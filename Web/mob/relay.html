@@ -1,0 +1,90 @@
+﻿<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_listRelay");loadParam("get_WORK");
+		loadParam("get_Relay(RCOMP),get_Relay(RTRV),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RBOILER),get_Relay(RHEAT),get_Relay(RFAN1),get_Relay(RFAN2),get_Relay(R3WAY),get_Relay(REVI),get_Relay(RPUMPB)");
+		updateParam("get_Relay(RCOMP),get_Relay(RTRV),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RBOILER),get_Relay(RHEAT),get_Relay(RFAN1),get_Relay(RFAN2),get_Relay(R3WAY),get_Relay(REVI),get_Relay(RPUMPB)"); 
+			
+		};		
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+			  <div class="content">
+						<header>
+							<h2>КОНСТАНТЫ КОНТРОЛЛЕРА<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+
+</div> 
+                                     
+<div class="table-wrapper">
+
+<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Pin</th>
+			<th>Состояние</th>
+		</tr>
+		</thead>
+		<tbody id="get_listrelay">
+		</tbody>
+	</table>	
+</div>
+</div>
+
+ 
+  <br>
+ </div>                   
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

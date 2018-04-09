@@ -178,18 +178,20 @@ int8_t Scheduler::save(void)
 int8_t Scheduler::load(uint8_t *data)
 {
 	journal.jprintf(" Load scheduler ");
-//#ifdef LOAD_VERIFICATION
 	uint8_t err = check_crc16_eeprom();
+#ifdef LOAD_VERIFICATION
 	if(err == OK) {
-//#endif
+#endif
 		if(data == NULL) data = (uint8_t *)&sch_data;
 	    if(readEEPROM_I2C(I2C_SCHEDULER_EEPROM, data, sizeof(sch_data))) {
 	        set_Error(ERR_LOAD_EEPROM, (char *) get_name());
 	        journal.jprintf("Error!\n");
 	        return ERR_SAVE_EEPROM;
 	    }
+#ifndef LOAD_VERIFICATION
+	if(err == OK)
+#endif
 	    journal.jprintf("Ok.\n");
-//#ifdef LOAD_VERIFICATION
 	} else {
 		journal.jprintf("CRC mismatch!\n");
 	}

@@ -1,0 +1,584 @@
+ <html>
+<head>
+	<title>Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script type='text/javascript'>
+function updateParam(paramids)
+{
+	setInterval(function() {loadParam(paramids)}, 5000); // время обновления параметров в в миллисекундах
+	loadParam(paramids);
+}
+
+function setParam(paramid, resultid)
+{
+var elid = paramid.replace(/\(/g,"-").replace(/\)/g,"").toLowerCase();   //console.log("elid:"+elid);
+var rec = new RegExp('et_listChart');
+var res = new RegExp('et_freon|et_rule|et_testMode|et_FC|et_EEV|et_modeHP');
+var ret = new RegExp('[(]SCHEDULER[)]');
+var rer = new RegExp('MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|et_Relay|UPDATE_I2C|et_optionHP[(]SAVE_ON|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEAT|RESET_HEAT|CIRCULATION|et_optionHP[(]SD_CARD|et_optionHP[(]BEEP|RTV_OFF|et_optionHP[(]NEXTION|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
+if (rer.test(paramid)) { swichid = document.getElementById(elid); if (swichid.checked) { elval =1; } else { elval = 0; } }
+else if (ret.test(paramid)) {console.log("sended sheduler");
+							var divscheduler = document.getElementById("get_boiler-scheduler");						
+							var inputs = divscheduler.getElementsByTagName("input");
+							var elval = ""; //console.log("lenght:"+inputs.length);
+							for (var i = 1; i < inputs.length; i++){
+								if (inputs[i-1].checked){	elval += 1; } else { elval += 0; }
+								if ( i % 24 == 0) {elval +="/";}
+							}
+	}
+else { var elval = document.getElementById(elid).value;}
+if (res.test(paramid)) {var elsend = paramid.replace(/get_/g,"set_").replace(/\)/g,"") + "(" + elval +")";}
+else if(rec.test(paramid)) { var elsend = paramid.replace(/get_listChart/g,"get_Chart("+elval+")"); }
+else {var elsend = paramid.replace(/get_/g,"set_").replace(/\)/g,"") + "=" + elval +")";}
+if(resultid == "" || resultid == null )  {
+	var valueid = paramid.replace(/set_/g,"get_").replace(/\(/g,"-").replace(/\)/g,"").toLowerCase();
+} else {
+	var valueid = resultid;
+}
+console.log( "valueid: " + valueid + "<-->" + elsend);
+if(!rec.test(paramid)) { document.getElementById(valueid).value = ""; document.getElementById(valueid).placeholder  = ""; }
+loadParam(elsend, true, valueid); 
+}
+
+function loadParam(paramid, noretry, resultdiv)
+{
+var check_ready = 1;
+var queue = 0;
+var req_stek = new Array();
+  if (queue == 0)
+  {
+	req_stek.push(paramid);
+  }
+  else if (queue == 1)
+  {
+	req_stek.unshift(paramid);
+	queue = 0;
+  }
+  
+  if (check_ready == 1)
+  { unique(req_stek);
+	var oneparamid = req_stek.shift();
+	check_ready = 0;
+		
+var request = new XMLHttpRequest(); 
+var findz = new RegExp('/,/gi');
+//if (oneparamid.search(findz) != -1 )  { 
+	var reqstr = oneparamid.replace(/,/g,'&'); 
+	// } else { var reqstr = oneparamid; } 
+
+//console.log(oneparamid + ":" + oneparamid.search(findz));
+request.open("GET", "/&" + reqstr + "&&", true); // адрес и порт контроллера
+request.timeout = 3800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
+request.send (null);
+request.onreadystatechange = function()
+	{
+	if (this.readyState != 4) return;
+		if (request.status == 200)
+		{ 
+			if (request.responseText != null)
+			{
+    			strResponse = request.responseText.replace(/^&*/,'').replace(/&&*$/,'');
+				var arr = strResponse.split('&'); //console.log(strResponse);
+				if (arr != null && arr != 0  ) {
+					check_ready = 1; // ответ получен, можно слать следующий запрос.
+					if (req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
+					{
+						queue = 1;
+						setTimeout(function() { loadParam(req_stek.shift()); }, 10); // запрашиваем следующую порцию.
+					}					
+				for (var i = 0; i < arr.length; i++) { //console.log(arr.length);
+					if (arr[i] != null && arr[i] != 0) {
+						var reerr = new RegExp('^E');
+						var rec = new RegExp('^CONST|get_sysInfo|get_socketInfo');
+						var reo = new RegExp('^scan_');
+						var rer = new RegExp('^get_Relay|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|CIRCULATION|RESET_HEAT|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEA|et_optionHP[(]BEEP|RTV_OFF|get_optionHP[(]SAVE_ON|et_optionHP[(]NEXTION|et_optionHP[(]SD_CARD|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
+						var rep = new RegExp('^get_present');
+						var ret = new RegExp('[(]SCHEDULER[)]');
+						var res = new RegExp('et_Network[(]SIZE_PACKET|et_freon|et_rule|et_testMode|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|W5200|et_modeHP|TIME_CHART|SMS_SERVICE');
+						var rev = new RegExp(/\([a-z0-9_]+\)/i);
+						var reg = new RegExp('^get_Chart');
+						var remintemp = new RegExp('^get_mintemp');
+						var remaxtemp = new RegExp('^get_maxtemp');
+						if (rec.test(arr[i])) { var type = "const"; }
+						else if (res.test(arr[i])) { var type = "select";  }  // значения
+						else if (reg.test(arr[i])) { var type = "chart";  }  // график
+						else if (ret.test(arr[i])) { var type = "scheduler";  }  // расписание
+						else if (reo.test(arr[i])) { var type = "scan";  } // ответ на сканирование
+						else if (rep.test(arr[i])) { var type = "present";  } // наличие датчика в конфигурации
+						else if (rer.test(arr[i])) { var type = "checkbox";  }  // чекбокс
+						else if (rev.test(arr[i])) { var type = "values";  }  // значения
+						else { var type = "str"; }
+						values = arr[i].split('=');  console.log(type + ": " + values[0] + "<-->"  + values[1] );
+						if(type == 'scheduler') {
+							var divscheduler = document.getElementById("get_boiler-scheduler");						
+							var inputs = divscheduler.getElementsByTagName("input");
+							cont1 = values[1].replace(/\//g,""); //console.log(cont1);
+							for (var i = 0; i < inputs.length; i++){
+								if (cont1.charAt(i) == 1){ inputs[i].checked = true; } else { inputs[i].checked = false; }
+							}
+						} else if(type == 'chart') {
+							if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {	
+								title = values[0].replace(/get_Chart\(_/g,"").replace(/\)[0-9]?/g,"");
+								var yizm = ''; var ytooltip = ''; var timeval = '';
+								var regexpt = /^(T|O|d)/g;var regexpp = /^P/g;var regexpe = /^pos/g;var regexpr = /^R/g;
+									if(regexpt.test(title)) { yizm = "Температура, °C"; ytooltip = " °C"; }
+									if(regexpp.test(title)) { yizm = "Давление, BAR"; ytooltip = " BAR"; }
+									if(regexpr.test(title)) { yizm = "Состояние реле"; ytooltip = ""; }
+									if(regexpe.test(title)) { yizm = "Позиция, шаги"; ytooltip = " шаг";	}
+								data = values[1].split(';'); var dataSeries = []; for (var i = 0; i < data.length - 1; i++) { dataSeries.push([[i], Number(data[i])]); }
+								$('#'+resultdiv).highcharts({
+									title: {text: title ,x: -15 },
+									xAxis: { title: { text: "Время " + timeval } },
+									yAxis: { title: { text: yizm }, allowDecimals: false,  plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
+									tooltip: {valueSuffix: ytooltip },
+									legend: { layout: 'vertical',  align: 'right', verticalAlign: 'middle', borderWidth: 0 },
+									plotOptions: { series: { dataGrouping: { enabled: false } } },
+									series: [{ name: ' ', tooltip: { valueDecimals: 2 }, states: { hover: { enabled: false }}, showInLegend: false, turboThreshold: 0, data:  dataSeries, dashStyle: "Solid" }] });
+							}  
+						} else if (type == 'scan') {
+								if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									cont1 = values[1].replace(/\:/g,"</td><td>");
+									cont2 = cont1.replace(/(\;)/g,"</td></tr><tr><td>");
+									var content = "<tr><td>" + cont2 + "</td></tr>";
+									document.getElementById(values[0].toLowerCase()).innerHTML = content;
+									cont3 = values[1].replace(/[0-9]:.{1,10}:[-0-9\.]{1,5}:/g,""); cont3 = cont3.replace(/;$/g,"");
+									var cont4 = cont3.split(';');						
+									for (var j=0;j<14;j++) {
+										document.getElementsByTagName('select')[j].options.length = 0;
+										optdef = new Option("---", "", true, true);
+										document.getElementsByTagName('select')[j].add(optdef,null);
+										optres = new Option("reset", 0, false, false);
+										document.getElementsByTagName('select')[j].add(optres,null);
+										for (var i=0,len=cont4.length;i<len;i++) {
+											opt = new Option(i+1, i+1, false, false);
+											document.getElementsByTagName('select')[j].add(opt,null);
+										}
+									}
+								}
+						} else if (type == 'select') { 
+								if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+								 var idsel = values[0].toLowerCase().replace(/set_/g,"get_").replace(/\([0-9]\)/g,"").replace(/\(/g,"-").replace(/\)/g,"");// console.log(idsel);	
+								 if (idsel=="get_testmode") {
+									var element2=document.getElementById("get_testmode2");
+									if(element2) {
+										var cont1 = values[1].split(';');
+										for (var n=0,len=cont1.length-1;n<len;n++) { 
+												cont2 = cont1[n].split(':');
+												if (cont2[1] == 1)  {
+													if (cont2[0] != "NORMAL") {document.getElementById("get_testmode2").className = "red";}
+													else {document.getElementById("get_testmode2").className = "";}
+													document.getElementById("get_testmode2").innerHTML = cont2[0];
+													} 
+											}
+										}									
+									}
+								 else if (idsel=="get_ruleeev") {
+									document.getElementById("get_freoneev").disabled = false;
+									document.getElementById("get_parameev-m_step").disabled = false;
+									document.getElementById("get_parameev-m_step2").disabled = false;
+									document.getElementById("get_parameev-correction").disabled = false;
+									document.getElementById("get_parameev-correction2").disabled = false;
+									document.getElementById("get_parameev-t_owerheat").disabled = false;
+									document.getElementById("get_parameev-t_owerheat2").disabled = false;
+									document.getElementById("get_parameev-time_in").disabled = false;
+									document.getElementById("get_parameev-time_in2").disabled = false;
+									document.getElementById("get_parameev-k_pro").disabled = false;
+									document.getElementById("get_parameev-k_pro2").disabled = false;
+									document.getElementById("get_parameev-k_in").disabled = false;
+									document.getElementById("get_parameev-k_in2").disabled = false;
+									document.getElementById("get_parameev-k_dif").disabled = false;
+									document.getElementById("get_parameev-k_dif2").disabled = false;
+									}
+									else if (idsel=="get_message-smtp_server") {
+										loadParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
+									}		
+									else if (idsel=="get_message-sms_service") {
+										loadParam("get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_IP)");
+									}		
+									var element=document.getElementById(idsel);
+									if(element) {document.getElementById(idsel).innerHTML="";}
+									var element3 = document.getElementById(idsel);
+									if ( element3 && element3.tagName != "SPAN") {
+									var cont1 = values[1].split(';');//		console.log(idsel+":"+values[1]);
+									for (var k=0,len=cont1.length-1;k<len;k++) {
+										cont2 = cont1[k].split(':');
+										if (cont2[1] == 1)  {
+											selected = true;
+											
+											if (idsel=="get_ruleeev") {
+											if (k==0) {
+											document.getElementById("get_freoneev").disabled = true;
+											document.getElementById("get_parameev-m_step").disabled = true;
+											document.getElementById("get_parameev-m_step2").disabled = true;											
+											}
+											else if (k==1){
+											document.getElementById("get_parameev-m_step").disabled = true;
+											document.getElementById("get_parameev-m_step2").disabled = true;
+											}
+											else if (k==2 || k==3){
+											document.getElementById("get_parameev-t_owerheat").disabled = true;
+											document.getElementById("get_parameev-t_owerheat2").disabled = true;
+											document.getElementById("get_parameev-k_pro").disabled = true;
+											document.getElementById("get_parameev-k_pro2").disabled = true;
+											document.getElementById("get_parameev-k_in").disabled = true;
+											document.getElementById("get_parameev-k_in2").disabled = true;
+											document.getElementById("get_parameev-k_dif").disabled = true;
+											document.getElementById("get_parameev-k_dif2").disabled = true;
+											document.getElementById("get_freoneev").disabled = true;
+											document.getElementById("get_parameev-correction").disabled = true;
+											document.getElementById("get_parameev-correction2").disabled = true;
+											}
+											if(k==2){
+												document.getElementById("get_parameev-m_step").disabled = true;
+												document.getElementById("get_parameev-m_step2").disabled = true;
+											}
+											} else if (idsel=="get_paramcoolhp-rule") {
+												document.getElementById("get_paramcoolhp-target").disabled = false;document.getElementById("get_paramcoolhp-dtemp").disabled = false; document.getElementById("get_paramcoolhp-hp_pro").disabled = false; document.getElementById("get_paramcoolhp-hp_in").disabled = false; document.getElementById("get_paramcoolhp-hp_dif").disabled = false; document.getElementById("get_paramcoolhp-hp_time").disabled = false;
+														if (k==2) { document.getElementById("get_paramcoolhp-target").disabled = true;
+												 } else if (k==1){ document.getElementById("get_paramcoolhp-dtemp").disabled = true; 
+												 } else if (k==0){ document.getElementById("get_paramcoolhp-hp_time").disabled = true; document.getElementById("get_paramcoolhp-hp_pro").disabled = true; document.getElementById("get_paramcoolhp-hp_in").disabled = true; document.getElementById("get_paramcoolhp-hp_dif").disabled = true; }
+											} else if (idsel=="get_paramheathp-rule") {
+												document.getElementById("get_paramheathp-target").disabled = false; document.getElementById("get_paramheathp-dtemp").disabled = false; document.getElementById("get_paramheathp-hp_pro").disabled = false; document.getElementById("get_paramheathp-hp_in").disabled = false; document.getElementById("get_paramheathp-hp_dif").disabled = false; document.getElementById("get_paramheathp-hp_time").disabled = false;
+														if (k==2) { document.getElementById("get_paramheathp-target").disabled = true;
+												 } else if (k==1){ document.getElementById("get_paramheathp-dtemp").disabled = true;
+												 } else if (k==0){ document.getElementById("get_paramheathp-hp_time").disabled = true; document.getElementById("get_paramheathp-hp_pro").disabled = true; document.getElementById("get_paramheathp-hp_in").disabled = true; document.getElementById("get_paramheathp-hp_dif").disabled = true; }
+											} else if (idsel=="get_paramcoolhp-target") {
+												if (k==0) { document.getElementById("get_paramcoolhp-temp2").disabled = true; document.getElementById("get_paramcoolhp-temp1").disabled = false;
+												} else if (k==1) { document.getElementById("get_paramcoolhp-temp2").disabled = false; document.getElementById("get_paramcoolhp-temp1").disabled = true;}
+											} else if (idsel=="get_paramheathp-target") {
+												if (k==0) { document.getElementById("get_paramheathp-temp2").disabled = true; document.getElementById("get_paramheathp-temp1").disabled = false;																						
+												} else if (k==1) { document.getElementById("get_paramheathp-temp2").disabled = false; document.getElementById("get_paramheathp-temp1").disabled = true;}
+											} 
+											
+										} else { selected = false; }
+										if(idsel=="get_listchart") {			
+												for (var j=0;j<5;j++) {
+												opt = new Option(cont2[0], "_"+cont2[0], false, selected );
+												document.getElementsByTagName('select')[j].add(opt,null);
+												}
+											} else {
+												var opt = new Option(cont2[0], k, false, selected ); document.getElementById(idsel).add(opt,null); 	
+											}
+										}
+									}
+								}		
+						} else if (type == 'const') {
+								if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									cont1 = values[1].replace(/\|/g,"</td><td>");
+									cont2 = cont1.replace(/(\;)/g,"</td></tr><tr><td>");
+									var content = "<tr><td>" + cont2 + "</td></tr>";
+									document.getElementById(values[0].toLowerCase()).innerHTML = content; 
+								}
+						} else if (type == 'values') {
+								var valueid = values[0].replace(/set_/g,"get_").replace(/\([0-9]*\)/g,"").replace(/\(/g,"-").replace(/\)/g,"").toLowerCase(); //.toLowerCase().replace(/set_/g,"get_").replace(/\([0-9]\)/g,"");
+								var valuevar = values[1].toLowerCase().replace(/[^\w\d]/g,""); 
+								if (valueid != null  && valueid != ""  && values[1] != null) {
+								if ( valueid == "get_message-sms_ret") {  
+										if(valuevar == "waitresponse") {	setTimeout(loadParam('get_Message(SMS_RET)'), 3000); console.log("wait response..."); } else { alert(values[1]); }
+									} 							
+								if ( valueid == "get_message-mail_ret") {  
+										if(valuevar == "waitresponse") {	setTimeout(loadParam('get_Message(MAIL_RET)'), 3000); console.log("wait response..."); } else { alert(values[1]); }
+									} 
+									
+									element3=document.getElementById(valueid+"3");	if(element3)  {element3.value  = values[1];  element3.innerHTML = values[1];}
+									element=document.getElementById(valueid);
+									if(element) {if(element!=document.activeElement) {element.value = values[1]; element.innerHTML = values[1];}}
+									if(reerr.test(values[1]))   { element=document.getElementById(valueid); if(element) {element.placeholder = values[1];} } }	
+																
+									if(remintemp.test(valueid)) { document.getElementById(valueid.replace(/get_min/g,"get_test")).min = values[1]; }
+									else if (remaxtemp.test(valueid)) { document.getElementById(valueid.replace(/get_max/g,"get_test")).max = values[1]; }	
+								
+									
+									 
+						} else if (type == 'present') {
+								var valueid = values[0].replace(/\(/g,"-").replace(/\)/g,"").toLowerCase();
+								if (valueid != null  && values[1] != null && values[1] == 0 ) {
+									element=document.getElementById(valueid);if(element) {element.className = "inactive";}
+									if(values[0] == "get_presentRelay(RHEAT)" && values[1] == 0) {element=document.getElementById("get_optionhp-add_heat");if(element) {element.disabled = true;}}
+									if(values[0] == "get_presentRelay(REVI)" && values[1] == 0) {element=document.getElementById("get_optionhp-temp_evi");if(element) {element.disabled = true;} element=document.getElementById("get_optionhp-temp_evi2");if(element) {element.disabled = true;}}
+									var tableElem = document.getElementById(valueid);
+									if (tableElem) {
+										var elements = tableElem.getElementsByTagName('select');
+										if(elements[0]) {elements[0].disabled = true;}
+									}
+								}
+						} else if (type == 'checkbox') {
+								var valueid = values[0].replace(/\(/g,"-").replace(/\)/g,"").replace(/set_/g,"get_").toLowerCase();
+										if(values[1] == 1) {
+											document.getElementById(valueid).checked = true;
+											document.getElementById(valueid).innerHTML= "вкл.";
+										} else if (values[1] == 0) {
+											document.getElementById(valueid).checked = false;
+											document.getElementById(valueid).innerHTML= "выкл.";
+										}							
+						} else {  							//console.log(type + ": " + values[0] + "<-->"  + values[1] );
+								if (values[0] == "get_WORK" &&  values[1] == "ON" ) {
+									var element=document.getElementById("onoffswitch");
+									var element2=document.getElementById("get_work2");
+									if(element2) {document.getElementById("get_work2").innerHTML = "ON";}
+									if(!element) {document.getElementById(values[0].toLowerCase()).innerHTML = "ON";}
+									else {document.getElementById("onoffswitch").checked = true;}
+										if(document.getElementById('get_relay-rcomp')) document.getElementById('get_relay-rcomp').disabled = true;
+										if(document.getElementById('get_relay-rpumpi')) document.getElementById('get_relay-rpumpi').disabled = true;
+										if(document.getElementById('get_relay-rpumpo')) document.getElementById('get_relay-rpumpo').disabled = true;
+										if(document.getElementById('get_relay-rboiler')) document.getElementById('get_relay-rboiler').disabled = true;
+										if(document.getElementById('get_relay-rheat')) document.getElementById('get_relay-rheat').disabled = true;
+										if(document.getElementById('get_relay-rtrv')) document.getElementById('get_relay-rtrv').disabled = true;
+										if(document.getElementById('get_relay-rfan1')) document.getElementById('get_relay-rfan1').disabled = true;
+										if(document.getElementById('get_relay-rfan2')) document.getElementById('get_relay-rfan2').disabled = true;
+										if(document.getElementById('get_relay-r3way')) document.getElementById('get_relay-r3way').disabled = true;
+										if(document.getElementById('get_relay-revi')) document.getElementById('get_relay-revi').disabled = true;
+										if(document.getElementById('get_eev')) document.getElementById('get_eev').disabled = true;
+										if(document.getElementById('get_fc')) document.getElementById('get_fc').disabled = true;
+										if(document.getElementById('get_fc2')) document.getElementById('get_eev2').disabled = true;
+										if(document.getElementById('get_fc2')) document.getElementById('get_fc2').disabled = true;		
+										if(document.getElementById('get_testmode')) document.getElementById('get_testmode').disabled = true;	
+										if(document.getElementById('get_modehp')) document.getElementById('get_modehp').disabled = true;						
+								} else if ( values[0] == "get_WORK" &&  values[1] == "OFF" ) {
+									var element=document.getElementById("onoffswitch");
+									var element2=document.getElementById("get_work2");
+									if(element2) {document.getElementById("get_work2").innerHTML = "OFF";}
+									/*if(!element) {document.getElementById(values[0].toLowerCase()).innerHTML = "OFF";}*/
+									else {document.getElementById("onoffswitch").checked = false;
+										}
+										
+										if(document.getElementById('get_relay-rcomp')) document.getElementById('get_relay-rcomp').disabled = false;
+										if(document.getElementById('get_relay-rpumpi')) document.getElementById('get_relay-rpumpi').disabled = false;
+										if(document.getElementById('get_relay-rpumpo')) document.getElementById('get_relay-rpumpo').disabled = false;
+										if(document.getElementById('get_relay-rboiler')) document.getElementById('get_relay-rboiler').disabled = false;
+										if(document.getElementById('get_relay-rheat')) document.getElementById('get_relay-rheat').disabled = false;
+										if(document.getElementById('get_relay-rtrv')) document.getElementById('get_relay-rtrv').disabled = false;
+										if(document.getElementById('get_relay-rfan1')) document.getElementById('get_relay-rfan1').disabled = false;
+										if(document.getElementById('get_relay-rfan2')) document.getElementById('get_relay-rfan2').disabled = false;
+										if(document.getElementById('get_relay-r3way')) document.getElementById('get_relay-r3way').disabled = false;
+										if(document.getElementById('get_relay-revi')) document.getElementById('get_relay-revi').disabled = false;
+										if(document.getElementById('get_eev')) document.getElementById('get_eev').disabled = false;
+										if(document.getElementById('get_fc')) document.getElementById('get_fc').disabled = false;
+										if(document.getElementById('get_fc2')) document.getElementById('get_eev2').disabled = false;
+										if(document.getElementById('get_fc2')) document.getElementById('get_fc2').disabled = false;	
+										if(document.getElementById('get_testmode')) document.getElementById('get_testmode').disabled = false;	
+										if(document.getElementById('get_modehp')) document.getElementById('get_modehp').disabled = false;
+								} else if ( values[0] == "get_uptime") {
+								var element1=document.getElementById("get_uptime");
+								var element2=document.getElementById("get_uptime2");
+								if(element1) {document.getElementById("get_uptime").innerHTML =  values[1] ;}	
+								if(element2) {document.getElementById("get_uptime2").innerHTML =  values[1] ;}									 
+								} else if ( values[0] == "get_EEV") {
+								var element1=document.getElementById("get_eev");
+								var element2=document.getElementById("get_eev2");
+								if(element1) {document.getElementById("get_eev").innerHTML =  values[1];}	
+								if(element2) {document.getElementById("get_eev2").innerHTML =  values[1];}									 
+								} else if ( values[0] == "set_EEV") {
+								var element1=document.getElementById("get_eev");
+								var element2=document.getElementById("get_eev2");
+								if(element1) {document.getElementById("get_eev").innerHTML =  values[1];}	
+								if(element2) {document.getElementById("get_eev2").innerHTML =  values[1];}									 
+								} else if ( values[0] == "get_errcode" &&  values[1] == 0 ) {
+									document.getElementById("get_errcode").innerHTML = "OK";
+									document.getElementById("get_error").innerHTML = "";
+								} else if (values[0] == "get_errcode" &&  values[1] < 0) {
+									document.getElementById("get_errcode").innerHTML = "Ошибка";
+								} else if (values[0] == "test_Mail") {
+										setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
+								}  else if (values[0] == "test_SMS") {
+										setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
+								} else if (values[0] == "set_SAVE") { RESET
+									//alert(values[0].toLowerCase() + "--" + values[1]);
+									if (values[1] > 0) {
+											alert("Настройки сохранены в EEPROM, записано " + values[1] +" байт" );
+										} else {
+											alert("Ошибка записи в EEPROM, код ошибки:" + values[1] );
+										}
+								}  else if (values[0] == "RESET") { 
+											alert(values[1]);
+								} else if (values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
+									break;
+								} else {
+									element=document.getElementById(values[0].toLowerCase()); if(element) {element.value = values[1]; element.innerHTML = values[1];}
+									element2=document.getElementById(values[0].toLowerCase()+"2"); if(element2) {element2.value = values[1]; element2.innerHTML = values[1];}
+								}
+							}
+						}
+
+					}
+
+
+				} // end: if (request.responseText != null)
+			} // end: if (request.responseText != null)
+		} else if( noretry != true) { console.log("request.status: "+request.status+" retry load..."); check_ready = 1; setTimeout(function() { loadParam(paramid); }, 4000); }
+	}  
+	}
+}
+
+function dhcp(dcb)
+{
+	dhcpcheckbox = document.getElementById(dcb);
+  if (dhcpcheckbox.checked)
+  {
+	  //console.log("dhcp:enabled");
+	 document.getElementById('get_network-address').disabled = true;
+	 document.getElementById('get_network-subnet').disabled = true;
+	 document.getElementById('get_network-gateway').disabled = true;
+	 document.getElementById('get_network-dns').disabled = true;
+	 document.getElementById('get_network-address2').disabled = true;
+	 document.getElementById('get_network-subnet2').disabled = true;
+	 document.getElementById('get_network-gateway2').disabled = true;
+	 document.getElementById('get_network-dns2').disabled = true;	 
+  }
+  else 
+  {  //console.log("dhcp:disabled");
+	 document.getElementById('get_network-address').disabled = false;
+	 document.getElementById('get_network-subnet').disabled = false;
+	 document.getElementById('get_network-gateway').disabled = false;
+	 document.getElementById('get_network-dns').disabled = false;
+	 document.getElementById('get_network-address2').disabled = false;
+	 document.getElementById('get_network-subnet2').disabled = false;
+	 document.getElementById('get_network-gateway2').disabled = false;
+	 document.getElementById('get_network-dns2').disabled = false;
+  }
+}
+
+function validip(valip) {
+    var re = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/; 
+    var valip = document.getElementById(valip).value;
+    var valid = re.test(valip);
+    if (!valid) alert ('Сетевые настройки введены неверно!');
+    //document.getElementById('message').innerHTML = document.getElementById('message').innerHTML+'<br />'+output;
+    return valid;
+}
+
+function validmac(valimac) {
+    var re = /^[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/; 
+    var valimac = document.getElementById(valimac).value;
+    var valid = re.test(valimac);
+    if (!valid) alert ('Аппаратный mac адрес введен неверно!');
+    //document.getElementById('message').innerHTML = document.getElementById('message').innerHTML+'<br />'+output;
+    return valid;
+}
+
+function clock() {
+var d = new Date();
+var month_num = d.getMonth()
+var day = d.getDate();
+var hours = d.getHours();
+var minutes = d.getMinutes();
+var seconds = d.getSeconds();
+
+if (day <= 9) day = "0" + day;
+if (hours <= 9) hours = "0" + hours;
+if (minutes <= 9) minutes = "0" + minutes;
+if (seconds <= 9) seconds = "0" + seconds;
+if (month_num <=9) month_num = "0" + month_num;
+
+get_time = hours + ":" + minutes + ":" + seconds;
+get_date = day + "." + month_num + "." + d.getFullYear();
+if (document.layers) {
+ document.layers.get_time.document.write(get_time);
+ document.layers.get_time.document.close();
+ document.layers.get_date.document.write(get_date);
+ document.layers.get_date.document.close();
+ }
+else
+ {
+ document.getElementById("get_time").innerHTML = get_time;
+ document.getElementById("get_date").innerHTML = get_date;
+ setTimeout("clock()", 1000);
+ }
+}
+
+function swich(sw)
+{
+  swichid = document.getElementById(sw);
+  if (swichid.checked)
+  { 
+    loadParam("set_ON");
+  }
+  else 
+  {
+    loadParam("set_OFF");
+  }
+}
+
+function unique(arr) {
+  var result = [];
+
+  nextInput:
+    for (var i = 0; i < arr.length; i++) {
+      var str = arr[i]; // для каждого элемента
+      for (var j = 0; j < result.length; j++) { // ищем, был ли он уже?
+        if (result[j] == str) continue nextInput; // если да, то следующий
+      }
+      result.push(str);
+    }
+
+  return result;
+}
+		window.onload = function() {
+			updateParam("get_version,get_testMode,get_datetime(TIME),get_datetime(DATE),get_WORK,get_uptime,get_freeRam,get_loadingCPU,get_uptime,get_overheatEEV,get_MODE,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TBOILER)");
+	};
+	</script>	
+	<style>
+body{font-size: 12px;padding:0;margin:0; font-family: Arial,'Helvetica Neue', Helvetica, sans-serif;  background: -webkit-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -o-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -ms-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -moz-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: linear-gradient(to bottom, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);}		
+.row2 dd, .row2 dt{float:left;width:48%;margin:0 1%;line-height:2em;min-height:2em;padding: 0; text-align:center;2em;}
+.row2 dt {font-size:1.5em}
+.row2 dd {font-size:1.8em}
+.row2 dl {float:left; margin: 0; padding:20px 0; list-style:none;  min-height:100px; background: rgba(255, 255, 255, 0.6) center 15px no-repeat}	
+.dateinfo,.row2{display:block;float:left;width:48%; margin:1%; text-align: center;}
+.dateinfo span{width:48%;display:inline-block;padding:0 1%}
+.dateinfo span:nth-child(2n){text-align: left}
+.dateinfo h1, .dateinfo h2{margin:0;padding: 0 0 5px 0;text-align: center;}
+.onoffswitch { position: relative; width: 60px; display: inline-block; -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;}
+.onoffswitch-checkbox { display: none;}
+.onoffswitch-label { display: block; overflow: hidden; cursor: pointer; border-radius: 20px;}
+.onoffswitch-inner { display: block; width: 200%; margin-left: -100%; transition: margin 0.3s ease-in 0s;}
+.onoffswitch-inner:before, .onoffswitch-inner:after { display: block; float: left; width: 50%; height: 26px; padding: 0; line-height: 26px; font-size: 18px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold; box-sizing: border-box;}
+.onoffswitch-inner:before { content: "✔"; padding-left: 10px; background-color: #FFFFFF; color: #81D14E;}
+.onoffswitch-inner:after { content: "X"; padding-right: 10px; background-color: #FFFFFF; color: #F44E4E; text-align: right;}
+.onoffswitch-switch { display: block; width: 22px; margin: 0px; background: #F44E4E; position: absolute; top: 0; bottom: 0; right: 33px; border: 2px solid #FFFFFF; border-radius: 20px; transition: all 0.3s ease-in 0s; }
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner { margin-left: 0;}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch { right: 0px; background-color: #81D14E; }
+@media screen and (max-width: 600px) { .dateinfo,.row2{width:98%} }
+	</style>
+</head>
+<body>	
+<div class="row2">
+	<dl>
+			<dt>Тепловой насос</dt>
+			<dd>
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="onoffswitch" onchange="swich('onoffswitch')">
+					<label class="onoffswitch-label" for="onoffswitch">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+			</dd>
+			<dt>Режим работы</dt><dd><span id="get_mode">-</span></dd>
+			<dt>Показатели</dt><dd><span id="get_errcode">-</span></dd>		
+			<dt>На улице</dt><dd><span id="get_temp-tout">-</span> &deg;C</dd>
+			<dt>В доме</dt><dd><span id="get_temp-tin">-</span> &deg;C</dd>
+			<dt>Из геоконтура</dt><dd><span id="get_temp-tevaoutg">-</span> &deg;C</dd>
+			<dt>В геоконтур</dt><dd><span id="get_temp-tevaing">-</span> &deg;C</dd>
+			<dt>Подача СО</dt><dd><span id="get_temp-tconing">-</span> &deg;C</dd>
+			<dt>Обратка СО</dt><dd><span id="get_temp-tconoutg">-</span> &deg;C</dd>
+			<dt>Температура бойлера</dt><dd><span id="get_temp-tboiler">-</span> &deg;C</dd>
+	</dl>								
+</div>
+<div class="row2">		
+	<dl>
+		<dt>Дата/Время</dt><dd><span id="get_datetime-time3">-</span> - <span id="get_datetime-date3">-</span></dd>
+		<dt>Версия ПО:</dt><dd id="get_version">-</dd>
+		<dt>FREE RAM:</dt><dd id="get_freeram">-</dd>
+		<dt>CPU LOAD:</dt><dd id="get_loadingcpu">-</dd>
+		<dt>Uptime:</dt><dd id="get_uptime2">-</dd>
+		<dt>Режим:</dt><dd id="get_testmode2">-</dd>
+		<dt>Перегрев:</dt><dd id="get_overheateev2">-</dd>
+		<dd style="width:98%;">
+			<span id="get_error" style="font-size:1em;line-height:1.3em" ></span><br/>
+			<span style="font-size:0.8em;font-style:italic;line-height:1em">SD карта не работает, показана упрощеная версия интерфейса. Для устраниея ошибки попробуйте на выключеном контроллере перставить карту. И выполнить сброс  контроллера. <br/><input style="margin-top:15px;" type="submit" value="Сброс контроллера"  onclick='loadParam("RESET")'></span>
+		</dd>	
+	</dl> 
+</div>	
+</body>
+</html>

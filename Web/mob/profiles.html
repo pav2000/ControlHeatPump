@@ -1,0 +1,125 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_WORK,get_Profile(ID_PROFILE),get_Profile(NAME_PROFILE),get_Profile(DATE_PROFILE),get_Profile(CRC16_PROFILE),get_Profile(NOTE_PROFILE),get_Profile(ENABLE_PROFILE),get_Profile(NUM_PROFILE)");
+			
+		};			
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+					<div class="content">
+						<header>
+							<h2>ПРОФИЛИ РАБОТЫ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+</div> 
+                                     
+                    <div class="table-wrapper">
+                    <h4> Текущий профиль </h4><br>
+<table>		
+		<tbody>
+		<tr>
+            <td>Номер используемого профиля</td>
+			<td><input id="get_profile-id_profile" type="number" min="0" max="7"></td>
+            <td><input class="button2 small" id="get_profile-id_profile2" type="submit" value="Установить Текущий профиля"  onclick="setParam('get_Profile(ID_PROFILE)');"></td>
+		</tr>
+        </tbody>
+	</table>                    
+<h4> Настройка текущего профиля </h4> <br>                   
+<table>		
+		<tbody>
+		<tr>
+			<td>Имя профиля</td>
+			<td><input id="get_profile-name_profile" type="text" maxlength="10"></td>
+            <td><input class="button2 small" id="get_profile-name_profile2" type="submit" value="Установить Имя профиля"  onclick="setParam('get_Profile(NAME_PROFILE)');"></td>
+		</tr>
+		<tr>
+			<td>Описание профиля</td>
+			<td><input id="get_profile-note_profile" type="text" maxlength="40"></td>
+            <td><input class="button2 small" id="get_profile-note_profile2" type="submit" value="Установить Описание профиля"  onclick="setParam('get_Profile(NOTE_PROFILE)');"></td>
+		</tr>
+		<tr>
+			<td colspan="2">Последнее редактирование</td>
+			<td><span id="get_profile-date_profile"></span><br/>CRC16=<span id="get_profile-crc16_profile"></span></td>
+		</tr>
+        <tr>
+			<td  colspan="2">Использование профиля в списке</td>
+			<td><input type="checkbox" name="get_profile-enable_profile" id="get_profile-enable_profile" onChange="setParam('get_Profile(ENABLE_PROFILE)');" >
+                <label for="get_profile-enable_profile"><span id="get_profile-enable_profile2"></span></label></td>
+		</tr>							
+	</tbody>
+	</table>
+ <h4>Таблица профилей</h4><br>
+
+		<table>
+		<thead>
+		<tr>
+			<th>Номер профиля</th>
+			<th>Описание</th>
+			<th colspan="2">Действие</th>
+		</tr>
+		</thead>
+		<tbody id="get_profile-num_profile">				
+		</tbody>
+	</table>	   
+    
+ 
+</div>
+
+ 
+  <br>
+ </div>                   
+
+	    </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

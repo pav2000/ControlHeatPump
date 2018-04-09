@@ -1,0 +1,183 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="pragma" content="no-cache">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_listChart,get_optionHP(TIME_CHART)");
+		/*google.charts.load('current', {packages: ['corechart', 'line']});*/
+Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });		
+		$("#autoupdate").change(function(){
+		if(this.checked){
+			var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4');setParam('get_listChart5','chart5');setParam('get_listChart6','chart6') }, 10000)
+			window.timerId = timerId
+		}else{
+			timerId = window.timerId
+			clearInterval(timerId);
+		}
+});		
+		};			
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+					<div class="content">
+						<header>
+							<h2>ГРАФИКИ РАБОТЫ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                    <div>Обновлять графики автоматически<input id="autoupdate"  type="checkbox"></div>    
+                     <br>                 
+                    <div class="table-wrapper">
+                    <div id="chart1">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart" onChange="setParam('get_listChart','chart1')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart" type="submit" value="Обновить"  onclick="setParam('get_listChart','chart1')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart2">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart2" onChange="setParam('get_listChart2','chart2')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart2" type="submit" value="Обновить"  onclick="setParam('get_listChart2','chart2')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart3">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart3" onChange="setParam('get_listChart3','chart3')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart3" type="submit" value="Обновить"  onclick="setParam('get_listChart3','chart3')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart4">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart4" onChange="setParam('get_listChart4','chart4')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart4" type="submit" value="Обновить"  onclick="setParam('get_listChart4','chart4')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart5">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart5" onChange="setParam('get_listChart5','chart5')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart5" type="submit" value="Обновить"  onclick="setParam('get_listChart5','chart5')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart6">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr><td></td>
+						<td>График: </td>
+                        <td><div class="12u$">
+						<div class="select-wrapper">
+						<h7><select id="get_listchart6" onChange="setParam('get_listChart6','chart6')"></select></h7>
+						</div>
+						</div></td>
+                        <td><input class="button2 small" id="get_listchart6" type="submit" value="Обновить"  onclick="setParam('get_listChart6','chart6')"></td>
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+									
+
+<div><input style="display:none" id="autoupdate"  type="checkbox">
+<input style="display:none" class="button small" type="submit" value="Обновить графики"  onClick="setParam('get_listChart','chart1'); setParam('get_listChart2','chart2'); setParam('get_listChart3','chart3'); setParam('get_listChart4','chart4');"><br>
+<select style="display:none" id="get_optionhp-time_chart" disabled></select>
+<select style="display:none" id="get_listchart" onChange="setParam('get_listChart','chart1')"></select>
+</div>
+    
+
+   
+</div>
+
+ 
+  <br>
+ </div>                   
+
+		  </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

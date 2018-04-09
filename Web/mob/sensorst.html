@@ -1,0 +1,105 @@
+﻿<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_WORK");
+		loadParam("get_listTemp");
+    	loadParam("get_numberIP");
+		};		 
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+			  <div class="content">
+						<header>
+							<h2>ДАТЧИКИ ТЕМПЕРАТУРЫ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+
+</div> 
+                                     
+<div class="table-wrapper">
+
+<h4>Температуные датчики, значения в &deg;C</h4><p>
+<table>
+    <thead>
+    <tr>
+      <th>Имя</th>
+      <th>Описание</th>
+      <th></th>
+      <th>Значение</th>
+
+    </tr>
+    </thead>
+    <tbody id="get_listtemp">
+    </tbody>
+  </table>                     
+
+<h4>Удалённые датчики</h4><p>
+
+  
+<div id="get_sensor_ip-1"></div>  
+<div id="get_sensor_ip-2"></div> 
+<div id="get_sensor_ip-3"></div> 
+<div id="get_sensor_ip-4"></div>             
+
+
+                       
+</div>
+</div>
+
+ 
+  <br>
+ </div>                   
+
+	    </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="pragma" content="no-cache">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+			updateParam("get_Boiler(BOILER_ON),get_WORK,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_paramFC(FC),get_paramFC(POWER),get_EEV,get_overheatEEV,get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONIN),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(R3WAY)");
+
+};
+	</script>
+    
+</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+                
+			<!-- Banner -->
+				<section id="banner">
+					<div class="content">
+						<header>
+							<h2>СХЕМА <br> ТЕПЛОВОГО НАСОСА</h2>
+					  <p> <br />
+</header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+</div> 
+                            
+          <div class="table-wrapper">
+									<table>
+										
+										<tbody>
+                                        
+                                       <tr>
+                                       <td></td>
+												<td> <span id="get_work5"></span></td>
+                                                <td> Состояние</td>
+												<td><h7><span id="get_mode">-</span></h7></td>
+											</tr>
+                                       <tr>
+                                            <td></td>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2RJREFUeNrEV01ME1EQni1bECu0WutfTeBCApoIFzDBgzXBxJtIoieJdw0JJB6IXnqR4EkTImcNnjwInuVQY0JULuWgEkkUEmtEFAtNESg/zvf63rp9XdNdrDrJy243b9838803s1ODXFjDo7k6vnTK1cIrpG1J80ryGsOauVQ3V+pMowRgM1/u8oqRN0vw6mUHpjwBM2CQL3G8TH9mcDrODiyVBJagCUmpJ7vXvp8yuS3qn1y0P0YKYjq4b6eg0d0VRc9q/T5KZTf1xzgrIc8uBvYa6UjsID05e4hq/L9Ie7WwRo0hf8G+jiPVdKWhpgjcHnHcC73jqRVaXt+imy17rWdwAlErY0DqOR4U4PLseAGwVK8nIQ1MpSm1ssGUmzTYuk88e5vO8VoX93jWVR8Qzl2dWFCv9UosMm3q82wQ0cjpA+Jw0I5rNGCKBZHBAJrJbetKP2PI5jC703qByJDv7sQ8M7BpRasc+43Vm7IbubILdQGRM9CpcrnMkQ29XrJAYbeS3+khO4P9RwOmTMO6WHJfpyfg8U8r1kGwtkiVuCpalYFa0N7ECm8KVRbs7X72xQJ2bIdQaFf9HqVIEdnobJaG3hQ2ocagn263henlwqqVS6gZwoMAkYqodDaV3bBq23QCxWHDpyICqH/ym6BH1iN1RKuFekH1Rz5odC5L999lWFyHxX5EVlvpE7TCebxrT4O0EMS1XdQcWKmP+RAcqtuN5lD+MAaFE6DyMgsLjiAyUIx0QAuqlDRV53u1EzBK4/zTz67yDkcAiK6FpqKiAzuoYxgc08FNnWLlqVsDrdNMPRgYbA0LioW4WBNIBRg5GdnFwvxBeq9O2/P6YCajlOfaQDnEhfcQMe7zqq6kAS4t/NYHh4rwxb5zKOjrJ0IC9Pn8qidQRFJVYQhacT+1mK/V6aW8AN9ncvQhs6G/9sInxxVP9Dp9MNCzi6qD61iVo2ZjFjBUjBypQndr9hTpdm3iqxAe9ujAJgYzVnaCqYlB+j3HgiXFhOjUVwiGlqmLR3/HPo8B07B9FpNuIkRTGG6PiM7kMG0UGNiDg+hg9okEQ6Bhm0DulGG4Kzn8MWif0wSS/IugSfsEYpRrwnQBWjBplnW8dQtaNN7C5IbYTschh4E+5mqg/69/Yf7Fn7afAgwAb2e3okQizmQAAAAASUVORK5CYII=" alt="" /></td>
+                                                <td> На улице</td>
+												<td><h7><span id="get_temp-tout">-</span> &deg;C </h7></td>
+											</tr>
+											<tr>
+                                            <td></td>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAolJREFUeNrEV0FPE0EUfrvdtjEB7QES0IOaaKIn4YAXJGnwVE71YLxzVtIreOlFvFbxjAl/wJ7gJGkCXvTAetJEE/CgkOgBrQmhLa3vm86upTu7s9OG8pKXmd2Z9743M9+8fWtRDDl6NX2Vm7zUCdZM15RDVpe1DL3w+N03nU9LA3iHmxJrlsykwlrgAD4aATPgJW6KMKb+BEEXOYDfWmAJWpFbGirJ2SXR1jeXdeA4gmw3uGUMmhqi1Nxzsq9Misfm9x2qrS8S1f4agVsmoNbwGCVzDDp6k5o/v4h3Xr++sUit6kFscLtjoBgJOnKDUo9et4GwyvIToejjHcYwJ0ImJMb/FUv2umEWiVs5St5/Kvonn9YD54rzTtyea5/522d08nkjMgCw3e5gn1KcqXkftL71QkkmvMOYCILnwkbDdLJkcthTkSh5b0GspHVc5ZUsU3N3K5K+9vUZBl4iKz3c3pntl2Gku2bLbBRkbn7FBxVnqQEVDOc5mAsb2MIHfCkkHwAGQdIeiZitx2sPqfXra+yMgbmwgS18pNWkE8B+OrQvT4oorYvj4rkRvlXRwjbCFgthX/AJ350Ec05FW6u22z/7PvipM0RgD1bUWG/4OH7sBHeAfVF6yPctJWOrtklzHYQz3F+ocBwh8KU6Lke1TTqBs8aHVf+6OXfntVsf2D06J3HkRzxjYoSc7ZEF/R7k0PGSt4kV7qiXInsU15HlSizgVnWfGu9XQ8cMpOwBl+IBH/ik6lPKtizMKgPkVQWYHqsLAwQu+PcY30f+SpW6AwjLUv0Uf17l2V2BuGe4UjdQgZhWmD2Cqou9MwRXlreBlCknZONesRgFfTZWQX+uvzCD+Gn7J8AA8twrGIU9AJQAAAAASUVORK5CYII=" alt="" /></td>
+                                                <td> В доме</td>
+												<td><h7><span id="get_temp-tin">-</span> &deg;C </h7></td>
+											</tr>
+                                            <tr>
+                                            <td></td>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAArpJREFUeNpiZCAC7JfTlQdSAVBsAMQCaEo+APEFIN4Awo6PLj8kZCYjAQv1gdQEIHZgIA0cAOICoAMukmQx0EJ+INUA0sxAGQA5ugHogI8ELYZaCnKxgUSIHwOHjDSK/Is1Gxl+PHlGiuWgKHBAt5wRl6UqdWUMMskxWE06Ye1BseVM2CwF8Xm01BmezF3CcEBeD45BFoKATFIMqUEOMvMA1A5Ui6FxaoCs+s+nz3A2h4wUg8m2VQx/Pn4Ch4RGTzM5ljegWAxNvXgTEijoWfj5wEEMslwi1J9BwMKEVMsLoHYxsCClPpyAhY+X4cu1m2D6w4kzYDGQpaBQIDOlOzJBCwe8+RQU5F+u3WAQsDRleDBhOtDy02D2izWbyLHYAWQnE7Q0IghAPr3T2MlgsGIu2KcgNgUggGiLQb5+Mm8pOLhBGMSmxGIWUovDM15hDFQABkwMAwMEBspihgGzmAU9v8KKQ1DKBeVVhYJMqlr4ZN4ScEJlgVbiAjCLwTWSrDTDh+On4QUFxb4DmsujrcHw4/FTcO0GtPgDC6zmACkAFYd3mroYdGZPZLiSVoBSVlMCQKEGCsELEcmwWu0CE7S5glJQUMunsChTKMwE53ukqnQDhsXg4vEqsHi0MKWKxaBaDBTEoKIWCWxggjbMDqD7mho+FnFzBJfpN0pqUdpjIDth2akA1eLT4MQAShSUJChQVfpm5z549CHbBc5OoNYgsMaYABOEKQRlLZAjyAESIf5gy0GJFblKhLU8WdBaIKDUbQCK5wf908GJgoGBvHwMaiyALEVKUBeQWyA4G3uwOAJlLRC4kprP8GbXfryWWRzZDi4DQMELyo74GnvMyLILP776mcAvvgLIBLXqJH69fsvw7+cvcNC/2rwDzCbcYLjJ8O7gUYZvdx8Q37wd0Ab9gHZh6NFpAwgwAHAdN+OLGhSRAAAAAElFTkSuQmCC" alt="" /></td>
+                                                <td> ГВС</td>
+												<td><h7><span id="get_temp-tboiler">-</span> &deg;C </h7></td>
+											</tr>
+											
+                                      
+                                            
+										</tbody>                       
+									</table>
+          
+          </div>
+          
+  
+          
+          <div class="item">
+             <div class="shem"><span id="get_relay-r3way3"></span>
+             </div>
+             <div class="wrap-text1" id="get_temp-tconoutg_t"><span id="get_temp-tconoutg">-.-</span><span>° C</span></div>
+             <div class="wrap-text3"><span id="get_temp-tconing">-.-</span><span>° C</span></div>
+             <div class="wrap-text4"><span id="get_press-pcon">-.-</span></div>
+             <div class="wrap-text5"><span id="get_temp-tcomp">-.-</span><span>° C</span></div>
+             <!--<div class="wrap-text6"><span id="get_temp-trtoout">-.-</span><span>° C</span></div>-->
+             <div class="wrap-text7"><span id="get_press-peva">-.-</span></div>
+             <div class="wrap-text8"><span id="get_eev">-.-</span><span> step</span></div>
+             <div class="wrap-text9"><span id="get_temp-tevaout">-.-</span><span>° C</span></div>
+             <!--<div class="wrap-text10"><span id="get_temp-tevain">-.-</span><span>° C</span></div>-->
+             <div class="wrap-text12"><span id="get_temp-tevaoutg">-.-</span><span>° C</span></div>
+             <div class="wrap-text11"><span id="get_temp-tevaing">-.-</span><span>° C</span></div>
+             <!--<div class="wrap-text14"><span id="get_temp-tconout">-.-</span><span>° C</span></div>-->
+             <!--<div class="wrap-text13"><span id="get_temp-tconin">-.-</span><span>° C</span></div>-->
+             <div class="wrap-text15"><span id="get_overheateev">-.-</span><span>° C</span></div>
+             <div class="wrap-text16"><span id="get_paramfc-power">-.-</span><span>кВт</span></div>
+             <div class="wrap-text17"><span id="get_paramfc-fc">-.-</span><span>Гц</span></div>
+             <div class="wrap-text18"><span id="get_flow-flowcon">-.-</span><span> м³</span></div>
+             <div class="wrap-text19"><span id="get_flow-floweva">-.-</span><span> м³</span></div>
+             <div class="wrap-text20"><input style="display:none" type="checkbox" name="get_relay-rpumpo" id="get_relay-rpumpo" onChange="setParam('get_Relay(RPUMPO)');" ><label for="get_relay-rpumpo"><span id="get_relay-rpumpo2"></span></label></div>
+             <div class="wrap-text21"><input style="display:none" type="checkbox" name="get_relay-rpumpi" id="get_relay-rpumpi" onChange="setParam('get_Relay(RPUMPI)');" ><label for="get_relay-rpumpi"><span id="get_relay-rpumpi2"></span></label></div>
+            <!-- <div class="wrap-text20"><span id="get_temp-tcondelta">-.-</span><span>° C</span></div> -->
+            <!-- <div class="wrap-text20"><span id="get_temp-tcondelta2">-.-</span><span>° C</span></div> -->
+         
+
+                    <div class="table-wrapper">
+	
+</div>
+ <br> 
+ 
+  <br>
+                    
+			  </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

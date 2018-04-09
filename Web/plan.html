@@ -1,0 +1,49 @@
+<html>
+<head>
+	<title>Схема. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+			updateParam("get_paramFC(FC),get_paramFC(POWER),get_EEV,get_overheatEEV,get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO)");
+	};
+	</script>	
+</head>
+<body class="index">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Тепловой насос</h1>
+	<div class="visualization">
+		<span id="get_temp-tboiler" class="red">-.-</span>
+		<span id="get_temp-tevaoutg" class="blue">-.-</span>
+		<span id="get_temp-tevaing" class="blue">-.-</span>
+		<span id="get_temp-tconing" class="orange">-.-</span>
+		<span id="get_temp-tconout" class="orange">-.-</span>
+		<span id="get_temp-tconoutg" class="red">-.-</span>
+		<span id="get_temp-tcomp" class="red">-.-</span>
+		<span id="get_temp-trtoout" class="blue">-.-</span>
+		<span id="get_temp-tevaout" class="blue">-.-</span>
+		<span id="get_temp-tevain" class="blue">-.-</span>
+		<span id="get_press-pcon" class="red">-.-</span>
+		<span id="get_press-peva" class="blue">-.-</span>
+		<span id="get_paramfc-fc" class="blue">-</span>
+		<span id="get_paramfc-power" class="blue">-</span>
+		<span id="get_overheateev">-.-</span>
+		<span id="get_eev">-.-</span>
+	</div>
+	<div class="row1">
+		<dl>
+			<dt>Режим работы</dt><dd><span id="get_mode">-</span></dd>
+			<dt>На улице</dt><dd><span id="get_temp-tout">-</span> &deg;C</dd>
+			<dt>В доме</dt><dd><span id="get_temp-tin">-</span> &deg;C</dd>
+
+			<dt>Насос ГК</dt><dd><span id="get_relay-rpumpi-ONOFF">-</span></dd>
+			<dt>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
+		</dl>
+							
+	</div>
+</div>
+</body>
+</html>

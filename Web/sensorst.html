@@ -1,0 +1,86 @@
+﻿<html>
+<head>
+  <title>Конфигурация #1. Народный контроллер ТН</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script type='text/javascript' src='scripts.js'></script>
+  <script type="text/javascript">
+    window.onload = function() {
+    loadParam("get_listTemp");
+    loadParam("get_numberIP");};
+	urlupdate = 1000;
+  </script>
+</head>
+<body  class="sensorst">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+  <h1>Датчики температуры<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+  
+<div class="row1">
+    <h2>Температуные датчики, значения в &deg;C</h2>
+    <table>
+    <thead>
+    <tr>
+      <th>Имя</th>
+      <th>Описание</th>
+      <th>Значение</th>
+      <th>Минимум</th>
+      <th>Максимум</th>
+      <th>Поправка</th>
+      <th>Тест</th>
+      <th>Адрес</th>
+      <th>Код ошибки</th>
+
+    </tr>
+    </thead>
+    <tbody id="get_listtemp">
+    </tbody>
+  </table>            
+  </div>       
+    
+<div class="row1 remtemp">  
+  <h2>Удалённые датчики, значения в &deg;C</h2>
+  <table>
+    <tr>
+      <td width="80" style="padding:0;vertical-align: top;">
+  <table>
+  <thead>
+    <tr>
+      <th>Номер</th>
+      <th>Температура</th>
+      <th>Обновление (сек)</th>
+      <th>IP</th>
+      <th>RSSI (дб)</th>
+      <th>VCC (В)</th>
+      <th>Пакеты</th>     
+    </tr>
+  </thead>
+  <tbody id="get_numberip">             
+  </tbody>
+  </table>
+      </td><td width="20" style="padding:0;vertical-align: top;">
+
+  <table>
+  <thead>
+    <tr>
+      <th>Использование</th>
+      <th>Усреднение</th>
+      <th>Привязка</th>
+    </tr>
+  </thead>
+  <tbody id="get_numberip-inputs">              
+  </tbody>
+  </table>
+
+      </td>
+    </tr>
+  </table>
+
+
+<div style="width:100%;"></div>
+</div>
+    
+</div>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_listChart,get_optionHP(TIME_CHART),get_Temp(TOUT),get_Temp(TIN),get_Temp(TBOILER),get_WORK,");
+		updateParam("get_listProfile,get_modeHP,get_work,get_MODE,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TOUT),get_Temp(TIN),get_Temp(TBOILER),get_WORK");
+		setParam('get_listChart1','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4');	
+		/*google.charts.load('current', {packages: ['corechart', 'line']});*/
+Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });		
+		$("#autoupdate").change(function(){
+		if(this.checked){
+			var timerId = setInterval(function() {setParam('get_listChart1','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4')}, 5000)
+			window.timerId = timerId
+		}else{
+			timerId = window.timerId
+			clearInterval(timerId);
+		}
+});		
+		};			
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+					<div class="content">
+						<header>
+							<h2>СОСТОЯНИЕ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+<dd style="width:100%;"><span id="get_error">-</span></dd>
+</div> 
+                                     
+                    <div class="table-wrapper">
+                    
+                    <table>
+										
+										<tbody>
+                                        
+                                        <tr>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAfhJREFUeNrMV81Kw0AQ3oStllJoEUFBUXrUi7npMb5BwV58CuMDCAFfoL6BNy8W+gg52lu96LEoCgoiKRSptqAzYVLS3c1u6k/qB8PCstlvdmfm24nFMuC2V9uEoU7mgFWFJSFYF6yNtlXr3Zn2tAyEOzA0wVw2GwIwDxy4nokYCCsw+Pgx+xnQaR8c6BuJiTSgK/0NYAhckdz6Y9JUcktFWiruslJxT7tTf3AZjZVyQ7vubXgF1pHIeWKNH58USZerR8YNEaZ1LyGLiR3iOJ4QU/ZKifT8esreP26m5irlA+mUePr+oDU1t7iwzVaWTsQtPeA6x2znieyTgKTk7QSqEIzGj9I6Q6bv2yQOLssPLnLapEZ5oz43Yq6rWUwkMaZYaiJwTszuAl/TETtcIfgJ4kYm99E5U90LqFoQ6E9xFr0t8HXtl0MqsyKUjQ6j8UOU9SJsNifwtCs2KdL902E0bqxeGJTrLDIVcZgWZ1Qk8ZpUOp7Q46lwaXIk5LF4q4lb0oZ4EzJxRzoVOqgh7trUruSN9vyIqTELciQNkDPOao9iLT1tqhpXzYmKtphe396knPB9BCFpim+y4j1NVbiMKteMO0+xA8HsdrA8sHMwKVJcp1k6FbpR//80e3m3t5JW0wI3rR36RkPvZmro5/oLk8dP25cAAwAzE9Yhd+ZIWQAAAABJRU5ErkJggg==" alt="" /></td>
+                                                <td>Профиль </td>
+												<td><div class="12u$">
+											<div class="select-wrapper">
+												<h7><select id="get_listprofile" onChange="setParam('get_listProfile', 'get_listprofile');"></select></h7>
+											</div>
+										</div></td>
+											</tr>
+                                        
+											<tr>
+												<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABDNJREFUeNrMV1tIVFEU3c6M77mjViBaYUFqBb1Gq4+CJuqrKKSfpEj6SqgfET+iiJQKCiSEMIgKgijqbzCsj7CmKIio6EFZ+pFmjhk+xrnTmI/R9jreO819OVeCasOZe+eeM3edvffa6+xJIRsmy5EivlQoYy2PXN2SEI/XPPwYkuTuTvbOlCSAa/jSxMNHc7MAjxrewJs5ATNgDl/q8WP6M8Om63kDI0mBFdCAElKDDbc9opgcoQUVO8X3xg8/qGx+Km3NT7MCRwp8enDHXEBh36/fJqfkjn/3MeDJtxF6MThBwWjM7Cd4V0B5txHYDqhqLkmK35ezt5HJaTr5LkKVT0dsgyd6XK+CBpuv0JezTbYTWSI56damHCrMdFBwdMpq2VoF4zewwt44kfo5nOO9ffT52ClbwLc251Jje1Tcl3qcIvTee4PiqrMaBSvusca9xUdraIyBQSI74AD4FJ6kyxs9JE9M04uhCXq0PY/u9I5R7cswXeqM6plODkUcNHUKxuZX7TUFz1xeQk6PWwMMAIBKqQ4BWj4vVYS8gEMP8rXwPDam8hGYDkWNDKYHH/C3kvz8lZiLfuw0rAeoUI7+cSqb5xL5Rt7xHFGQXJrKrXBZAavgMOQboD0PHtN8fiat9xrWopzAbACipoX3/Kyx/Qffp4iRCJzCbg+baK/GwPLhtsdUeq2ZXB7JMA8iIax1K7I5zC662fWT3AyEkJd6XFT5JDQzx6WnartLBY1+7KBY2MBCSltYIMK89MwJU1DYvqIMqi7O5PxOilou5fIqzHRSbZc8E2beBNieYLkAFnn8dPAI5R/Ya8wdeWk8+I2kDV7LiAC09pXMBIrRea8U96xuZTYDT8XzrxEhfKSzV2mFBRS8eNWwoPDwzHUyLFt6jBfvWpjOwFHBcHinllUHb8ZMy5Hj6WR1+n5PFRNtB7O80nR+Z2CYGla5BeClzlG62c05ZhYDrER5JpQty6nxODQbueApyqqHJRT5ztu2xbCmj2sWjEZuQSKEHlGAbsNrEws5lGPLEhS5jwGc8991/LTwHmQzyCZ7JBjM5EKYRYkNTQgpRSQSvQWmQ2lXLEER4gH/XVasYlr37L74nsX3ZnmuLs4S4QXgQxYSMLvVlytULEG5YH5TYD0oQq2GOMQioi875LPl609xD9V6yWUFITn0PCw8NlEuv0NpzAKJT/WgqoJZGXQaAFAqiAa8hdc4LrERzCeEOgBMtcA0vVVMlm2DijCzN3g5ahm2f0mG0OyG1W7avShD5D7xaIzXMbpBLqsm9eGyC+fEiiw+iewYCAUQtRFArqstmj+189R3IK9VQLugMNH68JlsIo36pq9eo1yK1yPstS9Z3wWFGwv2kaphN7pGxQHR6subbW+GTnPO7S0YP8rnsardYDMIpavTpO3t/9PQ/9O/MH/jT9svAQYAtbUJNCDdErYAAAAASUVORK5CYII=" alt="" /></td>
+                                                <td> Режим работы</td>
+												<td><div class="12u$">
+											<div class="select-wrapper">
+												<h7><select name="category" id="get_modehp">
+													<option value="">- Режим работы -</option>
+												</select></h7>
+											</div>
+										</div></td>
+											</tr>
+                                            <tr>
+												<td> <span id="get_work5"></span></td>
+                                                <td> Состояние</td>
+												<td><h7><span id="get_mode">-</span></h7></td>
+											</tr>
+											<tr>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAmBJREFUeNpiZCACaG8rlgdSAVBsAMQCaEo+APEFIN4Awle9eh8SMpORgIX6QGoCEDswkAYOAHEB0AEXSbIYaCE/kGoAaWagDIAc3QB0wEeCFkMtPQANUqzAVEgZjEHg9Lu7YIwHgKLAAd1yRlItbdENZwiQMWW48ekpmK/BJ81QfWkFw8anZ0iynJEUS9V5pRjW2hShWARyiJO4DoP7gVaGz39+EG05E5JEAz5LQcAZaMHTb+9QfNd5fSMDHysn2OcEgAHUDga4xdDUSzAhPf3+jkGaS4iBl4UDLgaz8NPv78QktgKoXXAfTyBG176XV8AWzDfPZHAS0wbjiUYJDKff3mW4+fkZKSmdgRFaODwgVhconicBLQP5HJyqgZbmnZtPKH7RgQILtDQiGoB85n6wjcLszRDARKrFVAIBLIRSMgxIcQoyzDfLhAcxMgDl6cST00kJbgMWLAU+ViDNKQS2FGQBMgCl8EnGieDUTaAEQwYCLKSGEcjnoNRNYmLCAEzEKgQF54Ynpxla9SIYdjpUM/hLm9DHYpAPay6vZLDcXcPwDFSQcApRbPEHUjSAHPD59w9KU/UHJmjhTW9wgQnaXKE32DBwFkMbZgdIKatBWQqbOLHtMZCdsFRNsEoEFRQ77avADQFY9kLOahVa/gxXPHuIyWYF6C2QfnwOALWxQNVh8JE+rFUgyGEtwDzOx8LJkHhqOs4qEejbQhCDBa0F4kCo7Aa1NmANPVJTMnILhOjGHr5KAhngaPjhbuyR0ugjw6cYzVuMIhOqwIHY5hARzRwHohr0A9qFoUenDSDAAI0I83jtdsTQAAAAAElFTkSuQmCC" alt="" /></td>
+                                                <td> Показатели</td>
+												<td><h7><span id="get_errcode">-</span></h7></td>
+                                            </tr>
+											<tr>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2RJREFUeNrEV01ME1EQni1bECu0WutfTeBCApoIFzDBgzXBxJtIoieJdw0JJB6IXnqR4EkTImcNnjwInuVQY0JULuWgEkkUEmtEFAtNESg/zvf63rp9XdNdrDrJy243b9838803s1ODXFjDo7k6vnTK1cIrpG1J80ryGsOauVQ3V+pMowRgM1/u8oqRN0vw6mUHpjwBM2CQL3G8TH9mcDrODiyVBJagCUmpJ7vXvp8yuS3qn1y0P0YKYjq4b6eg0d0VRc9q/T5KZTf1xzgrIc8uBvYa6UjsID05e4hq/L9Ie7WwRo0hf8G+jiPVdKWhpgjcHnHcC73jqRVaXt+imy17rWdwAlErY0DqOR4U4PLseAGwVK8nIQ1MpSm1ssGUmzTYuk88e5vO8VoX93jWVR8Qzl2dWFCv9UosMm3q82wQ0cjpA+Jw0I5rNGCKBZHBAJrJbetKP2PI5jC703qByJDv7sQ8M7BpRasc+43Vm7IbubILdQGRM9CpcrnMkQ29XrJAYbeS3+khO4P9RwOmTMO6WHJfpyfg8U8r1kGwtkiVuCpalYFa0N7ECm8KVRbs7X72xQJ2bIdQaFf9HqVIEdnobJaG3hQ2ocagn263henlwqqVS6gZwoMAkYqodDaV3bBq23QCxWHDpyICqH/ym6BH1iN1RKuFekH1Rz5odC5L999lWFyHxX5EVlvpE7TCebxrT4O0EMS1XdQcWKmP+RAcqtuN5lD+MAaFE6DyMgsLjiAyUIx0QAuqlDRV53u1EzBK4/zTz67yDkcAiK6FpqKiAzuoYxgc08FNnWLlqVsDrdNMPRgYbA0LioW4WBNIBRg5GdnFwvxBeq9O2/P6YCajlOfaQDnEhfcQMe7zqq6kAS4t/NYHh4rwxb5zKOjrJ0IC9Pn8qidQRFJVYQhacT+1mK/V6aW8AN9ncvQhs6G/9sInxxVP9Dp9MNCzi6qD61iVo2ZjFjBUjBypQndr9hTpdm3iqxAe9ujAJgYzVnaCqYlB+j3HgiXFhOjUVwiGlqmLR3/HPo8B07B9FpNuIkRTGG6PiM7kMG0UGNiDg+hg9okEQ6Bhm0DulGG4Kzn8MWif0wSS/IugSfsEYpRrwnQBWjBplnW8dQtaNN7C5IbYTschh4E+5mqg/69/Yf7Fn7afAgwAb2e3okQizmQAAAAASUVORK5CYII=" alt="" /></td>
+                                                <td> На улице</td>
+												<td><h7><span id="get_temp-tout">-</span> &deg;C </h7></td>
+											</tr>
+											<tr>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAolJREFUeNrEV0FPE0EUfrvdtjEB7QES0IOaaKIn4YAXJGnwVE71YLxzVtIreOlFvFbxjAl/wJ7gJGkCXvTAetJEE/CgkOgBrQmhLa3vm86upTu7s9OG8pKXmd2Z9743M9+8fWtRDDl6NX2Vm7zUCdZM15RDVpe1DL3w+N03nU9LA3iHmxJrlsykwlrgAD4aATPgJW6KMKb+BEEXOYDfWmAJWpFbGirJ2SXR1jeXdeA4gmw3uGUMmhqi1Nxzsq9Misfm9x2qrS8S1f4agVsmoNbwGCVzDDp6k5o/v4h3Xr++sUit6kFscLtjoBgJOnKDUo9et4GwyvIToejjHcYwJ0ImJMb/FUv2umEWiVs5St5/Kvonn9YD54rzTtyea5/522d08nkjMgCw3e5gn1KcqXkftL71QkkmvMOYCILnwkbDdLJkcthTkSh5b0GspHVc5ZUsU3N3K5K+9vUZBl4iKz3c3pntl2Gku2bLbBRkbn7FBxVnqQEVDOc5mAsb2MIHfCkkHwAGQdIeiZitx2sPqfXra+yMgbmwgS18pNWkE8B+OrQvT4oorYvj4rkRvlXRwjbCFgthX/AJ350Ec05FW6u22z/7PvipM0RgD1bUWG/4OH7sBHeAfVF6yPctJWOrtklzHYQz3F+ocBwh8KU6Lke1TTqBs8aHVf+6OXfntVsf2D06J3HkRzxjYoSc7ZEF/R7k0PGSt4kV7qiXInsU15HlSizgVnWfGu9XQ8cMpOwBl+IBH/ik6lPKtizMKgPkVQWYHqsLAwQu+PcY30f+SpW6AwjLUv0Uf17l2V2BuGe4UjdQgZhWmD2Cqou9MwRXlreBlCknZONesRgFfTZWQX+uvzCD+Gn7J8AA8twrGIU9AJQAAAAASUVORK5CYII=" alt="" /></td>
+                                                <td> В доме</td>
+												<td><h7><span id="get_temp-tin">-</span> &deg;C </h7></td>
+											</tr>
+											<tr>
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAArpJREFUeNpiZCAC7JfTlQdSAVBsAMQCaEo+APEFIN4Awo6PLj8kZCYjAQv1gdQEIHZgIA0cAOICoAMukmQx0EJ+INUA0sxAGQA5ugHogI8ELYZaCnKxgUSIHwOHjDSK/Is1Gxl+PHlGiuWgKHBAt5wRl6UqdWUMMskxWE06Ye1BseVM2CwF8Xm01BmezF3CcEBeD45BFoKATFIMqUEOMvMA1A5Ui6FxaoCs+s+nz3A2h4wUg8m2VQx/Pn4Ch4RGTzM5ljegWAxNvXgTEijoWfj5wEEMslwi1J9BwMKEVMsLoHYxsCClPpyAhY+X4cu1m2D6w4kzYDGQpaBQIDOlOzJBCwe8+RQU5F+u3WAQsDRleDBhOtDy02D2izWbyLHYAWQnE7Q0IghAPr3T2MlgsGIu2KcgNgUggGiLQb5+Mm8pOLhBGMSmxGIWUovDM15hDFQABkwMAwMEBspihgGzmAU9v8KKQ1DKBeVVhYJMqlr4ZN4ScEJlgVbiAjCLwTWSrDTDh+On4QUFxb4DmsujrcHw4/FTcO0GtPgDC6zmACkAFYd3mroYdGZPZLiSVoBSVlMCQKEGCsELEcmwWu0CE7S5glJQUMunsChTKMwE53ukqnQDhsXg4vEqsHi0MKWKxaBaDBTEoKIWCWxggjbMDqD7mho+FnFzBJfpN0pqUdpjIDth2akA1eLT4MQAShSUJChQVfpm5z549CHbBc5OoNYgsMaYABOEKQRlLZAjyAESIf5gy0GJFblKhLU8WdBaIKDUbQCK5wf908GJgoGBvHwMaiyALEVKUBeQWyA4G3uwOAJlLRC4kprP8GbXfryWWRzZDi4DQMELyo74GnvMyLILP776mcAvvgLIBLXqJH69fsvw7+cvcNC/2rwDzCbcYLjJ8O7gUYZvdx8Q37wd0Ab9gHZh6NFpAwgwAHAdN+OLGhSRAAAAAElFTkSuQmCC" alt="" /></td>
+                                                <td> ГВС</td>
+												<td><h7><span id="get_temp-tboiler">-</span> &deg;C </h7></td>
+											</tr>
+                                            </tbody>                       
+									</table>
+                                    
+<h5><span id="m-test2"></span></h5><p>
+                    
+<div id="m-control2" style="display:block">                    
+                    
+                    <br>
+                    <div>Обновлять графики автоматически<input id="autoupdate"  type="checkbox"></div>    
+                    
+                    <div id="chart1">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr>
+						<td> Температура В ДОМЕ</td>
+                        <td><div class="12u$">
+						<div>
+						<h7><select style="display:none" id="get_listchart1" onChange="setParam('get_Chart(_TIN)','chart1')"><option value="_TIN"></option>_TIN</select></h7>
+						</div>
+						</div></td>
+                        <!--<td><input class="button2 small" id="get_listchart" type="submit" value="Обновить"  onclick="setParam('get_listChart1','chart1')"></td>-->
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart2">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr>
+						<td> Температура НА УЛИЦЕ</td>
+                        <td><div class="12u$">
+						<div>
+						<h7><select style="display:none" id="get_listchart2" onChange="setParam('get_Chart(_TOUT)','chart2')"><option value="_TOUT"></option>_TOUT</select></h7>
+						</div>
+						</div></td>
+                        <!--<td><input class="button2 small" id="get_listchart2" type="submit" value="Обновить"  onclick="setParam('get_listChart2','chart2')"></td>-->
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart3">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr>
+						<td> Температура ГВС</td>
+                        <td><div class="12u$">
+						<div>
+						<h7><select style="display:none" id="get_listchart3" onChange="setParam('get_Chart(_TBOILER)','chart3')"><option value="_TBOILER"></option>_TBOILER</select></h7>
+						</div>
+						</div></td>
+                        <!--<td><input class="button2 small" id="get_listchart3" type="submit" value="Обновить"  onclick="setParam('get_listChart3','chart3')"></td>-->
+						</tr>
+                    </tbody>                       
+					</table>
+                    
+                    <div id="chart4">График не выбран</div>
+                    <table>
+                    <tbody>
+                     <tr>
+						<td>Температура ОБРАТКА СО </td>
+                        <td><div class="12u$">
+						<div>
+						<h7><select style="display:none" id="get_listchart4" onChange="setParam('get_Chart(_TCONING)','chart4')"><option value="_TCONING"></option>_TCONING</select></h7>
+						</div>
+						</div></td>
+                        <!--<td><input class="button2 small" id="get_listchart4" type="submit" value="Обновить"  onclick="setParam('get_listChart4','chart4')"></td>-->
+						</tr>
+                    </tbody>                       
+					</table>
+                                      
+									
+
+<div>
+<input style="display:none" class="button small" type="submit" value="Обновить графики"  onClick="setParam('get_Chart(_TIN)','chart1'); setParam('get_Chart(_TOUT)','chart2'); setParam('get_Chart(_TBOILER)','chart3'); setParam('get_Chart(_TCONING)','chart4');"><br>
+<select style="display:none" id="get_optionhp-time_chart" disabled></select>
+</div>
+    
+</div>
+   
+</div>
+
+ 
+  <br>
+ </div>                   
+
+	    </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

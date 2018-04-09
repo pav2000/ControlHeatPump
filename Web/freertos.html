@@ -1,0 +1,107 @@
+﻿<html>
+<head>
+  <title>ОС FreeRTOS. Народный контроллер ТН</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script type='text/javascript' src='scripts.js'></script>
+  <script type="text/javascript">
+	window.onload = function() {
+		urlupdate = 1000;
+		updateParam("TASK_LIST");
+	}
+	var sorting = [ [ 0|0, 1|0 ] ]; // [col, dir]
+	function sortTable(tbln, n) {
+		var table,rows,switching,i,rx,x,ry,y,shouldSwitch,dir,switchcount = 0;
+		var namecol = 1;
+		table = document.getElementById("tbl" + tbln);
+		switching = true;
+		if(n == -1) {
+			n = sorting[tbln][0];
+		} else {
+			xr = table.getElementsByTagName("TH");
+			xr[sorting[tbln][0]].innerHTML = xr[sorting[tbln][0]].innerHTML.replace(/↓|↑/g, "");
+			if(n != sorting[tbln][0]) {
+				sorting[tbln][0] = n;
+				sorting[tbln][1] = 1;
+			} else sorting[tbln][1] ^= 1;
+			xr[n].innerHTML = xr[n].innerHTML + (sorting[tbln][1] ? "↓" : "↑");
+		}
+		dir = sorting[tbln][1];
+		while (switching) {
+			switching = false;
+			rows = table.getElementsByTagName("TR");
+			for(i = 1; i < (rows.length - 1); i++) {
+				shouldSwitch = false;
+				rx = rows[i].getElementsByTagName("TD");
+				ry = rows[i + 1].getElementsByTagName("TD");
+				x = rx[n].innerText;
+				if(x.match(/^\d|^<1/)) {
+					x = Number(x.replace(/[<%]/g,"")); 
+					y = Number(ry[n].innerText.replace(/[<%]/g,""));
+				} else {
+					x = x.toLowerCase();
+					y = ry[n].innerHTML.toLowerCase();
+				}
+				if(dir == 1) { // 
+					if(x > y || (x == y && rx[namecol].innerHTML.toLowerCase() > ry[namecol].innerHTML.toLowerCase())) { 
+						shouldSwitch= true;
+						break;
+					}
+				} else if(dir == 0) {
+					if(x < y || (x == y && rx[namecol].innerHTML.toLowerCase() < ry[namecol].innerHTML.toLowerCase())) {
+						shouldSwitch= true;
+						break;
+					}
+				}
+			}
+			if(shouldSwitch) {
+				rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+				switching = true;
+				switchcount ++;
+//			} else if(switchcount == 0 && dir == 1) { // switch direction
+//				dir = 0; switching = true;
+			}
+		}
+	}
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("TASK_") != -1) {
+			sortTable(0, -1);
+		}
+	}
+//	var cookie_sort = "FreertosSort", cookie_sort_val;
+//	if((cookie_sort_val = getCookie(cookie_sort)) == undefined) setCookie(cookie_sort, sorting);
+//	else {
+//		sorting = cookie_sort_val;
+//		for(var i = 0; i < sorting.length; i++) sortTable(i, -1);
+//	}
+  </script>
+</head>
+<body class="freertos">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>ОС FreeRTOS</h1>
+<br>
+<h2>Список задач</h2>
+<table id="tbl0">
+ <thead>
+  <tr>
+	<th onclick="sortTable(0,0)">Номер задачи ↓</th>
+	<th onclick="sortTable(0,1)">Задача </th>
+	<th onclick="sortTable(0,2)">Статус </th>
+	<th onclick="sortTable(0,3)">Приоритет </th>
+	<th onclick="sortTable(0,4)">Стек мин., 4b </th>
+	<th onclick="sortTable(0,5)">Время, мс </th>
+	<th onclick="sortTable(0,6)">Итого </th>
+  </tr>
+ </thead>
+ <tbody id="task_list">
+  <tr>
+  </tr>
+ </tbody>
+</table>
+<br>
+Сортировка - клик по шапке таблицы<br>
+</div>
+</body>
+</html>

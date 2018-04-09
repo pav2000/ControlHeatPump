@@ -1,0 +1,53 @@
+<html>
+<head>
+	<title>Файлы. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+	window.onload = function() {
+	var arr = document.getElementById('links').getElementsByTagName('a'); //var arr = document.links;
+	var chang1 = "http://.*/"; // Точки экранируем
+	chang1 = new RegExp(chang1,"i");
+	for (i=0;i<arr.length;i++){ arr[i].href = arr[i].href.replace(chang1,urlcontrol + '/'); }		
+		document.forms.upload.onsubmit = function() {
+			var input = this.elements.myfile;
+			var file = input.files[0];
+			if (file) { upload(file); }
+			return false;
+		}
+	}
+	</script>
+</head>
+<body class="about">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Файлы</h1>
+	<div class="row1" id="links">
+		<table>
+		<tbody>
+			<tr><td>Документация</td><td><a class="download" href="/manual.pdf" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Текущее состояние ТН</td><td><a class="download" href="/state.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Графики работы ТН из RAM</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Графики работы ТН с SD карты <sup>1</sup></td><td><a class="download" href="/chart_sd.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Статистика работы ТН (максимум 364 дня)</td><td><a class="download" href="/statistic.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
+				<td> 
+					<form name="upload">
+						<input type="file" name="myfile">
+						<p><input type="submit" value="Восстановить"></p>
+					</form>
+
+				</td>
+			</tr>
+		</tbody>
+		</table>
+		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН)
+	</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<html>
+<head>
+	<title>Датчики. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_listTemp");
+		loadParam("get_numberIP");
+		loadParam("get_listInput");
+		loadParam("get_listPress");
+		//loadParam("get_zeroPress(PEVA),get_zeroPress(PCON),get_transPress(PEVA),get_transPress(PCON),get_maxPress(PEVA),get_maxPress(PCON),get_pinPress(PEVA),get_pinPress(PCON),get_notePress(PEVA),get_notePress(PCON),get_testPress(PEVA),get_testPress(PCON),get_minPress(PEVA),get_minPress(PCON)")
+		//updateParam("get_Press(PEVA),get_Press(PCON),get_adcPress(PEVA),get_adcPress(PCON),get_errcodePress(PEVA),get_errcodePress(PCON)");
+	};
+	</script>
+</head>
+<body  class="sensors">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Датчики<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+	<div class="row1" id="temps">
+		<h2>Температуные датчики, значения в &deg;C</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Значение</th>
+			<th>Минимум</th>
+			<th>Максимум</th>
+			<th>Поправка</th>
+			<th>Тест</th>
+			<th>Адрес</th>
+			<th>Код ошибки</th>
+
+		</tr>
+		</thead>
+		<tbody id="get_listtemp">		
+		</tbody>
+		</table>		
+</div>
+<div class="row1 remtemp">  
+	<h2>Удалённые датчики, значения в &deg;C</h2>
+	<table>
+		<tr>
+			<td width="80" style="padding:0;vertical-align: top;">
+	<table>
+	<thead>
+		<tr>
+			<th>Номер</th>
+			<th>Температура</th>
+			<th>Обновление (сек)</th>
+			<th>IP</th>
+			<th>RSSI (дб)</th>
+			<th>VCC (В)</th>
+			<th>Пакеты</th>			
+		</tr>
+	</thead>
+	<tbody id="get_numberip">							
+	</tbody>
+	</table>
+			</td><td width="20" style="padding:0;vertical-align: top;">
+
+	<table>
+	<thead>
+		<tr>
+			<th>Использование</th>
+			<th>Усреднение</th>
+			<th>Привязка</th>
+		</tr>
+	</thead>
+	<tbody id="get_numberip-inputs">							
+	</tbody>
+	</table>
+
+			</td>
+		</tr>
+	</table>
+
+
+<div style="width:100%;"></div>
+</div>
+
+<div class="row1">
+	<h2>Аналоговые датчики</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Значение</th>
+			<th>Минимум</th>
+			<th>Максимум</th>
+			<th>"0" датчика</th>
+			<th>Коэффициент</th>
+			<th>Тест</th>
+			<th>Pin</th>
+			<th>ADC</th>
+			<th>Код ошибки</th>
+		</tr>
+		</thead>
+		<tbody id="get_listpress2"></tbody>
+	</table>	
+	<h3 style="">Калькулятор коэффициентов аналоговых датчиков <input style="float:right" type="submit" value="Расчёт коэффициентов"  onclick="toggletable('pcalc');"></h3>
+		<table id="pcalc" style="display:none;">
+		<thead>
+		<tr>
+			<th> </th>
+			<th>АЦП [отсчеты]</th>
+			<th>Манометрическое давление [бар]</th>
+			<th> </th>
+			<th>Результат вычислений</th>
+			<th>Установить для:</th>
+		</tr>
+		<tbody>	
+			<tr>
+				<td>Точка 1</td>
+				<td><input id="a1" type="number" min="0" max="4095" step="1" value="0"></td>
+				<td><input id="p1" type="number" min="0" max="100" step="0.1" value="0"></td>
+				<td rowspan="2"><input type="submit" value="Рассчитать коэффициенты"  onclick="calcacp();"></td>
+				<td>"0" датчика: <span id="k1"></span></td>
+				<td rowspan="2"><select id="get_listpress" onchange="setKanalog();"><option value="-" class="">--</option></select></td>
+			</tr>
+			<tr>
+				<td>Точка 2</td>
+				<td><input id="a2" type="number" min="0" max="4095" step="1" value="2500"></td>
+				<td><input id="p2" type="number" min="0" max="100" step="0.1" value="12"></td>
+				<td>Коэффициент: <span id="k2"></span></td>
+			</tr>			
+		</tbody>
+		</table>
+</div>	
+<div class="row1">
+		<h2>Датчики сухой контакт</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Значение</th>
+			<th>Состояние в режиме аварии</th>
+			<th>Тест</th>
+			<th>Pin</th>
+			<th>Тип</th>
+			<th>Код ошибки</th>
+		</tr>
+		</thead>
+		<tbody id="get_listinput">
+		</tbody>
+	</table>						
+	</div>
+</div>
+</body>
+</html>

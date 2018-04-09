@@ -1,0 +1,92 @@
+<html>
+<head> 
+	<title>Инвертор. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_FC,get_paramFC(START_FC),get_dacFC,get_nameFC,get_noteFC,get_paramFC(ANALOG),get_paramFC(LEVEL0),get_paramFC(LEVEL100),get_paramFC(LEVELOFF),get_pinFC,get_infoFC");
+		updateParam("get_paramFC(STOP_FC),get_paramFC(MAX_FC),get_paramFC(MIN_FC),get_paramFC(ON_OFF),get_paramFC(FC),get_paramFC(POWER),get_paramFC(MAX_POWER)");
+		};
+	</script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>Инвертор <span id="get_namefc"></span> <span id="get_notefc"></span> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+<div class="row1">
+		<h2>Основные параметры <input type="submit" value="Сброс инвертора"  onclick='loadParam("reset_FC")'  style="float:right;"> <input type="submit" value="Восстановление соединения"  onclick='loadParam("set_paramFC(STOP_FC=0)")'  style="float:right;margin-right:10px;"></h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Состояние</th>
+			<th>Целевая частота</th>
+			<th>Текущая частота</th>
+			<th>Текущая мощность</th>
+			<th>Максимальная мощность</th>
+			<th>Стартовая частота</th>
+			<th>Минимальная частота</th>
+			<th>Максимальная частота</th>
+			<th>Блокировка инвертора</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td id="get_paramfc-on_off"></td>
+			<td id="get_fc"></td>
+			<td id="get_paramfc-fc"></td>
+			<td id="get_paramfc-power"></td>
+			<td id="get_paramfc-max_power"></td>
+			<td id="get_paramfc-start_fc"></td>
+			<td id="get_paramfc-min_fc"></td>
+			<td id="get_paramfc-max_fc"></td> 
+			<td id="get_paramfc-stop_fc"></td>
+		</tr>		
+		</tbody>
+		</table>
+</div>		
+<div class="row1">
+<h2>Состояние 		<input type="submit" value="Сброс ошибок инвертора"  onclick='loadParam("reset_errorFC")'  style="float:right">		</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Код функции</th>
+			<th>Описание</th>
+			<th>Значение</th>
+		</tr>
+		</thead>
+		<tbody id="get_infofc">
+		</tbody>
+		</table>						
+</div>
+
+<div class="row1">
+	<h2>Аналоговое управление</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Использовать аналоговый выход</th>
+			<th>Значение DAC</th>
+			<th>pin</th>
+			<th>Уровень «0» (диск. ЦАП)</th>
+			<th>Уровень «100» (диск. ЦАП)</th>
+			<th>Уровень выключения %</th>
+		</tr>
+		<tr id="get_presentfc">
+			<td><input type="checkbox" name="get_paramfc-analog" id="get_paramfc-analog" onchange="setParam('get_paramFC(ANALOG)');"></td>
+			<td id="get_dacfc"></td>
+			<td id="get_pinfc"></td> 
+			<td><input id="get_paramfc-level0" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_paramfc-level02"  type="submit" value=">"  onclick="setParam('get_paramFC(LEVEL0)');"></td>
+			<td><input id="get_paramfc-level100" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_paramfc-level1002" type="submit" value=">"  onclick="setParam('get_paramFC(LEVEL100)');"></td>
+			<td><input id="get_paramfc-leveloff" type="number"  min="0" max="100" step="1" value="-1"><input id="get_paramfc-leveloff2" type="submit" value=">"  onclick="setParam('get_paramFC(LEVELOFF)');"></td>
+		</tr>		
+		</thead>
+		<tbody>
+	</tbody>
+	</table>
+	</div>	
+</div>
+</body>
+</html>
