@@ -219,6 +219,7 @@ void sensorTemp::set_onewire_bus_type()
 void sensorTemp::set_address(byte *addr, byte bus_type)
 {
 	uint8_t i;
+	setup_flags &= ~(1<<fDS2482_second);
 	if (addr == NULL) //сброс адреса
 	{
 		for(i=0;i<8;i++) address[i]=0;           // обнуление адресс датчика
@@ -228,7 +229,7 @@ void sensorTemp::set_address(byte *addr, byte bus_type)
 	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
 	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
 	err = 0;
-	if(bus_type) SETBIT1(setup_flags, fDS2482_second);
+	if(bus_type) setup_flags |= (1<<fDS2482_second);
 	set_onewire_bus_type();
 	busOneWire->SetResolution(address, DS18B20_p12BIT);
 }
