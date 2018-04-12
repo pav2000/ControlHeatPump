@@ -332,7 +332,7 @@ int8_t sensorDiditalInput::Read()
      }
  }
  if ((Input==alarmInput) && (type==pALARM))     // Срабатывание аварийного датчика (только его!)
-     { err=ERR_DINPUT;set_Error(err,name); }  // Сработал датчик АВАРИЯ!!!!
+     { err=ERR_DINPUT;set_Error(err,name); }    // Сработал датчик АВАРИЯ!!!!
  return err;
 
 }
@@ -418,6 +418,7 @@ void sensorFrequency::initFrequency(int sensor)
 {
    Frequency=0;                                   // значение частоты
    Value=0;                                       // значение датчика в ТЫСЯЧНЫХ (умножать на 1000)
+   Capacity=HEAT_CAPACITY;                        // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
    minValue=MINFLOW[sensor];                      // минимальное значение датчика
    testValue=TESTFLOW[sensor];                    // Состояние датчика в режиме теста
    kfValue=TRANSFLOW[sensor];                     // коэффициент пересчета частоты в значение
@@ -468,7 +469,6 @@ int8_t sensorFrequency::Read()
  #endif   
  return err;    
 }
-
 // Установить Состояние датчика в режиме теста
 int8_t  sensorFrequency::set_testValue(int16_t i) 
 {
@@ -480,11 +480,17 @@ int8_t  sensorFrequency::set_kfValue(float f)
   if((f>=0.0)&&(f<=100.0)) {kfValue=f; return OK;}  // Суммы обнулить надо
   else return WARNING_VALUE;                
 }
+// Установить теплоемкость больше 5000 не устанавливается
+int8_t sensorFrequency::set_Capacity(uint16_t c)                      
+{  
+  if (c<=5000) {Capacity=c; return OK;} else return WARNING_VALUE;    
+}   
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t sensorFrequency::save(int32_t adr)
 {
 if (writeEEPROM_I2C(adr, (byte*)&testValue, sizeof(testValue)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testValue);    // Состояние датчика в режиме теста
 if (writeEEPROM_I2C(adr, (byte*)&kfValue, sizeof(kfValue)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(kfValue);      // коэффициент пересчета частоты в значение
+if (writeEEPROM_I2C(adr, (byte*)&Capacity, sizeof(Capacity)))     { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Capacity);     // теплоемкость теплоносителя в контуре
 return adr;                                 
 }
 
@@ -493,6 +499,7 @@ int32_t sensorFrequency::load(int32_t adr)
 {
 if (readEEPROM_I2C(adr, (byte*)&testValue, sizeof(testValue)))   { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testValue);    // Состояние датчика в режиме теста
 if (readEEPROM_I2C(adr, (byte*)&kfValue, sizeof(kfValue)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(kfValue);      // коэффициент пересчета частоты в значение
+if (readEEPROM_I2C(adr, (byte*)&Capacity, sizeof(Capacity)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Capacity);     // теплоемкость теплоносителя в контуре
 return adr;                              
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -500,6 +507,7 @@ int32_t sensorFrequency::loadFromBuf(int32_t adr,byte *buf)
 {
   memcpy((byte*)&testValue,buf+adr,sizeof(testValue)); adr=adr+sizeof(testValue);      // Состояние датчика в режиме теста
   memcpy((byte*)&kfValue,buf+adr,sizeof(kfValue)); adr=adr+sizeof(kfValue);            // коэффициент пересчета частоты в значение
+  memcpy((byte*)&Capacity,buf+adr,sizeof(Capacity)); adr=adr+sizeof(Capacity);         // теплоемкость теплоносителя в контуре
   return adr;  
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
@@ -508,6 +516,7 @@ uint16_t sensorFrequency::get_crc16(uint16_t crc)
   uint8_t i;
   crc=_crc16(crc,lowByte(testValue)); crc=_crc16(crc,highByte(testValue));    // uint16_t Состояние датчика в режиме теста
   for(i=0;i<sizeof(kfValue);i++) crc=_crc16(crc,*((byte*)&kfValue+i));        // float    коэффициент пересчета АЦП в давление FLOAT
+  crc=_crc16(crc,lowByte(Capacity)); crc=_crc16(crc,highByte(Capacity));      // uint16_t теплоемкость теплоносителя в контуре
   return crc;                      
 }
 
@@ -650,7 +659,7 @@ void devEEV::initEEV()
          stepperEEV.initStepMotor(maxEEV,PIN_EEV1_D24,PIN_EEV2_D25,PIN_EEV3_D26,PIN_EEV4_D27);    // на 8 фазном работает 480 шагов прямое подключение
       #endif
     #endif  // DRV_EEV_L9333
-#endif // DEMO   
+#endif // DEMO   
 stepperEEV.setSpeed(EEV_SPEED);   // Установить скорость движения
 //journal.jprintf(" EEV init: OK\r\n"); 
 }

@@ -186,6 +186,9 @@ public:
   int8_t  set_testValue(int16_t i);                      // Установить Состояние датчика в режиме теста
   float get_kfValue(){return kfValue;}                   // Получить коэффициент пересчета
   int8_t  set_kfValue(float f);                          // Установить коэффициент пересчета
+  uint16_t get_Capacity(){return Capacity;}              // Получить теплоемкость
+  float    get_kfCapacity(){return 3600*100/Capacity;}   // Получить Коэффициент пересчета для определениея мощности  (3600 секунды в часе) в СОТЫХ!!!
+  int8_t set_Capacity(uint16_t c);                       // Установить теплоемкость больше 5000 не устанавливается
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void  set_testMode(TEST_MODE t){testMode=t;}           // Установить значение текущий режим работы
   inline int8_t  get_pinF(){return pin;}                 // Получить ногу куда прицеплен датчик
@@ -198,6 +201,7 @@ public:
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
    uint16_t Value;                                       // значение датчика в ТЫСЯЧНЫХ (умножать на 1000)
+   uint16_t Capacity;                                    // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
    uint16_t minValue;                                    // !save! минимальное значение датчика
    uint16_t testValue;                                   // !save! Состояние датчика в режиме теста
    float    kfValue;                                     // коэффициент пересчета частоты в значение

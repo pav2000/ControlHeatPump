@@ -310,7 +310,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
 //   if (strcmp(str,"TASK_STAT")==0)  // Функция получение статистики по задачам
 //       {
-//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
 //         strcat(strReturn,cStrEnd);
 //         vTaskGetRunTimeStats(strReturn+strlen(strReturn));
 //       #else
@@ -320,7 +320,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 //       }
   if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
        {
-         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
          //strcat(strReturn,cStrEnd);
          vTaskList(strReturn+strlen(strReturn));
          #else
@@ -2259,6 +2259,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                    else strcat(strReturn,"-");               // Датчика нет ставим прочерк
                   strcat(strReturn,"&") ;    continue;
                   }
+            if (strcmp(str,"get_capacityFlow")==0)           // Функция get_capacityFlow
+                  {
+                  if (HP.sFrequency[p].get_present())        // Если датчик есть в конфигурации то выводим значение
+                   strcat(strReturn,int2str(HP.sFrequency[p].get_CapacityValue())); 
+                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+                  strcat(strReturn,"&") ;    continue;
+                  }                  
             if (strcmp(str,"get_testFlow")==0)           // Функция get_testFlow
                   {
                   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
@@ -2281,12 +2288,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                    {strcat(strReturn,ftoa(temp,(float)HP.sFrequency[p].get_testValue()/1000.0,3)); strcat(strReturn,"&"); continue; } 
                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
-           
               if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
                  { if (HP.sFrequency[p].set_kfValue(pm)==OK)    // Установить значение
                    {strcat(strReturn,ftoa(temp,HP.sFrequency[p].get_kfValue(),3)); strcat(strReturn,"&"); continue;} 
                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
+              if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
+                 { 
+                   if (HP.sFrequency[p].set_capacityValue(pm)==OK)    // Установить значение
+                   {  strcat(strReturn,int2str(HP.sFrequency[p].get_CapacityValue()));  strcat(strReturn,"&"); continue;} 
+                   else { strcat(strReturn,"E35");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                  }   
              }  // else end 
            } //if ((strstr(str,"Flow")>0)          
            

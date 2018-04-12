@@ -540,7 +540,7 @@ if (t2==0) t2=t; // первоначальная инициализация
       
      if(ChartPowerCO.get_present()) // Расчет выработанной энергии Если есть соответсвующее оборудование
      {
-        power=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/(float)(KF_HEAT_CAPACITY); // Мгновенная мощность в ВАТТАХ
+        power=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity(); // Мгновенная мощность в ВАТТАХ
         motoHour.P1=motoHour.P1+(int)(power/60.0);   // потребленная энергия за минуту
         motoHour.P2=motoHour.P2+(int)(power/60.0);   // потребленная энергия за минуту
      }  
@@ -1071,7 +1071,7 @@ void  HeatPump::updateChart()
  
  if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
  {
-  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/(float)(KF_HEAT_CAPACITY);
+  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/(sFrequency[FLOWCON].get_kfCapacity();
   #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
     #ifdef RHEAT
       if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
@@ -1079,7 +1079,7 @@ void  HeatPump::updateChart()
   #endif
   ChartPowerCO.addPoint((int16_t)powerCO);
   } 
- if(ChartPowerGEO.get_present())  {powerGEO=(float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())*(float)sFrequency[FLOWEVA].get_Value()/(KF_HEAT_CAPACITY); ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура в Вт!!!!!!!!!
+ if(ChartPowerGEO.get_present())  {powerGEO=(float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity(); ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура в Вт!!!!!!!!!
  if(ChartCOP.get_present())       {if (dFC.get_power()>0) {ChartCOP.addPoint((int16_t)powerCO/dFC.get_power());}  else ChartCOP.addPoint(0);}  // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
@@ -1534,7 +1534,7 @@ boolean HeatPump::switch3WAY(boolean b)
         _delay(DELAY_3WAY*1000);  // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
        } 
   #else
-  // замена трехходовго
+  // замена трехходового крана
   // ставим сюда код переключения ГВС/отопление в зависимости от relay3Way=true - ГВС
   #endif        
   return relay3Way;     

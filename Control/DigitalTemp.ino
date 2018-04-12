@@ -144,7 +144,7 @@ int8_t sensorTemp::Read()
 	// Serial.print("sum="); Serial.print(sum);Serial.print(" lastTemp="); Serial.print(lastTemp); Serial.print(" last="); Serial.print(last);  Serial.print(" fFull="); Serial.println(GETBIT(fFull));
 
 	if(GETBIT(flags,fFull))   Temp=sum/T_NUMSAMLES+errTemp;   // буфер полный
-	else                       Temp=sum/last+errTemp;
+	else                      Temp=sum/last+errTemp;
 
 	// Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	if(Temp<minTemp) { err=ERR_MINTEMP; set_Error(err, name); return err; }
