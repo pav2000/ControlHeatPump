@@ -89,7 +89,7 @@ public:
 	// Issue skip rom
 	void skip();
 	
-	uint8_t has_timeout() { return mTimeout; }
+//	uint8_t has_timeout() { return mTimeout; }
 #if ONEWIRE_SEARCH
     // Clear the search state so that if will start from the beginning again.
     void reset_search();
@@ -111,7 +111,8 @@ public:
 private:
 	
 	uint8_t mAddress;
-	uint8_t mTimeout;
+//	uint8_t mTimeout;
+	uint8_t CurrPtr;
 	uint8_t readByte();
 	uint8_t setReadPtr(uint8_t readPtr);
 	

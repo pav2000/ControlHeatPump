@@ -153,16 +153,19 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
 		return err;
 	}
+	eepromI2C.use_RTOS_delay = 0;
 	OneWireDrv.reset_search();
 	while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
 	{
+		watchdogReset();
+		err = OK;
 		//  Датчик найден!
 		// 1. Номер по порядку
 		OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
 		strcat(result_str, int2str(OW_scanTableIdx + 1)); strcat(result_str,":");
 		if(OneWireDrv.crc8(addr, 7) != addr[7]) {
-			strcat(result_str,"CRC is not valid!:::;");
-			break;
+			strcat(result_str,"Error CRC:::;");
+			continue;
 		}
 		// 2. первый байт определяет чип выводим этот тип
 		OW_scanTable[OW_scanTableIdx].type_sensor = addr[0];
@@ -171,40 +174,40 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			case tDS18S20: strcat(result_str,"DS18S20:"); break;
 			case tDS18B20: strcat(result_str,"DS18B20:"); break;
 			case tDS1822:  strcat(result_str,"DS1822:");  break;
-			default:       strcat(result_str,"Unknown:"); break;
+			default:       strcat(result_str,"Unknown"); strcat(result_str, byteToHex(addr[0])); strcat(result_str, ":"); break;
 		}
 		// 3. Уменьшить разрешение до 9 бит, для увеличения скорости сканирования для DS18B20
 		if(SetResolution(addr, DS18B20_p09BIT, true)) {
 			journal.jprintf("SetRes 9b error %d for %s\n", err, addressToHex(addr));
 		}
 		// 4. Старт преобразования температуры и пауза
-		OneWireDrv.reset();
-		OneWireDrv.select(addr);
+		if(OneWireDrv.reset()) {
+			OneWireDrv.select(addr);
 #ifdef ONEWIRE_DS2482_SECOND_2WAY
-		if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+			if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
-		OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
-		release_bus();
-		_delay(95);             // Ожитать время разрешение 9 бит это гуд
+			OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
+		} else err = ERR_ONEWIRE;
+		if(err == OK) {
+			_delay(95);             // Ожитать время разрешение 9 бит это гуд
 
-		// 5. Получение данных
-		if(lock_bus_reset(0)) {
-			strcat(result_str,":err reset;");
-			break;
+			// 5. Получение данных
+			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
 		}
+		if(err == OK) {
+			OneWireDrv.select(addr);
+			OneWireDrv.write(0xBE);
+			for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
 
-		OneWireDrv.select(addr);
-		OneWireDrv.write(0xBE);
-		for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
+			// 6. Увеличить разрешение до 12 бит, рабочий режим откат обратно
+			SetResolution(addr, DS18B20_p12BIT, true);
 
-		// 6. Увеличить разрешение до 12 бит, рабочий режим откат обратно
-		SetResolution(addr, DS18B20_p12BIT, true);
-
-		// конвертируем данные в фактическую температуру
-		int16_t t = CalcTemp(addr[0], data);
-		if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  				// Дополнительнеая проверка для DS18B20
-			strcat(result_str, "ERR");  	// только правильные значения, проверка по разрешению должно быть 1F
-		else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2)); // для DS18S20 просто выводим температуру
+			// конвертируем данные в фактическую температуру
+			int16_t t = CalcTemp(addr[0], data);
+			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  				// Дополнительнеая проверка для DS18B20
+				strcat(result_str, "CRC");  	// только правильные значения, проверка по разрешению должно быть 1F
+			else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2)); // для DS18S20 просто выводим температуру
+		}
 		strcat(result_str, ":");
 
 		// 8. Адрес добавить
@@ -219,9 +222,10 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		strcat(result_str, "1");
 #endif
 		strcat(result_str, ";");
-		OW_scanTableIdx++;   // Следующий датчик
+		if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
 	} // while по датчикам
 	release_bus();
+	eepromI2C.use_RTOS_delay = 1;
 #endif  // DEMO
 	return OK;
 }

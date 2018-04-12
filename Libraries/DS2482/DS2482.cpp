@@ -28,26 +28,23 @@
 #include "DS2482.h"
 #include "WireSam.h"
 
-#define PTR_STATUS 0xf0
-#define PTR_READ   0xe1
-#define PTR_CONFIG 0xc3
-
-
 DS2482::DS2482(uint8_t addr)
 {
     mAddress = addr;
-    mTimeout = 0;
+    CurrPtr = 0;
+//    mTimeout = 0;
 }
 
 //-------helpers
-inline void DS2482::begin()
+__attribute__((always_inline)) inline void DS2482::begin()
 {
 	Wire.beginTransmission(mAddress);
 }
 
-inline uint8_t DS2482::end()
+// return 1 when success
+__attribute__((always_inline)) inline uint8_t DS2482::end()
 {
-	return	Wire.endTransmission();
+	return !Wire.endTransmission();
 }
 
 // Simply starts and ends an Wire transmission
@@ -62,10 +59,13 @@ uint8_t DS2482::check_presence()
 // return 1 - success
 __attribute__((always_inline)) inline uint8_t DS2482::setReadPtr(uint8_t readPtr)
 {
+	if(CurrPtr == readPtr) return 1;
 	begin();
-	Wire.write(0xe1);
+	Wire.write(DS2482_COMMAND_SRP);
 	Wire.write(readPtr);
-	return !end();
+	uint8_t res = end();
+	if(res) CurrPtr = readPtr;
+	return res;
 }
 
 uint8_t DS2482::readByte()
@@ -78,7 +78,7 @@ uint8_t DS2482::readByte()
 __attribute__((always_inline)) inline uint8_t DS2482::read_status(bool setPtr)
 {
 	if (setPtr) {
-		if(!setReadPtr(PTR_STATUS)) return DS2482_I2C_ERROR;
+		if(!setReadPtr(DS2482_POINTER_STATUS)) return DS2482_I2C_ERROR;
 	}
 
 	return readByte();
@@ -94,10 +94,11 @@ uint8_t DS2482::busyWait(bool setReadPtr)
 		if(status == DS2482_I2C_ERROR) break;
 		if (--loopCount <= 0)
 		{
-			mTimeout = 1;
+//			mTimeout = 1;
 			break;
 		}
 		delayMicroseconds(20);
+		setReadPtr = false;
 	}
 	return status;
 }
@@ -105,10 +106,12 @@ uint8_t DS2482::busyWait(bool setReadPtr)
 //Сброс чипа ds2482, 1 - ok
 uint8_t DS2482::reset_bridge()
 {
-	mTimeout = 0;
+//	mTimeout = 0;
 	begin();
 	Wire.write(0xf0);
-	return !end();
+	uint8_t res = end();
+	if(res) CurrPtr = 0xF0; // Status Register
+	return res;
 }
 
 // Return 1 when OK
@@ -118,7 +121,7 @@ uint8_t DS2482::configure(uint8_t config)
 	begin();
 	Wire.write(0xd2);
 	Wire.write(config | (~config)<<4);
-	if(end()) return false;
+	if(!end()) return false;
 	
 	return readByte() == config;
 }
@@ -169,7 +172,7 @@ uint8_t DS2482::select_channel(uint8_t channel)
 	begin();
 	Wire.write(0xc3);
 	Wire.write(ch);
-	if(end()) return false;
+	if(!end()) return false;
 	if(busyWait() == DS2482_I2C_ERROR) return false;
 
 	uint8_t check = readByte();
@@ -184,7 +187,7 @@ uint8_t DS2482::reset()
 	if(busyWait(true) == DS2482_I2C_ERROR) return false;
 	begin();
 	Wire.write(0xb4);
-	if(end()) return false;
+	if(!end()) return false;
 	uint8_t status = busyWait();
 	return status != DS2482_I2C_ERROR && (status & DS2482_STATUS_PPD) ? true : false;
 }
@@ -197,19 +200,19 @@ uint8_t DS2482::write(uint8_t b)
 	begin();
 	Wire.write(0xa5);
 	Wire.write(b);
-	return !end();
+	return end();
 }
 
 // return 1 when success
 uint8_t DS2482::read()
 {
-	if(busyWait(true) == DS2482_I2C_ERROR) return false;
+	if(busyWait(true) == DS2482_I2C_ERROR) return -1;
 	begin();
 	Wire.write(0x96);
-	if(end()) return false;
-	if(busyWait() == DS2482_I2C_ERROR) return false;
-	if(setReadPtr(PTR_READ)) return readByte();
-	return false;
+	if(!end()) return -1;
+	if(busyWait() == DS2482_I2C_ERROR) return -1;
+	if(setReadPtr(DS2482_POINTER_DATA)) return readByte();
+	return -1;
 }
 
 // return 1 when success
@@ -219,7 +222,7 @@ uint8_t DS2482::write_bit(uint8_t bit)
 	begin();
 	Wire.write(0x87);
 	Wire.write(bit ? 0x80 : 0);
-	return !end();
+	return end();
 }
 
 uint8_t DS2482::read_bit()
@@ -280,7 +283,7 @@ uint8_t DS2482::search(uint8_t *newAddr)
 		begin();
 		Wire.write(0x78);
 		Wire.write(direction ? 0x80 : 0);
-		if(end()) return 0;
+		if(!end()) return 0;
 		uint8_t status = busyWait();
 		if(status == DS2482_I2C_ERROR) return 0;
 
