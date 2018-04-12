@@ -452,7 +452,9 @@ int8_t sensorFrequency::Read()
  #ifdef DEMO
     Frequency=random(2500,6000);
     count=0;
-    Value=60.0*Frequency/kfValue/1000.0;        // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
+ //   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
+    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
+   //  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
     return err;      // Если демо вернуть случайное число
  #else
    tickCount=xTaskGetTickCount();            // получить текущее время
@@ -460,11 +462,11 @@ int8_t sensorFrequency::Read()
        { sTime=tickCount;  count=0; }
    else if(tickCount-sTime>BASE_TIME_READ*1000)   // если только пришло время измерения
        { 
-        Frequency=(count*500.0*1000.0)/(tickCount-sTime);    // время в миллисекундах частота в сотых герца 2!!!!!!!!
+        Frequency=(count*500.0*1000.0)/(tickCount-sTime);    // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
         sTime=tickCount;  
         count=0;
-     Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
-   //     journal.jprintf("Sensor %s: frequence=%.2f flow=%.2f\n",name,Frequency/(1000.0),Value/(1000.0));
+  //   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
+       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
        }
  #endif   
  return err;    
@@ -477,7 +479,7 @@ int8_t  sensorFrequency::set_testValue(int16_t i)
 // Установить коэффициент пересчета
 int8_t  sensorFrequency::set_kfValue(float f)
 {
-  if((f>=0.0)&&(f<=100.0)) {kfValue=f; return OK;}  // Суммы обнулить надо
+  if((f>=0.0)&&(f<=600.0)) {kfValue=f; return OK;}  
   else return WARNING_VALUE;                
 }
 // Установить теплоемкость больше 5000 не устанавливается

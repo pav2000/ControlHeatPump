@@ -1071,7 +1071,7 @@ void  HeatPump::updateChart()
  
  if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
  {
-  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/(sFrequency[FLOWCON].get_kfCapacity();
+  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
   #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
     #ifdef RHEAT
       if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел

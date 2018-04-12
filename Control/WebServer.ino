@@ -2262,7 +2262,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             if (strcmp(str,"get_capacityFlow")==0)           // Функция get_capacityFlow
                   {
                   if (HP.sFrequency[p].get_present())        // Если датчик есть в конфигурации то выводим значение
-                   strcat(strReturn,int2str(HP.sFrequency[p].get_CapacityValue())); 
+                   strcat(strReturn,int2str(HP.sFrequency[p].get_Capacity())); 
                    else strcat(strReturn,"-");               // Датчика нет ставим прочерк
                   strcat(strReturn,"&") ;    continue;
                   }                  
@@ -2295,8 +2295,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   }
               if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
                  { 
-                   if (HP.sFrequency[p].set_capacityValue(pm)==OK)    // Установить значение
-                   {  strcat(strReturn,int2str(HP.sFrequency[p].get_CapacityValue()));  strcat(strReturn,"&"); continue;} 
+                   if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение
+                   {  strcat(strReturn,int2str(HP.sFrequency[p].get_Capacity()));  strcat(strReturn,"&"); continue;} 
                    else { strcat(strReturn,"E35");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }   
              }  // else end 
