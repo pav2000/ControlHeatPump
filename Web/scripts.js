@@ -1,7 +1,7 @@
 ﻿/* ver 0.930 beta */
-//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопредиление (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.210';
+//var urlcontrol = 'http://192.168.0.210';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в в миллисекундах
 
@@ -693,15 +693,15 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_noteFlow(" + count[j] + "),get_Flow(" + count[j] + "),get_minFlow(" + count[j] + "),get_kfFlow(" + count[j] + "),get_frFlow(" + count[j] + "),get_testFlow(" + count[j] + "),get_pinFlow(" + count[j] + "),get_errcodeFlow(" + count[j] + "),";
+												loadsens = loadsens + "get_noteFlow(" + count[j] + "),get_Flow(" + count[j] + "),get_minFlow(" + count[j] + "),get_kfFlow(" + count[j] + "),get_capacityFlow(" + count[j] + "),get_frFlow(" + count[j] + "),get_testFlow(" + count[j] + "),get_pinFlow(" + count[j] + "),get_errcodeFlow(" + count[j] + "),";
 												upsens = upsens + "get_Flow(" + count[j] + "),get_frFlow(" + count[j] + "),get_errcodeFlow(" + count[j] + "),";
 												content = content + '<tr>';
 												content = content + '<td>' + count[j] + '</td>';
 												content = content + '<td id="get_noteflow-' + input + '">-</td>';
 												content = content + '<td id="get_flow-' + input + '">-</td>';
 												content = content + '<td id="get_minflow-' + input + '">-</td>';
-												//content = content + '<td id="get_kfflow-'+input+'">-</td>';
-												content = content + '<td><input id="get_kfflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityfnflow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_frflow-' + input + '">-</td>';
 												content = content + '<td><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinflow-' + input + '">-</td>';
@@ -814,15 +814,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(values[0] == "get_WORK") {
 									var element = document.getElementById(values[0].toLowerCase());
-									if(!element) continue;
-									var onoff;
-									if(values[1] == "ON") {
-										element.innerHTML = "ВКЛ";
-										onoff = true;
-									} else if(values[1] == "OFF") {
-										element.innerHTML = "ВЫКЛ";
-										onoff = false;
-									}
+									var onoff = values[1] == "ON"; // "OFF"
+									if(element) element.innerHTML = onoff ? "ВКЛ" : "ВЫКЛ";   
 									element = document.getElementById("onoffswitch");
 									if(element) element.checked = onoff;
 									if((element=document.getElementById('get_relay-rcomp'))) element.disabled = onoff;
