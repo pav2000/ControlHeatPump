@@ -47,12 +47,13 @@
 <span id="get_work3"></span></h8>
 <span id="onoffswitch"></span>
 <br>
+<dd style="width:100%;"><span id="get_error"></span></dd>
 </div>                                           
                     <div class="table-wrapper">
 									<table>
 										<tbody>
-                                        <tr>
-                                        <td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAfhJREFUeNrMV81Kw0AQ3oStllJoEUFBUXrUi7npMb5BwV58CuMDCAFfoL6BNy8W+gg52lu96LEoCgoiKRSptqAzYVLS3c1u6k/qB8PCstlvdmfm24nFMuC2V9uEoU7mgFWFJSFYF6yNtlXr3Zn2tAyEOzA0wVw2GwIwDxy4nokYCCsw+Pgx+xnQaR8c6BuJiTSgK/0NYAhckdz6Y9JUcktFWiruslJxT7tTf3AZjZVyQ7vubXgF1pHIeWKNH58USZerR8YNEaZ1LyGLiR3iOJ4QU/ZKifT8esreP26m5irlA+mUePr+oDU1t7iwzVaWTsQtPeA6x2znieyTgKTk7QSqEIzGj9I6Q6bv2yQOLssPLnLapEZ5oz43Yq6rWUwkMaZYaiJwTszuAl/TETtcIfgJ4kYm99E5U90LqFoQ6E9xFr0t8HXtl0MqsyKUjQ6j8UOU9SJsNifwtCs2KdL902E0bqxeGJTrLDIVcZgWZ1Qk8ZpUOp7Q46lwaXIk5LF4q4lb0oZ4EzJxRzoVOqgh7trUruSN9vyIqTELciQNkDPOao9iLT1tqhpXzYmKtphe396knPB9BCFpim+y4j1NVbiMKteMO0+xA8HsdrA8sHMwKVJcp1k6FbpR//80e3m3t5JW0wI3rR36RkPvZmro5/oLk8dP25cAAwAzE9Yhd+ZIWQAAAABJRU5ErkJggg==" alt="" /></td>
+                                        <tr id="operate">
+												<td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAfhJREFUeNrMV81Kw0AQ3oStllJoEUFBUXrUi7npMb5BwV58CuMDCAFfoL6BNy8W+gg52lu96LEoCgoiKRSptqAzYVLS3c1u6k/qB8PCstlvdmfm24nFMuC2V9uEoU7mgFWFJSFYF6yNtlXr3Zn2tAyEOzA0wVw2GwIwDxy4nokYCCsw+Pgx+xnQaR8c6BuJiTSgK/0NYAhckdz6Y9JUcktFWiruslJxT7tTf3AZjZVyQ7vubXgF1pHIeWKNH58USZerR8YNEaZ1LyGLiR3iOJ4QU/ZKifT8esreP26m5irlA+mUePr+oDU1t7iwzVaWTsQtPeA6x2znieyTgKTk7QSqEIzGj9I6Q6bv2yQOLssPLnLapEZ5oz43Yq6rWUwkMaZYaiJwTszuAl/TETtcIfgJ4kYm99E5U90LqFoQ6E9xFr0t8HXtl0MqsyKUjQ6j8UOU9SJsNifwtCs2KdL902E0bqxeGJTrLDIVcZgWZ1Qk8ZpUOp7Q46lwaXIk5LF4q4lb0oZ4EzJxRzoVOqgh7trUruSN9vyIqTELciQNkDPOao9iLT1tqhpXzYmKtphe396knPB9BCFpim+y4j1NVbiMKteMO0+xA8HsdrA8sHMwKVJcp1k6FbpR//80e3m3t5JW0wI3rR36RkPvZmro5/oLk8dP25cAAwAzE9Yhd+ZIWQAAAABJRU5ErkJggg==" alt="" /></td>
                                                 <td>Профиль </td>
 												<td><div class="12u$">
 											<div class="select-wrapper">
@@ -61,8 +62,8 @@
 										</div></td>
 											</tr>
                                         
-											<tr>
-                                            <td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABDNJREFUeNrMV1tIVFEU3c6M77mjViBaYUFqBb1Gq4+CJuqrKKSfpEj6SqgfET+iiJQKCiSEMIgKgijqbzCsj7CmKIio6EFZ+pFmjhk+xrnTmI/R9jreO819OVeCasOZe+eeM3edvffa6+xJIRsmy5EivlQoYy2PXN2SEI/XPPwYkuTuTvbOlCSAa/jSxMNHc7MAjxrewJs5ATNgDl/q8WP6M8Om63kDI0mBFdCAElKDDbc9opgcoQUVO8X3xg8/qGx+Km3NT7MCRwp8enDHXEBh36/fJqfkjn/3MeDJtxF6MThBwWjM7Cd4V0B5txHYDqhqLkmK35ezt5HJaTr5LkKVT0dsgyd6XK+CBpuv0JezTbYTWSI56damHCrMdFBwdMpq2VoF4zewwt44kfo5nOO9ffT52ClbwLc251Jje1Tcl3qcIvTee4PiqrMaBSvusca9xUdraIyBQSI74AD4FJ6kyxs9JE9M04uhCXq0PY/u9I5R7cswXeqM6plODkUcNHUKxuZX7TUFz1xeQk6PWwMMAIBKqQ4BWj4vVYS8gEMP8rXwPDam8hGYDkWNDKYHH/C3kvz8lZiLfuw0rAeoUI7+cSqb5xL5Rt7xHFGQXJrKrXBZAavgMOQboD0PHtN8fiat9xrWopzAbACipoX3/Kyx/Qffp4iRCJzCbg+baK/GwPLhtsdUeq2ZXB7JMA8iIax1K7I5zC662fWT3AyEkJd6XFT5JDQzx6WnartLBY1+7KBY2MBCSltYIMK89MwJU1DYvqIMqi7O5PxOilou5fIqzHRSbZc8E2beBNieYLkAFnn8dPAI5R/Ya8wdeWk8+I2kDV7LiAC09pXMBIrRea8U96xuZTYDT8XzrxEhfKSzV2mFBRS8eNWwoPDwzHUyLFt6jBfvWpjOwFHBcHinllUHb8ZMy5Hj6WR1+n5PFRNtB7O80nR+Z2CYGla5BeClzlG62c05ZhYDrER5JpQty6nxODQbueApyqqHJRT5ztu2xbCmj2sWjEZuQSKEHlGAbsNrEws5lGPLEhS5jwGc8991/LTwHmQzyCZ7JBjM5EKYRYkNTQgpRSQSvQWmQ2lXLEER4gH/XVasYlr37L74nsX3ZnmuLs4S4QXgQxYSMLvVlytULEG5YH5TYD0oQq2GOMQioi875LPl609xD9V6yWUFITn0PCw8NlEuv0NpzAKJT/WgqoJZGXQaAFAqiAa8hdc4LrERzCeEOgBMtcA0vVVMlm2DijCzN3g5ahm2f0mG0OyG1W7avShD5D7xaIzXMbpBLqsm9eGyC+fEiiw+iewYCAUQtRFArqstmj+189R3IK9VQLugMNH68JlsIo36pq9eo1yK1yPstS9Z3wWFGwv2kaphN7pGxQHR6subbW+GTnPO7S0YP8rnsardYDMIpavTpO3t/9PQ/9O/MH/jT9svAQYAtbUJNCDdErYAAAAASUVORK5CYII=" alt="" /></td>
+											<tr id="operate">
+												<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABDNJREFUeNrMV1tIVFEU3c6M77mjViBaYUFqBb1Gq4+CJuqrKKSfpEj6SqgfET+iiJQKCiSEMIgKgijqbzCsj7CmKIio6EFZ+pFmjhk+xrnTmI/R9jreO819OVeCasOZe+eeM3edvffa6+xJIRsmy5EivlQoYy2PXN2SEI/XPPwYkuTuTvbOlCSAa/jSxMNHc7MAjxrewJs5ATNgDl/q8WP6M8Om63kDI0mBFdCAElKDDbc9opgcoQUVO8X3xg8/qGx+Km3NT7MCRwp8enDHXEBh36/fJqfkjn/3MeDJtxF6MThBwWjM7Cd4V0B5txHYDqhqLkmK35ezt5HJaTr5LkKVT0dsgyd6XK+CBpuv0JezTbYTWSI56damHCrMdFBwdMpq2VoF4zewwt44kfo5nOO9ffT52ClbwLc251Jje1Tcl3qcIvTee4PiqrMaBSvusca9xUdraIyBQSI74AD4FJ6kyxs9JE9M04uhCXq0PY/u9I5R7cswXeqM6plODkUcNHUKxuZX7TUFz1xeQk6PWwMMAIBKqQ4BWj4vVYS8gEMP8rXwPDam8hGYDkWNDKYHH/C3kvz8lZiLfuw0rAeoUI7+cSqb5xL5Rt7xHFGQXJrKrXBZAavgMOQboD0PHtN8fiat9xrWopzAbACipoX3/Kyx/Qffp4iRCJzCbg+baK/GwPLhtsdUeq2ZXB7JMA8iIax1K7I5zC662fWT3AyEkJd6XFT5JDQzx6WnartLBY1+7KBY2MBCSltYIMK89MwJU1DYvqIMqi7O5PxOilou5fIqzHRSbZc8E2beBNieYLkAFnn8dPAI5R/Ya8wdeWk8+I2kDV7LiAC09pXMBIrRea8U96xuZTYDT8XzrxEhfKSzV2mFBRS8eNWwoPDwzHUyLFt6jBfvWpjOwFHBcHinllUHb8ZMy5Hj6WR1+n5PFRNtB7O80nR+Z2CYGla5BeClzlG62c05ZhYDrER5JpQty6nxODQbueApyqqHJRT5ztu2xbCmj2sWjEZuQSKEHlGAbsNrEws5lGPLEhS5jwGc8991/LTwHmQzyCZ7JBjM5EKYRYkNTQgpRSQSvQWmQ2lXLEER4gH/XVasYlr37L74nsX3ZnmuLs4S4QXgQxYSMLvVlytULEG5YH5TYD0oQq2GOMQioi875LPl609xD9V6yWUFITn0PCw8NlEuv0NpzAKJT/WgqoJZGXQaAFAqiAa8hdc4LrERzCeEOgBMtcA0vVVMlm2DijCzN3g5ahm2f0mG0OyG1W7avShD5D7xaIzXMbpBLqsm9eGyC+fEiiw+iewYCAUQtRFArqstmj+189R3IK9VQLugMNH68JlsIo36pq9eo1yK1yPstS9Z3wWFGwv2kaphN7pGxQHR6subbW+GTnPO7S0YP8rnsardYDMIpavTpO3t/9PQ/9O/MH/jT9svAQYAtbUJNCDdErYAAAAASUVORK5CYII=" alt="" /></td>
                                                 <td> Режим работы</td>
 												<td><div class="12u$">
 											<div class="select-wrapper">
@@ -73,6 +74,12 @@
 										</div></td>
 											</tr>
                                             <tr>
+												<td> <span id="get_work5">-</span></td>
+                                                <td> Состояние</td>
+												<td><h7><span id="get_mode">-Состояние-</span></h7></td>
+											</tr>
+											                                            
+                                            <tr id="operate">
                                             <td> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAArpJREFUeNpiZCAC7JfTlQdSAVBsAMQCaEo+APEFIN4Awo6PLj8kZCYjAQv1gdQEIHZgIA0cAOICoAMukmQx0EJ+INUA0sxAGQA5ugHogI8ELYZaCnKxgUSIHwOHjDSK/Is1Gxl+PHlGiuWgKHBAt5wRl6UqdWUMMskxWE06Ye1BseVM2CwF8Xm01BmezF3CcEBeD45BFoKATFIMqUEOMvMA1A5Ui6FxaoCs+s+nz3A2h4wUg8m2VQx/Pn4Ch4RGTzM5ljegWAxNvXgTEijoWfj5wEEMslwi1J9BwMKEVMsLoHYxsCClPpyAhY+X4cu1m2D6w4kzYDGQpaBQIDOlOzJBCwe8+RQU5F+u3WAQsDRleDBhOtDy02D2izWbyLHYAWQnE7Q0IghAPr3T2MlgsGIu2KcgNgUggGiLQb5+Mm8pOLhBGMSmxGIWUovDM15hDFQABkwMAwMEBspihgGzmAU9v8KKQ1DKBeVVhYJMqlr4ZN4ScEJlgVbiAjCLwTWSrDTDh+On4QUFxb4DmsujrcHw4/FTcO0GtPgDC6zmACkAFYd3mroYdGZPZLiSVoBSVlMCQKEGCsELEcmwWu0CE7S5glJQUMunsChTKMwE53ukqnQDhsXg4vEqsHi0MKWKxaBaDBTEoKIWCWxggjbMDqD7mho+FnFzBJfpN0pqUdpjIDth2akA1eLT4MQAShSUJChQVfpm5z549CHbBc5OoNYgsMaYABOEKQRlLZAjyAESIf5gy0GJFblKhLU8WdBaIKDUbQCK5wf908GJgoGBvHwMaiyALEVKUBeQWyA4G3uwOAJlLRC4kprP8GbXfryWWRzZDi4DQMELyo74GnvMyLILP776mcAvvgLIBLXqJH69fsvw7+cvcNC/2rwDzCbcYLjJ8O7gUYZvdx8Q37wd0Ab9gHZh6NFpAwgwAHAdN+OLGhSRAAAAAElFTkSuQmCC" alt="" /></td>
                                             <td> Включение ГВС</td>
 											<td><input type="checkbox" id="get_boiler-boiler_on" name="get_boiler-boiler_on" onChange="setParam('get_Boiler(BOILER_ON)');">
@@ -88,7 +95,6 @@
 								        <table>
                                         <tbody>
                                         <tr>
-                                        <td></td>
                                         <td>Целевая температура</td>
                                         <td><div class="12u$">
 											<div class="select-wrapper">
@@ -99,13 +105,11 @@
                                                                                     
                                             </tr> 
                                         <tr>
-                                        <td></td>
                                         <td><span id="paramheathp_2">-</span></td>
                                          <td><span id="paramheathp_1">-</span></td>                                            
                                             </tr>
                                             
                                         <tr>
-                                        <td></td>
                                         <td>Использование доп. ТЭНа</td>
                                         <td><div class="12u$">
 											<div class="select-wrapper">
@@ -116,7 +120,6 @@
                                         
                                         </tr>
                                         <tr>
-                                        <td></td>
                                         <td><input class="button2 small" id="get_optionhp-temp_rheat2" type="submit" value="Установить температуру вкл ТЭНа"  onclick="setParam('get_optionHP(TEMP_RHEAT)');"></input></td>
                                         <td><input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1"></td>
                                         
@@ -129,7 +132,6 @@
 								        <table>
                                         <tbody>
                                         <tr>
-                                        <td></td>
                                         <td>Целевая температура</td>
                                         <td><div class="12u$">
 											<div class="select-wrapper">
@@ -140,7 +142,6 @@
                                                                                     
                                             </tr> 
                                         <tr>
-                                        <td></td>
                                         <td><span id="paramheathp_4">-</span></td>
                                          <td><span id="paramheathp_3">-</span></td>                                            
                                             </tr>
@@ -151,25 +152,21 @@
 								        <table>
                                         <tbody>
                                         <tr>
-                                        <td></td>
                                         <td><input class="button2 small" id="get_boiler-temp_target2" type="submit" value="Установить температуру бойлера"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
                                         <td><span><input id="get_boiler-temp_target" type="number" min="5" max="60" step="0.1" value="40.0"></span></td>
                                                                                      
                                             </tr> 
                                         <tr>
-                                        <td></td>
 			<td>Работа по расписанию</td>
 			<td><input type="checkbox" name="get_boiler-scheduler_on" id="get_boiler-scheduler_on" onChange="setParam('get_Boiler(SCHEDULER_ON)');" >
             <label for="get_boiler-scheduler_on"><span id="get_boiler-scheduler_on2"></span></label></td>
 		</tr>						
 		<tr>
-			<td></td>
             <td>Использование доп. ТЭНа</td>
 			<td><input type="checkbox" name="get_boiler-add_heating" id="get_boiler-add_heating" onChange="setParam('get_Boiler(ADD_HEATING)');" >
             <label for="get_boiler-add_heating"><span id="get_boiler-add_heating2"></span></label></td>
 		</tr>						
 		<tr>
-			<td></td>
             <td>Профилактика легионеллы</td>
 			<td><input type="checkbox" name="get_boiler-sallmonela" id="get_boiler-sallmonela" onChange="setParam('get_Boiler(SALLMONELA)');" >
             <label for="get_boiler-sallmonela"><span id="get_boiler-sallmonela2"></span></label></td>

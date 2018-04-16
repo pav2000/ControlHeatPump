@@ -1743,9 +1743,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"SAVE_ON")==0)        { param=92;}  // 12 Запись состояния ТН для воссановления его при перезагрузке
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
-               else if (strcmp(x+1,"ADD_BOILER")==0)     { param=95;}  // 15 флаг использования тена для догрева ГВС
-               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=96;}  // 16 температура включчения догрева бойлера
-              
+    
                // Параметры для графиков смещение 100 занимает 40 позиций  используется в одной функции get_Chart
                else if (strcmp(x+1,"_NONE")==0)          { param=100;} // ничего не показываем
                else if (strcmp(x+1,"_TOUT")==0)          { param=101;} // Температура улицы
@@ -1840,7 +1838,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"PING_TIME")==0)      { param=187;}  // Время пинга в секундах
                else if (strcmp(x+1,"NO_PING")==0)        { param=188;}  // Запрет пинга контроллера
          
-                // Настройки дата время  смещение 190
+                // Настройки дата время  смещение 190 общее число 10 шт
                else if (strcmp(x+1,"TIME")==0)           { param=190;}  // время
                else if (strcmp(x+1,"DATE")==0)           { param=191;}  // дата
                else if (strcmp(x+1,"NTP")==0)            { param=192;}  // NTP сервер
@@ -1848,14 +1846,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"TIMEZONE")==0)       { param=194;}  // часовой пояс
                else if (strcmp(x+1,"UPDATE_I2C")==0)     { param=195;}  // обновление внутренних часов по i2c раз час
         
-               // Настройка бойлера смещение 200 занимает 20
+               // Настройка бойлера смещение 200 занимает 30
                else if (strcmp(x+1,"BOILER_ON")==0)      { param=200;}  // флаг Включения бойлера
                else if (strcmp(x+1,"SCHEDULER_ON")==0)   { param=201;}  // флаг Использование расписания
                else if (strcmp(x+1,"ADD_HEATING")==0)    { param=202;}  // флаг использование ТЭН для нагрева
                else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
                else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
                else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
-               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры ночью
+               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры 
                else if (strcmp(x+1,"TEMP_MAX")==0)       { param=207;}  // Температура подачи максимальная
                else if (strcmp(x+1,"PAUSE1")==0)         { param=208;}  // Минимальное время простоя компрессора в минутах
                else if (strcmp(x+1,"SCHEDULER")==0)      { param=209;}  // Расписание SCHEDULER
@@ -1868,92 +1866,94 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"BOIL_IN")==0)        { param=216;}  // Интегральная составляющая ПИД ГВС
                else if (strcmp(x+1,"BOIL_DIF")==0)       { param=217;}  // Дифференциальная составляющая ПИД ГВС
                else if (strcmp(x+1,"BOIL_TEMP")==0)      { param=218;}  // Целевая темпеартура ПИД ГВС
-               else if (strcmp(x+1,"DTARGET_DAY")==0)    { param=219;}  // гистерезис целевой температуры днем
-               // Настройка Уведомлений смещение 220 занимает 30
-               else if (strcmp(x+1,"MAIL")==0)           { param=220;}  // флаг уведомления скидывать на почту
-               else if (strcmp(x+1,"MAIL_AUTH")==0)      { param=221;}  // флаг необходимости авторизации на почтовом сервере
-               else if (strcmp(x+1,"MAIL_INFO")==0)      { param=222;}  // флаг необходимости добавления в письмо информации о состоянии ТН
-               else if (strcmp(x+1,"SMS")==0)            { param=223;}  // флаг уведомления скидывать на СМС (пока не реализовано)
-               else if (strcmp(x+1,"MESS_RESET")==0)     { param=224;}  // флаг уведомления Сброс
-               else if (strcmp(x+1,"MESS_ERROR")==0)     { param=225;}  // флаг уведомления Ошибка
-               else if (strcmp(x+1,"MESS_LIFE")==0)      { param=226;}  // флаг уведомления Сигнал жизни
-               else if (strcmp(x+1,"MESS_TEMP")==0)      { param=227;}  // флаг уведомления Достижение граничной температуры
-               else if (strcmp(x+1,"MESS_SD")==0)        { param=228;}  // флаг уведомления "Проблемы с sd картой"
-               else if (strcmp(x+1,"MESS_WARNING")==0)   { param=229;}  // флаг уведомления "Прочие уведомления"
-               else if (strcmp(x+1,"SMTP_SERVER")==0)    { param=230;}  // Адрес сервера SMTP_IP
-               else if (strcmp(x+1,"SMTP_IP")==0)        { param=231;}  // IP Адрес сервера
-               else if (strcmp(x+1,"SMTP_PORT")==0)      { param=232;}  // Адрес порта сервера
-               else if (strcmp(x+1,"SMTP_LOGIN")==0)     { param=233;}  // логин сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_PASS")==0)      { param=234;}  // пароль сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_MAILTO")==0)    { param=235;}  // адрес отправителя
-               else if (strcmp(x+1,"SMTP_RCPTTO")==0)    { param=236;}  // адрес получателя
-               else if (strcmp(x+1,"SMS_SERVICE")==0)    { param=237;}  // сервис для отправки смс
-               else if (strcmp(x+1,"SMS_IP")==0)         { param=238;}  // IP адрес сервера для отправки смс
-               else if (strcmp(x+1,"SMS_PHONE")==0)      { param=239;}  // телефон куда отправляется смс
-               else if (strcmp(x+1,"SMS_P1")==0)         { param=240;}  // первый параметр
-               else if (strcmp(x+1,"SMS_P2")==0)         { param=241;}  // второй параметр
-               else if (strcmp(x+1,"SMS_NAMEP1")==0)     { param=242;}  // описание первого параметра
-               else if (strcmp(x+1,"SMS_NAMEP2")==0)     { param=243;}  // описание второго параметра
-               else if (strcmp(x+1,"MESS_TIN")==0)       { param=244;}  // Критическая температура в доме (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TBOILER")==0)   { param=245;}  // Критическая температура бойлера (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TCOMP")==0)     { param=246;}  // Критическая температура компрессора (если больше то генериться уведомление)
-               else if (strcmp(x+1,"MAIL_RET")==0)       { param=247;}  // ответ на тестовое сообщение
-               else if (strcmp(x+1,"SMS_RET")==0)        { param=248;}  // ответ на тестовое SMS
+               else if (strcmp(x+1,"ADD_BOILER")==0)     { param=219;}   // 15 флаг использования тена для догрева ГВС
+               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}   // 16 температура включчения догрева бойлера
+               
+               // Настройка Уведомлений смещение 230 занимает 30
+               else if (strcmp(x+1,"MAIL")==0)           { param=230;}  // флаг уведомления скидывать на почту
+               else if (strcmp(x+1,"MAIL_AUTH")==0)      { param=231;}  // флаг необходимости авторизации на почтовом сервере
+               else if (strcmp(x+1,"MAIL_INFO")==0)      { param=232;}  // флаг необходимости добавления в письмо информации о состоянии ТН
+               else if (strcmp(x+1,"SMS")==0)            { param=233;}  // флаг уведомления скидывать на СМС (пока не реализовано)
+               else if (strcmp(x+1,"MESS_RESET")==0)     { param=234;}  // флаг уведомления Сброс
+               else if (strcmp(x+1,"MESS_ERROR")==0)     { param=235;}  // флаг уведомления Ошибка
+               else if (strcmp(x+1,"MESS_LIFE")==0)      { param=236;}  // флаг уведомления Сигнал жизни
+               else if (strcmp(x+1,"MESS_TEMP")==0)      { param=237;}  // флаг уведомления Достижение граничной температуры
+               else if (strcmp(x+1,"MESS_SD")==0)        { param=238;}  // флаг уведомления "Проблемы с sd картой"
+               else if (strcmp(x+1,"MESS_WARNING")==0)   { param=239;}  // флаг уведомления "Прочие уведомления"
+               else if (strcmp(x+1,"SMTP_SERVER")==0)    { param=240;}  // Адрес сервера SMTP_IP
+               else if (strcmp(x+1,"SMTP_IP")==0)        { param=241;}  // IP Адрес сервера
+               else if (strcmp(x+1,"SMTP_PORT")==0)      { param=242;}  // Адрес порта сервера
+               else if (strcmp(x+1,"SMTP_LOGIN")==0)     { param=243;}  // логин сервера если включена авторизация
+               else if (strcmp(x+1,"SMTP_PASS")==0)      { param=244;}  // пароль сервера если включена авторизация
+               else if (strcmp(x+1,"SMTP_MAILTO")==0)    { param=245;}  // адрес отправителя
+               else if (strcmp(x+1,"SMTP_RCPTTO")==0)    { param=246;}  // адрес получателя
+               else if (strcmp(x+1,"SMS_SERVICE")==0)    { param=247;}  // сервис для отправки смс
+               else if (strcmp(x+1,"SMS_IP")==0)         { param=248;}  // IP адрес сервера для отправки смс
+               else if (strcmp(x+1,"SMS_PHONE")==0)      { param=249;}  // телефон куда отправляется смс
+               else if (strcmp(x+1,"SMS_P1")==0)         { param=250;}  // первый параметр
+               else if (strcmp(x+1,"SMS_P2")==0)         { param=251;}  // второй параметр
+               else if (strcmp(x+1,"SMS_NAMEP1")==0)     { param=252;}  // описание первого параметра
+               else if (strcmp(x+1,"SMS_NAMEP2")==0)     { param=253;}  // описание второго параметра
+               else if (strcmp(x+1,"MESS_TIN")==0)       { param=254;}  // Критическая температура в доме (если меньше то генерится уведомление)
+               else if (strcmp(x+1,"MESS_TBOILER")==0)   { param=255;}  // Критическая температура бойлера (если меньше то генерится уведомление)
+               else if (strcmp(x+1,"MESS_TCOMP")==0)     { param=256;}  // Критическая температура компрессора (если больше то генериться уведомление)
+               else if (strcmp(x+1,"MAIL_RET")==0)       { param=257;}  // ответ на тестовое сообщение
+               else if (strcmp(x+1,"SMS_RET")==0)        { param=258;}  // ответ на тестовое SMS
         
-               // Настройки Профиля  смещение 250
-               else if (strcmp(x+1,"NAME_PROFILE")==0)   { param=250;}  // Имя профиля до 10 русских букв
-               else if (strcmp(x+1,"ENABLE_PROFILE")==0) { param=251;}  // разрешение использовать в списке
-               else if (strcmp(x+1,"ID_PROFILE")==0)     { param=252;}  // номер профиля
-               else if (strcmp(x+1,"NOTE_PROFILE")==0)   { param=253;}  // описание профиля
-               else if (strcmp(x+1,"DATE_PROFILE")==0)   { param=254;}  // дата профиля
-               else if (strcmp(x+1,"CRC16_PROFILE")==0)  { param=255;}  // контрольная сумма профиля
-               else if (strcmp(x+1,"NUM_PROFILE")==0)    { param=256;}  // максимальное число профилей
+               // Настройки Профиля  смещение 260 общее число 10 шт
+               else if (strcmp(x+1,"NAME_PROFILE")==0)   { param=260;}  // Имя профиля до 10 русских букв
+               else if (strcmp(x+1,"ENABLE_PROFILE")==0) { param=261;}  // разрешение использовать в списке
+               else if (strcmp(x+1,"ID_PROFILE")==0)     { param=262;}  // номер профиля
+               else if (strcmp(x+1,"NOTE_PROFILE")==0)   { param=263;}  // описание профиля
+               else if (strcmp(x+1,"DATE_PROFILE")==0)   { param=264;}  // дата профиля
+               else if (strcmp(x+1,"CRC16_PROFILE")==0)  { param=265;}  // контрольная сумма профиля
+               else if (strcmp(x+1,"NUM_PROFILE")==0)    { param=266;}  // максимальное число профилей
                //else if (strcmp(x+1,"SEL_PROFILE")==0)    { param=257;}  // список профилей
                
-               // Настройки Счетчика смещение 260
-               else if (strcmp(x+1,"NAME_SDM")==0)       { param=260;}  // Имя счетчика
-               else if (strcmp(x+1,"NOTE_SDM")==0)       { param=261;}  // Описание счетчика
-               else if (strcmp(x+1,"MAX_VOLTAGE_SDM")==0){ param=262;}  // Контроль напряжения max
-               else if (strcmp(x+1,"MIN_VOLTAGE_SDM")==0){ param=263;}  // Контроль напряжения min
-               else if (strcmp(x+1,"MAX_POWER_SDM")==0)  { param=264;}  // Контроль мощности max
-               else if (strcmp(x+1,"VOLTAGE_SDM")==0)    { param=265;}  // Напряжение
-               else if (strcmp(x+1,"CURRENT_SDM")==0)    { param=266;}  // Ток
-               else if (strcmp(x+1,"REPOWER_SDM")==0)    { param=267;}  // Реактивная мощность
-               else if (strcmp(x+1,"ACPOWER_SDM")==0)    { param=268;}  // Активная мощность
-               else if (strcmp(x+1,"POWER_SDM")==0)      { param=269;}  // Полная мощность
-               else if (strcmp(x+1,"POW_FACTOR_SDM")==0) { param=270;}  // Коэффициент мощности
-               else if (strcmp(x+1,"PHASE_SDM")==0)      { param=271;}  // Угол фазы (градусы)
-               else if (strcmp(x+1,"IACENERGY_SDM")==0)  { param=272;}  // Потребленная активная энергия
-               else if (strcmp(x+1,"EACENERGY_SDM")==0)  { param=273;}  // Переданная активная энергия
-               else if (strcmp(x+1,"IREENERGY_SDM")==0)  { param=274;}  // Потребленная реактивная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=275;}  // Переданная реактивная энергия
-               else if (strcmp(x+1,"ACENERGY_SDM")==0)   { param=276;}  // Суммараная активная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=277;}  // Суммараная реактивная энергия
-               else if (strcmp(x+1,"ENERGY_SDM")==0)     { param=278;}  // Суммараная  энергия
-               else if (strcmp(x+1,"LINK_SDM")==0)       { param=279;}  // Cостояние связи со счетчиком
+               // Настройки Счетчика смещение 270 общее число 30 шт
+               else if (strcmp(x+1,"NAME_SDM")==0)       { param=270;}  // Имя счетчика
+               else if (strcmp(x+1,"NOTE_SDM")==0)       { param=271;}  // Описание счетчика
+               else if (strcmp(x+1,"MAX_VOLTAGE_SDM")==0){ param=272;}  // Контроль напряжения max
+               else if (strcmp(x+1,"MIN_VOLTAGE_SDM")==0){ param=273;}  // Контроль напряжения min
+               else if (strcmp(x+1,"MAX_POWER_SDM")==0)  { param=274;}  // Контроль мощности max
+               else if (strcmp(x+1,"VOLTAGE_SDM")==0)    { param=275;}  // Напряжение
+               else if (strcmp(x+1,"CURRENT_SDM")==0)    { param=276;}  // Ток
+               else if (strcmp(x+1,"REPOWER_SDM")==0)    { param=277;}  // Реактивная мощность
+               else if (strcmp(x+1,"ACPOWER_SDM")==0)    { param=278;}  // Активная мощность
+               else if (strcmp(x+1,"POWER_SDM")==0)      { param=279;}  // Полная мощность
+               else if (strcmp(x+1,"POW_FACTOR_SDM")==0) { param=280;}  // Коэффициент мощности
+               else if (strcmp(x+1,"PHASE_SDM")==0)      { param=281;}  // Угол фазы (градусы)
+               else if (strcmp(x+1,"IACENERGY_SDM")==0)  { param=282;}  // Потребленная активная энергия
+               else if (strcmp(x+1,"EACENERGY_SDM")==0)  { param=283;}  // Переданная активная энергия
+               else if (strcmp(x+1,"IREENERGY_SDM")==0)  { param=284;}  // Потребленная реактивная энергия
+               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=285;}  // Переданная реактивная энергия
+               else if (strcmp(x+1,"ACENERGY_SDM")==0)   { param=286;}  // Суммараная активная энергия
+               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=287;}  // Суммараная реактивная энергия
+               else if (strcmp(x+1,"ENERGY_SDM")==0)     { param=288;}  // Суммараная  энергия
+               else if (strcmp(x+1,"LINK_SDM")==0)       { param=289;}  // Cостояние связи со счетчиком
         
-              // Настройки MQTT клиента смещение 290 общее число 30 шт
-               else if (strcmp(x+1,"USE_THINGSPEAK")==0) { param=290;}  // флаг использования  ThingSpeak
-               else if (strcmp(x+1,"USE_MQTT")==0)       { param=291;}  // флаг использования MQTT
-               else if (strcmp(x+1,"BIG_MQTT")==0)       { param=292;}  // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-               else if (strcmp(x+1,"SDM_MQTT")==0)       { param=293;}  // флаг отправки данных электросчетчика на MQTT
-               else if (strcmp(x+1,"FC_MQTT")==0)        { param=294;}  // флаг отправки данных инвертора на MQTT
-               else if (strcmp(x+1,"COP_MQTT")==0)       { param=295;}  // флаг отправки данных COP на MQTT
-               else if (strcmp(x+1,"TIME_MQTT")==0)      { param=296;}  // период отправки на сервер в сек. 10...60000
-               else if (strcmp(x+1,"ADR_MQTT")==0)       { param=297;}  // Адрес сервера
-               else if (strcmp(x+1,"IP_MQTT")==0)        { param=298;}  // IP Адрес сервера
-               else if (strcmp(x+1,"PORT_MQTT")==0)      { param=299;}  // Адрес порта сервера
-               else if (strcmp(x+1,"LOGIN_MQTT")==0)     { param=300;}  // логин сервера
-               else if (strcmp(x+1,"PASSWORD_MQTT")==0)  { param=301;}  // пароль сервера
-               else if (strcmp(x+1,"ID_MQTT")==0)        { param=302;}  // Идентификатор клиента на MQTT сервере
-               else if (strcmp(x+1,"USE_NARMON")==0)     { param=303;}  // флаг отправки данных на народный мониторинг
-               else if (strcmp(x+1,"BIG_NARMON")==0)     { param=304;}  // флаг отправки данных на народный мониторинг ,большую версию
-               else if (strcmp(x+1,"ADR_NARMON")==0)     { param=305;}  // Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"IP_NARMON")==0)      { param=306;}  // IP Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"PORT_NARMON")==0)    { param=307;}  // Адрес порта сервера народный мониторинг
-               else if (strcmp(x+1,"LOGIN_NARMON")==0)   { param=308;}  // логин сервера народный мониторинг
-               else if (strcmp(x+1,"PASSWORD_NARMON")==0){ param=309;}  // пароль сервера народный мониторинг
-               else if (strcmp(x+1,"ID_NARMON")==0)      { param=310;}  // Идентификатор клиента на народный мониторинг
+              // Настройки MQTT клиента смещение 300 общее число 30 шт
+               else if (strcmp(x+1,"USE_THINGSPEAK")==0) { param=300;}  // флаг использования  ThingSpeak
+               else if (strcmp(x+1,"USE_MQTT")==0)       { param=301;}  // флаг использования MQTT
+               else if (strcmp(x+1,"BIG_MQTT")==0)       { param=302;}  // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+               else if (strcmp(x+1,"SDM_MQTT")==0)       { param=303;}  // флаг отправки данных электросчетчика на MQTT
+               else if (strcmp(x+1,"FC_MQTT")==0)        { param=304;}  // флаг отправки данных инвертора на MQTT
+               else if (strcmp(x+1,"COP_MQTT")==0)       { param=305;}  // флаг отправки данных COP на MQTT
+               else if (strcmp(x+1,"TIME_MQTT")==0)      { param=306;}  // период отправки на сервер в сек. 10...60000
+               else if (strcmp(x+1,"ADR_MQTT")==0)       { param=307;}  // Адрес сервера
+               else if (strcmp(x+1,"IP_MQTT")==0)        { param=308;}  // IP Адрес сервера
+               else if (strcmp(x+1,"PORT_MQTT")==0)      { param=309;}  // Адрес порта сервера
+               else if (strcmp(x+1,"LOGIN_MQTT")==0)     { param=310;}  // логин сервера
+               else if (strcmp(x+1,"PASSWORD_MQTT")==0)  { param=311;}  // пароль сервера
+               else if (strcmp(x+1,"ID_MQTT")==0)        { param=312;}  // Идентификатор клиента на MQTT сервере
+               else if (strcmp(x+1,"USE_NARMON")==0)     { param=313;}  // флаг отправки данных на народный мониторинг
+               else if (strcmp(x+1,"BIG_NARMON")==0)     { param=314;}  // флаг отправки данных на народный мониторинг ,большую версию
+               else if (strcmp(x+1,"ADR_NARMON")==0)     { param=315;}  // Адрес сервера народный мониторинг
+               else if (strcmp(x+1,"IP_NARMON")==0)      { param=316;}  // IP Адрес сервера народный мониторинг
+               else if (strcmp(x+1,"PORT_NARMON")==0)    { param=317;}  // Адрес порта сервера народный мониторинг
+               else if (strcmp(x+1,"LOGIN_NARMON")==0)   { param=318;}  // логин сервера народный мониторинг
+               else if (strcmp(x+1,"PASSWORD_NARMON")==0){ param=319;}  // пароль сервера народный мониторинг
+               else if (strcmp(x+1,"ID_NARMON")==0)      { param=320;}  // Идентификатор клиента на народный мониторинг
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2540,10 +2540,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
             } //if ((strstr(str,"datetime")>0)   
 
-         //12.  Настройки бойлера смещение 200 занимает 20
+         //12.  Настройки бойлера смещение 200 занимает 30
           if (strstr(str,"Boiler"))          // Проверка для запросов содержащих Boiler
              {
-             if ((param>=220)||(param<200))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+             if ((param>=230)||(param<200))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
              else  // параметр верный
                {   p=param-200; 
                if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
@@ -2563,10 +2563,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
             } //if ((strstr(str,"Boiler")>0)   
 
-         //13.  Настройки Уведомлений смещение 220 занимает 30
+         //13.  Настройки Уведомлений смещение 230 занимает 30
           if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
              {
-             if ((param>=250)||(param<220))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+             if ((param>=260)||(param<230))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
              else  // параметр верный
                {   p=param-220; 
                if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
@@ -2586,10 +2586,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
             } //if ((strstr(str,"messageSetting")>0)   
             
-         //14.  Настройки профилей смещение 250 занимает 10
+         //14.  Настройки профилей смещение 260 занимает 10
           if (strstr(str,"Profile"))          // Проверка для запросов содержащих messageSetting
           {
-             if ((param>=260)||(param<250))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+             if ((param>=270)||(param<260))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
              else  // параметр верный
                {   p=param-250; 
                if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
@@ -2609,10 +2609,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
            } //if ((strstr(str,"Profile")>0)
            #ifdef USE_ELECTROMETER_SDM  
-              //15.  Настройки счетчика смещение 260 занимает 20
+           
+              //15.  Настройки счетчика смещение 270 занимает 30
               if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
                  {
-                 if ((param>=280)||(param<260))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+                 if ((param>=300)||(param<270))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
                  else  // параметр верный
                    {   p=param-260; 
                    if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
@@ -2637,7 +2638,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
 			   #ifdef MQTT
                  {
-                 if ((param>=320)||(param<290))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+                 if ((param>=330)||(param<300))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
                  else  // параметр верный
                    {   p=param-290; 
                    if (strcmp(str,"get_MQTT")==0)           // Функция получить настройки MQTT

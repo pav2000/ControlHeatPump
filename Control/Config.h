@@ -75,6 +75,7 @@ enum TYPE_SENSOR
   const IPAddress defaultSDNS(192, 168, 0, 191);
   const IPAddress defaultGateway(192, 168, 0, 1);
   const IPAddress defaultSubnet(255, 255, 255, 0);
+  const boolean  defaultDHCP=false;
     // Сервис
     #define PIN_ETH_RES         8       // + Сброс сетевого чипа w5500 активный low
     #define PIN_ETH_CS         10       // + Чип селект SPI w5500
@@ -407,6 +408,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS(192, 168, 0, 191);
     const IPAddress defaultGateway(192, 168, 0, 1);
     const IPAddress defaultSubnet(255, 255, 255, 0);
+    const boolean  defaultDHCP=false;
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
     // Для каждой конфигурации теперь свои определения!!!
@@ -749,6 +751,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS(192, 168, 0, 191);
     const IPAddress defaultGateway(192, 168, 0, 1);
     const IPAddress defaultSubnet(255, 255, 255, 0);
+    const boolean  defaultDHCP=false;
 //###################################################################################################################################################################################################################
     // SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом w5500
@@ -1108,6 +1111,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS(192, 168, 0, 191);
     const IPAddress defaultGateway(192, 168, 0, 1);
     const IPAddress defaultSubnet(255, 255, 255, 0);
+    const boolean  defaultDHCP=false;
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
     // Для каждой конфигурации теперь свои определения!!!
@@ -1474,6 +1478,8 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS(192, 168, 0, 191);
     const IPAddress defaultGateway(192, 168, 0, 1);
     const IPAddress defaultSubnet(255, 255, 255, 0);
+    const boolean  defaultDHCP=false;              
+    
     #define USE_SCHEDULER       // Использовать расписание для управления ТН   
    // #define RELAY_INVERT   // инвертирование реле выходов реле
     #ifdef EXTERNAL_AREF                     // Какая опора для АЦП используется
@@ -1856,6 +1862,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS   	(192, 168, 0,   1);
     const IPAddress defaultGateway  (192, 168, 0,   1);
     const IPAddress defaultSubnet 	(255, 255, 255, 0);
+    const boolean  defaultDHCP=true;
 
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы

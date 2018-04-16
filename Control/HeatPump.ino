@@ -633,7 +633,7 @@ void HeatPump::resetSettingHP()
  
   
   // Установка сетевых параметров по умолчанию
-  SETBIT0(Network.flags,fDHCP);                 // использование DHCP НЕТ
+  if (defaultDHCP) SETBIT1(Network.flags,fDHCP);else SETBIT0(Network.flags,fDHCP); // использование DHCP
   Network.ip=IPAddress(defaultIP);              // ip адрес
   Network.sdns=IPAddress(defaultSDNS);          // сервер dns
   Network.gateway=IPAddress(defaultGateway);    // шлюз
@@ -677,8 +677,6 @@ void HeatPump::resetSettingHP()
   SETBIT0(Option.flags,fEEV_close);    //  Закрытие ЭРВ при выключении компрессора
   SETBIT0(Option.flags,fSD_card);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
-  SETBIT0(Option.flags,fAddBoiler);    //  флаг флаг догрева ГВС ТЭНом
-  Option.tempRHEAT=40*100;             //  Темпеартура ГВС при котором включается бойлер и отключатся ТН
   Option.sleep=5;                      //  Время засыпания минуты
   Option.dim=80;                       //  Якрость %
 
@@ -984,8 +982,8 @@ boolean HeatPump::set_optionHP(OPTION_HP p, float x)
  
    case pNEXT_SLEEP:       if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                                 break;    // Время засыпания секунды NEXTION минуты
    case pNEXT_DIM:         if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                                  break;    // Якрость % NEXTION
-   case pADD_BOILER:       if (x==0) {SETBIT0(Option.flags,fAddBoiler); return true;} else if (x==1) {SETBIT1(Option.flags,fAddBoiler); return true;} else return false;               break;    // флаг использования тена для догрева ГВС
-   case pTEMP_RBOILER:     if ((x>=20.0)&&(x<=60.0))  {Option.tempRBOILER=x*100.0; return true;} else return false;                                                                    break;    // температура включчения догрева бойлера
+ //  case pADD_BOILER:       if (x==0) {SETBIT0(Option.flags,fAddBoiler); return true;} else if (x==1) {SETBIT1(Option.flags,fAddBoiler); return true;} else return false;               break;    // флаг использования тена для догрева ГВС
+ //  case pTEMP_RBOILER:     if ((x>=20.0)&&(x<=60.0))  {Option.tempRBOILER=x*100.0; return true;} else return false;                                                                    break;    // температура включчения догрева бойлера
  
    case pEND2:             return (char*)"end";                                                                                                                                        break;    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
    default:        return  (char*)cInvalid;                                                                                                                                           break;   
@@ -1028,8 +1026,8 @@ char*    HeatPump::get_optionHP(OPTION_HP p)
    case pNEXT_SLEEP:       return int2str(Option.sleep);                                                     break;            // Время засыпания секунды NEXTION минуты
    case pNEXT_DIM:         return  int2str(Option.dim);                                                      break;            // Якрость % NEXTION
 
-   case pADD_BOILER:       if(GETBIT(Option.flags,fAddBoiler)) return (char*)cOne; else return (char*)cZero; break;            // флаг использования тена для догрева ГВС
-   case pTEMP_RBOILER:     return ftoa(temp,(float)Option.tempRBOILER/100.0,1);                           break;            // температура включчения догрева бойлера
+//   case pADD_BOILER:       if(GETBIT(Option.flags,fAddBoiler)) return (char*)cOne; else return (char*)cZero; break;            // флаг использования тена для догрева ГВС
+//   case pTEMP_RBOILER:     return ftoa(temp,(float)Option.tempRBOILER/100.0,1);                           break;            // температура включчения догрева бойлера
  
    case pEND2:             return (char*)"end";                                                           break;            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
    default:                return  (char*)cInvalid;                                                      break;   
@@ -1774,6 +1772,11 @@ int8_t HeatPump::Stop()
   if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
   setState(pSTOPING_HP);  // Состояние включения
   journal.jprintf(pP_DATE,"   Stop . . .\n"); 
+  
+  #ifdef RBOILER  
+  if (dRelay[RBOILER].get_Relay()) dRelay[RBOILER].set_OFF(); // Выключение догрева бойлера
+  #endif
+
   if (relay3Way) // Если надо выключить трехходовой (облегчение останова)
       {
         relay3Way=false;
@@ -1868,8 +1871,8 @@ if (!((!scheduleBoiler())||(!GETBIT(Prof.SaveON.flags,fBoilerON)))) // Если 
              if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)  flagRBOILER=true;    // Доп ТЭН и Температура ниже гистрезиса начала цикла нагрева бойлера ТЭН не включаем
              if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                                         // Доп ТЭН и надо греть (цель не достигнута) то смотрим возможны действия
              {
-              if ((flagRBOILER)&&(sTemp[TBOILER].get_Temp()>Option.tempRBOILER)) dRelay[RBOILER].set_ON();  // включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
-              if (sTemp[TBOILER].get_Temp()<Option.tempRBOILER-HYSTERESIS_RBOILER) {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // выключение тена, выход вниз за темпеартуру включения догрева
+              if ((flagRBOILER)&&(sTemp[TBOILER].get_Temp()>Prof.Boiler.tempRBOILER)) dRelay[RBOILER].set_ON();  // включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
+              if (sTemp[TBOILER].get_Temp()<Prof.Boiler.tempRBOILER-HYSTERESIS_RBOILER) {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // выключение тена, выход вниз за темпеартуру включения догрева
              }
              else  {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // Цель достигнута - догрев выключаем
         } 
@@ -1978,7 +1981,7 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
  if (FEED>Prof.Boiler.tempIn)                                         {Status.ret=pBh1; return pCOMP_OFF; }    // Достигнута максимальная температура подачи ВЫКЛ)
 
 // if ((Prof.Boiler.TempTarget-get_dTempBoiler())>sTemp[TBOILER].get_Temp()) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
- if ((!GETBIT(Prof.Boiler.flags,fAddHeating))&&(GETBIT(Option.flags,fAddBoiler))&&(Option.tempRBOILER<sTemp[TBOILER].get_Temp())) {Status.ret=pBp22; return pCOMP_OFF;}  // Первое - если используется дополнительный ТЭН и Температура выше целевой температуры Тэна надо выключаться!
+ if ((!GETBIT(Prof.Boiler.flags,fAddHeating))&&(GETBIT(Prof.Boiler.flags,fAddBoiler))&&(Prof.Boiler.tempRBOILER<sTemp[TBOILER].get_Temp())) {Status.ret=pBp22; return pCOMP_OFF;}  // Первое - если используется дополнительный ТЭН и Температура выше целевой температуры Тэна надо выключаться!
  if ((Prof.Boiler.TempTarget-Prof.Boiler.dTemp)>sTemp[TBOILER].get_Temp()) {Status.ret=pBh2; return pCOMP_ON;  }    // Второе - Температура ниже гистрезиса надо включаться!
  
  else  if (Prof.Boiler.TempTarget<sTemp[TBOILER].get_Temp())                            {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры надо выключаться!
@@ -1992,7 +1995,7 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
     Status.ret=pNone;                // Сбросить состояние пида
     // отработка гистререзиса целевой функции
 //    if (Prof.Boiler.TempTarget<sTemp[TBOILER].get_Temp()) {Status.ret=pBp3; return pCOMP_OFF; }                        // Температура выше целевой температуры надо выключаться!
-    if ((!GETBIT(Prof.Boiler.flags,fAddHeating))&&(GETBIT(Option.flags,fAddBoiler))&&(Option.tempRBOILER<sTemp[TBOILER].get_Temp())) {Status.ret=pBp22; return pCOMP_OFF;}  // если используется дополнительный ТЭН и Температура выше целевой температуры Тэна надо выключаться!
+    if ((!GETBIT(Prof.Boiler.flags,fAddHeating))&&(GETBIT(Prof.Boiler.flags,fAddBoiler))&&(Prof.Boiler.tempRBOILER<sTemp[TBOILER].get_Temp())) {Status.ret=pBp22; return pCOMP_OFF;}  // если используется дополнительный ТЭН и Температура выше целевой температуры Тэна надо выключаться!
     else if (Prof.Boiler.TempTarget<sTemp[TBOILER].get_Temp())                             {Status.ret=pBh3; return pCOMP_OFF; }   // Температура выше целевой температуры надо выключаться!
     else if(FEED>Prof.Boiler.tempIn) {Status.ret=pBp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет
 

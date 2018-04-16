@@ -1,0 +1,171 @@
+﻿<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		<!-- Scripts -->
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+		window.onload = function() {
+	loadParam("get_listInput");
+    loadParam("get_listPress");
+    loadParam("get_listFlow");
+	loadParam("get_WORK");
+	loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM),get_SDM(ENERGY_SDM)");
+	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(ENERGY_SDM)");                      
+    };	 
+		</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+			  <div class="content">
+						<header>
+							<h2>ДАТЧИКИ ПАРАМЕТРОВ<br> ТЕПЛОВОГО НАСОСА</h2></br>
+														
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+
+</div> 
+                                     
+                                    
+<div class="table-wrapper">
+<h4>Частотные датчики</h4></br>
+		
+    <table>
+    <tbody id="get_listflow">
+    </tbody>
+  </table>
+                       
+</div>
+
+<div class="table-wrapper">
+<h4>Аналоговые датчики</h4></br>
+<p><input style="float:center" type="submit" value="Расчёт коэффициентов аналоговых датчиков"  onclick="toggletable('pcalc');"></p>
+    
+    <table id="pcalc" style="display:none;">
+    <tbody> 
+      
+      <tr class="sensor_a"><td>Точка 1</td><td>Минимальное значение датчика</td></tr>
+        <tr class="sensor_p"><td>АЦП [отсчеты]</td><td><input id="a1" class="buttont" type="number" min="0" max="4095" step="1" value="0"></td></tr>
+        <tr class="sensor_p"><td>Манометрическое давление [бар]</td><td><input id="p1" class="buttont" type="number" min="0" max="100" step="0.1" value="0"></td></tr>
+              
+      <tr class="sensor_a"><td>Точка 2</td><td>Максимальное значение датчика</td></tr>
+        <tr class="sensor_p"><td>АЦП [отсчеты]</td><td><input id="a2" class="buttont" type="number" min="0" max="4095" step="1" value="2500"></td></tr>
+        <tr class="sensor_p"><td>Манометрическое давление [бар]</td><td><input id="p2" class="buttont" type="number" min="0" max="100" step="0.1" value="12"></td></tr>
+        
+      <tr class="sensor_a2"><td><input type="submit" value="Рассчитать >>>"  onclick="calcacp();"></td><td>РЕЗУЛЬТАТЫ ВЫЧИСЛЕНИЙ:</td></tr>
+      
+      <tr class="sensor_a2"><td>«0» датчика:</td><td> <span id="k1">--</span></td></tr>
+      <tr class="sensor_a2"><td>Коэффициент:</td><td> <span id="k2">--</span></td></tr>
+      <tr class="sensor_p"><td>Установить для:</td><td rowspan="2"><select id="get_listpress" onChange="setKanalog();"><option value="-" class="">Выбрать датчик</option></select></td></tr>     
+    </tbody>
+    </table>		
+    <table>
+    <tbody id="get_listpress2"></tbody>
+  	</table> 
+                     
+</div>
+
+<div class="table-wrapper">
+<h4>Датчики сухой контакт</h4></br>
+		
+    <table>
+    <tbody id="get_listinput">
+    </tbody>
+  </table>
+                       
+</div>
+
+<div class="table-wrapper">
+<h4>Электрический счётчик с MODBUS "SDM120"</h4></br>
+<input type="submit" value="Программирование (*1)"  onclick='loadParam("settingSDM")'>
+<input type="submit" value="Восстановление связи (*2) "  onclick='loadParam("uplinkSDM")'>
+<p>		
+    <table>
+    <tr>
+        <tr class="sensor_p"><td>Напряжение (V)</td><td id="get_sdm-voltage_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Ток (А)</td><td id="get_sdm-current_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Реактивная мощность (W)</td><td id="get_sdm-repower_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Активная мощность (W)</td><td id="get_sdm-acpower_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Полная мощность (W)</td><td id="get_sdm-power_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Коэффициент мощности (cos φ)</td><td id="get_sdm-pow_factor_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Активная энергия (kW/h)</td><td id="get_sdm-acenergy_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Реактивная энергия (kW/h)</td><td id="get_sdm-reenergy_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Полная энергия (kW/h)</td><td id="get_sdm-energy_sdm"></span></td></tr>
+        <tr class="sensor_p"><td>Связь с SDM120</td><td id="get_sdm-link_sdm"></span></td></tr>
+   </tr>
+  </table>
+                       
+</div>
+
+<div class="table-wrapper">
+<h4>Защиты по входному напряжению</h4></br>
+		
+    <table>
+   <tr>
+    <tr><td><input class="buttont" type="submit" value="Максимальное напряжения (V) (*3)"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>
+    <td><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="390" step="1" value=""></td></tr>
+    <tr><td><input class="buttont" type="submit" value="Минимальное напряжения (V) (*4)"  onclick="setParam('get_SDM(MIN_VOLTAGE_SDM)');"></td>
+    <td><input id="get_sdm-min_voltage_sdm" type="number" min="0" max="390" step="1" value=""></td></tr>
+    <tr><td><input class="buttont" type="submit" value="Контроль мощности (W) (*4)"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
+    <td><input id="get_sdm-max_power_sdm" type="number" min="0" max="5000" step="1" value=""></td></tr>
+   </tr>  
+    </table>
+</div>
+
+<span>
+    <h6>*1. При нажатии кнопки флаг сбоя связи сбрасывается</br> и делается попытка прочитать данные со счетчика.</h6>
+	<h6>*2. Производится установка параметров связи счетчика под требуемые.</br> Перед нажатием необходимо перевести счетчик в режим программирования</br> (долгое нажате на кнопку, надпись  Set на экране). </br> После этой операции счетчик надо сбросить (выключить питание).</h6>  
+  	<h6>*3. При выполнении условия, ТН останавливается по ошибке.</h6>
+    <h6>*4. При выполнении условия, ТН не останавливается, генерируется уведомление.</h6>
+</span>
+
+</div>
+
+  <br>
+ </div>                   
+
+	    </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

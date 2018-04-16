@@ -251,6 +251,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: "); if(!strcmp(HP.Prof.get_boiler(pCIRCULATION),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС минуты: ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pCIRCUL_WORK));STR_END;
      strcat(Socket[thread].outBuf,"Пауза в работе насоса ГВС минуты: ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pCIRCUL_PAUSE));STR_END;
+     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа бойлера: "); if(!strcmp(HP.Prof.get_boiler(pADD_BOILER),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом бойлера: "); strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pTEMP_RBOILER)) ;STR_END;
      strcat(Socket[thread].outBuf,"При нагреве бойлера сбрасывать ""избыточное"" тепло систему отопления: "); if(!strcmp(HP.Prof.get_boiler(pRESET_HEAT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время сброса тепла (минуты): ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pRESET_TIME));  STR_END;  
      strcat(Socket[thread].outBuf," Защиты\r\n");
@@ -268,8 +270,6 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); strcat(Socket[thread].outBuf,HP.get_optionHP(pATTEMPT));STR_END;
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); if(!strcmp(HP.get_optionHP(pADD_HEAT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pTEMP_RHEAT)) ;STR_END;
-     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа бойлера: "); if(!strcmp(HP.get_optionHP(pADD_BOILER),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом бойлера: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pTEMP_RBOILER)) ;STR_END;
      strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_CLOSE),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); if(!strcmp(HP.get_optionHP(pEEV_START),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_LIGHT_START),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
