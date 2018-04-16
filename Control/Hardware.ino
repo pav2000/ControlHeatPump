@@ -448,7 +448,7 @@ void sensorFrequency::initFrequency(int sensor)
 int8_t sensorFrequency::Read()
 {
 
- if (testMode!=NORMAL) { Value=testValue;  return err; }   // В режиме теста
+ if (testMode!=NORMAL) { Value=testValue; Frequency=Value*1000*(kfValue/3600.0); return err; }   // В режиме теста
  #ifdef DEMO
     Frequency=random(2500,6000);
     count=0;
