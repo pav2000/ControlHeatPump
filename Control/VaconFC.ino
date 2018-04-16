@@ -72,24 +72,19 @@ int8_t devVaconFC::initFC()
 
     note = (char*)noteFC_OK; // Описание инвертора есть
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
-    err = CheckLinkStatus(); // проверка связи с инвертором
+    CheckLinkStatus(); // проверка связи с инвертором
     check_blockFC();
-    if(err != OK)
-        return err; // связи нет выходим
+    if(err != OK) return err; // связи нет выходим
     journal.jprintf("Test link Modbus %s: OK\r\n", name); // Тест пройден
 
     uint8_t i = 3;
-    for (; i > 0; i--) {
-        // Если частотник работает то остановить его
+    while(state >= 0 && (state & FC_S_RUN)) // Если частотник работает то остановить его
+    {
+    	if(i-- == 0) break;
+        stop_FC();
+        journal.jprintf("Wait stop %s...\r\n", name);
+        _delay(3000);
         CheckLinkStatus(); //  Получить состояние частотника
-        if(state != ERR_LINK_FC) // В зависимости от состояния
-        {
-            if(state & FC_S_RUN) {
-                stop_FC();
-                journal.jprintf("Wait stop %s...\r\n", name);
-                _delay(3000);
-            } else break;
-        }
     }
     if(i == 0) { // Не останавливается
         err = ERR_485_MX2_STATE;

@@ -129,7 +129,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var remaxtemp = new RegExp('^get_maxtemp');
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").toLowerCase().replace(/set_/g, "get_");
-								var type;
+								var type, element;
 								if(rec.test(values[0])) type = "const"; 
 								else if(rei.test(values[0])) type = "table"; 
 								else if(res.test(values[0])) type = "select"; // значения
@@ -141,7 +141,10 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
-									var element = document.getElementById(valueid);
+									if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись
+										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
+									}
+									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
 										if(valueid == "get_mqtt-use_thingspeak") {
@@ -154,10 +157,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										if((element = document.getElementById(valueid))) element.checked = onoff;
 										continue;
-									} else if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись
-										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
-										continue;
-									}
+									} 
 									type = rev.test(values[0]) ? "values" : "str";
 								}
 								if(type == 'scheduler') {
@@ -630,7 +630,6 @@ function loadParam(paramid, noretry, resultdiv) {
 											upsens = "";
 											loadsens = "";
 											var count = values[1].split(';');
-											//console.log("list:" + count);
 											for(var j = 0; j < count.length - 1; j++) {
 												relay = count[j].toLowerCase();
 												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_presentRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
