@@ -66,12 +66,19 @@
 // Биты
 // FC_STATE
 #define FC_S_RDY		0b00000001	// Привод готов
+const char FC_S_RDY_str[]			= "Готов,";
 #define FC_S_RUN		0b00000010	// Привод работает
+const char FC_S_RUN_str[]			= "Работает,";
 #define FC_S_DIR		0b00000100	// 0 - По часовой стрелке, 1 - Против часовой стрелки
+const char FC_S_DIR_str[]			= "Против час.ст.,";
 #define FC_S_FLT		0b00001000	// Действующий отказ
+const char FC_S_FLT_str[]			= "Ошибка,";
 #define FC_S_W			0b00010000	// Сигнал тревоги
+const char FC_S_W_str[]				= "Тревога,";
 #define FC_S_AREF		0b00100000	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
+const char FC_S_AREF_str0[]			= "Изменение скорости,";
 #define FC_S_Z			0b01000000	// 1 - Привод работает на нулевой скорости
+const char FC_S_Z_str[]				= "Остановлен,";
 // FC_CONTROL
 #define FC_C_RUN		0b00000001	// 0 - Останов, 1 - Выполнение
 #define FC_C_STOP		0
@@ -146,6 +153,7 @@ public:
   uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
   uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
   char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
+  void 	get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
   boolean reset_errorFC();                        // Сброс ошибок инвертора
   boolean reset_FC();               		      // Сброс состояния связи модбас
   int16_t CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи

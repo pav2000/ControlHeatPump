@@ -1,9 +1,9 @@
-﻿/* ver 0.930 beta */
+﻿/* ver 0.946 beta */
 var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = ''; //  автоопредиление (если адрес сервера совпадает с адресом контроллера)
+//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.210';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
-var urlupdate = 4000; // время обновления параметров в в миллисекундах
+var urlupdate = 4000; // время обновления параметров в миллисекундах
 
 function setParam(paramid, resultid) {
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "").toLowerCase();
@@ -154,7 +154,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										if((element = document.getElementById(valueid))) element.checked = onoff;
 										continue;
-									} else if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
+									} else if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись
 										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 										continue;
 									}

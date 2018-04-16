@@ -717,14 +717,28 @@ boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
     }
     return false;
 }
+
+// Вывести в buffer строковый статус.
+void devVaconFC::get_infoFC_status(char *buffer, uint16_t st)
+{
+	if(st & FC_S_RDY) 	strcat(buffer, FC_S_RDY_str);
+	if(st & FC_S_RUN) 	strcat(buffer, FC_S_RUN_str);
+	if(st & FC_S_DIR) 	strcat(buffer, FC_S_DIR_str);
+	if(st & FC_S_FLT) 	strcat(buffer, FC_S_FLT_str);
+	if(st & FC_S_W) 	strcat(buffer, FC_S_W_str);
+	if((st & FC_S_AREF)==0)	strcat(buffer, FC_S_AREF_str0);
+	if(st & FC_S_Z) 	strcat(buffer, FC_S_Z_str);
+}
+
 // Получить информацию о частотнике
 char* devVaconFC::get_infoFC(char* buf)
 {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-    int8_t i;
+    int16_t i;
     char temp[10];
-    strcat(buf, "-|Состояние инвертора [b0:Привод готов, b1:Работа, b2:Против часовой стрелки, b3:Отказ, b4:Тревога, b5:Скорость установлена, b6:Zero]|");
-    strcat(buf, int2str(read_0x03_16(FC_STATUS))); strcat(buf, ";");
+    strcat(buf, "-|Состояние инвертора: ");
+    get_infoFC_status(buf, i = read_0x03_16(FC_STATUS)); strcat(buf, "|");
+    strcat(buf, int2str(i)); strcat(buf, ";");
     _delay(FC_DELAY_READ);
     strcat(buf, "V1.1|Контроль выходной частоты (Гц)|");
     strcat(buf, ftoa(temp, (float)read_0x03_16(FC_FREQ) / 100.0, 2)); strcat(buf, ";");
@@ -744,14 +758,14 @@ char* devVaconFC::get_infoFC(char* buf)
     strcat(buf, "V1.3|Контроль оборотов (об/м)|");
     strcat(buf, ftoa(temp, (float)read_0x03_16(FC_RPM), 0)); strcat(buf, ";");
     _delay(FC_DELAY_READ);
-    strcat(buf, "V3.5|Контроль времени наработки в режиме \"Ход\" (ч)|");
+    strcat(buf, "V3.5|Счетчик времени работы в режиме \"Ход\" (ч)|");
     strcat(buf, int2str(read_0x03_16(FC_RUN_HOURS))); strcat(buf, ";");
     _delay(FC_DELAY_READ);
-    strcat(buf, "V3.3|Контроль времени наработки при включенном питании (ч)|");
+    strcat(buf, "V3.3|Контроль времени наработки (ч)|");
     strcat(buf, int2str(read_0x03_16(FC_POWER_HOURS))); strcat(buf, ";");
     _delay(FC_DELAY_READ);
     strcat(buf, "V1.9|Контроль температуры радиатора (°С)|");
-    strcat(buf, ftoa(temp, (float)read_tempFC() / 10.0, 1)); strcat(buf, ";");
+    strcat(buf, ftoa(temp, (float)read_tempFC(), 1)); strcat(buf, ";");
     _delay(FC_DELAY_READ);
     strcat(buf, "V1.8|Контроль напряжения  постоянного тока (В)|");
     strcat(buf, ftoa(temp, (float)read_0x03_16(FC_VOLTATE_DC), 0)); strcat(buf, ";");
