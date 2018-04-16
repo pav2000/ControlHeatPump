@@ -2184,6 +2184,7 @@ int8_t   devModbus::writeHoldingRegistersFloat(uint8_t id, uint16_t cmd, float d
 }
 
 // Тестирование связи возвращает код ошибки
+#ifndef FC_VACON
 int8_t devModbus::LinkTestOmronMX2()
 {
   uint16_t result, ret;
@@ -2195,7 +2196,7 @@ int8_t devModbus::LinkTestOmronMX2()
   if (TEST_NUMBER!=ret) return err=ERR_MODBUS_MX2_0x05;  // Контрольные данные не совпали
   return err;                                                    
 }
-
+#endif
 // Перевод ошибки протокола Модбас (что дает либа) в ошибки ТН, учитывается спицифика Инверторов
 // коды ошибок у инверторов могут отличаться
 int8_t devModbus::translateErr(uint8_t result)

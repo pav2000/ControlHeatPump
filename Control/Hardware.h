@@ -653,7 +653,9 @@ class devModbus
     int8_t readCoil(uint8_t id,uint16_t cmd, boolean *ret);                                // прочитать отдельный бит, возвращает ошибку Modbus function 0x01 Read Coils.
     int8_t writeHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t data);               // Установить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные data
     int8_t writeHoldingRegistersFloat(uint8_t id, uint16_t cmd, float dat);                // Записать float как 2 регистра числа возвращает код ошибки данные data
+    #ifndef FC_VACON
     int8_t LinkTestOmronMX2();                                                             // Тестирование связи c МХ2 (актуально только с omronom) возвращает код ошибки
+    #endif
     int8_t writeMultipleRegisters32(uint8_t id,uint16_t cmd,int16_t hWord, int16_t lWord); // Записать 2 регистра подряд возвращает код ошибки
     int8_t get_err() {return err;}                                                         // Получить код ошибки
 private:
