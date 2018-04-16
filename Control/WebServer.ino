@@ -2568,7 +2568,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
              {
              if ((param>=260)||(param<230))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
              else  // параметр верный
-               {   p=param-220; 
+               {   p=param-230; 
                if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
                   {
                     strcat(strReturn,HP.message.get_messageSetting((MESSAGE_HP)p));
@@ -2591,7 +2591,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           {
              if ((param>=270)||(param<260))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
              else  // параметр верный
-               {   p=param-250; 
+               {   p=param-260; 
                if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
                   {
                     strcat(strReturn,HP.Prof.get_paramProfile((TYPE_PARAM_PROFILE)p));
@@ -2615,7 +2615,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                  {
                  if ((param>=300)||(param<270))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
                  else  // параметр верный
-                   {   p=param-260; 
+                   {   p=param-270; 
                    if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
                       {
                         strcat(strReturn,HP.dSDM.get_paramSDM((TYPE_PARAM_SDM)p));
@@ -2634,13 +2634,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                 } //if ((strstr(str,"SDM")>0)      
             #endif
 
-              //16.  Настройки клиента смещение 290 занимает 30
+              //16.  Настройки клиента смещение 300 занимает 30
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
 			   #ifdef MQTT
                  {
                  if ((param>=330)||(param<300))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
                  else  // параметр верный
-                   {   p=param-290; 
+                   {   p=param-300; 
                    if (strcmp(str,"get_MQTT")==0)           // Функция получить настройки MQTT
                       {
                         strcat(strReturn,HP.clMQTT.get_paramMQTT((TYPE_PARAM_MQTT)p));
