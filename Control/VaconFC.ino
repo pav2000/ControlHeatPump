@@ -87,7 +87,7 @@ int8_t devVaconFC::initFC()
         CheckLinkStatus(); //  Получить состояние частотника
     }
     if(i == 0) { // Не останавливается
-        err = ERR_485_MX2_STATE;
+        err = ERR_MODBUS_STATE;
         set_Error(err, name);
     }
     if(err == OK) {

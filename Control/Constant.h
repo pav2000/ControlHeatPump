@@ -327,24 +327,35 @@ const uint16_t  defaultPort=80;
 #define ERR_TYPE_OVERHEAT  -38         // Правило вычисления перегрева не соответствует датчикам (обратитесь к разработчику)
 #define ERR_485_INIT       -39         // Инвертор на шине Modbus не найден (работа инвертора запрещена)
 #define ERR_485_BUZY       -40         // При обращении к 485 порту привышено время ожидания его освобождения
-#define ERR_485_0x01       -41         // Modbus 0x01 protocol illegal function exception
-#define ERR_485_0x02       -42         // Modbus 0x02 protocol illegal data address exception
-#define ERR_485_0x03       -43         // Modbus 0x03 protocol illegal data value exception
-#define ERR_485_0x04       -44         // Modbus 0х04 protocol slave device failure exception
-#define ERR_485_0x05       -45         // Modbus 0х05 ошибка связи по Modbus (функция проверка связи 0x08 Omron mx2)
-#define ERR_485_0xe0       -46         // Modbus 0xe0 Master invalid response slave ID exception
-#define ERR_485_0xe1       -47         // Modbus 0xe1 Master invalid response function exception
-#define ERR_485_0xe2       -48         // Modbus 0xe2 Master response timed out exception
-#define ERR_485_0xe3       -49         // Modbus 0xe3 Master invalid response CRC exception
-#define ERR_485_MX2_0x01   -50         // Omron mx2 Код исключения 0x01 Указанная функция не поддерживается
-#define ERR_485_MX2_0x02   -51         // Omron mx2 Код исключения 0x02 Указанная функция не обнаружена.
-#define ERR_485_MX2_0x03   -52         // Omron mx2 Код исключения 0x03 Неприемлемый формат указанных данных
-#define ERR_485_MX2_0x21   -53         // Omron mx2 Код исключения 0x21 Данные, записываемые в регистр хранения, находятся за пределами ПЧ
-#define ERR_485_MX2_0x22   -54         // Omron mx2 Код исключения 0x22 Указанные функции не доступны для ПЧ
-#define ERR_485_MX2_0x23   -55         // Omron mx2 Код исключения 0x23 Регистр (бит), в который должно быть записано значение, доступен только для чтения
-#define ERR_485_unknow     -56         // Modbus не известная ошибка (сбой протокола)
-#define ERR_485_MX2_STATE  -57         // Запрещенное (не верное) состояние инвертора
-#define ERR_485_BLOCK      -58         // Попытка включения ТН при заблокированном инверторе
+// Ошибки описаные в протоколе modbus
+#define ERR_MODBUS_0x01      -41         // Modbus 0x01 protocol illegal function exception
+#define ERR_MODBUS_0x02      -42         // Modbus 0x02 protocol illegal data address exception
+#define ERR_MODBUS_0x03      -43         // Modbus 0x03 protocol illegal data value exception
+#define ERR_MODBUS_0x04      -44         // Modbus 0х04 protocol slave device failure exception
+#define ERR_MODBUS_0xe0      -45         // Modbus 0xe0 Master invalid response slave ID exception
+#define ERR_MODBUS_0xe1      -46         // Modbus 0xe1 Master invalid response function exception
+#define ERR_MODBUS_0xe2      -47         // Modbus 0xe2 Master response timed out exception
+#define ERR_MODBUS_0xe3      -48         // Modbus 0xe3 Master invalid response CRC exception
+#ifdef FC_VACON // Спицифические ошибки Vocon 10
+  #define ERR_MODBUS_VACON_0x05 -49       // Ведомое устройство приняло запрос и обрабатывает его, но это требует много времени. Этот ответ предохраняет ведущее устройство от генерации ошибки тайм-аута.
+  #define ERR_MODBUS_VACON_0x06 -50       // Ведомое устройство занято обработкой команды. Ведущее устройство должно повторить сообщение позже, когда ведомое освободится.
+  #define ERR_MODBUS_VACON_0x07 -52       // Ведомое устройство не может выполнить программную функцию, заданную в запросе.
+  #define ERR_MODBUS_VACON_0x08 -52       // Ведомое устройство при чтении расширенной памяти обнаружило ошибку контроля четности
+  #define ERR_MODBUS_VACON_0000 -53       // пусто для сохранения нумерации
+  #define ERR_MODBUS_VACON_0001 -54       // пусто для сохранения нумерации
+  #define ERR_MODBUS_VACON_0002 -55       // пусто для сохранения нумерации
+#else           // Спицифические ошибки OMRON
+  #define ERR_MODBUS_MX2_0x01  -49        // Omron mx2 Код исключения 0x01 Указанная функция не поддерживается
+  #define ERR_MODBUS_MX2_0x02  -50        // Omron mx2 Код исключения 0x02 Указанная функция не обнаружена.
+  #define ERR_MODBUS_MX2_0x03  -52        // Omron mx2 Код исключения 0x03 Неприемлемый формат указанных данных
+  #define ERR_MODBUS_MX2_0x05  -52        // Modbus 0х05 ошибка связи по Modbus (функция проверка связи 0x08 Omron mx2)
+  #define ERR_MODBUS_MX2_0x21  -53        // Omron mx2 Код исключения 0x21 Данные, записываемые в регистр хранения, находятся за пределами ПЧ
+  #define ERR_MODBUS_MX2_0x22  -54        // Omron mx2 Код исключения 0x22 Указанные функции не доступны для ПЧ
+  #define ERR_MODBUS_MX2_0x23  -55        // Omron mx2 Код исключения 0x23 Регистр (бит), в который должно быть записано значение, доступен только для чтения
+#endif
+#define ERR_MODBUS_UNKNOW    -56         // Modbus не известная ошибка (сбой протокола)
+#define ERR_MODBUS_STATE -57         // Запрещенное (не верное) состояние инвертора
+#define ERR_MODBUS_BLOCK    -58         // Попытка включения ТН при заблокированном инверторе
 #define ERR_PID_FEED       -59         // Алгоритм ПИД - достижение максимальной температуры подачи (защита) Подача целевая функция, защита выше, и этого не должно быть
 #define ERR_OUT_OF_MEMORY  -60         // Не хватает памяти для выделения массивов
 #define ERR_SAVE_PROFILE   -61         // Ошибка записи профиля в eeprom I2C
@@ -444,17 +455,27 @@ const char *noteError[] = {"Ok",                                                
                            "Modbus error 0x02 protocol illegal data address exception",                         //-42
                            "Modbus error 0x03 protocol illegal data value exception",                           //-43
                            "Modbus error 0х04 protocol slave device failure exception",                         //-44
-                           "Modbus error 0х05 ошибка связи по Modbus (функция проверка связи 0x08)",            //-45
-                           "Modbus error 0xe0 Master invalid response slave ID exception",                      //-46
-                           "Modbus error 0xe1 Master invalid response function exception",                      //-47
-                           "Modbus error 0xe2 Master response timed out exception",                             //-48
-                           "Modbus error 0xe3 Master invalid response CRC exception",                           //-49
-                           "Код исключения 0x01 Указанная функция не поддерживается",                           //-50
-                           "Код исключения 0x02 Указанная функция не обнаружена",                               //-51
-                           "Код исключения 0x03 Неприемлемый формат указанных данных",                          //-52
+                           "Modbus error 0xe0 Master invalid response slave ID exception",                      //-45
+                           "Modbus error 0xe1 Master invalid response function exception",                      //-46
+                           "Modbus error 0xe2 Master response timed out exception",                             //-47
+                           "Modbus error 0xe3 Master invalid response CRC exception",                           //-48
+                           #ifdef FC_VACON // Спицифические ошибки Vocon 10
+                              "Ведомое устройство приняло запрос и обрабатывает его (0x05)",                    //-49
+                              "Ведомое устройство занято обработкой команды (0x06)",                            //-50     
+                              "Ведомое устройство не может выполнить программную функцию (0x07)",               //-51
+                              "Ведомое устройство обнаружило ошибку контроля четности (0x08)",                  //-52
+                              "",                                                                               //-53
+                              "",                                                                               //-54
+                              "",                                                                               //-55
+                            #else  // Спицифические ошибки OMRON
+                           "Код исключения 0x01 Указанная функция не поддерживается",                           //-49
+                           "Код исключения 0x02 Указанная функция не обнаружена",                               //-50
+                           "Код исключения 0x03 Неприемлемый формат указанных данных",                          //-51
+                           "Modbus error 0х05 ошибка связи по Modbus (функция проверка связи 0x08)",            //-52
                            "Код исключения 0x21 Данные, записываемые в регистр, находятся за пределами ПЧ",     //-53
                            "Код исключения 0x22 Указанные функции не доступны для ПЧ",                          //-54
                            "Код исключения 0x23 Регистр (бит), доступен только для чтения",                     //-55
+                           #endif
                            "Modbus не известная ошибка (сбой протокола)",                                       //-56
                            "Запрещенное (не верное) состояние инвертора",                                       //-57
                            "Попытка включения ТН при заблокированном инверторе",                                //-58

@@ -1077,11 +1077,11 @@ int8_t devOmronMX2::initFC()
                 while ((state!=2)||(state!=4)) { get_readState();journal.jprintf("Wait stop %s . . .\r\n",name); _delay(3000); } 
                 break;
         case 6:                                                                // ТОРМОЖЕНИЕ ПОСТОЯННЫМ ТОКОМ
-        case 7: err=ERR_485_MX2_STATE;set_Error(err,name);  break;             // ВЫПОЛНЕНИЕ ПОВТОРНОЙ ПОПЫТКИ Подъем ошибки на верх и останов ТН
+        case 7: err=ERR_MODBUS_STATE;set_Error(err,name);  break;             // ВЫПОЛНЕНИЕ ПОВТОРНОЙ ПОПЫТКИ Подъем ошибки на верх и останов ТН
         case 8: break;                                                         // АВАРИЙНОЕ ОТКЛЮЧЕНИЕ
         case 9: break;                                                         // ПОНИЖЕНОЕ ПИТАНИЕ
         case -1:break;
-        default:err=ERR_485_MX2_STATE;set_Error(err,name);  break;             // Подъем ошибки на верх и останов ТН
+        default:err=ERR_MODBUS_STATE;set_Error(err,name);  break;             // Подъем ошибки на верх и останов ТН
       }
       if (err!=OK) return err;
 
@@ -1295,7 +1295,7 @@ err=OK;
 //  else  if ((testMode==NORMAL)||(testMode==HARD_TEST))     //   Режим работа и хард тест, анализируем состояние,
 //        if ((GETBIT(flags,fOnOff))&&(state!=3))                  // Не верное состояние
 //         {
-//         err=ERR_485_MX2_STATE;                            // Ошибка не верное состояние инвертора
+//         err=ERR_MODBUS_STATE;                            // Ошибка не верное состояние инвертора
 //         journal.jprintf(" %s:Compressor ON and wrong read state: %d \n",name,state); 
 //         set_Error(err,name);  
 //         return err;                                        // Возврат
@@ -2192,32 +2192,41 @@ int8_t devModbus::LinkTestOmronMX2()
   result = RS485.LinkTestOmronMX2Only(TEST_NUMBER);                                              // Послать команду проверки связи
   if (result == RS485.ku8MBSuccess) ret=RS485.getResponseBuffer(0);                              // Получить данные с ответа
   else return err=ERR_485_INIT;                                                                  // Ошибка инициализации
-  if (TEST_NUMBER!=ret) return err=ERR_485_0x05;  // Контрольные данные не совпали
+  if (TEST_NUMBER!=ret) return err=ERR_MODBUS_MX2_0x05;  // Контрольные данные не совпали
   return err;                                                    
 }
 
-// Перевод ошибки протокола Модбас (что дает либа) в ошибки ТН
+// Перевод ошибки протокола Модбас (что дает либа) в ошибки ТН, учитывается спицифика Инверторов
+// коды ошибок у инверторов могут отличаться
 int8_t devModbus::translateErr(uint8_t result)
 {
  switch (result)
     {
-    case 0x00:      return OK;               break;  
-    case 0x01:      return ERR_485_0x01;     break;
-    case 0x02:      return ERR_485_0x02;     break;
-    case 0x03:      return ERR_485_0x03;     break;
-    case 0x04:      return ERR_485_0x04;     break;
-    case 0x05:      return ERR_485_0x05;     break;
-    case 0x08+0x01: return ERR_485_MX2_0x01; break;
-    case 0x08+0x02: return ERR_485_MX2_0x02; break;
-    case 0x08+0x03: return ERR_485_MX2_0x03; break;
-    case 0x08+0x21: return ERR_485_MX2_0x21; break;
-    case 0x08+0x22: return ERR_485_MX2_0x22; break;
-    case 0x08+0x23: return ERR_485_MX2_0x23; break;
-    case 0xe0:      return ERR_485_0xe0;     break;
-    case 0xe1:      return ERR_485_0xe1;     break;
-    case 0xe2:      return ERR_485_0xe2;     break;
-    case 0xe3:      return ERR_485_0xe3;     break;
-    default  :      return ERR_485_unknow;   break;
+    // Сдандартные ошибки протокола modbus  едины для всех устройств на модбасе
+    case 0x00:      return OK;                  break;  
+    case 0x01:      return ERR_MODBUS_0x01;     break;
+    case 0x02:      return ERR_MODBUS_0x02;     break;
+    case 0x03:      return ERR_MODBUS_0x03;     break;
+    case 0x04:      return ERR_MODBUS_0x04;     break;
+    case 0xe0:      return ERR_MODBUS_0xe0;     break;
+    case 0xe1:      return ERR_MODBUS_0xe1;     break;
+    case 0xe2:      return ERR_MODBUS_0xe2;     break;
+    case 0xe3:      return ERR_MODBUS_0xe3;     break;    
+    #ifdef FC_VACON
+      case 0x05:      return ERR_MODBUS_VACON_0x05;break;
+      case 0x06:      return ERR_MODBUS_VACON_0x06;break;
+      case 0x07:      return ERR_MODBUS_VACON_0x07;break;
+      case 0x08:      return ERR_MODBUS_VACON_0x08;break;
+    #else
+      case 0x05:      return ERR_MODBUS_MX2_0x05; break;
+      case 0x08+0x01: return ERR_MODBUS_MX2_0x01; break;
+      case 0x08+0x02: return ERR_MODBUS_MX2_0x02; break;
+      case 0x08+0x03: return ERR_MODBUS_MX2_0x03; break;
+      case 0x08+0x21: return ERR_MODBUS_MX2_0x21; break;
+      case 0x08+0x22: return ERR_MODBUS_MX2_0x22; break;
+      case 0x08+0x23: return ERR_MODBUS_MX2_0x23; break;
+    #endif
+    default  :      return ERR_MODBUS_UNKNOW;   break;
     }
  
 }

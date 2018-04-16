@@ -1646,7 +1646,7 @@ int8_t HeatPump::Start()
        {
         journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
         setState(pOFF_HP);                                              // Еще ничего не сделали по этому сразу ставим состоение выключено
-        set_Error(ERR_485_BLOCK,(char*)__FUNCTION__); 
+        set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__); 
         return error;
        }   
   #endif
