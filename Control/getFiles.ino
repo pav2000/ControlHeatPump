@@ -196,7 +196,7 @@ void get_txtSettings(uint8_t thread)
      if (HP.get_ruleHeat()!=pHYSTERESIS)
          {
          strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP_PID,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в минутах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_TIME,HP.dFC.get_present()));STR_END;
+         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_TIME,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_PRO,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_IN,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_DIF,HP.dFC.get_present()));STR_END;
@@ -218,7 +218,7 @@ void get_txtSettings(uint8_t thread)
      if (HP.get_ruleCool()!=pHYSTERESIS)
          {
          strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP_PID,HP.dFC.get_present()));STR_END;     
-         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в минутах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_TIME,HP.dFC.get_present()));STR_END;
+         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_TIME,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_PRO,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_IN,HP.dFC.get_present()));STR_END;
          strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_DIF,HP.dFC.get_present()));STR_END;
@@ -277,8 +277,10 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); if(!strcmp(HP.get_optionHP(pNEXTION),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); strcat(Socket[thread].outBuf,HP.get_optionHP(pNEXT_SLEEP));STR_END;
      strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pNEXT_DIM));STR_END;
-   
-     strcat(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
+
+     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+    
+     strcpy(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
      strcat(Socket[thread].outBuf,"Использование DHCP: "); if(!strcmp(HP.get_network(pDHSP),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"IP адрес контроллера: "); strcat(Socket[thread].outBuf,HP.get_network(pIP));STR_END;
      strcat(Socket[thread].outBuf,"DNS сервер: "); strcat(Socket[thread].outBuf,HP.get_network(pSDNS)); STR_END;
@@ -295,14 +297,23 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Адрес пингуемого сервера: "); strcat(Socket[thread].outBuf,HP.get_network(pPING_ADR)); STR_END;
      strcat(Socket[thread].outBuf,"Ежеминутный контроль связи с Wiznet W5xxx: "); if(!strcmp(HP.get_network(pINIT_W5200),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время очистки сокетов: "); strcat(Socket[thread].outBuf,HP.get_network(pRES_SOCKET));STR_END;
-     strcat(Socket[thread].outBuf,"Время сброса чипа "); strcat(Socket[thread].outBuf,nameWiznet);strcat(Socket[thread].outBuf,": "); strcat(Socket[thread].outBuf,HP.get_network(pRES_W5200));STR_END;
+     strcat(Socket[thread].outBuf,"Время сброса чипа: "); strcat(Socket[thread].outBuf,nameWiznet);strcat(Socket[thread].outBuf,": "); strcat(Socket[thread].outBuf,HP.get_network(pRES_W5200));STR_END;
      strcat(Socket[thread].outBuf,"Размер пакета для отправки в байтах: "); strcat(Socket[thread].outBuf,HP.get_network(pSIZE_PACKET));STR_END; 
      strcat(Socket[thread].outBuf,"Не ожидать получения ACK при посылке следующего пакета: "); if(!strcmp(HP.get_network(pNO_ACK),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Пауза перед отправкой следующего пакета, если нет ожидания ACK. (мсек): "); strcat(Socket[thread].outBuf,HP.get_network(pDELAY_ACK));STR_END;
 
-     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
      
-     strcpy(Socket[thread].outBuf,"\n  1.6 Уведомления\r\n");
+     strcat(Socket[thread].outBuf,"\n  1.6 Настройки даты и времени\r\n");
+     strcat(Socket[thread].outBuf,"Установленная дата: "); strcat(Socket[thread].outBuf,HP.get_datetime(pDATE));STR_END;
+     strcat(Socket[thread].outBuf,"Установленное время: "); strcat(Socket[thread].outBuf,HP.get_datetime(pTIME));STR_END;
+     strcat(Socket[thread].outBuf,"Адрес NTP сервера: "); strcat(Socket[thread].outBuf,HP.get_datetime(pNTP));STR_END;
+     strcat(Socket[thread].outBuf,"Часовой пояс (часы): "); strcat(Socket[thread].outBuf,HP.get_datetime(pTIMEZONE));STR_END;
+     strcat(Socket[thread].outBuf,"Синхронизация времени по NTP раз в сутки: "); if(!strcmp(HP.get_datetime(pUPDATE),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+     strcat(Socket[thread].outBuf,"Синхронизация раз в час с I2C часами: "); if(!strcmp(HP.get_datetime(pUPDATE_I2C),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+  
+     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+      
+     strcpy(Socket[thread].outBuf,"\n  1.7 Уведомления\r\n");
      strcat(Socket[thread].outBuf,"Сброс контроллера: "); if(!strcmp(HP.message.get_messageSetting(pMESS_RESET),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END; 
      strcat(Socket[thread].outBuf,"Возникновение ошибок: "); if(!strcmp(HP.message.get_messageSetting(pMESS_ERROR),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;  
      strcat(Socket[thread].outBuf,"Сигнал «жизни» (ежедневно в 12-00): "); if(!strcmp(HP.message.get_messageSetting(pMESS_LIFE),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END; 
@@ -332,7 +343,7 @@ void get_txtSettings(uint8_t thread)
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf)); 
       
       // MQTT
-     strcpy(Socket[thread].outBuf,"\n  1.7 Настройка MQTT\r\n");
+     strcpy(Socket[thread].outBuf,"\n  1.8 Настройка MQTT\r\n");
       #ifdef MQTT
      strcat(Socket[thread].outBuf,"Включить отправку на сервер MQTT: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pUSE_MQTT),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END; 
      strcat(Socket[thread].outBuf,"Отправка на сервер ThingSpeak: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pUSE_TS),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END; 
@@ -357,6 +368,7 @@ void get_txtSettings(uint8_t thread)
      #else
       strcat(Socket[thread].outBuf,"Не поддерживается, нет в прошивке");
      #endif
+     
      strcat(Socket[thread].outBuf,"\n  2.1 Датчики температуры\r\n");
      for(i=0;i<TNUMBER;i++)   // Информация по  датчикам температуры   
          {
@@ -380,7 +392,7 @@ void get_txtSettings(uint8_t thread)
     
           
       strcpy(Socket[thread].outBuf,"\n  2.2 Аналоговые датчики\r\n");
-      for(i=0;i<ANUMBER;i++)   // Информация по  датчикам температуры   
+      for(i=0;i<ANUMBER;i++)   // Информация по  аналоговым датчикм - например давление   
          {   
             strcat(Socket[thread].outBuf,HP.sADC[i].get_name()); if((x=8-strlen(HP.sADC[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(Socket[thread].outBuf," "); }
             strcat(Socket[thread].outBuf,HP.sADC[i].get_note());  strcat(Socket[thread].outBuf,": "); 
@@ -391,7 +403,7 @@ void get_txtSettings(uint8_t thread)
                   strcat(Socket[thread].outBuf," Pmax="); strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.sADC[i].get_maxPress()/100.0,2));
                   strcat(Socket[thread].outBuf," Ptest=");strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.sADC[i].get_testPress()/100.0,2));
                   strcat(Socket[thread].outBuf," Zero="); strcat(Socket[thread].outBuf,int2str(HP.sADC[i].get_zeroPress()));
-                  strcat(Socket[thread].outBuf," Kof=");  strcat(Socket[thread].outBuf,int2str(HP.sADC[i].get_transADC()));
+                  strcat(Socket[thread].outBuf," Kof=");  strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.sADC[i].get_transADC(),3));
                   strcat(Socket[thread].outBuf," Pin=AD");strcat(Socket[thread].outBuf,int2str(HP.sADC[i].get_pinA())); 
                   if (HP.sADC[i].get_lastErr()!=OK ) { strcat(Socket[thread].outBuf," error:"); strcat(Socket[thread].outBuf,int2str(HP.sADC[i].get_lastErr())); }  STR_END;
                 } 

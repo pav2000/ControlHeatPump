@@ -166,6 +166,8 @@ void HeatPump::set_testMode(TEST_MODE b)
   for(i=0;i<TNUMBER;i++) sTemp[i].set_testMode(b);         // датчики температуры
   for(i=0;i<ANUMBER;i++) sADC[i].set_testMode(b);          // Датчик давления
   for(i=0;i<INUMBER;i++) sInput[i].set_testMode(b);        // Датчики сухой контакт
+  for(i=0;i<FNUMBER;i++) sFrequency[i].set_testMode(b);    // Частотные датчики
+  
   for(i=0;i<RNUMBER;i++) dRelay[i].set_testMode(b);        // Реле
   #ifdef EEV_DEF
   dEEV.set_testMode(b);                                    // ЭРВ
@@ -1286,7 +1288,7 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
  if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг false
  switch (t)
    {
-   case pNONE:      strcat(str,""); return str;                          break;   
+   case pNONE:      strcat(str,""); return str;                           break;   
    case pTOUT:      return sTemp[TOUT].Chart.get_PointsStr(100,str);      break;   
    case pTIN:       return sTemp[TIN].Chart.get_PointsStr(100,str);       break;   
    case pTEVAIN:    return sTemp[TEVAIN].Chart.get_PointsStr(100,str);    break;   
@@ -1307,7 +1309,7 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
 
 
    case pFLOWCON:   
-                    #ifdef FFLOWCON
+                     #ifdef FLOWCON
                      return sFrequency[FLOWCON].Chart.get_PointsStr(1000,str);
                      #endif
                      break;
@@ -1854,6 +1856,28 @@ MODE_HP HeatPump::get_Work()
      {
       switch3WAY(false);                                            // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
      }
+   
+// Догрев бойлера ТЭНом это вне зависимости от всего остального
+#ifdef RBOILER  // ДОГРЕВ - управление дополнительным ТЭНом бойлера
+if (!((!scheduleBoiler())||(!GETBIT(Prof.SaveON.flags,fBoilerON)))) // Если разрешено греть бойлер согласно расписания И  Бойлер включен, проверяем догрев
+{
+  if (!GETBIT(Prof.Boiler.flags,fAddHeating))  // если нет форсированного нагрева у него приоритет выше
+   {
+      if  (GETBIT(Option.flags,fAddBoiler))  // Требуется догрев
+        { 
+             if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)  flagRBOILER=true;    // Доп ТЭН и Температура ниже гистрезиса начала цикла нагрева бойлера ТЭН не включаем
+             if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                                         // Доп ТЭН и надо греть (цель не достигнута) то смотрим возможны действия
+             {
+              if ((flagRBOILER)&&(sTemp[TBOILER].get_Temp()>Option.tempRBOILER)) dRelay[RBOILER].set_ON();  // включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
+              if (sTemp[TBOILER].get_Temp()<Option.tempRBOILER-HYSTERESIS_RBOILER) {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // выключение тена, выход вниз за темпеартуру включения догрева
+             }
+             else  {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // Цель достигнута - догрев выключаем
+        } 
+       else  {dRelay[RBOILER].set_OFF();flagRBOILER=false;}         // Догрев выключен
+   }
+}   
+#endif
+   
 
     // 2. Отопление/охлаждение
     switch ((int)get_mode())   // проверка отопления
@@ -1905,7 +1929,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 // Проверки на необходимость включения бойлера
  if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) // Если ТН выключен или выключается ничего не делаем
- {
+{
  #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
  dRelay[RBOILER].set_OFF();flagRBOILER=false;  // Выключение
  #endif 
@@ -1947,24 +1971,7 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
    }      
  }  
  
- #ifdef RBOILER  // ДОГРЕВ - управление дополнительным ТЭНом бойлера
-  if (!GETBIT(Prof.Boiler.flags,fAddHeating))  // если нет форсированного нагрева у него приоритет выше
-   {
-      if  (GETBIT(Option.flags,fAddBoiler))  // Требуется догрев
-        {
-             if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)  flagRBOILER=true;    // Доп ТЭН и Температура ниже гистрезиса начала цикла нагрева бойлера ТЭН не включаем
-             if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                                         // Доп ТЭН и надо греть (цель не достигнута) то смотрим возможны действия
-             {
-              if ((flagRBOILER)&&(sTemp[TBOILER].get_Temp()>Option.tempRBOILER)) dRelay[RBOILER].set_ON();  // включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
-              if (sTemp[TBOILER].get_Temp()<Option.tempRBOILER-HYSTERESIS_RBOILER) {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // выключение тена, выход вниз за темпеартуру включения догрева
-             }
-             else  {dRelay[RBOILER].set_OFF();flagRBOILER=false;}   // Цель достигнута - догрев выключаем
-        } 
-       else  {dRelay[RBOILER].set_OFF();flagRBOILER=false;}         // Догрев выключен
-   } 
- #endif
- 
- // Алгоритм гистерезис для старт стопа
+ // Алгоритм гистерезис для старт стоп
  if(!dFC.get_present())
  {
   Status.ret=pNone;                                                                                       // Сбросить состояние
