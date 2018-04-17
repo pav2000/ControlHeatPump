@@ -195,9 +195,27 @@ void readFileSD(char *filename,uint8_t thread)
 {   
   volatile int n,i;
   SdFile  webFile; 
-
+  char *ch1,*ch2;
+  char buf[8];  // для расширения файла хватит 8 байт
   //  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename); 
-
+  
+         // Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png  
+         if ((ch1=strchr(filename,'['))!=NULL) // скобка найдена надо обрабатывать
+         {
+           if (strstr(filename,"HPscheme")!=0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
+            {
+             if ((ch2=strchr(filename,']'))!=NULL)
+              {
+              strncpy(buf,ch2+1,sizeof(buf)-1); // скопировать хвост в промежуточный буфер
+              *ch1=0x00;  // обрезать строку filename перед [
+              strcat(filename,int2str(HP_SHEME)); // добавить номер схемы
+              strcat(filename,buf);               // добавить расширение
+              }
+            else journal.jprintf("Not found ] in: %s",filename); // нет закрывающейся скобки
+            } // if (strstr(filename,"HPscheme")!=0) 
+         else journal.jprintf("Bad argument in: %s",filename);   // не верный аргумент в скобках
+         }
+    
   	  	 // В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
          if (strcmp(filename,"state.txt")==0)     {get_txtState(thread,true); return;}  
          if (strcmp(filename,"settings.txt")==0)  {get_txtSettings(thread);   return;}      

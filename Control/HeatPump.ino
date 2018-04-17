@@ -2687,6 +2687,7 @@ const char *EEV_go={" EEV go "};  // экономим место
 const char *MinPauseOffCompressor={" Wait %d sec min pause off compressor . . .\n"};  // экономим место
 void HeatPump::compressorON(MODE_HP mod)
 {
+  uint8_t i;  
   uint32_t nTime=rtcSAM3X8.unixtime();
   if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
   
@@ -2739,13 +2740,18 @@ void HeatPump::compressorON(MODE_HP mod)
            if (startPump)                                      // Проверка задачи насос - должен быть выключен
               {
                 startPump=false;                               // Поставить признак останова задачи насос
-                vTaskSuspend(xHandleUpdatePump);            // Остановить задачу насос
+                vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
                 journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
               } 
-           // Проверка включение насосов с проверкой и предупреждением
-           if (!dRelay[PUMP_IN].get_Relay()) {journal.jprintf(" WARNING!! PUMP_IN is off Compressor on\n"); dRelay[PUMP_IN].set_ON();  }
+           // Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
+           if (!dRelay[PUMP_IN].get_Relay()) {journal.jprintf(" WARNING! PUMP_IN is off Compressor on\n");  dRelay[PUMP_IN].set_ON(); _delay(DELAY_ON_PUMP * 1000); }
            #ifndef SUPERBOILER  // для супербойлера это лишнее
-           if (!dRelay[PUMP_OUT].get_Relay()){journal.jprintf(" WARNING!! PUMP_OUT is off Compressor on\n"); dRelay[PUMP_OUT].set_ON();  }
+           if (!dRelay[PUMP_OUT].get_Relay()){journal.jprintf(" WARNING! PUMP_OUT is off Compressor on\n"); dRelay[PUMP_OUT].set_ON(); _delay(DELAY_ON_PUMP * 1000); }
+           #endif
+           
+           #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
+           for(i=0;i<FNUMBER;i++)   // Проверка потока по каждому датчику
+           if (sFrequency[i].get_Value()<HP.sFrequency[i].get_minValue())   { set_Error(ERR_MIN_FLOW,(char*)sFrequency[i].get_name());  return; }    // Поток меньше минимального ошибка осанавливаем ТН
            #endif
            
            COMPRESSOR_ON;                                        // Включить компрессор
@@ -3050,13 +3056,14 @@ switch ((int)get_State())  //TYPE_STATE_HP
   case pWORK_HP:                                                          // 3 Работает
          switch ((int)get_modWork())                                      // MODE_HP
          {
-         case  pOFF: return (char*)strRusPause;      break;               // 0 Пауза
+         case  pOFF: return (char*)strRusPause;      break;                // 0 Пауза
          case  pHEAT: return (char*)"Нагрев+";        break;               // 1 Включить отопление
          case  pCOOL: return (char*)"Заморозка+";     break;               // 2 Включить охлаждение
-         case  pBOILER: return (char*)"Нагрев ГВС+"; break;               // 3 Включить бойлер
+         case  pBOILER: return (char*)"Нагрев ГВС+"; break;                // 3 Включить бойлер
          case  pNONE_H: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"Отопление";   break;  // 4 Продолжаем греть отопление
          case  pNONE_C: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
          case  pNONE_B: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
+         
          default: return (char*)"Error state";          break; 
          }
         break;   
