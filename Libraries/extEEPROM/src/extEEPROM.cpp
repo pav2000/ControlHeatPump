@@ -77,9 +77,9 @@ extEEPROM::extEEPROM(eeprom_size_t deviceCapacity, byte nDevice, uint32_t pageSi
     _nAddrBytes = deviceCapacity > kbits_16 ? 2 : 1;       //two address bytes needed for eeproms > 16kbits
     _FRAM = FRAM;
     _dvcCapacity = deviceCapacity * 1024UL / 8;
+    _totalCapacity = _nDevice * _dvcCapacity;
     if(_FRAM) _pageSize =  _totalCapacity;
     else _pageSize = pageSize;
-    _totalCapacity = _nDevice * _dvcCapacity;
 #ifdef USE_RTOS_DELAY_AFTER_BYTES
     DelayAfterBytes = USE_RTOS_DELAY_AFTER_BYTES;
     use_RTOS_delay = 0;
@@ -137,7 +137,6 @@ byte extEEPROM::write(uint32_t addr, byte *values, uint32_t nBytes)
     if (addr + nBytes > _totalCapacity) {   //will this write go past the top of the EEPROM?
         return EEPROM_ADDR_ERR;             //yes, tell the caller
     }
-
     while(nBytes > 0) {
    		uint32_t nPage;         //number of bytes remaining on current page, starting at addr
    		nPage = _pageSize - ( addr & (_pageSize - 1) );
@@ -148,7 +147,6 @@ byte extEEPROM::write(uint32_t addr, byte *values, uint32_t nBytes)
         Wire.beginTransmission(ctrlByte, values, nWrite);
         if(_nAddrBytes == 2) Wire.write( (byte) (addr >> 8) );   //high addr byte
         Wire.write( (byte) addr );                               //low addr byte
-
 #ifdef USE_RTOS_DELAY_AFTER_BYTES
         uint8_t dly = use_RTOS_delay && nWrite > DelayAfterBytes;
        	if((txStatus = Wire.endTransmission(dly))) return txStatus; // choice RTOS delay(1) or not
