@@ -421,8 +421,8 @@ class HeatPump
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
   private:
-    int8_t Start();                       // Запустить ТН - возвращает ок или код ошибки
-    int8_t Stop();                        // Остановить ТН
+    int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
+    int8_t StopWait(boolean stop);        // Функция Останова/Ожидания ТН  - возвращает код ошибки
     int8_t ResetFC();                     // Сброс инвертора если он стоит в ошибке, провиряется наличие инвертора и прорверка ошибки
 
     MODE_HP get_Work();                   // Что надо делать

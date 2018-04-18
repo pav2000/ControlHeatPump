@@ -986,7 +986,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 						MODE_HP currmode = HP.get_modWork();
 						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL) != (_son.mode == pCOOL)); // Если направление работы ТН разное
 						if(frestart) {
-							HP.sendCommand(pSTOP);
+							HP.sendCommand(pWAIT);
 							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
 						}
 						vTaskSuspendAll();	// без проверки
@@ -994,7 +994,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 						HP.set_profile();
 						xTaskResumeAll();
 						journal.jprintf("Profile changed to %d\n", _profile);
-						if(frestart) HP.sendCommand(pSTART);
+						if(frestart) HP.sendCommand(pRESUME);
 					}
 				} else if(_profile == SCHDLR_Profile_off) {
 					HP.sendCommand(pSTOP);

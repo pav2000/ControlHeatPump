@@ -246,13 +246,13 @@ void get_txtSettings(uint8_t thread)
          }
      strcat(Socket[thread].outBuf," Опции ГВС\r\n");    
      strcat(Socket[thread].outBuf,"Использование расписания: "); if(!strcmp(HP.Prof.get_boiler(pSCHEDULER_ON),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Использование ТЭНа для нагрева ГВС: "); if(!strcmp(HP.Prof.get_boiler(pADD_HEATING),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Борьба с сальмонелой: "); if(!strcmp(HP.Prof.get_boiler(pSALLMONELA),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: "); if(!strcmp(HP.Prof.get_boiler(pCIRCULATION),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС минуты: ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pCIRCUL_WORK));STR_END;
      strcat(Socket[thread].outBuf,"Пауза в работе насоса ГВС минуты: ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pCIRCUL_PAUSE));STR_END;
-     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа бойлера: "); if(!strcmp(HP.Prof.get_boiler(pADD_BOILER),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом бойлера: "); strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pTEMP_RBOILER)) ;STR_END;
+     strcat(Socket[thread].outBuf,"Turbo нагрев ГВС (одновременное использование ТЭНа и ТН для нагрева): "); if(!strcmp(HP.Prof.get_boiler(pTURBO_BOILER),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+     strcat(Socket[thread].outBuf,"Использование ТЭНа для догрева бойлера до высоких температур: "); if(!strcmp(HP.Prof.get_boiler(pADD_HEATING),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+     strcat(Socket[thread].outBuf,"Значение температуры для включения догрева бойлера: "); strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pTEMP_RBOILER)) ;STR_END;
      strcat(Socket[thread].outBuf,"При нагреве бойлера сбрасывать ""избыточное"" тепло систему отопления: "); if(!strcmp(HP.Prof.get_boiler(pRESET_HEAT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Время сброса тепла (минуты): ");strcat(Socket[thread].outBuf,HP.Prof.get_boiler(pRESET_TIME));  STR_END;  
      strcat(Socket[thread].outBuf," Защиты\r\n");

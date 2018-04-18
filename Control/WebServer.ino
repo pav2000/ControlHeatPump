@@ -199,7 +199,7 @@ void readFileSD(char *filename,uint8_t thread)
   char buf[8];  // для расширения файла хватит 8 байт
   //  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename); 
   
-         // Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png  
+         // Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
          if ((ch1=strchr(filename,'['))!=NULL) // скобка найдена надо обрабатывать
          {
            if (strstr(filename,"HPscheme")!=0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
@@ -1864,10 +1864,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"TIMEZONE")==0)       { param=194;}  // часовой пояс
                else if (strcmp(x+1,"UPDATE_I2C")==0)     { param=195;}  // обновление внутренних часов по i2c раз час
         
-               // Настройка бойлера смещение 200 занимает 30
+               // Настройка бойлера смещение 200 занимает 30 позиций
                else if (strcmp(x+1,"BOILER_ON")==0)      { param=200;}  // флаг Включения бойлера
                else if (strcmp(x+1,"SCHEDULER_ON")==0)   { param=201;}  // флаг Использование расписания
-               else if (strcmp(x+1,"ADD_HEATING")==0)    { param=202;}  // флаг использование ТЭН для нагрева
+               else if (strcmp(x+1,"TURBO_BOILER")==0)   { param=202;}  // флаг использование ТУРБО нагрева бойлера
                else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
                else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
                else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
@@ -1884,10 +1884,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"BOIL_IN")==0)        { param=216;}  // Интегральная составляющая ПИД ГВС
                else if (strcmp(x+1,"BOIL_DIF")==0)       { param=217;}  // Дифференциальная составляющая ПИД ГВС
                else if (strcmp(x+1,"BOIL_TEMP")==0)      { param=218;}  // Целевая темпеартура ПИД ГВС
-               else if (strcmp(x+1,"ADD_BOILER")==0)     { param=219;}   // 15 флаг использования тена для догрева ГВС
-               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}   // 16 температура включчения догрева бойлера
+               else if (strcmp(x+1,"ADD_HEATING")==0)    { param=219;}  // флаг использования тена для догрева ГВС
+               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}  // температура включчения догрева бойлера
                
-               // Настройка Уведомлений смещение 230 занимает 30
+               // Настройка Уведомлений смещение 230 занимает 30 позиций
                else if (strcmp(x+1,"MAIL")==0)           { param=230;}  // флаг уведомления скидывать на почту
                else if (strcmp(x+1,"MAIL_AUTH")==0)      { param=231;}  // флаг необходимости авторизации на почтовом сервере
                else if (strcmp(x+1,"MAIL_INFO")==0)      { param=232;}  // флаг необходимости добавления в письмо информации о состоянии ТН

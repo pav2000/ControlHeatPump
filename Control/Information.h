@@ -135,13 +135,13 @@ struct type_SaveON
 };
 
 // Структуры для хранения настроек бойлера
-//  Определение флагов в  type_boilerHP
+//  Определение флагов в type_boilerHP
 #define fSchedule    1                // флаг Использование расписания
-#define fAddHeating  2                // флаг использование ТЭН для нагрева
-#define fSalmonella  3                // флаг Сальмонела раз внеделю греть бойлер
-#define fCirculation 4                // флаг Управления циркуляционным насосом ГВС
-#define fResetHeat   5                // флаг Сброса лишнего тепла в СО
-#define fAddBoiler   6                // флаг догрева ГВС ТЭНом
+#define fSalmonella  2                // флаг Сальмонела раз внеделю греть бойлер
+#define fCirculation 3                // флаг Управления циркуляционным насосом ГВС
+#define fResetHeat   4                // флаг Сброса лишнего тепла в СО
+#define fTurboBoiler 5                // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+#define fAddHeating  6                // флаг ДОГРЕВА ГВС ТЭНом
 
 struct type_boilerHP
 {
