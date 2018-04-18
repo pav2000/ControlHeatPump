@@ -1,0 +1,56 @@
+<html>
+<head> 
+	<title>Modbus RTU. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		};
+		function set_param(e) {
+			var els = e.parentElement.parentElement.getElementsByClassName("mdb");
+			for(var i = 1; i < els.length; i++) els[i].id = els[i].id.replace(/\d$/, '') + els[0].value;
+			loadParam(els[1].id, true);
+		}
+		function set_value(e) {
+			var els = e.parentElement.parentElement.getElementsByClassName("mdb");
+			setParam(els[1].id);
+		}
+		function add_new_modbus_row() {
+			var el = document.getElementById("tbl_modbus");
+			var row = el.insertRow();
+			var mid = document.getElementById("device").value;
+			row.insertCell(-1).innerHTML = '<input class="mdb" type="number" style="max-width: 100;" min="0" max="65535" step="1" value="0"> <input type="submit" value=">" onclick="set_param(this)">'; 
+			row.insertCell(-1).innerHTML = '<input id="get_modbus_'+ mid +'val-0" class="mdb" type="number" style="max-width: 100;" min="-32768" max="65535" step="1" value="0"> <input type="submit" value=">" onclick="set_value(this)">';
+			row.insertCell(-1).innerHTML = '<span id="get_modbus_'+ mid +'err-0" class="mdb"></span>';
+		}
+		function refresh_all() {
+			var els = document.getElementById("tbl_modbus").rows;
+			var pars = "";
+			var mid = "_val" + document.getElementById("device").value;
+			for(var i = 0; i < els.length; i++) pars += els[i].getElementsByClassName("mdb")[1].id + (i < els.length - 1 ? ',' : '');
+			loadParam(pars, true);
+		}
+	</script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>Modbus RTU</h1>
+<br>
+<h3>Устройство, ид: <input id="device" type="number" min="0" max="255" step="1" value="1"></h3>
+Частотник: 1, Счетчик: 2
+<br> 
+<br>
+<h2>Чтение, запись параметров <input type="submit" value="Добавить"  onclick="add_new_modbus_row()"> <input type="submit" value="Обновить"  onclick="refresh_all()"></h2> 
+<table id="tbl_modbus">
+	<tr>
+		<th>Параметр, номер ячейки</th>
+		<th>Значение</th>
+		<th>Статус</th>
+	</tr>
+</table>
+</div>
+</body>
+</html>

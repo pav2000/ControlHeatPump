@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ON_DAY_TIME),get_optionHP(OFF_DAY_TIME),get_optionHP(TEMP_RBOILER),get_optionHP(ADD_BOILER),get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON)");
+		loadParam("get_optionHP(ON_DAY_TIME),get_optionHP(OFF_DAY_TIME),get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON)");
 	}; 
 	</script>
 </head>
@@ -76,20 +76,6 @@
 				<input id="get_optionhp-temp_rheat2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
-		<tr>
-			<td>Использование дополнительного ТЭНа для догрева бойлера</td>
-			<td>
-				<input id="get_optionhp-add_boiler" type="checkbox" onchange="setParam('get_optionHP(ADD_BOILER)','get_optionhp-add_boiler');">
-			</td>
-		</tr>
-		<tr>
-			<td>Температура при которой выключается нагрев ТН и включается ТЭН бойлера [20...60]</td>
-			<td>
-				<input id="get_optionhp-temp_rboiler" type="number" min="20" max="60" step="0.1" value="0">
-				<input id="get_optionhp-temp_rboiler2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RBOILER)');">
-			</td>
-			
-		</tr>		
 		<tr>
 			<td>Закрытие ЭРВ при выключении компрессора</td>
 			<td>

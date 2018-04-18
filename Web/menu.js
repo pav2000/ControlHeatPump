@@ -15,7 +15,7 @@ document.write('\
 <ul class="cd-accordion-menu">\
     <li class="index"><a href="index.html"><i></i>Состояние</a></li>\
     <li class="plan"><a href="plan.html"><i></i>Схема ТН</a></li>\
-    <li class="heating gvs profiles has-children">\
+    <li class="heating gvs profiles scheduler has-children">\
         <input type="checkbox" name="group-1" id="group-1">\
         <label for="group-1"><i></i>Отопление и ГВС</label>\
         <ul>\
@@ -51,14 +51,15 @@ document.write('\
             <li class="files"><a href="files.html">Файлы</a></li>\
         </ul>\
     </li>\
-    <li class="test charts log has-children">\
+    <li class="charts test modbus log freertos has-children">\
         <input type="checkbox" name="group-4" id="group-4">\
         <label for="group-4"><i></i>Отладка ТН</label>\
         <ul>\
             <li class="charts"><a href="charts.html">Графики</a></li>\
             <li class="test"><a href="test.html">Тестирование</a></li>\
+            <li class="modbus"><a href="modbus.html">Modbus</a></li>\
             <li class="log"><a href="log.html">Журнал</a></li>\
-            <li class="rtos"><a href="freertos.html">ОС RTOS</a></li>\
+            <li class="freertos"><a href="freertos.html">ОС RTOS</a></li>\
         </ul>\
     </li>\
     <li class="about"><a href="about.html"><i></i>О контроллере</a></li>\

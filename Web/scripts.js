@@ -1,11 +1,12 @@
 ﻿/* ver 0.946 beta */
-//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.126';
+//var urlcontrol = 'http://192.168.0.126';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в миллисекундах
 
 function setParam(paramid, resultid) {
+	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "").toLowerCase();
 	var rec = new RegExp('et_listChart');
 	var rel = new RegExp('et_sensorListIP');
@@ -43,7 +44,7 @@ function setParam(paramid, resultid) {
 		}
 		elval = len + ";" + elval;
 		clear = false;
-	} else if((clear = elid.indexOf("=")==-1)) { // 'x=n'
+	} else if((clear = elid.indexOf("=")==-1)) { // Не (x=n)
 		if((element = document.getElementById(elid))) {
 			if(element.getAttribute('type') == 'checkbox') {
 				if(element.checked) elval = 1; else elval = 0;
@@ -60,7 +61,8 @@ function setParam(paramid, resultid) {
 		var elsend = paramid.replace(/get_listChart/g, "get_Chart(" + elval + ")");
 		clear = false;
 	} else {
-		var elsend = paramid.replace(/get_/g, "set_").replace(/\)/g, "") + "=" + elval + ")";
+		var elsend = paramid.replace(/get_/g, "set_");
+		if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;  
 	}
 	if(rel.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
 	if(!resultid) resultid = elid.replace(/set_/g, "get_");
@@ -127,6 +129,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');
 								var remaxtemp = new RegExp('^get_maxtemp');
+								var retblval = new RegExp('et_modbus_');
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").toLowerCase().replace(/set_/g, "get_");
 								var type, element;
@@ -138,6 +141,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(reo.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
+								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
 								else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
@@ -458,7 +462,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadParam(loadsens);
 											values[1] = "--;" + values[1];
 										}
-										var element = document.getElementById(idsel);
+										element = document.getElementById(idsel);
 										if(element) {
 											if(values[0].substr(-6, 5) == "_skip") {
 												var j2 = Number(values[0].substr(-1)) - 1;
@@ -811,8 +815,16 @@ function loadParam(paramid, noretry, resultdiv) {
 											}
 										}
 									}
+								} else if(type == 'tableval') {
+									var element2 = document.getElementById(valueid.replace(/val/, "err"));
+									if(values[1].match(/^E-?\d/)) {
+										if(element2) element2.innerHTML = values[1]; 
+									} else {
+										if(element2) element2.innerHTML = "OK";
+										if((element = document.getElementById(valueid))) element.value = values[1];
+									}
 								} else if(values[0] == "get_WORK") {
-									var element = document.getElementById(values[0].toLowerCase());
+									element = document.getElementById(values[0].toLowerCase());
 									var onoff = values[1] == "ON"; // "OFF"
 									if(element) element.innerHTML = onoff ? "ВКЛ" : "ВЫКЛ";   
 									element = document.getElementById("onoffswitch");

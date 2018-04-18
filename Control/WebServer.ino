@@ -1584,6 +1584,30 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			}
 		 #endif
 
+			// get_modbus_Nval-XXX, set_modbus_Nval-XXX=YYY
+			// N - modbus id, XXX - parameter, YYY - value
+			if(strstr(str,"et_modbus_")) {
+				x++;
+				y = strchr(str, 'v');
+				if(y) {
+					*y = '\0';
+					uint8_t id = atoi(y + 4); // ид
+					uint16_t par = atoi(x);
+					if(strncmp(str, "set", 3) == 0) { // set_SCHDLR(x=n)
+				        i = Modbus.writeHoldingRegisters16(id, par - 1, atoi(z + 1)); // запись, Нумерация регистров с НУЛЯ!!!!
+				        if(i != OK) {
+				        	strcat(strReturn, "E"); itoa(i, strReturn + strlen(strReturn), 10); strcat(strReturn, "&");
+				        	continue;
+				        }
+					} else if(strncmp(str, "get", 3) == 0) { // get_SCHDLR(x)
+					} else goto x_FunctionNotFound;
+				    i = Modbus.readHoldingRegisters16(id, par - 1, (int16_t *)&par); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
+				    itoa(par, strReturn + strlen(strReturn), 10);
+				    strcat(strReturn, "&");
+		        	continue;
+				}
+			}
+
        // --- УДАЛЕННЫЕ ДАТЧИКИ ----------  кусок кода для удаленного датчика - установка параметров ответ - повторение запроса уже сделали
          #ifdef SENSOR_IP                           // Получение данных удаленного датчика
               
