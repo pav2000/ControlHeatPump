@@ -1269,14 +1269,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           strcat(strReturn,"&") ;    continue;
          }
          
-       // Чтение данных из модбас  
-        if (strstr(str,"get_modbus"))          // Проверка для запросов содержащих get_modbus
-        {
-           // код обработки получения значений модбас
-           // str - полное имя запроса до ()
-        }
-
-         
        // -----------------------------------------------------------------------------------------------------        
        // 2. Функции с параметром ------------------------------------------------------------------------------
        // Ищем скобки ------------------------------------------------------------------------------------------
@@ -1592,37 +1584,42 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			}
 		 #endif
 
-      // запись данных модбас
-      if (strstr(str,"set_modbus"))          // Проверка для запросов содержащих set_modbus
-      {
-        // код обработки установки значений модбас
-        // pm - содержит строку что между ()
-        // str - полное имя запроса до ()
-      }
-  
-			// get_modbus_Nval-XXX, set_modbus_Nval-XXX=YYY
-			// N - modbus id, XXX - parameter, YYY - value
-			if(strstr(str,"et_modbus_")) {
-				x++;
-				y = strchr(str, 'v');
-				if(y) {
-					*y = '\0';
-					uint8_t id = atoi(y + 4); // ид
-					uint16_t par = atoi(x);
-					if(strncmp(str, "set", 3) == 0) { // set_SCHDLR(x=n)
-				        i = Modbus.writeHoldingRegisters16(id, par - 1, atoi(z + 1)); // запись, Нумерация регистров с НУЛЯ!!!!
-				        if(i != OK) {
-				        	strcat(strReturn, "E"); itoa(i, strReturn + strlen(strReturn), 10); strcat(strReturn, "&");
-				        	continue;
-				        }
-					} else if(strncmp(str, "get", 3) == 0) { // get_SCHDLR(x)
+		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
+		// код обработки установки значений модбас
+		// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
+		// N - номер устройства, D - тип данных, X - адрес, Y - новое значение
+		if(strstr(str,"et_modbus_")) {
+			if((y = strchr(x+1, ':'))) {
+				*y++ = '\0';
+				uint8_t id = atoi(x);
+				uint16_t par = atoi(y + 2); // Нумерация регистров с НУЛЯ!!!!
+				if(par--) {
+					i = OK;
+					if(strncmp(str, "set", 3) == 0) {
+						z++;
+						if(*y == '1') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
+						else if(*y == '2') i = Modbus.writeHoldingRegistersFloat(id, par, pm);
+						else if(*y == '3') i = Modbus.writeSingleCoil(id, par, atoi(z));
+						else goto x_FunctionNotFound;
+					} else if(strncmp(str, "get", 3) == 0) {
 					} else goto x_FunctionNotFound;
-				    i = Modbus.readHoldingRegisters16(id, par - 1, (int16_t *)&par); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
-				    itoa(par, strReturn + strlen(strReturn), 10);
-				    strcat(strReturn, "&");
-		        	continue;
+					if(i == OK) {
+						if(*y == '1') {
+							if((i = Modbus.readHoldingRegisters16(id, par, (int16_t *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
+						} else if(*y == '2') {
+							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 3);
+						} else if(*y == '3') {
+							if((i = Modbus.readCoil(id, par, (boolean *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);;
+						} else goto x_FunctionNotFound;
+					}
+					if(i != OK) {
+						strcat(strReturn, "E"); itoa(i, strReturn + strlen(strReturn), 10);
+					}
+					strcat(strReturn, "&");
+					continue;
 				}
 			}
+		}
 
        // --- УДАЛЕННЫЕ ДАТЧИКИ ----------  кусок кода для удаленного датчика - установка параметров ответ - повторение запроса уже сделали
          #ifdef SENSOR_IP                           // Получение данных удаленного датчика

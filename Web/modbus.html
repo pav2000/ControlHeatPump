@@ -6,32 +6,43 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
-		window.onload = function() {
-		};
-		function set_param(e) {
-			var els = e.parentElement.parentElement.getElementsByClassName("mdb");
-			for(var i = 1; i < els.length; i++) els[i].id = els[i].id.replace(/\d$/, '') + els[0].value;
-			loadParam(els[1].id, true);
+	window.onload = function() {
+	};
+	function set_param(e) {
+		var els = e.parentElement.parentElement.getElementsByClassName("mdb");
+		for(var i = 1; i < els.length; i++) els[i].id = els[i].id.replace(/\d+$/, '') + parseInt(els[0].value);
+		loadParam(els[1].id.replace(/-/, '(') + ')');
+	}
+	function set_value(e) {
+		var els = e.parentElement.parentElement.getElementsByClassName("mdb");
+		setParam(els[1].id.replace(/-/, '(') + ')');
+	}
+	function add_new_modbus_row(data_type) {
+		var el = document.getElementById("tbl_modbus");
+		var row = el.insertRow(-1);
+		var mid = parseInt(document.getElementById("device").value) +':'+ data_type + ':0" class="mdb"';
+		var typ = [ "W", "F", "C"]; 
+		row.insertCell(-1).innerHTML = '<input class="mdb" style="max-width: 100;" value="0"> <input type="submit" value=">" onclick="set_param(this)">' + ' ' + typ[data_type-1]; 
+		row.insertCell(-1).innerHTML = '<input id="get_modbus_val-'+mid+' style="max-width: 100;" value="0"> <input id="get_modbus_hex-'+mid+' style="background-color: transparent; max-width: 100;" readonly> <input type="submit" value=">" onclick="set_value(this)">';
+		row.insertCell(-1).innerHTML = '<span id="get_modbus_err-'+mid+'></span>';
+	}
+	var refreshid = 0;
+	function refresh_all() {
+		var r = document.getElementById("refresh_auto").checked;
+		if(!r && refreshid) {
+			clearInterval(refreshid);
+			refreshid = 0;
+		} else if(r && !refreshid) {
+			refreshid = setInterval(function() {
+				refresh_all()
+			}, 1000);
+			
 		}
-		function set_value(e) {
-			var els = e.parentElement.parentElement.getElementsByClassName("mdb");
-			setParam(els[1].id);
-		}
-		function add_new_modbus_row() {
-			var el = document.getElementById("tbl_modbus");
-			var row = el.insertRow();
-			var mid = document.getElementById("device").value;
-			row.insertCell(-1).innerHTML = '<input class="mdb" type="number" style="max-width: 100;" min="0" max="65535" step="1" value="0"> <input type="submit" value=">" onclick="set_param(this)">'; 
-			row.insertCell(-1).innerHTML = '<input id="get_modbus_'+ mid +'val-0" class="mdb" type="number" style="max-width: 100;" min="-32768" max="65535" step="1" value="0"> <input type="submit" value=">" onclick="set_value(this)">';
-			row.insertCell(-1).innerHTML = '<span id="get_modbus_'+ mid +'err-0" class="mdb"></span>';
-		}
-		function refresh_all() {
-			var els = document.getElementById("tbl_modbus").rows;
-			var pars = "";
-			var mid = "_val" + document.getElementById("device").value;
-			for(var i = 0; i < els.length; i++) pars += els[i].getElementsByClassName("mdb")[1].id + (i < els.length - 1 ? ',' : '');
-			loadParam(pars, true);
-		}
+		var pars = "";
+		var els = document.getElementById("tbl_modbus").rows;
+		for(var i = 1; i < els.length; i++) pars += els[i].getElementsByClassName("mdb")[1].id.replace(/-/, '(') + ')' + (i < els.length - 1 ? ',' : '');
+		loadParam(pars);
+	}
 	</script>
 </head>
 <body class="actuators">
@@ -39,14 +50,15 @@
 <div class="content">
 <h1>Modbus RTU</h1>
 <br>
-<h3>Устройство, ид: <input id="device" type="number" min="0" max="255" step="1" value="1"></h3>
+<span style="font-size: larger;">Адрес устройства на шине RS485: </span><input id="device" type="number" min="0" max="255" step="1" value="1">
+<br>
 Частотник: 1, Счетчик: 2
 <br> 
 <br>
-<h2>Чтение, запись параметров <input type="submit" value="Добавить"  onclick="add_new_modbus_row()"> <input type="submit" value="Обновить"  onclick="refresh_all()"></h2> 
+<h2>Чтение, запись <input type="submit" value="+ (16bit)" onclick="add_new_modbus_row(1)"> <input type="submit" value="+ (Float)" onclick="add_new_modbus_row(2)"> <input type="submit" value="+ (Coil)" onclick="add_new_modbus_row(3)"> <input type="submit" value="Обновить, авто:" onclick="refresh_all()"> <input type="checkbox" id="refresh_auto"></h2> 
 <table id="tbl_modbus">
 	<tr>
-		<th>Параметр, номер ячейки</th>
+		<th>Параметр, адрес</th>
 		<th>Значение</th>
 		<th>Статус</th>
 	</tr>
