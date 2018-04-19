@@ -171,7 +171,8 @@ public:
   IPAddress getDhcpServerIp();
   IPAddress getDnsServerIp();
   
-  int beginWithDHCP(uint8_t *, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
+ // int beginWithDHCP(uint8_t *, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
+  int beginWithDHCP(uint8_t *, unsigned long timeout = 6000, unsigned long responseTimeout = 2000);  // pav2000 проблема без кабеля вачдог срабатывает
   int checkLease();
 };
 

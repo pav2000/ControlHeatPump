@@ -112,6 +112,7 @@ void initW5200(boolean flag)
     for (i = 0; i < W5200_THREARD; i++)  { Socket[i].flags=0x00; Socket[i].sock=-1; memset((char*)Socket[i].inBuf,0x00,sizeof(Socket[i].inBuf)); memset((char*)Socket[i].outBuf,0x00,sizeof(Socket[i].outBuf));} 
       
     // Иницилизация сетевого адаптера
+     WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
     #ifdef DEMO
         Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
         beginWeb(defaultPort);
@@ -124,12 +125,12 @@ void initW5200(boolean flag)
           }
         else 
          {  
-          if (HP.get_DHCP()) Ethernet.begin((uint8_t*)HP.get_mac());    // Работаем по DHCP
+          if (HP.get_DHCP()) { if(Ethernet.begin((uint8_t*)HP.get_mac())==0) journal.jprintf("Failed to configure Ethernet using DHCP");}   // Работаем по DHCP
           else Ethernet.begin((uint8_t*)HP.get_mac(), (IPAddress)HP.get_ip(), (IPAddress)HP.get_sdns(), (IPAddress)HP.get_gateway(), (IPAddress)HP.get_subnet()); // Статика
           beginWeb(HP.get_port());
          }
     #endif
-   
+  
     pingW5200(HP.get_NoPing());  // Установка пинга флага разрешенеия пинга
     W5100.writeRTR(W5200_RTR);   // установка таймаута      
     W5100.writeRCR(W5200_RCR);   // установка числа повторов 
