@@ -73,10 +73,12 @@ int8_t	deviceOneWire::Init(void)
 	return err;
 }
 
+#ifdef ONEWIRE_DS2482
 inline uint8_t deviceOneWire::check_presence(void)
 {
 	return OneWireDrv.check_presence();
 }
+#endif
 
 // Возвращает OK или err
 int8_t  deviceOneWire::lock_bus_reset(uint8_t checkpresence)
@@ -149,7 +151,11 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte data[12];
 	byte addr[8];
 	if(lock_bus_reset(true)) {
+#ifdef ONEWIRE_DS2482
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
+#else
+		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus is empty. . .\n");
+#endif
 		return err;
 	}
 	eepromI2C.use_RTOS_delay = 0;
