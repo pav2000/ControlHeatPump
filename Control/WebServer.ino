@@ -1589,7 +1589,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
 		// N - номер устройства, D - тип данных, X - адрес, Y - новое значение
 		if(strstr(str,"et_modbus_")) {
-			if((y = strchr(x+1, ':'))) {
+			x++;
+			if((y = strchr(x, ':'))) {
 				*y++ = '\0';
 				uint8_t id = atoi(x);
 				uint16_t par = atoi(y + 2); // Нумерация регистров с НУЛЯ!!!!

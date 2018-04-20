@@ -1844,9 +1844,9 @@ enum TYPE_SENSOR
 //  #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
 //  #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
     #define SPI_FLASH         // + Наличие чипа флеш памяти на шине SPI
-//    #define ONEWIRE_DS2482        // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
-//    #define ONEWIRE_DS2482_SECOND   // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
-//    #define ONEWIRE_DS2482_SECOND_2WAY  // 2-х проводный OneWire второго мастера (паразитное питание)
+    #define ONEWIRE_DS2482        // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
+    #define ONEWIRE_DS2482_SECOND   // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
+    #define ONEWIRE_DS2482_SECOND_2WAY  // 2-х проводный OneWire второго мастера (паразитное питание)
     #define ONEWIRE_DONT_CHG_RES    // Не менять разрешение датчиков
 //    #define I2C_EEPROM_64KB       // + Использование памяти I2C для записи журнала при коментарии используется оперативка
     #define I2C_FRAM_MEMORY  0//1     // 1 - FRAM память
