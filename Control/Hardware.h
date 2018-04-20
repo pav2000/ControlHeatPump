@@ -514,8 +514,8 @@ private:
   int16_t  read_0x03_error(uint16_t cmd);          // Функция Modbus 0х03 описание ошибки num
   int8_t   write_0x05_bit(uint16_t cmd, boolean f);// Запись отдельного бита в регистр cmd возвращает код ошибки
   boolean  read_0x01_bit(uint16_t cmd);            // Чтение отдельного бита в регистр cmd возвращает код ошибки
-  int8_t write_0x06_16(uint16_t cmd,uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
-  int8_t write_0x10_32(uint16_t cmd,int16_t hWord, int16_t lWord);// Запись данных (4 байта) в регистр cmd возвращает код ошибки
+  int8_t write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+  int8_t write_0x10_32(uint16_t cmd, uint32_t data);// Запись данных (4 байта) в регистр cmd возвращает код ошибки
   #endif
  };
 
@@ -645,7 +645,7 @@ class devModbus
     int8_t initModbus();                                                                // Инициализация Modbus и проверка связи возвращает ошибку
      __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fModbus);} // Наличие Modbus в текущей конфигурации
     int8_t readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret);                  // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
-    int8_t readHoldingRegisters16(uint8_t id, uint16_t cmd, int16_t *ret);                 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
+    int8_t readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret);                 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
     int8_t readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret);                // Получить значение 2-x регистров (4 байта) МХ2 в виде целого числа возвращает код ошибки данные кладутся в ret
     int8_t readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret);                // Получить значение 2-x регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
     int8_t readHoldingRegistersNN(uint8_t id, uint16_t cmd, uint16_t num,uint16_t *buf);   // Получить значение N регистров (2*N байта) МХ2 (положить в buf) возвращает код ошибки
@@ -656,7 +656,7 @@ class devModbus
     #ifndef FC_VACON
     int8_t LinkTestOmronMX2();                                                             // Тестирование связи c МХ2 (актуально только с omronom) возвращает код ошибки
     #endif
-    int8_t writeMultipleRegisters32(uint8_t id,uint16_t cmd,int16_t hWord, int16_t lWord); // Записать 2 регистра подряд возвращает код ошибки
+    int8_t writeHoldingRegisters32(uint8_t id,uint16_t cmd, uint32_t data); // Записать 2 регистра подряд возвращает код ошибки
     int8_t get_err() {return err;}                                                         // Получить код ошибки
 private:
     // Переменные

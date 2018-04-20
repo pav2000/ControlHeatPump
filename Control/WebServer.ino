@@ -297,8 +297,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
    #ifdef SENSOR_IP                           // Получение данных удаленного датчика
        char *ptr;
        int16_t a,b,c,d;
-       int32_t e; 
    #endif
+   int32_t e;
   
  // strcpy(strReturn,"&");   // начало запроса
    strcat(strReturn,"&");   // начало запроса
@@ -1593,23 +1593,26 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			if((y = strchr(x, ':'))) {
 				*y++ = '\0';
 				uint8_t id = atoi(x);
-				uint16_t par = atoi(y + 2); // Нумерация регистров с НУЛЯ!!!!
+				uint16_t par = atoi(y + 2); // Передается нумерация регистров с 1, а в modbus с 0
 				if(par--) {
 					i = OK;
 					if(strncmp(str, "set", 3) == 0) {
 						z++;
-						if(*y == '1') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
-						else if(*y == '2') i = Modbus.writeHoldingRegistersFloat(id, par, pm);
-						else if(*y == '3') i = Modbus.writeSingleCoil(id, par, atoi(z));
+						if(*y == 'W') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
+						else if(*y == 'L') i = Modbus.writeHoldingRegisters32(id, par, strtol(z, NULL, 0));
+						else if(*y == 'F') i = Modbus.writeHoldingRegistersFloat(id, par, pm);
+						else if(*y == 'C') i = Modbus.writeSingleCoil(id, par, atoi(z));
 						else goto x_FunctionNotFound;
 					} else if(strncmp(str, "get", 3) == 0) {
 					} else goto x_FunctionNotFound;
 					if(i == OK) {
-						if(*y == '1') {
-							if((i = Modbus.readHoldingRegisters16(id, par, (int16_t *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
-						} else if(*y == '2') {
-							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 3);
-						} else if(*y == '3') {
+						if(*y == 'W') {
+							if((i = Modbus.readHoldingRegisters16(id, par, &par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
+						} else if(*y == 'L') {
+								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&e)) == OK) itoa(e, strReturn + strlen(strReturn), 10);
+						} else if(*y == 'F') {
+							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 2);
+						} else if(*y == 'C') {
 							if((i = Modbus.readCoil(id, par, (boolean *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);;
 						} else goto x_FunctionNotFound;
 					}

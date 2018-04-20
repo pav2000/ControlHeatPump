@@ -222,7 +222,6 @@ char * ftoa(char * outstr, double val, byte precision){
    mult *= 10;
  }
  
- temp[0]='\0';
  outstr[0]='\0';
 
  if(val < 0.0){

@@ -21,8 +21,7 @@
 		var el = document.getElementById("tbl_modbus");
 		var row = el.insertRow(-1);
 		var mid = parseInt(document.getElementById("device").value) +':'+ data_type + ':0" class="mdb"';
-		var typ = [ "W", "F", "C"]; 
-		row.insertCell(-1).innerHTML = '<input class="mdb" style="max-width: 100;" value="0"> <input type="submit" value=">" onclick="set_param(this)">' + ' ' + typ[data_type-1]; 
+		row.insertCell(-1).innerHTML = '<input class="mdb" style="max-width: 100;" value="0"> <input type="submit" value=">" onclick="set_param(this)">' + ' ' + data_type; 
 		row.insertCell(-1).innerHTML = '<input id="get_modbus_val-'+mid+' style="max-width: 100;" value="0"> <input id="get_modbus_hex-'+mid+' style="background-color: transparent; max-width: 100;" readonly> <input type="submit" value=">" onclick="set_value(this)">';
 		row.insertCell(-1).innerHTML = '<span id="get_modbus_err-'+mid+'></span>';
 	}
@@ -51,10 +50,10 @@
 <br>
 <span style="font-size: larger;">Адрес устройства на шине RS485: </span><input id="device" type="number" min="0" max="255" step="1" value="1">
 <br>
-Частотник: 1, Счетчик: 2
+Частотник: 1, Счетчик: 2. Нумерация регистров с 1.
 <br> 
 <br>
-<h2>Чтение, запись <input type="submit" value="+ (16bit)" onclick="add_new_modbus_row(1)"> <input type="submit" value="+ (Float)" onclick="add_new_modbus_row(2)"> <input type="submit" value="+ (Coil)" onclick="add_new_modbus_row(3)"> <input type="submit" value="Обновить, авто:" onclick="refresh_all()"> <input type="checkbox" id="refresh_auto"></h2> 
+<h2>Чтение, запись <input type="submit" value="+ (16bit)" onclick="add_new_modbus_row('W')"> <input type="submit" value="+ (32bit)" onclick="add_new_modbus_row('L')"> <input type="submit" value="+ (Float)" onclick="add_new_modbus_row('F')"> <input type="submit" value="+ (Coil)" onclick="add_new_modbus_row('C')"> <input type="submit" value="Обновить, авто:" onclick="refresh_all()"> <input type="checkbox" id="refresh_auto"></h2> 
 <table id="tbl_modbus">
 	<tr>
 		<th>Параметр, адрес</th>
