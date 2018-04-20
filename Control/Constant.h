@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.946 beta"        // Версия прошивки
+#define VERSION         "0.947 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -143,7 +143,7 @@ const uint16_t  defaultPort=80;
   #define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
   #define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
 #else // все остальное
-  #define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+  #define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
   #define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
   #define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 #endif
