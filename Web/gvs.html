@@ -33,7 +33,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			loadParam("get_Boiler(RESET_HEAT),get_Boiler(RESET_TIME),get_Boiler(CIRCUL_PAUSE),get_Boiler(CIRCUL_WORK),get_Boiler(TEMP_MAX),get_Boiler(PAUSE1),get_Boiler(BOILER_ON),get_Boiler(SCHEDULER_ON),get_Boiler(ADD_HEATING),get_Boiler(SALLMONELA),get_Boiler(CIRCULATION),get_Boiler(DTARGET_DAY),get_Boiler(DTARGET),get_Boiler(TEMP_TARGET),get_Boiler(BOIL_TEMP),get_Boiler(BOIL_DIF),get_Boiler(BOIL_IN),get_Boiler(BOIL_PRO),get_Boiler(BOIL_TIME),get_Boiler(TEMP_RBOILER),get_Boiler(ADD_BOILER)");
+			loadParam("get_Boiler(RESET_HEAT),get_Boiler(RESET_TIME),get_Boiler(CIRCUL_PAUSE),get_Boiler(CIRCUL_WORK),get_Boiler(TEMP_MAX),get_Boiler(PAUSE1),get_Boiler(BOILER_ON),get_Boiler(SCHEDULER_ON),get_Boiler(ADD_HEATING),get_Boiler(SALLMONELA),get_Boiler(CIRCULATION),get_Boiler(DTARGET_DAY),get_Boiler(DTARGET),get_Boiler(TEMP_TARGET),get_Boiler(BOIL_TEMP),get_Boiler(BOIL_DIF),get_Boiler(BOIL_IN),get_Boiler(BOIL_PRO),get_Boiler(BOIL_TIME),get_Boiler(TEMP_RBOILER),get_Boiler(ADD_BOILER),get_Boiler(TURBO_BOILER)");
 			loadParam("get_Boiler(SCHEDULER)");
 	};
 	</script>
@@ -70,6 +70,10 @@
 			<td></td>
 		</tr>
 		<tr>
+			<td>Ускоренный нагрев бойлера <sup>2</sup></td>
+			<td><input type="checkbox" name="get_boiler-turbo_boiler" id="get_boiler-turbo_boiler" onChange="setParam('get_Boiler(TURBO_BOILER)');" ></td>
+		</tr>						
+		<tr>
 			<td>Использование дополнительного ТЭНа для догрева бойлера</td>
 			<td>
 				<input id="get_boiler-add_heating" type="checkbox" onchange="setParam('get_Boiler(ADD_HEATING)','get_boiler-add_heating');">
@@ -82,10 +86,6 @@
 				<input id="get_boiler-temp_rboiler2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_RBOILER)');">
 			</td>
 		</tr>
-		<tr>
-			<td>Ускоренный нагрев бойлера <sup>2</sup></td>
-			<td><input type="checkbox" name="get_boiler-turbo_boiler" id="get_boiler-turbo_boiler" onChange="setParam('get_Boiler(TURBO_BOILER)');" ></td>
-		</tr>						
 		<tr>
 			<td><b>ПИД</b></td>
 			<td></td>
