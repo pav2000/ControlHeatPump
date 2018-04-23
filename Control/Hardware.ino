@@ -1600,7 +1600,7 @@ int16_t devOmronMX2::read_tempFC()
     // Реализовано FC_NUM_READ попыток чтения/записи в инвертор
     int16_t  devOmronMX2::read_0x03_16(uint16_t cmd)
     {   uint8_t i;
-        int16_t result;  
+        uint16_t result;  
         err=OK;
         if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     

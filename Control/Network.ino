@@ -23,36 +23,12 @@
 // по возможности работаем через сокеты
 // -------------------------------------------------------------------------------------------
 static unsigned long connectTime[MAX_SOCK_NUM];    // время соединения сокета, здесь по всем сокетам (и служебному)
-#define W5200_LINK_OK     0x20                     // МАСКА регистра PHYSTATUS(W5200 PHY status Register) при котором считается что связь есть
-#define W5500_LINK_OK     0x01                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] при котором считается что связь есть
-// Получить версию сетевого чипа 
+#define W5200_LINK        0x20                     // МАСКА регистра PHYSTATUS(W5200 PHY status Register) при котором считается что связь есть
+#define W5500_LINK        0x01                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] при котором считается что связь есть
+#define W5500_SPEED       0x02                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] определяется скорость Speed Status
+#define W5500_DUPLEX      0x04                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] определяется дуплекс Duplex Status
 
-uint8_t W5200VERSIONR()
-{
-  #if defined(W5100_ETHERNET_SHIELD)
-    return 51;                    // В чипе w5100 нет номера версии по этому делаем условно 51
-  #else
-    return W5100.readVERSIONR();  // Для w5200 и 5500
-  #endif
-}
-// Проверить состояние сетевого чипа (бит LINK)
-// параметр show задает выдачу на сообщений
-boolean linkStatusWiznet(boolean show)
-{
-#if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
-  uint8_t st=W5100.readPHYCFGR();
-  if (show)
-   {
-   if (st&0x02)  journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n"); 
-   if (st&0x04)  journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");  
-   }
-  if (W5100.readPHYSTATUS()&W5500_LINK_OK) return true; else return false;
-#elif defined(W5200_ETHERNET_SHIELD)
-  if (W5100.readPHYSTATUS()&W5200_LINK_OK) return true; else return false;
-#else
-  return true;
-#endif
-}
+// SPI переключение между устройствами -------------------------------------------------------------------------------------------------
 // Функции переключения SPI между тремя! устройствами (активный уровень низкий)
  __attribute__((always_inline)) inline void SPI_switchW5200()   // Переключение на сеть
 { //_delay(1);
@@ -95,24 +71,81 @@ boolean linkStatusWiznet(boolean show)
   #endif
 }
 
+// Функции для первоначальной сетевого чипа  ----------------------------------------------------------------
+// Получить номер версии сетевого чипа
+uint8_t W5200VERSIONR()
+{
+  #if defined(W5100_ETHERNET_SHIELD)
+    return 51;                    // В чипе w5100 нет номера версии по этому делаем условно 51
+  #else
+    return W5100.readVERSIONR();  // Для w5200 и 5500
+  #endif
+}
+// Проверить состояние сетевого чипа без сброса! (бит LINK)
+// show - нужен вывод в консоль или нет, возврат true- связь есть
+boolean linkStatusWiznet(boolean show)
+{
+#if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
+  uint8_t st=W5100.readPHYCFGR();
+  if (show)
+   {
+   if (st&W5500_SPEED)   journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n"); 
+   if (st&W5500_DUPLEX)  journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");  
+   journal.jprintf(" Register PHYCFGR: 0x%02x\n",st); 
+   }
+  if (st&W5500_LINK) return true; else return false;
+#elif defined(W5200_ETHERNET_SHIELD)
+  if (W5100.readPHYSTATUS()&W5200_LINK) return true; else return false;
+#else // w5100
+  return true;
+#endif
+}
 
-// Сброс и инициализация сети ----------------------------------------------------------------
+// Сброс чипа и проверка на соедиенние, делается несколько попыток (бит LINK)
+// show - нужен вывод в консль или нет, возврат true- связь есть
+boolean resetWiznet(boolean show)
+{
+    uint8_t i;
+    uint16_t t;
+    for (i = 0; i <  W5200_NUM_LINK; i++)  // делается несколько попыток связи до появления LINK с задержкой
+    { 
+     WDT_Restart(WDT);
+     digitalWriteDirect(PIN_ETH_RES, LOW); _delay(5);digitalWriteDirect(PIN_ETH_RES, HIGH);                        // Аппаратный сброс чипа (если он завис вдруг это помогает)
+     W5100.init();                                                                                                 // Программная инициализация чипа (программный сброс и программирование)
+     for (t = 0; t <  W5200_TIME_LINK; t=t+50)                                                                     // Ожидание установления связи но не более W5200_TIME_LINK мсек
+       {
+       _delay(50);                                                                                                 
+       if (linkStatusWiznet(false)) { if(show)journal.jprintf(" %s: link OK (time %d mc)\n",(char*)__FUNCTION__, t);return true;}  // link есть, едим дальше
+       }
+     if (show) journal.jprintf(" %s: no link\n",(char*)__FUNCTION__);   
+    }
+  return false;                                                                                                     // линка нет
+}
+// Инициализация сети 
 // flag true - полный вывод на консоль false - скоращенный вывод на консоль
+// Проверят сетевой кабель
 const char* NetworkChipOK={" Network library setting: %s, ID chip: %s\n"};
 const char* NetworkChipBad={" WRONG setting library, library: %s, ID: chip %s\n"};
 void initW5200(boolean flag)
 {  
    uint8_t i;
    pinMode(PIN_ETH_INT, INPUT);
-   pinMode(PIN_ETH_RES, OUTPUT); digitalWriteDirect(PIN_ETH_RES, LOW); _delay(100);digitalWriteDirect(PIN_ETH_RES, HIGH);
-    _delay(200);           // Ждем сброса чипа задержка здесь нужна
+   pinMode(PIN_ETH_RES, OUTPUT); 
 
-    W5100.init();
+   if (!resetWiznet(false))  // Сброс и проверка провода (молча)
+      {
+       if (flag) journal.jprintf("WARNING: %s no link, check ethernet cable\n",nameWiznet);      
+       return; // дальше ехать бесполезно
+      }
+   else  if (flag) journal.jprintf("SUCCESS: %s link ok\n",nameWiznet); 
+   
+   if (flag) linkStatusWiznet(true);  // вывести полученные настройки чипа
+   
     // Подготовить структура для потоков
     for (i = 0; i < W5200_THREARD; i++)  { Socket[i].flags=0x00; Socket[i].sock=-1; memset((char*)Socket[i].inBuf,0x00,sizeof(Socket[i].inBuf)); memset((char*)Socket[i].outBuf,0x00,sizeof(Socket[i].outBuf));} 
       
-    // Иницилизация сетевого адаптера
-     WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
+    // Иницилизация сетевого адаптера  
+      WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
     #ifdef DEMO
         Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
         beginWeb(defaultPort);
@@ -161,11 +194,7 @@ void initW5200(boolean flag)
      uint8_t dmac[6];
      W5100.getMACAddress(dmac);
      journal.jprintf(" MAC: %s\n",MAC2String(dmac)); 
-     
-     for (i = 0;i<50;i++) {WDT_Restart(WDT); _delay(100); if ((linkStatusWiznet(false))) break;}   // проверка линка чипа ожидаем до 5 секунд
-     if ((linkStatusWiznet(true))) journal.jprintf(" SUCCESS: %s link ok, PHYSTATUS=%s\n",nameWiznet,byteToHex(W5100.readPHYSTATUS()));
-     else                          journal.jprintf(" WARNING: %s no link, PHYSTATUS=%s\n",nameWiznet,byteToHex(W5100.readPHYSTATUS()));   
-       
+        
      }
    else   // Кратко выводим сообщение в журнал 
      { 
@@ -472,7 +501,7 @@ boolean pingServer()
 	IPAddress ip;
 	if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  {return false;}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 	if (!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong address ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
-	// Адрес правильный
+ 	// Адрес правильный
 	ping.setTimeout(W5200_TIME_PING);                   // время между попытками пинга мсек
 	WDT_Restart(WDT);                                   // Сбросить вачдог
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
