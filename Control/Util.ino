@@ -213,6 +213,7 @@ float my_atof(const char* s){
 char * ftoa(char * outstr, float val, byte precision){
 	char frmt[] = "%.0f";
 	frmt[2] = '0' + precision;
+	sprintf(outstr, frmt, val);
 	return outstr;
 /*
  byte i;

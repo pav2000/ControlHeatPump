@@ -56,7 +56,7 @@ enum TYPE_SENSOR
     #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "VictorUfa"                                 // Имя конфигурации
     #define CONFIG_NOTE   "Старт-стоп Компрессор скролл с ТРВ и РТО"  // Описание конфигурации
-    #define HP_SHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+    #define HP_SCHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
   //  #define I2C_EEPROM_64KB                                         // В самосборе этого нет!!!!!! Использование памяти I2C для записи журнала.При коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0                                   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
@@ -385,7 +385,7 @@ enum TYPE_SENSOR
     #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "Sheeny"          
     #define CONFIG_NOTE   "Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя"
-    #define HP_SHEME       1                                              // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+    #define HP_SCHEME       1                                              // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define DEFROST        // нужна разморозка
     #define RHEAT_POWER   2000                                            // Мощность электрокотла
     #define ONEWIRE_DS2482                                                // + Использование мастера i2c Onewire DS2482
@@ -735,7 +735,7 @@ enum TYPE_SENSOR
     #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "dimex"          
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"
-    #define HP_SHEME       1            // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+    #define HP_SCHEME       1            // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
     #define SUPERBOILER_FC (35*100)   // частота супербойлера для частотника
     #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
@@ -1097,7 +1097,7 @@ enum TYPE_SENSOR
     #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "dobrinia"          
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"
-    #define HP_SHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+    #define HP_SCHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
     #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
     #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
@@ -1460,7 +1460,7 @@ enum TYPE_SENSOR
     #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "pav2000inv"                                        // Имя конфигурации
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"  // Описание конфигурации
-   #define HP_SHEME       2                                                   // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+   #define HP_SCHEME       2                                                   // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
  //   #define DEFROST                                                           // нужна разморозка
          #define ONEWIRE_DS2482                                                // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
    //    #define ONEWIRE_DS2482_SECOND                                        // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
@@ -1833,7 +1833,7 @@ enum TYPE_SENSOR
    // #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхонник 3 фазы, ЭРВ, РТО, 2 датчика давления"
-    #define HP_SHEME       3        // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+    #define HP_SCHEME       3        // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define UART_SPEED    250000    // Скорость отладочного порта
 //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
 //  #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
@@ -2011,6 +2011,7 @@ enum TYPE_SENSOR
     #define RBOILER            4          // Включение ТЭНа бойлера
     #define RTRV               5          // 4-ходовой клапан (охлаждение)
     #define RRESET             6          // Выход для сброса инвертора
+	#define RPUMPF             7          // Реле насоса Теплого Пола
   // удалить:
  //    #define R3WAY              7          // Трех ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
 

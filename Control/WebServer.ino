@@ -208,7 +208,7 @@ void readFileSD(char *filename,uint8_t thread)
               {
               strncpy(buf,ch2+1,sizeof(buf)-1); // скопировать хвост в промежуточный буфер
               *ch1=0x00;  // обрезать строку filename перед [
-              strcat(filename,int2str(HP_SHEME)); // добавить номер схемы
+              strcat(filename,int2str(HP_SCHEME)); // добавить номер схемы
               strcat(filename,buf);               // добавить расширение
               }
             else journal.jprintf("Not found ] in: %s",filename); // нет закрывающейся скобки

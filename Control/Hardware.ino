@@ -2019,7 +2019,12 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
       result = RS485.readInputRegisters(cmd,2);                                               // послать запрос,
       if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1));}  
       else                               {err=translateErr(result); *ret=0;}
-    SemaphoreGive(xModbusSemaphore);
+
+      // [V]
+     journal.jprintf("RS485.RI_F: %x %x = %f\n", RS485.getResponseBuffer(0), RS485.getResponseBuffer(1), *ret);
+
+
+      SemaphoreGive(xModbusSemaphore);
     return err;   
    }
 
@@ -2048,6 +2053,11 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
       result = RS485.readHoldingRegisters(cmd,2);                                             // послать запрос,
       if (result == RS485.ku8MBSuccess) {err=OK; *ret=(RS485.getResponseBuffer(0)<<16) | RS485.getResponseBuffer(1);}
       else                              {err=translateErr(result); *ret=0;}
+
+    // [V]
+   journal.jprintf("RS485.RH_4: %x %x = %x\n", RS485.getResponseBuffer(0), RS485.getResponseBuffer(1), *ret);
+
+
     SemaphoreGive(xModbusSemaphore);
     return err;  
     } 
@@ -2065,7 +2075,7 @@ int8_t devModbus::readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret
       else                               {err=translateErr(result); *ret=0;}
 
   // [V]
-  journal.jprintf("RS485.RHR: %x %x = %f\n", RS485.getResponseBuffer(0), RS485.getResponseBuffer(1), *ret);
+  journal.jprintf("RS485.RH_F: %x %x = %f\n", RS485.getResponseBuffer(0), RS485.getResponseBuffer(1), *ret);
 
 
     SemaphoreGive(xModbusSemaphore);
