@@ -71,7 +71,7 @@ static unsigned long connectTime[MAX_SOCK_NUM];    // время соедине�
   #endif
 }
 
-// Функции для первоначальной сетевого чипа  ----------------------------------------------------------------
+// Функции для первоначальной настройки сетевого чипа  ----------------------------------------------------------------
 // Получить номер версии сетевого чипа
 uint8_t W5200VERSIONR()
 {
@@ -134,10 +134,10 @@ void initW5200(boolean flag)
 
    if (!resetWiznet(false))  // Сброс и проверка провода (молча)
       {
-       if (flag) journal.jprintf("WARNING: %s no link, check ethernet cable\n",nameWiznet);      
+       if (flag) journal.jprintf(" WARNING: %s no link, check ethernet cable\n",nameWiznet);      
        return; // дальше ехать бесполезно
       }
-   else  if (flag) journal.jprintf("SUCCESS: %s link ok\n",nameWiznet); 
+   else  if (flag) journal.jprintf(" SUCCESS: %s link OK\n",nameWiznet); 
    
    if (flag) linkStatusWiznet(true);  // вывести полученные настройки чипа
    

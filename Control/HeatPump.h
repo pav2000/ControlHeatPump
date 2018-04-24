@@ -171,7 +171,7 @@ class HeatPump
     void scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
     TEST_MODE get_testMode();           // Получить текущий режим работы
     void  set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
-    boolean get_relay3Way(){return relay3Way;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
+    boolean get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
     boolean get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
     void set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
@@ -436,7 +436,8 @@ class HeatPump
     #ifdef  RTRV
     void set_RTRV(uint16_t d);            // Поставить 4х ходовой в нужное положение для работы в заваисимости от Prof.SaveON.mode параметр задержка после включения mсек.
     #endif
-    boolean  switch3WAY(boolean b);       //  Переключение 3-х ходового крана с обеспечением паузы после переключения
+    boolean boilerAddHeat(MODE_HP b);     // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть)
+    boolean switchBoiler(boolean b);      // Переключение на нагрев бойлера ТН true-бойлер false-отопление/охлаждение
     boolean checkEVI();                   // Проверка и если надо включение EVI если надо то выключение возвращает состояние реле
     void Pumps(boolean b,  uint16_t d);   // Включение/выключение насосов, задержка после включения msec
     MODE_COMP UpdateHeat();               // Итерация нагрев  вход true - делаем, false - ТОЛЬКО проверяем выход что сделано или надо сделать
@@ -448,11 +449,7 @@ class HeatPump
     int8_t check_crc16_eeprom(int32_t adr);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     int8_t check_crc16_buf(int32_t adr, byte* buf);// Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка
   
-    // Использование ночного тарифа вычисление гистерезиса
-    int16_t get_dTempBoiler();                              // Получить гистерезис в зависмости от времени суток БОЙЛЕР
-    int16_t get_dTempHeat();                                // Получить гистерезис в зависмости от времени суток ОТОПЛЕНИЕ
-    int16_t get_dTempCool();                                // Получить гистерезис в зависмости от времени суток ОХЛАЖДЕНИЕ
-         
+          
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
@@ -464,7 +461,7 @@ class HeatPump
     char   source_error[16];              // источник ошибки
     char   note_error[160+1];             // Строка c описанием ошибки формат "время источник:описание"
     boolean fSD;                          // Признак наличия РАБОТАЮЩЕЙ SD карты
-    boolean relay3Way;                    // Cостояние трехходового точнее если true то идет нагрев бойлера
+    boolean onBoiler;                     // Если true то идет нагрев бойлера
    
     // Различные времена
     type_DateTimeHP DateTime;             // структура где хранится все что касается времени и даты
@@ -495,7 +492,7 @@ class HeatPump
     float errPIDBoiler;                   // Текущая ошибка ПИД регулятора
     float pre_errPIDBoiler;               // Предыдущая ошибка ПИД регулятора
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
-    boolean flagRBOILER;                  // true - идет цикл нагрева бойлера
+    boolean flagRBOILER;                  // true - идет цикл догрева бойлера
     
     SdFile  statFile;                       // файл для записи статистики
 

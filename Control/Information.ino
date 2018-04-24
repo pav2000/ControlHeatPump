@@ -560,7 +560,7 @@ void Profile::initProfile()
   Boiler.Ki=1;                          // Интегральная составляющая ПИД ГВС
   Boiler.Kd=0;                          // Дифференциальная составляющая ПИД ГВС
   Boiler.tempPID=3800;                  // Целевая температура ПИД ГВС
-  SETBIT0(Boiler.flags,fAddHeating);     // флаг флаг догрева ГВС ТЭНом
+  SETBIT0(Boiler.flags,fAddHeating);    // флаг флаг догрева ГВС ТЭНом
   Boiler.tempRBOILER=40*100;            // Темпеартура ГВС при котором включается бойлер и отключатся ТН
 }
 
@@ -771,11 +771,11 @@ boolean Profile::set_boiler(BOILER_HP p, char *c)
     case pBOIL_IN:     if ((x>=0.0)&&(x<=20.0))  {Boiler.Ki=x; return true;} else return false;  break;               // Интегральная составляющая ПИД ГВС
     case pBOIL_DIF:    if ((x>=0.0)&&(x<=10.0))  {Boiler.Kd=x; return true;} else return false;   break;              // Дифференциальная составляющая ПИД ГВС
     case pBOIL_TEMP:   if ((x>=30.0)&&(x<=60))   {Boiler.tempPID=x*100.0; return true;} else return false;            // Целевая темпеартура ПИД ГВС
-    case pADD_HEATING:  if (x==0) {SETBIT0(Boiler.flags,fAddHeating); return true;}                                     // флаг использования тена для догрева ГВС
-                       else if (x==1) {SETBIT1(Boiler.flags,fAddHeating); return true;} 
-                       else return false;               
-                       break;    
-    case pTEMP_RBOILER:if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;break; // температура включчения догрева бойлера
+    case pADD_HEATING: if (strcmp(c,cZero)==0)      { SETBIT0(Boiler.flags,fAddHeating); return true;}                // флаг использования тена для догрева ГВС
+                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fAddHeating);  return true;}
+                       else return false;  
+                       break;
+    case pTEMP_RBOILER:if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;break; // температура включения догрева бойлера
                                                                                                
     default:       return false;                               break;   
    }
@@ -790,7 +790,7 @@ char* Profile::get_boiler(BOILER_HP p)
    {
     case pBOILER_ON:       if (GETBIT(SaveON.flags,fBoilerON))   return  (char*)cOne; else return  (char*)cZero; break;
     case pSCHEDULER_ON:    if (GETBIT(Boiler.flags,fSchedule))   return  (char*)cOne; else return  (char*)cZero; break;
-    case pTURBO_BOILER:     if (GETBIT(Boiler.flags,fTurboBoiler)) return  (char*)cOne; else return  (char*)cZero; break;
+    case pTURBO_BOILER:    if (GETBIT(Boiler.flags,fTurboBoiler))return  (char*)cOne; else return  (char*)cZero; break;
     case pSALLMONELA:      if (GETBIT(Boiler.flags,fSalmonella)) return  (char*)cOne; else return  (char*)cZero; break;
     case pCIRCULATION:     if (GETBIT(Boiler.flags,fCirculation))return  (char*)cOne; else return  (char*)cZero; break;
     case pTEMP_TARGET:     return ftoa(temp,(float)Boiler.TempTarget/100.0,1);      break;             
@@ -807,7 +807,7 @@ char* Profile::get_boiler(BOILER_HP p)
     case pBOIL_IN:         return  int2str(Boiler.Ki);                              break;                            // Интегральная составляющая ПИД ГВС
     case pBOIL_DIF:        return  int2str(Boiler.Kd);                              break;                            // Дифференциальная составляющая ПИД ГВС
     case pBOIL_TEMP:       return ftoa(temp,(float)Boiler.tempPID/100.0,1);         break;                            // Целевая темпеартура ПИД ГВС
-    case pADD_HEATING:      if(GETBIT(Boiler.flags,fAddHeating)) return (char*)cOne; else return (char*)cZero; break;   // флаг использования тена для догрева ГВС
+    case pADD_HEATING:     if(GETBIT(Boiler.flags,fAddHeating)) return (char*)cOne; else return (char*)cZero; break;   // флаг использования тена для догрева ГВС
     case pTEMP_RBOILER:    return ftoa(temp,(float)Boiler.tempRBOILER/100.0,1);     break;                            // температура включения догрева бойлера
     default:               return false;                                            break;   
    }
