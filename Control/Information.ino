@@ -876,7 +876,7 @@ int16_t  Profile::save(int8_t num)
 {
   magic=0xaa;                                   // Обновить заголовок
   dataProfile.len=get_sizeProfile();            // вычислить адрес начала данных
-  dataProfile.saveTime=rtcSAM3X8.unixtime();   // запомнить время сохранения профиля
+  dataProfile.saveTime=rtcSAM3X8.unixtime();    // запомнить время сохранения профиля
   
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;
   
@@ -947,7 +947,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
   uint32_t aStart=adr;
    
   // Прочитать заголовок
-  memcpy((byte*)&x,buf+adr,sizeof(magic)); adr=adr+sizeof(magic);                                                     // заголовок
+  memcpy((byte*)&x,buf+adr,sizeof(magic)); adr=adr+sizeof(magic);                                                       // заголовок
   if (x==PROFILE_EMPTY) {journal.jprintf(" Profile of memory is empty\n"); return OK;}                                  // профиль пустой, загружать нечего, выходим
   if (x==!0xaa)  {journal.jprintf(" Profile of memory is bad format\n"); return OK; }                                   // профиль битый, читать нечего выходим
 

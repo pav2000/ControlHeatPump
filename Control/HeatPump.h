@@ -167,9 +167,9 @@ class HeatPump
     void eraseError();                                       // стереть последнюю ошибку
 
     __attribute__((always_inline)) inline int8_t get_errcode(){return error;} // Получить код последней ошибки
-    char *get_lastErr();                // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
+    char *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
     void scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
-    TEST_MODE get_testMode();           // Получить текущий режим работы
+    TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
     void  set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
     boolean get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
     boolean get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
@@ -324,8 +324,8 @@ class HeatPump
    boolean  get_updateI2C(){return GETBIT(DateTime.flags,fUpdateI2C);}// Получить необходимость обновления часов I2C
    unsigned long timeNTP;                                  // Время обновления по NTP в тиках (0-сразу обновляемся)
    
-   __attribute__((always_inline)) inline uint32_t get_uptime();// Получить время с последенй перезагрузки в секундах
-   uint32_t get_startDT();                                 // Получить дату и время последеней перезагрузки
+   __attribute__((always_inline)) inline uint32_t get_uptime() {return rtcSAM3X8.unixtime()-timeON;} // Получить время с последенй перезагрузки в секундах
+   uint32_t get_startDT(){return timeON;}                  // Получить дату и время последеней перезагрузки
    uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
    uint32_t get_startTime(){return Prof.SaveON.startTime;} // Получить дату и время пуска ТН (не компрессора!)
    uint32_t get_motoHourH1(){return motoHour.H1;}          // Получить моточасы ТН ВСЕГО
@@ -342,7 +342,7 @@ class HeatPump
    void resetCount(boolean full);                          // Сборос сезонного счетчика моточасов
    void updateCount();                                     // Обновление счетчиков моточасов
    
-   void set_uptime(unsigned long ttime);                   // Установить текущее время как начало старта контроллера
+   void set_uptime(unsigned long ttime){timeON=ttime;}     // Установить текущее время как начало старта контроллера
   
     // Переменные
     uint8_t CPU_IDLE;                                      // загрузка CPU
@@ -436,7 +436,7 @@ class HeatPump
     #ifdef  RTRV
     void set_RTRV(uint16_t d);            // Поставить 4х ходовой в нужное положение для работы в заваисимости от Prof.SaveON.mode параметр задержка после включения mсек.
     #endif
-    boolean boilerAddHeat(MODE_HP b);     // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть)
+    boolean boilerAddHeat();              // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть)
     boolean switchBoiler(boolean b);      // Переключение на нагрев бойлера ТН true-бойлер false-отопление/охлаждение
     boolean checkEVI();                   // Проверка и если надо включение EVI если надо то выключение возвращает состояние реле
     void Pumps(boolean b,  uint16_t d);   // Включение/выключение насосов, задержка после включения msec
@@ -448,32 +448,31 @@ class HeatPump
     uint16_t get_crc16_mem();             // Рассчитать контрольную сумму в ПАМЯТИ для структуры дынных на выходе crc16
     int8_t check_crc16_eeprom(int32_t adr);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     int8_t check_crc16_buf(int32_t adr, byte* buf);// Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка
+    boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
   
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
     type_status Status;                   // Описание состояния ТН
-    boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
       
-    // Ошибки
+    // Ошибки и описания
     int8_t error;                         // Код ошибки
     char   source_error[16];              // источник ошибки
     char   note_error[160+1];             // Строка c описанием ошибки формат "время источник:описание"
     boolean fSD;                          // Признак наличия РАБОТАЮЩЕЙ SD карты
-    boolean onBoiler;                     // Если true то идет нагрев бойлера
-   
+     
     // Различные времена
     type_DateTimeHP DateTime;             // структура где хранится все что касается времени и даты
     uint32_t timeON;                      // время включения контроллера для вычисления UPTIME
     uint32_t countNTP;                    // число секунд с последнего обновления по NTP
-    uint32_t startCompressor;             // время пуска компрессора
-    uint32_t stopCompressor;              // время останова компрессора
+    uint32_t startCompressor;             // время пуска компрессора (для обеспечения минимального времени работы)
+    uint32_t stopCompressor;              // время останова компрессора (для опеспечения паузы)
     uint32_t offBoiler;                   // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
     uint32_t startDefrost;                // время срабатывания датчика разморозки
     uint32_t timeBoilerOff;               // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
-   
-    
+    uint32_t startSallmonela;             // время начала обеззараживания
+       
     // Сетевые настройки
     type_NetworkHP Network;                 // !save! Структура для хранения сетевых настроек
     uint32_t countResSocket;                // Число сбросов сокетов
@@ -493,6 +492,8 @@ class HeatPump
     float pre_errPIDBoiler;               // Предыдущая ошибка ПИД регулятора
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет цикл догрева бойлера
+    boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
+    boolean onSallmonela;                 // Если true то идет Обеззараживание
     
     SdFile  statFile;                       // файл для записи статистики
 
