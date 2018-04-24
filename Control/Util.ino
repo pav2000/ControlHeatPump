@@ -209,9 +209,12 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
-
 // float в *char  экономим место и скорость -----------------------------------
-char * ftoa(char * outstr, double val, byte precision){
+char * ftoa(char * outstr, float val, byte precision){
+	char frmt[] = "%.0f";
+	frmt[2] = '0' + precision;
+	return outstr;
+/*
  byte i;
  // compute the rounding factor and fractional multiplier
  double roundingFactor = 0.5;
@@ -252,20 +255,20 @@ char * ftoa(char * outstr, double val, byte precision){
    itoa(frac, outstr + strlen(outstr), 10);
  }
  return outstr;
+ */
 }
 
 // Преобразование во float двух слов из двух байт
-static union  float_int {
-                        float f;
-                        uint16_t i[2];
-                        } float_map;
-                
-float fromInt16ToFloat(int16_t lowInt,int16_t highInt)
+float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)
 {
-//float_map = { .i = { highInt, lowInt } };
- float_map.i[0]=highInt;
- float_map.i[1]=lowInt;
- return float_map.f; 
+	union  float_int {
+		float f;
+		uint16_t i[2];
+	} float_map;
+
+	float_map.i[0]=highInt;
+	float_map.i[1]=lowInt;
+	return float_map.f;
 }
 
 // int to str - для уменьшения кода и увеличения быстродействия ---------------------------------------------------

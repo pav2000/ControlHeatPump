@@ -1,7 +1,7 @@
 ﻿/* ver 0.947 beta */
-//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.0.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в миллисекундах
 
@@ -151,6 +151,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
+										element.checked = onoff;
 										if(valueid == "get_mqtt-use_thingspeak") {
 											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
@@ -158,8 +159,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
 											toggleclass('thingspeakon', onoff);
 											toggleclass('thingspeakoff', !onoff);
-										}
-										if((element = document.getElementById(valueid))) element.checked = onoff;
+										} 
 										continue;
 									} 
 									type = rev.test(values[0]) ? "values" : "str";

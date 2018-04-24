@@ -1600,7 +1600,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 						z++;
 						if(*y == 'w') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
 						else if(*y == 'l') i = Modbus.writeHoldingRegisters32(id, par, strtol(z, NULL, 0));
-						else if(*y == 'f') i = Modbus.writeHoldingRegistersFloat(id, par, pm);
+						else if(*y == 'f') i = Modbus.writeHoldingRegistersFloat(id, par, strtol(z, NULL, 0));
 						else if(*y == 'c') i = Modbus.writeSingleCoil(id, par, atoi(z));
 						else goto x_FunctionNotFound;
 					} else if(strncmp(str, "get", 3) == 0) {
@@ -1610,15 +1610,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 							if((i = Modbus.readHoldingRegisters16(id, par, &par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
 						} else if(*y == 'l') {
 								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&e)) == OK) itoa(e, strReturn + strlen(strReturn), 10);
+						} else if(*y == 'i') {
+							if((i = Modbus.readInputRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 2);
 						} else if(*y == 'f') {
-
-				Serial.print("MB->"); Serial.print(id); Serial.print(','); Serial.print(par); char *tt = strReturn + strlen(strReturn);
-
-							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), (double)pm, 2);
-
-				Serial.print(" => "); Serial.println(tt);
-
-
+							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 2);
 						} else if(*y == 'c') {
 							if((i = Modbus.readCoil(id, par, (boolean *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);;
 						} else goto x_FunctionNotFound;
