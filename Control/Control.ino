@@ -367,7 +367,7 @@ pinMode(21, OUTPUT);
   } 
   else HP.load();                                      // Загрузить настройки ТН и текущий профиль
 #ifdef USE_SCHEDULER
-  int8_t err = HP.Schdlr.load();							// Загрузка настроек расписания
+  HP.Schdlr.load();							// Загрузка настроек расписания
 #endif
 
   // обновить хеш для пользователей

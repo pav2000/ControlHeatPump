@@ -175,37 +175,46 @@ int8_t Scheduler::save(void)
 }
 
 // Считать настройки в память по адресу из eeprom i2c, если число меньше 0 это код ошибки
-int8_t Scheduler::load(uint8_t *data)
+int16_t Scheduler::load(uint8_t *data)
 {
 	journal.jprintf(" Load scheduler ");
-	uint8_t err = check_crc16_eeprom();
+	uint16_t ret = check_crc16_eeprom();
 #ifdef LOAD_VERIFICATION
-	if(err == OK) {
+	if(ret == OK) {
 #endif
-		if(data == NULL) data = (uint8_t *)&sch_data;
+		if(data == NULL) {
+			data = (uint8_t *)&sch_data;
+			ret = 2; // crc16
+		} else ret = 0;
 	    if(readEEPROM_I2C(I2C_SCHEDULER_EEPROM, data, sizeof(sch_data))) {
 	        set_Error(ERR_LOAD_EEPROM, (char *) get_name());
 	        journal.jprintf("Error!\n");
 	        return ERR_SAVE_EEPROM;
-	    }
+	    } else if(data != (uint8_t *)&sch_data) *(uint16_t *)(data + sizeof(sch_data)) = get_crc16((uint8_t *)&sch_data);
+	    ret += sizeof(sch_data);
 #ifndef LOAD_VERIFICATION
-	if(err == OK)
+	if(ret >= 0)
 #endif
 	    journal.jprintf("Ok.\n");
 	} else {
 		journal.jprintf("CRC mismatch!\n");
 	}
-    return err;
-//#else
-//    return OK;
-//#endif
+    return ret;
 }
 
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t Scheduler::loadFromBuf(int32_t addr, byte* buf)
+// Считать настройки из буфера на входе адрес с какого, на выходе код ошибки
+int8_t Scheduler::loadFromBuf(int32_t addr, byte* buf)
 {
+	journal.jprintf(" Load scheduler ");
+#ifdef LOAD_VERIFICATION
+	if(get_crc16(buf + addr) != *(uint16_t *)(buf + addr + sizeof(sch_data))) {
+		journal.jprintf("CRC error!\n");
+		return ERR_CRC16_EEPROM;
+	}
+#endif
     memcpy((byte*)&sch_data, buf + addr, sizeof(sch_data));
-    return addr + sizeof(sch_data);
+    journal.jprintf("OK.\n");
+    return OK;
 }
 
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая

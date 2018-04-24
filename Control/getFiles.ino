@@ -567,7 +567,9 @@ uint16_t get_binSettings(uint8_t thread)
 	}
 #ifdef USE_SCHEDULER
 	if(i + j + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
-		HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + i + j);
+		i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + i + j);
+		if(i <= 0) return 0; // ошибка
+		len += i;
 	}
 #endif
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти

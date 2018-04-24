@@ -2816,7 +2816,7 @@ byte *ptr;
   // Чтение профиля
   if (OK!=HP.Prof.loadFromBuf(HP.headerEEPROM.len,ptr)) return false;
 #ifdef USE_SCHEDULER
-  if(HP.Schdlr.loadFromBuf(HP.headerEEPROM.len + HP.Prof.get_lenProfile(), ptr)) return false;
+  if(HP.Schdlr.loadFromBuf(HP.headerEEPROM.len + HP.Prof.get_lenProfile(), ptr) != OK) return false;
 #endif
   HP.Prof.update_list(HP.Prof.get_idProfile());                                                                        // обновить список
   return true;
