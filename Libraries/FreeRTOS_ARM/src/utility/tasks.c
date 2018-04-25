@@ -3703,27 +3703,43 @@ void vTaskList( char * pcWriteBuffer )
 			/* Write the rest of the string. */
 			sprintf( pcWriteBuffer, "\t%c\t%u\t%u\t%u\r\n", cStatus, ( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark, ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber );
 #else
-			char *cStatus;
+			const char *cStatus;
 			switch( pxTaskStatusArray[ x ].eCurrentState )
 			{
-			case eReady:		cStatus = &tskREADY; break;
-			case eBlocked:		cStatus = &tskBLOCKED; break;
-			case eSuspended:	cStatus = &tskSUSPENDED; break;
-			case eDeleted:		cStatus = &tskDELETED; break;
+			case eReady:		cStatus = (const char *)&tskREADY; break;
+			case eBlocked:		cStatus = (const char *)&tskBLOCKED; break;
+			case eSuspended:	cStatus = (const char *)&tskSUSPENDED; break;
+			case eDeleted:		cStatus = (const char *)&tskDELETED; break;
 			default:			/* Should not get here, but it is included to prevent static checking errors. */
-								cStatus = &tskERROR; break;
+								cStatus = (const char *)&tskERROR; break;
 			}
-			sprintf( pcWriteBuffer, "%u:%s:%s:%u:%u", ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber, pxTaskStatusArray[ x ].pcTaskName, cStatus,
-					( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark );
-			pcWriteBuffer += strlen( pcWriteBuffer );
-			char lastdelimiter;
-			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
+//			sprintf( pcWriteBuffer, "%u:%s:%s:%u:%u", ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber, pxTaskStatusArray[ x ].pcTaskName, cStatus,
+//					( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark );
+//			pcWriteBuffer += strlen( pcWriteBuffer );
+//			char lastdelimiter;
+//			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
+			ultoa(pxTaskStatusArray[ x ].xTaskNumber, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, pxTaskStatusArray[ x ].pcTaskName);
+			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, cStatus);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].uxCurrentPriority, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].usStackHighWaterMark, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].ulRunTimeCounter, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
 			if( ulStatsAsPercentage > 0UL ) {
-				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );
+				ultoa(ulStatsAsPercentage, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+//				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );
 			} else {
-				sprintf( pcWriteBuffer, ":%u:<1%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, lastdelimiter );
+				strcat(pcWriteBuffer, "<1");
+//				sprintf( pcWriteBuffer, ":%u:<1%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, lastdelimiter );
 			}
-			pcWriteBuffer += strlen( pcWriteBuffer );
+			strcat(pcWriteBuffer, "%");
+			strcat(pcWriteBuffer, x == uxArraySize - 1 ? "\0" : "\n");
+//			pcWriteBuffer += strlen( pcWriteBuffer );
 #endif
 		}
 		vPortFree( pxTaskStatusArray );
