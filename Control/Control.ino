@@ -796,7 +796,7 @@ void vReadSensor(void *pvParameters)
 			//uint32_t m1 = micros();
 			HP.sTemp[i].Read();
 			//uint32_t m2 = micros(); //Serial.print(HP.sTemp[i].get_name()); Serial.print(':'); Serial.print(m2 - m1); Serial.print(", ");
-			_delay(1);     												// пауза
+			_delay(2);     												// пауза
 		}
 		//Serial.print("\n");
 
@@ -858,7 +858,7 @@ void vReadSensor(void *pvParameters)
 						(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
 				if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
 						(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
-			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + TNUMBER) / 100; // в 0.1 сек
+			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + 2 * TNUMBER) / 100; // в 0.1 сек
 		}
 		static uint8_t last_life_h = 255;
 		if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
@@ -977,10 +977,12 @@ void vReadSensor_delay10ms(uint16_t msec)
      // Расписание
 	   #ifdef USE_SCHEDULER
 		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
-		if(_profile != SCHDLR_NotActive) {                 //сравнение с текущий - профили не равны надо переключаться
+		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
 			if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
-				if(HP.Prof.get_idProfile() != _profile) {
+				if(_profile == SCHDLR_Profile_off) {
+					HP.sendCommand(pWAIT);
+				} else if(HP.Prof.get_idProfile() != _profile) {
 					type_SaveON _son;
 					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
 						MODE_HP currmode = HP.get_modWork();
@@ -996,10 +998,8 @@ void vReadSensor_delay10ms(uint16_t msec)
 						journal.jprintf("Profile changed to %d\n", _profile);
 						if(frestart) HP.sendCommand(pRESUME);
 					}
-				} else if(_profile == SCHDLR_Profile_off) {
-					HP.sendCommand(pSTOP);
 				} else if(HP.get_State() == pOFF_HP) {
-					HP.sendCommand(pSTART);
+					HP.sendCommand(pRESUME);
 				}
 			}
 		}

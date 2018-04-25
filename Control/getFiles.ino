@@ -547,7 +547,7 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 uint16_t get_binSettings(uint8_t thread)
 {
-	uint16_t i, j, len;
+	int16_t i, j, len;
 	byte b;
 	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 	sendConstRTOS(thread, "HTTP/1.1 200 OK\r\nContent-Type:application/x-binary\r\nContent-Disposition: attachment; filename=\"settings.bin\"\r\n\r\n");
