@@ -2783,6 +2783,12 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
               Socket[thread].inPtr=(char*)INDEX_FILE;      // Указатель на имя файла по умолчанию
               return HTTP_GET;                          
               }
+         else if (strcmp(str_token, (char*)MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
+              {      
+              Socket[thread].inPtr=(char*)(str_token+1);   // Указатель на путь до мобильной морды
+              strcat(Socket[thread].inPtr,(char*)INDEX_MOB_FILE);
+              return HTTP_GET;                          
+              }     
          else if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)   // Проверка на длину запроса или имени файла
                { 
                  Socket[thread].inPtr=(char*)(str_token+1);       // Указатель на имя файла

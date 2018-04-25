@@ -93,15 +93,36 @@ void EthernetServer::accept()
 #endif
 #ifdef FAST_LIB  // Переделка
 EthernetClient EthernetServer::available_(int sock) {
-  accept_(sock);
+  int listening = 0;             // pav2000 убрал вызовы функции работаю через регистры
   EthernetClient client(sock);
+
+  if (EthernetClass::_server_port[sock] == _port) {
+    if (W5100.readSnSR(sock) == SnSR::LISTEN) {
+      listening = 1;
+    }
+    else if (W5100.readSnSR(sock) == SnSR::CLOSE_WAIT && !W5100.getRXReceivedSize(sock)) {
+      client.stop();
+    }
+  }
+  if (!listening) begin_(sock);
+
   if (EthernetClass::_server_port[sock] == _port &&
-      (client.status() == SnSR::ESTABLISHED ||
-       client.status() == SnSR::CLOSE_WAIT)) {
-    if (client.available()) {
+      (W5100.readSnSR(sock) == SnSR::ESTABLISHED ||
+       W5100.readSnSR(sock) == SnSR::CLOSE_WAIT)) {
+    if (W5100.getRXReceivedSize(sock)) {
       return client;
     }
   }
+
+//  accept_(sock);    // pav2000 старая версия
+//  EthernetClient client(sock);
+//  if (EthernetClass::_server_port[sock] == _port &&
+//      (client.status() == SnSR::ESTABLISHED ||
+//       client.status() == SnSR::CLOSE_WAIT)) {
+//    if (client.available()) {
+//      return client;
+//    }
+//  }
   return EthernetClient(MAX_SOCK_NUM);
 }
 #else
