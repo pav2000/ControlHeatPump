@@ -211,14 +211,9 @@ float my_atof(const char* s){
 
 // float в *char  экономим место и скорость -----------------------------------
 char * ftoa(char * outstr, float val, byte precision){
-	char frmt[] = "%.0f";
-	frmt[2] = '0' + precision;
-	sprintf(outstr, frmt, val);
-	return outstr;
-/*
  byte i;
  // compute the rounding factor and fractional multiplier
- double roundingFactor = 0.5;
+ float roundingFactor = 0.5;
  unsigned long mult = 1;
  for (i = 0; i < precision; i++)
  {
@@ -256,7 +251,7 @@ char * ftoa(char * outstr, float val, byte precision){
    itoa(frac, outstr + strlen(outstr), 10);
  }
  return outstr;
- */
+
 }
 
 // Преобразование во float двух слов из двух байт
