@@ -103,7 +103,7 @@ boolean parseIPAddress(const char* str, char sep, IPAddress &ip)
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Функции ниже использовать только в WebServer или с семафором xWebThreadSemaphore!
-static char _buf[16+1];
+char _buf[16+1];
 // IP адрес в строку
 char *IPAddress2String(IPAddress & ip) 
 {
@@ -209,6 +209,7 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
+/*
 // float в *char  экономим место и скорость и стек -----------------------------------
 char * ftoa(char * outstr, float val, byte precision){
  byte i;
@@ -251,8 +252,8 @@ char * ftoa(char * outstr, float val, byte precision){
    itoa(frac, outstr + strlen(outstr), 10);
  }
  return outstr;
-
 }
+*/
 
 // Преобразование во float двух слов из двух байт
 float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)

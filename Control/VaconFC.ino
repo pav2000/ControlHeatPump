@@ -3,7 +3,7 @@
  * Адаптировано vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -560,7 +560,7 @@ int8_t devVaconFC::stop_FC()
 // Получить параметр инвертора в виде строки
 char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
 {
-    static char temp[10];
+    static char temp[12];
     switch (p) {
     case pON_OFF:
         if(GETBIT(flags, fOnOff))

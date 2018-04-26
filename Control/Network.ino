@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -121,7 +121,7 @@ boolean resetWiznet(boolean show)
     }
   return false;                                                                                                     // линка нет
 }
-// Инициализация сети 
+// Инициализация сети
 // flag true - полный вывод на консоль false - скоращенный вывод на консоль
 // Проверят сетевой кабель
 const char* NetworkChipOK={" Network library setting: %s, ID chip: %s\n"};
@@ -144,8 +144,8 @@ void initW5200(boolean flag)
     // Подготовить структура для потоков
     for (i = 0; i < W5200_THREARD; i++)  { Socket[i].flags=0x00; Socket[i].sock=-1; memset((char*)Socket[i].inBuf,0x00,sizeof(Socket[i].inBuf)); memset((char*)Socket[i].outBuf,0x00,sizeof(Socket[i].outBuf));} 
       
-    // Иницилизация сетевого адаптера  
-    WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут    
+    // Иницилизация сетевого адаптера
+    WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
     #ifdef DEMO
         Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
         beginWeb(defaultPort);
@@ -165,8 +165,8 @@ void initW5200(boolean flag)
     #endif
       
     pingW5200(HP.get_NoPing());  // Установка пинга флага разрешенеия пинга
-    W5100.writeRTR(W5200_RTR);   // установка таймаута      
-    W5100.writeRCR(W5200_RCR);   // установка числа повторов 
+    W5100.writeRTR(W5200_RTR);   // установка таймаута
+    W5100.writeRCR(W5200_RCR);   // установка числа повторов
      
     if (flag)  // печать настроек и состояния связи
      {
@@ -196,7 +196,7 @@ void initW5200(boolean flag)
      journal.jprintf(" MAC: %s\n",MAC2String(dmac)); 
         
      }
-   else   // Кратко выводим сообщение в журнал 
+   else   // Кратко выводим сообщение в журнал
      { 
       journal.jprintf("%s Reset %s . . . \n",NowTimeToStr(),nameWiznet);
      }
@@ -244,7 +244,7 @@ boolean check_address(char *adr,IPAddress &ip)
 // Вывести состояние регистров сокета -------------------------------------------------------------
 void ShowSockRegisters(uint8_t s)
 {
- journal.jprintf("#%d", s); // номер сокета 
+ journal.jprintf("#%d", s); // номер сокета
  journal.jprintf(" MR:%02x",W5100.readSnMR(s)); 
  journal.jprintf(" CR:%02x",W5100.readSnCR(s)); 
  journal.jprintf(" IR:%02x",W5100.readSnIR(s)); 
@@ -428,7 +428,7 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 }
 
 // Послать буфер, может быть множество пакетов!!
-// Послать данные TCP (максимальный размер данных не ограничен, может отправлять несколько пакетов), 
+// Послать данные TCP (максимальный размер данных не ограничен, может отправлять несколько пакетов),
 // Использует функцию sendPaketRTOS
 // возвращает число посланых байт (0-ничего не послано, или ошибка передачи)
 // НЕ РАБОТАЕТ с КОНСТАНТАМИ!! их предварительно надо скопировать в ОЗУ т.к. используется DMA
@@ -440,7 +440,7 @@ uint16_t sendBufferRTOS(uint8_t thread, const uint8_t * buf, uint16_t len)
  while (n>0)
        if(n>W5200_MAX_LEN)
        {
-        if(sendPacketRTOS(thread,(byte*)buf+i,W5200_MAX_LEN,pause)==0) {return 0; }         // ошибка передачи 
+        if(sendPacketRTOS(thread,(byte*)buf+i,W5200_MAX_LEN,pause)==0) {return 0; }         // ошибка передачи
         i=i+W5200_MAX_LEN;n=n-W5200_MAX_LEN;
        }    
        else   { if(sendPacketRTOS(thread,(byte*)buf+i,n,pause)==0) return 0; else break; }  // последний пакет или ошибка передачи
@@ -465,7 +465,7 @@ uint16_t sendPrintfRTOS(uint8_t thread, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
-  vsnprintf((Socket[thread].outBuf), sizeof((Socket[thread].outBuf)), format, ap);
+  m_vsnprintf((Socket[thread].outBuf), sizeof((Socket[thread].outBuf)), format, ap);
   va_end(ap);
   return sendBufferRTOS(thread, (byte*)Socket[thread].outBuf, strlen((Socket[thread].outBuf)));
 }
@@ -539,7 +539,7 @@ W5100.writeMR(x);
 }
 
 // =============================== M Q T T ==================================================
-#ifdef MQTT    // признак использования MQTT 
+#ifdef MQTT    // признак использования MQTT
 static char root[60],topic[140], temp[10];
 const char* MQTTpublish={">> %s "};
 const char* MQTTPublishOK={"OK\n"};
@@ -559,7 +559,7 @@ boolean sendNarodMon(boolean debug)
      strcat(root,HP.clMQTT.get_paramMQTT(pID_NARMON));  
      strcat(root,"/");
      
-     // посылка отдельных топиков    
+     // посылка отдельных топиков
      strcpy(topic,root);
      strcat(topic,HP.sTemp[TOUT].get_name());
      ftoa(temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
@@ -596,7 +596,7 @@ boolean sendNarodMon(boolean debug)
          
         if (debug) journal.jprintf(cStrEnd);   
          
-      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,             
+      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,
       if (HP.clMQTT.get_NarodMonBig())                
          {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
@@ -692,10 +692,10 @@ boolean sendMQTT(boolean debug)
        if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
        if (debug) journal.jprintf(cStrEnd);
          
-      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,             
+      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,
       if (HP.clMQTT.get_NarodMonBig())                
          {
-         _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя     
+         _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("Additional data:");  
 
          strcpy(topic,root);
@@ -765,7 +765,7 @@ boolean sendMQTT(boolean debug)
              if (debug) journal.jprintf(cStrEnd);        
          }//  if (HP.clMQTT.get_NarodMonBig())
       
-        #ifdef USE_ELECTROMETER_SDM    // Послать данные электросчетчика на сервер MQTT    
+        #ifdef USE_ELECTROMETER_SDM    // Послать данные электросчетчика на сервер MQTT
         if (HP.clMQTT.get_MqttSDM120())                
         {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
@@ -788,9 +788,9 @@ boolean sendMQTT(boolean debug)
         }
         #endif
         
-       if ((HP.clMQTT.get_MqttFC())&&(HP.dFC.get_present()))   // Отправка данных об инверторе,если он есть            
+       if ((HP.clMQTT.get_MqttFC())&&(HP.dFC.get_present()))   // Отправка данных об инверторе,если он есть
         {
-         _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя          
+         _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("FC data:");  
          strcpy(topic,root);
          strcat(topic,"powerFC");
@@ -809,9 +809,9 @@ boolean sendMQTT(boolean debug)
          if (debug) journal.jprintf(cStrEnd); 
         }
           
-        if (HP.clMQTT.get_MqttCOP())   // Отправка данных об СОР           
+        if (HP.clMQTT.get_MqttCOP())   // Отправка данных об СОР
           {
-          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя            
+          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
           if (debug) journal.jprintf("COP data:");     
           #ifdef USE_ELECTROMETER_SDM
            strcpy(topic,root);
@@ -836,7 +836,7 @@ boolean sendMQTT(boolean debug)
 // debug  true - выводить в консоль информацию о посылаемых данных false - нет вывода
 // возвращает true если удачно
 // При удачной отправке Socket# 7 Sn_MR:1 Sn_CR:0 Sn_IR:7 Sn_SR:0 Sn_PORT:401 Sn_DPORT:75b Sn_TOS:0 Sn_TTL:80 Sn_IMR:ff Sn_FRAG:4000 Sn_KPALVTR:0
-// При неудачной        
+// При неудачной
 boolean  sendThingSpeak(boolean debug)
 {
  //uint8_t i;

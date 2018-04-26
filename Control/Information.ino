@@ -178,10 +178,10 @@ void Journal::printf(const char *format, ...)
   {
   #ifdef DEBUG
   va_list ap;
-    if (strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
     {
     va_start(ap, format);
-    vsnprintf(pbuf, sizeof(pbuf), format, ap);
+    m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
     va_end(ap);
     }
     Serial.print(pbuf);
@@ -192,11 +192,11 @@ void Journal::printf(const char *format, ...)
 uint16_t Journal::jprintf(const char *format, ...)
   {
       va_list ap;
-      if (strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
       else
       {
       va_start(ap, format);
-      vsnprintf(pbuf, sizeof(pbuf), format, ap);
+      m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
       va_end(ap);
       }
       #ifdef DEBUG
@@ -220,11 +220,11 @@ uint16_t Journal::jprintf(type_promt pr,const char *format, ...)
   default: len_promt=0;break;
   }
      va_list ap;
-      if (strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
       else
       {
       va_start(ap, format);
-      vsnprintf(pbuf, sizeof(pbuf), format, ap);
+      m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
       va_end(ap);
       }
       #ifdef DEBUG
@@ -237,10 +237,10 @@ uint16_t Journal::jprintf(type_promt pr,const char *format, ...)
 uint16_t Journal::jprintf_only(const char *format, ...)
 {
   va_list ap;
-    if (strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
     {
     va_start(ap, format);
-    vsnprintf(pbuf, sizeof(pbuf), format, ap);
+    m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
     va_end(ap);
     }
    return _write(pbuf);   
@@ -320,7 +320,7 @@ size_t Journal::write (uint8_t c)
 uint16_t Journal::_write(char *dataPtr)
     {
       uint16_t numBytes;
-      numBytes=strlen(dataPtr);
+      numBytes=m_strlen(dataPtr);
       if( dataPtr == 0 || numBytes == 0 )  return 0;  // Записывать нечего
   #ifdef I2C_EEPROM_64KB // запись в еепром
       if( numBytes >= JOURNAL_LEN-2 )  numBytes = JOURNAL_LEN-2;  // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
@@ -1117,7 +1117,7 @@ int8_t Profile::update_list(int8_t num)
     if ((GETBIT(temp_prof.flags,fEnabled))||(i==num))                                                // Если разрешено использовать или ТЕКУЩИЙ профиль
    // if (GETBIT(temp.flags,fEnabled)))                                                         // Если разрешено использовать
      { 
-    	p = list + strlen(list);
+    	p = list + m_strlen(list);
     	itoa(i, p, 10);
     	strcat(p, ". ");
     	strcat(p, temp_prof.name);
@@ -1549,8 +1549,8 @@ boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
                        else if((x<1)||(x>=1000)) return   false;    
                        else mqttSettintg.ttime=(int)x*60; return true;
                        break; 
-   case  pADR_MQTT:    if(strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
-                       if(strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
+   case  pADR_MQTT:    if(m_strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
+                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
                        else // ок сохраняем
                         {  
                         strcpy(mqttSettintg.mqtt_server,c); 
@@ -1564,16 +1564,16 @@ boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
                        else if((x<=1)||(x>=65535-1)) return   false;   
                        else mqttSettintg.mqtt_port=(int)x; return true;
                        break;  
-   case pLOGIN_MQTT:   if(strlen(c)==0) return false;                                                            // логин сервера
-                       if(strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;                     
+   case pLOGIN_MQTT:   if(m_strlen(c)==0) return false;                                                            // логин сервера
+                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;
                        else { strcpy(mqttSettintg.mqtt_login,c); return true;  }                         
                        break;
-   case pPASSWORD_MQTT:if(strlen(c)==0) return false;                                                            // пароль сервера
-                       if(strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;                     
+   case pPASSWORD_MQTT:if(m_strlen(c)==0) return false;                                                            // пароль сервера
+                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;
                        else { strcpy(mqttSettintg.mqtt_password,c); return true;  }                         
                        break;
-   case pID_MQTT:      if(strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;                     
+   case pID_MQTT:      if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;
                        else { strcpy(mqttSettintg.mqtt_id,c); return true;  }                         
                        break;
                        // --------------------- NARMON -------------------------
@@ -1585,8 +1585,8 @@ boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
                        else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonBig);  return true;}
                        else return false;  
                        break;    
-  case  pADR_NARMON:   if(strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
-                       if(strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
+  case  pADR_NARMON:   if(m_strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
+                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
                        else // ок сохраняем
                         {  
                         strcpy(mqttSettintg.narodMon_server,c); 
@@ -1600,16 +1600,16 @@ boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
                        else if((x<=1)||(x>=65535-1)) return   false;   
                        else mqttSettintg.narodMon_port=(int)x; return true;
                        break;  
-   case pLOGIN_NARMON: if(strlen(c)==0) return false;                                                            // логин сервера
-                       if(strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;                     
+   case pLOGIN_NARMON: if(m_strlen(c)==0) return false;                                                            // логин сервера
+                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;
                        else { strcpy(mqttSettintg.narodMon_login,c); return true;  }                         
                        break;
-   case pPASSWORD_NARMON:if(strlen(c)==0) return false;                                                          // пароль сервера
-                       if(strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;                     
+   case pPASSWORD_NARMON:if(m_strlen(c)==0) return false;                                                          // пароль сервера
+                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;
                        else { strcpy(mqttSettintg.narodMon_password,c); return true;  }                         
                        break;
-   case pID_NARMON:    if(strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;                     
+   case pID_NARMON:    if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;
                        else { strcpy(mqttSettintg.narodMon_id,c); return true;  }                         
                        break;
  default:              return false;                               break;   
