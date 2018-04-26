@@ -209,7 +209,7 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
-// float в *char  экономим место и скорость -----------------------------------
+// float в *char  экономим место и скорость и стек -----------------------------------
 char * ftoa(char * outstr, float val, byte precision){
  byte i;
  // compute the rounding factor and fractional multiplier

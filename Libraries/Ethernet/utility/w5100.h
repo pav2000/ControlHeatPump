@@ -213,10 +213,10 @@ public:
   inline void setRetransmissionTime(uint16_t timeout);
   inline void setRetransmissionCount(uint8_t _retry);
 
-  void execCmdSn(SOCKET s, SockCMD _cmd);
+  inline void execCmdSn(SOCKET s, SockCMD _cmd);
   
-  uint16_t getTXFreeSize(SOCKET s);
-  uint16_t getRXReceivedSize(SOCKET s);
+  inline uint16_t getTXFreeSize(SOCKET s);
+  inline uint16_t getRXReceivedSize(SOCKET s);
   
 
   // W5100 Registers
