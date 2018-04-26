@@ -3718,20 +3718,20 @@ void vTaskList( char * pcWriteBuffer )
 //			pcWriteBuffer += strlen( pcWriteBuffer );
 //			char lastdelimiter;
 //			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
-			ultoa(pxTaskStatusArray[ x ].xTaskNumber, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			ultoa(pxTaskStatusArray[ x ].xTaskNumber, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 			strcat(pcWriteBuffer, ":");
 			strcat(pcWriteBuffer, pxTaskStatusArray[ x ].pcTaskName);
 			strcat(pcWriteBuffer, ":");
 			strcat(pcWriteBuffer, cStatus);
 			strcat(pcWriteBuffer, ":");
-			ultoa(pxTaskStatusArray[ x ].uxCurrentPriority, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			ultoa(pxTaskStatusArray[ x ].uxCurrentPriority, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 			strcat(pcWriteBuffer, ":");
-			ultoa(pxTaskStatusArray[ x ].usStackHighWaterMark, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			ultoa(pxTaskStatusArray[ x ].usStackHighWaterMark, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 			strcat(pcWriteBuffer, ":");
-			ultoa(pxTaskStatusArray[ x ].ulRunTimeCounter, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+			ultoa(pxTaskStatusArray[ x ].ulRunTimeCounter, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 			strcat(pcWriteBuffer, ":");
 			if( ulStatsAsPercentage > 0UL ) {
-				ultoa(ulStatsAsPercentage, pcWriteBuffer += strlen(pcWriteBuffer), 10);
+				ultoa(ulStatsAsPercentage, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 //				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );
 			} else {
 				strcat(pcWriteBuffer, "<1");

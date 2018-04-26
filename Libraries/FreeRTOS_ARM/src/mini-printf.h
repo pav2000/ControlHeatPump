@@ -4,7 +4,7 @@
  * Copyright (c) 2013 Michal Ludvig <michal@logix.cz>
  * All rights reserved.
  *
- * Modified by vad7 - minimum stack usage, added %.xf
+ * Modified by vad7@yahoo.com - minimum stack usage, added float to string: %.xf, x - precision
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,16 +39,19 @@ extern "C" {
 
 #include <stdarg.h>
 
-int mini_vsnprintf(char* buffer, unsigned int buffer_len, const char *fmt, va_list va);
-int mini_snprintf(char* buffer, unsigned int buffer_len, const char *fmt, ...);
-static unsigned int mini_itoa(long value, char *buffer, unsigned char radix, unsigned char flags);
+#define MINI_PRINTF_USE_FLOAT		// %.xf - float with decimal point, x - precision
+
+unsigned int m_vsnprintf(char* buffer, unsigned int buffer_len, const char *fmt, va_list va);
+unsigned int m_snprintf(char* buffer, unsigned int buffer_len, const char *fmt, ...);
+unsigned int m_strlen(const char *s);
+unsigned int m_itoa(long value, char *buffer, unsigned char radix, unsigned char flags);
 char *ftoa(char *outstr, float val, unsigned char precision);
 
 #ifdef __cplusplus
 }
 #endif
 
-#define vsnprintf mini_vsnprintf
-#define snprintf mini_snprintf
+//#define vsnprintf mini_vsnprintf
+//#define snprintf mini_snprintf
 
 #endif
