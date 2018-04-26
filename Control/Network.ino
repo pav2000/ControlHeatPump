@@ -145,6 +145,7 @@ void initW5200(boolean flag)
     for (i = 0; i < W5200_THREARD; i++)  { Socket[i].flags=0x00; Socket[i].sock=-1; memset((char*)Socket[i].inBuf,0x00,sizeof(Socket[i].inBuf)); memset((char*)Socket[i].outBuf,0x00,sizeof(Socket[i].outBuf));} 
       
     // Иницилизация сетевого адаптера  
+    WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут    
     #ifdef DEMO
         Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
         beginWeb(defaultPort);
@@ -157,13 +158,7 @@ void initW5200(boolean flag)
           }
         else 
          {  
-          if (HP.get_DHCP())  // Работаем по DHCP
-          { 
-            watchdogEnable(15 * 1000);                 // установить максимальное время вачдога проблема с временем получения адреса по DHCP
-            WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут  
-            if(Ethernet.begin((uint8_t*)HP.get_mac())==0) journal.jprintf("Failed to configure Ethernet using DHCP");// тут может быть много времени
-            watchdogSetup();  // восстановить штаное время вачдога
-           }   
+          if (HP.get_DHCP()) if(Ethernet.begin((uint8_t*)HP.get_mac())==0) journal.jprintf("Failed to configure Ethernet using DHCP"); // Работаем по DHCP
           else Ethernet.begin((uint8_t*)HP.get_mac(), (IPAddress)HP.get_ip(), (IPAddress)HP.get_sdns(), (IPAddress)HP.get_gateway(), (IPAddress)HP.get_subnet()); // Статика
           beginWeb(HP.get_port());
          }
@@ -379,10 +374,8 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 	uint8_t  status=0;
 	uint16_t ret=0;
 	uint16_t freesize=0;
-	uint8_t  s=Socket[thread].sock;
 
 	SPI_switchW5200();
-
 	if (len > W5100.SSIZE)  ret = W5100.SSIZE;  else ret = len;
 
 	if (pause==0) // Честно ждем ack
@@ -394,45 +387,43 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 				xSemaphoreGive(xWebThreadSemaphore);  //                                      // Мютекс потока отдать
 				taskYIELD();
 			} else _delay(1);
-			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf("Socket: %d %s\n",s,MutexWebThreadBuzy); return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf("Socket: %d %s\n",Socket[thread].sock,MutexWebThreadBuzy); return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			taskENTER_CRITICAL();
-			freesize = W5100.getTXFreeSize(s);
+			freesize = W5100.getTXFreeSize(Socket[thread].sock);
 			if (freesize>=ret) {taskEXIT_CRITICAL(); break;}
-			status = W5100.readSnSR(s);
+			status = W5100.readSnSR(Socket[thread].sock);
 			taskEXIT_CRITICAL();
 			if ((status != SnSR::ESTABLISHED) && (status != SnSR::CLOSE_WAIT))  { ret = 0;  break;  }
 		}
-		while (freesize < ret);
+	while (freesize < ret);
 	}
 	else  // Не ждем ACK а просто делаем задержку
 	{
 		//  Serial.println("pause no ask");
 		SemaphoreGive(xWebThreadSemaphore);                                                             // Мютекс потока отдать
 		_delay(pause);                                                            // Ждем pause мсек
-		if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf("Socket: %d %s\n",s,MutexWebThreadBuzy); return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+		if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf("Socket: %d %s\n",Socket[thread].sock,MutexWebThreadBuzy); return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 	}
 
 	if(GETBIT(Socket[thread].flags,fABORT_SOCK)) {SETBIT0(Socket[thread].flags,fABORT_SOCK);return 0;}              // Произошел сброс прерываем передачу
 
 	// послать данные
 	taskENTER_CRITICAL();
-	W5100.send_data_processing_offset(s, 0, (uint8_t *)buf,ret);
-	W5100.execCmdSn(s,Sock_SEND);
+	W5100.send_data_processing_offset(Socket[thread].sock, 0, (uint8_t *)buf,ret);
+	W5100.execCmdSn(Socket[thread].sock,Sock_SEND);
 	//Serial.println("Sock_SEND");
 	taskEXIT_CRITICAL();
 
-
 	// +2008.01 bj : reduce code
-	while ( (W5100.readSnIR(s) & SnIR::SEND_OK) != SnIR::SEND_OK )
+	while ( (W5100.readSnIR(Socket[thread].sock) & SnIR::SEND_OK) != SnIR::SEND_OK )
 	{
-		if ( W5100.readSnSR(s) == SnSR::CLOSED )
+		if (W5100.readSnSR(Socket[thread].sock) == SnSR::CLOSED )
 		{
-			close(s);
+			close(Socket[thread].sock);
 			return 0;
 		}
 	}
-	W5100.writeSnIR(s, SnIR::SEND_OK);
-
+	W5100.writeSnIR(Socket[thread].sock, SnIR::SEND_OK);
 	return ret;
 }
 
@@ -444,7 +435,6 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 uint16_t sendBufferRTOS(uint8_t thread, const uint8_t * buf, uint16_t len)
 {
  uint16_t i=0,n=len,pause;
- //SPI_switchW5200();
  
  if (HP.get_NoAck()) pause=HP.get_delayAck(); else pause=0;
  while (n>0)
