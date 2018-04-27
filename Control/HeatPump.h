@@ -245,6 +245,10 @@ class HeatPump
     IPAddress get_sdns() { return Network.sdns;}           //  Получить sdns адрес
     IPAddress get_subnet() { return Network.subnet;}       //  Получить subnet адрес
     IPAddress get_gateway() { return Network.gateway;}     //  Получить gateway адрес
+    void set_ip(IPAddress ip) {Network.ip=ip;}             //  Установить ip адрес
+    void set_sdns(IPAddress sdns) {Network.sdns=sdns;}     //  Установит sdns адрес
+    void set_subnet(IPAddress subnet) {Network.subnet=subnet;}  //  Установит subnet адрес
+    void set_gateway(IPAddress gateway) {Network.gateway=gateway;}//  Установит gateway адрес
     uint16_t get_port() {return Network.port;}             //  получить порт вебсервера
     boolean get_NoAck() { return GETBIT(Network.flags,fNoAck);}  //  Получить флаг Не ожидать ответа ACK
     uint8_t get_delayAck() {return Network.delayAck;}      //  получить задержку перед отсылкой следующего пакета
