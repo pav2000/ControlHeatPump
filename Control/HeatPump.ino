@@ -1919,7 +1919,7 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
 
   #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();     /
+     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();    // выключить насос циркуляции ТП
   #endif
 
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС
