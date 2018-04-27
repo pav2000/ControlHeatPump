@@ -328,7 +328,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
 //   if (strcmp(str,"TASK_STAT")==0)  // Функция получение статистики по задачам
 //       {
-//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
 //         strcat(strReturn,cStrEnd);
 //         vTaskGetRunTimeStats(strReturn+strlen(strReturn));
 //       #else
@@ -338,7 +338,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 //       }
   if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
        {
-         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
          //strcat(strReturn,cStrEnd);
          vTaskList(strReturn+strlen(strReturn));
          #else
@@ -346,6 +346,15 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        #endif
          strcat(strReturn,"&");  continue;
        } 
+  if (strcmp(str,"TASK_LIST_RST")==0)  // Функция сброс статистики по задачам
+       {
+         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+	  	 vTaskResetRunTimeCounters();
+         #else
+         strcat(strReturn,NO_SUPPORT);
+       #endif
+         strcat(strReturn,"&");  continue;
+       }
    if (strcmp(str,"RESET_STAT")==0)   // Команда очистки статистики (в зависимости от типа)
        {
       
@@ -1914,7 +1923,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
                else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
                else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
-               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры 
+               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры
                else if (strcmp(x+1,"TEMP_MAX")==0)       { param=207;}  // Температура подачи максимальная
                else if (strcmp(x+1,"PAUSE1")==0)         { param=208;}  // Минимальное время простоя компрессора в минутах
                else if (strcmp(x+1,"SCHEDULER")==0)      { param=209;}  // Расписание SCHEDULER

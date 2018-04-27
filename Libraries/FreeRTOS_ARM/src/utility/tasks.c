@@ -3747,6 +3747,41 @@ void vTaskList( char * pcWriteBuffer )
 	} else {	mtCOVERAGE_TEST_MARKER(); }
 }
 
+// +vad7
+// Reset runtime stats - runtime counters
+static void pvtTaskResetRunTimeCounters(List_t *pxList)
+{
+	volatile TCB_t *pxNextTCB, *pxFirstTCB;
+	if( listCURRENT_LIST_LENGTH( pxList ) > ( UBaseType_t ) 0 )
+	{
+		listGET_OWNER_OF_NEXT_ENTRY( pxFirstTCB, pxList );
+		do
+		{
+			listGET_OWNER_OF_NEXT_ENTRY( pxNextTCB, pxList );
+			pxNextTCB->ulRunTimeCounter = 0;
+		} while( pxNextTCB != pxFirstTCB );
+	}
+}
+
+// Reset runtime stats - runtime counters (+vad7)
+void vTaskResetRunTimeCounters(void)
+{
+	UBaseType_t uxQueue = configMAX_PRIORITIES;
+	vTaskSuspendAll();
+	do {
+		pvtTaskResetRunTimeCounters(&( pxReadyTasksLists[ --uxQueue ] ));
+	} while( uxQueue > ( UBaseType_t ) tskIDLE_PRIORITY ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
+	pvtTaskResetRunTimeCounters(( List_t * ) pxDelayedTaskList);
+	pvtTaskResetRunTimeCounters(( List_t * ) pxOverflowDelayedTaskList);
+	#if( INCLUDE_vTaskDelete == 1 )
+		pvtTaskResetRunTimeCounters(&xTasksWaitingTermination);
+	#endif
+	#if ( INCLUDE_vTaskSuspend == 1 )
+		pvtTaskResetRunTimeCounters(&xSuspendedTaskList);
+	#endif
+	xTaskResumeAll();
+}
+
 #else //configGENERATE_RUN_TIME_STATS_TASKLIST
 
 	void vTaskList( char * pcWriteBuffer )

@@ -1339,6 +1339,10 @@ UBaseType_t uxTaskGetSystemState( TaskStatus_t * const pxTaskStatusArray, const 
  */
 void vTaskList( char * pcWriteBuffer ) PRIVILEGED_FUNCTION; /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 
+// +vad7
+// Reset runtime stats - runtime counters
+void vTaskResetRunTimeCounters(void);
+
 /**
  * task. h
  * <PRE>void vTaskGetRunTimeStats( char *pcWriteBuffer );</PRE>
