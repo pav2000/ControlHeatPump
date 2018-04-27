@@ -602,8 +602,8 @@ uint16_t get_csvChart(uint8_t thread)
            
      if(HP.ChartRCOMP.get_present())     strcat(Socket[thread].outBuf,"RCOMP;");
      
-     if(HP.ChartdCO.get_present())       strcat(Socket[thread].outBuf,"dCO;");
-     if(HP.ChartdGEO.get_present())      strcat(Socket[thread].outBuf,"dGEO;");
+     if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"dCO;");
+     if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) strcat(Socket[thread].outBuf,"dGEO;");
      
      if(HP.ChartPowerCO.get_present())   strcat(Socket[thread].outBuf,"PowerCO;");
      if(HP.ChartPowerGEO.get_present())  strcat(Socket[thread].outBuf,"PowerGEO;");
@@ -624,7 +624,7 @@ uint16_t get_csvChart(uint8_t thread)
      sum=s;
      if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
 
-   for(i=0;i<HP.ChartdCO.get_num();i++)  // По всем точкам
+   for(i=0;i<HP.ChartRCOMP.get_num();i++)  // По всем точкам
    { 
       //сформировать одну строку
       strcpy(Socket[thread].outBuf,"#"); strcat(Socket[thread].outBuf,int2str(i+1)); strcat(Socket[thread].outBuf,";");
@@ -642,9 +642,12 @@ uint16_t get_csvChart(uint8_t thread)
       if(HP.dFC.ChartCurrent.get_present())  { strcat(Socket[thread].outBuf,int2str(HP.dFC.ChartCurrent.get_Point(i))); strcat(Socket[thread].outBuf,";"); }
       
       if(HP.ChartRCOMP.get_present())    { strcat(Socket[thread].outBuf,int2str(HP.ChartRCOMP.get_Point(i))); strcat(Socket[thread].outBuf,";"); }
-      
-      if(HP.ChartdCO.get_present())      { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdCO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
-      if(HP.ChartdGEO.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdGEO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
+  //    if(HP.ChartdCO.get_present())      { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdCO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
+      if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) // считаем на лету экономим оперативку
+                    { strcat(Socket[thread].outBuf,ftoa(temp,((float)HP.sTemp[TCONOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2)); strcat(Socket[thread].outBuf,(char*)";"); } 
+ //      if(HP.ChartdGEO.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdGEO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
+       if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) // считаем на лету экономим оперативку
+                    { strcat(Socket[thread].outBuf,ftoa(temp,((float)HP.sTemp[TEVAOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2)); strcat(Socket[thread].outBuf,(char*)";"); } 
       
       if(HP.ChartPowerCO.get_present())  { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartPowerCO.get_Point(i)/1000.0,3)); strcat(Socket[thread].outBuf,";"); } 
       if(HP.ChartPowerGEO.get_present()) { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartPowerGEO.get_Point(i)/1000.0,3)); strcat(Socket[thread].outBuf,";"); }

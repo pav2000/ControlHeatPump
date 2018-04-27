@@ -432,31 +432,31 @@ HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездейс
 HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
 
 // ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"rSensor",300,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*300;//300 - начало глючить при переходе на либы vad711  увеличил до 330
+if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*100;//200
+  if (xTaskCreate(vUpdateStepperEEV,"upStepper",150,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*150;//до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",300,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*300;//300  при 200 уже не работает инвертор!!!!! ПРОВЕРЕНО 250 - проблемы не в демо инертор
+if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300 
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Оставновить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",350,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*350;//400  при 300 вылет при ошибке
+if (xTaskCreate(vUpdate,"updateHP",200,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*200;//до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Оставновить задачу обновление ТН
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"updateEEV",200,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*200;  //200 Проверено минимум 200 при configMINIMAL_STACK_SIZE не работает, сыпится при выключении ТН
+  if (xTaskCreate(vUpdateEEV,"updateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
   vTaskSuspend(HP.xHandleUpdateEEV);                              // Оставновить задачу обновление EEV
 #endif  
 
@@ -511,22 +511,15 @@ if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD
 HP.mRTOS=HP.mRTOS+64+4*100;  //100
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",200,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200; // 200
+if (xTaskCreate(vUpdatePump,"upPump",150,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*150; //до обрезки стеков было 200
 vTaskSuspend(HP.xHandleUpdatePump); 
 
 // Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",200,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;  // 200 - проверено при configMINIMAL_STACK_SIZE или 150 виснет при попытке повторного пуска при ошибке
+if (xTaskCreate(vPauseStart,"delayStart",150,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*150;  // до обрезки стеков было 200
 vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
-
-// Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
-//if(Modbus.get_present())
-//{  
-// vSemaphoreCreateBinary(xModbusSemaphore);                       // Создание мютекса
-// if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//}
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 journal.jprintf("15. If you want to send a notification about resetting the controller . . .\n");
@@ -904,8 +897,8 @@ void vReadSensor_delay10ms(uint16_t msec)
      // 1. Обновится, В это время команды управления не выполняются!!!!!
      if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен
        { 
-       if (HP.get_State()==pWORK_HP)  HP.vUpdate();                                                 // ТН работает и идет процесс контроля
-       SemaphoreGive(HP.xCommandSemaphore);                                                        // Семафор отдан
+       if (HP.get_State()==pWORK_HP)  HP.vUpdate();                                               // ТН работает и идет процесс контроля
+       SemaphoreGive(HP.xCommandSemaphore);                                                       // Семафор отдан
        }
      // 2. Отработка пауз
      if ((HP.get_State()==pOFF_HP)||(HP.get_State()==pSTOPING_HP))                                     // Если  насос не работает или идет останов насоса то остановить задачу Обновления ТН (Вообще то это лишнее, надо убрать)
@@ -914,7 +907,6 @@ void vReadSensor_delay10ms(uint16_t msec)
       vTaskSuspend(HP.xHandleUpdate);    //???????????????         
       } 
      else   // Время паузы очень разное в зависимости от настроек
-
         if (HP.get_mode())    // true отопление
             {
             if  (HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);       // Гистерезис
@@ -972,23 +964,23 @@ void vReadSensor_delay10ms(uint16_t msec)
             else HP.dRelay[RPUMPB].set_OFF() ;                                      // if (HP.get_Circulation())        выключить насос если его управление запрещено
          } //  if (HP.scheduleBoiler()) 
         else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
-       #endif // #ifdef RPUMPB
+       #endif // #ifdef RPUMPB 
      } // НЕ ОЖИДАНИЕ if HP.get_State()==pWAIT_HP)
-     // Расписание проверка всегда
-	   #ifdef USE_SCHEDULER
+    
+	   #ifdef USE_SCHEDULER  // Расписание проверка всегда
 		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
 			if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
 				if(_profile == SCHDLR_Profile_off) {
-					HP.sendCommand(pWAIT);
+          HP.sendCommand(pWAIT);
 				} else if(HP.Prof.get_idProfile() != _profile) {
 					type_SaveON _son;
 					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
 						MODE_HP currmode = HP.get_modWork();
 						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL) != (_son.mode == pCOOL)); // Если направление работы ТН разное
 						if(frestart) {
-							HP.sendCommand(pWAIT);
+             	HP.sendCommand(pWAIT);
 							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
 						}
 						vTaskSuspendAll();	// без проверки

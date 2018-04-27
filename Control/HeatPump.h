@@ -380,8 +380,7 @@ class HeatPump
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора
-    statChart ChartdCO;                                     // дельта СО
-    statChart ChartdGEO;                                    // дельта геоконтура
+    
     #ifdef EEV_DEF
     statChart ChartOVERHEAT;                                // перегрев
     statChart ChartTPEVA;                                   // температура расчитанная из давления испариения

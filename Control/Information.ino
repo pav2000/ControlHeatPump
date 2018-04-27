@@ -424,17 +424,13 @@ void statChart::addPoint(int16_t y)
 }
 
 // получить точку нумерация 0-самая новая CHART_POINT-1 - самая старая, (работает кольцевой буфер)
-int16_t statChart::get_Point(uint16_t x)
+inline int16_t statChart::get_Point(uint16_t x)
 {
-  if (!present) return 0; 
-//  if (num<CHART_POINT) return data[x];
-//  else if ((pos+x)<CHART_POINT) return data[pos+x]; 
-//       else return data[pos+x-CHART_POINT];
+ if (!present) return 0; 
  if (!flagFULL) return data[x];
  else 
  {
-    if ((pos+x)<CHART_POINT) return data[pos+x]; 
-       else return data[pos+x-CHART_POINT];
+    if ((pos+x)<CHART_POINT) return data[pos+x];else return data[pos+x-CHART_POINT];
  }
 }
 

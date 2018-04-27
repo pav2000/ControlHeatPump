@@ -665,8 +665,6 @@ void HeatPump::resetSettingHP()
  // инициализация статистика дополнительно помимо датчиков
   ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
 //  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
-  ChartdCO.init(sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present());   // дельта СО
-  ChartdGEO.init(sTemp[TEVAOUTG].get_present()&sTemp[TEVAING].get_present());  // дельта геоконтура
   #ifdef EEV_DEF
   ChartOVERHEAT.init(true);                                                    // перегрев
   ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  испарения
@@ -1041,11 +1039,7 @@ void  HeatPump::updateChart()
  if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
- 
- if(ChartdCO.get_present())       ChartdCO.addPoint(FEED-RET);
- if(ChartdGEO.get_present())      ChartdGEO.addPoint(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp());
- 
- 
+   
  if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
  {
   powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
@@ -1069,7 +1063,7 @@ void  HeatPump::updateChart()
  #endif
 
 
-// ДАННЫЕ Запись статистики в файл
+// ДАННЫЕ Запись графика в файл
  if(GETBIT(Option.flags,fSD_card))
    {
 	 if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy);return;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
@@ -1097,8 +1091,8 @@ void  HeatPump::updateChart()
            if(dFC.ChartCurrent.get_present()) { statFile.print((float)dFC.get_current()/100.0); statFile.print(";");}
            
            if(ChartRCOMP.get_present())       { statFile.print((int16_t)dRelay[RCOMP].get_Relay()); statFile.print(";");}
-           if(ChartdCO.get_present())         { statFile.print((float)(FEED-RET)/100.0); statFile.print(";");}
-           if(ChartdGEO.get_present())        { statFile.print((float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())/100.0); statFile.print(";");}
+           if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  { statFile.print((float)(FEED-RET)/100.0); statFile.print(";");}
+           if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  { statFile.print((float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())/100.0); statFile.print(";");}
 
                 
            if(ChartPowerCO.get_present())  { statFile.print((int16_t)(powerCO)); statFile.print(";"); } // Мощность контура в ваттах!!!!!!!!!
@@ -1141,8 +1135,6 @@ void HeatPump::startChart()
  dFC.ChartCurrent.clear();
  ChartRCOMP.clear();
 // ChartRELAY.clear();
- ChartdCO.clear();
- ChartdGEO.clear();
  ChartPowerCO.clear();                                 // выходная мощность насоса
  ChartPowerGEO.clear();                                // Мощность геоконтура
  ChartCOP.clear();                                     // Коэффициент преобразования
@@ -1188,8 +1180,8 @@ void HeatPump::startChart()
            
            if(ChartRCOMP.get_present())        statFile.print("RCOMP;");
            
-           if(ChartdCO.get_present())          statFile.print("dCO;");
-           if(ChartdGEO.get_present())         statFile.print("dGEO;");
+           if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) statFile.print("dCO;");
+           if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) statFile.print("dGEO;");
            
            if(ChartPowerCO.get_present())      statFile.print("PowerCO;");
            if(ChartPowerGEO.get_present())     statFile.print("PowerGEO;");
@@ -1238,8 +1230,8 @@ if (!cat) strcpy(str,"");  //Обнулить строку если есть с�
  if(dFC.ChartPower.get_present())   strcat(str,"powerFC:0;");
  if(dFC.ChartCurrent.get_present()) strcat(str,"currentFC:0;");
  if(ChartRCOMP.get_present())       strcat(str,"RCOMP:0;");
- if(ChartdCO.get_present())         strcat(str,"dCO:0;");
- if(ChartdGEO.get_present())        strcat(str,"dGEO:0;");
+ if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  strcat(str,"dCO:0;");
+ if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  strcat(str,"dGEO:0;");
  if(ChartPowerCO.get_present())     strcat(str,"PowerCO:0;");
  if(ChartPowerGEO.get_present())    strcat(str,"PowerGEO:0;");
  if(ChartCOP.get_present())         strcat(str,"COP:0;"); 
@@ -1260,6 +1252,7 @@ return str;
 // cat=true - не обнулять входную строку а добавить в конец
 char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
 {
+ char buf[8]; 
  if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг false
  switch (t)
    {
@@ -1310,8 +1303,27 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
    case pcurrentFC: return dFC.ChartCurrent.get_PointsStr(100,str);       break;
 
    case pRCOMP:     return ChartRCOMP.get_PointsStr(1,str);               break;
-   case pdCO:       return ChartdCO.get_PointsStr(100,str);               break;
-   case pdGEO:      return ChartdGEO.get_PointsStr(100,str);              break; 
+   case pdCO:       if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
+                    {
+                     for(int i=0;i<sTemp[TCONOUTG].Chart.get_num();i++) 
+                        {
+                          strcat(str,ftoa(buf,((float)sTemp[TCONOUTG].Chart.get_Point(i)-(float)sTemp[TCONING].Chart.get_Point(i))/100, 2));
+                          strcat(str,(char*)";"); 
+                        }                  
+                     }
+                    else return (char*)";";// График не определен - нет данных 
+                    break;
+   case pdGEO:      if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
+                    {
+                     for(int i=0;i<sTemp[TEVAING].Chart.get_num();i++) 
+                        {
+                          strcat(str,ftoa(buf,((float)sTemp[TEVAING].Chart.get_Point(i)-(float)sTemp[TEVAOUTG].Chart.get_Point(i))/100, 2));
+                          strcat(str,(char*)";"); 
+                        }                  
+                     }
+                    else return (char*)";";// График не определен - нет данных 
+                    break;
+
    case pPowerCO:   return ChartPowerCO.get_PointsStr(1000,str);          break; 
    case pPowerGEO:  return ChartPowerGEO.get_PointsStr(1000,str);         break;
    case pCOP:       return ChartCOP.get_PointsStr(100,str);               break;
@@ -3063,95 +3075,99 @@ int8_t HeatPump::runCommand()
                          
          default:         journal.jprintf("UNKNOW\n");   break;    // Не должно быть!
         }
-  // Захватываем семафор и разбираем потом команды
-      if(SemaphoreTake(xCommandSemaphore,(100*1000/portTICK_PERIOD_MS))==pdPASS)                // Cемафор  захвачен ОЖИДАНИНЕ ДА 100 сек
- //   vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
-  HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-  switch(command)
-  {
-  case pEMPTY:  return true; break;     // 0 Команд нет
-  case pSTART:                          // 1 Пуск теплового насоса
-                num_repeat=0;           // обнулить счетчик повторных пусков
-                StartResume(_start);    // включить ТН
-                command=pEMPTY;         // Сбросить команду
-                break;
-  case pAUTOSTART:                      // 2 Пуск теплового насоса автоматический
-                StartResume(_start);    // включить ТН
-                command=pEMPTY;         // Сбросить команду
-                break;                
-  case pSTOP:                           // 3 Стоп теплового насоса
-                StopWait(_stop);        // Выключить ТН
-                command=pEMPTY;         // Сбросить команду
-                break;
-  case pRESET:                          // 4 Сброс контроллера
-                StopWait(_stop);        // Выключить ТН
-                journal.jprintf("$SOFTWARE RESET control . . .\r\n"); 
-                journal.jprintf("");
-                _delay(500);            // задержка что бы вывести сообщение в консоль
-                command=pEMPTY;         // Сбросить команду
-                Software_Reset() ;      // Сброс
-                break;
-  case pREPEAT:
-                StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
-                num_repeat++;                                  // увеличить счетчик повторов пуска ТН
-                journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat); 
-        //        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-                vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                command=pEMPTY;                                    // Сбросить команду
-                break;  
-  case pRESTART:
-               // Stop();                                          // пуск Тн после сброса - есть задержка
-                 journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
-//              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-                vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                command=pEMPTY;                                    // Сбросить команду
-                break;                 
-  case pNETWORK:
-                journal.jprintf("Update network setting . . .\r\n");
-                _delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
-                if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
-                initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
-                for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
-                SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
-                command=pEMPTY;                                    // Сбросить команду
-                break;                 
-  case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
-                #ifdef I2C_EEPROM_64KB 
-                 _delay(2000);           						   // задержка что бы вывести сообщение в консоль и на веб морду
-                 journal.Format();                                 // Послать команду форматирование журнала
-                #else                                              // Этого не может быть, но на всякий случай
-                 journal.Init();                                   // Очистить журнал в оперативке
-                #endif 
-                command=pEMPTY;                                    // Сбросить команду
-                break;      
-  case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
-                #ifdef I2C_EEPROM_64KB 
-                 _delay(2000);              						           // задержка что бы вывести сообщение в консоль и на веб морду
-                 Stat.Format();                                    // Послать команду форматирование статистики
-                #endif 
-                command=pEMPTY;                                    // Сбросить команду
-                break;                    
-  case pSAVE:                                                      // Сохранить настройки
-                _delay(2000);              						 // задержка что бы вывести сообщение в консоль и на веб морду
-                save();                                            // сохранить настройки
-                command=pEMPTY;                                    // Сбросить команду
-                break;  
-  case pWAIT:                                                     // Перевод в состояние ожидания ТН
-                StopWait(_wait);                                  // Ожидание
-                command=pEMPTY;                                   // Сбросить команду
-                break;   
-  case pRESUME:                                                  // Восстановление работы после ожиданияя
-                StartResume(_resume);                            // восстановление ТН
-                command=pEMPTY;                                  // Сбросить команду
-                break;                         
-                                     
-  default:                                                         // Не известная команда
-                journal.jprintf("Unknow command????"); 
-                command=pEMPTY;
-                break;
-  }
-  SemaphoreGive(xCommandSemaphore);              // Семафор отдать
-return error;  
+  // Захватываем семафор и разбираем потом команды и блокируем обновление ТН
+      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)                // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
+      {
+       vTaskSuspend(xHandleUpdate);
+       HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+       switch(command)
+        {
+        case pEMPTY:  return true; break;     // 0 Команд нет
+        case pSTART:                          // 1 Пуск теплового насоса
+                      num_repeat=0;           // обнулить счетчик повторных пусков
+                      StartResume(_start);    // включить ТН
+                      command=pEMPTY;         // Сбросить команду
+                      break;
+        case pAUTOSTART:                      // 2 Пуск теплового насоса автоматический
+                      StartResume(_start);    // включить ТН
+                      command=pEMPTY;         // Сбросить команду
+                      break;                
+        case pSTOP:                           // 3 Стоп теплового насоса
+                      StopWait(_stop);        // Выключить ТН
+                      command=pEMPTY;         // Сбросить команду
+                      break;
+        case pRESET:                          // 4 Сброс контроллера
+                      StopWait(_stop);        // Выключить ТН
+                      journal.jprintf("$SOFTWARE RESET control . . .\r\n"); 
+                      journal.jprintf("");
+                      _delay(500);            // задержка что бы вывести сообщение в консоль
+                      command=pEMPTY;         // Сбросить команду
+                      Software_Reset() ;      // Сброс
+                      break;
+        case pREPEAT:
+                      StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
+                      num_repeat++;                                  // увеличить счетчик повторов пуска ТН
+                      journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat); 
+              //        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+                      vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;  
+        case pRESTART:
+                     // Stop();                                          // пуск Тн после сброса - есть задержка
+                       journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
+      //              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+                      vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;                 
+        case pNETWORK:
+                      journal.jprintf("Update network setting . . .\r\n");
+                      _delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
+                      if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+                      initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
+                      for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
+                      SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;                 
+        case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
+                      #ifdef I2C_EEPROM_64KB 
+                       _delay(2000);           						   // задержка что бы вывести сообщение в консоль и на веб морду
+                       journal.Format();                                 // Послать команду форматирование журнала
+                      #else                                              // Этого не может быть, но на всякий случай
+                       journal.Init();                                   // Очистить журнал в оперативке
+                      #endif 
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;      
+        case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
+                      #ifdef I2C_EEPROM_64KB 
+                       _delay(2000);              						           // задержка что бы вывести сообщение в консоль и на веб морду
+                       Stat.Format();                                    // Послать команду форматирование статистики
+                      #endif 
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;                    
+        case pSAVE:                                                      // Сохранить настройки
+                      _delay(2000);              						 // задержка что бы вывести сообщение в консоль и на веб морду
+                      save();                                            // сохранить настройки
+                      command=pEMPTY;                                    // Сбросить команду
+                      break;  
+        case pWAIT:                                                     // Перевод в состояние ожидания ТН
+                      StopWait(_wait);                                  // Ожидание
+                      command=pEMPTY;                                   // Сбросить команду
+                      break;   
+        case pRESUME:                                                  // Восстановление работы после ожиданияя
+                      StartResume(_resume);                            // восстановление ТН
+                      command=pEMPTY;                                  // Сбросить команду
+                      break;                         
+                                           
+        default:                                                         // Не известная команда
+                      journal.jprintf("Unknow command????"); 
+                      command=pEMPTY;
+                      break;
+        }
+        SemaphoreGive(xCommandSemaphore);              // Семафор отдать
+        vTaskResume(xHandleUpdate);
+      }
+      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy)
+      return error;  
 }
 
 // --------------------------Строковые функции ----------------------------
