@@ -1010,17 +1010,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         strcat(strReturn,"Часы работы ТН с момента запуска (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourH1()/60.0,1));strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН с момента запуска (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourC1()/60.0,1));strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
-          strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2));strcat(strReturn,";");
+          strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2));strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP1()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
+        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP1()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
   
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");strcat(strReturn,DecodeTimeDate(HP.get_motoHourD2()));strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourH2()/60.0,1));strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourC2()/60.0,1));strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
-          strcat(strReturn,"Потребленная энергия ТН за сезон (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2));strcat(strReturn,";");
+          strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2));strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP2()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
+        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP2()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
   
         strcat(strReturn,"&") ;    continue;
        } // sisInfo

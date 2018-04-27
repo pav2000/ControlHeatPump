@@ -1559,8 +1559,8 @@ boolean HeatPump::switchBoiler(boolean b)
   // ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
   if (onBoiler) // ГВС
   { 
-       #ifdef RPUMPB
-       dRelay[RPUMPB].set_ON();    // ГВС
+       #ifdef RPUMPBH
+       dRelay[RPUMPBH].set_ON();    // ГВС
        #endif
        #ifdef RPUMPFL
        dRelay[RPUMPFL].set_OFF();   // ТП
@@ -1571,8 +1571,8 @@ boolean HeatPump::switchBoiler(boolean b)
     {
       if ((Status.modWork==pHEAT)||(Status.modWork==pNONE_H)) // Отопление
       {
-      #ifdef RPUMPB  
-      dRelay[RPUMPB].set_OFF();    // ГВС
+      #ifdef RPUMPBH  
+      dRelay[RPUMPBH].set_OFF();    // ГВС
       #endif
       #ifdef RPUMPFL
       dRelay[RPUMPFL].set_ON();     // ТП
@@ -1581,8 +1581,8 @@ boolean HeatPump::switchBoiler(boolean b)
       }
      else if ((Status.modWork==pCOOL)||(Status.modWork==pNONE_C)) // Охлаждение
       {
-       #ifdef RPUMPB 
-       dRelay[RPUMPB].set_OFF();    // ГВС
+       #ifdef RPUMPBH 
+       dRelay[RPUMPBH].set_OFF();    // ГВС
        #endif
        #ifdef RPUMPFL
        dRelay[RPUMPFL].set_OFF();    // ТП
@@ -1591,8 +1591,8 @@ boolean HeatPump::switchBoiler(boolean b)
       }
       else   // Все осталное  
       {
-       #ifdef RPUMPB 
-       dRelay[RPUMPB].set_OFF();    // ГВС
+       #ifdef RPUMPBH 
+       dRelay[RPUMPBH].set_OFF();    // ГВС
        #endif
        #ifdef RPUMPFL
        dRelay[RPUMPFL].set_OFF();    // ТП
@@ -1913,8 +1913,13 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
 
   #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();     // выключить насос циркуляции ТП
+     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();     /
   #endif
+
+  #ifdef RPUMPBH  // управление  насосом нагрева ГВС
+     if (dRelay[RPUMPBH].get_Relay()) dRelay[RPUMPBH].set_OFF();     
+  #endif
+
 
   PUMPS_OFF;                                                       // выключить насосы контуров
   
@@ -3242,7 +3247,14 @@ int8_t HeatPump::save_DumpJournal(boolean f)
         #endif
         #ifdef RPUMPB
         if (dRelay[RPUMPB].get_present())   journal.jprintf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
-        #endif      
+        #endif     
+        #ifdef RPUMPBH
+        if (dRelay[RPUMPBH].get_present())   journal.jprintf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
+        #endif     
+        #ifdef RPUMPFL
+        if (dRelay[RPUMPFL].get_present())   journal.jprintf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
+        #endif
+         
         if(dFC.get_present())               journal.jprintf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
         if(dFC.get_present())               journal.jprintf(" Power:%.2f",dFC.get_power()/10.0);  
         #ifdef EEV_DEF
@@ -3280,10 +3292,13 @@ int8_t HeatPump::save_DumpJournal(boolean f)
         if (dRelay[REVI].get_present())           journal.printf(" REVI:%d",dRelay[REVI].get_Relay());   
         #endif
         #ifdef RPUMPB
-        if (dRelay[RPUMPB].get_present())           journal.printf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
+        if (dRelay[RPUMPB].get_present())         journal.printf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
         #endif
+        #ifdef RPUMPBH
+        if (dRelay[RPUMPBH].get_present())        journal.printf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
+        #endif 
         #ifdef RPUMPFL
-        if (dRelay[RPUMPFL].get_present())           journal.printf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
+        if (dRelay[RPUMPFL].get_present())        journal.printf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
         #endif
  //      Serial.print(" dEEV.stepperEEV.isBuzy():");  Serial.print(dEEV.stepperEEV.isBuzy());
  //      Serial.print(" dEEV.setZero: ");  Serial.print(dEEV.setZero);  
