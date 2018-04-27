@@ -1854,8 +1854,11 @@ int8_t HeatPump::StartResume(boolean start)
     if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
           
      // 10. Запуск задачи обновления ТН ---------------------------------------------------------------------------
+     if(start)
+     {
      vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
      journal.jprintf(" Start task update %s\n",(char*)nameHeatPump); 
+     }
      
      // 11. Сохранение состояния  -------------------------------------------------------------------------------
      if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
@@ -1883,14 +1886,17 @@ int8_t HeatPump::StopWait(boolean stop)
     journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");    
     }
     
-  if (onBoiler) // Если надо уйти с ГВС для облегчения останова
+  if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
       {
         switchBoiler(false);
       }
   if (COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить веремя
-  
-  vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-  journal.jprintf(" Stop task update %s\n",(char*)nameHeatPump);   
+
+  if (stop) //Обновление ТН отключаем только при останове
+    {
+    vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
+    journal.jprintf(" Stop task update %s\n",(char*)nameHeatPump);  
+    } 
     
   if(startPump)
   {

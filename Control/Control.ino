@@ -894,13 +894,13 @@ void vReadSensor_delay10ms(uint16_t msec)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-
 // Задача Управление тепловым насосом
  void vUpdate( void *pvParameters )
 { //const char *pcTaskName = "HP_Update\r\n";
   static unsigned long RPUMPBTick=0;
   for( ;; )
   {
+    if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
      // 1. Обновится, В это время команды управления не выполняются!!!!!
      if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен
        { 
@@ -973,8 +973,8 @@ void vReadSensor_delay10ms(uint16_t msec)
          } //  if (HP.scheduleBoiler()) 
         else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
        #endif // #ifdef RPUMPB
-     
-     // Расписание
+     } // НЕ ОЖИДАНИЕ if HP.get_State()==pWAIT_HP)
+     // Расписание проверка всегда
 	   #ifdef USE_SCHEDULER
 		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
