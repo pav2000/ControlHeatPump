@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_FC,get_paramFC(START_FC),get_dacFC,get_nameFC,get_noteFC,get_paramFC(ANALOG),get_paramFC(LEVEL0),get_paramFC(LEVEL100),get_paramFC(LEVELOFF),get_pinFC,get_infoFC");
+		loadParam("get_FC_analog,get_FC,get_paramFC(START_FC),get_dacFC,get_nameFC,get_noteFC,get_paramFC(ANALOG),get_paramFC(LEVEL0),get_paramFC(LEVEL100),get_paramFC(LEVELOFF),get_pinFC,get_infoFC");
 		updateParam("get_paramFC(STOP_FC),get_paramFC(MAX_FC),get_paramFC(MIN_FC),get_paramFC(ON_OFF),get_paramFC(FC),get_paramFC(POWER),get_paramFC(MAX_POWER)");
 		};
 	</script>
@@ -62,7 +62,7 @@
 		</table>						
 </div>
 
-<div class="row1">
+<div id="get_fc_analog" class="row1">
 	<h2>Аналоговое управление</h2>
 	<table>
 	<thead>

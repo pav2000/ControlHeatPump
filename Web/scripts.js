@@ -1,7 +1,7 @@
 ﻿/* ver 0.949 beta */
-var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.20.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в миллисекундах
 
@@ -142,7 +142,10 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
 								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/^RELOAD/)) { 
+								else if(values[0].match(/get_FC_analog/)) { // clear
+									if(values[1] == 0 && (element = document.getElementById(valueid))) element.innerHTML = "";
+									continue;
+								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
 									if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись

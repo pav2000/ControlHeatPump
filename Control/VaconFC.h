@@ -3,7 +3,7 @@
  * Адаптировано vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -152,7 +152,7 @@ public:
   int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
   uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
   uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
-  char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
+  char * get_infoFC(char *buf);                   // Получить информацию о частотнике
   void 	get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
   boolean reset_errorFC();                        // Сброс ошибок инвертора
   boolean reset_FC();               		      // Сброс состояния связи модбас

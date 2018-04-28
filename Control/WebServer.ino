@@ -717,7 +717,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         else {strcat(strReturn,"Error "); strcat(strReturn,int2str(HP.get_errcode()));} // есть ошибки
         strcat(strReturn,";");   strcat(strReturn,"&") ;    continue;
        }   
-    
+     if (strcmp(str,"get_FC_analog")==0)
+     {
+		#ifdef FC_ANALOG_CONTROL
+    	 	 strcat(strReturn,"1&");
+		#else
+    	 	strcat(strReturn,"0&");
+		#endif
+     }
      if (strcmp(str,"get_infoFC")==0)  // get_infoFC
        {
         
@@ -727,7 +734,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        #ifndef FC_ANALOG_CONTROL     
          HP.dFC.get_infoFC(strReturn);
        #else
-         strcat("Данные не доступны, работа через анлоговый вход|;","&") ;
+         strcat("Данные не доступны, работа через аналоговый вход|;","&") ;
        #endif  
        strcat(strReturn,"&") ;    continue;
        }       
