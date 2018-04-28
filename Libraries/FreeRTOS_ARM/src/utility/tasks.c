@@ -3660,6 +3660,10 @@ TCB_t *pxTCB;
 
 #if ( ( configUSE_TRACE_FACILITY == 1 ) && ( configUSE_STATS_FORMATTING_FUNCTIONS > 0 ) )
 #ifdef configGENERATE_RUN_TIME_STATS_TASKLIST
+
+// +vad7
+TickType_t xTickCountZero = 0;
+
 // Combined vTaskList with vTaskGetRunTimeStats (vad711)
 void vTaskList( char * pcWriteBuffer )
 {
@@ -3681,7 +3685,7 @@ void vTaskList( char * pcWriteBuffer )
 		/* Generate the (binary) data. */
 		uxArraySize = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, &ulTotalTime );
 		/* For percentage calculations. */
-		ulTotalTime /= 100UL;
+		ulTotalTime = (ulTotalTime - xTickCountZero) / 100UL;
 		/* Create a human readable table from the binary data. */
 		for( x = 0; x < uxArraySize; x++ )
 		{
@@ -3779,6 +3783,7 @@ void vTaskResetRunTimeCounters(void)
 	#if ( INCLUDE_vTaskSuspend == 1 )
 		pvtTaskResetRunTimeCounters(&xSuspendedTaskList);
 	#endif
+	xTickCountZero = xTickCount;
 	xTaskResumeAll();
 }
 

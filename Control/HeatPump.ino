@@ -1734,21 +1734,23 @@ int8_t HeatPump::StartResume(boolean start)
   volatile MODE_HP mod; 
 
  // Дана команда старт - но возможно надо переходить в ожидание
-  #ifdef USE_SCHEDULER  // Определяем что делать
-  if((HP.Schdlr.calc_active_profile() != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
-    if (Schdlr.calc_active_profile() == SCHDLR_Profile_off) 
-    {
-    startWait=true;                    // Начало работы с ожидания=true;
-    setState(pWAIT_HP);
-    journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);  
-    return error;    
-    }
+#ifdef USE_SCHEDULER  // Определяем что делать
+  int8_t profile = HP.Schdlr.calc_active_profile();
+  if((profile != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
+	  if (profile == SCHDLR_Profile_off)
+	  {
+		  startWait=true;                    // Начало работы с ожидания=true;
+		  setState(pWAIT_HP);
+		  journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
+		  vTaskResume(xHandleUpdate);
+		  return error;
+	  }
   if (startWait)
-   {
-    startWait=false;
-    start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)  
-   }
-  #endif
+  {
+	  startWait=false;
+	  start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)
+  }
+#endif
 
  
   #ifndef DEMO   // проверка блокировки инвертора
