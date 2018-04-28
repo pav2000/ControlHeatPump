@@ -584,6 +584,7 @@ void HeatPump::resetSettingHP()
   startPump=false;                              // Признак работы задачи насос
   flagRBOILER=false;                            // не идет нагрев бойлера
   fSD=false;                                    // СД карта не рабоатет
+  startWait=false;                              // Начало работы с ожидания
   onBoiler=false;                               // Если true то идет нагрев бойлера
   onSallmonela=false;                           // Если true то идет Обеззараживание
   command=pEMPTY;                               // Команд на выполнение нет
@@ -1731,7 +1732,25 @@ int8_t HeatPump::ResetFC()
 int8_t HeatPump::StartResume(boolean start)
 {
   volatile MODE_HP mod; 
-  
+
+ // Дана команда старт - но возможно надо переходить в ожидание
+  #ifdef USE_SCHEDULER  // Определяем что делать
+  if((HP.Schdlr.calc_active_profile() != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
+    if (Schdlr.calc_active_profile() == SCHDLR_Profile_off) 
+    {
+    startWait=true;                    // Начало работы с ожидания=true;
+    setState(pWAIT_HP);
+    journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);  
+    return error;    
+    }
+  if (startWait)
+   {
+    startWait=false;
+    start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)  
+   }
+  #endif
+
+ 
   #ifndef DEMO   // проверка блокировки инвертора
   if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
        {
