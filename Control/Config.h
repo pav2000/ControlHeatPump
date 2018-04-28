@@ -46,8 +46,8 @@ enum TYPE_SENSOR
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -59,6 +59,17 @@ enum TYPE_SENSOR
     #define HP_SCHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
   //  #define I2C_EEPROM_64KB                                         // В самосборе этого нет!!!!!! Использование памяти I2C для записи журнала.При коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0                                   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
+	#else // все остальное
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+	#endif
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
     // Для каждой конфигурации теперь свои определения!!!
     // --------------------------------------------------------------------------------
@@ -398,6 +409,17 @@ enum TYPE_SENSOR
     #define EXTERNEL_AREF                                                 // + Использование внешней опоры для АЦП (ADR4525ARZ) требует доработки DUE и поддержки платы
     #define I2C_EEPROM_64KB                                               // + Использование памяти I2C для записи журнала
     #define I2C_FRAM_MEMORY       0                                       // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
+	#else // все остальное
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+	#endif
 
    // #define RELAY_INVERT                                                    // инвертирование реле выходов реле
       #ifdef EXTERNAL_AREF                     // Какая опора для АЦП используется
@@ -741,6 +763,17 @@ enum TYPE_SENSOR
     #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
     #define I2C_EEPROM_64KB           // + Использование памяти I2C для записи журнала.При коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
+	#else // все остальное
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+	#endif
     #define SPI_FLASH      // + Наличие чипа флеш памяти на шине SPI
     #define RELAY_INVERT   // инвертирование выходов реле
     #define USE_ELECTROMETER_SDM     // + Наличие счетчика SDM220 в конфигурации
@@ -1104,6 +1137,17 @@ enum TYPE_SENSOR
     #define SPI_FLASH                 // + Наличие чипа флеш памяти на шине SPI
     #define I2C_EEPROM_64KB           // + Использование памяти I2C для записи журнала при коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
+	#else // все остальное
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+	#endif
  // #define RELAY_INVERT              // инвертирование реле выходов реле
     #ifdef EXTERNAL_AREF                     // Какая опора для АЦП используется
          #define SAM3X_ADC_REF  2.5006         // Используется внешняя опора ADR4525ARZ плата pav2000 (UT71E результататы ЗИП 2.4997 ТН 2.5006)
@@ -1475,6 +1519,17 @@ enum TYPE_SENSOR
         #define EXTERNAL_AREF                                                 // + Использование внешней опоры для АЦП (ADR4525ARZ) требует доработки DUE и поддержки платы
         #define I2C_EEPROM_64KB                                               // + Использование памяти I2C для записи журнала при коментарии используется оперативка
         #define I2C_FRAM_MEMORY       0                                       // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+		#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+			#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+			#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+			#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+			#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
+		#else // все остальное
+			#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+			#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+			#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+			#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+		#endif
         #define USE_ELECTROMETER_SDM                                          // + Наличие счетчика SDM120 в конфигурации
 //        #define FLOW_CONTROL                                                // Контроль потоков через ПТО (актуален если установлены расходомеры)
         #define LOAD_VERIFICATION                                             // Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
@@ -1841,8 +1896,6 @@ enum TYPE_SENSOR
     #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
     #define ONEWIRE_DS2482_SECOND_2WAY  // 2-х проводный OneWire второго мастера (паразитное питание)
     #define ONEWIRE_DONT_CHG_RES    // Не менять разрешение датчиков
-//    #define I2C_EEPROM_64KB       // + Использование памяти I2C для записи журнала при коментарии используется оперативка
-    #define I2C_FRAM_MEMORY  0//1	// 1 - FRAM память
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
     #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
@@ -1853,6 +1906,20 @@ enum TYPE_SENSOR
       #define SAM3X_ADC_REF  3.30    // Штатное подключение используется питание DUE
     #endif
     #define USE_SCHEDULER			// Использовать расписание для управления ТН
+
+	#define I2C_EEPROM_64KB			// + Использование памяти I2C для записи журнала при коментарии используется оперативка
+	#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+  		#define I2C_MEMORY_TOTAL  kbits_1024   // Итоговый размер I2C памяти
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+	#else // все остальное
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
+		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+	#endif
 
     #define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
 

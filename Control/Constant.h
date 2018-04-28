@@ -141,17 +141,6 @@ const uint16_t  defaultPort=80;
 #define I2C_ADR_DS2482       0x18        // Адрес чипа OneWire на шине I2C 3-х проводная
 #define I2C_ADR_DS2482two    0x19        // Адрес чипа OneWire на шине I2C 2-х проводная
 
-
-#ifdef  I2C_EEPROM_64KB                  // В зависимости от типа чипа
-  #define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-  #define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
-  #define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-#else // все остальное
-  #define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-  #define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
-  #define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
-#endif
-
 // --------------------------------------------------------------------------------------------------------------------------
 // КАРТА ПАМЯТИ в чипе i2c объемом 64 кбайта
 // 0х0000 - I2C_COUNT_EEPROM хранение счетчиков, максимальный размер 0x79 (127) байт. Сейчас используется 52 байта

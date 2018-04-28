@@ -19,9 +19,9 @@
 // https://github.com/pav2000/ControlHeatPump проект на гитхабе
 // http://77.50.254.24:25402/ последняя версия демо
 // http://77.50.254.24:25402/mob/index.html мобильная морда демо
-// Архивные ссылки 
+// Архивные ссылки
 // http://pumps.tk/webtn.zip  последняя вебморда
-// http://pumps.tk/v09/ демо версия (старая) 
+// http://pumps.tk/v09/ демо версия (старая)
 // http://pumps.tk/v09/mob мобильная демо версия (старая)
 // https://github.com/vad7/Arduino-DUE-WireSam  библиотеки доработанные vad711 при релизе добавляются в архив
 
@@ -77,7 +77,8 @@ EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
 
-extEEPROM eepromI2C(I2C_SIZE_EEPROM,1,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY); // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти
+// I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
+extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
 //RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
@@ -315,9 +316,19 @@ pinMode(21, OUTPUT);
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
                     {    
-               	   	case I2C_ADR_DS2482two: journal.jprintf(" - OneWire DS2482-100 second\n");              break;
-                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100\n");  		            break; // 0x18 есть варианты
-                    case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24CXXX %d kBit\n",I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
+               	   	case I2C_ADR_DS2482two:
+                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100%s\n", address == I2C_ADR_DS2482two ? " second" : ""); break; // 0x18 есть варианты
+					#if I2C_FRAM_MEMORY == 1
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
+						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break
+						#endif
+					#else
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24C%d\n", I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
+						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break
+						#endif
+					#endif
                     case I2C_ADR_RTC   :	journal.jprintf(" - RTC DS3231\n");                             break; // 0x68
                     default            :	journal.jprintf(" - Unknow\n");                                 break; // не определенный тип
                     }
@@ -444,7 +455,7 @@ HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
 if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300 
+HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Оставновить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
