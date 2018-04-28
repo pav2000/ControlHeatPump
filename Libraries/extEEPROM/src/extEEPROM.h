@@ -61,19 +61,19 @@
 #define USE_RTOS_DELAY_AFTER_BYTES  15 // at 400kHz // if omitted don't use external delay()
 
 //EEPROM size in kilobits. EEPROM part numbers are usually designated in k-bits.
-enum eeprom_size_t {
-    kbits_2 = 2,
-    kbits_4 = 4,
-    kbits_8 = 8,
-    kbits_16 = 16,
-    kbits_32 = 32,
-    kbits_64 = 64,
-    kbits_128 = 128,
-    kbits_256 = 256,
-    kbits_512 = 512,
-    kbits_1024 = 1024,
-    kbits_2048 = 2048
-};
+//enum eeprom_size_t {
+//    kbits_2 = 2,
+//    kbits_4 = 4,
+//    kbits_8 = 8,
+//    kbits_16 = 16,
+//    kbits_32 = 32,
+//    kbits_64 = 64,
+//    kbits_128 = 128,
+//    kbits_256 = 256,
+//    kbits_512 = 512,
+//    kbits_1024 = 1024,
+//    kbits_2048 = 2048
+//};
 
 enum twiClockFreq_t { twiClock100kHz = 100000, twiClock400kHz = 400000 };
 
@@ -83,7 +83,7 @@ const uint8_t EEPROM_ADDR_ERR = 9;
 class extEEPROM
 {
     public:
-       extEEPROM(eeprom_size_t deviceCapacity, byte nDevice, uint32_t pageSize, byte eepromAddr = 0x50, byte FRAM = 0);
+       extEEPROM(uint16_t deviceCapacity, byte nDevice, uint32_t pageSize, byte eepromAddr = 0x50, byte FRAM = 0);
         byte begin(unsigned int twiFreq);  // 0 = don't set twi speed
         byte write(uint32_t addr, byte *values, uint32_t nBytes);
         byte write(uint32_t addr, byte value);

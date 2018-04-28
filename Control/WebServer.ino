@@ -208,7 +208,7 @@ void readFileSD(char *filename,uint8_t thread)
               {
               strncpy(buf,ch2+1,sizeof(buf)-1); // скопировать хвост в промежуточный буфер
               *ch1=0x00;  // обрезать строку filename перед [
-              strcat(filename,int2str(HP_SHEME)); // добавить номер схемы
+              strcat(filename,int2str(HP_SCHEME)); // добавить номер схемы
               strcat(filename,buf);               // добавить расширение
               }
             else journal.jprintf("Not found ] in: %s",filename); // нет закрывающейся скобки
@@ -297,8 +297,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
    #ifdef SENSOR_IP                           // Получение данных удаленного датчика
        char *ptr;
        int16_t a,b,c,d;
-       int32_t e; 
    #endif
+   int32_t e;
   
  // strcpy(strReturn,"&");   // начало запроса
    strcat(strReturn,"&");   // начало запроса
@@ -328,7 +328,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
 //   if (strcmp(str,"TASK_STAT")==0)  // Функция получение статистики по задачам
 //       {
-//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
 //         strcat(strReturn,cStrEnd);
 //         vTaskGetRunTimeStats(strReturn+strlen(strReturn));
 //       #else
@@ -338,7 +338,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 //       }
   if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
        {
-         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h 
+         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
          //strcat(strReturn,cStrEnd);
          vTaskList(strReturn+strlen(strReturn));
          #else
@@ -346,6 +346,15 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        #endif
          strcat(strReturn,"&");  continue;
        } 
+  if (strcmp(str,"TASK_LIST_RST")==0)  // Функция сброс статистики по задачам
+       {
+         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+	  	 vTaskResetRunTimeCounters();
+         #else
+         strcat(strReturn,NO_SUPPORT);
+       #endif
+         strcat(strReturn,"&");  continue;
+       }
    if (strcmp(str,"RESET_STAT")==0)   // Команда очистки статистики (в зависимости от типа)
        {
       
@@ -544,7 +553,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
        {
-       if ((HP.get_State()==pWORK_HP)||(HP.get_State()==pSTARTING_HP))  strcat(strReturn,"ON"); else  strcat(strReturn,"OFF"); strcat(strReturn,"&") ;    continue;
+       if ((HP.get_State()==pWORK_HP)||(HP.get_State()==pSTARTING_HP)||(HP.get_State()==pWAIT_HP)||(HP.get_State()==pSTOPING_HP))  strcat(strReturn,"ON"); else  strcat(strReturn,"OFF"); strcat(strReturn,"&"); continue;
        }   
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {
@@ -1010,17 +1019,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         strcat(strReturn,"Часы работы ТН с момента запуска (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourH1()/60.0,1));strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН с момента запуска (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourC1()/60.0,1));strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
-          strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2));strcat(strReturn,";");
+          strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2));strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP1()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
+        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP1()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
   
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");strcat(strReturn,DecodeTimeDate(HP.get_motoHourD2()));strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourH2()/60.0,1));strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");strcat(strReturn,ftoa(temp,(float)HP.get_motoHourC2()/60.0,1));strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
-          strcat(strReturn,"Потребленная энергия ТН за сезон (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2));strcat(strReturn,";");
+          strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2));strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт/ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP2()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
+        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");strcat(strReturn,ftoa(temp, HP.get_motoHourP2()/1000.0,2));strcat(strReturn,";"); // Если есть оборудование
   
         strcat(strReturn,"&") ;    continue;
        } // sisInfo
@@ -1589,26 +1598,32 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
 		// N - номер устройства, D - тип данных, X - адрес, Y - новое значение
 		if(strstr(str,"et_modbus_")) {
-			if((y = strchr(x+1, ':'))) {
+			x++;
+			if((y = strchr(x, ':'))) {
 				*y++ = '\0';
 				uint8_t id = atoi(x);
-				uint16_t par = atoi(y + 2); // Нумерация регистров с НУЛЯ!!!!
+				uint16_t par = atoi(y + 2); // Передается нумерация регистров с 1, а в modbus с 0
 				if(par--) {
 					i = OK;
 					if(strncmp(str, "set", 3) == 0) {
 						z++;
-						if(*y == '1') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
-						else if(*y == '2') i = Modbus.writeHoldingRegistersFloat(id, par, pm);
-						else if(*y == '3') i = Modbus.writeSingleCoil(id, par, atoi(z));
+						if(*y == 'w') i = Modbus.writeHoldingRegisters16(id, par, strtol(z, NULL, 0));
+						else if(*y == 'l') i = Modbus.writeHoldingRegisters32(id, par, strtol(z, NULL, 0));
+						else if(*y == 'f') i = Modbus.writeHoldingRegistersFloat(id, par, strtol(z, NULL, 0));
+						else if(*y == 'c') i = Modbus.writeSingleCoil(id, par, atoi(z));
 						else goto x_FunctionNotFound;
 					} else if(strncmp(str, "get", 3) == 0) {
 					} else goto x_FunctionNotFound;
 					if(i == OK) {
-						if(*y == '1') {
-							if((i = Modbus.readHoldingRegisters16(id, par, (int16_t *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
-						} else if(*y == '2') {
-							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 3);
-						} else if(*y == '3') {
+						if(*y == 'w') {
+							if((i = Modbus.readHoldingRegisters16(id, par, &par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);
+						} else if(*y == 'l') {
+								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&e)) == OK) itoa(e, strReturn + strlen(strReturn), 10);
+						} else if(*y == 'i') {
+							if((i = Modbus.readInputRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 2);
+						} else if(*y == 'f') {
+							if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) ftoa(strReturn + strlen(strReturn), pm, 2);
+						} else if(*y == 'c') {
 							if((i = Modbus.readCoil(id, par, (boolean *)&par)) == OK) itoa(par, strReturn + strlen(strReturn), 10);;
 						} else goto x_FunctionNotFound;
 					}
@@ -1908,7 +1923,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
                else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
                else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
-               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры 
+               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры
                else if (strcmp(x+1,"TEMP_MAX")==0)       { param=207;}  // Температура подачи максимальная
                else if (strcmp(x+1,"PAUSE1")==0)         { param=208;}  // Минимальное время простоя компрессора в минутах
                else if (strcmp(x+1,"SCHEDULER")==0)      { param=209;}  // Расписание SCHEDULER
@@ -2777,6 +2792,12 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
               Socket[thread].inPtr=(char*)INDEX_FILE;      // Указатель на имя файла по умолчанию
               return HTTP_GET;                          
               }
+         else if (strcmp(str_token, (char*)MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
+              {      
+              Socket[thread].inPtr=(char*)(str_token+1);   // Указатель на путь до мобильной морды
+              strcat(Socket[thread].inPtr,(char*)INDEX_MOB_FILE);
+              return HTTP_GET;                          
+              }     
          else if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)   // Проверка на длину запроса или имени файла
                { 
                  Socket[thread].inPtr=(char*)(str_token+1);       // Указатель на имя файла
@@ -2810,7 +2831,7 @@ byte *ptr;
   // Чтение профиля
   if (OK!=HP.Prof.loadFromBuf(HP.headerEEPROM.len,ptr)) return false;
 #ifdef USE_SCHEDULER
-  if(HP.Schdlr.loadFromBuf(HP.headerEEPROM.len + HP.Prof.get_lenProfile(), ptr)) return false;
+  if(HP.Schdlr.loadFromBuf(HP.headerEEPROM.len + HP.Prof.get_lenProfile(), ptr) != OK) return false;
 #endif
   HP.Prof.update_list(HP.Prof.get_idProfile());                                                                        // обновить список
   return true;

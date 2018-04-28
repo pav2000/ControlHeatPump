@@ -3,7 +3,7 @@
  * Адаптировано vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -105,7 +105,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 
     for (uint8_t i = 0; i < 3; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
-        err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, &state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
+        err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         _delay(1);
     }
@@ -560,7 +560,7 @@ int8_t devVaconFC::stop_FC()
 // Получить параметр инвертора в виде строки
 char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
 {
-    static char temp[10];
+    static char temp[12];
     switch (p) {
     case pON_OFF:
         if(GETBIT(flags, fOnOff))
@@ -841,7 +841,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
-        err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, &result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
+        err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         _delay(FC_DELAY_REPEAT);
         journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении

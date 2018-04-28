@@ -82,6 +82,7 @@ task.h is included from an application file. */
 #include "task.h"
 #include "timers.h"
 #include "StackMacros.h"
+#include "../mini-printf.h"
 
 /* Lint e961 and e750 are suppressed as a MISRA exception justified because the
 MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined for the
@@ -3659,6 +3660,10 @@ TCB_t *pxTCB;
 
 #if ( ( configUSE_TRACE_FACILITY == 1 ) && ( configUSE_STATS_FORMATTING_FUNCTIONS > 0 ) )
 #ifdef configGENERATE_RUN_TIME_STATS_TASKLIST
+
+// +vad7
+TickType_t xTickCountZero = 0;
+
 // Combined vTaskList with vTaskGetRunTimeStats (vad711)
 void vTaskList( char * pcWriteBuffer )
 {
@@ -3680,7 +3685,7 @@ void vTaskList( char * pcWriteBuffer )
 		/* Generate the (binary) data. */
 		uxArraySize = uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, &ulTotalTime );
 		/* For percentage calculations. */
-		ulTotalTime /= 100UL;
+		ulTotalTime = (ulTotalTime - xTickCountZero) / 100UL;
 		/* Create a human readable table from the binary data. */
 		for( x = 0; x < uxArraySize; x++ )
 		{
@@ -3703,31 +3708,83 @@ void vTaskList( char * pcWriteBuffer )
 			/* Write the rest of the string. */
 			sprintf( pcWriteBuffer, "\t%c\t%u\t%u\t%u\r\n", cStatus, ( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark, ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber );
 #else
-			char *cStatus;
+			const char *cStatus;
 			switch( pxTaskStatusArray[ x ].eCurrentState )
 			{
-			case eReady:		cStatus = &tskREADY; break;
-			case eBlocked:		cStatus = &tskBLOCKED; break;
-			case eSuspended:	cStatus = &tskSUSPENDED; break;
-			case eDeleted:		cStatus = &tskDELETED; break;
+			case eReady:		cStatus = (const char *)&tskREADY; break;
+			case eBlocked:		cStatus = (const char *)&tskBLOCKED; break;
+			case eSuspended:	cStatus = (const char *)&tskSUSPENDED; break;
+			case eDeleted:		cStatus = (const char *)&tskDELETED; break;
 			default:			/* Should not get here, but it is included to prevent static checking errors. */
-								cStatus = &tskERROR; break;
+								cStatus = (const char *)&tskERROR; break;
 			}
-			sprintf( pcWriteBuffer, "%u:%s:%s:%u:%u", ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber, pxTaskStatusArray[ x ].pcTaskName, cStatus,
-					( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark );
-			pcWriteBuffer += strlen( pcWriteBuffer );
-			char lastdelimiter;
-			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
+//			sprintf( pcWriteBuffer, "%u:%s:%s:%u:%u", ( unsigned int ) pxTaskStatusArray[ x ].xTaskNumber, pxTaskStatusArray[ x ].pcTaskName, cStatus,
+//					( unsigned int ) pxTaskStatusArray[ x ].uxCurrentPriority, ( unsigned int ) pxTaskStatusArray[ x ].usStackHighWaterMark );
+//			pcWriteBuffer += strlen( pcWriteBuffer );
+//			char lastdelimiter;
+//			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
+			ultoa(pxTaskStatusArray[ x ].xTaskNumber, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, pxTaskStatusArray[ x ].pcTaskName);
+			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, cStatus);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].uxCurrentPriority, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].usStackHighWaterMark, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
+			ultoa(pxTaskStatusArray[ x ].ulRunTimeCounter, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
+			strcat(pcWriteBuffer, ":");
 			if( ulStatsAsPercentage > 0UL ) {
-				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );
+				ultoa(ulStatsAsPercentage, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
+//				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );
 			} else {
-				sprintf( pcWriteBuffer, ":%u:<1%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, lastdelimiter );
+				strcat(pcWriteBuffer, "<1");
+//				sprintf( pcWriteBuffer, ":%u:<1%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, lastdelimiter );
 			}
-			pcWriteBuffer += strlen( pcWriteBuffer );
+			strcat(pcWriteBuffer, "%");
+			strcat(pcWriteBuffer, x == uxArraySize - 1 ? "\0" : "\n");
+//			pcWriteBuffer += strlen( pcWriteBuffer );
 #endif
 		}
 		vPortFree( pxTaskStatusArray );
 	} else {	mtCOVERAGE_TEST_MARKER(); }
+}
+
+// +vad7
+// Reset runtime stats - runtime counters
+static void pvtTaskResetRunTimeCounters(List_t *pxList)
+{
+	volatile TCB_t *pxNextTCB, *pxFirstTCB;
+	if( listCURRENT_LIST_LENGTH( pxList ) > ( UBaseType_t ) 0 )
+	{
+		listGET_OWNER_OF_NEXT_ENTRY( pxFirstTCB, pxList );
+		do
+		{
+			listGET_OWNER_OF_NEXT_ENTRY( pxNextTCB, pxList );
+			pxNextTCB->ulRunTimeCounter = 0;
+		} while( pxNextTCB != pxFirstTCB );
+	}
+}
+
+// Reset runtime stats - runtime counters (+vad7)
+void vTaskResetRunTimeCounters(void)
+{
+	UBaseType_t uxQueue = configMAX_PRIORITIES;
+	vTaskSuspendAll();
+	do {
+		pvtTaskResetRunTimeCounters(&( pxReadyTasksLists[ --uxQueue ] ));
+	} while( uxQueue > ( UBaseType_t ) tskIDLE_PRIORITY ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
+	pvtTaskResetRunTimeCounters(( List_t * ) pxDelayedTaskList);
+	pvtTaskResetRunTimeCounters(( List_t * ) pxOverflowDelayedTaskList);
+	#if( INCLUDE_vTaskDelete == 1 )
+		pvtTaskResetRunTimeCounters(&xTasksWaitingTermination);
+	#endif
+	#if ( INCLUDE_vTaskSuspend == 1 )
+		pvtTaskResetRunTimeCounters(&xSuspendedTaskList);
+	#endif
+	xTickCountZero = xTickCount;
+	xTaskResumeAll();
 }
 
 #else //configGENERATE_RUN_TIME_STATS_TASKLIST

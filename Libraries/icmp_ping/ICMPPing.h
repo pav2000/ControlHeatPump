@@ -7,6 +7,9 @@
  * published by the Free Software Foundation.
  */
 
+#ifndef _ICMPPING_H_
+#define _ICMPPING_H_
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <utility/w5100.h>
@@ -296,3 +299,5 @@ private:
 };
 
 #pragma pack(1)
+
+#endif // _ICMPPING_H_

@@ -22,5 +22,8 @@
 #include "utility/semphr.h"
 #include "utility/portmacro.h"
 //#include "utility/cmsis_os.h"
+
+#include "mini-printf.h"
+
 #endif  // __arm__
 #endif  // FreeRTOS_ARM_h

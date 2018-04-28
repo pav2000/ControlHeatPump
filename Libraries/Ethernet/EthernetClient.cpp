@@ -196,9 +196,12 @@ void EthernetClient::stop() {
 uint8_t EthernetClient::connected() {
   if (_sock == MAX_SOCK_NUM) return 0;
   
-  uint8_t s = status();
+//  uint8_t s = status();              // pav2000
+//  return !(s == SnSR::LISTEN || s == SnSR::CLOSED || s == SnSR::FIN_WAIT || /
+//    (s == SnSR::CLOSE_WAIT && !available()));
+  uint8_t s = W5100.readSnSR(_sock); // pav2000 немного ускорим и стек уменьшим
   return !(s == SnSR::LISTEN || s == SnSR::CLOSED || s == SnSR::FIN_WAIT ||
-    (s == SnSR::CLOSE_WAIT && !available()));
+    (s == SnSR::CLOSE_WAIT && !W5100.getRXReceivedSize(_sock)));
 }
 
 uint8_t EthernetClient::status() {

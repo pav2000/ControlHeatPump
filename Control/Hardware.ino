@@ -1101,14 +1101,10 @@ int8_t devOmronMX2::initFC()
         if ((err=write_0x06_16(MX2_MAX_FR, FC_MAX_FREQ/10))==OK)   journal.jprintf(" Setting maximum frequency (A004) %s: %.2f [Hz]\r\n",name,FC_MAX_FREQ/100.0);
         else                                                        journal.jprintf(" Error setting maximum frequency (A004) %s code %d\r\n",name,err);
         // 5. Время разгона
-        hWord=FC_ACCEL_TIME/0xffff;      
-        lWord=FC_ACCEL_TIME-hWord;
-        if( write_0x10_32(MX2_ACCEL_TIME,hWord,lWord)==OK)          journal.jprintf(" Setting acceleration time (F002) %s: %.2f [sec]\r\n",name,FC_ACCEL_TIME/100.0); 
+        if( write_0x10_32(MX2_ACCEL_TIME,FC_ACCEL_TIME)==OK)          journal.jprintf(" Setting acceleration time (F002) %s: %.2f [sec]\r\n",name,FC_ACCEL_TIME/100.0);
         else                                                        journal.jprintf(" Error setting acceleration time (F002) %s code %d\r\n",name,err);
         // 6. Торможения разгона
-        hWord=FC_DEACCEL_TIME/0xffff;      
-        lWord=FC_DEACCEL_TIME-hWord;
-        if( write_0x10_32(MX2_DEACCEL_TIME,hWord,lWord)==OK)        journal.jprintf(" Setting deacceleration time (F003) %s: %.2f [sec]\r\n",name,FC_DEACCEL_TIME/100.0); 
+        if( write_0x10_32(MX2_DEACCEL_TIME,FC_DEACCEL_TIME)==OK)        journal.jprintf(" Setting deacceleration time (F003) %s: %.2f [sec]\r\n",name,FC_DEACCEL_TIME/100.0);
         else                                                        journal.jprintf(" Error setting deacceleration time (F003) %s code %d\r\n",name,err);
         // 7.  Разрешение торможения постоянным током A051=0
       //  if ((err=write_0x06_16(MX2_DC_BRAKING, 0x01))==OK)          journal.jprintf(" Setting DC braking enable (A051) %s: 0x01\r\n",name);
@@ -1144,11 +1140,9 @@ int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_
    {
   #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
           // Запись в регистры инвертора установленной частоты
-          hWord=x/0xffff;      
-          lWord=x-hWord;
           for(i=0;i<FC_NUM_READ;i++)  // Делаем FC_NUM_READ попыток
             {
-              err=write_0x10_32(MX2_TARGET_FR,hWord,lWord);
+              err=write_0x10_32(MX2_TARGET_FR,x);
               if (err==OK) break;                     // Команда выполнена
               _delay(100);
               journal.jprintf("%s: repeat set frequency\n",name);  // Выводим сообщение о повторной команде
@@ -1606,7 +1600,7 @@ int16_t devOmronMX2::read_tempFC()
     // Реализовано FC_NUM_READ попыток чтения/записи в инвертор
     int16_t  devOmronMX2::read_0x03_16(uint16_t cmd)
     {   uint8_t i;
-        int16_t result;  
+        uint16_t result;  
         err=OK;
         if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     
@@ -1711,13 +1705,13 @@ int16_t devOmronMX2::read_tempFC()
       
     }
     // Запись данных (4 байта) в регистр cmd возвращает код ошибки
-    int8_t devOmronMX2::write_0x10_32(uint16_t cmd,int16_t hWord, int16_t lWord)
+    int8_t devOmronMX2::write_0x10_32(uint16_t cmd, uint32_t data)
     { uint8_t i;
       err=OK;
       if ((!get_present())||(GETBIT(flags,fErrFC))) return err;             // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)                                          // делаем FC_NUM_READ попыток записи
          {  
-           err=Modbus.writeMultipleRegisters32(FC_MODBUS_ADR,cmd-1,hWord,lWord);// послать запрос, Нумерация регистров с НУЛЯ!!!!
+           err=Modbus.writeHoldingRegisters32(FC_MODBUS_ADR, cmd-1, data);// послать запрос, Нумерация регистров с НУЛЯ!!!!
            if (err==OK) break;                                               // Записали удачно
            _delay(FC_DELAY_REPEAT);
            journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                // Выводим сообщение о повторном чтении
@@ -2025,12 +2019,12 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
       result = RS485.readInputRegisters(cmd,2);                                               // послать запрос,
       if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1));}  
       else                               {err=translateErr(result); *ret=0;}
-    SemaphoreGive(xModbusSemaphore);
+      SemaphoreGive(xModbusSemaphore);
     return err;   
    }
 
 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
-int8_t   devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, int16_t *ret)
+int8_t   devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)
     {
     uint8_t result;
      // Если шедулер запущен то захватываем семафор
@@ -2052,7 +2046,7 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);err=ERR_485_BUZY; return err;}                                                     
       RS485.set_slave(id);
       result = RS485.readHoldingRegisters(cmd,2);                                             // послать запрос,
-      if (result == RS485.ku8MBSuccess) {err=OK; *ret=RS485.getResponseBuffer(0)*0xffff+RS485.getResponseBuffer(1);}  
+      if (result == RS485.ku8MBSuccess) {err=OK; *ret=(RS485.getResponseBuffer(0)<<16) | RS485.getResponseBuffer(1);}
       else                              {err=translateErr(result); *ret=0;}
     SemaphoreGive(xModbusSemaphore);
     return err;  
@@ -2143,7 +2137,7 @@ int8_t   devModbus::writeHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t d
 }
 
 // Записать 2 регистра подряд возвращает код ошибки
-int8_t devModbus::writeMultipleRegisters32(uint8_t id, uint16_t cmd, int16_t hWord, int16_t lWord)
+int8_t devModbus::writeHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t data)
 {
    uint8_t result;
     // Если шедулер запущен то захватываем семафор
@@ -2151,8 +2145,8 @@ int8_t devModbus::writeMultipleRegisters32(uint8_t id, uint16_t cmd, int16_t hWo
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);err=ERR_485_BUZY; return err;}                                                    
 
       RS485.set_slave(id);
-      RS485.setTransmitBuffer(0,hWord);
-      RS485.setTransmitBuffer(1,lWord);
+      RS485.setTransmitBuffer(0, data >> 16);
+      RS485.setTransmitBuffer(1, data & 0xFFFF);
       result = RS485.writeMultipleRegisters(cmd,2);                                                 // послать запрос,
       
       err=translateErr(result);

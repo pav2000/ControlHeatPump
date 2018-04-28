@@ -103,7 +103,7 @@ boolean parseIPAddress(const char* str, char sep, IPAddress &ip)
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Функции ниже использовать только в WebServer или с семафором xWebThreadSemaphore!
-static char _buf[16+1];
+char _buf[16+1];
 // IP адрес в строку
 char *IPAddress2String(IPAddress & ip) 
 {
@@ -209,12 +209,12 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
-
-// float в *char  экономим место и скорость -----------------------------------
-char * ftoa(char * outstr, double val, byte precision){
+/*
+// float в *char  экономим место и скорость и стек -----------------------------------
+char * ftoa(char * outstr, float val, byte precision){
  byte i;
  // compute the rounding factor and fractional multiplier
- double roundingFactor = 0.5;
+ float roundingFactor = 0.5;
  unsigned long mult = 1;
  for (i = 0; i < precision; i++)
  {
@@ -222,7 +222,6 @@ char * ftoa(char * outstr, double val, byte precision){
    mult *= 10;
  }
  
- temp[0]='\0';
  outstr[0]='\0';
 
  if(val < 0.0){
@@ -254,19 +253,19 @@ char * ftoa(char * outstr, double val, byte precision){
  }
  return outstr;
 }
+*/
 
 // Преобразование во float двух слов из двух байт
-static union  float_int {
-                        float f;
-                        uint16_t i[2];
-                        } float_map;
-                
-float fromInt16ToFloat(int16_t lowInt,int16_t highInt)
+float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)
 {
-//float_map = { .i = { highInt, lowInt } };
- float_map.i[0]=highInt;
- float_map.i[1]=lowInt;
- return float_map.f; 
+	union  float_int {
+		float f;
+		uint16_t i[2];
+	} float_map;
+
+	float_map.i[0]=highInt;
+	float_map.i[1]=lowInt;
+	return float_map.f;
 }
 
 // int to str - для уменьшения кода и увеличения быстродействия ---------------------------------------------------

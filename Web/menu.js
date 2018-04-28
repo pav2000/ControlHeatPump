@@ -6,8 +6,9 @@ document.write('\
         <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="onoffswitch" onchange="swich(\'onoffswitch\')">\
         <label class="onoffswitch-label" for="onoffswitch"><span class="onoffswitch-inner"></span><span class="onoffswitch-switch"></span></label>\
     </div><span>ТН ON</span></div>\
-<div class="menu-profiles">ПРОФИЛЬ\
-    <br/>\
+<div class="menu-profiles">\
+	<span id="get_mode" style="color: red">-</span><br>\
+ПРОФИЛЬ<br>\
     <select id="get_listprofile" onchange="setParam(\'get_listProfile\',\'get_listprofile\');"></select>\
 </div>');
 
@@ -77,5 +78,5 @@ if(!pathmath) {var activeli = "index";} else {var activeli = pathmath.toString()
 var elements = document.getElementsByClassName(activeli);
 var countElements = elements.length;
 for(i=0;i<countElements;i++){document.getElementsByClassName(activeli)[i].classList.add("active");}
-updateParam("get_status,get_WORK,get_listProfile");
+updateParam("get_status,get_WORK,get_MODE,get_listProfile");
 window.onscroll = function() { autoheight(); }

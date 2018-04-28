@@ -230,11 +230,6 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
 	} // while по датчикам
 	release_bus();
-
-Serial.print("End: "); Serial.println(millis());
-
-
-
 	eepromI2C.use_RTOS_delay = 1;
 #endif  // DEMO
 	return OK;

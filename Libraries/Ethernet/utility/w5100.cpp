@@ -47,7 +47,7 @@ void W5100Class::init(void)
   }
 }
 
-uint16_t W5100Class::getTXFreeSize(SOCKET s)
+inline uint16_t W5100Class::getTXFreeSize(SOCKET s)
 {
   uint16_t val=0, val1=0;
   do {
@@ -59,7 +59,7 @@ uint16_t W5100Class::getTXFreeSize(SOCKET s)
   return val;
 }
 
-uint16_t W5100Class::getRXReceivedSize(SOCKET s)
+inline uint16_t W5100Class::getRXReceivedSize(SOCKET s)
 {
   uint16_t val=0,val1=0;
   do {
@@ -216,7 +216,7 @@ uint16_t W5100Class::read(uint16_t _addr, uint8_t *_buf, uint16_t _len)
   return _len;
 }
 
-void W5100Class::execCmdSn(SOCKET s, SockCMD _cmd) {
+inline void W5100Class::execCmdSn(SOCKET s, SockCMD _cmd) {
   // Send command to socket
   writeSnCR(s, _cmd);
   // Wait for command to complete

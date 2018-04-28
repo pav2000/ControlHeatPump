@@ -19,9 +19,9 @@
 // https://github.com/pav2000/ControlHeatPump проект на гитхабе
 // http://77.50.254.24:25402/ последняя версия демо
 // http://77.50.254.24:25402/mob/index.html мобильная морда демо
-// Архивные ссылки 
+// Архивные ссылки
 // http://pumps.tk/webtn.zip  последняя вебморда
-// http://pumps.tk/v09/ демо версия (старая) 
+// http://pumps.tk/v09/ демо версия (старая)
 // http://pumps.tk/v09/mob мобильная демо версия (старая)
 // https://github.com/vad7/Arduino-DUE-WireSam  библиотеки доработанные vad711 при релизе добавляются в архив
 
@@ -77,7 +77,8 @@ EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
 
-extEEPROM eepromI2C(I2C_SIZE_EEPROM,1,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY); // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти
+// I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
+extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
 //RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
@@ -315,9 +316,19 @@ pinMode(21, OUTPUT);
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
                     {    
-               	   	case I2C_ADR_DS2482two: journal.jprintf(" - OneWire DS2482-100 second\n");              break;
-                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100\n");  		            break; // 0x18 есть варианты
-                    case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24CXXX %d kBit\n",I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
+               	   	case I2C_ADR_DS2482two:
+                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100%s\n", address == I2C_ADR_DS2482two ? " second" : ""); break; // 0x18 есть варианты
+					#if I2C_FRAM_MEMORY == 1
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
+						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
+						#endif
+					#else
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24C%d\n", I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
+						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
+						#endif
+					#endif
                     case I2C_ADR_RTC   :	journal.jprintf(" - RTC DS3231\n");                             break; // 0x68
                     default            :	journal.jprintf(" - Unknow\n");                                 break; // не определенный тип
                     }
@@ -367,7 +378,7 @@ pinMode(21, OUTPUT);
   } 
   else HP.load();                                      // Загрузить настройки ТН и текущий профиль
 #ifdef USE_SCHEDULER
-  int8_t err = HP.Schdlr.load();							// Загрузка настроек расписания
+  HP.Schdlr.load();							// Загрузка настроек расписания
 #endif
 
   // обновить хеш для пользователей
@@ -432,31 +443,31 @@ HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездейс
 HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
 
 // ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"rSensor",300,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*300;//300 - начало глючить при переходе на либы vad711  увеличил до 330
+if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*100;//200
+  if (xTaskCreate(vUpdateStepperEEV,"upStepper",150,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*150;//до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",300,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*300;//300  при 200 уже не работает инвертор!!!!! ПРОВЕРЕНО 250 - проблемы не в демо инертор
+if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Оставновить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",350,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*350;//400  при 300 вылет при ошибке
+if (xTaskCreate(vUpdate,"updateHP",200,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*200;//до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Оставновить задачу обновление ТН
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"updateEEV",200,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*200;  //200 Проверено минимум 200 при configMINIMAL_STACK_SIZE не работает, сыпится при выключении ТН
+  if (xTaskCreate(vUpdateEEV,"updateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
   vTaskSuspend(HP.xHandleUpdateEEV);                              // Оставновить задачу обновление EEV
 #endif  
 
@@ -511,22 +522,15 @@ if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD
 HP.mRTOS=HP.mRTOS+64+4*100;  //100
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",200,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200; // 200
+if (xTaskCreate(vUpdatePump,"upPump",150,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*150; //до обрезки стеков было 200
 vTaskSuspend(HP.xHandleUpdatePump); 
 
 // Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",200,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;  // 200 - проверено при configMINIMAL_STACK_SIZE или 150 виснет при попытке повторного пуска при ошибке
+if (xTaskCreate(vPauseStart,"delayStart",150,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+HP.mRTOS=HP.mRTOS+64+4*150;  // до обрезки стеков было 200
 vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
-
-// Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
-//if(Modbus.get_present())
-//{  
-// vSemaphoreCreateBinary(xModbusSemaphore);                       // Создание мютекса
-// if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//}
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 journal.jprintf("15. If you want to send a notification about resetting the controller . . .\n");
@@ -608,7 +612,7 @@ void vWeb0( void *pvParameters )
    volatile unsigned long pingt=0;
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
-   volatile boolean active=true;  // ФЛОГ Одно дополнительное действие за один цикл - распределяем нагрузку
+   volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
    
    HP.timeNTP=xTaskGetTickCount();        // В первый момент не обновляем
     for( ;; )
@@ -796,7 +800,7 @@ void vReadSensor(void *pvParameters)
 			//uint32_t m1 = micros();
 			HP.sTemp[i].Read();
 			//uint32_t m2 = micros(); //Serial.print(HP.sTemp[i].get_name()); Serial.print(':'); Serial.print(m2 - m1); Serial.print(", ");
-			_delay(1);     												// пауза
+			_delay(2);     												// пауза
 		}
 		//Serial.print("\n");
 
@@ -858,7 +862,7 @@ void vReadSensor(void *pvParameters)
 						(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
 				if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
 						(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
-			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + TNUMBER) / 100; // в 0.1 сек
+			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + 2 * TNUMBER) / 100; // в 0.1 сек
 		}
 		static uint8_t last_life_h = 255;
 		if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
@@ -894,120 +898,151 @@ void vReadSensor_delay10ms(uint16_t msec)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-
 // Задача Управление тепловым насосом
  void vUpdate( void *pvParameters )
 { //const char *pcTaskName = "HP_Update\r\n";
-  static unsigned long RPUMPBTick=0;
-  for( ;; )
-  {
-     // 1. Обновится, В это время команды управления не выполняются!!!!!
-     if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен
-       { 
-       if (HP.get_State()==pWORK_HP)  HP.vUpdate();                                                 // ТН работает и идет процесс контроля
-       SemaphoreGive(HP.xCommandSemaphore);                                                        // Семафор отдан
-       }
-     // 2. Отработка пауз
-     if ((HP.get_State()==pOFF_HP)||(HP.get_State()==pSTOPING_HP))                                     // Если  насос не работает или идет останов насоса то остановить задачу Обновления ТН (Вообще то это лишнее, надо убрать)
-     {
-      journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump); 
-      vTaskSuspend(HP.xHandleUpdate);    //???????????????         
-      } 
-     else   // Время паузы очень разное в зависимости от настроек
+	 static unsigned long RPUMPBTick=0;
+	 for( ;; )
+	 {
+		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
+			 // 1. Обновится, В это время команды управления не выполняются!!!!!
+			 if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен
+			 {
+				 if (HP.get_State()==pWORK_HP)  HP.vUpdate();                                               // ТН работает и идет процесс контроля
+				 SemaphoreGive(HP.xCommandSemaphore);                                                       // Семафор отдан
+			 }
+			 // 2. Управление циркуляционным насосом ГВС
+#ifdef RPUMPB
+#ifdef SUPERBOILER
+			 if (HP.scheduleBoiler())                         // Для супербойлера игнорироуем для циркуляции флаг включения бойлера только расписание
+#else
+				 if ((HP.scheduleBoiler())&&(HP.get_BoilerON()))  // если бойлер разрешен и разрешено греть бойлер согласно расписания или расписание выключено
+#endif
+				 {
+					 if ((HP.get_modWork()==pBOILER)||(HP.get_modWork()==pNONE_B))           // Если включен нагрев ГВС всегда включать насос циркуляции
+					 { HP.dRelay[RPUMPB].set_ON(); }
+					 else
+						 if (HP.get_Circulation())                                               // Циркуляция разрешена
+						 {
+							 if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { HP.dRelay[RPUMPB].set_ON(); continue;} // идет нагрев ГВС включаем насос ГВС ВСЕГДА - улучшаем перемешивание
+							 if (HP.get_CirculWork()==0) { HP.dRelay[RPUMPB].set_OFF(); continue;}   // В условиях стоит время работы 0 - выключаем насос ГВС
+							 if (HP.get_CirculPause()==0) { HP.dRelay[RPUMPB].set_ON(); continue;}  // В условиях стоит время паузы 0 - включаем насос ГВС
+							 if(HP.dRelay[RPUMPB].get_Relay())                                       // Насос включен Смотрим времена
+							 {
+								 if(((long)xTaskGetTickCount()-RPUMPBTick ) > HP.get_CirculWork()*configTICK_RATE_HZ)   // ждем время мсек
+								 {
+									 RPUMPBTick=xTaskGetTickCount();
+									 HP.dRelay[RPUMPB].set_OFF();                                  // выключить насос
+								 }
+							 }
+							 else                                                                 // Насос выключен
+							 {
+								 if(((long)xTaskGetTickCount()-RPUMPBTick ) >  HP.get_CirculPause()*configTICK_RATE_HZ)   // ждем время мсек
+								 {
+									 RPUMPBTick=xTaskGetTickCount();
+									 HP.dRelay[RPUMPB].set_ON();                                    // включить насос
+								 }
+							 } // if(HP.dRealay[RPUMPB].get_Relay())
+						 }  //  if (HP.get_Circulation())
+						 else HP.dRelay[RPUMPB].set_OFF() ;                                      // if (HP.get_Circulation())        выключить насос если его управление запрещено
+				 } //  if (HP.scheduleBoiler())
+				 else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
+#endif // #ifdef RPUMPB
+		 } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
 
-        if (HP.get_mode())    // true отопление
-            {
-            if  (HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);       // Гистерезис
-            else
-                #ifdef DEMO
-                   vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
-                #else 
-                    vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                     // Время интегрирования ПИД  секунды
-                #endif    
-            }
-        else                 // Охлаждение
-           {
-            if  (HP.get_ruleCool()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);        // Гистерезис
-             else 
-                 #ifdef DEMO
-                   vTaskDelay(10*1000/portTICK_PERIOD_MS);                                            // для демо 10 сек
-                #else 
-                   vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                       // Время интегрирования ПИД секунды
-                #endif   
-            };
-            
-      // 3. Управление циркуляционным насосом ГВС
-       #ifdef RPUMPB 
-       #ifdef SUPERBOILER
-         if (HP.scheduleBoiler())                         // Для супербойлера игнорироуем для циркуляции флаг включения бойлера только расписание
-       #else
-         if ((HP.scheduleBoiler())&&(HP.get_BoilerON()))  // если бойлер разрешен и разрешено греть бойлер согласно расписания или расписание выключено
-       #endif
-        {
-           if ((HP.get_modWork()==pBOILER)||(HP.get_modWork()==pNONE_B))           // Если включен нагрев ГВС всегда включать насос циркуляции
-              { HP.dRelay[RPUMPB].set_ON(); }
-           else
-           if (HP.get_Circulation())                                               // Циркуляция разрешена
-           {
-            if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_relay3Way())) { HP.dRelay[RPUMPB].set_ON(); continue;} // идет нагрев ГВС включаем насос ГВС ВСЕГДА - улучшаем перемешивание
-            if (HP.get_CirculWork()==0) { HP.dRelay[RPUMPB].set_OFF(); continue;}   // В условиях стоит время работы 0 - выключаем насос ГВС
-            if (HP.get_CirculPause()==0) { HP.dRelay[RPUMPB].set_ON(); continue;}  // В условиях стоит время паузы 0 - включаем насос ГВС
-            if(HP.dRelay[RPUMPB].get_Relay())                                       // Насос включен Смотрим времена
-             {
-               if(((long)xTaskGetTickCount()-RPUMPBTick ) > HP.get_CirculWork()*configTICK_RATE_HZ)   // ждем время мсек
-                    {
-                     RPUMPBTick=xTaskGetTickCount();
-                     HP.dRelay[RPUMPB].set_OFF();                                  // выключить насос
-                     }
-             }      
-             else                                                                 // Насос выключен
-              { 
-               if(((long)xTaskGetTickCount()-RPUMPBTick ) >  HP.get_CirculPause()*configTICK_RATE_HZ)   // ждем время мсек
-                    {
-                     RPUMPBTick=xTaskGetTickCount();
-                     HP.dRelay[RPUMPB].set_ON();                                    // включить насос
-                     }
-               } // if(HP.dRealay[RPUMPB].get_Relay())
-           }  //  if (HP.get_Circulation())    
-            else HP.dRelay[RPUMPB].set_OFF() ;                                      // if (HP.get_Circulation())        выключить насос если его управление запрещено
-         } //  if (HP.scheduleBoiler()) 
-        else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
-       #endif // #ifdef RPUMPB
-     
-     // Расписание
-	   #ifdef USE_SCHEDULER
-		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
-		if(_profile != SCHDLR_NotActive) {                 //сравнение с текущий - профили не равны надо переключаться
-			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
-			if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
-				if(HP.Prof.get_idProfile() != _profile) {
-					type_SaveON _son;
-					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
-						MODE_HP currmode = HP.get_modWork();
-						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL) != (_son.mode == pCOOL)); // Если направление работы ТН разное
-						if(frestart) {
-							HP.sendCommand(pWAIT);
-							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
-						}
-						vTaskSuspendAll();	// без проверки
-						HP.Prof.load(_profile);
-						HP.set_profile();
-						xTaskResumeAll();
-						journal.jprintf("Profile changed to %d\n", _profile);
-						if(frestart) HP.sendCommand(pRESUME);
-					}
-				} else if(_profile == SCHDLR_Profile_off) {
-					HP.sendCommand(pSTOP);
-				} else if(HP.get_State() == pOFF_HP) {
-					HP.sendCommand(pSTART);
-				}
-			}
-		}
-	   #endif
-     // Расписание
+#ifdef USE_SCHEDULER  // 3. Расписание проверка всегда
+		 int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
+		 if(_profile != SCHDLR_NotActive) {                 // Расписание активно
+			 int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
+			 if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
+				 if(_profile == SCHDLR_Profile_off) {
+					 HP.sendCommand(pWAIT);
+				 } else if(HP.Prof.get_idProfile() != _profile) {
+					 type_SaveON _son;
+					 if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
+						 MODE_HP currmode = HP.get_modWork();
+						 uint8_t frestart = currmode != pOFF && ((currmode == pCOOL) != (_son.mode == pCOOL)); // Если направление работы ТН разное
+						 if(frestart) {
+							 HP.sendCommand(pWAIT);
+							 uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
+						 }
+						 vTaskSuspendAll();	// без проверки
+						 HP.Prof.load(_profile);
+						 HP.set_profile();
+						 xTaskResumeAll();
+						 journal.jprintf("Profile changed to %d\n", _profile);
+						 if(frestart) HP.sendCommand(pRESUME);
+					 }
+				 } else if(HP.get_State() == pWAIT_HP) {
+					 HP.sendCommand(pRESUME);
+				 }
+			 }
+		 }  // Расписание активно
+		 else if (HP.get_State()==pWAIT_HP) HP.sendCommand(pRESUME);   // Если расписание не активно и есть режим ожидания (т.е.изменение флага расписания) надо подать команду старт
+#endif
 
-   }// for
- vTaskDelete( NULL ); 
+		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
+		 switch (HP.get_State())
+		 {
+		 case pOFF_HP:                          // 0 ТН выключен
+		 case pSTOPING_HP:                      // 2 Останавливается
+			 journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump);
+			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
+			 break;
+		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
+		 case  pWORK_HP:                          // 3 Работает   - анализ режима работы
+			 switch(HP.get_mode()) // Текущий режим работы
+			 {
+			 case  pOFF:                          // 0 Выключить
+				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
+				 vTaskSuspend(HP.xHandleUpdate);
+				 break;
+			 case  pHEAT:                         // 1 Включить отопление
+			 case  pNONE_H:                       // 4 Продолжаем греть отопление
+				 if  (HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
+				 else
+#ifdef DEMO
+					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+#else
+				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
+#endif
+				 break;
+			 case  pCOOL:                         // 2 Включить охлаждение
+			 case  pNONE_C:                       // 5 Продолжаем охлаждение
+				 if  (HP.get_ruleCool()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
+				 else
+#ifdef DEMO
+					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+#else
+				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+#endif
+				 break;
+
+			 case  pBOILER:                       // 3 Включить бойлер
+			 case  pNONE_B:                       // 6 Продолжаем греть бойлер
+#ifdef DEMO
+				 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+#else
+				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+#endif
+				 break;
+			 default:
+				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
+				 vTaskSuspend(HP.xHandleUpdate);
+				 break;
+			 }  // switch(HP.get_mode())
+			 break;
+			 case  pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
+			 case  pERROR_HP:_delay(5000); break;     // 5 Ошибка ТН
+			 case  pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
+			 default:            journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
+			 vTaskSuspend(HP.xHandleUpdate);
+			 break;
+
+		 } //  switch (HP.get_State())
+
+	 }// for
+	 vTaskDelete( NULL );
 }
 
 // Задача Управление ЭРВ

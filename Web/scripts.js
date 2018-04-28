@@ -1,7 +1,7 @@
-﻿/* ver 0.946 beta */
-//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+﻿/* ver 0.949 beta */
+var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.177';
+//var urlcontrol = 'http://192.168.0.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в миллисекундах
 
@@ -151,6 +151,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
+										element.checked = onoff;
 										if(valueid == "get_mqtt-use_thingspeak") {
 											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
@@ -158,8 +159,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
 											toggleclass('thingspeakon', onoff);
 											toggleclass('thingspeakoff', !onoff);
-										}
-										if((element = document.getElementById(valueid))) element.checked = onoff;
+										} 
 										continue;
 									} 
 									type = rev.test(values[0]) ? "values" : "str";
@@ -704,7 +704,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_flow-' + input + '">-</td>';
 												content = content + '<td id="get_minflow-' + input + '">-</td>';
 												content = content + '<td><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityfnflow(' + count[j] + ')\');"></td>';
+												content = content + '<td><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_frflow-' + input + '">-</td>';
 												content = content + '<td><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinflow-' + input + '">-</td>';

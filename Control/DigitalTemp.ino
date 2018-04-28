@@ -322,7 +322,7 @@ return true;
 // Получить параметр в виде строки
 char* sensorIP::get_sensorIP(TYPE_SENSOR_IP  p)
 {
-  char static temp[16];
+  char static temp[12];
   switch (p)
    {
     case pSENSOR_TEMP:          return ftoa(temp,(float)Temp/100.0,2);       break;  
