@@ -272,7 +272,7 @@ class HeatPump
    void set_nextMode();                                    // Переключение на следующий режим работы отопления (последовательный перебор режимов)
    void set_profile();										// Установить рабочий профиль по текущему Prof
 
-   MODE_HP get_mode() {return Prof.SaveON.mode;}                // Получить режим работы отопления
+   MODE_HP get_mode() {return Prof.SaveON.mode;}                // Получить режим работы 
    RULE_HP get_ruleCool(){return Prof.Cool.Rule;}               // Получить алгоритм охлаждения
    RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}               // Получить алгоритм отопления
    boolean get_TargetCool(){return GETBIT(Prof.Cool.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка

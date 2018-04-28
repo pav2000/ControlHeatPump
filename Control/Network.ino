@@ -520,7 +520,7 @@ boolean pingServer()
 	ping.setTimeout(W5200_TIME_PING);                   // время между попытками пинга мсек
 	WDT_Restart(WDT);                                   // Сбросить вачдог
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
-	SemaphoreGive(xWebThreadSemaphore);                // отдать семафор
+	SemaphoreGive(xWebThreadSemaphore);                 // отдать семафор
 	if (echoReply.status == SUCCESS)
 	{
 		journal.jprintf(pP_DATE," Ping[%d] from: %d.%d.%d.%d: bytes=%d time=%ldms TTL=%d\n",echoReply.data.seq, echoReply.addr[0], echoReply.addr[1], echoReply.addr[2], echoReply.addr[3],REQ_DATASIZE, millis() - echoReply.data.time, echoReply.ttl);

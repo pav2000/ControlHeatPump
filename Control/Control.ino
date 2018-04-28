@@ -601,7 +601,7 @@ void vWeb0( void *pvParameters )
    volatile unsigned long pingt=0;
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
-   volatile boolean active=true;  // ФЛОГ Одно дополнительное действие за один цикл - распределяем нагрузку
+   volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
    
    HP.timeNTP=xTaskGetTickCount();        // В первый момент не обновляем
     for( ;; )
@@ -900,37 +900,9 @@ void vReadSensor_delay10ms(uint16_t msec)
        if (HP.get_State()==pWORK_HP)  HP.vUpdate();                                               // ТН работает и идет процесс контроля
        SemaphoreGive(HP.xCommandSemaphore);                                                       // Семафор отдан
        }
-     // 2. Отработка пауз
-     if ((HP.get_State()==pOFF_HP)||(HP.get_State()==pSTOPING_HP))                                     // Если  насос не работает или идет останов насоса то остановить задачу Обновления ТН (Вообще то это лишнее, надо убрать)
-     {
-      journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump); 
-      vTaskSuspend(HP.xHandleUpdate);    //???????????????         
-      } 
-     else   // Время паузы очень разное в зависимости от настроек
-        if (HP.get_mode())    // true отопление
-            {
-            if  (HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);       // Гистерезис
-            else
-                #ifdef DEMO
-                   vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
-                #else 
-                    vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                     // Время интегрирования ПИД  секунды
-                #endif    
-            }
-        else                 // Охлаждение
-           {
-            if  (HP.get_ruleCool()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);        // Гистерезис
-             else 
-                 #ifdef DEMO
-                   vTaskDelay(10*1000/portTICK_PERIOD_MS);                                            // для демо 10 сек
-                #else 
-                   vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                       // Время интегрирования ПИД секунды
-                #endif   
-            };
-            
-      // 3. Управление циркуляционным насосом ГВС
-       #ifdef RPUMPB 
-       #ifdef SUPERBOILER
+      // 2. Управление циркуляционным насосом ГВС
+        #ifdef RPUMPB 
+        #ifdef SUPERBOILER
          if (HP.scheduleBoiler())                         // Для супербойлера игнорироуем для циркуляции флаг включения бойлера только расписание
        #else
          if ((HP.scheduleBoiler())&&(HP.get_BoilerON()))  // если бойлер разрешен и разрешено греть бойлер согласно расписания или расписание выключено
@@ -965,9 +937,10 @@ void vReadSensor_delay10ms(uint16_t msec)
          } //  if (HP.scheduleBoiler()) 
         else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
        #endif // #ifdef RPUMPB 
-     } // НЕ ОЖИДАНИЕ if HP.get_State()==pWAIT_HP)
+     } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
+
     
-	   #ifdef USE_SCHEDULER  // Расписание проверка всегда
+	  #ifdef USE_SCHEDULER  // 3. Расписание проверка всегда
 		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
@@ -994,11 +967,71 @@ void vReadSensor_delay10ms(uint16_t msec)
 					HP.sendCommand(pRESUME);
 				}
 			}
-		}
+	 	 }  // Расписание активно
+     else if (HP.get_State()==pWAIT_HP) HP.sendCommand(pRESUME);   // Если расписание не активно и есть режим ожидания (т.е.изменение флага расписания) надо подать команду старт
 	   #endif
-     // Расписание
+    
+    // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
+    switch (HP.get_State())
+    {
+      case pOFF_HP:                          // 0 ТН выключен
+      case pSTOPING_HP:                      // 2 Останавливается
+                         journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump); 
+                         vTaskSuspend(HP.xHandleUpdate);    //???????????????  
+                         break;
+      case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте   
+      case  pWORK_HP:                          // 3 Работает   - анализ режима работы  
+                         switch(HP.get_mode()) // Текущий режим работы
+                           {
+                             case  pOFF:                          // 0 Выключить
+                                        journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__); 
+                                        vTaskSuspend(HP.xHandleUpdate);    
+                                        break;
+                             case  pHEAT:                         // 1 Включить отопление
+                             case  pNONE_H:                       // 4 Продолжаем греть отопление
+                                           if  (HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
+                                           else
+                                           #ifdef DEMO
+                                               vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+                                           #else 
+                                                vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
+                                           #endif
+                                           break;
+                             case  pCOOL:                         // 2 Включить охлаждение
+                             case  pNONE_C:                       // 5 Продолжаем охлаждение
+                                           if  (HP.get_ruleCool()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
+                                           else 
+                                            #ifdef DEMO
+                                               vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+                                            #else 
+                                               vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+                                            #endif
+                                            break;    
+                                                                        
+                             case  pBOILER:                       // 3 Включить бойлер
+                             case  pNONE_B:                       // 6 Продолжаем греть бойлер
+                                          #ifdef DEMO
+                                              vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
+                                          #else 
+                                              vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+                                          #endif
+                                          break;    
+                             default:
+                                        journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__); 
+                                        vTaskSuspend(HP.xHandleUpdate);    
+                                        break;                            
+                           }  // switch(HP.get_mode())
+                          break;
+     case  pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
+     case  pERROR_HP:_delay(5000); break;     // 5 Ошибка ТН
+     case  pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
+     default:            journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__); 
+                         vTaskSuspend(HP.xHandleUpdate);    
+                         break;
+                      
+    } //  switch (HP.get_State())
 
-   }// for
+  }// for
  vTaskDelete( NULL ); 
 }
 

@@ -102,6 +102,7 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
   case pSTARTING_HP:  Status.State=pSTARTING_HP; break;                                                                                    // 1 Стартует
   case pSTOPING_HP:   Status.State=pSTOPING_HP;  break;                                                                                    // 2 Останавливается
   case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 3 Работает, при необходимости записываем в ЕЕПРОМ
+  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 4 Ожидание, при необходимости записываем в ЕЕПРОМ
   case pERROR_HP:     Status.State=pERROR_HP;    break;                                                                                    // 5 Ошибка ТН
   case pERROR_CODE:                                                                                                                        // 6 - Эта ошибка возникать не должна!
   default:            Status.State=pERROR_HP;    break;                                                                                    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
@@ -1931,7 +1932,7 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
 
   #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();    // выключить насос циркуляции ТП
+     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();     /
   #endif
 
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС
@@ -1967,10 +1968,10 @@ int8_t HeatPump::StopWait(boolean stop)
      journal.jprintf(pP_TIME,"   %s OFF . . .\n",(char*)nameHeatPump);  
     }
    else 
-    {
-    setState(pWAIT_HP);
-    journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);               
-    }
+     {
+     setState(pWAIT_HP);
+     journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);               
+     }
   return error;
 }
 
@@ -2627,7 +2628,11 @@ void HeatPump::configHP(MODE_HP conf)
       case  pHEAT:    // Отопление
                  PUMPS_ON;                                                     // включить насосы
                  _delay(2*1000);                        // Задержка на 2 сек
-                  
+
+                  #ifdef RPUMPFL
+                  dRelay[RPUMPFL].set_ON();     // ТП
+                  #endif 
+                           
                  #ifdef RTRV
                   if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
@@ -2651,6 +2656,10 @@ void HeatPump::configHP(MODE_HP conf)
                  PUMPS_ON;                                                     // включить насосы
                  _delay(2*1000);                        // Задержка на 2 сек
 
+                 #ifdef RPUMPFL
+                 dRelay[RPUMPFL].set_OFF();     // ТП
+                 #endif
+                
                  #ifdef RTRV
                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
                  dRelay[RTRV].set_ON();                                       // охлаждение
@@ -2675,6 +2684,10 @@ void HeatPump::configHP(MODE_HP conf)
                     if (Status.ret<pBp5) dFC.set_targetFreq(FC_START_FREQ,true,FC_MIN_FREQ_BOILER,FC_MAX_FREQ_BOILER);      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
                     PUMPS_ON; 
+                    
+                    #ifdef RPUMPFL
+                    dRelay[RPUMPFL].set_OFF();     // ТП
+                    #endif
                     // включить насосы
                     if (Status.ret<pBp5) dFC.set_targetFreq(FC_START_FREQ_BOILER,true,FC_MIN_FREQ_BOILER,FC_MAX_FREQ_BOILER);// установить стартовую частоту
                  #endif
@@ -3075,10 +3088,7 @@ int8_t HeatPump::runCommand()
                          
          default:         journal.jprintf("UNKNOW\n");   break;    // Не должно быть!
         }
-  // Захватываем семафор и разбираем потом команды и блокируем обновление ТН
-      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)                // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
-      {
-       vTaskSuspend(xHandleUpdate);
+
        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
        switch(command)
         {
@@ -3086,22 +3096,18 @@ int8_t HeatPump::runCommand()
         case pSTART:                          // 1 Пуск теплового насоса
                       num_repeat=0;           // обнулить счетчик повторных пусков
                       StartResume(_start);    // включить ТН
-                      command=pEMPTY;         // Сбросить команду
                       break;
         case pAUTOSTART:                      // 2 Пуск теплового насоса автоматический
                       StartResume(_start);    // включить ТН
-                      command=pEMPTY;         // Сбросить команду
                       break;                
         case pSTOP:                           // 3 Стоп теплового насоса
                       StopWait(_stop);        // Выключить ТН
-                      command=pEMPTY;         // Сбросить команду
                       break;
         case pRESET:                          // 4 Сброс контроллера
                       StopWait(_stop);        // Выключить ТН
                       journal.jprintf("$SOFTWARE RESET control . . .\r\n"); 
                       journal.jprintf("");
                       _delay(500);            // задержка что бы вывести сообщение в консоль
-                      command=pEMPTY;         // Сбросить команду
                       Software_Reset() ;      // Сброс
                       break;
         case pREPEAT:
@@ -3110,14 +3116,12 @@ int8_t HeatPump::runCommand()
                       journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat); 
               //        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
                       vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                      command=pEMPTY;                                    // Сбросить команду
                       break;  
         case pRESTART:
                      // Stop();                                          // пуск Тн после сброса - есть задержка
-                       journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
+                      journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
       //              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
                       vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                      command=pEMPTY;                                    // Сбросить команду
                       break;                 
         case pNETWORK:
                       journal.jprintf("Update network setting . . .\r\n");
@@ -3126,7 +3130,6 @@ int8_t HeatPump::runCommand()
                       initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
                       for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
                       SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
-                      command=pEMPTY;                                    // Сбросить команду
                       break;                 
         case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
                       #ifdef I2C_EEPROM_64KB 
@@ -3135,38 +3138,43 @@ int8_t HeatPump::runCommand()
                       #else                                              // Этого не может быть, но на всякий случай
                        journal.Init();                                   // Очистить журнал в оперативке
                       #endif 
-                      command=pEMPTY;                                    // Сбросить команду
                       break;      
         case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
                       #ifdef I2C_EEPROM_64KB 
                        _delay(2000);              						           // задержка что бы вывести сообщение в консоль и на веб морду
                        Stat.Format();                                    // Послать команду форматирование статистики
                       #endif 
-                      command=pEMPTY;                                    // Сбросить команду
                       break;                    
         case pSAVE:                                                      // Сохранить настройки
-                      _delay(2000);              						 // задержка что бы вывести сообщение в консоль и на веб морду
+                      _delay(2000);              				             		 // задержка что бы вывести сообщение в консоль и на веб морду
                       save();                                            // сохранить настройки
-                      command=pEMPTY;                                    // Сбросить команду
                       break;  
-        case pWAIT:                                                     // Перевод в состояние ожидания ТН
+        case pWAIT:   // Перевод в состяние ожидания  - особенность возможна блокировка задач - используем семафор
+                      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек 
+                      {
+                      vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
                       StopWait(_wait);                                  // Ожидание
-                      command=pEMPTY;                                   // Сбросить команду
+                      SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+                      vTaskResume(xHandleUpdate);
+                      }
+                      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
                       break;   
-        case pRESUME:                                                  // Восстановление работы после ожиданияя
-                      StartResume(_resume);                            // восстановление ТН
-                      command=pEMPTY;                                  // Сбросить команду
+        case pRESUME:   // Восстановление работы после ожиданияя -особенность возможна блокировка задач - используем семафор
+                      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
+                      {
+                      vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН                                               
+                      StartResume(_resume);                             // восстановление ТН
+                      SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+                      vTaskResume(xHandleUpdate);
+                      }
+                      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
                       break;                         
                                            
         default:                                                         // Не известная команда
                       journal.jprintf("Unknow command????"); 
-                      command=pEMPTY;
                       break;
         }
-        SemaphoreGive(xCommandSemaphore);              // Семафор отдать
-        vTaskResume(xHandleUpdate);
-      }
-      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
+      command=pEMPTY;   // Сбросить команду      
       return error;  
 }
 
@@ -3195,7 +3203,7 @@ switch ((int)get_State())  //TYPE_STATE_HP
          }
         break;   
   case pWAIT_HP:    return (char*)"Ожидание";  break;                     // 4 Ожидание
-  case pERROR_HP:   return (char*)"Ошибка";    break;                     // 5 Ошибка ТН
+  case pERROR_HP:   return (char*)"Ошибка#";    break;                    // 5 Ошибка ТН
   default:          return (char*)"Вн.Ошибка"; break;                     // 6 - Эта ошибка возникать не должна!
   }
   
@@ -3223,7 +3231,7 @@ switch ((int)get_State())  //TYPE_STATE_HP
         break;   
   case pWAIT_HP:    return (char*)"Wait";    break;                     // 4 Выключить
   case pERROR_HP:   return (char*)cError;    break;                     // 5 Ошибка ТН
-  default:          return (char*)cError;    break;                     // 6 - Эта ошибка возникать не должна!
+  default:          return (char*)"cInError";    break;                     // 6 - Эта ошибка возникать не должна!
   }
 }
 
