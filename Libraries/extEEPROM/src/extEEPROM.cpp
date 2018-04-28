@@ -70,11 +70,11 @@
 //   be identical).
 // - pageSize is the EEPROM's page size in bytes.
 // - eepromAddr is the EEPROM's I2C address and defaults to 0x50 which is common.
-extEEPROM::extEEPROM(eeprom_size_t deviceCapacity, byte nDevice, uint32_t pageSize, byte eepromAddr, byte FRAM)
+extEEPROM::extEEPROM(uint16_t deviceCapacity, byte nDevice, uint32_t pageSize, byte eepromAddr, byte FRAM)
 {
     _nDevice = nDevice;
     _eepromAddr = eepromAddr;
-    _nAddrBytes = deviceCapacity > kbits_16 ? 2 : 1;       //two address bytes needed for eeproms > 16kbits
+    _nAddrBytes = deviceCapacity > 16 ? 2 : 1;       //two address bytes needed for eeproms > 16kbits
     _FRAM = FRAM;
     _dvcCapacity = deviceCapacity * 1024UL / 8;
     _totalCapacity = _nDevice * _dvcCapacity;
@@ -87,8 +87,8 @@ extEEPROM::extEEPROM(eeprom_size_t deviceCapacity, byte nDevice, uint32_t pageSi
 
     //determine the bitshift needed to isolate the chip select bits from the address to put into the control byte
     uint16_t kb = deviceCapacity;
-    if ( kb <= kbits_16 ) _csShift = 8;
-    else if ( kb >= kbits_512 ) _csShift = 16;
+    if ( kb <= 16 ) _csShift = 8;
+    else if ( kb >= 512 ) _csShift = 16;
     else {
         kb >>= 6;
         _csShift = 12;

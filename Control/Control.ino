@@ -321,12 +321,12 @@ pinMode(21, OUTPUT);
 					#if I2C_FRAM_MEMORY == 1
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
-                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
 						#endif
 					#else
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24C%d\n", I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
-                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break
+                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
 						#endif
 					#endif
                     case I2C_ADR_RTC   :	journal.jprintf(" - RTC DS3231\n");                             break; // 0x68

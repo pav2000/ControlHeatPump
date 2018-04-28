@@ -61,12 +61,12 @@ enum TYPE_SENSOR
     #define I2C_FRAM_MEMORY       0                                   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+		#define I2C_MEMORY_TOTAL  512   	   // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
 	#else // все остальное
 		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
 	#endif
@@ -411,12 +411,12 @@ enum TYPE_SENSOR
     #define I2C_FRAM_MEMORY       0                                       // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+		#define I2C_MEMORY_TOTAL  512   	   // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
 	#else // все остальное
 		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
 	#endif
@@ -765,12 +765,12 @@ enum TYPE_SENSOR
     #define I2C_FRAM_MEMORY       0   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+		#define I2C_MEMORY_TOTAL  512   	   // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
 	#else // все остальное
 		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
 	#endif
@@ -1139,12 +1139,12 @@ enum TYPE_SENSOR
     #define I2C_FRAM_MEMORY       0   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+		#define I2C_MEMORY_TOTAL  512   	   // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-		#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
 	#else // все остальное
 		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
 	#endif
@@ -1521,12 +1521,12 @@ enum TYPE_SENSOR
         #define I2C_FRAM_MEMORY       0                                       // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 		#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 			#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-			#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
+			#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+			#define I2C_MEMORY_TOTAL  512   	   // Итоговый размер I2C памяти в килобитах
 			#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
-			#define I2C_MEMORY_TOTAL  kbits_512    // Итоговый размер I2C памяти
 		#else // все остальное
 			#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-			#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
+			#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
 			#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 			#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
 		#endif
@@ -1911,13 +1911,13 @@ enum TYPE_SENSOR
 	#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_512    // Объем чипа eeprom в килобитах
-  		#define I2C_MEMORY_TOTAL  kbits_1024   // Итоговый размер I2C памяти
+		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
+  		#define I2C_MEMORY_TOTAL  1024   	   // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
 	#else // все остальное
 		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   kbits_32     // Объем чипа eeprom в килобитах
-		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
+		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 	#endif
 
