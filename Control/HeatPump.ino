@@ -1559,7 +1559,7 @@ void HeatPump::relayAllOFF()
 #endif
 
 // Переключение на нагрев бойлера ТН true-бойлер false-отопление/охлаждение
-//  в зависимости от режима, не забываем менять onBoiler по нему определяется включение ГВС
+// в зависимости от режима, не забываем менять onBoiler по нему определяется включение ГВС
 boolean HeatPump::switchBoiler(boolean b)
 {
  if (b==onBoiler) return onBoiler;            // Нечего делать выходим
@@ -1649,7 +1649,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
 	if(b == old) return;                                                        // менять нечего выходим
 
-	// пауза перед выключением насосов, если нужно
+	// пауза перед выключением насосов контуров, если нужно
 	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n", DELAY_OFF_PUMP);
@@ -1669,8 +1669,14 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	_delay(d);                                 // Задержка на d мсек
 #endif
 #ifdef R3WAY
-	dRelay[PUMP_OUT].set_Relay(b);                         // Реле включения насоса выходного контура  (отопление и ГВС)
+	dRelay[PUMP_OUT].set_Relay(b);                  // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
+#else
+    #ifdef RPUMPBH
+    if ((Status.modWork==pBOILER)||(Status.modWork==pNONE_B)) dRelay[RPUMPBH].set_Relay(b);  else // Если бойлер 
+    #endif
+    dRelay[RPUMPO].set_Relay(b);                  // не бойлер
+   _delay(d);                                     // Задержка на d мсек    
 #endif
 	//  }
 	// пауза после включения насосов, если нужно
@@ -1932,7 +1938,7 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
 
   #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();     /
+     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();    // выключить насос циркуляции ТП
   #endif
 
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС
