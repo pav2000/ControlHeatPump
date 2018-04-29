@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			updateParam("get_paramFC(FC),get_paramFC(POWER),get_EEV,get_overheatEEV,get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RPUMPFL)");
+			updateParam("hide_rpumpfl,get_paramFC(FC),get_paramFC(POWER),get_EEV,get_overheatEEV,get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RPUMPFL)");
 	};
 	</script>	
 </head>
@@ -41,7 +41,7 @@
 
 			<dt>Насос ГК</dt><dd><span id="get_relay-rpumpi-ONOFF">-</span></dd>
 			<dt>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
-			<dt>Насос ТП</dt><dd><span id="get_relay-rpumpfl-ONOFF">-</span></dd>
+			<span name="hide_rpumpfl"><dt>Насос ТП</dt><dd><span id="get_relay-rpumpfl-ONOFF">-</span></dd></span>
 		</dl>
 							
 	</div>

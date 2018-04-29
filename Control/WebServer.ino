@@ -717,13 +717,21 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         else {strcat(strReturn,"Error "); strcat(strReturn,int2str(HP.get_errcode()));} // есть ошибки
         strcat(strReturn,";");   strcat(strReturn,"&") ;    continue;
        }   
-     if (strcmp(str,"get_FC_analog")==0)
-     {
-		#ifdef FC_ANALOG_CONTROL
-    	 	 strcat(strReturn,"1&");
-		#else
-    	 	strcat(strReturn,"0&");
-		#endif
+     if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
+    	str += 5;
+    	if(strcmp(str, "fcanalog") == 0) {
+			#ifdef FC_ANALOG_CONTROL
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	} else if(strcmp(str, "rpumpfl") == 0) {
+			#ifdef RPUMPFL
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	}
      }
      if (strcmp(str,"get_infoFC")==0)  // get_infoFC
        {

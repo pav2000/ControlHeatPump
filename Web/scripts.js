@@ -142,8 +142,11 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
 								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/get_FC_analog/)) { // clear
-									if(values[1] == 0 && (element = document.getElementById(valueid))) element.innerHTML = "";
+								else if(values[0].match(/^hide_/)) { // clear
+									if(values[1] == 1) {
+										var elements = document.getElementsByName(valueid);
+										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
+									}
 									continue;
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
