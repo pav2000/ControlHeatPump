@@ -735,9 +735,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
      }
      if (strcmp(str,"get_infoFC")==0)  // get_infoFC
        {
-        
-       if (!HP.dFC.get_present()) { strcat(strReturn,"|Данные не доступны (нет инвертора)|;&"); continue;}          // Инвертора нет в конфигурации
-       if(HP.dFC.get_blockFC())  { strcat(strReturn,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); continue;}  // Инвертор заблокирован
        // Все нормально опрашиваем инвертор
        #ifndef FC_ANALOG_CONTROL     
          HP.dFC.get_infoFC(strReturn);

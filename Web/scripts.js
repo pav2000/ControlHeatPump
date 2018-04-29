@@ -151,7 +151,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
-									if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись
+									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
 										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 									}
 									element = document.getElementById(valueid);
@@ -267,8 +267,7 @@ function loadParam(paramid, noretry, resultdiv) {
 														x: 20,
 														y: -40
 													},
-													relativeTo: "plot"
-												}
+													relativeTo: "plot"}
 											},
 											lang: {
 												contextButtonTitle: "Меню графика",
@@ -288,9 +287,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											},
 											xAxis: {
 												title: {
-													text: "Время, шаг: x" + window.time_chart
-												}
-											},
+													text: "Время, шаг: x" + window.time_chart}},
 											/*yAxis: [{ title: { text: yizm },labels: {align: 'left', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							{ title: { text: 'Положение ЭРВ(шаги)' },labels: {align: 'right', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							opposite: true],*/
@@ -299,15 +296,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												labels: {
 													format: '{value}',
 													style: {
-														color: Highcharts.getOptions().colors[0]
-													}
-												},
+														color: Highcharts.getOptions().colors[0]}},
 												title: {
 													text: yizm,
 													style: {
-														color: Highcharts.getOptions().colors[0]
-													}
-												}
+														color: Highcharts.getOptions().colors[0]}}
 											}, { // Secondary yAxis
 												allowDecimals: false,
 												showEmpty: false,
@@ -315,15 +308,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												title: {
 													text: 'Положение ЭРВ',
 													style: {
-														color: Highcharts.getOptions().colors[1]
-													}
-												},
+														color: Highcharts.getOptions().colors[1]}},
 												labels: {
 													format: '{value} шагов',
 													style: {
-														color: Highcharts.getOptions().colors[1]
-													}
-												},
+														color: Highcharts.getOptions().colors[1]}},
 												opposite: true
 											}],
 											tooltip: {
@@ -339,8 +328,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											plotOptions: {
 												series: {
 													label: {
-														connectorAllowed: false
-													},
+														connectorAllowed: false},
 										            animation: false,
 													pointStart: 0
 												}
@@ -349,13 +337,10 @@ function loadParam(paramid, noretry, resultdiv) {
 													yAxis: 0,
 													name: title,
 													tooltip: {
-														valueDecimals: 2
-													},
+														valueDecimals: 2},
 													states: {
 														hover: {
-															enabled: false
-														}
-													},
+															enabled: false}},
 													showInLegend: false,
 													turboThreshold: 0,
 													data: dataSeries1,
@@ -365,13 +350,10 @@ function loadParam(paramid, noretry, resultdiv) {
 													yAxis: 1,
 													name: 'Положение ЭРВ',
 													tooltip: {
-														valueDecimals: 2
-													},
+														valueDecimals: 2},
 													states: {
 														hover: {
-															enabled: false
-														}
-													},
+															enabled: false}},
 													showInLegend: false,
 													turboThreshold: 0,
 													data: dataSeries2,
@@ -915,8 +897,11 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
 									break;
 								} else {
-									element = document.getElementById(values[0].toLowerCase());
-									if(element) {
+									if((element = document.getElementById(values[0].toLowerCase()))) {
+										element.value = values[1];
+										element.innerHTML = values[1];
+									}
+									if((element = document.getElementById(values[0].toLowerCase() + "2"))) {
 										element.value = values[1];
 										element.innerHTML = values[1];
 									}

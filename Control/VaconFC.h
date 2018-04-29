@@ -17,8 +17,8 @@
  * GNU General Public License for more details.
  */
 //
-#ifndef VaconFC_h
-#define VaconFC_h
+#ifndef _VaconFC_h
+#define _VaconFC_h
 
 #define FC_VACON_NAME "Vacon 10"
 
@@ -140,58 +140,58 @@ const char *FC_Faults_str[] = {	"Ok", // нет ошибки
 class devVaconFC
 {
 public:
-  int8_t initFC();                                 // Инициализация Частотника
+  int8_t	initFC();                                 // Инициализация Частотника
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fFC);} // Наличие датчика в текущей конфигурации
-  int8_t get_err(){return err;}                    // Получить последню ошибку частотника
-  uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения
-  char* get_paramFC(TYPE_PARAM_FC p);              // Получить параметр инвертора в виде строки
-  boolean set_paramFC(TYPE_PARAM_FC p, float x);   // Установить параметр инвертора из строки
+  int8_t	get_err(){return err;}                    // Получить последню ошибку частотника
+  uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
+  char*		get_paramFC(TYPE_PARAM_FC p);              // Получить параметр инвертора в виде строки
+  boolean	set_paramFC(TYPE_PARAM_FC p, float x);   // Установить параметр инвертора из строки
   
   // Управление по модбас Общее для всех частотников
-  int16_t get_targetFreq() {return FC;}                    // Получить целевую скорость в %
-  int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
-  uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
-  uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
-  char * get_infoFC(char *buf);                   // Получить информацию о частотнике
-  void 	get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
-  boolean reset_errorFC();                        // Сброс ошибок инвертора
-  boolean reset_FC();               		      // Сброс состояния связи модбас
-  int16_t CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
-  int16_t read_stateFC();                        // Текущее состояние инвертора
-  int16_t read_tempFC();                         // Tемпература радиатора
+  int16_t	get_targetFreq() {return FC;}                    // Получить целевую скорость в %
+  int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
+  uint16_t	get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
+  void		get_infoFC(char *buf);                   // Получить информацию о частотнике
+  void		get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
+  boolean	reset_errorFC();                        // Сброс ошибок инвертора
+  boolean	reset_FC();               		      // Сброс состояния связи модбас
+  int16_t	CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
+  int16_t	read_stateFC();                        // Текущее состояние инвертора
+  int16_t	read_tempFC();                         // Tемпература радиатора
    
-  int16_t get_freqFC() {return FC_curr;}            // Получить текущую скорость в 0.01 %
-  uint32_t get_startTime(){return startCompressor;}// Получить время старта компрессора
-  int8_t get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
-  int8_t start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
-  int8_t stop_FC();                                 // Команда стоп на инвертор
-  boolean isfAuto(){return GETBIT(flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
-  boolean isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
+  int16_t	get_freqFC() {return FC_curr;}            // Получить текущую скорость в 0.01 %
+  uint32_t	get_startTime(){return startCompressor;}// Получить время старта компрессора
+  int8_t	get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
+  int8_t	start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
+  int8_t	stop_FC();                                 // Команда стоп на инвертор
+  boolean	isfAuto(){return GETBIT(flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
+  boolean	isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
  
-  void 	  check_blockFC();                          // Установить запрет на использование инвертора
-  boolean get_blockFC(); 						    // Получить флаг блокировки инвертора
+  void		check_blockFC();                          // Установить запрет на использование инвертора
+  boolean	get_blockFC(); 						    // Получить флаг блокировки инвертора
 
-  const char * get_fault_str(uint8_t fault); // Возвращает название ошибки
+  const char *get_fault_str(uint8_t fault); // Возвращает название ошибки
   
   // Аналоговое управление
   int16_t get_DAC(){return dac;};                  // Получить установленное значеие ЦАП
   int16_t get_level0(){return level0;}             // Получить Отсчеты ЦАП соответсвующие 0   скорости
   int16_t get_level100(){return level100;}         // Получить Отсчеты ЦАП соответсвующие максимальной скорости
   int16_t get_levelOff(){return levelOff;}         // Получить Минимальная скорость при котором частотник отключается (ограничение минимальной мощности)
-  int8_t set_level0(int16_t x);                    // Установить Отсчеты ЦАП соответсвующие 0   мощности
-  int8_t set_level100(int16_t x);                  // Установить Отсчеты ЦАП соответсвующие 100 мощности
-  int8_t set_levelOff(int16_t x);                  // Установить Минимальная мощность при котором частотник отключается (ограничение минимальной скорости)
+  int8_t  set_level0(int16_t x);                    // Установить Отсчеты ЦАП соответсвующие 0   мощности
+  int8_t  set_level100(int16_t x);                  // Установить Отсчеты ЦАП соответсвующие 100 мощности
+  int8_t  set_levelOff(int16_t x);                  // Установить Минимальная мощность при котором частотник отключается (ограничение минимальной скорости)
   uint8_t get_pinA(){return  pin;}                 // Ножка куда прицеплено FC
    
   // Сервис
-  TEST_MODE get_testMode() {return testMode;}      // Получить текущий режим работы
-  void    set_testMode(TEST_MODE t);			   // Установить значение текущий режим работы
-  char*   get_note(){return  note;}                // Получить описание
-  char*   get_name(){return  name;}                // Получить имя
-  int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t loadFromBuf(int32_t adr, byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  uint16_t get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
+  TEST_MODE	get_testMode() {return testMode;}      // Получить текущий режим работы
+  void		set_testMode(TEST_MODE t);			   // Установить значение текущий режим работы
+  char *	get_note(){return  note;}                // Получить описание
+  char *	get_name(){return  name;}                // Получить имя
+  int32_t	save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  int32_t	load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  int32_t	loadFromBuf(int32_t adr, byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  uint16_t	get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 
   statChart ChartFC;                               // График по скорости
   statChart ChartPower;                            // График по мощности

@@ -453,7 +453,7 @@ int8_t sensorFrequency::Read()
     Frequency=random(2500,6000);
     count=0;
  //   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
+    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
    //  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
     return err;      // Если демо вернуть случайное число
  #else
@@ -466,7 +466,7 @@ int8_t sensorFrequency::Read()
         sTime=tickCount;  
         count=0;
   //   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
-       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
+       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
        }
  #endif   
  return err;    
@@ -1486,6 +1486,8 @@ boolean devOmronMX2::set_paramFC(TYPE_PARAM_FC p, float x)
 char * devOmronMX2::get_infoFC(char *buf)
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+  if(!HP.dFC.get_present()) { strcat(buf,"|Данные не доступны (нет инвертора)|;&"); return buf;}          // Инвертора нет в конфигурации
+  if(HP.dFC.get_blockFC())  { strcat(buf,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); return buf;}  // Инвертор заблокирован
   int8_t i;  
   char temp[10];  
        strcat(buf,"-|Состояние инвертора [0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током ");strcat(buf,"7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]|");strcat(buf,int2str(read_0x03_16(MX2_STATE)));strcat(buf,";");

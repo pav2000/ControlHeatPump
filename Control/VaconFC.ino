@@ -70,7 +70,6 @@ int8_t devVaconFC::initFC()
     ChartCurrent.init(get_present()); // инициалазация графика
 #endif
 
-    note = (char*)noteFC_OK; // Описание инвертора есть
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     CheckLinkStatus(); // проверка связи с инвертором
     check_blockFC();
@@ -107,7 +106,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 		{
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
 			if(err == OK) break; // Прочитали удачно
-			_delay(1);
+			_delay(FC_DELAY_READ);
 		}
 		check_blockFC(); // проверить необходимость блокировки
 		if(err != OK) state = ERR_LINK_FC;
@@ -385,11 +384,12 @@ void devVaconFC::check_blockFC()
     else {
     	SETBIT0(flags, fErrFC);
         number_err = 0;
+        note = (char*)noteFC_OK; // Описание инвертора есть
         return;
     } // Увеличить счетчик ошибок
     if(number_err > FC_NUM_READ) // если привышено число ошибок то блокировка
     {
-        SemaphoreGive(xModbusSemaphore); // разблокировать семафор
+        //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
         SETBIT1(flags, fErrFC); // Установить флаг
         note = (char*)noteFC_NO;
         set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
@@ -411,8 +411,7 @@ void  devVaconFC::set_testMode(TEST_MODE t)
 		SETBIT0(flags, fErrFC);
 		err = OK;
 	} else {
-	    CheckLinkStatus(); // проверка связи с инвертором
-	    check_blockFC();
+	    //CheckLinkStatus(); // проверка связи с инвертором
 	}
 }
 
@@ -728,48 +727,54 @@ void devVaconFC::get_infoFC_status(char *buffer, uint16_t st)
 }
 
 // Получить информацию о частотнике
-char* devVaconFC::get_infoFC(char* buf)
+void devVaconFC::get_infoFC(char* buf)
 {
+	buf += m_strlen(buf);
 	if(testMode == NORMAL || testMode == HARD_TEST) {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-		int16_t i;
-		strcat(buf, "-|Состояние инвертора: "); get_infoFC_status(buf, i = read_0x03_16(FC_STATUS)); m_snprintf(buf, 256, "|%d;", i);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.1|Контроль выходной частоты (Гц)|%.2f;", (float)read_0x03_16(FC_FREQ) / 100.0);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "2103|Выходная скорость (%)|%.2f;", (float)read_0x03_16(FC_SPEED) / 100.0);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.4|Контроль выходного тока (А)|%.2f;", (float)read_0x03_16(FC_CURRENT) / 100.0);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.5|Контроль крутящего момента (%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.7|Контроль выходного напряжения (В)|%.1f;", (float)read_0x03_16(FC_VOLTAGE) / 10.0);
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.3|Контроль оборотов (об/м)|%d;", read_0x03_16(FC_RPM));
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V3.5|Счетчик времени работы в режиме \"Ход\" (ч)|%d;", read_0x03_16(FC_RUN_HOURS));
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V3.3|Контроль времени наработки (ч)|%d;", read_0x03_16(FC_POWER_HOURS));
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.9|Контроль температуры радиатора (°С)|%d;", read_tempFC());
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V1.8|Контроль напряжения  постоянного тока (В)|%d;", read_0x03_16(FC_VOLTATE_DC));
-		_delay(FC_DELAY_READ);
-		m_snprintf(buf, 256, "V3.6|Счетчик аварийных отключений (Шт)|%d;", read_0x03_16(FC_NUM_FAULTS));
-		_delay(FC_DELAY_READ);
+		if(HP.dFC.get_blockFC()) {   // Инвертор заблокирован
+			strcat(buf, "|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;");
+		} else {
+			int16_t i;
+			strcat(buf, "-|Состояние инвертора: "); get_infoFC_status(buf, i = read_0x03_16(FC_STATUS));
+			buf += m_snprintf(buf + m_strlen(buf), 256, "|%d;", i);
+			if(err == OK) {
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.1|Контроль выходной частоты (Гц)|%.2f;", (float)read_0x03_16(FC_FREQ) / 100.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%)|%.2f;", (float)read_0x03_16(FC_SPEED) / 100.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.4|Контроль выходного тока (А)|%.2f;", (float)read_0x03_16(FC_CURRENT) / 100.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.5|Контроль крутящего момента (%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.7|Контроль выходного напряжения (В)|%.1f;", (float)read_0x03_16(FC_VOLTAGE) / 10.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.3|Контроль оборотов (об/м)|%d;", read_0x03_16(FC_RPM));
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V3.5|Счетчик времени работы в режиме \"Ход\" (ч)|%d;", read_0x03_16(FC_RUN_HOURS));
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V3.3|Контроль времени наработки (ч)|%d;", read_0x03_16(FC_POWER_HOURS));
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.9|Контроль температуры радиатора (°С)|%d;", read_tempFC());
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.8|Контроль напряжения  постоянного тока (В)|%d;", read_0x03_16(FC_VOLTATE_DC));
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V3.6|Счетчик аварийных отключений (Шт)|%d;", read_0x03_16(FC_NUM_FAULTS));
+				_delay(FC_DELAY_READ);
 
-		i = read_0x03_16(FC_ERROR);
-		if(err == OK) {
-			m_snprintf(buf, 256, "2111|Активная ошибка|%s: %d;", get_fault_str(i), i);
-		}
-		else {
-			m_snprintf(buf, 256, "-|Ошибка Modbus|%d;", err);
+				i = read_0x03_16(FC_ERROR);
+				if(err == OK) {
+					m_snprintf(buf, 256, "2111|Активная ошибка|%s: %d;", get_fault_str(i), i);
+				} else {
+					m_snprintf(buf, 256, "-|Ошибка Modbus|%d;", err);
+				}
+			}
 		}
 #endif
 	} else {
 		m_snprintf(buf, 256, "-|Режим тестирования...|;");
 	}
-    return buf;
 }
 // Сброс ошибок инвертора по модбасу
 boolean devVaconFC::reset_errorFC()
