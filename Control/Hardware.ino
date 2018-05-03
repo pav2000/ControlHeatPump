@@ -406,12 +406,12 @@ void InterruptFLOWEVA()
   HP.sFrequency[FLOWEVA].InterruptHandler();
 #endif  
 }
+#ifdef FLOWPCON  
 void InterruptFLOWPCON() 
 {
-#ifdef FLOWPCON  
   HP.sFrequency[FLOWPCON].InterruptHandler();
-#endif  
 }
+#endif  
 
 // Инициализация частотного датчика, на входе номер сенсора по порядку
 void sensorFrequency::initFrequency(int sensor)                     
@@ -439,7 +439,9 @@ void sensorFrequency::initFrequency(int sensor)
    //   FALLING прерывание вызывается только при смене значения на порту с HIGH на LOW
         if (sensor==FLOWCON)  attachInterrupt(pin,InterruptFLOWCON,CHANGE); 
    else if (sensor==FLOWEVA)  attachInterrupt(pin,InterruptFLOWEVA,CHANGE); 
-   else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);  
+#ifdef FLOWPCON   
+   else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
+#endif     
    else err=ERR_NUM_FREQUENCY;
   
 }
