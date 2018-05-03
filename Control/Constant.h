@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.949 beta"        // Версия прошивки
+#define VERSION         "0.950 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -396,6 +396,8 @@ const char *cInvalid={"invalid"};
 const char *cStrEnd={"\n"};
 const char *cErrorRS485={"%s: Read error %s, code=%d repeat . . .\n"};  // имя, функция, код
 const char *cErrorMutex={"Function %s: %s, mutex is buzy\n"};           // функция, мютекс
+const char *cAddHeat = {"+"};                                           // Значек нагрева ГВС ТЭНом
+
 
 
 // Многозадачность, деление аппартных ресурсов
