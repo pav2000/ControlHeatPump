@@ -1501,7 +1501,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
           if  (GETBIT(Prof.Boiler.flags,fAddHeating))  // Включен догрев
             { 
                  if ((sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
-                 if ((!flagRBOILER)||(onBoiler))  return false; // флажка нет или рабоатет бойлер но догрев не включаем
+                 if ((!flagRBOILER)||(onBoiler))  return false; // флажка нет или работет бойлер но догрев не включаем
                  else  //flagRBOILER==true
                  { 
                   if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                       // Бойлер ниже целевой темпеартуры надо греть
@@ -1741,8 +1741,9 @@ int8_t HeatPump::StartResume(boolean start)
 	  {
 		  startWait=true;                    // Начало работы с ожидания=true;
 		  setState(pWAIT_HP);
-		  journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
 		  vTaskResume(xHandleUpdate);
+      journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
+      journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
 		  return error;
 	  }
   if (startWait)
@@ -1897,7 +1898,7 @@ int8_t HeatPump::StartResume(boolean start)
      if(start)
      {
      vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
-     journal.jprintf(" Start task update %s\n",(char*)nameHeatPump); 
+     journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
      }
      
      // 11. Сохранение состояния  -------------------------------------------------------------------------------
@@ -1935,7 +1936,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
     {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-    journal.jprintf(" Stop task update %s\n",(char*)nameHeatPump);  
+    journal.jprintf(" Stop task update %s\n",(char*)__FUNCTION__); 
     } 
     
   if(startPump)

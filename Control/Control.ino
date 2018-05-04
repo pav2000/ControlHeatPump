@@ -78,7 +78,7 @@ EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
-extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
+extEEPROM eepromI2C((eeprom_size_t)I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
 //RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
