@@ -52,7 +52,6 @@
 #include "Message.h"
 #include "Information.h"
  
-
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
@@ -78,7 +77,7 @@ EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
-extEEPROM eepromI2C((eeprom_size_t)I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
+extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
 //RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
@@ -254,42 +253,50 @@ pinMode(21, OUTPUT);
   #endif
   
 // 3. Инициализация и проверка шины i2c
-   journal.jprintf("1. Setting and checking I2C device . . .\n");
+   journal.jprintf("1. Setting and checking I2C devices . . .\n");
  
-   Wire.begin();
-   uint8_t eepStatus=0;
-   for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
-    {
-    if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на 400 кгц  OK==0 все остальное ошибки и пытаемся инициализировать
-      {
-      journal.jprintf("$ERROR - I2C bus failed, status = %d\n",eepStatus);
-      journal.jprintf("$WARNING - Repeat initialization I2C bus\n",eepStatus);
-       #ifdef POWER_CONTROL 
-          digitalWriteDirect(PIN_POWER_ON, HIGH);
-          digitalWriteDirect(PIN_LED1, LOW);
-          _delay(2000);
-          digitalWriteDirect(PIN_POWER_ON, LOW);
-          digitalWriteDirect(PIN_LED1, HIGH);
-           _delay(500);
-          Wire.begin();
-        #else
-           Wire.begin();
-           _delay(500);
-       #endif
-       WDT_Restart(WDT);                       // Сбросить вачдог
-      }
-   else {  journal.jprintf("I2C bus init on %d kHz - OK\n",I2C_SPEED/1000); break; }  // Все хорошо
-    } // for
-    
-    if (eepStatus!=0)  // если шина не инициализирована делаем попытку запустится на малой частоте один раз!
-     {
-      if ((eepStatus=eepromI2C.begin(twiClock100kHz))>0) 
-           journal.jprintf("$ERROR - I2C bus init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
-      else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",I2C_SPEED/1000);
-     } 
+    uint8_t eepStatus=0;
+	#ifdef I2C_EEPROM_64KB
+	if(journal.get_err()) { // I2C память и журнал в ней уже пытались инициализировать
+	#endif
+	   Wire.begin();
+	   for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
+	   {
+		   if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на I2C_SPEED и пытаемся инициализировать
+		   {
+			   journal.jprintf("$ERROR - I2C mem failed, status = %d\n", eepStatus);
+	        #ifdef POWER_CONTROL
+			   digitalWriteDirect(PIN_POWER_ON, HIGH);
+			   digitalWriteDirect(PIN_LED1, LOW);
+			   _delay(2000);
+			   digitalWriteDirect(PIN_POWER_ON, LOW);
+			   digitalWriteDirect(PIN_LED1, HIGH);
+			   _delay(500);
+			   Wire.begin();
+	        #else
+		       Wire.begin();
+		       _delay(500);
+	        #endif
+		       WDT_Restart(WDT);                       // Сбросить вачдог
+		   }  else break;   // Все хорошо
+	   } // for
+	#ifdef I2C_EEPROM_64KB
+	 }
+	#endif
+	if(eepStatus)  // если I2C память не инициализирована, делаем попытку запустится на малой частоте один раз!
+	{
+	   if((eepStatus=eepromI2C.begin(twiClock100kHz))>0) {
+		   journal.jprintf("$ERROR - I2C mem init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
+		   eepromI2C.begin(I2C_SPEED);
+		   goto x_I2C_init_std_message;
+	   } else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",twiClock100kHz/1000);
+	} else {
+x_I2C_init_std_message:
+	   journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
+	}
     
      // Сканирование шины i2c
-    if (eepStatus==0)   // есть инициализация
+//    if (eepStatus==0)   // есть инициализация
     {
         byte error, address;
         const byte start_address = 8;       // lower addresses are reserved to prevent conflicts with other protocols
@@ -299,10 +306,10 @@ pinMode(21, OUTPUT);
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = !OneWireBus.check_presence();
+            	  error = OneWireBus.lock_bus_reset(1);
 			    #ifdef ONEWIRE_DS2482_SECOND
               } else if(address == I2C_ADR_DS2482two) {
-               	  error = !OneWireBus2.check_presence();
+               	  error = OneWireBus2.lock_bus_reset(1);
 		        #endif
               } else {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
@@ -368,11 +375,11 @@ pinMode(21, OUTPUT);
    _delay(100);
 
 // 8. Чтение ЕЕПРОМ
-   journal.jprintf("5. Load data from EEPROM . . .\n"); 
+   journal.jprintf("5. Load data from I2C memory . . .\n");
 //  HP.save();                                         // Записать настройки по умолчанию для перехода с демо на боевую
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-   journal.jprintf("I2C eeprom is empty, save default setting\n");  
+   journal.jprintf("I2C memory is empty, save default setting\n");
   // HP.save();                                          //если ошибка ERR_HEADER2_EEPROM то скорее всего память чистая, считывать нечего и записывам настроки по умолчанию
    HP.save_motoHour();
   } 
@@ -411,7 +418,7 @@ pinMode(21, OUTPUT);
      HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
      journal.jprintf("10. Init counter statictic.\n");  
   #else    
-     journal.jprintf("10. Statistic no support (low eeprom).\n"); 
+     journal.jprintf("10. Statistic no support (low memory).\n");
   #endif
 
 #ifdef USE_SCHEDULER
