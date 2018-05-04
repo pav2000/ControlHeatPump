@@ -70,29 +70,29 @@ public:
 	DS2482(uint8_t address); // I2C address
 	
 	uint8_t configure(uint8_t config); // Return 1 when OK
-	uint8_t reset_bridge();
-    uint8_t check_presence();
+	uint8_t reset_bridge(void);
+    uint8_t check_presence(void);
 
 	//DS2482-800 only
     uint8_t select_channel(uint8_t channel);
 	
-    uint8_t reset(); // return true if presence pulse is detected
+    uint8_t reset(void); // return true if presence pulse is detected
 //	uint8_t read_status(bool setPtr=false); // for stack optimization moved to private
 	
 	uint8_t write(uint8_t b);
-	uint8_t read();
+	int16_t read(void);
 	
 	uint8_t write_bit(uint8_t bit);
-	uint8_t read_bit();
+	uint8_t read_bit(void);
     // Issue a 1-Wire rom select command, you do the reset first.
     void select(uint8_t rom[8]);
 	// Issue skip rom
-	void skip();
+	void skip(void);
 	
 //	uint8_t has_timeout() { return mTimeout; }
 #if ONEWIRE_SEARCH
     // Clear the search state so that if will start from the beginning again.
-    void reset_search();
+    void reset_search(void);
 
     // Look for the next device. Returns 1 if a new address has been
     // returned. A zero might mean that the bus is shorted, there are
@@ -113,12 +113,12 @@ private:
 	uint8_t mAddress;
 //	uint8_t mTimeout;
 	uint8_t CurrPtr;
-	uint8_t readByte();
+	int16_t readByte(void);
 	uint8_t setReadPtr(uint8_t readPtr);
 	
 	uint8_t busyWait(bool setReadPtr=false); //blocks until
-	void 	begin();
-	uint8_t end();
+	void 	begin(void);
+	uint8_t end(void);
 	uint8_t read_status(bool setPtr=false);
 	
 #if ONEWIRE_SEARCH

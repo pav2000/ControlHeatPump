@@ -318,71 +318,77 @@ size_t Journal::write (uint8_t c)
          
 // Записать строку в журнал
 uint16_t Journal::_write(char *dataPtr)
-    {
-      uint16_t numBytes;
-      numBytes=m_strlen(dataPtr);
-      if( dataPtr == 0 || numBytes == 0 )  return 0;  // Записывать нечего
-  #ifdef I2C_EEPROM_64KB // запись в еепром
-      if( numBytes >= JOURNAL_LEN-2 )  numBytes = JOURNAL_LEN-2;  // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
-     // Запись в eeprom
-      if(numBytes > (JOURNAL_LEN - bufferTail-1))       //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
-      {
-        int len =  JOURNAL_LEN - bufferTail-1;          // сколько можно записать в конец
-        if (writeEEPROM_I2C(I2C_JOURNAL_START+bufferTail, (byte*)dataPtr,len)) 
-           { err=ERR_WRITE_I2C_JOURNAL; 
-             #ifdef DEBUG
-             Serial.print(errorWriteI2C);
-             #endif
-           }
-        if (writeEEPROM_I2C(I2C_JOURNAL_START, (byte*)dataPtr+len,numBytes-len)) 
-           { err=ERR_WRITE_I2C_JOURNAL; 
-             #ifdef DEBUG
-             Serial.print(errorWriteI2C);
-             #endif
-           }          
-            bufferTail = numBytes-len+1;                     // Хвост начинает рости с начала буфера
-            writeTAIL();                                     // записать символ конца
-            bufferHead=bufferTail +1;                        // Буфер полный по этому начало стоит сразу за концом (затирание данных)
-            writeHEAD();                                     // записать символ начала
-            full=true;                                       // буфер полный
-      }
-      else   // Запись в один прием Буфер не полный
-      {     
-             if (writeEEPROM_I2C(I2C_JOURNAL_START+bufferTail,(byte*)dataPtr,numBytes)) 
-               { err=ERR_WRITE_I2C_JOURNAL; 
-                 #ifdef DEBUG
-                 Serial.print(errorWriteI2C);
-                 #endif
-               }  
-             bufferTail = bufferTail + numBytes;               // Хвост вырос
-             writeTAIL();                                      // записать символ конца
-             if (full){ bufferHead=bufferTail+1;writeHEAD(); }  // голова изменяется только при полном буфере (затирание данных)
-     //        else {bufferHead=0;writeHEAD();}
-      }     
- #else   // Запись в память
-     // Serial.print(">"); Serial.print(numBytes); Serial.println("<");
-    
-      if( numBytes >= JOURNAL_LEN )  numBytes = JOURNAL_LEN;  // Ограничиваем размером журнала
-      // Запись в журнал
-      if(numBytes > JOURNAL_LEN -  bufferTail) //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера
-      {
-            int len =  JOURNAL_LEN - bufferTail;             // сколько можно записать в конец
-            memcpy(_data+bufferTail,dataPtr,len);            // Пишем с конца очереди но до конца журнала
-            memcpy(_data, dataPtr+len, numBytes-len);        // Пишем в конец буфера с начала
-            bufferTail = numBytes-len;                       // Хвост начинает рости с начала буфера
-            bufferHead=bufferTail +1;                        // Буфер полный по этому начало стоит сразу за концом (затирание данных)
-            full=true;                                       // буфер полный
-      }
-      else   // Запись в один прием Буфер
-      {
-            memcpy(_data+bufferTail, dataPtr, numBytes);     // Пишем с конца очереди
-            bufferTail = bufferTail + numBytes;              // Хвост вырос
-            if (full) bufferHead=bufferTail+1;               // голова изменяется только при полном буфере (затирание данных)
-            else bufferHead=0;
-      }
-  #endif  
-     return numBytes;
-    }
+{
+	uint16_t numBytes;
+	numBytes = m_strlen(dataPtr);
+	if(dataPtr == NULL || numBytes == 0) return 0;  // Записывать нечего
+#ifdef I2C_EEPROM_64KB // запись в еепром
+	if(numBytes >= JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
+	// Запись в eeprom
+	if(numBytes > (JOURNAL_LEN - bufferTail - 1)) //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
+	{
+		int len = JOURNAL_LEN - bufferTail - 1;          // сколько можно записать в конец
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, len)) {
+#ifdef DEBUG
+			if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+#endif
+			err = ERR_WRITE_I2C_JOURNAL;
+			return 0;
+		}
+		err = OK;
+		if(writeEEPROM_I2C(I2C_JOURNAL_START, (byte*) dataPtr + len, numBytes - len)) {
+			err = ERR_WRITE_I2C_JOURNAL;
+#ifdef DEBUG
+			Serial.print(errorWriteI2C);
+#endif
+			return len;
+		}
+		bufferTail = numBytes - len + 1;                     // Хвост начинает рости с начала буфера
+		writeTAIL();                                     // записать символ конца
+		if(err) return numBytes;
+		bufferHead = bufferTail + 1;            // Буфер полный по этому начало стоит сразу за концом (затирание данных)
+		writeHEAD();                                     // записать символ начала
+		full = true;                                       // буфер полный
+	} else {  // Запись в один прием Буфер не полный
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes)) {
+#ifdef DEBUG
+			if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+#endif
+			err = ERR_WRITE_I2C_JOURNAL;
+			return numBytes;
+		}
+		err = OK;
+		bufferTail = bufferTail + numBytes;               // Хвост вырос
+		writeTAIL();                                      // записать символ конца
+		if(full && !err) {
+			bufferHead = bufferTail + 1;
+			writeHEAD();
+		}  // голова изменяется только при полном буфере (затирание данных)
+		//        else {bufferHead=0;writeHEAD();}
+	}
+#else   // Запись в память
+	// Serial.print(">"); Serial.print(numBytes); Serial.println("<");
+
+	if( numBytes >= JOURNAL_LEN ) numBytes = JOURNAL_LEN;// Ограничиваем размером журнала
+	// Запись в журнал
+	if(numBytes > JOURNAL_LEN - bufferTail)//  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера
+	{
+		int len = JOURNAL_LEN - bufferTail;             // сколько можно записать в конец
+		memcpy(_data+bufferTail,dataPtr,len);// Пишем с конца очереди но до конца журнала
+		memcpy(_data, dataPtr+len, numBytes-len);// Пишем в конец буфера с начала
+		bufferTail = numBytes-len;// Хвост начинает рости с начала буфера
+		bufferHead=bufferTail +1;// Буфер полный по этому начало стоит сразу за концом (затирание данных)
+		full=true;// буфер полный
+	} else   // Запись в один прием Буфер
+	{
+		memcpy(_data+bufferTail, dataPtr, numBytes);     // Пишем с конца очереди
+		bufferTail = bufferTail + numBytes;// Хвост вырос
+		if (full) bufferHead=bufferTail+1;// голова изменяется только при полном буфере (затирание данных)
+		else bufferHead=0;
+	}
+#endif
+	return numBytes;
+}
 
     
 // ---------------------------------------------------------------------------------
@@ -927,9 +933,9 @@ int32_t Profile::load(int8_t num)
   // проверка контрольной суммы
   if(crc16!=get_crc16_mem()) { set_Error(ERR_CRC16_PROFILE,(char*)nameHeatPump); return err=ERR_CRC16_PROFILE;}                                                           // прочитать crc16
   if (dataProfile.len!=adr-(I2C_PROFILE_EEPROM+dataProfile.len*num))  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;} // Проверка длины
-    journal.jprintf(" Load profile #%d from eeprom OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
+    journal.jprintf(" Load profile #%d from I2C OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
   #else
-    journal.jprintf(" Load profile #%d from eeprom OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
+    journal.jprintf(" Load profile #%d from I2C OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
   #endif
   update_list(num);     
   return adr;
@@ -1165,10 +1171,10 @@ void Statistics::Init()
   pos=0,
   num=0;                            // Позиция  для записи и число точек
   full=false;
-  journal.jprintf("Init I2C EEPROM statistics . . . \n");  
+  journal.jprintf("Init I2C memory statistics . . . \n");
    if (checkREADY()==false) // Проверка наличия статистики
    { 
-    journal.jprintf("Statistic not found from I2C EEPROM\n"); 
+    journal.jprintf("Statistic not found in I2C memory\n");
     Format(); 
    }   
    journal.jprintf("Statistic found: ");
@@ -1180,7 +1186,7 @@ void Statistics::Init()
     if ((pos==0)&&(num==0)) journal.jprintf("is empty, total %d points\n",STAT_POINT);
     else journal.jprintf("position=%d number=%d\n",pos,num);
     }
-    else journal.jprintf("Error %d format ststistics from i2c eeprom\n",error); 
+    else journal.jprintf("Error %d format statistics in I2C memory\n",error);
 }
 
 // Форматирование статистики (инициализация I2C памяти уже проведена)
@@ -1189,7 +1195,7 @@ void Statistics::Format()
     uint16_t i;
     error=OK;
     memset(bufI2C,I2C_STAT_FORMAT,sizeof(bufI2C)); 
-    journal.jprintf("Formating I2C EEPROM for statictic:\n");
+    journal.jprintf("Formating I2C memory for statistic: ");
     for (i=0;i<STAT_LEN/sizeof(bufI2C);i++) 
        { 
           journal.jprintf("*");
@@ -1208,7 +1214,7 @@ void Statistics::Format()
     if (error==OK)   // было удачное форматирование
     {
     writeREADY();  
-    journal.jprintf("\nFormat I2C EEPROM statistics (size %d bytes, %d points) - Ok\n",STAT_LEN,STAT_POINT);
+    journal.jprintf("\nFormat I2C memory statistics (size %d bytes, %d points) - Ok\n",STAT_LEN,STAT_POINT);
     }
 }
 

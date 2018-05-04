@@ -43,8 +43,8 @@ enum type_promt //  Перечисляемый тип - что идет в на�
 
 extern uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16_t pause);
 const char *MessageLongString = { "Jornal: Input string too long, skip string!"};  
-const char errorReadI2C[] =     {"$ERROR - read chip i2C eeprom\n"};     
-const char errorWriteI2C[] =    {"$ERROR - write chip i2C eeprom\n"};   
+const char errorReadI2C[] =     {"$ERROR - read I2C memory\n"};
+const char errorWriteI2C[] =    {"$ERROR - write I2C memory\n"};
 const char *promtUser={"> "};   
 
 class Journal :public Print
@@ -58,6 +58,7 @@ public:
   uint16_t jprintf_only(const char *format, ...);         // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
   uint16_t send_Data(uint8_t thread);                     // отдать журнал в сеть клиенту  Возвращает число записанных байт
   uint16_t available(void);                               // Возвращает размер журнала
+  int8_t   get_err(void) { return err; };
   virtual size_t write (uint8_t c);                       // чтобы print работал для это класса
   #ifdef I2C_EEPROM_64KB                                  // Если журнал находится в i2c
   void Format();                                          // форматирование журнала в еепром
@@ -65,7 +66,7 @@ public:
   void Clear(){bufferTail=0;bufferHead=0;full=false;err=OK;} // очистка журнала в памяти
   #endif
 private:
-  uint8_t err;                                            // ошибка журнала
+  int8_t err;                                             // ошибка журнала
   uint32_t bufferHead, bufferTail;                        // Начало и конец
   boolean full;                                           // признак полного буфера
   uint16_t _write(char *dataPtr);                         // Записать строку в журнал
@@ -318,7 +319,7 @@ class Statistics                      // Класс статистика
   
   
 private:
-  uint8_t error;                                          // ошибка
+  int8_t error;                                           // ошибка
   uint16_t pos, num;                                      // позиция для записи и число точек
   char bufI2C[256];                                       // буфер для работы с i2c памятью для ускорения работы
   boolean full;                                           // признак полного буфера

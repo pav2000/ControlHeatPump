@@ -360,11 +360,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       
        #ifndef I2C_EEPROM_64KB     // Статистика в памяти
            strcat(strReturn,"Статистика не поддерживается в конфигурации . . .&");
-           journal.jprintf("No support statistics (low i2C eeprom) . . .\n"); 
+           journal.jprintf("No support statistics (low I2C) . . .\n");
        #else                      // Статистика в ЕЕПРОМ
            if (HP.get_modWork()==pOFF)
              {
-              strcat(strReturn,"Форматирование I2C EEPROM статистики, ожидайте 10 сек . . .&");
+              strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .&");
               HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
              }
              else strcat(strReturn,"The heat pump must be switched OFF&");  

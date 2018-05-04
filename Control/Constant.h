@@ -381,6 +381,7 @@ const uint16_t  defaultPort=80;
 #define ERR_READ_TEMP       -84        // Ошибка чтения температурного датчика (лимит чтения исчерпан)
 #define ERR_CONFIG_TEMP     -85        // Ошибка конфигурации температурного датчика (привязка к отсутвующей шине OneWire)
 #define ERR_ONEWIRE_CRC     -86		   // ошибка CRC во время чтения OneWire
+#define ERR_ONEWIRE_RW      -87		   // ошибка во время чтения/записи OneWire
 
 // Предупреждения
 #define WARNING_VALUE        1         // Попытка установить значение за границами диапазона запрос типа SET

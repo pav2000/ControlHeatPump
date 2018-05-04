@@ -170,7 +170,7 @@ int8_t Scheduler::save(void)
     	return ERR_SAVE_PROFILE;
     }
     int8_t err = check_crc16_eeprom();
-    if(err == OK) journal.jprintf("Save scheduler to eeprom OK, write: %d bytes, crc16: 0x%x\n", sizeof(sch_data) + sizeof(crc16), crc16);
+    if(err == OK) journal.jprintf("Save scheduler to I2C OK, write: %d bytes, crc16: 0x%x\n", sizeof(sch_data) + sizeof(crc16), crc16);
     return err;
 }
 
