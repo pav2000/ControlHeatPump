@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
+ * vad711 - vad7@yahoo.com
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -46,8 +47,8 @@ enum TYPE_SENSOR
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -306,6 +307,11 @@ enum TYPE_SENSOR
     * #define PEVA        0                // Датчик давления испарителя.
     * #define PCON        1                // Датчик давления нагнетания.
     */
+    // Коэффициент преобразования отсчеты АЦП-давление
+    const float TRANsADC[ANUMBER]={0.482,0.3};
+    // напряжение (отсчеты АЦП) соответсвующее cZero
+    const uint16_t ZEROPRESS[ANUMBER]={285,150};
+
     const boolean SENSORPRESS[ANUMBER]={false,false};    
     const int16_t MINPRESS[ANUMBER]={400,100};        // минимальные значения давления
     const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
@@ -666,6 +672,11 @@ enum TYPE_SENSOR
      * #define PEVA        0                // Датчик давления испарителя.
      * #define PCON        1                // Датчик давления нагнетания.
      */
+     // Коэффициент преобразования отсчеты АЦП-давление
+     const float TRANsADC[ANUMBER]={0.482,0.3};
+     // напряжение (отсчеты АЦП) соответсвующее cZero
+     const uint16_t ZEROPRESS[ANUMBER]={285,150};
+
      const boolean SENSORPRESS[ANUMBER]={true,false}; 
      const int16_t MINPRESS[ANUMBER]={-10,0};          // минимальные значения давления
      const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
@@ -1038,6 +1049,11 @@ enum TYPE_SENSOR
        * #define PEVA        0                // Датчик давления испарителя.
        * #define PCON        1                // Датчик давления нагнетания.
        */
+       // Коэффициент преобразования отсчеты АЦП-давление
+       const float TRANsADC[ANUMBER]={0.482,0.3};
+       // напряжение (отсчеты АЦП) соответсвующее cZero
+       const uint16_t ZEROPRESS[ANUMBER]={285,150};
+
        const boolean SENSORPRESS[ANUMBER]={true,true}; 
        const int16_t MINPRESS[ANUMBER]={400,400};       // минимальные значения давления
        const uint16_t MAXPRESS[ANUMBER]={2000,3000};    // Максимальные значения давления
@@ -1404,6 +1420,11 @@ enum TYPE_SENSOR
        * #define PEVA        0                // Датчик давления испарителя.
        * #define PCON        1                // Датчик давления нагнетания.
        */
+       // Коэффициент преобразования отсчеты АЦП-давление
+       const float TRANsADC[ANUMBER]={0.482,0.3};
+       // напряжение (отсчеты АЦП) соответсвующее cZero
+       const uint16_t ZEROPRESS[ANUMBER]={285,150};
+
        const boolean SENSORPRESS[ANUMBER]={true,true};
        const int16_t MINPRESS[ANUMBER]={400,400};       // минимальные значения давления
        const uint16_t MAXPRESS[ANUMBER]={2000,3100};    // Максимальные значения давления
@@ -1798,6 +1819,11 @@ enum TYPE_SENSOR
       * #define PEVA        0                // Датчик давления испарителя.
       * #define PCON        1                // Датчик давления нагнетания.
       */
+      // Коэффициент преобразования отсчеты АЦП-давление
+      const float TRANsADC[ANUMBER]={0.482,0.3};
+      // напряжение (отсчеты АЦП) соответсвующее cZero
+      const uint16_t ZEROPRESS[ANUMBER]={285,150};
+
       const boolean SENSORPRESS[ANUMBER]={true,false};    
       const int16_t MINPRESS[ANUMBER]={350,100};        // минимальные значения давления
       const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
@@ -1980,9 +2006,15 @@ enum TYPE_SENSOR
    //#define PIN_DEVICE_PWM1       6  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
    //#define PIN_DEVICE_PWM1       7  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
    
-    #define PIN_MODBUS_RSE        22     //++   Управление направлением передачи 485 для связи с инвертором по Modbus (1-передача 0-прием)
+    // Конфигурирование Modbus для инвертора и счетчика SDM
+    #define MODBUS_PORT_NUM         Serial3     // Аппаратный порт куда прицеплен Modbus
+    #define MODBUS_PORT_SPEED       9600        // Скорость порта куда прицеплен частотник и счетчик
+    #define MODBUS_PORT_CONFIG      SERIAL_8N1  // Конфигурация порта куда прицеплен частотник и счетчик
+    #define MODBUS_TIME_WAIT        2000        // Время ожидания захвата мютекса для modbus мсек
+    #define MODBUS_TIME_TRANSMISION 3           // Пауза (msec) между запросом и ответом по модбас было 4
+    #define PIN_MODBUS_RSE          22          // Управление направлением передачи 485 для связи с инвертором по Modbus (1-передача 0-прием)
 
-   // датчики
+    // датчики
     #define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом OneWire ВСЕ температурные датчики
     #define ADC_SENSOR_PEVA    13       // X33. НОМЕР КАНАЛА ацп (внимание - в нумерации sam3x!) нога куда прицеплен датчик давления PEVA
     #define ADC_SENSOR_PCON    12       // X31. НОМЕР канала ацп (в нумерации sam3x!) нога куда прицеплен датчик давления PCON
@@ -2027,6 +2059,7 @@ enum TYPE_SENSOR
     //  Ноги куда прицепленны контактные датчики
     #define PIN_SENSOR_FLOWEVA   40     // X7(S5). Датчик потока по испарителю
     #define PIN_SENSOR_FLOWCON   41     // X8(S6). Датчик потока по кондесатору
+  // SIKA VVX25: +12V - коричневый (Xn.2), GND - голубой (Xn.3), выход - черный (Xn.1)
   // НЕ ПОДКЛЮЧЕН:
   //  #define PIN_SENSOR_FLOWPCON  68   // Датчик протока предконденсатора
      // Имена индексов ВАЖЕН ПОРЯДОК!
@@ -2254,6 +2287,11 @@ enum TYPE_SENSOR
   * #define PEVA        0                // Датчик давления испарителя.
   * #define PCON        1                // Датчик давления конденсатора.
   */
+  // Коэффициент преобразования отсчеты АЦП-давление
+  const float    TRANsADC[ANUMBER]  = {0.270, 1.36};
+  // напряжение (отсчеты АЦП) соответсвующее cZero
+  const uint16_t ZEROPRESS[ANUMBER] = {100, 100};
+
   const boolean SENSORPRESS[ANUMBER]  = {true , true};
   const int16_t MINPRESS[ANUMBER]   = {  50 ,  200  };       // минимальные значения давления
   const uint16_t MAXPRESS[ANUMBER]  = { 700 , 3100  };    // Максимальные значения давления

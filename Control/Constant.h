@@ -87,12 +87,14 @@ const uint16_t  defaultPort=80;
 #define NEXTION_READ     20                 // Время опроса дисплея Nextion (мсек) разбор входной очереди
 
 // Конфигурирование Modbus для инвертора и счетчика SDM
+#ifndef MODBUS_PORT_NUM
 #define MODBUS_PORT_NUM      Serial2        // Аппаратный порт куда прицеплен Modbus
-//#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
 #define MODBUS_PORT_SPEED    9600           // Скорость порта куда прицеплен частотник и счетчик
 #define MODBUS_PORT_CONFIG   SERIAL_8N1     // Конфигурация порта куда прицеплен частотник и счетчик
 #define MODBUS_TIME_WAIT     2000           // Время ожидания захвата мютекса для modbus мсек
 #define MODBUS_TIME_TRANSMISION 3           // Пауза (msec) между запросом и ответом по модбас было 4
+#endif
+//#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
 
 // Глобальные параметры инвертора инвертора на модбасе зависят от компрессора!!!!!!!!!
 #define FC_MODBUS_ADR      1             // Адрес частотного преобразователя на шине

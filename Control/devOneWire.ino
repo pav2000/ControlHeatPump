@@ -1,6 +1,6 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
+ * vad71 - vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -152,6 +152,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	if(lock_bus_reset(1)) return err; // check presense
 #endif
 	_delay(cDELAY_DS1820); // wait conversion
+	release_bus();
 	if(lock_bus_reset(0)) { // reset 1-wire
 #ifdef ONEWIRE_DS2482
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
