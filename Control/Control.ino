@@ -353,7 +353,7 @@ x_I2C_init_std_message:
 #endif
 
 // 4. Инициализировать основной класс
-  journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump); 
+  journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
   HP.initHeatPump();                                               // Основной класс
 
 // 5. Установка сервисных пинов
@@ -368,7 +368,7 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
-   journal.jprintf("4. Init and checking SD card . . .\n"); 
+   journal.jprintf("4. Init and checking SD card . . .\n");
    HP.set_fSD(initSD(SD_REPEAT));
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
@@ -393,16 +393,16 @@ x_I2C_init_std_message:
   HP.set_hashAdmin();
 
 // 9. Сетевые настройки
-   journal.jprintf("6. Setting Network . . .\n"); 
+   journal.jprintf("6. Setting Network . . .\n");
    initW5200(true);   // Инициализация сети с выводом инфы в консоль
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
 // 10. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("7. Setting time and clock . . .\n"); 
+   journal.jprintf("7. Setting time and clock . . .\n");
    set_time();        
    
  // 11. Инициалазация уведомлений
-   journal.jprintf("8. Message update IP from DNS . . .\n"); 
+   journal.jprintf("8. Message update IP from DNS . . .\n");
    HP.message.dnsUpdateStart(); 
    
  // 12. Инициалазация MQTT
@@ -416,7 +416,7 @@ x_I2C_init_std_message:
   // 13. Инициалазация Statistics
    #ifdef I2C_EEPROM_64KB  
      HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init counter statictic.\n");  
+     journal.jprintf("10. Init counter statistic.\n");
   #else    
      journal.jprintf("10. Statistic no support (low memory).\n");
   #endif
@@ -793,9 +793,9 @@ void vReadSensor(void *pvParameters)
 		watchdogReset();
 
 #ifndef DEMO  // Если не демо
-		if(OneWireBus.PrepareTemp()) set_Error(ERR_ONEWIRE, (char*) __FUNCTION__);
+		if((i = OneWireBus.PrepareTemp())) set_Error(i, (char*) __FUNCTION__);
 #ifdef ONEWIRE_DS2482_SECOND
-		if(OneWireBus2.PrepareTemp()) set_Error(ERR_DS2482_ONEWIRE, (char*)__FUNCTION__);
+		if((i = OneWireBus2.PrepareTemp())) set_Error(i, (char*)__FUNCTION__);
 #endif
 #endif     // не DEMO
 		vReadSensor_delay10ms(cDELAY_DS1820 / 10); 						 // Ожитать время преобразования
