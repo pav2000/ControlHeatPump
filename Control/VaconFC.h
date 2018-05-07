@@ -29,8 +29,10 @@
 #define FC_TEMP			8			// Температуры радиатора частотника, C
 #define FC_TEMP_MOTOR	9			// Расчетная температура двигателя, %
 #define FC_COMM_STATUS	808			// Состояние связи по шине Modbus. Формат: xx.yyy где xx = 0 – 64 (число сообщений об ошибках), yyy = 0 - 999 (число положительных сообщений)
-#define FC_POWER_HOURS	829			// Наработка в часах
-#define FC_RUN_HOURS	841			// Счетчик работы двигателя в часах
+#define FC_POWER_DAYS	828			// Наработка, дней
+#define FC_POWER_HOURS	829			// Наработка, часов
+#define FC_RUN_DAYS		840			// Счетчик работы двигателя, дней
+#define FC_RUN_HOURS	841			// Счетчик работы двигателя, часов
 #define FC_NUM_FAULTS	842			// Счетчик отказов
 
 // Чтение / запись
@@ -65,25 +67,25 @@
 
 // Биты
 // FC_STATE
-#define FC_S_RDY		0b00000001	// Привод готов
+#define FC_S_RDY		0x01	// Привод готов
 const char FC_S_RDY_str[]			= "Готов,";
-#define FC_S_RUN		0b00000010	// Привод работает
+#define FC_S_RUN		0x02	// Привод работает
 const char FC_S_RUN_str[]			= "Работает,";
-#define FC_S_DIR		0b00000100	// 0 - По часовой стрелке, 1 - Против часовой стрелки
+#define FC_S_DIR		0x04	// 0 - По часовой стрелке, 1 - Против часовой стрелки
 const char FC_S_DIR_str[]			= "Против час.ст.,";
-#define FC_S_FLT		0b00001000	// Действующий отказ
+#define FC_S_FLT		0x08	// Действующий отказ
 const char FC_S_FLT_str[]			= "Ошибка,";
-#define FC_S_W			0b00010000	// Сигнал тревоги
+#define FC_S_W			0x10	// Сигнал тревоги
 const char FC_S_W_str[]				= "Тревога,";
-#define FC_S_AREF		0b00100000	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
+#define FC_S_AREF		0x20	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
 const char FC_S_AREF_str0[]			= "Изменение скорости,";
-#define FC_S_Z			0b01000000	// 1 - Привод работает на нулевой скорости
+#define FC_S_Z			0x40	// 1 - Привод работает на нулевой скорости
 const char FC_S_Z_str[]				= "Остановлен,";
 // FC_CONTROL
-#define FC_C_RUN		0b00000001	// 0 - Останов, 1 - Выполнение
+#define FC_C_RUN		0x01	// 0 - Останов, 1 - Выполнение
 #define FC_C_STOP		0
-#define FC_C_DIR		0b00000010	// 0 - По часовой стрелке, 1 - Против часовой стрелки
-#define FC_C_RST		0b00000100	// Сброс отказа
+#define FC_C_DIR		0x02	// 0 - По часовой стрелке, 1 - Против часовой стрелки
+#define FC_C_RST		0x04	// Сброс отказа
 
 const uint8_t FC_Faults_code[] = {
 	0,
@@ -226,8 +228,10 @@ private:
 
   // Функции работы с Modbus
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-  int16_t read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
-  int8_t  write_0x06_16(uint16_t cmd,uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+  int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
+  uint32_t read_0x03_32(uint16_t cmd);             // Функция Modbus 0х03 прочитать 4 байта
+  int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+
 #endif
  };
 
