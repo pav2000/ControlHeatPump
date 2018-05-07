@@ -1624,6 +1624,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 						else if(*y == 'f') i = Modbus.writeHoldingRegistersFloat(id, par, strtol(z, NULL, 0));
 						else if(*y == 'c') i = Modbus.writeSingleCoil(id, par, atoi(z));
 						else goto x_FunctionNotFound;
+						_delay(MODBUS_TIME_TRANSMISION * 10); // Задержка перед чтением
 					} else if(strncmp(str, "get", 3) == 0) {
 					} else goto x_FunctionNotFound;
 					if(i == OK) {

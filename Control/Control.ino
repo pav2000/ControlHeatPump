@@ -357,8 +357,8 @@ x_I2C_init_std_message:
   HP.initHeatPump();                                               // Основной класс
 
 // 5. Установка сервисных пинов
-   journal.jprintf("3. Read safe Network botton . . .\n");
-   pinMode(PIN_KEY1, INPUT);               // Копка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
+   journal.jprintf("3. Read safe Network key . . .\n");
+   pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
    HP.safeNetwork=!digitalReadDirect(PIN_KEY1); 
    if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n"); 
   

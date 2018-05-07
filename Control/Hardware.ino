@@ -1970,6 +1970,7 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 
 // МОДБАС Устройство ----------------------------------------------------------
 // функции обратного вызова
+static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
       _delay(1);  // задержка чтения отдельного символа из Modbus
@@ -1979,9 +1980,14 @@ static inline void preTransmission() // Функция вызываемая ПЕ
       #ifdef PIN_MODBUS_RSE
       digitalWriteDirect(PIN_MODBUS_RSE, HIGH);
       #endif
+      Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus
     }
 static inline void postTransmission() // Функция вызываемая ПОСЛЕ окончания передачи
     {
+	if(Modbus_Entered_Critical) {
+		xTaskResumeAll();
+		Modbus_Entered_Critical = 0;
+	}
     _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
     #ifdef PIN_MODBUS_RSE
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
