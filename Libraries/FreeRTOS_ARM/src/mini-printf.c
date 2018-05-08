@@ -202,6 +202,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 		}
 	}
 end:
+	b.pbuffer = '\0';
 	return b.pbuffer - b.buffer;
 }
 

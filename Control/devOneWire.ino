@@ -249,14 +249,14 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	int8_t i;
 	byte data[9];
 
-	if(lock_bus_reset(0)) return ERR_ONEWIRE;
+	if((i = lock_bus_reset(0))) return i;
 	OneWireDrv.select(addr);
 	OneWireDrv.write(0xBE); // Команда на чтение регистра температуры
 	for(i = 0; i < 9; i++) {
 		int16_t r = OneWireDrv.read();
 		if(r < 0) { // ошибка во время чтения
 			release_bus();
-			return ERR_ONEWIRE_RW;
+			return abs(r);
 		}
 		data[i] = r;
 	}

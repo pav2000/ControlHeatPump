@@ -127,8 +127,10 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                           {
                           case HTTP_invalid:
                                {
-                               journal.jprintf("Error GET reqest\n");
-                               sendConstRTOS(thread,"HTTP/1.1 Error GET reqest\r\n\r\n");
+							 	#ifndef DEBUG
+                                   journal.jprintf("WEB:Error GET request\n");
+								#endif
+                               sendConstRTOS(thread,"HTTP/1.1 Error GET request\r\n\r\n");
                                break;
                                }
                           case HTTP_GET:     // чтение файла
@@ -1091,11 +1093,25 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           #endif   
           strcat(strReturn,"&") ;    continue;
          }  
-        if (strcmp(str,"get_EEV")==0)  // Функция get_EEV
+        if (strncmp(str,"get_EEV", 7)==0)  // Функция get_EEV
          {
            #ifdef EEV_DEF 
-           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
-           strcat(strReturn,int2str(HP.dEEV.get_EEV())); if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
+           if(HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
+           i = 0;
+           if(str[7] == 'p') { // get_EEVp - только проценты
+        	   i = 2;
+        	   if(str[8] == 'p') i = 1; // get_EEVpp - добавить проценты
+           }
+           if(i < 2) {
+        	   itoa(HP.dEEV.get_EEV(), strReturn + strlen(strReturn), 10);
+           }
+           if(i > 0) {
+        	   if(i == 1) strcat(strReturn, " (");
+        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + strlen(strReturn), 10); else strcat(strReturn, "?");
+               strcat(strReturn, "%");
+               if(i == 1) strcat(strReturn, ")");
+           }
+           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
            #else
            strcat(strReturn,"-");  
            #endif   
@@ -2769,60 +2785,74 @@ const char *header_POST_="Access-Control-Request-Method: POST";
 // thread - номер потока, возсращает тип запроса
 uint16_t GetRequestedHttpResource(uint8_t thread)
 {
-  char *str_token, *pass;
-  boolean user, admin;
-  uint8_t i;
-  uint16_t len;
-  
- // journal.jprintf(">%s\n",Socket[thread].inBuf);
-  
-  if((HP.get_fPass())&&(!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
-  {
-          if (!(pass=strstr((char*)Socket[thread].inBuf,header_Authorization_)))    return UNAUTHORIZED;          // строка авторизации не найдена
-          else  // Строка авторизации найдена смотрим логин пароль
-          {
-             pass=pass+strlen(header_Authorization_);
-             user=true; 
-             for(i=0;i<HP.Security.hashUserLen;i++) if (pass[i]!=HP.Security.hashUser[i]) {user=false; break;}
-             if (user!=true) // это не пользователь
-               {
-                admin=true; 
-                 for(i=0;i<HP.Security.hashAdminLen;i++) if (pass[i]!=HP.Security.hashAdmin[i]) {admin=false; break;}
-                 if (admin!=true)  return BAD_LOGIN_PASS; // Не верный логин или пароль
-               } //  if (user!=true)
-               else  SETBIT1(Socket[thread].flags,fUser);// зашел простой пользователь
-           } // else
-  } 
- 
-  // Идентификация пройдена
-//if(strstr((char*)Socket[thread].inBuf,"Access-Control-Request-Method: POST")) {request_type = HTTP_POST_; return request_type; }  //обработка предваритаельного запроса перед получением файла
-  str_token =  strtok((char*)Socket[thread].inBuf, " ");    // Обрезаем по пробелам
-  if (strcmp(str_token, "GET") == 0)   // Ищем GET
-       {      
-        str_token=strtok(NULL, " ");                       // get the file name
-        if (strcmp(str_token, "/") == 0)                   // Имени файла нет, берем файл по умолчанию
-              {      
-              Socket[thread].inPtr=(char*)INDEX_FILE;      // Указатель на имя файла по умолчанию
-              return HTTP_GET;                          
-              }
-         else if (strcmp(str_token, (char*)MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
-              {      
-              Socket[thread].inPtr=(char*)(str_token+1);   // Указатель на путь до мобильной морды
-              strcat(Socket[thread].inPtr,(char*)INDEX_MOB_FILE);
-              return HTTP_GET;                          
-              }     
-         else if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)   // Проверка на длину запроса или имени файла
-               { 
-                 Socket[thread].inPtr=(char*)(str_token+1);       // Указатель на имя файла
-          //        Serial.println(Socket[thread].inPtr=(char*)(str_token+1));
-                 if (Socket[thread].inPtr[0]=='&')     return HTTP_REQEST;       // Проверка на аякс запрос
-                 return HTTP_GET; 
-                } // if ((len=strlen(str_token)) <= W5200_MAX_LEN-100) 
-         else return HTTP_invalid;  // слишком длинная строка HTTP_invalid
-         }   //if (strcmp(str_token, "GET") == 0)
-   else  if (strcmp(str_token,"POST") == 0)  return HTTP_POST;    // Запрос POST
-   else  if (strcmp(str_token,"OPTIONS")==0) return HTTP_POST_;
-   return HTTP_invalid ;
+	char *str_token, *pass;
+	boolean user, admin;
+	uint8_t i;
+	uint16_t len;
+
+	// journal.jprintf(">%s\n",Socket[thread].inBuf);
+
+	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
+	{
+		if(!(pass = strstr((char*) Socket[thread].inBuf, header_Authorization_))) return UNAUTHORIZED; // строка авторизации не найдена
+		else  // Строка авторизации найдена смотрим логин пароль
+		{
+			pass = pass + strlen(header_Authorization_);
+			user = true;
+			for(i = 0; i < HP.Security.hashUserLen; i++)
+				if(pass[i] != HP.Security.hashUser[i]) {
+					user = false;
+					break;
+				}
+			if(user != true) // это не пользователь
+			{
+				admin = true;
+				for(i = 0; i < HP.Security.hashAdminLen; i++)
+					if(pass[i] != HP.Security.hashAdmin[i]) {
+						admin = false;
+						break;
+					}
+				if(admin != true) return BAD_LOGIN_PASS; // Не верный логин или пароль
+			} //  if (user!=true)
+			else SETBIT1(Socket[thread].flags, fUser); // зашел простой пользователь
+		} // else
+	}
+
+	// Идентификация пройдена
+	//if(strstr((char*)Socket[thread].inBuf,"Access-Control-Request-Method: POST")) {request_type = HTTP_POST_; return request_type; }  //обработка предваритаельного запроса перед получением файла
+	str_token = strtok((char*) Socket[thread].inBuf, " ");    // Обрезаем по пробелам
+	if(strcmp(str_token, "GET") == 0)   // Ищем GET
+	{
+		str_token = strtok(NULL, " ");                       // get the file name
+		if(strcmp(str_token, "/") == 0)                   // Имени файла нет, берем файл по умолчанию
+		{
+			Socket[thread].inPtr = (char*) INDEX_FILE;      // Указатель на имя файла по умолчанию
+			return HTTP_GET;
+		} else if(strcmp(str_token, (char*) MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
+		{
+			Socket[thread].inPtr = (char*) (str_token + 1);   // Указатель на путь до мобильной морды
+			strcat(Socket[thread].inPtr, (char*) INDEX_MOB_FILE);
+			return HTTP_GET;
+		} else if((len = strlen(str_token)) <= W5200_MAX_LEN - 100)   // Проверка на длину запроса или имени файла
+		{
+			Socket[thread].inPtr = (char*) (str_token + 1);       // Указатель на имя файла
+			//        Serial.println(Socket[thread].inPtr=(char*)(str_token+1));
+			if(Socket[thread].inPtr[0] == '&') return HTTP_REQEST;       // Проверка на аякс запрос
+			return HTTP_GET;
+		} // if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)
+		else {
+			#ifdef DEBUG
+			journal.jprintf("WEB:Error GET request, len=%d: %s\n", len, Socket[thread].inBuf);
+			#endif
+			return HTTP_invalid;  // слишком длинная строка HTTP_invalid
+		}
+	}   //if (strcmp(str_token, "GET") == 0)
+	else if(strcmp(str_token, "POST") == 0) return HTTP_POST;    // Запрос POST
+	else if(strcmp(str_token, "OPTIONS") == 0) return HTTP_POST_;
+	#ifdef DEBUG
+	journal.jprintf("WEB:Error request %s\n", Socket[thread].inBuf);
+	#endif
+	return HTTP_invalid;
 }
 
 // ========================== P A R S E R  P O S T =================================

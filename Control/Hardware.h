@@ -281,6 +281,7 @@ public:
   void set_testMode(TEST_MODE t){testMode=t;}            // Установить значение текущий режим работы
   
   __attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
+  int8_t  get_EEV_percent(void) { return (int32_t) EEV * 100 / maxEEV; } //  % открытия ЭРВ
   int8_t  set_EEV(int x);                                // Перейти на позицию абсолютную  возвращает код ошибки
   int8_t  set_zero();                                    // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
   char*   get_note(){ return note;}                      // Прочитать описание ЭРВ

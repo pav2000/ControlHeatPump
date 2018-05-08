@@ -127,9 +127,6 @@ const char *namePress[] =       {
                                  "PEVA",
                                  "PCON"
                                  };
-// Описание датчиков
-const char *notePress[] =       {"Датчик давления испарителя (bar)",
-                                 "Датчик давления конденсации (bar)"};
 
 void sensorADC::initSensorADC(int sensor,int pinA)
     { 
@@ -602,7 +599,9 @@ void devEEV::initEEV()
   halfPos=(EEV_STEPS-EEV_MIN_STEPS)/2+EEV_MIN_STEPS;// Позиция шаговика - половина диапазона ЭРВ
   timeIn=10;                            // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
   Overheat=0;                           // Перегрев текущий (сотые градуса)
-  tOverheat=400;                        // Перегрев ЦЕЛЬ (сотые градуса)
+  tOverheat= DEFAULT_OVERHEAT;          // Перегрев ЦЕЛЬ (сотые градуса)
+  typeFreon = (TYPEFREON) DEFAULT_FREON_TYPE;
+  ruleEEV = (RULE_EEV) DEFAULT_RULE_EEV;
   Kp = 3;                               // Коэф пропорц.
   Ki = 2;                               // Коэф интегр.  для настройки Ki=0
   Kd = 1;                               // Коэф дифф.

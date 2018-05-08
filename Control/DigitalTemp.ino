@@ -105,7 +105,7 @@ int8_t sensorTemp::Read()
 		int16_t ttemp;
 		err = busOneWire->Read(address, ttemp);
 		if(err) {
-            journal.jprintf(" %s: read error %d\n", name, err);
+            journal.jprintf(" %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
             numErrorRead++;
             sumErrorRead++;
             err = ERR_READ_TEMP;
