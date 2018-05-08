@@ -148,6 +148,9 @@ function loadParam(paramid, noretry, resultdiv) {
 										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
 									}
 									continue;
+								} else if(values[0].match(/^set_EEV/)) {
+									if((element = document.getElementById("get_eev"))) element.value = values[1];
+									if((element = document.getElementById("get_eev2"))) element.innerHTML = values[1];
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
@@ -849,32 +852,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
 									if((element=document.getElementById('scan'))) element.disabled = onoff;
 								} else if(values[0] == "get_uptime") {
-									var element1 = document.getElementById("get_uptime");
-									var element2 = document.getElementById("get_uptime2");
-									if(element1) {
-										document.getElementById("get_uptime").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_uptime2").innerHTML = values[1];
-									}
-								} else if(values[0] == "get_EEV") {
-									var element1 = document.getElementById("get_eev");
-									var element2 = document.getElementById("get_eev2");
-									if(element1) {
-										document.getElementById("get_eev").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_eev2").innerHTML = values[1];
-									}
-								} else if(values[0] == "set_EEV") {
-									var element1 = document.getElementById("get_eev");
-									var element2 = document.getElementById("get_eev2");
-									if(element1) {
-										document.getElementById("get_eev").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_eev2").innerHTML = values[1];
-									}
+									if((element = document.getElementById("get_uptime"))) element.innerHTML = values[1];
+									if((element = document.getElementById("get_uptime2"))) element.innerHTML = values[1];
 								} else if(values[0] == "get_errcode" && values[1] == 0) {
 									document.getElementById("get_errcode").innerHTML = "OK";
 									document.getElementById("get_error").innerHTML = "";
