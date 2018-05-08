@@ -3399,5 +3399,9 @@ void HeatPump::UpdateStatistics()
 
 }
 #endif // I2C_EEPROM_64KB 
-                   
 
+// пока только для режима отопления!
+int16_t HeatPump::get_overcool(void)
+{
+	return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon()) - HP.sTemp[TCONOUT].get_Temp();
+}

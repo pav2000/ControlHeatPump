@@ -172,7 +172,7 @@ int8_t sensorTemp::set_errTemp(int16_t t)
   if (abs(t)<MAX_TEMP_ERR) { errTemp=t; return OK;} else return WARNING_VALUE;
 }
 
-// Получить значение температуры датчика с учетом удаленных датчиков!!! - это то что используется в работе ТН
+// Получить значение температуры датчика (n.nn) с учетом удаленных датчиков!!! - это то что используется в работе ТН
 int16_t sensorTemp::get_Temp()            
 {
  #ifdef SENSOR_IP                                       // использутся удаленные датчики

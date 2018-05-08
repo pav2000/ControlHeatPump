@@ -423,6 +423,8 @@ class HeatPump
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
+    int16_t  get_overcool(void);							// Расчитать переохлаждение
+
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
     int8_t StopWait(boolean stop);        // Функция Останова/Ожидания ТН  - возвращает код ошибки

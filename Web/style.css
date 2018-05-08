@@ -131,6 +131,7 @@ body.test #get_listrelay span{display:none}
 .visualization #get_eevpp			{margin-top: 330px;margin-left: 370px; text-align: center; }.visualization #get_eevpp:after{content:"";}
 .visualization #get_flow-floweva	{margin-top: 240px;margin-left: 100px;}.visualization #get_flow-floweva:after{margin-left:3px;content:"м³ч";}
 .visualization #get_flow-flowcon	{margin-top: 280px;margin-left: 690px;}.visualization #get_flow-flowcon:after{margin-left:3px;content:"м³ч";}
+.visualization #get_overcool		{margin-top: 358px;margin-left: 575px;}.visualization #get_overcool:before{content:"Δ";}
 
 .cd-accordion-menu input[type=checkbox] {	position: absolute;	opacity: 0;}
 .cd-accordion-menu label, .cd-accordion-menu a {position: relative;	display: block;}

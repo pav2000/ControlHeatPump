@@ -1062,6 +1062,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"&") ;           
        continue;  
        }   // test_Mail    
+       if(strcmp(str, "get_OverCool") == 0) {
+    	   if(HP.sADC[PCON].get_present()) {
+               ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
+    	   }
+           strcat(strReturn,"&") ;    continue;
+       }
        // ЭРВ запросы , те которые без параметра ------------------------------
        if (strcmp(str,"get_pinEEV")==0)           // Функция get_pinEEV - строка с перечислением ного куда шаговик прицеплен
                   {   
@@ -1103,11 +1109,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         	   if(str[8] == 'p') i = 1; // get_EEVpp - добавить проценты
            }
            if(i < 2) {
-        	   itoa(HP.dEEV.get_EEV(), strReturn + strlen(strReturn), 10);
+        	   itoa(HP.dEEV.get_EEV(), strReturn + m_strlen(strReturn), 10);
            }
            if(i > 0) {
         	   if(i == 1) strcat(strReturn, " (");
-        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + strlen(strReturn), 10); else strcat(strReturn, "?");
+        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + m_strlen(strReturn), 10); else strcat(strReturn, "?");
                strcat(strReturn, "%");
                if(i == 1) strcat(strReturn, ")");
            }
@@ -1116,7 +1122,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            strcat(strReturn,"-");  
            #endif   
            strcat(strReturn,"&") ;    continue;
-         }   
+         }
         if (strcmp(str,"get_minEEV")==0)  // Функция get_minEEV
          {
           #ifdef EEV_DEF 
