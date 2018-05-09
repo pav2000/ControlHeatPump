@@ -142,7 +142,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
 
        // Try up to three times
         int retries = 0;
-//        while ((retries < 3) && (ret <= 0))
+        while ((retries < 3) && (ret <= 0))
         {
  //           Serial.println("0");
             // Send DNS request
@@ -160,15 +160,14 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
                     ret = iUdp.endPacket();
                     if (ret != 0)
                     {
-
                         // Now wait for a response
-                        int wait_retries = 0;
-                        ret = TIMED_OUT;
-                        while ((wait_retries < 3) && (ret == TIMED_OUT))
-                        {
-                            ret = ProcessResponse(10000, aResult);
-                            wait_retries++;
-                        }
+//                        int wait_retries = 0;
+//                        ret = TIMED_OUT;
+//                        while ((wait_retries < 3) && (ret == TIMED_OUT))
+//                        {
+                            ret = ProcessResponse(2000, aResult);
+//                            wait_retries++;
+//                        }
                     }
                 }
             }
@@ -223,8 +222,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
 //                        ret = TIMED_OUT;
 //                        while ((wait_retries < 3) && (ret == TIMED_OUT))
 //                        {
-
-                            ret = ProcessResponse(3000, aResult);
+                            ret = ProcessResponse(2000, aResult);
 //                            wait_retries++;
 //                        }
                     }
@@ -339,7 +337,7 @@ int16_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
         if((millis() - startTime) > aTimeout)
             return TIMED_OUT;
         //delay(50);
-        RTOS_delay(50);
+        RTOS_delay(10);
     }
 
     // We've had a reply! Read the UDP header
