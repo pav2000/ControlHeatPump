@@ -11,6 +11,8 @@
 //#include <stdlib.h>
 #include "Arduino.h"
 
+#include "FreeRTOS_ARM.h"
+#define RTOS_delay(ms) { if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(ms/portTICK_PERIOD_MS); else delay(ms); }
 
 #define SOCKET_NONE	255
 // Various flags and header field values for a DNS message
@@ -202,7 +204,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
      {
        // Try up to three times
         int retries = 0;
-   //     while ((retries < 3) && (ret <= 0))
+        while ((retries < 3) && (ret <= 0))
         {
             // Send DNS request
             ret = iUdp.beginPacket(iDNSServer, DNS_PORT,sock);  // сброс сокета и его настройка на UDP
@@ -217,14 +219,14 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
                     if (ret != 0)
                     {  // Serial.println("7-----");
                         // Now wait for a response
-                        int wait_retries = 0;
-                        ret = TIMED_OUT;
-                        while ((wait_retries < 3) && (ret == TIMED_OUT))
-                        {
+//                        int wait_retries = 0;
+//                        ret = TIMED_OUT;
+//                        while ((wait_retries < 3) && (ret == TIMED_OUT))
+//                        {
 
                             ret = ProcessResponse(3000, aResult);
-                            wait_retries++;
-                        }
+//                            wait_retries++;
+//                        }
                     }
                 }
             }
@@ -333,9 +335,11 @@ int16_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
 
     while(iUdp.parsePacket() <= 0)
     {
+    	watchdogReset();
         if((millis() - startTime) > aTimeout)
             return TIMED_OUT;
-        delay(50);
+        //delay(50);
+        RTOS_delay(50);
     }
 
     // We've had a reply! Read the UDP header

@@ -212,7 +212,7 @@ void sensorTemp::set_onewire_bus_type()
 	if(GETBIT(setup_flags, fDS2482_second)) busOneWire = &OneWireBus2; 	// второй
 	else
 #endif
-		busOneWire = &OneWireBus;		                   					// первый
+		busOneWire = &OneWireBus;		                   				// первый
 }
 
 // Установить адрес на шине датчикаbus_type
@@ -289,6 +289,13 @@ uint16_t sensorTemp::get_crc16(uint16_t crc)
 	crc=_crc16(crc,lowByte(testTemp)); crc=_crc16(crc,highByte(testTemp));  // температура датчика в режиме тестирования
 	for(uint8_t i=0; i<8; i++) crc=_crc16(crc,address[i]);
 	return crc;
+}
+
+// Возвращает 1, если превышен предел ошибок
+int8_t   sensorTemp::inc_error(void)
+{
+	if(++numErrorRead <= 0) numErrorRead--;
+	return numErrorRead > NUM_READ_TEMP_ERR;
 }
 
 // Удаленные датчики температуры ---------------------------------------------------------------------------------------

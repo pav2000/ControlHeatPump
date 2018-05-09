@@ -1845,7 +1845,7 @@ boolean  devSDM::progConnect()
       {
         // Читаем значения счетчика
         _delay(SDM_DELAY_READ); 
-        err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) Voltage=tmp; _delay(SDM_DELAY_READ);                   // Напряжение
+        err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) { Voltage=tmp;_delay(SDM_DELAY_READ);     }            // Напряжение
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_CURRENT,&tmp);       if(err==OK) Current=tmp;_delay(SDM_DELAY_READ);       }            // Ток
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_POWER,&tmp);      if(err==OK) AcPower=tmp;_delay(SDM_DELAY_READ);       }            // Активная мощность
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_POWER,&tmp);      if(err==OK) RePower=tmp;_delay(SDM_DELAY_READ);       }            // Реактивная мощность
@@ -2019,18 +2019,28 @@ int8_t devModbus::initModbus()
 // ФУНКЦИИ ЧТЕНИЯ ----------------------------------------------------------------------------------------------
 // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
-   {
-    uint8_t result;
-    // Если шедулер запущен то захватываем семафор
-    if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
-    { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);err=ERR_485_BUZY; return err;}                                                     
-      RS485.set_slave(id);
-      result = RS485.readInputRegisters(cmd,2);                                               // послать запрос,
-      if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1));}  
-      else                               {err=translateErr(result); *ret=0;}
-      SemaphoreGive(xModbusSemaphore);
-    return err;   
-   }
+{
+	uint8_t result;
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		err = ERR_485_BUZY;
+		return err;
+	}
+	RS485.set_slave(id);
+	result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
+	if(result == RS485.ku8MBSuccess) {
+		err = OK;
+		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+	} else {
+		err = translateErr(result);
+		journal.jprintf("Modbus reg #%d - ", cmd);
+		*ret = 0;
+	}
+	SemaphoreGive (xModbusSemaphore);
+	return err;
+}
 
 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t   devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)

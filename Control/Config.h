@@ -1979,9 +1979,9 @@ enum TYPE_SENSOR
     #endif
     #define USE_SCHEDULER			// Использовать расписание для управления ТН
 
-//	#define I2C_EEPROM_64KB			// + Использование памяти I2C для записи журнала при коментарии используется оперативка
-	#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
-//	#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+	#define I2C_EEPROM_64KB			// + Использование памяти I2C для записи журнала при коментарии используется оперативка
+//	#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+	#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
 		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
@@ -2005,7 +2005,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSDNS         (192, 168, 0,   1);
     const IPAddress defaultGateway      (192, 168, 0,   1);
     const IPAddress defaultSubnet       (255, 255, 255, 0);
-    const boolean  defaultDHCP	=       true;
+    const boolean  defaultDHCP	=       false; //true;
 
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
@@ -2419,8 +2419,8 @@ enum TYPE_SENSOR
 	#define FC_DT_TEMP           (1*100)        // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 	#define FC_DT_TEMP_BOILER    (2*100)        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 
-	#define FC_MAX_POWER         (2.0*10)       // Максимальная мощность инвертора (см компрессор) в 0.1 кВт
-	#define FC_MAX_POWER_BOILER  (1.0*10)     // Максимальная мощность инвертора в режиме ГВС (см компрессор) в 0.1 кВт
+	#define FC_MAX_POWER         (100*10)         // Максимальная мощность инвертора (см компрессор) в 0.1% от номинала
+	#define FC_MAX_POWER_BOILER  (80*10)          // Максимальная мощность инвертора в режиме ГВС (см компрессор) в 0.1% от номинала
 
 	#define FC_MAX_CURRENT        (10.0*100)     // Максимальный ток инвертора (см компрессор) в 0.01 А
 	#define FC_MAX_CURRENT_BOILER (10.0*100) // Максимальный ток инвертора для ГВС в 0.01 А

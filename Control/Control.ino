@@ -786,16 +786,16 @@ void vReadSensor(void *pvParameters)
 	volatile unsigned long readSDM = 0;
 	uint32_t ttime;                                                 // новое время
 	uint32_t oldTime;                                               // старое вермя
-	uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());             // Последнее врямя обновления часов
+	uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
 	int8_t i;
 
 	for(;;) {
 		watchdogReset();
 
 #ifndef DEMO  // Если не демо
-		if((i = OneWireBus.PrepareTemp())) set_Error(i, (char*) __FUNCTION__);
+		HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
-		if((i = OneWireBus2.PrepareTemp())) set_Error(i, (char*)__FUNCTION__);
+		HP.Prepare_Temp(1);
 #endif
 #endif     // не DEMO
 		vReadSensor_delay10ms(cDELAY_DS1820 / 10); 						 // Ожитать время преобразования

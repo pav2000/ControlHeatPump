@@ -402,7 +402,7 @@ class HeatPump
     
     // Удаленные датчики
     #ifdef SENSOR_IP
-    boolean updateLinkIP();                                // Обновить ВСЕ привязки удаленных датчиков
+    boolean updateLinkIP();                    // Обновить ВСЕ привязки удаленных датчиков
     #endif        
 
    
@@ -423,7 +423,8 @@ class HeatPump
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
-    int16_t  get_overcool(void);							// Расчитать переохлаждение
+    int16_t  get_overcool(void);			// Расчитать переохлаждение
+    int8_t	 Prepare_Temp(uint8_t bus);		// Запукск преобразования температуры
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки

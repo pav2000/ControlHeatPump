@@ -736,17 +736,18 @@ void devVaconFC::get_infoFC(char* buf)
 			strcat(buf, "|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;");
 		} else {
 			uint32_t i;
-			strcat(buf, "-|Состояние инвертора: "); get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
-			buf += m_snprintf(buf + m_strlen(buf), 256, "|%d;", i);
+			strcat(buf, "-|Состояние инвертора: ");
+			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
+			m_snprintf(buf + m_strlen(buf), 256, "|%d;", i);
 			if(err == OK) {
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
-				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf + m_strlen(buf), 256, "2103|Выходная скорость (%%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
 				buf += m_snprintf(buf, 256, "V1.3|Обороты (об/м)|%d;V1.4|Выходной ток (А)|%.2f;", i >> 16, (float)(i >> 16) / 100.0);
 				_delay(FC_DELAY_READ);
-				buf += m_snprintf(buf, 256, "V1.5|Крутящей момент (%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "V1.5|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "V1.7|Выходное напряжение (В)|%.1f;V1.8|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
@@ -754,10 +755,10 @@ void devVaconFC::get_infoFC(char* buf)
 				buf += m_snprintf(buf, 256, "V1.9|Температура радиатора (°С)|%d;", read_tempFC());
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
-				buf += m_snprintf(buf, 256, "V3.3|Время включения (дней.часов)|%d.%d;", i >> 16, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "V3.3|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RUN_DAYS); // +FC_RUN_HOURS (low word)
-				buf += m_snprintf(buf, 256, "V3.5|Время работы компрессора (дней.часов)|%d.%d;", i >> 16, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "V3.5|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
 				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V3.6|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
 				_delay(FC_DELAY_READ);
@@ -833,6 +834,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         _delay(FC_DELAY_REPEAT);
+        journal.jprintf("Modbus reg #%d - ", cmd);
         journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал

@@ -3405,3 +3405,25 @@ int16_t HeatPump::get_overcool(void)
 {
 	return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon()) - HP.sTemp[TCONOUT].get_Temp();
 }
+
+// Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок
+int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
+{
+	int8_t i, ret = 0;
+	if((i = OneWireBus.PrepareTemp())) {
+		for(uint8_t j = 0; j < TNUMBER; j++) {
+			if(sTemp[j].get_present() && GETBIT(sTemp[j].setup_flags, fDS2482_second) == bus) {
+				if(HP.sTemp[j].inc_error()) {
+					ret = 2;
+					break;
+				}
+				ret = 1;
+			}
+		}
+		if(ret) {
+			journal.jprintf("Error %d PrepareTemp bus %d\n", i, bus+1);
+			if(ret == 2) set_Error(i, (char*) __FUNCTION__);
+		}
+	}
+	return ret;
+}
