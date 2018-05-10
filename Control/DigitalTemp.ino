@@ -99,7 +99,8 @@ int8_t sensorTemp::Read()
 		else lastTemp=random(101,1190);                     // В демо режиме генерим значения
 #else   // чтение датчика
 		if(!(GETBIT(flags,fAddress))) { // Адрес не установлен
-			err = ERR_ADDRESS; set_Error(err,name);
+			err = ERR_ADDRESS;
+			set_Error(err,name);
 			return err;
 		}
 		int16_t ttemp;

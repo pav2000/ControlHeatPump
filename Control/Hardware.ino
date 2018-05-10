@@ -591,6 +591,18 @@ const char *nameEEV = {"EEV"} ;  //  Имя
 // Инициализация ЭРВ
 void devEEV::initEEV()
 {
+
+
+	Serial.println((uint32_t)&tOverheat);
+	Serial.println((uint32_t)&Kp);
+	Serial.println((uint32_t)&Ki);
+	Serial.println((uint32_t)&Kd);
+	Serial.println((uint32_t)&OverHeatCor.TDIS_TCON);
+	Serial.println((uint32_t)&OverHeatCor.TDIS_TCON_Thr);
+	Serial.println(sizeof(OverHeatCor));
+
+
+
   EEV=-1;                               // шаговик в непонятном положении
   setZero=true;                         // Признакнеобходимости обнуления счетчика шагов EEV
   err=OK;                               // Ошибок нет
@@ -934,6 +946,24 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
 if (fStart)           {fStart=false;  journal.jprintf(" Included tracking PID EEV . . .\n");return err;}   // Первая итерация пида - пропуск движения и сброс флага первой итерации
 else if (newEEV!=EEV) { set_EEV(newEEV); return err;}                                                      // Не первая итерация - движение EEV
 return err;
+}
+
+static int16_t OverHeatCor_period = 0; // Только один ЭРВ.
+void   devEEV::CorrectOverheat(void)
+{
+	if(!GETBIT(flags, fCorrectOverHeat)) return;
+	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > OverHeatCor.Delay && ++OverHeatCor_period > OverHeatCor.Period) {
+		OverHeatCor_period = 0;
+		uint16_t delta = HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing();
+		if(delta > OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr) {
+			delta = OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев большой - уменьшаем
+		} else if(delta < OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr) {
+			delta += OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr;			// Перегрев маленький - увеличиваем
+		}
+		Overheat += (int32_t) delta * OverHeatCor.K / 1000L;
+		if(Overheat > OverHeatCor.OverHeatMax) Overheat = OverHeatCor.OverHeatMax;
+		else if(Overheat < OverHeatCor.OverHeatMin) Overheat = OverHeatCor.OverHeatMin;
+	}
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
@@ -1972,7 +2002,8 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
-      _delay(1);  // задержка чтения отдельного символа из Modbus
+//      _delay(1);  // задержка чтения отдельного символа из Modbus
+		delay(1); //
     }
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {

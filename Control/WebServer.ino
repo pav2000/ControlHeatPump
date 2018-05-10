@@ -1063,9 +1063,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        continue;  
        }   // test_Mail    
        if(strcmp(str, "get_OverCool") == 0) {
-    	   if(HP.sADC[PCON].get_present()) {
-               ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
-    	   }
+           ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
            strcat(strReturn,"&") ;    continue;
        }
        // ЭРВ запросы , те которые без параметра ------------------------------

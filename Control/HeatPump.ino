@@ -3400,10 +3400,21 @@ void HeatPump::UpdateStatistics()
 }
 #endif // I2C_EEPROM_64KB 
 
+int16_t HeatPump::get_temp_condensing(void)
+{
+	if(HP.sADC[PCON].get_present()) {
+		return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon());
+	} else {
+		return sTemp[TCONOUTG].get_Temp() + 200; // +2C
+	}
+}
+
 // пока только для режима отопления!
 int16_t HeatPump::get_overcool(void)
 {
-	return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon()) - HP.sTemp[TCONOUT].get_Temp();
+	if(HP.sADC[PCON].get_present()) {
+		return get_temp_condensing() - HP.sTemp[TCONOUT].get_Temp();
+	}
 }
 
 // Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок

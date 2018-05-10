@@ -804,12 +804,9 @@ void vReadSensor(void *pvParameters)
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-			//uint32_t m1 = micros();
 			HP.sTemp[i].Read();
-			//uint32_t m2 = micros(); //Serial.print(HP.sTemp[i].get_name()); Serial.print(':'); Serial.print(m2 - m1); Serial.print(", ");
 			_delay(2);     												// пауза
 		}
-		//Serial.print("\n");
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
@@ -1054,40 +1051,42 @@ void vReadSensor_delay10ms(uint16_t msec)
 
 // Задача Управление ЭРВ
 #ifdef EEV_DEF
-void vUpdateEEV( void *pvParameters )
-{ //const char *pcTaskName = "HP_UpdateEEV\r\n";
-  static int16_t  cmd=0;
-  for( ;; )
-  {
- //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-  if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)    // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
-   {
-    // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
-    // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
-    if ((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0)==errQUEUE_EMPTY)&&(HP.dEEV.stepperEEV.isBuzy()))
-      {
- //     journal.jprintf("$WARNING! Loss of sync EEV\n"); 
-      HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
-      }
- 
-     // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-     HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp()+HP.sTemp[TEVAIN].get_Temp())/2,(HP.sTemp[TCONOUT].get_Temp()+HP.sTemp[TCONIN].get_Temp())/2); 
-     
-    if ((HP.get_State()==pOFF_HP)||(HP.get_State()==pSTOPING_HP))                // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
-     {
-      journal.jprintf((const char*)" Stop task update EEV\n"); 
-      vTaskSuspend(HP.xHandleUpdateEEV); 
-      continue;                             // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
-      }   
-     else    // штатная пауза (в зависимости от настроек)
-         if  ((HP.dEEV.get_ruleEEV()==TEVAOUT_PEVA)||(HP.dEEV.get_ruleEEV()==TRTOOUT_PEVA))   vTaskDelay(HP.dEEV.get_timeIn()*1000/portTICK_PERIOD_MS);  // интегрирование ПИД
-         else                                                                                 vTaskDelay(TIME_EEV/portTICK_PERIOD_MS);                   // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
-   
-     } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV) 
-     else vTaskDelay(TIME_EEV/portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
-   } // for
- vTaskDelete( NULL ); 
-}
+ void vUpdateEEV(void *pvParameters)
+ { //const char *pcTaskName = "HP_UpdateEEV\r\n";
+	 static int16_t cmd = 0;
+	 for(;;) {
+		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
+		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 {
+			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
+			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
+			 if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY)
+					 && (HP.dEEV.stepperEEV.isBuzy())) {
+				 //     journal.jprintf("$WARNING! Loss of sync EEV\n");
+				 HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
+			 }
+
+			 HP.dEEV.CorrectOverheat();
+
+			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
+			 HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
+					 (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
+
+			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
+			 {
+				 journal.jprintf((const char*) " Stop task update EEV\n");
+				 vTaskSuspend(HP.xHandleUpdateEEV);
+				 continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
+			 } else    // штатная пауза (в зависимости от настроек)
+				 if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
+						 HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
+				 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
+
+		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)
+		 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
+	 } // for
+	 vTaskDelete( NULL);
+ }
 #endif
 // Задача Разбор очереди команд
 void vUpdateCommand( void *pvParameters )
