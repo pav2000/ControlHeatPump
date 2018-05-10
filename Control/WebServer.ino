@@ -596,7 +596,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
+				#ifdef USE_SCHEDULER
 				strcat(strReturn, int2str(HP.Schdlr.save())); // сохранение расписаний
+				#endif
 			} else {
 				strcat(strReturn, int2str(HP.save())); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
@@ -607,7 +609,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
+				#ifdef USE_SCHEDULER
 				strcat(strReturn, int2str(HP.Schdlr.load())); // сохранение расписаний
+				#endif
 			} else {
 			}
 			strcat(strReturn,"&");
