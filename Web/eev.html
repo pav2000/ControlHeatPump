@@ -10,9 +10,9 @@
   <script type="text/javascript" src="exporting.js"></script>
   <script type="text/javascript">
     window.onload = function() {
-    loadParam("get_optionHP(TIME_CHART),get_freonEEV,get_ruleEEV,get_paramEEV(TIME_IN),get_paramEEV(T_OWERHEAT),get_paramEEV(K_PRO),get_paramEEV(K_IN),get_paramEEV(K_DIF),get_paramEEV(M_STEP),get_paramEEV(CORRECTION),get_presentEEV,get_nameEEV,get_noteEEV,get_maxEEV,get_minEEV,get_pinEEV");
-    updateParam("get_remarkEEV,get_EEVpp,get_overheatEEV,get_errcodeEEV");
-     loadParam("get_Chart(_posEEV)");
+    loadParam("get_remarkEEV,get_optionHP(TIME_CHART),get_freonEEV,get_ruleEEV,get_paramEEV(TIME_IN),get_paramEEV(T_OWERHEAT),get_paramEEV(K_PRO),get_paramEEV(K_IN),get_paramEEV(K_DIF),get_paramEEV(M_STEP),get_paramEEV(CORRECTION),get_presentEEV,get_nameEEV,get_noteEEV,get_maxEEV,get_minEEV,get_pinEEV,get_paramEEV(cCOR),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX)");
+    updateParam("get_EEVpp,get_overheatEEV,get_errcodeEEV,get_paramEEV(T_OWERHEAT)");
+    loadParam("get_Chart(_posEEV)");
     setParam('get_listChart','chart1');
     
    // setParam('get_listChart2','chart2')
@@ -83,7 +83,7 @@
    <tbody>
     <tr>
       <td>
-        <select id="get_ruleeev" onchange="setParam('get_ruleEEV','get_ruleeev');"></select>
+        <select id="get_ruleeev" onchange="setParam('get_ruleEEV','get_ruleeev');loadParam('get_remarkEEV')"></select>
       </td>
       <td id="get_remarkeev"></td>
       <td><input id="get_parameev-correction" type="number"  min="-5" max="5" step="0.1" value="0"><input id="get_parameev-correction2" type="submit" value=">"  onclick="setParam('get_paramEEV(CORRECTION)');"></td>
@@ -95,7 +95,34 @@
    </tbody>
    </table>            
   </div>
-  
+
+  <div class="row1">
+    <h2>Корректировка перегрева <input id="get_parameev-ccor" type="checkbox" onclick="setParam('get_paramEEV(cCOR)')"></h2>
+    <table>
+    <thead>
+    <tr>
+      <th>Задержка после старта, сек</th>
+      <th>Период в циклах ЭРВ</th>
+      <th>Разница Нагнетание-Конденсация, °C</th>
+      <th>Порог разницы, °C</th>
+      <th>Коэффициент</th>
+      <th>Мин. перегрев, °C</th>
+      <th>Макс. перегрев, °C</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
+      <td><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
+      <td><input id="get_parameev-cdelta" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTA)')"></td>
+      <td><input id="get_parameev-cdeltat" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAT)')"></td>
+      <td><input id="get_parameev-ckf" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(cKF)')"></td>
+      <td><input id="get_parameev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MIN)')"></td>
+      <td><input id="get_parameev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MAX)')"></td>
+    </tr>
+  </tbody>
+  </table>            
+  </div>
   
   <div class="row1">
     <h2>Параметры ПИД ЭРВ</h2>
@@ -111,15 +138,16 @@
     </thead>
     <tbody>
     <tr>
-      <td><input id="get_parameev-t_owerheat" type="number"  min="0" max="15" step="0.1" value="-"><input id="get_parameev-t_owerheat2" type="submit" value=">"  onclick="setParam('get_paramEEV(T_OWERHEAT)');"></td>
-      <td><input id="get_parameev-time_in" type="number"  min="1" max="1000" step="1" value="-"><input id="get_parameev-time_in2"  type="submit" value=">"  onclick="setParam('get_paramEEV(TIME_IN)');"></td>
-      <td><input id="get_parameev-k_pro" type="number"  min="0" max="1000" step="0.01" value="-"><input id="get_parameev-k_pro2"  type="submit" value=">"  onclick="setParam('get_paramEEV(K_PRO)');"></td>
-      <td><input id="get_parameev-k_in" type="number"  min="0" max="1000" step="0.1" value="-"><input id="get_parameev-k_in2" type="submit" value=">"  onclick="setParam('get_paramEEV(K_IN)');"></td>
-      <td><input id="get_parameev-k_dif" type="number"  min="0" max="1000" step="0.1" value="-"><input id="get_parameev-k_dif2" type="submit" value=">"  onclick="setParam('get_paramEEV(K_DIF)');"></td>
+      <td><input id="get_parameev-t_owerheat" type="number"  min="0" max="20" step="0.01"><input id="get_parameev-t_owerheat2" type="submit" value=">"  onclick="setParam('get_paramEEV(T_OWERHEAT)');"></td>
+      <td><input id="get_parameev-time_in" type="number"  min="1" max="1000" step="1"><input id="get_parameev-time_in2"  type="submit" value=">"  onclick="setParam('get_paramEEV(TIME_IN)');"></td>
+      <td><input id="get_parameev-k_pro" type="number"  min="0" max="1000" step="0.01"><input id="get_parameev-k_pro2"  type="submit" value=">"  onclick="setParam('get_paramEEV(K_PRO)');"></td>
+      <td><input id="get_parameev-k_in" type="number"  min="0" max="1000" step="0.01"><input id="get_parameev-k_in2" type="submit" value=">"  onclick="setParam('get_paramEEV(K_IN)');"></td>
+      <td><input id="get_parameev-k_dif" type="number"  min="0" max="1000" step="0.01"><input id="get_parameev-k_dif2" type="submit" value=">"  onclick="setParam('get_paramEEV(K_DIF)');"></td>
     </tr>
   </tbody>
   </table>            
   </div>
+
 <div>Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" >
 <input type="submit" value="Обновить графики"  onclick="setParam('get_listChart','chart1');">
 <select style="display:none" id="get_optionhp-time_chart" disabled></select>

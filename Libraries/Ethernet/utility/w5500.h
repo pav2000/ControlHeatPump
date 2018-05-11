@@ -21,6 +21,9 @@ public:
   static const uint8_t IND   = 0x01;
 };
 */
+#define MR_RST                       0x80
+#define MR_PB                        0x10
+#define MR_FARP                      0x02
 /*
 class IR {
 public:

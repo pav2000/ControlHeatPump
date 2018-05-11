@@ -157,6 +157,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
                 if (ret != 0)
                 {
                     // And finally send the request
+                	W5100.writeMR(W5100.readMR() | MR_FARP); // Force ARP mode
                     ret = iUdp.endPacket();
                     if (ret != 0)
                     {
@@ -169,6 +170,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
 //                            wait_retries++;
 //                        }
                     }
+                	W5100.writeMR(W5100.readMR() & (~MR_FARP)); // Force ARP mode
                 }
             }
             retries++;

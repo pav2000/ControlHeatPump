@@ -1239,11 +1239,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
          {
           strcat(strReturn,HP.dFC.get_note()); strcat(strReturn,"&") ;    continue;
          }   
-        if (strcmp(str,"get_presentFC")==0)  // Функция get_presentEEV
+        if (strcmp(str,"get_presentFC")==0)
          {
          if (HP.dFC.get_present()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,"&"); continue;
          }      
-        if (strcmp(str,"get_pinFC")==0)  // Функция get_presentEEV
+        if (strcmp(str,"get_pinFC")==0)
          {
          strcat(strReturn,"D"); strcat(strReturn,int2str(HP.dFC.get_pinA())); strcat(strReturn,"&"); continue;
          }         
@@ -1815,6 +1815,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"K_DIF")==0)          { param=54;}  // ЭРВ дифференциальная составляющая.
                else if (strcmp(x+1,"M_STEP")==0)         { param=55;}  // ЭРВ Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
                else if (strcmp(x+1,"CORRECTION")==0)     { param=56;}  // ЭРВ поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
+               else if (strcmp(x+1,"cCOR")==0)	    	 { param=57;}
+               else if (strcmp(x+1,"cDELAY")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cPERIOD")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cDELTA")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cDELTAT")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cKF")==0)    		 { param=57;}
+               else if (strcmp(x+1,"cOH_MIN")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cOH_MAX")==0)    	 { param=57;}
         
                 // Параметры и опции ТН  смещение 60 занимат 40 позиций не 10!!!!!!!!!!!!!!!!!!!! используется в двух разных функциях, единый список
                else if (strcmp(x+1,"RULE")==0)           { param=60;}  // 0  Алгоритм отопления
@@ -2440,7 +2448,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-       
           //6.  ЭРВ смещение param 50
           if (strstr(str,"EEV"))          // Проверка для запросов содержащих EEV
              {
@@ -2452,13 +2459,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                    #ifdef EEV_DEF        
                    switch (p)
                      {
-                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,1)); break;  
+                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0 +0.005,1)); break;
                       case 1: strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                     break;  
-                      case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0,2));      break;     // В СОТЫХ!!!
-                      case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));      break;     // В СОТЫХ!!!
-                      case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));      break;     // В СОТЫХ!!!
+                      case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
+                      case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
+                      case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
                       case 5: strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                 break;  
-                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1));break;  
+                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0 +0.005,1));break;
+
+                      case 7: HP.dEEV.variable(0, strReturn + m_strlen(strReturn), x+1, 0); break;
+
                       default: strcat(strReturn,"E10");                                            break;   
                      }
                    #else
@@ -2477,7 +2487,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                       case 3: if(HP.dEEV.set_Kint((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 4: if(HP.dEEV.set_Kdif((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 5: if(HP.dEEV.set_manualStep(pm)==OK)          strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                  else strcat(strReturn,"E11"); break;  
-                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1)); else strcat(strReturn,"E11"); break;  
+                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1)); else strcat(strReturn,"E11"); break;
+
+                      case 7: HP.dEEV.variable(1, strReturn + m_strlen(strReturn), x+1, pm); break;
+
                       default: strcat(strReturn,"E10");                                                                                                                       break;   
                      }
                     #else

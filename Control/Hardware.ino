@@ -948,9 +948,9 @@ void   devEEV::CorrectOverheat(void)
 		} else if(delta < OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr) {
 			delta = OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев маленький - увеличиваем
 		}
-		Overheat += (int32_t) delta * OverHeatCor.K / 1000L;
-		if(Overheat > OverHeatCor.OverHeatMax) Overheat = OverHeatCor.OverHeatMax;
-		else if(Overheat < OverHeatCor.OverHeatMin) Overheat = OverHeatCor.OverHeatMin;
+		tOverheat += (int32_t) delta * OverHeatCor.K / 1000;
+		if(tOverheat > OverHeatCor.OverHeatMax) tOverheat = OverHeatCor.OverHeatMax;
+		else if(tOverheat < OverHeatCor.OverHeatMin) tOverheat = OverHeatCor.OverHeatMin;
 	}
 }
 
@@ -973,6 +973,7 @@ int32_t devEEV::load(int32_t adr)
 		return ERR_LOAD_EEPROM;
 	}
 	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
 	return adr;
 }
 
@@ -981,6 +982,7 @@ int32_t devEEV::loadFromBuf(int32_t adr,byte *buf)
 {
 	memcpy((byte*)&timeIn, buf+adr, (byte*)&flags - (byte*)&timeIn + sizeof(flags));
 	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
 	return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
@@ -1001,6 +1003,36 @@ void devEEV::resetPID()
   tmpTime=timeIn;                        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                           // Признак работы пид с начала (пропуск первой итерации)
 }
+
+void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
+{
+	if(strcmp(var, "cCOR")==0) {
+    	if(getset) flags = (flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
+    	itoa((flags & (1<<fCorrectOverHeat)) != 0, ret, 10);
+	} else if(strcmp(var, "cDELAY")==0) {
+    	if(getset) OverHeatCor.Delay = value;
+    	itoa(OverHeatCor.Delay, ret, 10);
+    } else if(strcmp(var, "cPERIOD")==0) {
+    	if(getset) OverHeatCor.Period = value;
+    	itoa(OverHeatCor.Period, ret, 10);
+    } else if(strcmp(var, "cDELTA")==0) {
+    	if(getset) OverHeatCor.TDIS_TCON = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.TDIS_TCON / 100.0, 2);
+    } else if(strcmp(var, "cDELTAT")==0) {
+    	if(getset) OverHeatCor.TDIS_TCON_Thr = value * 100.0  +0.005;
+    	ftoa(ret, (float)OverHeatCor.TDIS_TCON_Thr / 100.0, 2);
+    } else if(strcmp(var, "cKF")==0) {
+    	if(getset) OverHeatCor.K = value * 1000.0 + 0.0005;
+    	ftoa(ret, (float)OverHeatCor.K / 1000.0, 3);
+    } else if(strcmp(var, "cOH_MIN")==0) {
+    	if(getset) OverHeatCor.OverHeatMin = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.OverHeatMin / 100.0, 2);
+    } else if(strcmp(var, "cOH_MAX")==0) {
+    	if(getset) OverHeatCor.OverHeatMax = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.OverHeatMax / 100.0, 2);
+    }
+}
+
 #endif
 
 #ifndef FC_VACON
