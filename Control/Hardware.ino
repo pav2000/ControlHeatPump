@@ -591,18 +591,6 @@ const char *nameEEV = {"EEV"} ;  //  Имя
 // Инициализация ЭРВ
 void devEEV::initEEV()
 {
-
-
-	Serial.println((uint32_t)&tOverheat);
-	Serial.println((uint32_t)&Kp);
-	Serial.println((uint32_t)&Ki);
-	Serial.println((uint32_t)&Kd);
-	Serial.println((uint32_t)&OverHeatCor.TDIS_TCON);
-	Serial.println((uint32_t)&OverHeatCor.TDIS_TCON_Thr);
-	Serial.println(sizeof(OverHeatCor));
-
-
-
   EEV=-1;                               // шаговик в непонятном положении
   setZero=true;                         // Признакнеобходимости обнуления счетчика шагов EEV
   err=OK;                               // Ошибок нет
@@ -958,7 +946,7 @@ void   devEEV::CorrectOverheat(void)
 		if(delta > OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr) {
 			delta = OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев большой - уменьшаем
 		} else if(delta < OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr) {
-			delta += OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr;			// Перегрев маленький - увеличиваем
+			delta = OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев маленький - увеличиваем
 		}
 		Overheat += (int32_t) delta * OverHeatCor.K / 1000L;
 		if(Overheat > OverHeatCor.OverHeatMax) Overheat = OverHeatCor.OverHeatMax;
@@ -969,60 +957,39 @@ void   devEEV::CorrectOverheat(void)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::save(int32_t adr)
 {
-    if (writeEEPROM_I2C(adr, (byte*)&timeIn, sizeof(timeIn)))          { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(timeIn);     // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-    if (writeEEPROM_I2C(adr, (byte*)&tOverheat, sizeof(tOverheat)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(tOverheat);  // !save! Перегрев ЦЕЛЬ (сотые градуса)
-    if (writeEEPROM_I2C(adr, (byte*)&Kp, sizeof(Kp)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Kp);         // !save! ПИД Коэф пропорц.
-    if (writeEEPROM_I2C(adr, (byte*)&Ki, sizeof(Ki)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Ki);         // !save! ПИД Коэф интегр.
-    if (writeEEPROM_I2C(adr, (byte*)&Kd, sizeof(Kd)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Kd);         // !save! ПИД Коэф дифф.
-    if (writeEEPROM_I2C(adr, (byte*)&Correction, sizeof(Correction)))  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Correction); // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-    if (writeEEPROM_I2C(adr, (byte*)&manualStep, sizeof(manualStep)))  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(manualStep); // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-    if (writeEEPROM_I2C(adr, (byte*)&typeFreon, sizeof(typeFreon)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(typeFreon);  // !save! Тип фреона
-    if (writeEEPROM_I2C(adr, (byte*)&ruleEEV, sizeof(ruleEEV)))        { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(ruleEEV);    // !save! Тправило работы ЭРВ
+    if (writeEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
+    	set_Error(ERR_SAVE_EEPROM,name);
+    	return ERR_SAVE_EEPROM;
+    }
+    adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
     return adr;   
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::load(int32_t adr)
 {
-    if (readEEPROM_I2C(adr, (byte*)&timeIn, sizeof(timeIn)))          { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(timeIn);     // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-    if (readEEPROM_I2C(adr, (byte*)&tOverheat, sizeof(tOverheat)))    { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(tOverheat);  // !save! Перегрев ЦЕЛЬ (сотые градуса)
-    if (readEEPROM_I2C(adr, (byte*)&Kp, sizeof(Kp)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Kp);         // !save! ПИД Коэф пропорц.
-    if (readEEPROM_I2C(adr, (byte*)&Ki, sizeof(Ki)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Ki);         // !save! ПИД Коэф интегр.
-    if (readEEPROM_I2C(adr, (byte*)&Kd, sizeof(Kd)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Kd);         // !save! ПИД Коэф дифф.
-    if (readEEPROM_I2C(adr, (byte*)&Correction, sizeof(Correction)))  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Correction); // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-    if (readEEPROM_I2C(adr, (byte*)&manualStep, sizeof(manualStep)))  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(manualStep); // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-    if (readEEPROM_I2C(adr, (byte*)&typeFreon, sizeof(typeFreon)))    { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(typeFreon);  // !save! Тип фреона
-    if (readEEPROM_I2C(adr, (byte*)&ruleEEV, sizeof(ruleEEV)))        { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(ruleEEV);    // !save! Тправило работы ЭРВ
-    return adr;
+	if (readEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
+		set_Error(ERR_LOAD_EEPROM,name);
+		return ERR_LOAD_EEPROM;
+	}
+	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	return adr;
 }
 
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devEEV::loadFromBuf(int32_t adr,byte *buf) 
 {
- memcpy((byte*)&timeIn,buf+adr,sizeof(timeIn)); adr=adr+sizeof(timeIn);                              // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
- memcpy((byte*)&tOverheat,buf+adr,sizeof(tOverheat)); adr=adr+sizeof(tOverheat);                     // !save! Перегрев ЦЕЛЬ (сотые градуса)
- memcpy((byte*)&Kp,buf+adr,sizeof(Kp)); adr=adr+sizeof(Kp);                                          // !save! ПИД Коэф пропорц.
- memcpy((byte*)&Ki,buf+adr,sizeof(Ki)); adr=adr+sizeof(Ki);                                          // !save! ПИД Коэф интегр.
- memcpy((byte*)&Kd,buf+adr,sizeof(Kd)); adr=adr+sizeof(Kd);                                          // !save! ПИД Коэф дифф.
- memcpy((byte*)&Correction,buf+adr,sizeof(Correction)); adr=adr+sizeof(Correction);                  // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
- memcpy((byte*)&manualStep,buf+adr,sizeof(manualStep)); adr=adr+sizeof(manualStep);                  // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
- memcpy((byte*)&typeFreon,buf+adr,sizeof(typeFreon)); adr=adr+sizeof(typeFreon);                     // !save! Тип фреона
- memcpy((byte*)&ruleEEV,buf+adr,sizeof(ruleEEV)); adr=adr+sizeof(ruleEEV);                           // !save! Правило работы ЭРВ
- return adr; 
+	memcpy((byte*)&timeIn, buf+adr, (byte*)&flags - (byte*)&timeIn + sizeof(flags));
+	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devEEV::get_crc16(uint16_t crc) 
 {
-  crc=_crc16(crc,lowByte(timeIn)); crc=_crc16(crc,highByte(timeIn));          //   Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-  crc=_crc16(crc,lowByte(tOverheat)); crc=_crc16(crc,highByte(tOverheat));    //   Перегрев ЦЕЛЬ (сотые градуса)
-  crc=_crc16(crc,lowByte(Kp)); crc=_crc16(crc,highByte(Kp));                  //   ПИД Коэф пропорц.
-  crc=_crc16(crc,lowByte(Ki)); crc=_crc16(crc,highByte(Ki));                  //   ПИД Коэф интегр.
-  crc=_crc16(crc,lowByte(Kd)); crc=_crc16(crc,highByte(Kd));                  //   ПИД Коэф дифф.
-  crc=_crc16(crc,lowByte(Correction)); crc=_crc16(crc,highByte(Correction));  //   Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-  crc=_crc16(crc,lowByte(manualStep)); crc=_crc16(crc,highByte(manualStep));  //   Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-  crc=_crc16(crc,typeFreon);                                                  //   Тип фреона
-  crc=_crc16(crc,ruleEEV);                                                    //   Правило работы ЭРВ
-  return crc;           
+	uint8_t i;
+	for(i = 0; i < (byte*)&flags - (byte*)&timeIn + sizeof(flags); i++)
+		crc = _crc16(crc,*((byte*)&timeIn + i));  // CRC16 структуры
+	return crc;
 }
 
 // Сброс пид регулятора
