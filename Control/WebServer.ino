@@ -2459,13 +2459,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                    #ifdef EEV_DEF        
                    switch (p)
                      {
-                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0 +0.005,1)); break;
+                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0 +0.005,2)); break;
                       case 1: strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                     break;  
                       case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
                       case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
                       case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
                       case 5: strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                 break;  
-                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0 +0.005,1));break;
+                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0 +0.005,2));break;
 
                       case 7: HP.dEEV.variable(0, strReturn + m_strlen(strReturn), x+1, 0); break;
 
@@ -2481,13 +2481,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   #ifdef EEV_DEF   
                    switch (p)
                      {
-                      case 0: if(HP.dEEV.set_tOverheat((int)(pm*100))==OK)strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,1));  else strcat(strReturn,"E11"); break;  
+                      case 0: if(HP.dEEV.set_tOverheat((int)(pm*100))==OK)strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,2));  else strcat(strReturn,"E11"); break;
                       case 1: if(HP.dEEV.set_timeIn(pm)==OK)              strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                      else strcat(strReturn,"E11"); break;  
                       case 2: if(HP.dEEV.set_Kpro((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 3: if(HP.dEEV.set_Kint((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 4: if(HP.dEEV.set_Kdif((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 5: if(HP.dEEV.set_manualStep(pm)==OK)          strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                  else strcat(strReturn,"E11"); break;  
-                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1)); else strcat(strReturn,"E11"); break;
+                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,2)); else strcat(strReturn,"E11"); break;
 
                       case 7: HP.dEEV.variable(1, strReturn + m_strlen(strReturn), x+1, pm); break;
 

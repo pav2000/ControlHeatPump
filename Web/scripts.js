@@ -440,9 +440,9 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_press-' + input + '">-</td>';
 												content = content + '<td id="get_minpress-' + input + '">-</td>';
 												content = content + '<td id="get_maxpress-' + input + '">-</td>';
-												content = content + '<td><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinpress-' + input + '">-</td>';
 												content = content + '<td id="get_adcpress-' + input + '">-</td>';
 												content = content + '<td id="get_errcodepress-' + input + '">-</td>';
@@ -694,7 +694,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_noteflow-' + input + '">-</td>';
 												content = content + '<td id="get_flow-' + input + '">-</td>';
 												content = content + '<td id="get_minflow-' + input + '">-</td>';
-												content = content + '<td nowrap><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_kfflow-' + input + '" type="number" min="0.001" max="655" step="1.000" style="max-width:70px;" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td nowrap><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_frflow-' + input + '">-</td>';
 												content = content + '<td nowrap><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
