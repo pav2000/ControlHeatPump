@@ -1,7 +1,7 @@
 ﻿/* ver 0.951 beta */
-//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.0.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -646,7 +646,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												input = count[j].toLowerCase();
 												loadsens = loadsens + "get_alarmInput(" + count[j] + "),get_errcodeInput(" + count[j] + "),get_typeInput(" + count[j] + "),get_pinInput(" + count[j] + "),get_Input(" + count[j] + "),get_noteInput(" + count[j] + "),get_testInput(" + count[j] + "),";
 												upsens = upsens + "get_Input(" + count[j] + "),get_errcodeInput(" + count[j] + "),";
-												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
+												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -669,8 +669,8 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
 												content = content + ' <td id="get_mintemp-' + input + '">-</td>';
 												content = content + ' <td id="get_maxtemp-' + input + '">-</td>';
-												content = content + ' <td><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+												content = content + ' <td nowrap><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+												content = content + ' <td nowrap><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												content = content + ' <td id="get_addresstemp-' + input + '">-</td>';
 												content = content + ' <td id="get_errcodetemp-' + input + '">-</td>';
 												content = content + '</tr>';
@@ -694,10 +694,10 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_noteflow-' + input + '">-</td>';
 												content = content + '<td id="get_flow-' + input + '">-</td>';
 												content = content + '<td id="get_minflow-' + input + '">-</td>';
-												content = content + '<td><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_frflow-' + input + '">-</td>';
-												content = content + '<td><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinflow-' + input + '">-</td>';
 												content = content + '<td id="get_errcodeflow-' + input + '">-</td>';
 												content = content + '</tr>';

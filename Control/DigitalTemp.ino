@@ -106,10 +106,10 @@ int8_t sensorTemp::Read()
 		int16_t ttemp;
 		err = busOneWire->Read(address, ttemp);
 		if(err) {
-            journal.jprintf(" %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
-            numErrorRead++;
+            journal.jprintf(pP_TIME, " %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
+//            err = ERR_READ_TEMP;
             sumErrorRead++;
-            err = ERR_READ_TEMP;
+            if(++numErrorRead == 0) numErrorRead--;
             if(numErrorRead > NUM_READ_TEMP_ERR) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
             return err;
 		} else {
@@ -124,7 +124,7 @@ int8_t sensorTemp::Read()
 				   nGap=0;
 				   lastTemp=ttemp;
 			   } else {  // Пропуск данных
-				   journal.jprintf("WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
+				   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
 			   }
 			}
 		}
@@ -295,7 +295,7 @@ uint16_t sensorTemp::get_crc16(uint16_t crc)
 // Возвращает 1, если превышен предел ошибок
 int8_t   sensorTemp::inc_error(void)
 {
-	if(++numErrorRead <= 0) numErrorRead--;
+	if(++numErrorRead == 0) numErrorRead--;
 	return numErrorRead > NUM_READ_TEMP_ERR;
 }
 

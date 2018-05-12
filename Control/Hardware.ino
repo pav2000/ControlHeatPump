@@ -1887,7 +1887,7 @@ boolean  devSDM::progConnect()
         Energy=AcEnergy+ReEnergy;
         if (err==OK) break;
         numErr++;                  // число ошибок чтение по модбасу
-        journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                         // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485,name,__FUNCTION__,err);      // Выводим сообщение о повторном чтении
         WDT_Restart(WDT);          // Сбросить вачдог
         _delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
       }
@@ -1945,9 +1945,9 @@ boolean devSDM::set_paramSDM(TYPE_PARAM_SDM p, char *c)
    {
    case   pNAME_SDM:         return  true;                                    break;      // Имя счетчика
    case   pNOTE_SDM:         return  true;                                    break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=390)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=390)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=5000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
+   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
+   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
+   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=30000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
    case   pVOLTAGE_SDM:      return true;                                     break;      // Напряжение
    case   pCURRENT_SDM:      return true;                                     break;      // Ток
    case   pREPOWER_SDM:      return true;                                     break;      // Реактивная мощность

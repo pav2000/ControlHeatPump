@@ -116,10 +116,8 @@ void HeatPump::scan_OneWire(char *result_str)
 	char *_result_str = result_str + strlen(result_str);
 	if(get_State() == pWORK_HP)  // ТН работает
 	{
-		StopWait(_stop);  // При сканировании останить ТН
-		_delay(200);       // задержка после останова ТН
-	}
-	if(!OW_prepare_buffers()) {
+		strcat(result_str, "-:Не доступно - ТН работает!:::;");
+	} else if(!OW_prepare_buffers()) {
 		OneWireBus.Scan(result_str);
 #ifdef ONEWIRE_DS2482_SECOND
 		OneWireBus2.Scan(result_str);
@@ -3421,9 +3419,13 @@ int16_t HeatPump::get_overcool(void)
 int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 {
 	int8_t i, ret = 0;
+#ifdef ONEWIRE_DS2482_SECOND
+	if((i = bus ? OneWireBus2.PrepareTemp() : OneWireBus.PrepareTemp())) {
+#else
 	if((i = OneWireBus.PrepareTemp())) {
+#endif
 		for(uint8_t j = 0; j < TNUMBER; j++) {
-			if(sTemp[j].get_present() && GETBIT(sTemp[j].setup_flags, fDS2482_second) == bus) {
+			if(sTemp[j].get_fAddress() && sTemp[j].get_bus() == bus) {
 				if(HP.sTemp[j].inc_error()) {
 					ret = 2;
 					break;
@@ -3432,9 +3434,9 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 			}
 		}
 		if(ret) {
-			journal.jprintf("Error %d PrepareTemp bus %d\n", i, bus+1);
+			journal.jprintf(pP_TIME, "Error %d PrepareTemp bus %d\n", i, bus+1);
 			if(ret == 2) set_Error(i, (char*) __FUNCTION__);
 		}
 	}
-	return ret;
+	return ret ? (1<<bus) : 0;
 }

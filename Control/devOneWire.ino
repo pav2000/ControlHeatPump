@@ -96,10 +96,11 @@ int8_t  deviceOneWire::lock_bus_reset(uint8_t checkpresence)
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
 	{
 #ifdef ONEWIRE_DS2482_SECOND_2WAY
-		if(bus && !OneWireDrv.configure(DS2482_CONFIG)) break;
+		if(bus && !OneWireDrv.configure(DS2482_CONFIG)) goto x_Reset_bridge;
 #endif
 		if((presence = OneWireDrv.reset())) break;                     // Сброс прошел выходим
 #ifdef ONEWIRE_DS2482
+x_Reset_bridge:
 		if(!OneWireDrv.reset_bridge()) break;
 		#ifndef ONEWIRE_DS2482_SECOND_2WAY
 		#if DS2482_CONFIG != 0
@@ -148,6 +149,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte i;
 	byte data[12];
 	byte addr[8];
+	watchdogReset();
 #ifdef ONEWIRE_DS2482
 	if(lock_bus_reset(1)) return err; // check presense
 #endif

@@ -127,7 +127,6 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
       <th>Реактивная энергия (kW/h)</th>
       <th>Полная энергия (kW/h)</th>
       <th>Связь с SDM120</th>
-
     </tr>
     <tr>
         <td id="get_sdm-voltage_sdm"></td>
@@ -140,7 +139,6 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
         <td id="get_sdm-reenergy_sdm"></td>
         <td id="get_sdm-energy_sdm"></td>
         <td id="get_sdm-link_sdm"></td>
-        
       </tr>
     </thead>
   </table>
@@ -156,9 +154,9 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
       <th>Контроль мощности<sup>4</sup> [0...10000] (W)</th>      
     </tr>
     <tr>
-    <td><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>
-    <td><input id="get_sdm-min_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MIN_VOLTAGE_SDM)');"></td>
-    <td><input id="get_sdm-max_power_sdm" type="number" min="0" max="10000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
+    <td nowrap><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>
+    <td nowrap><input id="get_sdm-min_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MIN_VOLTAGE_SDM)');"></td>
+    <td nowrap><input id="get_sdm-max_power_sdm" type="number" min="0" max="10000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
     </tr>  
     </thead>
     </table>
@@ -171,8 +169,3 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
 </div>
 </body>
 </html>
-
-
-
-
-

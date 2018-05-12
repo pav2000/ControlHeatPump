@@ -835,7 +835,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         if(err == OK) break; // Прочитали удачно
         _delay(FC_DELAY_REPEAT);
         journal.jprintf("Modbus reg #%d - ", cmd);
-        journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
@@ -856,7 +856,7 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
         err = Modbus.readHoldingRegisters32(FC_MODBUS_ADR, cmd - 1, (uint32_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         _delay(FC_DELAY_REPEAT);
-        journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
@@ -876,7 +876,7 @@ int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
         err = Modbus.writeHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, data); // послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Записали удачно
         _delay(FC_DELAY_REPEAT);
-        journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }

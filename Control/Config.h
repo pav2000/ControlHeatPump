@@ -47,8 +47,8 @@ enum TYPE_SENSOR
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -1957,7 +1957,8 @@ enum TYPE_SENSOR
 // =============================================== C O N F I G   6 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-   // #define DEMO                  // Включение демо режима
+    //#define DEMO                  // Включение демо режима
+//	#define TEST_BOARD 				// Тестовая плата!
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхонник 3 фазы, ЭРВ, РТО, 2 датчика давления"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -1975,13 +1976,16 @@ enum TYPE_SENSOR
     #ifdef EXTERNAL_AREF        	// Какая опора для АЦП используется
       #define SAM3X_ADC_REF  3.00   // Используется внешняя опора ADR4530ARZ
     #else
-      #define SAM3X_ADC_REF  3.30    // Штатное подключение используется питание DUE
+      #define SAM3X_ADC_REF  3.30   // Штатное подключение используется питание DUE
     #endif
     #define USE_SCHEDULER			// Использовать расписание для управления ТН
 
-	#define I2C_EEPROM_64KB			// + Использование памяти I2C для записи журнала при коментарии используется оперативка
-//	#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
-	#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+	#ifndef TEST_BOARD
+	 #define I2C_EEPROM_64KB		// Использование памяти I2C для записи журнала при коментарии используется оперативка
+     #define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+	#else
+	 #define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+	#endif
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
 		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
@@ -2001,12 +2005,18 @@ enum TYPE_SENSOR
     //  #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
 
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
-    const IPAddress defaultIP           (192, 168, 0, 199);
-    const IPAddress defaultSDNS         (192, 168, 0,   1);
-    const IPAddress defaultGateway      (192, 168, 0,   1);
-    const IPAddress defaultSubnet       (255, 255, 255, 0);
-    const boolean  defaultDHCP	=       true;
-
+	#ifndef  TEST_BOARD
+     const boolean   defaultDHCP	=   false;
+	 const IPAddress defaultIP          (192, 168, 1,  10);
+     const IPAddress defaultSDNS        (  8,   8, 8,   8);
+     const IPAddress defaultGateway     (192, 168, 1,   1);
+	#else
+     const boolean   defaultDHCP	=   true;
+	 const IPAddress defaultIP          (192, 168, 0, 199);
+     const IPAddress defaultSDNS        (192, 168, 0,   1);
+     const IPAddress defaultGateway     (192, 168, 0,   1);
+	#endif
+     const IPAddress defaultSubnet       (255, 255, 255, 0);
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
     // Для каждой конфигурации теперь свои определения!!!
@@ -2257,7 +2267,7 @@ enum TYPE_SENSOR
     #define TOUT        0    // Температура улицы                                - 2896D3C6040000A3
     #define TIN         1    // Температура в доме                               - 28F718C604000005
     #define TBOILER     2    // Температура в бойлере ГВС                        - 289704C60400009B
-    #define TCOMP       3    // Температура нагнетания компрессора               - 28EE50D227160141
+    #define TCOMP       3    // Температура нагнетания компрессора               - 28FF235B63140298
     #define TEVAING     4    // Температура на входе испарителя (по гликолю)     - 28E1962606000083
     #define TEVAOUTG    5    // Температура на выходе испарителя (по гликолю)    - 2897E02606000058
     #define TCONING     6    // Температура на входе конденсатора (по гликолю)   - 28B41A28060000B9

@@ -443,6 +443,11 @@ x_I2C_init_std_message:
     journal.jprintf("13. Nextion dispaly absent in config\n");
   #endif
 
+  #ifdef TEST_BOARD
+  // Scan oneWire - TEST.
+  HP.scan_OneWire(Socket[0].outBuf);
+  #endif
+
   // Создание задач Free RTOS  ----------------------
     journal.jprintf("14. Create tasks free RTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
@@ -784,18 +789,18 @@ void vReadSensor(void *pvParameters)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	volatile unsigned long readFC = 0;
 	volatile unsigned long readSDM = 0;
-	uint32_t ttime;                                                 // новое время
-	uint32_t oldTime;                                               // старое вермя
-	uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
-	int8_t i;
-
+	static uint32_t ttime;                                                 // новое время
+	static uint32_t oldTime;                                               // старое вермя
+	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
+	static uint8_t prtemp = 0;
 	for(;;) {
+		int8_t i;
 		watchdogReset();
 
 #ifndef DEMO  // Если не демо
-		HP.Prepare_Temp(0);
+		prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
-		HP.Prepare_Temp(1);
+		prtemp |= HP.Prepare_Temp(1);
 #endif
 #endif     // не DEMO
 		vReadSensor_delay10ms(cDELAY_DS1820 / 10); 						 // Ожитать время преобразования
@@ -804,7 +809,7 @@ void vReadSensor(void *pvParameters)
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-			HP.sTemp[i].Read();
+			if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
 			_delay(2);     												// пауза
 		}
 
@@ -974,7 +979,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 						 HP.Prof.load(_profile);
 						 HP.set_profile();
 						 xTaskResumeAll();
-						 journal.jprintf("Profile changed to %d\n", _profile);
+						 journal.jprintf(pP_TIME, "Profile changed to %d\n", _profile);
 						 if(frestart) HP.sendCommand(pRESUME);
 					 }
 				 } else if(HP.get_State() == pWAIT_HP) {

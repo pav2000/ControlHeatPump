@@ -207,7 +207,7 @@ uint16_t Journal::jprintf(const char *format, ...)
    return _write(pbuf);
   }
 
-//ПРОММТ вставляется в начале журнала а далее печать в консоль и журнал возвращает число записанных байт с типом промта
+//type_promt вставляется в начале журнала а далее печать в консоль и журнал возвращает число записанных байт с типом промта
 uint16_t Journal::jprintf(type_promt pr,const char *format, ...)
 {
   uint16_t len_promt=0;
