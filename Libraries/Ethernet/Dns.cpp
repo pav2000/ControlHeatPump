@@ -157,7 +157,6 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
                 if (ret != 0)
                 {
                     // And finally send the request
-                	W5100.writeMR(W5100.readMR() | MR_FARP); // Force ARP mode
                     ret = iUdp.endPacket();
                     if (ret != 0)
                     {
@@ -170,7 +169,6 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
 //                            wait_retries++;
 //                        }
                     }
-                	W5100.writeMR(W5100.readMR() & (~MR_FARP)); // Force ARP mode
                 }
             }
             retries++;
@@ -200,11 +198,12 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
         return INVALID_SERVER;
     }
 
+//	W5100.writeMR(W5100.readMR() | MR_FARP); // Force ARP mode
     // Используем конкретный соет для udp
     if (iUdp.begin((1024+(millis() & 0xF)),sock) == 1)
      {
        // Try up to three times
-        int retries = 0;
+        uint8_t retries = 0;
         while ((retries < 3) && (ret <= 0))
         {
             // Send DNS request
@@ -214,7 +213,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
                 // Now output the request data
                 ret = BuildRequest(aHostname);
                 if (ret != 0)
-                {    ;
+                {
                     // And finally send the request
                     ret = iUdp.endPacket();
                     if (ret != 0)
@@ -236,6 +235,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
         // We're done with the socket now
         iUdp.stop();
     }
+//	W5100.writeMR(W5100.readMR() & (~MR_FARP)); // Force ARP mode off
     return ret;
 }
 
