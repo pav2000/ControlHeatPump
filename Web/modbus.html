@@ -29,19 +29,21 @@
 	}
 	var refreshid = 0;
 	function refresh_all() {
-		var r = document.getElementById("refresh_auto").checked;
-		if(!r && refreshid) {
-			clearInterval(refreshid);
-			refreshid = 0;
-		} else if(r && !refreshid) {
-			refreshid = setInterval(function() {
-				refresh_all()
-			}, 1000);
-		}
 		var pars = "";
 		var els = document.getElementById("tbl_modbus").rows;
-		for(var i = 1; i < els.length; i++) pars += els[i].getElementsByClassName("mdb")[1].id.replace(/-/, '(') + ')' + (i < els.length - 1 ? ',' : '');
-		loadParam(pars);
+		var i = 1;
+		for(; i < els.length; i++) {
+			var id = els[i].getElementsByClassName("mdb")[1].id;
+			if(id.substr(-2) != ":0") pars += id.replace(/-/, '(') + ')' + (i < els.length - 1 ? ',' : '');
+		}
+		if(pars.length){
+			urltimeout = 500 * i;
+			if(urltimeout >= urlupdate) urltimeout = urlupdate - 10;
+			loadParam(pars);
+		}
+	}
+	function loadParam_after(paramid) {
+		if(document.getElementById("refresh_auto").checked && paramid.indexOf("get_modbus")!=-1) refresh_all();
 	}
 	</script>
 </head>

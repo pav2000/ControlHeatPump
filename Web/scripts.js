@@ -1,9 +1,9 @@
-﻿/* ver 0.949 beta */
+﻿/* ver 0.951 beta */
 var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
-var urlupdate = 4000; // время обновления параметров в миллисекундах
+var urlupdate = 4010; // время обновления параметров в миллисекундах
 
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
@@ -142,10 +142,19 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
 								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/^RELOAD/)) { 
+								else if(values[0].match(/^hide_/)) { // clear
+									if(values[1] == 1) {
+										var elements = document.getElementsByName(valueid);
+										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
+									}
+									continue;
+								} else if(values[0].match(/^set_EEV/)) {
+									if((element = document.getElementById("get_eev"))) element.value = values[1];
+									if((element = document.getElementById("get_eev2"))) element.innerHTML = values[1];
+								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
-									if((element = document.getElementById(valueid + "-ONOFF")) || (element = document.getElementById(valueid + "2"))) { // Надпись
+									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
 										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 									}
 									element = document.getElementById(valueid);
@@ -261,8 +270,7 @@ function loadParam(paramid, noretry, resultdiv) {
 														x: 20,
 														y: -40
 													},
-													relativeTo: "plot"
-												}
+													relativeTo: "plot"}
 											},
 											lang: {
 												contextButtonTitle: "Меню графика",
@@ -282,9 +290,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											},
 											xAxis: {
 												title: {
-													text: "Время, шаг: x" + window.time_chart
-												}
-											},
+													text: "Время, шаг: x" + window.time_chart}},
 											/*yAxis: [{ title: { text: yizm },labels: {align: 'left', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							{ title: { text: 'Положение ЭРВ(шаги)' },labels: {align: 'right', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							opposite: true],*/
@@ -293,15 +299,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												labels: {
 													format: '{value}',
 													style: {
-														color: Highcharts.getOptions().colors[0]
-													}
-												},
+														color: Highcharts.getOptions().colors[0]}},
 												title: {
 													text: yizm,
 													style: {
-														color: Highcharts.getOptions().colors[0]
-													}
-												}
+														color: Highcharts.getOptions().colors[0]}}
 											}, { // Secondary yAxis
 												allowDecimals: false,
 												showEmpty: false,
@@ -309,15 +311,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												title: {
 													text: 'Положение ЭРВ',
 													style: {
-														color: Highcharts.getOptions().colors[1]
-													}
-												},
+														color: Highcharts.getOptions().colors[1]}},
 												labels: {
 													format: '{value} шагов',
 													style: {
-														color: Highcharts.getOptions().colors[1]
-													}
-												},
+														color: Highcharts.getOptions().colors[1]}},
 												opposite: true
 											}],
 											tooltip: {
@@ -333,8 +331,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											plotOptions: {
 												series: {
 													label: {
-														connectorAllowed: false
-													},
+														connectorAllowed: false},
 										            animation: false,
 													pointStart: 0
 												}
@@ -343,13 +340,10 @@ function loadParam(paramid, noretry, resultdiv) {
 													yAxis: 0,
 													name: title,
 													tooltip: {
-														valueDecimals: 2
-													},
+														valueDecimals: 2},
 													states: {
 														hover: {
-															enabled: false
-														}
-													},
+															enabled: false}},
 													showInLegend: false,
 													turboThreshold: 0,
 													data: dataSeries1,
@@ -359,13 +353,10 @@ function loadParam(paramid, noretry, resultdiv) {
 													yAxis: 1,
 													name: 'Положение ЭРВ',
 													tooltip: {
-														valueDecimals: 2
-													},
+														valueDecimals: 2},
 													states: {
 														hover: {
-															enabled: false
-														}
-													},
+															enabled: false}},
 													showInLegend: false,
 													turboThreshold: 0,
 													data: dataSeries2,
@@ -449,9 +440,9 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_press-' + input + '">-</td>';
 												content = content + '<td id="get_minpress-' + input + '">-</td>';
 												content = content + '<td id="get_maxpress-' + input + '">-</td>';
-												content = content + '<td><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinpress-' + input + '">-</td>';
 												content = content + '<td id="get_adcpress-' + input + '">-</td>';
 												content = content + '<td id="get_errcodepress-' + input + '">-</td>';
@@ -638,7 +629,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if((relay = count[j].toLowerCase()) == "") continue;
 												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_presentRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
 												upsens = upsens + "get_Relay(" + count[j] + "),";
-												content = content + '<tr id="get_presentrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '2"></span><input type="checkbox" name="get_relay-' + relay + '" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
+												content = content + '<tr id="get_presentrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="get_relay-' + relay + '" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -655,7 +646,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												input = count[j].toLowerCase();
 												loadsens = loadsens + "get_alarmInput(" + count[j] + "),get_errcodeInput(" + count[j] + "),get_typeInput(" + count[j] + "),get_pinInput(" + count[j] + "),get_Input(" + count[j] + "),get_noteInput(" + count[j] + "),get_testInput(" + count[j] + "),";
 												upsens = upsens + "get_Input(" + count[j] + "),get_errcodeInput(" + count[j] + "),";
-												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
+												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -678,8 +669,8 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
 												content = content + ' <td id="get_mintemp-' + input + '">-</td>';
 												content = content + ' <td id="get_maxtemp-' + input + '">-</td>';
-												content = content + ' <td><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+												content = content + ' <td nowrap><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+												content = content + ' <td nowrap><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												content = content + ' <td id="get_addresstemp-' + input + '">-</td>';
 												content = content + ' <td id="get_errcodetemp-' + input + '">-</td>';
 												content = content + '</tr>';
@@ -703,10 +694,10 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_noteflow-' + input + '">-</td>';
 												content = content + '<td id="get_flow-' + input + '">-</td>';
 												content = content + '<td id="get_minflow-' + input + '">-</td>';
-												content = content + '<td><input id="get_kfflow-' + input + '" type="number" min="0.01" max="655" step="1.00" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
-												content = content + '<td><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_kfflow-' + input + '" type="number" min="0.001" max="655" step="1.000" style="max-width:70px;" value=""><input type="submit" value=">"  onclick="setParam(\'get_kfFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_capacityflow-' + input + '" type="number" min="0" max="65535" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_capacityFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_frflow-' + input + '">-</td>';
-												content = content + '<td><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
+												content = content + '<td nowrap><input id="get_testflow-' + input + '" type="number" min="0.0" max="1000" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_testFlow(' + count[j] + ')\');"></td>';
 												content = content + '<td id="get_pinflow-' + input + '">-</td>';
 												content = content + '<td id="get_errcodeflow-' + input + '">-</td>';
 												content = content + '</tr>';
@@ -833,6 +824,20 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.innerHTML = onoff ? "ВКЛ" : "ВЫКЛ";   
 									element = document.getElementById("onoffswitch");
 									if(element) element.checked = onoff;
+									if((element=document.getElementById('get_zeroEEV'))) element.disabled = onoff;
+									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
+									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-0'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-1'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-2'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-3'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-4'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-5'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-6'))) element.disabled = onoff;
+									if((element=document.getElementById('load-profile-7'))) element.disabled = onoff;
+									if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
+									if((element=document.getElementById('scan'))) element.disabled = onoff;
+									element = document.getElementById('manual_override'); if(element && element.checked) onoff = false;
 									if((element=document.getElementById('get_relay-rcomp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpi'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpo'))) element.disabled = onoff;
@@ -846,47 +851,10 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_relay-rpumpb'))) element.disabled = onoff;
 									if((element=document.getElementById('get_eev'))) element.disabled = onoff;
 									if((element=document.getElementById('get_eev3'))) element.disabled = onoff;
-									if((element=document.getElementById('get_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;
-									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
-									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-0'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-1'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-2'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-3'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-4'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-5'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-6'))) element.disabled = onoff;
-									if((element=document.getElementById('load-profile-7'))) element.disabled = onoff;
-									if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
-									if((element=document.getElementById('scan'))) element.disabled = onoff;
 								} else if(values[0] == "get_uptime") {
-									var element1 = document.getElementById("get_uptime");
-									var element2 = document.getElementById("get_uptime2");
-									if(element1) {
-										document.getElementById("get_uptime").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_uptime2").innerHTML = values[1];
-									}
-								} else if(values[0] == "get_EEV") {
-									var element1 = document.getElementById("get_eev");
-									var element2 = document.getElementById("get_eev2");
-									if(element1) {
-										document.getElementById("get_eev").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_eev2").innerHTML = values[1];
-									}
-								} else if(values[0] == "set_EEV") {
-									var element1 = document.getElementById("get_eev");
-									var element2 = document.getElementById("get_eev2");
-									if(element1) {
-										document.getElementById("get_eev").innerHTML = values[1];
-									}
-									if(element2) {
-										document.getElementById("get_eev2").innerHTML = values[1];
-									}
+									if((element = document.getElementById("get_uptime"))) element.innerHTML = values[1];
+									if((element = document.getElementById("get_uptime2"))) element.innerHTML = values[1];
 								} else if(values[0] == "get_errcode" && values[1] == 0) {
 									document.getElementById("get_errcode").innerHTML = "OK";
 									document.getElementById("get_error").innerHTML = "";
@@ -909,8 +877,11 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
 									break;
 								} else {
-									element = document.getElementById(values[0].toLowerCase());
-									if(element) {
+									if((element = document.getElementById(values[0].toLowerCase()))) {
+										element.value = values[1];
+										element.innerHTML = values[1];
+									}
+									if((element = document.getElementById(values[0].toLowerCase() + "2"))) {
 										element.value = values[1];
 										element.innerHTML = values[1];
 									}

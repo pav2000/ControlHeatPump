@@ -402,7 +402,7 @@ class HeatPump
     
     // Удаленные датчики
     #ifdef SENSOR_IP
-    boolean updateLinkIP();                                // Обновить ВСЕ привязки удаленных датчиков
+    boolean updateLinkIP();                    // Обновить ВСЕ привязки удаленных датчиков
     #endif        
 
    
@@ -423,6 +423,10 @@ class HeatPump
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
+    int16_t get_temp_condensing(void);	  // Расчитать температуру конденсации
+    int16_t get_overcool(void);			// Расчитать переохлаждение
+    int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
+
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
     int8_t StopWait(boolean stop);        // Функция Останова/Ожидания ТН  - возвращает код ошибки
@@ -452,7 +456,6 @@ class HeatPump
     int8_t check_crc16_eeprom(int32_t adr);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     int8_t check_crc16_buf(int32_t adr, byte* buf);// Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
-  
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования

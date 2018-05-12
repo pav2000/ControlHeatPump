@@ -1,6 +1,6 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
+ * vad71 - vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -61,9 +61,9 @@ int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data)
 int8_t	deviceOneWire::Init(void)
 {
 	err = 0;
-	if(lock_bus_reset(true) == OK) {
+	if(lock_bus_reset(1) == OK) {
 #ifdef ONEWIRE_DS2482
-		if(!OneWireDrv.reset_bridge()) err = ERR_DS2482_ONEWIRE;;
+		if(!OneWireDrv.reset_bridge()) err = ERR_DS2482_ONEWIRE;
 #if DS2482_CONFIG != 0
 		if(!err && !OneWireDrv.configure(DS2482_CONFIG)) err = ERR_DS2482_ONEWIRE;
 #endif
@@ -73,14 +73,7 @@ int8_t	deviceOneWire::Init(void)
 	return err;
 }
 
-#ifdef ONEWIRE_DS2482
-inline uint8_t deviceOneWire::check_presence(void)
-{
-	return OneWireDrv.check_presence();
-}
-#endif
-
-// Возвращает OK или err
+// Возвращает OK или err. Если checkpresence=1, то только проверка на присутствие ds2482
 int8_t  deviceOneWire::lock_bus_reset(uint8_t checkpresence)
 {
 	uint8_t presence;
@@ -92,21 +85,27 @@ int8_t  deviceOneWire::lock_bus_reset(uint8_t checkpresence)
 		return err;
 	}
 	if(checkpresence) {
-		if(check_presence() == 0){    // Проверяем наличие на i2с шине  ds2482
+		if(OneWireDrv.check_presence() == 0){    // Проверяем наличие на i2с шине  ds2482
 			err = ERR_DS2482_NOT_FOUND;
 			release_bus();
 			journal.jprintf("DS2482-%d not found . . .\n", bus + 1);
-			return err;
 		}
+		return err;
 	}
 #endif
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
 	{
+#ifdef ONEWIRE_DS2482_SECOND_2WAY
+		if(bus && !OneWireDrv.configure(DS2482_CONFIG)) goto x_Reset_bridge;
+#endif
 		if((presence = OneWireDrv.reset())) break;                     // Сброс прошел выходим
 #ifdef ONEWIRE_DS2482
+x_Reset_bridge:
 		if(!OneWireDrv.reset_bridge()) break;
+		#ifndef ONEWIRE_DS2482_SECOND_2WAY
 		#if DS2482_CONFIG != 0
-		if(!OneWireDrv.configure(DS2482_CONFIG)) break;
+			if(!OneWireDrv.configure(DS2482_CONFIG)) break;
+		#endif
 		#endif
 #else
         pinMode(PIN_ONE_WIRE_BUS, INPUT_PULLUP);
@@ -150,7 +149,13 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte i;
 	byte data[12];
 	byte addr[8];
-	if(lock_bus_reset(true)) {
+	watchdogReset();
+#ifdef ONEWIRE_DS2482
+	if(lock_bus_reset(1)) return err; // check presense
+#endif
+	_delay(cDELAY_DS1820); // wait conversion
+	release_bus();
+	if(lock_bus_reset(0)) { // reset 1-wire
 #ifdef ONEWIRE_DS2482
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
 #else
@@ -197,6 +202,9 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			_delay(95);             // Ожитать время разрешение 9 бит это гуд
 
 			// 5. Получение данных
+#ifdef ONEWIRE_DS2482_SECOND_2WAY
+			if(bus && !OneWireDrv.configure(DS2482_CONFIG)) break;
+#endif
 			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
 		}
 		if(err == OK) {
@@ -204,14 +212,14 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			OneWireDrv.write(0xBE);
 			for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
 
-			// 6. Увеличить разрешение до 12 бит, рабочий режим откат обратно
+			// 6. Увеличить разрешение до 12 бит, рабочий режим
 			SetResolution(addr, DS18B20_p12BIT, true);
 
 			// конвертируем данные в фактическую температуру
 			int16_t t = CalcTemp(addr[0], data);
-			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  				// Дополнительнеая проверка для DS18B20
-				strcat(result_str, "CRC");  	// только правильные значения, проверка по разрешению должно быть 1F
-			else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2)); // для DS18S20 просто выводим температуру
+			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
+				strcat(result_str, "CRC");
+			else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2));
 		}
 		strcat(result_str, ":");
 
@@ -243,10 +251,17 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	int8_t i;
 	byte data[9];
 
-	if(lock_bus_reset(0)) return ERR_ONEWIRE;
+	if((i = lock_bus_reset(0))) return i;
 	OneWireDrv.select(addr);
 	OneWireDrv.write(0xBE); // Команда на чтение регистра температуры
-	for(i = 0; i < 9; i++) { data[i] = OneWireDrv.read();}
+	for(i = 0; i < 9; i++) {
+		int16_t r = OneWireDrv.read();
+		if(r < 0) { // ошибка во время чтения
+			release_bus();
+			return abs(r);
+		}
+		data[i] = r;
+	}
 	release_bus();
 
 	// Данные получены
@@ -280,7 +295,9 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
 #endif
     	OneWireDrv.write(0x48);  // Записать в чип разрешение на всякий случай
     	_delay(12);
-    	OneWireDrv.reset();
+#ifdef ONEWIRE_DS2482_SECOND_2WAY
+		if(bus) OneWireDrv.configure(DS2482_CONFIG);
+#endif
     }
 #endif
     if(!dont_lock_bus) release_bus();

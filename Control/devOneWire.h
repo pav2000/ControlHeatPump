@@ -55,7 +55,6 @@ class deviceOneWire 									       // Класс шина   OneWire
   public:
 #ifdef ONEWIRE_DS2482
 	deviceOneWire(uint8_t addr, uint8_t _bus): OneWireDrv(addr) { err = 0; bus = _bus; };
-	uint8_t check_presence(void); 							// возвращает 1, если найден DS2482
 #else
 	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; };
 #endif
@@ -66,7 +65,7 @@ class deviceOneWire 									       // Класс шина   OneWire
 	int8_t  Read(uint8_t *addr, int16_t &val);          // чтение данных DS18B20, возвращает код ошибки, делает все преобразования
 	int8_t  SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock_bus = 0);	// установить разрешение конкретного датчика
 	int8_t  GetLastErr() { return err; }       			// Получить последнюю ошибку
-	int8_t  lock_bus_reset(uint8_t checkpresence);		// проверка работоспособности шины, блокирование семафора
+	int8_t  lock_bus_reset(uint8_t checkpresence);		// блокирование семафора, проверка наличия ds2482, reset 1-wire.
 	void	release_bus();
   private:
 	int8_t err;                                         // ошибка шины (работа) при ошибке останов ТН

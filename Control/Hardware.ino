@@ -127,9 +127,6 @@ const char *namePress[] =       {
                                  "PEVA",
                                  "PCON"
                                  };
-// Описание датчиков
-const char *notePress[] =       {"Датчик давления испарителя (bar)",
-                                 "Датчик давления конденсации (bar)"};
 
 void sensorADC::initSensorADC(int sensor,int pinA)
     { 
@@ -406,12 +403,12 @@ void InterruptFLOWEVA()
   HP.sFrequency[FLOWEVA].InterruptHandler();
 #endif  
 }
+#ifdef FLOWPCON  
 void InterruptFLOWPCON() 
 {
-#ifdef FLOWPCON  
   HP.sFrequency[FLOWPCON].InterruptHandler();
-#endif  
 }
+#endif  
 
 // Инициализация частотного датчика, на входе номер сенсора по порядку
 void sensorFrequency::initFrequency(int sensor)                     
@@ -439,7 +436,9 @@ void sensorFrequency::initFrequency(int sensor)
    //   FALLING прерывание вызывается только при смене значения на порту с HIGH на LOW
         if (sensor==FLOWCON)  attachInterrupt(pin,InterruptFLOWCON,CHANGE); 
    else if (sensor==FLOWEVA)  attachInterrupt(pin,InterruptFLOWEVA,CHANGE); 
-   else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);  
+#ifdef FLOWPCON   
+   else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
+#endif     
    else err=ERR_NUM_FREQUENCY;
   
 }
@@ -453,7 +452,7 @@ int8_t sensorFrequency::Read()
     Frequency=random(2500,6000);
     count=0;
  //   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
+    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
    //  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
     return err;      // Если демо вернуть случайное число
  #else
@@ -466,7 +465,7 @@ int8_t sensorFrequency::Read()
         sTime=tickCount;  
         count=0;
   //   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
-       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим 
+       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
        }
  #endif   
  return err;    
@@ -600,7 +599,9 @@ void devEEV::initEEV()
   halfPos=(EEV_STEPS-EEV_MIN_STEPS)/2+EEV_MIN_STEPS;// Позиция шаговика - половина диапазона ЭРВ
   timeIn=10;                            // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
   Overheat=0;                           // Перегрев текущий (сотые градуса)
-  tOverheat=400;                        // Перегрев ЦЕЛЬ (сотые градуса)
+  tOverheat= DEFAULT_OVERHEAT;          // Перегрев ЦЕЛЬ (сотые градуса)
+  typeFreon = (TYPEFREON) DEFAULT_FREON_TYPE;
+  ruleEEV = (RULE_EEV) DEFAULT_RULE_EEV;
   Kp = 3;                               // Коэф пропорц.
   Ki = 2;                               // Коэф интегр.  для настройки Ki=0
   Kd = 1;                               // Коэф дифф.
@@ -935,63 +936,62 @@ else if (newEEV!=EEV) { set_EEV(newEEV); return err;}                           
 return err;
 }
 
+static int16_t OverHeatCor_period = 0; // Только один ЭРВ.
+void   devEEV::CorrectOverheat(void)
+{
+	if(!GETBIT(flags, fCorrectOverHeat)) return;
+	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > OverHeatCor.Delay && ++OverHeatCor_period > OverHeatCor.Period) {
+		OverHeatCor_period = 0;
+		uint16_t delta = HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing();
+		if(delta > OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr) {
+			delta = OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев большой - уменьшаем
+		} else if(delta < OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr) {
+			delta = OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев маленький - увеличиваем
+		}
+		tOverheat += (int32_t) delta * OverHeatCor.K / 1000;
+		if(tOverheat > OverHeatCor.OverHeatMax) tOverheat = OverHeatCor.OverHeatMax;
+		else if(tOverheat < OverHeatCor.OverHeatMin) tOverheat = OverHeatCor.OverHeatMin;
+	}
+}
+
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::save(int32_t adr)
 {
-    if (writeEEPROM_I2C(adr, (byte*)&timeIn, sizeof(timeIn)))          { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(timeIn);     // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-    if (writeEEPROM_I2C(adr, (byte*)&tOverheat, sizeof(tOverheat)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(tOverheat);  // !save! Перегрев ЦЕЛЬ (сотые градуса)
-    if (writeEEPROM_I2C(adr, (byte*)&Kp, sizeof(Kp)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Kp);         // !save! ПИД Коэф пропорц.
-    if (writeEEPROM_I2C(adr, (byte*)&Ki, sizeof(Ki)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Ki);         // !save! ПИД Коэф интегр.
-    if (writeEEPROM_I2C(adr, (byte*)&Kd, sizeof(Kd)))                  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Kd);         // !save! ПИД Коэф дифф.
-    if (writeEEPROM_I2C(adr, (byte*)&Correction, sizeof(Correction)))  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Correction); // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-    if (writeEEPROM_I2C(adr, (byte*)&manualStep, sizeof(manualStep)))  { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(manualStep); // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-    if (writeEEPROM_I2C(adr, (byte*)&typeFreon, sizeof(typeFreon)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(typeFreon);  // !save! Тип фреона
-    if (writeEEPROM_I2C(adr, (byte*)&ruleEEV, sizeof(ruleEEV)))        { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(ruleEEV);    // !save! Тправило работы ЭРВ
+    if (writeEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
+    	set_Error(ERR_SAVE_EEPROM,name);
+    	return ERR_SAVE_EEPROM;
+    }
+    adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
     return adr;   
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::load(int32_t adr)
 {
-    if (readEEPROM_I2C(adr, (byte*)&timeIn, sizeof(timeIn)))          { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(timeIn);     // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-    if (readEEPROM_I2C(adr, (byte*)&tOverheat, sizeof(tOverheat)))    { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(tOverheat);  // !save! Перегрев ЦЕЛЬ (сотые градуса)
-    if (readEEPROM_I2C(adr, (byte*)&Kp, sizeof(Kp)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Kp);         // !save! ПИД Коэф пропорц.
-    if (readEEPROM_I2C(adr, (byte*)&Ki, sizeof(Ki)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Ki);         // !save! ПИД Коэф интегр.
-    if (readEEPROM_I2C(adr, (byte*)&Kd, sizeof(Kd)))                  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Kd);         // !save! ПИД Коэф дифф.
-    if (readEEPROM_I2C(adr, (byte*)&Correction, sizeof(Correction)))  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Correction); // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-    if (readEEPROM_I2C(adr, (byte*)&manualStep, sizeof(manualStep)))  { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(manualStep); // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-    if (readEEPROM_I2C(adr, (byte*)&typeFreon, sizeof(typeFreon)))    { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(typeFreon);  // !save! Тип фреона
-    if (readEEPROM_I2C(adr, (byte*)&ruleEEV, sizeof(ruleEEV)))        { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(ruleEEV);    // !save! Тправило работы ЭРВ
-    return adr;
+	if (readEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
+		set_Error(ERR_LOAD_EEPROM,name);
+		return ERR_LOAD_EEPROM;
+	}
+	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
+	return adr;
 }
 
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devEEV::loadFromBuf(int32_t adr,byte *buf) 
 {
- memcpy((byte*)&timeIn,buf+adr,sizeof(timeIn)); adr=adr+sizeof(timeIn);                              // !save! Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
- memcpy((byte*)&tOverheat,buf+adr,sizeof(tOverheat)); adr=adr+sizeof(tOverheat);                     // !save! Перегрев ЦЕЛЬ (сотые градуса)
- memcpy((byte*)&Kp,buf+adr,sizeof(Kp)); adr=adr+sizeof(Kp);                                          // !save! ПИД Коэф пропорц.
- memcpy((byte*)&Ki,buf+adr,sizeof(Ki)); adr=adr+sizeof(Ki);                                          // !save! ПИД Коэф интегр.
- memcpy((byte*)&Kd,buf+adr,sizeof(Kd)); adr=adr+sizeof(Kd);                                          // !save! ПИД Коэф дифф.
- memcpy((byte*)&Correction,buf+adr,sizeof(Correction)); adr=adr+sizeof(Correction);                  // !save! Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
- memcpy((byte*)&manualStep,buf+adr,sizeof(manualStep)); adr=adr+sizeof(manualStep);                  // !save! Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
- memcpy((byte*)&typeFreon,buf+adr,sizeof(typeFreon)); adr=adr+sizeof(typeFreon);                     // !save! Тип фреона
- memcpy((byte*)&ruleEEV,buf+adr,sizeof(ruleEEV)); adr=adr+sizeof(ruleEEV);                           // !save! Правило работы ЭРВ
- return adr; 
+	memcpy((byte*)&timeIn, buf+adr, (byte*)&flags - (byte*)&timeIn + sizeof(flags));
+	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
+	return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devEEV::get_crc16(uint16_t crc) 
 {
-  crc=_crc16(crc,lowByte(timeIn)); crc=_crc16(crc,highByte(timeIn));          //   Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-  crc=_crc16(crc,lowByte(tOverheat)); crc=_crc16(crc,highByte(tOverheat));    //   Перегрев ЦЕЛЬ (сотые градуса)
-  crc=_crc16(crc,lowByte(Kp)); crc=_crc16(crc,highByte(Kp));                  //   ПИД Коэф пропорц.
-  crc=_crc16(crc,lowByte(Ki)); crc=_crc16(crc,highByte(Ki));                  //   ПИД Коэф интегр.
-  crc=_crc16(crc,lowByte(Kd)); crc=_crc16(crc,highByte(Kd));                  //   ПИД Коэф дифф.
-  crc=_crc16(crc,lowByte(Correction)); crc=_crc16(crc,highByte(Correction));  //   Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN». ДОБАВЛЯЕТСЯ к перегреву
-  crc=_crc16(crc,lowByte(manualStep)); crc=_crc16(crc,highByte(manualStep));  //   Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-  crc=_crc16(crc,typeFreon);                                                  //   Тип фреона
-  crc=_crc16(crc,ruleEEV);                                                    //   Правило работы ЭРВ
-  return crc;           
+	uint8_t i;
+	for(i = 0; i < (byte*)&flags - (byte*)&timeIn + sizeof(flags); i++)
+		crc = _crc16(crc,*((byte*)&timeIn + i));  // CRC16 структуры
+	return crc;
 }
 
 // Сброс пид регулятора
@@ -1003,6 +1003,36 @@ void devEEV::resetPID()
   tmpTime=timeIn;                        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                           // Признак работы пид с начала (пропуск первой итерации)
 }
+
+void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
+{
+	if(strcmp(var, "cCOR")==0) {
+    	if(getset) flags = (flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
+    	itoa((flags & (1<<fCorrectOverHeat)) != 0, ret, 10);
+	} else if(strcmp(var, "cDELAY")==0) {
+    	if(getset) OverHeatCor.Delay = value;
+    	itoa(OverHeatCor.Delay, ret, 10);
+    } else if(strcmp(var, "cPERIOD")==0) {
+    	if(getset) OverHeatCor.Period = value;
+    	itoa(OverHeatCor.Period, ret, 10);
+    } else if(strcmp(var, "cDELTA")==0) {
+    	if(getset) OverHeatCor.TDIS_TCON = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.TDIS_TCON / 100.0, 2);
+    } else if(strcmp(var, "cDELTAT")==0) {
+    	if(getset) OverHeatCor.TDIS_TCON_Thr = value * 100.0  +0.005;
+    	ftoa(ret, (float)OverHeatCor.TDIS_TCON_Thr / 100.0, 2);
+    } else if(strcmp(var, "cKF")==0) {
+    	if(getset) OverHeatCor.K = value * 1000.0 + 0.0005;
+    	ftoa(ret, (float)OverHeatCor.K / 1000.0, 3);
+    } else if(strcmp(var, "cOH_MIN")==0) {
+    	if(getset) OverHeatCor.OverHeatMin = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.OverHeatMin / 100.0, 2);
+    } else if(strcmp(var, "cOH_MAX")==0) {
+    	if(getset) OverHeatCor.OverHeatMax = value * 100.0 +0.005;
+    	ftoa(ret, (float)OverHeatCor.OverHeatMax / 100.0, 2);
+    }
+}
+
 #endif
 
 #ifndef FC_VACON
@@ -1486,6 +1516,8 @@ boolean devOmronMX2::set_paramFC(TYPE_PARAM_FC p, float x)
 char * devOmronMX2::get_infoFC(char *buf)
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+  if(!HP.dFC.get_present()) { strcat(buf,"|Данные не доступны (нет инвертора)|;&"); return buf;}          // Инвертора нет в конфигурации
+  if(HP.dFC.get_blockFC())  { strcat(buf,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); return buf;}  // Инвертор заблокирован
   int8_t i;  
   char temp[10];  
        strcat(buf,"-|Состояние инвертора [0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током ");strcat(buf,"7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]|");strcat(buf,int2str(read_0x03_16(MX2_STATE)));strcat(buf,";");
@@ -1842,7 +1874,7 @@ boolean  devSDM::progConnect()
       {
         // Читаем значения счетчика
         _delay(SDM_DELAY_READ); 
-        err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) Voltage=tmp; _delay(SDM_DELAY_READ);                   // Напряжение
+        err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) { Voltage=tmp;_delay(SDM_DELAY_READ);     }            // Напряжение
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_CURRENT,&tmp);       if(err==OK) Current=tmp;_delay(SDM_DELAY_READ);       }            // Ток
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_POWER,&tmp);      if(err==OK) AcPower=tmp;_delay(SDM_DELAY_READ);       }            // Активная мощность
         if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_POWER,&tmp);      if(err==OK) RePower=tmp;_delay(SDM_DELAY_READ);       }            // Реактивная мощность
@@ -1855,7 +1887,7 @@ boolean  devSDM::progConnect()
         Energy=AcEnergy+ReEnergy;
         if (err==OK) break;
         numErr++;                  // число ошибок чтение по модбасу
-        journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                         // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485,name,__FUNCTION__,err);      // Выводим сообщение о повторном чтении
         WDT_Restart(WDT);          // Сбросить вачдог
         _delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
       }
@@ -1913,9 +1945,9 @@ boolean devSDM::set_paramSDM(TYPE_PARAM_SDM p, char *c)
    {
    case   pNAME_SDM:         return  true;                                    break;      // Имя счетчика
    case   pNOTE_SDM:         return  true;                                    break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=390)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=390)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=5000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
+   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
+   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
+   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=30000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
    case   pVOLTAGE_SDM:      return true;                                     break;      // Напряжение
    case   pCURRENT_SDM:      return true;                                     break;      // Ток
    case   pREPOWER_SDM:      return true;                                     break;      // Реактивная мощность
@@ -1966,18 +1998,25 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 
 // МОДБАС Устройство ----------------------------------------------------------
 // функции обратного вызова
+static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
-      _delay(1);  // задержка чтения отдельного символа из Modbus
+//      _delay(1);  // задержка чтения отдельного символа из Modbus
+		delay(1); //
     }
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
       #ifdef PIN_MODBUS_RSE
       digitalWriteDirect(PIN_MODBUS_RSE, HIGH);
       #endif
+      Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus
     }
 static inline void postTransmission() // Функция вызываемая ПОСЛЕ окончания передачи
     {
+	if(Modbus_Entered_Critical) {
+		xTaskResumeAll();
+		Modbus_Entered_Critical = 0;
+	}
     _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
     #ifdef PIN_MODBUS_RSE
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
@@ -2010,18 +2049,28 @@ int8_t devModbus::initModbus()
 // ФУНКЦИИ ЧТЕНИЯ ----------------------------------------------------------------------------------------------
 // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
-   {
-    uint8_t result;
-    // Если шедулер запущен то захватываем семафор
-    if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
-    { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);err=ERR_485_BUZY; return err;}                                                     
-      RS485.set_slave(id);
-      result = RS485.readInputRegisters(cmd,2);                                               // послать запрос,
-      if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1));}  
-      else                               {err=translateErr(result); *ret=0;}
-      SemaphoreGive(xModbusSemaphore);
-    return err;   
-   }
+{
+	uint8_t result;
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		err = ERR_485_BUZY;
+		return err;
+	}
+	RS485.set_slave(id);
+	result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
+	if(result == RS485.ku8MBSuccess) {
+		err = OK;
+		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+	} else {
+		err = translateErr(result);
+		journal.jprintf("Modbus reg #%d - ", cmd);
+		*ret = 0;
+	}
+	SemaphoreGive (xModbusSemaphore);
+	return err;
+}
 
 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t   devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)

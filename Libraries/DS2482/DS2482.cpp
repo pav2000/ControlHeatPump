@@ -36,13 +36,13 @@ DS2482::DS2482(uint8_t addr)
 }
 
 //-------helpers
-__attribute__((always_inline)) inline void DS2482::begin()
+__attribute__((always_inline)) inline void DS2482::begin(void)
 {
 	Wire.beginTransmission(mAddress);
 }
 
 // return 1 when success
-__attribute__((always_inline)) inline uint8_t DS2482::end()
+__attribute__((always_inline)) inline uint8_t DS2482::end(void)
 {
 	return !Wire.endTransmission();
 }
@@ -50,7 +50,7 @@ __attribute__((always_inline)) inline uint8_t DS2482::end()
 // Simply starts and ends an Wire transmission
 // If no devices are present, this returns false
 // Проверка наличия чипа на шине (читается статус) если чип найден возврат true
-uint8_t DS2482::check_presence()
+uint8_t DS2482::check_presence(void)
 {
 	uint8_t status = read_status(true);
 	if((status==0x00)||(status==DS2482_I2C_ERROR)) return false; else return true;
@@ -68,7 +68,7 @@ __attribute__((always_inline)) inline uint8_t DS2482::setReadPtr(uint8_t readPtr
 	return res;
 }
 
-uint8_t DS2482::readByte()
+int16_t DS2482::readByte(void)
 {
 	Wire.requestFrom(mAddress,(uint8_t)1);
 	return Wire.read();
@@ -104,7 +104,7 @@ uint8_t DS2482::busyWait(bool setReadPtr)
 }
 
 //Сброс чипа ds2482, 1 - ok
-uint8_t DS2482::reset_bridge()
+uint8_t DS2482::reset_bridge(void)
 {
 //	mTimeout = 0;
 	begin();
@@ -182,7 +182,7 @@ uint8_t DS2482::select_channel(uint8_t channel)
 
 
 // Сброс шины OneWire, return 1 if presence,
-uint8_t DS2482::reset()
+uint8_t DS2482::reset(void)
 {
 	if(busyWait(true) == DS2482_I2C_ERROR) return false;
 	begin();
@@ -204,15 +204,15 @@ uint8_t DS2482::write(uint8_t b)
 }
 
 // return 1 when success
-uint8_t DS2482::read()
+int16_t DS2482::read(void)
 {
-	if(busyWait(true) == DS2482_I2C_ERROR) return -1;
+	if(busyWait(true) == DS2482_I2C_ERROR) return -2;
 	begin();
 	Wire.write(0x96);
-	if(!end()) return -1;
-	if(busyWait() == DS2482_I2C_ERROR) return -1;
+	if(!end()) return -3;
+	if(busyWait() == DS2482_I2C_ERROR) return -4;
 	if(setReadPtr(DS2482_POINTER_DATA)) return readByte();
-	return -1;
+	return -5;
 }
 
 // return 1 when success
@@ -225,14 +225,14 @@ uint8_t DS2482::write_bit(uint8_t bit)
 	return end();
 }
 
-uint8_t DS2482::read_bit()
+uint8_t DS2482::read_bit(void)
 {
 	write_bit(1);
 	uint8_t status = busyWait(true);
 	return status & DS2482_STATUS_SBR ? 1 : 0;
 }
 
-void DS2482::skip()
+void DS2482::skip(void)
 {
 	write(0xcc);
 }
@@ -245,7 +245,7 @@ void DS2482::select(uint8_t rom[8])
 }
 
 #if ONEWIRE_SEARCH
-void DS2482::reset_search()
+void DS2482::reset_search(void)
 {
 	searchExhausted = 0;
 	searchLastDisrepancy = 0;

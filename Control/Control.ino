@@ -52,7 +52,6 @@
 #include "Message.h"
 #include "Information.h"
  
-
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
@@ -254,42 +253,50 @@ pinMode(21, OUTPUT);
   #endif
   
 // 3. Инициализация и проверка шины i2c
-   journal.jprintf("1. Setting and checking I2C device . . .\n");
+   journal.jprintf("1. Setting and checking I2C devices . . .\n");
  
-   Wire.begin();
-   uint8_t eepStatus=0;
-   for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
-    {
-    if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на 400 кгц  OK==0 все остальное ошибки и пытаемся инициализировать
-      {
-      journal.jprintf("$ERROR - I2C bus failed, status = %d\n",eepStatus);
-      journal.jprintf("$WARNING - Repeat initialization I2C bus\n",eepStatus);
-       #ifdef POWER_CONTROL 
-          digitalWriteDirect(PIN_POWER_ON, HIGH);
-          digitalWriteDirect(PIN_LED1, LOW);
-          _delay(2000);
-          digitalWriteDirect(PIN_POWER_ON, LOW);
-          digitalWriteDirect(PIN_LED1, HIGH);
-           _delay(500);
-          Wire.begin();
-        #else
-           Wire.begin();
-           _delay(500);
-       #endif
-       WDT_Restart(WDT);                       // Сбросить вачдог
-      }
-   else {  journal.jprintf("I2C bus init on %d kHz - OK\n",I2C_SPEED/1000); break; }  // Все хорошо
-    } // for
-    
-    if (eepStatus!=0)  // если шина не инициализирована делаем попытку запустится на малой частоте один раз!
-     {
-      if ((eepStatus=eepromI2C.begin(twiClock100kHz))>0) 
-           journal.jprintf("$ERROR - I2C bus init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
-      else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",I2C_SPEED/1000);
-     } 
+    uint8_t eepStatus=0;
+	#ifdef I2C_EEPROM_64KB
+	if(journal.get_err()) { // I2C память и журнал в ней уже пытались инициализировать
+	#endif
+	   Wire.begin();
+	   for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
+	   {
+		   if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на I2C_SPEED и пытаемся инициализировать
+		   {
+			   journal.jprintf("$ERROR - I2C mem failed, status = %d\n", eepStatus);
+	        #ifdef POWER_CONTROL
+			   digitalWriteDirect(PIN_POWER_ON, HIGH);
+			   digitalWriteDirect(PIN_LED1, LOW);
+			   _delay(2000);
+			   digitalWriteDirect(PIN_POWER_ON, LOW);
+			   digitalWriteDirect(PIN_LED1, HIGH);
+			   _delay(500);
+			   Wire.begin();
+	        #else
+		       Wire.begin();
+		       _delay(500);
+	        #endif
+		       WDT_Restart(WDT);                       // Сбросить вачдог
+		   }  else break;   // Все хорошо
+	   } // for
+	#ifdef I2C_EEPROM_64KB
+	 }
+	#endif
+	if(eepStatus)  // если I2C память не инициализирована, делаем попытку запустится на малой частоте один раз!
+	{
+	   if((eepStatus=eepromI2C.begin(twiClock100kHz))>0) {
+		   journal.jprintf("$ERROR - I2C mem init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
+		   eepromI2C.begin(I2C_SPEED);
+		   goto x_I2C_init_std_message;
+	   } else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",twiClock100kHz/1000);
+	} else {
+x_I2C_init_std_message:
+	   journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
+	}
     
      // Сканирование шины i2c
-    if (eepStatus==0)   // есть инициализация
+//    if (eepStatus==0)   // есть инициализация
     {
         byte error, address;
         const byte start_address = 8;       // lower addresses are reserved to prevent conflicts with other protocols
@@ -299,10 +306,10 @@ pinMode(21, OUTPUT);
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = !OneWireBus.check_presence();
+            	  error = OneWireBus.lock_bus_reset(1);
 			    #ifdef ONEWIRE_DS2482_SECOND
               } else if(address == I2C_ADR_DS2482two) {
-               	  error = !OneWireBus2.check_presence();
+               	  error = OneWireBus2.lock_bus_reset(1);
 		        #endif
               } else {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
@@ -346,12 +353,12 @@ pinMode(21, OUTPUT);
 #endif
 
 // 4. Инициализировать основной класс
-  journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump); 
+  journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
   HP.initHeatPump();                                               // Основной класс
 
 // 5. Установка сервисных пинов
-   journal.jprintf("3. Read safe Network botton . . .\n");
-   pinMode(PIN_KEY1, INPUT);               // Копка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
+   journal.jprintf("3. Read safe Network key . . .\n");
+   pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
    HP.safeNetwork=!digitalReadDirect(PIN_KEY1); 
    if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n"); 
   
@@ -361,18 +368,18 @@ pinMode(21, OUTPUT);
    digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
-   journal.jprintf("4. Init and checking SD card . . .\n"); 
+   journal.jprintf("4. Init and checking SD card . . .\n");
    HP.set_fSD(initSD(SD_REPEAT));
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    _delay(100);
 
 // 8. Чтение ЕЕПРОМ
-   journal.jprintf("5. Load data from EEPROM . . .\n"); 
+   journal.jprintf("5. Load data from I2C memory . . .\n");
 //  HP.save();                                         // Записать настройки по умолчанию для перехода с демо на боевую
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-   journal.jprintf("I2C eeprom is empty, save default setting\n");  
+   journal.jprintf("I2C memory is empty, save default setting\n");
   // HP.save();                                          //если ошибка ERR_HEADER2_EEPROM то скорее всего память чистая, считывать нечего и записывам настроки по умолчанию
    HP.save_motoHour();
   } 
@@ -386,16 +393,16 @@ pinMode(21, OUTPUT);
   HP.set_hashAdmin();
 
 // 9. Сетевые настройки
-   journal.jprintf("6. Setting Network . . .\n"); 
+   journal.jprintf("6. Setting Network . . .\n");
    initW5200(true);   // Инициализация сети с выводом инфы в консоль
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
 // 10. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("7. Setting time and clock . . .\n"); 
+   journal.jprintf("7. Setting time and clock . . .\n");
    set_time();        
    
  // 11. Инициалазация уведомлений
-   journal.jprintf("8. Message update IP from DNS . . .\n"); 
+   journal.jprintf("8. Message update IP from DNS . . .\n");
    HP.message.dnsUpdateStart(); 
    
  // 12. Инициалазация MQTT
@@ -409,9 +416,9 @@ pinMode(21, OUTPUT);
   // 13. Инициалазация Statistics
    #ifdef I2C_EEPROM_64KB  
      HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init counter statictic.\n");  
+     journal.jprintf("10. Init counter statistic.\n");
   #else    
-     journal.jprintf("10. Statistic no support (low eeprom).\n"); 
+     journal.jprintf("10. Statistic no support (low memory).\n");
   #endif
 
 #ifdef USE_SCHEDULER
@@ -434,6 +441,11 @@ pinMode(21, OUTPUT);
     myNextion.init(cZero);
   #else
     journal.jprintf("13. Nextion dispaly absent in config\n");
+  #endif
+
+  #ifdef TEST_BOARD
+  // Scan oneWire - TEST.
+  HP.scan_OneWire(Socket[0].outBuf);
   #endif
 
   // Создание задач Free RTOS  ----------------------
@@ -777,18 +789,18 @@ void vReadSensor(void *pvParameters)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	volatile unsigned long readFC = 0;
 	volatile unsigned long readSDM = 0;
-	uint32_t ttime;                                                 // новое время
-	uint32_t oldTime;                                               // старое вермя
-	uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());             // Последнее врямя обновления часов
-	int8_t i;
-
+	static uint32_t ttime;                                                 // новое время
+	static uint32_t oldTime;                                               // старое вермя
+	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
+	static uint8_t prtemp = 0;
 	for(;;) {
+		int8_t i;
 		watchdogReset();
 
 #ifndef DEMO  // Если не демо
-		if(OneWireBus.PrepareTemp()) set_Error(ERR_ONEWIRE, (char*) __FUNCTION__);
+		prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
-		if(OneWireBus2.PrepareTemp()) set_Error(ERR_DS2482_ONEWIRE, (char*)__FUNCTION__);
+		prtemp |= HP.Prepare_Temp(1);
 #endif
 #endif     // не DEMO
 		vReadSensor_delay10ms(cDELAY_DS1820 / 10); 						 // Ожитать время преобразования
@@ -797,12 +809,9 @@ void vReadSensor(void *pvParameters)
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-			//uint32_t m1 = micros();
-			HP.sTemp[i].Read();
-			//uint32_t m2 = micros(); //Serial.print(HP.sTemp[i].get_name()); Serial.print(':'); Serial.print(m2 - m1); Serial.print(", ");
+			if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
 			_delay(2);     												// пауза
 		}
-		//Serial.print("\n");
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
@@ -970,7 +979,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 						 HP.Prof.load(_profile);
 						 HP.set_profile();
 						 xTaskResumeAll();
-						 journal.jprintf("Profile changed to %d\n", _profile);
+						 journal.jprintf(pP_TIME, "Profile changed to %d\n", _profile);
 						 if(frestart) HP.sendCommand(pRESUME);
 					 }
 				 } else if(HP.get_State() == pWAIT_HP) {
@@ -1047,40 +1056,42 @@ void vReadSensor_delay10ms(uint16_t msec)
 
 // Задача Управление ЭРВ
 #ifdef EEV_DEF
-void vUpdateEEV( void *pvParameters )
-{ //const char *pcTaskName = "HP_UpdateEEV\r\n";
-  static int16_t  cmd=0;
-  for( ;; )
-  {
- //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-  if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)    // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
-   {
-    // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
-    // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
-    if ((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0)==errQUEUE_EMPTY)&&(HP.dEEV.stepperEEV.isBuzy()))
-      {
- //     journal.jprintf("$WARNING! Loss of sync EEV\n"); 
-      HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
-      }
- 
-     // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-     HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp()+HP.sTemp[TEVAIN].get_Temp())/2,(HP.sTemp[TCONOUT].get_Temp()+HP.sTemp[TCONIN].get_Temp())/2); 
-     
-    if ((HP.get_State()==pOFF_HP)||(HP.get_State()==pSTOPING_HP))                // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
-     {
-      journal.jprintf((const char*)" Stop task update EEV\n"); 
-      vTaskSuspend(HP.xHandleUpdateEEV); 
-      continue;                             // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
-      }   
-     else    // штатная пауза (в зависимости от настроек)
-         if  ((HP.dEEV.get_ruleEEV()==TEVAOUT_PEVA)||(HP.dEEV.get_ruleEEV()==TRTOOUT_PEVA))   vTaskDelay(HP.dEEV.get_timeIn()*1000/portTICK_PERIOD_MS);  // интегрирование ПИД
-         else                                                                                 vTaskDelay(TIME_EEV/portTICK_PERIOD_MS);                   // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
-   
-     } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV) 
-     else vTaskDelay(TIME_EEV/portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
-   } // for
- vTaskDelete( NULL ); 
-}
+ void vUpdateEEV(void *pvParameters)
+ { //const char *pcTaskName = "HP_UpdateEEV\r\n";
+	 static int16_t cmd = 0;
+	 for(;;) {
+		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
+		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 {
+			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
+			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
+			 if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY)
+					 && (HP.dEEV.stepperEEV.isBuzy())) {
+				 //     journal.jprintf("$WARNING! Loss of sync EEV\n");
+				 HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
+			 }
+
+			 HP.dEEV.CorrectOverheat();
+
+			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
+			 HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
+					 (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
+
+			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
+			 {
+				 journal.jprintf((const char*) " Stop task update EEV\n");
+				 vTaskSuspend(HP.xHandleUpdateEEV);
+				 continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
+			 } else    // штатная пауза (в зависимости от настроек)
+				 if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
+						 HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
+				 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
+
+		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)
+		 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
+	 } // for
+	 vTaskDelete( NULL);
+ }
 #endif
 // Задача Разбор очереди команд
 void vUpdateCommand( void *pvParameters )

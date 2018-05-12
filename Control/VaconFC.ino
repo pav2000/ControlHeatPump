@@ -47,7 +47,7 @@ int8_t devVaconFC::initFC()
     SETBIT0(flags, fAuto); // По умолчанию старт-стоп
     if(!Modbus.get_present()) // modbus отсутствует
     {
-        SETBIT0(flags, fFC); // Инвертор не рабоатет
+        SETBIT0(flags, fFC); // Инвертор не работает
         journal.jprintf("%s, modbus not found, block.\n", name);
         err = ERR_NO_MODBUS;
         return err;
@@ -70,7 +70,6 @@ int8_t devVaconFC::initFC()
     ChartCurrent.init(get_present()); // инициалазация графика
 #endif
 
-    note = (char*)noteFC_OK; // Описание инвертора есть
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     CheckLinkStatus(); // проверка связи с инвертором
     check_blockFC();
@@ -102,16 +101,18 @@ int8_t devVaconFC::initFC()
 int16_t devVaconFC::CheckLinkStatus(void)
 {
     //    if((!get_present())||(GETBIT(flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
-
-    for (uint8_t i = 0; i < 3; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
-    {
-        err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
-        if(err == OK) break; // Прочитали удачно
-        _delay(1);
+    if(testMode == NORMAL || testMode == HARD_TEST){
+		for (uint8_t i = 0; i < 3; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
+		{
+			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
+			if(err == OK) break; // Прочитали удачно
+			_delay(FC_DELAY_READ);
+		}
+		check_blockFC(); // проверить необходимость блокировки
+		if(err != OK) state = ERR_LINK_FC;
+    } else {
+    	state = 0;
     }
-    check_blockFC(); // проверить необходимость блокировки
-    if(err != OK)
-        state = ERR_LINK_FC;
     return state;
 }
 
@@ -120,9 +121,14 @@ int16_t devVaconFC::CheckLinkStatus(void)
 int8_t devVaconFC::get_readState()
 {
     uint8_t i;
-    if((!get_present()) || (GETBIT(flags, fErrFC)))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
+    if((!get_present()) || (GETBIT(flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     err = OK;
+    if(testMode != NORMAL && testMode != HARD_TEST){
+    	state = 0;
+    	FC_curr = FC;
+    	return OK;
+    }
+
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
     // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения
@@ -186,8 +192,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
         FC = x;
-        if(show)
-            journal.jprintf(" Set %s: %.2f\r\n", name, FC / 100.0);
+        if(show) journal.jprintf(" Set %s: %.2f\r\n", name, FC / 100.0);
         return err;
     } // установка частоты OK  - вывод сообщения если надо
     else {
@@ -196,24 +201,23 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
     }
 #else // Боевой вариант
     uint8_t i;
-    if((!get_present()) || (GETBIT(flags, fErrFC)))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
+    if((!get_present()) || (GETBIT(flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
         // Запись в регистры инвертора установленной частоты
-        for (i = 0; i < FC_NUM_READ; i++) // Делаем FC_NUM_READ попыток
-        {
-            err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
-            if(err == OK)
-                break; // Команда выполнена
-            _delay(100);
-            journal.jprintf("%s: repeat set speed\n", name); // Выводим сообщение о повторной команде
+        if(testMode == NORMAL || testMode == HARD_TEST){
+			for (i = 0; i < FC_NUM_READ; i++) // Делаем FC_NUM_READ попыток
+			{
+				err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
+				if(err == OK) break; // Команда выполнена
+				_delay(100);
+				journal.jprintf("%s: repeat set speed\n", name); // Выводим сообщение о повторной команде
+			}
         }
         if(err == OK) {
             FC = x;
-            if(show)
-                journal.jprintf(" Set %s: %.2f %%\r\n", name, FC / 100.0);
+            if(show) journal.jprintf(" Set %s: %.2f %%\r\n", name, FC / 100.0);
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {
@@ -380,11 +384,12 @@ void devVaconFC::check_blockFC()
     else {
     	SETBIT0(flags, fErrFC);
         number_err = 0;
+        note = (char*)noteFC_OK; // Описание инвертора есть
         return;
     } // Увеличить счетчик ошибок
     if(number_err > FC_NUM_READ) // если привышено число ошибок то блокировка
     {
-        SemaphoreGive(xModbusSemaphore); // разблокировать семафор
+        //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
         SETBIT1(flags, fErrFC); // Установить флаг
         note = (char*)noteFC_NO;
         set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
@@ -395,23 +400,31 @@ void devVaconFC::check_blockFC()
 // Получить флаг блокировки инвертора
 boolean devVaconFC::get_blockFC()
 {
-	return testMode == SAFE_TEST || testMode == TEST ? false : GETBIT(flags, fErrFC);
+	return GETBIT(flags, fErrFC);
 }
 
 // Установить значение текущий режим работы
 void  devVaconFC::set_testMode(TEST_MODE t)
 {
 	testMode = t;
-//	if(t == SAFE_TEST || t == TEST) SETBIT0(flags, fErrFC);
+	if(t == SAFE_TEST || t == TEST) {
+		SETBIT0(flags, fErrFC);
+		err = OK;
+	} else {
+	    //CheckLinkStatus(); // проверка связи с инвертором
+	}
 }
 
 // Команда ход на инвертор (целевая скорость НЕ ВЫСТАВЛЯЕТСЯ)
 // Может быть подана команда через реле и через модбас в зависимости от ключей компиляции
 int8_t devVaconFC::start_FC()
 {
-    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((FC < FC_MIN_FREQ) || (FC > FC_MAX_FREQ)))) {
-        journal.jprintf(" %s: Wrong frequency, ignore start\n", name);
-        return err;
+    if(((testMode == NORMAL) || (testMode == HARD_TEST))) {
+    	if(!get_present() || GETBIT(flags, fErrFC)) return err; // выходим если нет инвертора или он заблокирован по ошибке
+    	if(FC < FC_MIN_FREQ || FC > FC_MAX_FREQ) {
+    		journal.jprintf(" %s: Wrong frequency, ignore start\n", name);
+    		return err;
+    	}
     } // проверка частоты не в режиме теста
     err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
@@ -431,12 +444,7 @@ int8_t devVaconFC::start_FC()
     } // генерация ошибки
 #else // DEMO
     // Боевая часть
-    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((!get_present()) || (GETBIT(flags, fErrFC)))))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
-
     // set_targetFreq(FC_START_FC,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда скорость стартовая - супербойлер
-
-    err = OK;
     if((testMode == NORMAL) || (testMode == HARD_TEST)) //   Режим работа и хард тест, все включаем,
     {
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
@@ -448,8 +456,7 @@ int8_t devVaconFC::start_FC()
         SETBIT1(flags, fOnOff);
         startCompressor = rtcSAM3X8.unixtime();
         journal.jprintf(" %s ON\n", name);
-    }
-    else {
+    } else {
         state = ERR_LINK_FC;
         SETBIT1(flags, fErrFC);
         set_Error(err, name);
@@ -465,9 +472,6 @@ int8_t devVaconFC::start_FC()
     journal.jprintf(" %s ON\n", name);
 #else // DEMO
     // Боевая часть
-    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((!get_present()) || (GETBIT(flags, fErrFC)))))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
-    err = OK;
     if((testMode == NORMAL) || (testMode == HARD_TEST)) //   Режим работа и хард тест, все включаем,
     {
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
@@ -489,6 +493,8 @@ int8_t devVaconFC::start_FC()
 // Команда стоп на инвертор Обратно код ошибки
 int8_t devVaconFC::stop_FC()
 {
+    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((!get_present()) || (GETBIT(flags, fErrFC)))))
+        return err; // выходим если нет инвертора или он заблокирован по ошибке
     err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 #ifdef DEMO
@@ -506,9 +512,6 @@ int8_t devVaconFC::stop_FC()
         set_Error(err, name);
     } // генерация ошибки
 #else // DEMO
-    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((!get_present()) || (GETBIT(flags, fErrFC)))))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
-    err = OK;
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
@@ -536,8 +539,6 @@ int8_t devVaconFC::stop_FC()
     startCompressor = 0;
     journal.jprintf(" %s OFF\n", name);
 #else // DEMO
-    if(((testMode == NORMAL) || (testMode == HARD_TEST)) && (((!get_present()) || (GETBIT(flags, fErrFC)))))
-        return err; // выходим если нет инвертора или он заблокирован по ошибке
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
@@ -726,64 +727,54 @@ void devVaconFC::get_infoFC_status(char *buffer, uint16_t st)
 }
 
 // Получить информацию о частотнике
-char* devVaconFC::get_infoFC(char* buf)
+void devVaconFC::get_infoFC(char* buf)
 {
+	buf += m_strlen(buf);
+	if(testMode == NORMAL || testMode == HARD_TEST) {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-    int16_t i;
-    char temp[10];
-    strcat(buf, "-|Состояние инвертора: ");
-    get_infoFC_status(buf, i = read_0x03_16(FC_STATUS)); strcat(buf, "|");
-    strcat(buf, int2str(i)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.1|Контроль выходной частоты (Гц)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_FREQ) / 100.0, 2)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "2103|Выходная скорость (%)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_SPEED) / 100.0, 2)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.4|Контроль выходного тока (А)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_CURRENT) / 100.0, 2)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.5|Контроль крутящего момента (%)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_TORQUE) / 10.0, 1)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.7|Контроль выходного напряжения (В)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_VOLTAGE) / 10.0, 1)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.3|Контроль оборотов (об/м)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_RPM), 0)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V3.5|Счетчик времени работы в режиме \"Ход\" (ч)|");
-    strcat(buf, int2str(read_0x03_16(FC_RUN_HOURS))); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V3.3|Контроль времени наработки (ч)|");
-    strcat(buf, int2str(read_0x03_16(FC_POWER_HOURS))); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.9|Контроль температуры радиатора (°С)|");
-    strcat(buf, ftoa(temp, (float)read_tempFC(), 1)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V1.8|Контроль напряжения  постоянного тока (В)|");
-    strcat(buf, ftoa(temp, (float)read_0x03_16(FC_VOLTATE_DC), 0)); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
-    strcat(buf, "V3.6|Счетчик аварийных отключений (Шт)|");
-    strcat(buf, int2str(read_0x03_16(FC_NUM_FAULTS))); strcat(buf, ";");
-    _delay(FC_DELAY_READ);
+		if(HP.dFC.get_blockFC()) {   // Инвертор заблокирован
+			strcat(buf, "|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;");
+		} else {
+			uint32_t i;
+			strcat(buf, "-|Состояние инвертора: ");
+			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
+			m_snprintf(buf + m_strlen(buf), 256, "|%d;", i);
+			if(err == OK) {
+				_delay(FC_DELAY_READ);
+				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
+				buf += m_snprintf(buf + m_strlen(buf), 256, "2103|Выходная скорость (%%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				_delay(FC_DELAY_READ);
+				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
+				buf += m_snprintf(buf, 256, "V1.3|Обороты (об/м)|%d;V1.4|Выходной ток (А)|%.2f;", i >> 16, (float)(i >> 16) / 100.0);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.5|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				_delay(FC_DELAY_READ);
+				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
+				buf += m_snprintf(buf, 256, "V1.7|Выходное напряжение (В)|%.1f;V1.8|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V1.9|Температура радиатора (°С)|%d;", read_tempFC());
+				_delay(FC_DELAY_READ);
+				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
+				buf += m_snprintf(buf, 256, "V3.3|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
+				_delay(FC_DELAY_READ);
+				i = read_0x03_32(FC_RUN_DAYS); // +FC_RUN_HOURS (low word)
+				buf += m_snprintf(buf, 256, "V3.5|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
+				_delay(FC_DELAY_READ);
+				buf += m_snprintf(buf, 256, "V3.6|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
+				_delay(FC_DELAY_READ);
 
-    strcat(buf, "2111|Активная ошибка|");
-    i = read_0x03_16(FC_ERROR);
-    if(err == OK) {
-        strcat(buf, get_fault_str(i));
-        strcat(buf, ": ");
-        strcat(buf, int2str(i));
-    }
-    else {
-        strcat(buf, "Ошибка Modbus: ");
-        strcat(buf, int2str(err));
-    }
-    strcat(buf, ";");
-
+				i = read_0x03_16(FC_ERROR);
+				if(err == OK) {
+					m_snprintf(buf, 256, "2111|Активная ошибка|%s: %d;", get_fault_str(i), i);
+				} else {
+					m_snprintf(buf, 256, "-|Ошибка Modbus|%d;", err);
+				}
+			}
+		}
 #endif
-    return buf;
+	} else {
+		m_snprintf(buf, 256, "-|Режим тестирования...|;");
+	}
 }
 // Сброс ошибок инвертора по модбасу
 boolean devVaconFC::reset_errorFC()
@@ -836,15 +827,36 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
     uint8_t i;
     int16_t result;
     err = OK;
-    if((!get_present()) || (GETBIT(flags, fErrFC)))
-        return 0; // выходим если нет инвертора или он заблокирован по ошибке
+    if((!get_present()) || (GETBIT(flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
 
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         _delay(FC_DELAY_REPEAT);
-        journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf("Modbus reg #%d - ", cmd);
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        numErr++; // число ошибок чтение по модбасу
+        //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+    }
+    check_blockFC(); // проверить необходимость блокировки
+    return result;
+}
+
+// Функция 0х03 прочитать 2 байта, возвращает значение, ошибка обновляется
+// Реализовано FC_NUM_READ попыток чтения/записи в инвертор
+uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
+{
+    uint8_t i;
+    uint32_t result;
+    err = OK;
+    if((!get_present()) || (GETBIT(flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
+    for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
+    {
+        err = Modbus.readHoldingRegisters32(FC_MODBUS_ADR, cmd - 1, (uint32_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
+        if(err == OK) break; // Прочитали удачно
+        _delay(FC_DELAY_REPEAT);
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
@@ -864,7 +876,7 @@ int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
         err = Modbus.writeHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, data); // послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Записали удачно
         _delay(FC_DELAY_REPEAT);
-        journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
         //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }

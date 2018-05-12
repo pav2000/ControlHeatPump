@@ -3,7 +3,7 @@
  * Адаптировано vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -17,8 +17,8 @@
  * GNU General Public License for more details.
  */
 //
-#ifndef VaconFC_h
-#define VaconFC_h
+#ifndef _VaconFC_h
+#define _VaconFC_h
 
 #define FC_VACON_NAME "Vacon 10"
 
@@ -29,8 +29,10 @@
 #define FC_TEMP			8			// Температуры радиатора частотника, C
 #define FC_TEMP_MOTOR	9			// Расчетная температура двигателя, %
 #define FC_COMM_STATUS	808			// Состояние связи по шине Modbus. Формат: xx.yyy где xx = 0 – 64 (число сообщений об ошибках), yyy = 0 - 999 (число положительных сообщений)
-#define FC_POWER_HOURS	829			// Наработка в часах
-#define FC_RUN_HOURS	841			// Счетчик работы двигателя в часах
+#define FC_POWER_DAYS	828			// Наработка, дней
+#define FC_POWER_HOURS	829			// Наработка, часов
+#define FC_RUN_DAYS		840			// Счетчик работы двигателя, дней
+#define FC_RUN_HOURS	841			// Счетчик работы двигателя, часов
 #define FC_NUM_FAULTS	842			// Счетчик отказов
 
 // Чтение / запись
@@ -65,25 +67,25 @@
 
 // Биты
 // FC_STATE
-#define FC_S_RDY		0b00000001	// Привод готов
+#define FC_S_RDY		0x01	// Привод готов
 const char FC_S_RDY_str[]			= "Готов,";
-#define FC_S_RUN		0b00000010	// Привод работает
+#define FC_S_RUN		0x02	// Привод работает
 const char FC_S_RUN_str[]			= "Работает,";
-#define FC_S_DIR		0b00000100	// 0 - По часовой стрелке, 1 - Против часовой стрелки
+#define FC_S_DIR		0x04	// 0 - По часовой стрелке, 1 - Против часовой стрелки
 const char FC_S_DIR_str[]			= "Против час.ст.,";
-#define FC_S_FLT		0b00001000	// Действующий отказ
+#define FC_S_FLT		0x08	// Действующий отказ
 const char FC_S_FLT_str[]			= "Ошибка,";
-#define FC_S_W			0b00010000	// Сигнал тревоги
+#define FC_S_W			0x10	// Сигнал тревоги
 const char FC_S_W_str[]				= "Тревога,";
-#define FC_S_AREF		0b00100000	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
+#define FC_S_AREF		0x20	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
 const char FC_S_AREF_str0[]			= "Изменение скорости,";
-#define FC_S_Z			0b01000000	// 1 - Привод работает на нулевой скорости
+#define FC_S_Z			0x40	// 1 - Привод работает на нулевой скорости
 const char FC_S_Z_str[]				= "Остановлен,";
 // FC_CONTROL
-#define FC_C_RUN		0b00000001	// 0 - Останов, 1 - Выполнение
+#define FC_C_RUN		0x01	// 0 - Останов, 1 - Выполнение
 #define FC_C_STOP		0
-#define FC_C_DIR		0b00000010	// 0 - По часовой стрелке, 1 - Против часовой стрелки
-#define FC_C_RST		0b00000100	// Сброс отказа
+#define FC_C_DIR		0x02	// 0 - По часовой стрелке, 1 - Против часовой стрелки
+#define FC_C_RST		0x04	// Сброс отказа
 
 const uint8_t FC_Faults_code[] = {
 	0,
@@ -140,58 +142,58 @@ const char *FC_Faults_str[] = {	"Ok", // нет ошибки
 class devVaconFC
 {
 public:
-  int8_t initFC();                                 // Инициализация Частотника
+  int8_t	initFC();                                 // Инициализация Частотника
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fFC);} // Наличие датчика в текущей конфигурации
-  int8_t get_err(){return err;}                    // Получить последню ошибку частотника
-  uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения
-  char* get_paramFC(TYPE_PARAM_FC p);              // Получить параметр инвертора в виде строки
-  boolean set_paramFC(TYPE_PARAM_FC p, float x);   // Установить параметр инвертора из строки
+  int8_t	get_err(){return err;}                    // Получить последню ошибку частотника
+  uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
+  char*		get_paramFC(TYPE_PARAM_FC p);              // Получить параметр инвертора в виде строки
+  boolean	set_paramFC(TYPE_PARAM_FC p, float x);   // Установить параметр инвертора из строки
   
   // Управление по модбас Общее для всех частотников
-  int16_t get_targetFreq() {return FC;}                    // Получить целевую скорость в %
-  int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
-  uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
-  uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
-  char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
-  void 	get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
-  boolean reset_errorFC();                        // Сброс ошибок инвертора
-  boolean reset_FC();               		      // Сброс состояния связи модбас
-  int16_t CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
-  int16_t read_stateFC();                        // Текущее состояние инвертора
-  int16_t read_tempFC();                         // Tемпература радиатора
+  int16_t	get_targetFreq() {return FC;}                    // Получить целевую скорость в %
+  int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
+  uint16_t	get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
+  void		get_infoFC(char *buf);                   // Получить информацию о частотнике
+  void		get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
+  boolean	reset_errorFC();                        // Сброс ошибок инвертора
+  boolean	reset_FC();               		      // Сброс состояния связи модбас
+  int16_t	CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
+  int16_t	read_stateFC();                        // Текущее состояние инвертора
+  int16_t	read_tempFC();                         // Tемпература радиатора
    
-  int16_t get_freqFC() {return FC_curr;}            // Получить текущую скорость в 0.01 %
-  uint32_t get_startTime(){return startCompressor;}// Получить время старта компрессора
-  int8_t get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
-  int8_t start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
-  int8_t stop_FC();                                 // Команда стоп на инвертор
-  boolean isfAuto(){return GETBIT(flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
-  boolean isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
+  int16_t	get_freqFC() {return FC_curr;}            // Получить текущую скорость в 0.01 %
+  uint32_t	get_startTime(){return startCompressor;}// Получить время старта компрессора
+  int8_t	get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
+  int8_t	start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
+  int8_t	stop_FC();                                 // Команда стоп на инвертор
+  boolean	isfAuto(){return GETBIT(flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
+  boolean	isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
  
-  void 	  check_blockFC();                          // Установить запрет на использование инвертора
-  boolean get_blockFC(); 						    // Получить флаг блокировки инвертора
+  void		check_blockFC();                          // Установить запрет на использование инвертора
+  boolean	get_blockFC(); 						    // Получить флаг блокировки инвертора
 
-  const char * get_fault_str(uint8_t fault); // Возвращает название ошибки
+  const char *get_fault_str(uint8_t fault); // Возвращает название ошибки
   
   // Аналоговое управление
   int16_t get_DAC(){return dac;};                  // Получить установленное значеие ЦАП
   int16_t get_level0(){return level0;}             // Получить Отсчеты ЦАП соответсвующие 0   скорости
   int16_t get_level100(){return level100;}         // Получить Отсчеты ЦАП соответсвующие максимальной скорости
   int16_t get_levelOff(){return levelOff;}         // Получить Минимальная скорость при котором частотник отключается (ограничение минимальной мощности)
-  int8_t set_level0(int16_t x);                    // Установить Отсчеты ЦАП соответсвующие 0   мощности
-  int8_t set_level100(int16_t x);                  // Установить Отсчеты ЦАП соответсвующие 100 мощности
-  int8_t set_levelOff(int16_t x);                  // Установить Минимальная мощность при котором частотник отключается (ограничение минимальной скорости)
+  int8_t  set_level0(int16_t x);                    // Установить Отсчеты ЦАП соответсвующие 0   мощности
+  int8_t  set_level100(int16_t x);                  // Установить Отсчеты ЦАП соответсвующие 100 мощности
+  int8_t  set_levelOff(int16_t x);                  // Установить Минимальная мощность при котором частотник отключается (ограничение минимальной скорости)
   uint8_t get_pinA(){return  pin;}                 // Ножка куда прицеплено FC
    
   // Сервис
-  TEST_MODE get_testMode() {return testMode;}      // Получить текущий режим работы
-  void    set_testMode(TEST_MODE t);			   // Установить значение текущий режим работы
-  char*   get_note(){return  note;}                // Получить описание
-  char*   get_name(){return  name;}                // Получить имя
-  int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t loadFromBuf(int32_t adr, byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  uint16_t get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
+  TEST_MODE	get_testMode() {return testMode;}      // Получить текущий режим работы
+  void		set_testMode(TEST_MODE t);			   // Установить значение текущий режим работы
+  char *	get_note(){return  note;}                // Получить описание
+  char *	get_name(){return  name;}                // Получить имя
+  int32_t	save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  int32_t	load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  int32_t	loadFromBuf(int32_t adr, byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
+  uint16_t	get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 
   statChart ChartFC;                               // График по скорости
   statChart ChartPower;                            // График по мощности
@@ -205,7 +207,7 @@ private:
    // Управление по 485
   uint16_t FC;                                     // Целевая скорость инвертора в 0.01 %
   uint16_t FC_curr;                                // Чтение: текущая скорость инвертора в 0.01 %
-  uint16_t power;                                  // Чтение: Текущая мощность инвертора  в 100 ватных единицах (3 это 300 вт)
+  uint16_t power;                                  // Чтение: Текущая мощность инвертора  в 0.1% от номинала
   uint16_t current;                                // Чтение: Текущий ток инвертора  в 0.01 Ампера единицах
   
   int16_t state;                                   // Чтение: Состояние ПЧ регистр FC_STATUS
@@ -226,8 +228,10 @@ private:
 
   // Функции работы с Modbus
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-  int16_t read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
-  int8_t  write_0x06_16(uint16_t cmd,uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+  int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
+  uint32_t read_0x03_32(uint16_t cmd);             // Функция Modbus 0х03 прочитать 4 байта
+  int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+
 #endif
  };
 

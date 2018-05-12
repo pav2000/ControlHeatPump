@@ -127,8 +127,10 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                           {
                           case HTTP_invalid:
                                {
-                               journal.jprintf("Error GET reqest\n");
-                               sendConstRTOS(thread,"HTTP/1.1 Error GET reqest\r\n\r\n");
+							 	#ifndef DEBUG
+                                   journal.jprintf("WEB:Error GET request\n");
+								#endif
+                               sendConstRTOS(thread,"HTTP/1.1 Error GET request\r\n\r\n");
                                break;
                                }
                           case HTTP_GET:     // чтение файла
@@ -360,11 +362,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       
        #ifndef I2C_EEPROM_64KB     // Статистика в памяти
            strcat(strReturn,"Статистика не поддерживается в конфигурации . . .&");
-           journal.jprintf("No support statistics (low i2C eeprom) . . .\n"); 
+           journal.jprintf("No support statistics (low I2C) . . .\n");
        #else                      // Статистика в ЕЕПРОМ
            if (HP.get_modWork()==pOFF)
              {
-              strcat(strReturn,"Форматирование I2C EEPROM статистики, ожидайте 10 сек . . .&");
+              strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .&");
               HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
              }
              else strcat(strReturn,"The heat pump must be switched OFF&");  
@@ -594,7 +596,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
+				#ifdef USE_SCHEDULER
 				strcat(strReturn, int2str(HP.Schdlr.save())); // сохранение расписаний
+				#endif
 			} else {
 				strcat(strReturn, int2str(HP.save())); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
@@ -605,7 +609,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
+				#ifdef USE_SCHEDULER
 				strcat(strReturn, int2str(HP.Schdlr.load())); // сохранение расписаний
+				#endif
 			} else {
 			}
 			strcat(strReturn,"&");
@@ -717,17 +723,29 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         else {strcat(strReturn,"Error "); strcat(strReturn,int2str(HP.get_errcode()));} // есть ошибки
         strcat(strReturn,";");   strcat(strReturn,"&") ;    continue;
        }   
-    
+     if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
+    	str += 5;
+    	if(strcmp(str, "fcanalog") == 0) {
+			#ifdef FC_ANALOG_CONTROL
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	} else if(strcmp(str, "rpumpfl") == 0) {
+			#ifdef RPUMPFL
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	}
+     }
      if (strcmp(str,"get_infoFC")==0)  // get_infoFC
        {
-        
-       if (!HP.dFC.get_present()) { strcat(strReturn,"|Данные не доступны (нет инвертора)|;&"); continue;}          // Инвертора нет в конфигурации
-       if(HP.dFC.get_blockFC())  { strcat(strReturn,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); continue;}  // Инвертор заблокирован
        // Все нормально опрашиваем инвертор
        #ifndef FC_ANALOG_CONTROL     
          HP.dFC.get_infoFC(strReturn);
        #else
-         strcat("Данные не доступны, работа через анлоговый вход|;","&") ;
+         strcat("Данные не доступны, работа через аналоговый вход|;","&") ;
        #endif  
        strcat(strReturn,"&") ;    continue;
        }       
@@ -1048,6 +1066,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"&") ;           
        continue;  
        }   // test_Mail    
+       if(strcmp(str, "get_OverCool") == 0) {
+           ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
+           strcat(strReturn,"&") ;    continue;
+       }
        // ЭРВ запросы , те которые без параметра ------------------------------
        if (strcmp(str,"get_pinEEV")==0)           // Функция get_pinEEV - строка с перечислением ного куда шаговик прицеплен
                   {   
@@ -1079,16 +1101,30 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           #endif   
           strcat(strReturn,"&") ;    continue;
          }  
-        if (strcmp(str,"get_EEV")==0)  // Функция get_EEV
+        if (strncmp(str,"get_EEV", 7)==0)  // Функция get_EEV
          {
            #ifdef EEV_DEF 
-           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
-           strcat(strReturn,int2str(HP.dEEV.get_EEV())); if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
+           if(HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
+           i = 0;
+           if(str[7] == 'p') { // get_EEVp - только проценты
+        	   i = 2;
+        	   if(str[8] == 'p') i = 1; // get_EEVpp - добавить проценты
+           }
+           if(i < 2) {
+        	   itoa(HP.dEEV.get_EEV(), strReturn + m_strlen(strReturn), 10);
+           }
+           if(i > 0) {
+        	   if(i == 1) strcat(strReturn, " (");
+        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + m_strlen(strReturn), 10); else strcat(strReturn, "?");
+               strcat(strReturn, "%");
+               if(i == 1) strcat(strReturn, ")");
+           }
+           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
            #else
            strcat(strReturn,"-");  
            #endif   
            strcat(strReturn,"&") ;    continue;
-         }   
+         }
         if (strcmp(str,"get_minEEV")==0)  // Функция get_minEEV
          {
           #ifdef EEV_DEF 
@@ -1203,11 +1239,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
          {
           strcat(strReturn,HP.dFC.get_note()); strcat(strReturn,"&") ;    continue;
          }   
-        if (strcmp(str,"get_presentFC")==0)  // Функция get_presentEEV
+        if (strcmp(str,"get_presentFC")==0)
          {
          if (HP.dFC.get_present()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,"&"); continue;
          }      
-        if (strcmp(str,"get_pinFC")==0)  // Функция get_presentEEV
+        if (strcmp(str,"get_pinFC")==0)
          {
          strcat(strReturn,"D"); strcat(strReturn,int2str(HP.dFC.get_pinA())); strcat(strReturn,"&"); continue;
          }         
@@ -1612,6 +1648,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 						else if(*y == 'f') i = Modbus.writeHoldingRegistersFloat(id, par, strtol(z, NULL, 0));
 						else if(*y == 'c') i = Modbus.writeSingleCoil(id, par, atoi(z));
 						else goto x_FunctionNotFound;
+						_delay(MODBUS_TIME_TRANSMISION * 10); // Задержка перед чтением
 					} else if(strncmp(str, "get", 3) == 0) {
 					} else goto x_FunctionNotFound;
 					if(i == OK) {
@@ -1778,6 +1815,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"K_DIF")==0)          { param=54;}  // ЭРВ дифференциальная составляющая.
                else if (strcmp(x+1,"M_STEP")==0)         { param=55;}  // ЭРВ Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
                else if (strcmp(x+1,"CORRECTION")==0)     { param=56;}  // ЭРВ поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
+               else if (strcmp(x+1,"cCOR")==0)	    	 { param=57;}
+               else if (strcmp(x+1,"cDELAY")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cPERIOD")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cDELTA")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cDELTAT")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cKF")==0)    		 { param=57;}
+               else if (strcmp(x+1,"cOH_MIN")==0)    	 { param=57;}
+               else if (strcmp(x+1,"cOH_MAX")==0)    	 { param=57;}
         
                 // Параметры и опции ТН  смещение 60 занимат 40 позиций не 10!!!!!!!!!!!!!!!!!!!! используется в двух разных функциях, единый список
                else if (strcmp(x+1,"RULE")==0)           { param=60;}  // 0  Алгоритм отопления
@@ -2403,7 +2448,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-       
           //6.  ЭРВ смещение param 50
           if (strstr(str,"EEV"))          // Проверка для запросов содержащих EEV
              {
@@ -2415,13 +2459,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                    #ifdef EEV_DEF        
                    switch (p)
                      {
-                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,1)); break;  
+                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0 +0.005,2)); break;
                       case 1: strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                     break;  
-                      case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0,2));      break;     // В СОТЫХ!!!
-                      case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));      break;     // В СОТЫХ!!!
-                      case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));      break;     // В СОТЫХ!!!
+                      case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
+                      case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
+                      case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
                       case 5: strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                 break;  
-                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1));break;  
+                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0 +0.005,2));break;
+
+                      case 7: HP.dEEV.variable(0, strReturn + m_strlen(strReturn), x+1, 0); break;
+
                       default: strcat(strReturn,"E10");                                            break;   
                      }
                    #else
@@ -2434,13 +2481,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   #ifdef EEV_DEF   
                    switch (p)
                      {
-                      case 0: if(HP.dEEV.set_tOverheat((int)(pm*100))==OK)strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,1));  else strcat(strReturn,"E11"); break;  
+                      case 0: if(HP.dEEV.set_tOverheat((int)(pm*100))==OK)strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,2));  else strcat(strReturn,"E11"); break;
                       case 1: if(HP.dEEV.set_timeIn(pm)==OK)              strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                      else strcat(strReturn,"E11"); break;  
                       case 2: if(HP.dEEV.set_Kpro((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 3: if(HP.dEEV.set_Kint((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 4: if(HP.dEEV.set_Kdif((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
                       case 5: if(HP.dEEV.set_manualStep(pm)==OK)          strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                  else strcat(strReturn,"E11"); break;  
-                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,1)); else strcat(strReturn,"E11"); break;  
+                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,2)); else strcat(strReturn,"E11"); break;
+
+                      case 7: HP.dEEV.variable(1, strReturn + m_strlen(strReturn), x+1, pm); break;
+
                       default: strcat(strReturn,"E10");                                                                                                                       break;   
                      }
                     #else
@@ -2756,60 +2806,74 @@ const char *header_POST_="Access-Control-Request-Method: POST";
 // thread - номер потока, возсращает тип запроса
 uint16_t GetRequestedHttpResource(uint8_t thread)
 {
-  char *str_token, *pass;
-  boolean user, admin;
-  uint8_t i;
-  uint16_t len;
-  
- // journal.jprintf(">%s\n",Socket[thread].inBuf);
-  
-  if((HP.get_fPass())&&(!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
-  {
-          if (!(pass=strstr((char*)Socket[thread].inBuf,header_Authorization_)))    return UNAUTHORIZED;          // строка авторизации не найдена
-          else  // Строка авторизации найдена смотрим логин пароль
-          {
-             pass=pass+strlen(header_Authorization_);
-             user=true; 
-             for(i=0;i<HP.Security.hashUserLen;i++) if (pass[i]!=HP.Security.hashUser[i]) {user=false; break;}
-             if (user!=true) // это не пользователь
-               {
-                admin=true; 
-                 for(i=0;i<HP.Security.hashAdminLen;i++) if (pass[i]!=HP.Security.hashAdmin[i]) {admin=false; break;}
-                 if (admin!=true)  return BAD_LOGIN_PASS; // Не верный логин или пароль
-               } //  if (user!=true)
-               else  SETBIT1(Socket[thread].flags,fUser);// зашел простой пользователь
-           } // else
-  } 
- 
-  // Идентификация пройдена
-//if(strstr((char*)Socket[thread].inBuf,"Access-Control-Request-Method: POST")) {request_type = HTTP_POST_; return request_type; }  //обработка предваритаельного запроса перед получением файла
-  str_token =  strtok((char*)Socket[thread].inBuf, " ");    // Обрезаем по пробелам
-  if (strcmp(str_token, "GET") == 0)   // Ищем GET
-       {      
-        str_token=strtok(NULL, " ");                       // get the file name
-        if (strcmp(str_token, "/") == 0)                   // Имени файла нет, берем файл по умолчанию
-              {      
-              Socket[thread].inPtr=(char*)INDEX_FILE;      // Указатель на имя файла по умолчанию
-              return HTTP_GET;                          
-              }
-         else if (strcmp(str_token, (char*)MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
-              {      
-              Socket[thread].inPtr=(char*)(str_token+1);   // Указатель на путь до мобильной морды
-              strcat(Socket[thread].inPtr,(char*)INDEX_MOB_FILE);
-              return HTTP_GET;                          
-              }     
-         else if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)   // Проверка на длину запроса или имени файла
-               { 
-                 Socket[thread].inPtr=(char*)(str_token+1);       // Указатель на имя файла
-          //        Serial.println(Socket[thread].inPtr=(char*)(str_token+1));
-                 if (Socket[thread].inPtr[0]=='&')     return HTTP_REQEST;       // Проверка на аякс запрос
-                 return HTTP_GET; 
-                } // if ((len=strlen(str_token)) <= W5200_MAX_LEN-100) 
-         else return HTTP_invalid;  // слишком длинная строка HTTP_invalid
-         }   //if (strcmp(str_token, "GET") == 0)
-   else  if (strcmp(str_token,"POST") == 0)  return HTTP_POST;    // Запрос POST
-   else  if (strcmp(str_token,"OPTIONS")==0) return HTTP_POST_;
-   return HTTP_invalid ;
+	char *str_token, *pass;
+	boolean user, admin;
+	uint8_t i;
+	uint16_t len;
+
+	// journal.jprintf(">%s\n",Socket[thread].inBuf);
+
+	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
+	{
+		if(!(pass = strstr((char*) Socket[thread].inBuf, header_Authorization_))) return UNAUTHORIZED; // строка авторизации не найдена
+		else  // Строка авторизации найдена смотрим логин пароль
+		{
+			pass = pass + strlen(header_Authorization_);
+			user = true;
+			for(i = 0; i < HP.Security.hashUserLen; i++)
+				if(pass[i] != HP.Security.hashUser[i]) {
+					user = false;
+					break;
+				}
+			if(user != true) // это не пользователь
+			{
+				admin = true;
+				for(i = 0; i < HP.Security.hashAdminLen; i++)
+					if(pass[i] != HP.Security.hashAdmin[i]) {
+						admin = false;
+						break;
+					}
+				if(admin != true) return BAD_LOGIN_PASS; // Не верный логин или пароль
+			} //  if (user!=true)
+			else SETBIT1(Socket[thread].flags, fUser); // зашел простой пользователь
+		} // else
+	}
+
+	// Идентификация пройдена
+	//if(strstr((char*)Socket[thread].inBuf,"Access-Control-Request-Method: POST")) {request_type = HTTP_POST_; return request_type; }  //обработка предваритаельного запроса перед получением файла
+	str_token = strtok((char*) Socket[thread].inBuf, " ");    // Обрезаем по пробелам
+	if(strcmp(str_token, "GET") == 0)   // Ищем GET
+	{
+		str_token = strtok(NULL, " ");                       // get the file name
+		if(strcmp(str_token, "/") == 0)                   // Имени файла нет, берем файл по умолчанию
+		{
+			Socket[thread].inPtr = (char*) INDEX_FILE;      // Указатель на имя файла по умолчанию
+			return HTTP_GET;
+		} else if(strcmp(str_token, (char*) MOB_PATH) == 0) // Имени файла нет, но указан путь до мобильной морды
+		{
+			Socket[thread].inPtr = (char*) (str_token + 1);   // Указатель на путь до мобильной морды
+			strcat(Socket[thread].inPtr, (char*) INDEX_MOB_FILE);
+			return HTTP_GET;
+		} else if((len = strlen(str_token)) <= W5200_MAX_LEN - 100)   // Проверка на длину запроса или имени файла
+		{
+			Socket[thread].inPtr = (char*) (str_token + 1);       // Указатель на имя файла
+			//        Serial.println(Socket[thread].inPtr=(char*)(str_token+1));
+			if(Socket[thread].inPtr[0] == '&') return HTTP_REQEST;       // Проверка на аякс запрос
+			return HTTP_GET;
+		} // if ((len=strlen(str_token)) <= W5200_MAX_LEN-100)
+		else {
+			#ifdef DEBUG
+			journal.jprintf("WEB:Error GET request, len=%d: %s\n", len, Socket[thread].inBuf);
+			#endif
+			return HTTP_invalid;  // слишком длинная строка HTTP_invalid
+		}
+	}   //if (strcmp(str_token, "GET") == 0)
+	else if(strcmp(str_token, "POST") == 0) return HTTP_POST;    // Запрос POST
+	else if(strcmp(str_token, "OPTIONS") == 0) return HTTP_POST_;
+	#ifdef DEBUG
+	journal.jprintf("WEB:Error request %s\n", Socket[thread].inBuf);
+	#endif
+	return HTTP_invalid;
 }
 
 // ========================== P A R S E R  P O S T =================================

@@ -99,16 +99,17 @@ int8_t sensorTemp::Read()
 		else lastTemp=random(101,1190);                     // В демо режиме генерим значения
 #else   // чтение датчика
 		if(!(GETBIT(flags,fAddress))) { // Адрес не установлен
-			err = ERR_ADDRESS; set_Error(err,name);
+			err = ERR_ADDRESS;
+			set_Error(err,name);
 			return err;
 		}
 		int16_t ttemp;
 		err = busOneWire->Read(address, ttemp);
 		if(err) {
-            journal.jprintf(" %s: read error %d\n", name, err);
-            numErrorRead++;
+            journal.jprintf(pP_TIME, " %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
+//            err = ERR_READ_TEMP;
             sumErrorRead++;
-            err = ERR_READ_TEMP;
+            if(++numErrorRead == 0) numErrorRead--;
             if(numErrorRead > NUM_READ_TEMP_ERR) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
             return err;
 		} else {
@@ -123,7 +124,7 @@ int8_t sensorTemp::Read()
 				   nGap=0;
 				   lastTemp=ttemp;
 			   } else {  // Пропуск данных
-				   journal.jprintf("WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
+				   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
 			   }
 			}
 		}
@@ -172,7 +173,7 @@ int8_t sensorTemp::set_errTemp(int16_t t)
   if (abs(t)<MAX_TEMP_ERR) { errTemp=t; return OK;} else return WARNING_VALUE;
 }
 
-// Получить значение температуры датчика с учетом удаленных датчиков!!! - это то что используется в работе ТН
+// Получить значение температуры датчика (n.nn) с учетом удаленных датчиков!!! - это то что используется в работе ТН
 int16_t sensorTemp::get_Temp()            
 {
  #ifdef SENSOR_IP                                       // использутся удаленные датчики
@@ -212,7 +213,7 @@ void sensorTemp::set_onewire_bus_type()
 	if(GETBIT(setup_flags, fDS2482_second)) busOneWire = &OneWireBus2; 	// второй
 	else
 #endif
-		busOneWire = &OneWireBus;		                   					// первый
+		busOneWire = &OneWireBus;		                   				// первый
 }
 
 // Установить адрес на шине датчикаbus_type
@@ -289,6 +290,13 @@ uint16_t sensorTemp::get_crc16(uint16_t crc)
 	crc=_crc16(crc,lowByte(testTemp)); crc=_crc16(crc,highByte(testTemp));  // температура датчика в режиме тестирования
 	for(uint8_t i=0; i<8; i++) crc=_crc16(crc,address[i]);
 	return crc;
+}
+
+// Возвращает 1, если превышен предел ошибок
+int8_t   sensorTemp::inc_error(void)
+{
+	if(++numErrorRead == 0) numErrorRead--;
+	return numErrorRead > NUM_READ_TEMP_ERR;
 }
 
 // Удаленные датчики температуры ---------------------------------------------------------------------------------------

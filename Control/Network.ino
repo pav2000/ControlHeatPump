@@ -128,99 +128,119 @@ const char* NetworkChipOK={" Network library setting: %s, ID chip: %s\n"};
 const char* NetworkChipBad={" WRONG setting library, library: %s, ID: chip %s\n"};
 const char* NetworkError={" $ERROR: Problem reset and setting %s\n"};
 boolean initW5200(boolean flag)
-{  
-   uint8_t i;
-   boolean EthernetOK=true;   // флаг успешности инициализации
-   pinMode(PIN_ETH_INT, INPUT);
-   pinMode(PIN_ETH_RES, OUTPUT); 
-  
-    if (!resetWiznet(false))  // 1. Сброс и проверка провода (молча)
-      {
-       journal.jprintf(" WARNING: %s no link, check ethernet cable\n",nameWiznet);     
-       journal.jprintf((char*)NetworkError,nameWiznet);  
-       return false; // дальше ехать бесполезно
-      }
-    else  if (flag) journal.jprintf(" SUCCESS: %s link OK\n",nameWiznet); 
-    if (flag) linkStatusWiznet(true);  // вывести полученные настройки чипа
+{
+	uint8_t i;
+	boolean EthernetOK = true;   // флаг успешности инициализации
+	pinMode(PIN_ETH_INT, INPUT);
+	pinMode(PIN_ETH_RES, OUTPUT);
 
-    if (flag)  // 2. Печать настроек соответствия либы и чипа (правильная настройка либы)
-     {
-     #ifdef DEMO
-        journal.jprintf(" DEMO mode!"); 
-     #endif 
-     #if defined(W5500_ETHERNET_SHIELD) // Определение соответстивия библиотеки и чипа
-     if (W5200VERSIONR()==0x04)  journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
-     else { journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
-     #elif defined(W5200_ETHERNET_SHIELD)
-     if (W5200VERSIONR()==0x03)  journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
-     else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
-     #else
-     if (W5200VERSIONR()==0x51)  journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
-     else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
-     #endif
-     }
-  
-    //  3. Подготовить структура для потоков
-    for (i = 0; i < W5200_THREARD; i++)  { Socket[i].flags=0x00; Socket[i].sock=-1; memset((char*)Socket[i].inBuf,0x00,sizeof(Socket[i].inBuf)); memset((char*)Socket[i].outBuf,0x00,sizeof(Socket[i].outBuf));} 
+	if(!resetWiznet(false))  // 1. Сброс и проверка провода (молча)
+	{
+		journal.jprintf(" WARNING: %s no link, check ethernet cable\n", nameWiznet);
+		journal.jprintf((char*) NetworkError, nameWiznet);
+		return false; // дальше ехать бесполезно
+	} else if(flag) journal.jprintf(" SUCCESS: %s link OK\n", nameWiznet);
+	if(flag) linkStatusWiznet(true);  // вывести полученные настройки чипа
 
-    // 4. Иницилизация сетевого адаптера, установка сетевых настроек
-    WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
-    #ifdef DEMO
-        Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
-        if (defaultIP!=Ethernet.localIP()) EthernetOK=false; else beginWeb(defaultPort);
-    #else
-        if (HP.safeNetwork) 
-          {
-          Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в режиме safeNetwork = КОНСТАНТЫ
-          if (defaultIP!=Ethernet.localIP()) EthernetOK=false; else { beginWeb(defaultPort);journal.jprintf(" Set mode safeNetwork!\n"); }
-          }
-        else 
-         {  
-          if (HP.get_DHCP()) // Работаем по DHCP
-              {
-              if(Ethernet.begin((uint8_t*)HP.get_mac())==0) {EthernetOK=false; journal.jprintf("Failed to configure Ethernet using DHCP");}
-              else {
-                    journal.jprintf("Configure Ethernet using DHCP: OK");         
-                    HP.set_ip(Ethernet.localIP());       // Получили удачно DHCP адрес - сохраняем в сетевые настройки
-                    HP.set_subnet(Ethernet.subnetMask()); 
-                    HP.set_sdns(Ethernet.dnsServerIP()); 
-                    HP.set_gateway(Ethernet.gatewayIP()); 
-                   } 
-              }    
-              else 
-              { 
-              Ethernet.begin((uint8_t*)HP.get_mac(), (IPAddress)HP.get_ip(), (IPAddress)HP.get_sdns(), (IPAddress)HP.get_gateway(), (IPAddress)HP.get_subnet()); // Статика
-              if (HP.get_ip()!=Ethernet.localIP()) EthernetOK=false; else beginWeb(HP.get_port());
-              }
-         }
-    #endif
-      
-    pingW5200(HP.get_NoPing());  // Установка пинга флага разрешенеия пинга
-    W5100.writeRTR(W5200_RTR);   // установка таймаута
-    W5100.writeRCR(W5200_RCR);   // установка числа повторов
- 
-   if (flag)  // 5. Печать сетевых настроек
-     {
-     if (EthernetOK)   
-       {
-       journal.jprintf(" DHCP use: "); if(HP.get_DHCP())  journal.jprintf("YES\n"); else  journal.jprintf("NO\n");
-       IPAddress dip;
-       dip=Ethernet.localIP();      journal.jprintf(" IP: %s\n",IPAddress2String(dip));      
-       dip=Ethernet.subnetMask();   journal.jprintf(" Subnet: %s\n",IPAddress2String(dip));  
-       dip=Ethernet.dnsServerIP();  journal.jprintf(" DNS: %s\n",IPAddress2String(dip));     
-       dip=Ethernet.gatewayIP();    journal.jprintf(" Gateway: %s\n",IPAddress2String(dip)); 
-       uint8_t dmac[6];
-       W5100.getMACAddress(dmac);
-       journal.jprintf(" MAC: %s\n",MAC2String(dmac)); 
-       }
-       else journal.jprintf((char*)NetworkError,nameWiznet);        
-     }
-    else   // Кратко выводим сообщение в журнал
-     { 
-       if (EthernetOK) journal.jprintf("%s Reset %s . . . \n",NowTimeToStr(),nameWiznet); else journal.jprintf((char*)NetworkError,nameWiznet); 
-     }
-   return  EthernetOK; 
-  }
+	if(flag)  // 2. Печать настроек соответствия либы и чипа (правильная настройка либы)
+	{
+#ifdef DEMO
+		journal.jprintf(" DEMO mode!");
+#endif
+#if defined(W5500_ETHERNET_SHIELD) // Определение соответстивия библиотеки и чипа
+		if(W5200VERSIONR() == 0x04) journal.jprintf((char*) NetworkChipOK, nameWiznet, int2str(W5200VERSIONR()));
+		else {
+			journal.jprintf((char*) NetworkChipBad, nameWiznet, int2str(W5200VERSIONR()));
+			journal.jprintf((char*) NetworkError, nameWiznet);
+			return false;
+		} // дальше ехать бесполезно
+#elif defined(W5200_ETHERNET_SHIELD)
+		if (W5200VERSIONR()==0x03) journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
+		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
+#else
+		if (W5200VERSIONR()==0x51) journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
+		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
+#endif
+	}
+
+	//  3. Подготовить структура для потоков
+	for(i = 0; i < W5200_THREARD; i++) {
+		Socket[i].flags = 0x00;
+		Socket[i].sock = -1;
+		memset((char*) Socket[i].inBuf, 0x00, sizeof(Socket[i].inBuf));
+		memset((char*) Socket[i].outBuf, 0x00, sizeof(Socket[i].outBuf));
+	}
+
+	// 4. Иницилизация сетевого адаптера, установка сетевых настроек
+	WDT_Restart(WDT);                          // Сбросить вачдог  DHCP при отключенном кабеле - большой таймаут
+#ifdef DEMO
+	Ethernet.begin((uint8_t*)defaultMAC,(IPAddress)defaultIP,(IPAddress)defaultSDNS,(IPAddress)defaultGateway,(IPAddress)defaultSubnet); // Инициализация сетевого адаптера  в демо режиме КОНСТАНТЫ
+	if (defaultIP!=Ethernet.localIP()) EthernetOK=false; else beginWeb(defaultPort);
+#else
+	if(HP.safeNetwork) {
+		Ethernet.begin((uint8_t*) defaultMAC, (IPAddress) defaultIP, (IPAddress) defaultSDNS,
+				(IPAddress) defaultGateway, (IPAddress) defaultSubnet); // Инициализация сетевого адаптера  в режиме safeNetwork = КОНСТАНТЫ
+		if(defaultIP != Ethernet.localIP()) EthernetOK = false;
+		else {
+			beginWeb(defaultPort);
+			journal.jprintf(" Set mode safeNetwork!\n");
+		}
+	} else {
+		if(HP.get_DHCP()) // Работаем по DHCP
+		{
+			journal.jprintf("Configure Ethernet using DHCP: ");
+			watchdogReset();
+			if(Ethernet.begin((uint8_t*) HP.get_mac()) == 0) {
+				journal.jprintf("Failed!\n");
+				goto x_TryStaticIP;
+			} else {
+				journal.jprintf("OK\n");
+				HP.set_ip(Ethernet.localIP());       // Получили удачно DHCP адрес - сохраняем в сетевые настройки
+				HP.set_subnet(Ethernet.subnetMask());
+				HP.set_sdns(Ethernet.dnsServerIP());
+				HP.set_gateway(Ethernet.gatewayIP());
+			}
+		} else {
+x_TryStaticIP:
+			Ethernet.begin((uint8_t*) HP.get_mac(), (IPAddress) HP.get_ip(), (IPAddress) HP.get_sdns(),
+					(IPAddress) HP.get_gateway(), (IPAddress) HP.get_subnet()); // Статика
+			if(HP.get_ip() != Ethernet.localIP()) EthernetOK = false;
+			else beginWeb(HP.get_port());
+		}
+	}
+#endif
+
+	pingW5200(HP.get_NoPing());  // Установка пинга флага разрешенеия пинга
+//	W5100.writeMR(W5100.readMR() | 2);	// FARP flag
+	W5100.writeRTR(W5200_RTR);   // установка таймаута
+	W5100.writeRCR(W5200_RCR);   // установка числа повторов
+
+	if(flag)  // 5. Печать сетевых настроек
+	{
+		if(EthernetOK) {
+			journal.jprintf(" DHCP use: ");
+			if(HP.get_DHCP()) journal.jprintf("YES\n");
+			else journal.jprintf("NO\n");
+			IPAddress dip;
+			dip = Ethernet.localIP();
+			journal.jprintf(" IP: %s\n", IPAddress2String(dip));
+			dip = Ethernet.subnetMask();
+			journal.jprintf(" Subnet: %s\n", IPAddress2String(dip));
+			dip = Ethernet.dnsServerIP();
+			journal.jprintf(" DNS: %s\n", IPAddress2String(dip));
+			dip = Ethernet.gatewayIP();
+			journal.jprintf(" Gateway: %s\n", IPAddress2String(dip));
+			uint8_t dmac[6];
+			W5100.getMACAddress(dmac);
+			journal.jprintf(" MAC: %s\n", MAC2String(dmac));
+		} else journal.jprintf((char*) NetworkError, nameWiznet);
+	} else   // Кратко выводим сообщение в журнал
+	{
+		if(EthernetOK) journal.jprintf("%s Reset %s . . . \n", NowTimeToStr(), nameWiznet);
+		else journal.jprintf((char*) NetworkError, nameWiznet);
+	}
+	return EthernetOK;
+}
 // DNS -------------------------------------------------------------------------------------------
 // Используется системный сокет!! W5200_SOCK_SYS
 // Проверить и преобразовать тип адреса (буквы или цифры) и если это буквы то резольвить через dns

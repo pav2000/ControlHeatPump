@@ -11,6 +11,8 @@
 //#include <stdlib.h>
 #include "Arduino.h"
 
+#include "FreeRTOS_ARM.h"
+#define RTOS_delay(ms) { if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(ms/portTICK_PERIOD_MS); else delay(ms); }
 
 #define SOCKET_NONE	255
 // Various flags and header field values for a DNS message
@@ -140,7 +142,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
 
        // Try up to three times
         int retries = 0;
-//        while ((retries < 3) && (ret <= 0))
+        while ((retries < 3) && (ret <= 0))
         {
  //           Serial.println("0");
             // Send DNS request
@@ -158,15 +160,14 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
                     ret = iUdp.endPacket();
                     if (ret != 0)
                     {
-
                         // Now wait for a response
-                        int wait_retries = 0;
-                        ret = TIMED_OUT;
-                        while ((wait_retries < 3) && (ret == TIMED_OUT))
-                        {
-                            ret = ProcessResponse(10000, aResult);
-                            wait_retries++;
-                        }
+//                        int wait_retries = 0;
+//                        ret = TIMED_OUT;
+//                        while ((wait_retries < 3) && (ret == TIMED_OUT))
+//                        {
+                            ret = ProcessResponse(2000, aResult);
+//                            wait_retries++;
+//                        }
                     }
                 }
             }
@@ -197,12 +198,13 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
         return INVALID_SERVER;
     }
 
+//	W5100.writeMR(W5100.readMR() | MR_FARP); // Force ARP mode
     // Используем конкретный соет для udp
     if (iUdp.begin((1024+(millis() & 0xF)),sock) == 1)
      {
        // Try up to three times
-        int retries = 0;
-   //     while ((retries < 3) && (ret <= 0))
+        uint8_t retries = 0;
+        while ((retries < 3) && (ret <= 0))
         {
             // Send DNS request
             ret = iUdp.beginPacket(iDNSServer, DNS_PORT,sock);  // сброс сокета и его настройка на UDP
@@ -211,20 +213,19 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
                 // Now output the request data
                 ret = BuildRequest(aHostname);
                 if (ret != 0)
-                {    ;
+                {
                     // And finally send the request
                     ret = iUdp.endPacket();
                     if (ret != 0)
                     {  // Serial.println("7-----");
                         // Now wait for a response
-                        int wait_retries = 0;
-                        ret = TIMED_OUT;
-                        while ((wait_retries < 3) && (ret == TIMED_OUT))
-                        {
-
-                            ret = ProcessResponse(3000, aResult);
-                            wait_retries++;
-                        }
+//                        int wait_retries = 0;
+//                        ret = TIMED_OUT;
+//                        while ((wait_retries < 3) && (ret == TIMED_OUT))
+//                        {
+                            ret = ProcessResponse(2000, aResult);
+//                            wait_retries++;
+//                        }
                     }
                 }
             }
@@ -234,6 +235,7 @@ int DNSClient::getHostByName(const char* aHostname, IPAddress& aResult,uint8_t s
         // We're done with the socket now
         iUdp.stop();
     }
+//	W5100.writeMR(W5100.readMR() & (~MR_FARP)); // Force ARP mode off
     return ret;
 }
 
@@ -333,9 +335,11 @@ int16_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
 
     while(iUdp.parsePacket() <= 0)
     {
+    	watchdogReset();
         if((millis() - startTime) > aTimeout)
             return TIMED_OUT;
-        delay(50);
+        //delay(50);
+        RTOS_delay(10);
     }
 
     // We've had a reply! Read the UDP header

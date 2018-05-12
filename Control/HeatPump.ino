@@ -116,10 +116,8 @@ void HeatPump::scan_OneWire(char *result_str)
 	char *_result_str = result_str + strlen(result_str);
 	if(get_State() == pWORK_HP)  // ТН работает
 	{
-		StopWait(_stop);  // При сканировании останить ТН
-		_delay(200);       // задержка после останова ТН
-	}
-	if(!OW_prepare_buffers()) {
+		strcat(result_str, "-:Не доступно - ТН работает!:::;");
+	} else if(!OW_prepare_buffers()) {
 		OneWireBus.Scan(result_str);
 #ifdef ONEWIRE_DS2482_SECOND
 		OneWireBus2.Scan(result_str);
@@ -1501,7 +1499,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
           if  (GETBIT(Prof.Boiler.flags,fAddHeating))  // Включен догрев
             { 
                  if ((sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
-                 if ((!flagRBOILER)||(onBoiler))  return false; // флажка нет или рабоатет бойлер но догрев не включаем
+                 if ((!flagRBOILER)||(onBoiler))  return false; // флажка нет или работет бойлер но догрев не включаем
                  else  //flagRBOILER==true
                  { 
                   if (sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                       // Бойлер ниже целевой темпеартуры надо греть
@@ -1741,8 +1739,9 @@ int8_t HeatPump::StartResume(boolean start)
 	  {
 		  startWait=true;                    // Начало работы с ожидания=true;
 		  setState(pWAIT_HP);
-		  journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
 		  vTaskResume(xHandleUpdate);
+      journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
+      journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
 		  return error;
 	  }
   if (startWait)
@@ -1897,7 +1896,7 @@ int8_t HeatPump::StartResume(boolean start)
      if(start)
      {
      vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
-     journal.jprintf(" Start task update %s\n",(char*)nameHeatPump); 
+     journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
      }
      
      // 11. Сохранение состояния  -------------------------------------------------------------------------------
@@ -1935,7 +1934,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
     {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-    journal.jprintf(" Stop task update %s\n",(char*)nameHeatPump);  
+    journal.jprintf(" Stop task update %s\n",(char*)__FUNCTION__); 
     } 
     
   if(startPump)
@@ -3398,5 +3397,46 @@ void HeatPump::UpdateStatistics()
 
 }
 #endif // I2C_EEPROM_64KB 
-                   
 
+int16_t HeatPump::get_temp_condensing(void)
+{
+	if(HP.sADC[PCON].get_present()) {
+		return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon());
+	} else {
+		return sTemp[TCONOUTG].get_Temp() + 200; // +2C
+	}
+}
+
+// пока только для режима отопления!
+int16_t HeatPump::get_overcool(void)
+{
+	if(HP.sADC[PCON].get_present()) {
+		return get_temp_condensing() - HP.sTemp[TCONOUT].get_Temp();
+	}
+}
+
+// Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок
+int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
+{
+	int8_t i, ret = 0;
+#ifdef ONEWIRE_DS2482_SECOND
+	if((i = bus ? OneWireBus2.PrepareTemp() : OneWireBus.PrepareTemp())) {
+#else
+	if((i = OneWireBus.PrepareTemp())) {
+#endif
+		for(uint8_t j = 0; j < TNUMBER; j++) {
+			if(sTemp[j].get_fAddress() && sTemp[j].get_bus() == bus) {
+				if(HP.sTemp[j].inc_error()) {
+					ret = 2;
+					break;
+				}
+				ret = 1;
+			}
+		}
+		if(ret) {
+			journal.jprintf(pP_TIME, "Error %d PrepareTemp bus %d\n", i, bus+1);
+			if(ret == 2) set_Error(i, (char*) __FUNCTION__);
+		}
+	}
+	return ret ? (1<<bus) : 0;
+}
