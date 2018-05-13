@@ -106,7 +106,10 @@ int8_t sensorTemp::Read()
 		int16_t ttemp;
 		err = busOneWire->Read(address, ttemp);
 		if(err) {
-            journal.jprintf(pP_TIME, " %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
+            journal.jprintf(pP_TIME, "%s: Error ", name);
+            if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+            	journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+            } else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
 //            err = ERR_READ_TEMP;
             sumErrorRead++;
             if(++numErrorRead == 0) numErrorRead--;
@@ -124,7 +127,7 @@ int8_t sensorTemp::Read()
 				   nGap=0;
 				   lastTemp=ttemp;
 			   } else {  // Пропуск данных
-				   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
+				   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
 			   }
 			}
 		}

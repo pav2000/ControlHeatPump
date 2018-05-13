@@ -1296,7 +1296,7 @@ if (writeEEPROM_I2C(I2C_STAT_START+pos*sizeof(type_OneDay), (byte*)&OneDay,sizeo
     }  
 if (error==OK) // Если удачно индекс и число точек поправить
   {  if (!full) {num++;writeNUM();}                            // ЧИСЛО ТОЧЕК буфер пока не полный, отсчет с 0 идет не забыть
-     journal.jprintf(pP_TIME," Save statictic day pos=%d num=%d\n", pos,num);   // вывод именно здесть - правильные значения
+     journal.jprintf(pP_TIME,"Save statictic day pos=%d num=%d\n", pos,num);   // вывод именно здесть - правильные значения
      if (pos<STAT_POINT-1) pos++; else { pos=0; full=true; }   // ПОЗИЦИЯ ДЛЯ СЛЕДУЮЩЕЙ ЗАПИСИ (Следующей!!!!!)
      writePOS(); 
   } 

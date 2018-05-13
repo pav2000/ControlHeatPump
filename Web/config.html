@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ON_DAY_TIME),get_optionHP(OFF_DAY_TIME),get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON)");
+		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(OW2TS)");
 	}; 
 	</script>
 </head>
@@ -127,6 +127,12 @@
 				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
 			</td>
 		</tr>											
+		<tr>
+			<td>На второй шине 1-Wire только один датчик температуры</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-ow2ts" onchange="setParam('get_optionHP(OW2TS)');" >
+			</td>
+		</tr>	
 	</tbody>
 	</table>
 	<p>1. При изменении периода графики обнуляются.</p>

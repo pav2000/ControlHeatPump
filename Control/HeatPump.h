@@ -65,15 +65,17 @@ struct type_motoHour
 };
 
 //  Работа с отдельными флагами type_optionHP
-#define fAddHeat           0                // флаг Использование дополнительного тена при нагреве
-#define fBeep              1                // флаг Использование звука
-#define fNextion           2                // флаг Использование nextion дисплея
-#define fEEV_close         3                // флаг Закрытие ЭРВ при выключении компрессора
-#define fSD_card           4                // флаг записи статистики на карту памяти
-#define fSaveON            5                // флаг записи в EEPROM включения ТН
-#define fEEV_start         6                // флаг Всегда начинать работу ЭРВ со стратовой позиции
-#define fEEV_light_start   7                // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
-#define fTypeRHEAT         8                // флаг как используется доболнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
+#define fBeep               1               // флаг Использование звука
+#define fNextion            2               // флаг Использование nextion дисплея
+#define fEEV_close          3               // флаг Закрытие ЭРВ при выключении компрессора
+#define fSD_card            4               // флаг записи статистики на карту памяти
+#define fSaveON             5               // флаг записи в EEPROM включения ТН
+#define fEEV_start          6               // флаг Всегда начинать работу ЭРВ со стратовой позиции
+#define fEEV_light_start    7               // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
+#define fTypeRHEAT          8               // флаг как используется доболнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define f1Wire2TSngl		9				// На 2-ой шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl		9				// На 3-ей шине 1-Wire(DS2482) только один датчик
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -167,18 +169,18 @@ class HeatPump
     void eraseError();                                       // стереть последнюю ошибку
 
     __attribute__((always_inline)) inline int8_t get_errcode(){return error;} // Получить код последней ошибки
-    char *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
-    void scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
+    char    *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
+    void     scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
     TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
-    void  set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
-    boolean get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
-    boolean get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
-    void set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
+    void     set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
+    boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
+    boolean  get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
+    void     set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
 
-    void sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
+    void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
-    int8_t  runCommand();               // Выполнить команду по управлению ТН
+    int8_t   runCommand();               // Выполнить команду по управлению ТН
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -253,7 +255,7 @@ class HeatPump
     boolean get_NoAck() { return GETBIT(Network.flags,fNoAck);}  //  Получить флаг Не ожидать ответа ACK
     uint8_t get_delayAck() {return Network.delayAck;}      //  получить задержку перед отсылкой следующего пакета
     uint16_t get_pingTime() {return Network.pingTime;}     //  получить вермя пингования сервера, 0 если не надо
-    char * get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
+    char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
         
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
@@ -294,7 +296,8 @@ class HeatPump
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    void     updateNextion();                                           // Обновить настройки дисплея
-   uint8_t  get_sleep() {return Option.sleep;};                        // 
+   uint8_t  get_sleep() {return Option.sleep;}                         //
+   uint16_t get_flags() { return Option.flags; }						// Все флаги
    
    // Структура состояния ТН Prof.SaveON.
    inline void  set_HP_OFF()                                                // Сброс флага включения ТН

@@ -962,6 +962,7 @@ boolean HeatPump::set_optionHP(OPTION_HP p, float x)
  
    case pNEXT_SLEEP:       if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                                 break;    // Время засыпания секунды NEXTION минуты
    case pNEXT_DIM:         if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                                  break;    // Якрость % NEXTION
+   case pOW2TS:			   Option.flags = (Option.flags & ~(1<<f1Wire2TSngl)) | (x == 0 ? 0 : (1<<f1Wire2TSngl)); return true;
  
    case pEND2:             return (char*)"end";                                                                                                                                        break;    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
    default:        return  (char*)cInvalid;                                                                                                                                           break;   
@@ -1002,7 +1003,8 @@ char*    HeatPump::get_optionHP(OPTION_HP p)
    case pSD_CARD:          if(GETBIT(Option.flags,fSD_card)) return (char*)cOne; else return (char*)cZero;   break;            // Сбрасывать статистику на карту
    case pSAVE_ON:          if(GETBIT(Option.flags,fSaveON)) return (char*)cOne; else return (char*)cZero;    break;            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    case pNEXT_SLEEP:       return int2str(Option.sleep);                                                     break;            // Время засыпания секунды NEXTION минуты
-   case pNEXT_DIM:         return  int2str(Option.dim);                                                      break;            // Якрость % NEXTION
+   case pNEXT_DIM:         return int2str(Option.dim);                                                       break;            // Якрость % NEXTION
+   case pOW2TS:			   return (char*)(GETBIT(Option.flags, f1Wire2TSngl) ? cOne : cZero); break;
 
    case pEND2:             return (char*)"end";                                                           break;            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
    default:                return  (char*)cInvalid;                                                      break;   
@@ -1741,7 +1743,7 @@ int8_t HeatPump::StartResume(boolean start)
 		  setState(pWAIT_HP);
 		  vTaskResume(xHandleUpdate);
       journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
-      journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);
+      journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 		  return error;
 	  }
   if (startWait)
@@ -1902,7 +1904,7 @@ int8_t HeatPump::StartResume(boolean start)
      // 11. Сохранение состояния  -------------------------------------------------------------------------------
      if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
      setState(pWORK_HP);
-     journal.jprintf(pP_TIME,"  %s ON . . .\n",(char*)nameHeatPump);
+     journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
   return error;
 }
 
@@ -1991,12 +1993,12 @@ int8_t HeatPump::StopWait(boolean stop)
      vTaskSuspend(xHandleUpdateStat);                    // Остановить задачу обновления статистики
      journal.jprintf(" statChart stop\n");      
      setState(pOFF_HP);
-     journal.jprintf(pP_TIME,"   %s OFF . . .\n",(char*)nameHeatPump);  
+     journal.jprintf(pP_TIME,"%s OFF . . .\n",(char*)nameHeatPump);
     }
    else 
      {
      setState(pWAIT_HP);
-     journal.jprintf(pP_TIME,"   %s WAIT . . .\n",(char*)nameHeatPump);               
+     journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
      }
   return error;
 }
@@ -2843,7 +2845,7 @@ void HeatPump::compressorON(MODE_HP mod)
   if (COMPRESSOR_IS_ON) return;                                  // Компрессор уже работает
   else                                                           // надо включать компрессор
   { 
-   journal.jprintf(pP_TIME," compressorON > modWork:%d[%s], COMPRESSOR_IS_ON:%d\n",mod,codeRet[Status.ret],COMPRESSOR_IS_ON);
+   journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], COMPRESSOR_IS_ON:%d\n",mod,codeRet[Status.ret],COMPRESSOR_IS_ON);
 
     #ifdef EEV_DEF
     if (lastEEV!=-1)              // Не первое включение компрессора после старта ТН
@@ -2931,7 +2933,7 @@ void HeatPump::compressorON(MODE_HP mod)
        if (GETBIT(Option.flags,fEEV_start))  dEEV.Resume(EEV_START);     // Снять с паузы задачу Обновления ЭРВ  PID  со стратовой позиции
        else                                  dEEV.Resume(lastEEV);       // Снять с паузы задачу Обновления ЭРВ  PID c последнего значения ЭРВ
        journal.jprintf(" Resume task update EEV\n"); 
-       journal.jprintf(pP_TIME,"  %s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+       journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
      }
       else  // признак первой итерации
       {
@@ -2961,7 +2963,7 @@ void HeatPump::compressorOFF()
   if((get_State()==pOFF_HP)||(get_State()==pSTARTING_HP)||(get_State()==pSTOPING_HP)) return;     // ТН выключен или включается или выключается выходим ничего не делаем!!!
 
 
- journal.jprintf(pP_TIME," compressorOFF > modWork:%d[%s], COMPRESSOR_IS_ON:%d\n",get_mode(),codeRet[Status.ret],COMPRESSOR_IS_ON);  
+ journal.jprintf(pP_TIME,"compressorOFF > modWork:%d[%s], COMPRESSOR_IS_ON:%d\n",get_mode(),codeRet[Status.ret],COMPRESSOR_IS_ON);
   #ifdef DEMO
     if (rtcSAM3X8.unixtime()-startCompressor<10)   {return;journal.jprintf(MinPauseOnCompressor);}     // Обеспечение минимального времени работы компрессора 2 минуты ТЕСТИРОВАНИЕ
   #else
@@ -2994,7 +2996,7 @@ void HeatPump::compressorOFF()
      } 
   #endif
   
-  journal.jprintf(pP_TIME,"  %s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
+  journal.jprintf(pP_TIME,"%s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
 }
 
 // РАЗМОРОЗКА ВОЗДУШНИКА ----------------------------------------------------------

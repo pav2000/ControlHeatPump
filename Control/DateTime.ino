@@ -52,7 +52,7 @@ boolean set_time_NTP(void)
    int i;
    boolean flag=false;
    IPAddress ip(0,0,0,0);
-   journal.jprintf(pP_TIME," Update time from NTP server: %s\n",HP.get_serverNTP()); 
+   journal.jprintf(pP_TIME,"Update time from NTP server: %s\n",HP.get_serverNTP());
    //1. Установить адрес  не забываем работаетм через один сокет, опреации строго последовательные,иначе настройки сбиваются
    WDT_Restart(WDT);                                        // Сбросить вачдог  при ошибке долго ждем
  

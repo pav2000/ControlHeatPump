@@ -1858,6 +1858,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"SAVE_ON")==0)        { param=92;}  // 12 Запись состояния ТН для воссановления его при перезагрузке
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
+               else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
     
                // Параметры для графиков смещение 100 занимает 40 позиций  используется в одной функции get_Chart
                else if (strcmp(x+1,"_NONE")==0)          { param=100;} // ничего не показываем

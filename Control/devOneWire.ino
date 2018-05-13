@@ -192,7 +192,11 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		}
 		// 4. Старт преобразования температуры и пауза
 		if(OneWireDrv.reset()) {
-			OneWireDrv.select(addr);
+#ifdef ONEWIRE_DS2482_SECOND
+			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+			else
+#endif
+				OneWireDrv.select(addr);
 #ifdef ONEWIRE_DS2482_SECOND_2WAY
 			if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
@@ -208,7 +212,11 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
 		}
 		if(err == OK) {
-			OneWireDrv.select(addr);
+#ifdef ONEWIRE_DS2482_SECOND
+			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+			else
+#endif
+				OneWireDrv.select(addr);
 			OneWireDrv.write(0xBE);
 			for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
 
@@ -252,23 +260,28 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	byte data[9];
 
 	if((i = lock_bus_reset(0))) return i;
-	OneWireDrv.select(addr);
+#ifdef ONEWIRE_DS2482_SECOND
+	if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+	else
+#endif
+		OneWireDrv.select(addr);
 	OneWireDrv.write(0xBE); // Команда на чтение регистра температуры
 	for(i = 0; i < 9; i++) {
 		int16_t r = OneWireDrv.read();
 		if(r < 0) { // ошибка во время чтения
 			release_bus();
-			return abs(r);
+			return abs(r) | (i > 1 ? 0x40 : 0);
 		}
 		data[i] = r;
 	}
 	release_bus();
 
 	// Данные получены
-	if(OneWireDrv.crc8(data,8) != data[8]) return ERR_ONEWIRE_CRC;  // Проверка контрольной суммы
+	i = OK;
+	if(OneWireDrv.crc8(data,8) != data[8]) i = ERR_ONEWIRE_CRC;  // Проверка контрольной суммы
 	val = CalcTemp(addr[0], data);
-	if(val == ERROR_TEMPERATURE) return ERR_ONEWIRE_CRC; // Прочитаны "плохие данные"
-	return OK;
+	if(val == ERROR_TEMPERATURE) i = ERR_ONEWIRE_CRC; // Прочитаны "плохие данные"
+	return i;
 }
 
 // установить разрешение, блокировка шины, возврат OK или err
