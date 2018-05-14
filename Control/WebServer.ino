@@ -42,17 +42,6 @@ extern void  noCsvChart_SD(uint8_t thread);
 
 // Названия режимов теста
 const char *noteTestMode[] =   {"NORMAL","SAFE_TEST","TEST","HARD_TEST"};
-// Названия типы фреонов
-const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
-// Названия правило работы ЭРВ
-const char *noteRuleEEV[]   =  {"TEVAOUT-TEVAIN","TRTOOUT-TEVAIN","TEVAOUT-T[PEVA]","TRTOOUT-T[PEVA]","Table[EVA CON]","Manual"};
-// Описание правила работы ЭРВ
-const char *noteRemarkEEV[] = {"Перегрев равен температуре на выходе испарителя - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
-                               "Перегрев равен температуре на выходе РТО - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
-                               "Перегрев равен температура на выходе испарителя - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
-                               "Перегрев равен температура на выходе РТО - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
-                               "Перегрев не вычисляется. ЭРВ открывается по значению из таблицы, которая увязывает температуры испарителя и конденсатора с шагами открытия ЭРВ.",
-                               "Перегрев не вычисляется. Ручной режим, ЭРВ открывается на заданное число шагов."};
 // Описание режима теста
 static const char *noteRemarkTest[] = {"Тестирование отключено. Основной режим работы",
                                        "Значения датчиков берутся из соответвующих полей ""Тест"", работа исполнительны устройств эмулируется. Безопасно.",
@@ -1611,7 +1600,34 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     //      if (pm==ATOF_ERROR)        // Ошибка преобразования   - завершить запрос с ошибкой
    //       { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
          } //if "="
-
+         
+        // --------------------------------------------------------------------------------------------------- 
+        // Вот сюда будет вставлятся код нового парсера (который не будет кодировать параметры в целые числа)
+        // ВХОД str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =, pm - флоат z+1
+        // ВЫХОД strReturn  надо Добавлять + в конце &
+       if (strstr(str,"EEV"))          // Проверка для запросов содержащих EEV
+              {
+              #ifdef EEV_DEF 
+              if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
+                  {
+                  HP.dEEV.get_paramEEV(x+1,strReturn);	
+                  strcat(strReturn,"&") ; 
+                  continue;	 
+                  }
+               else  if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
+                  {
+                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+                    if (HP.dEEV.set_paramEEV(strReturn,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
+                    else  strcat(strReturn,"E11");  // выход за диапазон значений   
+                  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+                  strcat(strReturn,"&") ; 
+                  continue;	 
+                  }
+                else   strcat(strReturn,"E10&");  continue;	 
+              #else
+               strcat(strReturn,"no support EEV&");  continue;	 
+              #endif   
+              }  //  if (strstr(str,"EEV"))    
 		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
@@ -1748,7 +1764,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                if (b==1) HP.sIP[a-1].set_fRule(true); else HP.sIP[a-1].set_fRule(false);
                strcat(strReturn,int2str(HP.sIP[a-1].get_fRule()));strcat(strReturn,"&") ;continue;  
               }              
-         #endif
+         #endif //  #ifdef SENSOR_IP  
        param=-1;
        // Температуры 0-19 смещение 0
             if (strcmp(x+1,"TOUT")==0)           { param=TOUT; }  // Температура улицы

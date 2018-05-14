@@ -1033,6 +1033,144 @@ void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
     }
 }
 
+ // Получить параметр инвертора в виде строки
+ // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
+char* devEEV::get_paramEEV(char *var, char *ret)
+{
+char temp[10+1];	
+	if(strstr(var, eev_POS)) {
+	  strcat(ret,itoa(EEV,temp,10)); 
+	} else if(strstr(var, eev_POSp)){
+	  strcat(ret,itoa((int32_t) EEV * 100 / maxEEV,temp,10)); 	
+	  strcat(ret,"%");
+	} else if(strstr(var, eev_POSpp)){
+	  strcat(ret,itoa(EEV,temp,10));
+	  strcat(ret,"(");
+	  strcat(ret,itoa((int32_t) EEV * 100 / maxEEV,temp,10)); 
+	  strcat(ret,"%)");	
+	} else if(strstr(var, eev_OVERHEAT)){
+	  strcat(ret,ftoa(temp,(float)Overheat/100.0,2)); 	
+	} else if(strstr(var, eev_ERROR)){
+	   strcat(ret,itoa(err,temp,10)); 
+	} else if(strstr(var, eev_MIN)){
+	   strcat(ret,itoa(minEEV,temp,10)); 
+	} else if(strstr(var, eev_MAX)){
+	   strcat(ret,itoa(maxEEV,temp,10)); 
+	} else if(strstr(var, eev_TIME)){
+	   strcat(ret,itoa(timeIn,temp,10)); 
+	} else if(strstr(var, eev_TARGET)){
+	   strcat(ret,ftoa(temp,(float)tOverheat/100.0,2)); 	
+	} else if(strstr(var, eev_KP)){
+	   strcat(ret,ftoa(temp,(float)Kp/100.0,3)); 
+	} else if(strstr(var, eev_KI)){
+	    strcat(ret,ftoa(temp,(float)Ki/100.0,3)); 
+	} else if(strstr(var, eev_KD)){
+	   strcat(ret,ftoa(temp,(float)Kd/100.0,3)); 
+	} else if(strstr(var, eev_CONST)){
+	    strcat(ret,ftoa(temp,(float)Correction/100.0,2)); 
+	} else if(strstr(var, eev_MANUAL)){
+	     strcat(ret,itoa(manualStep,temp,10)); 
+	} else if(strstr(var, eev_FREON)){
+         for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
+            { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+	}   else if(strstr(var, eev_RULE)){
+         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка фреонов
+            { strcat(ret,noteRuleEEV[i]); strcat(ret,":"); if(i==get_ruleEEV()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+	} else if(strstr(var, eev_NAME)){
+	     strcat(ret,name); 
+	} else if(strstr(var, eev_NOTE)){
+	     strcat(ret,note); 
+	} else if(strstr(var, eev_REMARK)){
+	     strcat(ret,noteRemarkEEV[get_ruleEEV()]); 
+	} else if(strstr(var, eev_PINS)){
+	      strcat(ret,"D");  strcat(ret,itoa(PIN_EEV1_D24,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV2_D25,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV3_D26,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV4_D27,temp,10));
+	} else if(strstr(var, eev_cCORRECT)==0) {
+    	strcat(ret,itoa((flags & (1<<fCorrectOverHeat)) != 0, temp, 10));
+	} else if(strstr(var, eev_cDELAY)) {
+    	strcat(ret,itoa(OverHeatCor.Delay, temp, 10));
+    } else if(strstr(var, eev_cPERIOD)) {
+    	strcat(ret, itoa(OverHeatCor.Period, temp, 10));
+    } else if(strstr(var, eev_cDELTA)) {
+    	strcat(ret, ftoa(temp, (float)OverHeatCor.TDIS_TCON / 100.0, 2));
+    } else if(strstr(var, eev_cDELTAT)) {
+    	strcat(ret,ftoa(temp, (float)OverHeatCor.TDIS_TCON_Thr / 100.0, 2));
+    } else if(strstr(var, eev_cKF)) {
+       	strcat(ret, ftoa(temp, (float)OverHeatCor.K / 1000.0, 3));
+    } else if(strstr(var, eev_cOH_MIN)) {
+    	strcat(ret,ftoa(temp, (float)OverHeatCor.OverHeatMin / 100.0, 2));
+    } else if(strstr(var, eev_cOH_MAX)) {
+    	strcat(ret,ftoa(temp, (float)OverHeatCor.OverHeatMax / 100.0, 2));
+    } else strcat(ret,"E10");
+   
+  return ret;              
+}
+// Установить параметр инвертора из строки
+boolean devEEV::set_paramEEV(char *var,float x)
+{
+float temp;	
+if(strstr(var, eev_POS)) {
+	  set_EEV((int)x); return true;
+	} else if(strstr(var, eev_POSp)){
+      temp=x*EEV/maxEEV; 		
+      set_EEV((int)temp); return true;
+	} else if(strstr(var, eev_POSpp)){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_OVERHEAT)){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_ERROR)){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_MIN)){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_MAX)){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_TIME)){
+	  if ((x>=5)&&(x<=600)) { if(timeIn!=x) resetPID(); timeIn=x; return true;} else false;	// секунды
+	} else if(strstr(var, eev_TARGET)){
+	  if ((x>0)&&(x<=15.0)) { x=x*100.0;if(tOverheat!=x) resetPID(); tOverheat=x;return true;}  else false;	// сотые градуса
+	} else if(strstr(var, eev_KP)){
+	   if ((x>=0)&&(x<=50.0)) {x=x*100.0; if(Kp!=x) resetPID(); Kp=(int)x;return true;} else false;	// сотые
+	} else if(strstr(var, eev_KI)){
+	   if ((x>=0)&&(x<=10.0)) {x=x*100.0; if(Ki!=x) resetPID(); Ki=(int)x; return true;} else false; // сотые	
+	} else if(strstr(var, eev_KD)){
+	   if ((x>=0)&&(x<=10.0)) {x=x*100.0; if(Kd!=x) resetPID(); Kd=(int)x;return true;} else false;	// сотые
+	} else if(strstr(var, eev_CONST)){
+	   if ((x>=-5.0)&&(x<=5.0)) {x=x*100.0; if(Correction!=x) resetPID(); Correction=(int)x; return true;}else false;	// сотые градуса
+	} else if(strstr(var, eev_MANUAL)){
+	   if ((x>=minEEV)&&(x<=maxEEV)){ manualStep=x; return true;} else false;	// шаги
+	} else if(strstr(var, eev_FREON)){
+        if ((x>0)&&(x<=R717)){ typeFreon=(TYPEFREON)x; return true;} else false;	// перечисляемый тип  
+	}   else if(strstr(var, eev_RULE)){
+		if ((x>TEVAOUT_TEVAIN)&&(x<=MANUAL)){ ruleEEV=(RULE_EEV)x; return true;} else false;	// перечисляемый тип  
+ 	} else if(strstr(var, eev_NAME)){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_NOTE)){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_REMARK)){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_PINS)){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strstr(var, eev_cCORRECT)) {
+    	if (x==0) SETBIT0(flags, fCorrectOverHeat); else SETBIT1(flags, fCorrectOverHeat);
+	} else if(strstr(var, eev_cDELAY)) {
+		if ((x>=0)&&(x<=900)) { if(OverHeatCor.Delay!=x) OverHeatCor.Delay=x; return true;} else false;	// секунды
+    } else if(strstr(var, eev_cPERIOD)) {
+		if ((x>=1)&&(x<=20)) { if(OverHeatCor.Period!=x) resetPID(); OverHeatCor.Period=x; return true;} else false;	// циклы ЭРВ
+    } else if(strstr(var, eev_cDELTA)) {
+        if ((x>=0.0)&&(x<=25.0)) {OverHeatCor.TDIS_TCON=(int)(x*100.0); return true;}else false;	// сотые градуса
+    } else if(strstr(var, eev_cDELTAT)) {
+        if ((x>=0.0)&&(x<=10.0)) {OverHeatCor.TDIS_TCON_Thr=(int)(x*100.0); return true;}else false;	// сотые градуса
+    } else if(strstr(var, eev_cKF)) {
+    	if ((x>=0.0)&&(x<=10.0)) {OverHeatCor.K=(int)(x*1000.0); return true;}else false;	// тысячные
+    } else if(strstr(var, eev_cOH_MIN)) {
+        if ((x>=0.0)&&(x<=50.0)) {OverHeatCor.OverHeatMin=(int)(x*100.0); return true;}else false;	// сотые градуса
+    } else if(strstr(var, eev_cOH_MAX)) {
+        if ((x>=0.0)&&(x<=50.0)) {OverHeatCor.OverHeatMax=(int)(x*100.0); return true;}else false;	// сотые градуса
+    } else return false;
+}
+
 #endif
 
 #ifndef FC_VACON

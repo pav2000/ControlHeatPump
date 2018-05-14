@@ -257,6 +257,9 @@ public:
   boolean isWork();                                      // Получить состояние ЭРВ
   int16_t get_Overheat(){return Overheat;}               // Получить текущий перегрев
   int16_t set_Overheat(int16_t rto,int16_t out, int16_t in, int16_t p); // Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
+
+  char* get_paramEEV(char *var, char *ret);              // Получить параметр ЭРВ в виде строки
+  boolean set_paramEEV(char *var,float x);               // Установить параметр ЭРВ из строки
   
   int16_t get_tOverheat(){return  tOverheat;}            // Получить целевой перегрев
   int8_t  set_tOverheat(int16_t t);                      // Установить целевой перегрев
@@ -303,7 +306,7 @@ public:
   StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
   int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
   boolean setZero;                                       // признак обнуления EEV;
-  statChart Chart;                                        // Статистика по по ЭРВ
+  statChart Chart;                                       // График по ЭРВ
   
 private:
   boolean fPause;                                        // пауза алгоритма отслеживания true
@@ -350,7 +353,7 @@ private:
   //} // Конец структуры для сохранения настроек - последняя переменная => flags
   TEST_MODE testMode;                                    // Значение режима тестирования
   int16_t maxEEV;                                        // Максимальное число шагов ЭРВ (диапазон)
-  int16_t minEEV;                                        // ТЧисло шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
+  int16_t minEEV;                                        // Число шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
   int8_t  err;                                           // ошибка ЭРВ (работа) при ошибке останов ТН
   char *note;                                            // Описание
   char *name;                                            // Имя
