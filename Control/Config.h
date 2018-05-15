@@ -1591,9 +1591,9 @@ enum TYPE_SENSOR
 //        #define FLOW_CONTROL                                                // Контроль потоков через ПТО (актуален если установлены расходомеры)
         #define LOAD_VERIFICATION                                             // Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
      // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
-    const IPAddress defaultIP(192, 168, 0, 177);
-    const IPAddress defaultSDNS(192, 168, 0, 191);
-    const IPAddress defaultGateway(192, 168, 0, 1);
+    const IPAddress defaultIP(192, 168, 1, 177);
+    const IPAddress defaultSDNS(192, 168, 1, 1);
+    const IPAddress defaultGateway(192, 168, 1, 1);
     const IPAddress defaultSubnet(255, 255, 255, 0);
     const boolean  defaultDHCP=false;              
     

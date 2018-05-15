@@ -1310,7 +1310,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
        // Выделяем параметр функции на выходе число - номер параметра
        // применяется кодирование 0-19 - температуры 20-29 - сухой контакт 30-39 -аналоговые датчики
-       y[0]=0;                                  // Стираем скобку ")"  строка х+ содержит параметр
+       y[0]=0;                                  // Стираем скобку ")"  строка х+1 содержит параметр
        param=-1;                                // по умолчанию параметр не валидный
 
       // -----------------------------------------------------------------------------------------------------        
@@ -1599,35 +1599,59 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           strcat(strReturn,")=");
     //      if (pm==ATOF_ERROR)        // Ошибка преобразования   - завершить запрос с ошибкой
    //       { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
-         } //if "="
+         } else z=NULL; // "=" - не обнаружено, значит значение пустая строка
          
-        // --------------------------------------------------------------------------------------------------- 
+        // --------------------------------НОВЫЙ ПАРСЕР ------------------------------------------------------------------- 
         // Вот сюда будет вставлятся код нового парсера (который не будет кодировать параметры в целые числа)
         // ВХОД str - полное имя запроса до (), x+1 - содержит строку (имя параметра), z+1 - после = (значение), pm - флоат z+1
         // ВЫХОД strReturn  надо Добавлять + в конце &
-       if (strstr(str,"EEV"))          // Проверка для запросов содержащих EEV
+        x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
+
+       // 1. Проверка для запросов содержащих EEV      
+       if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
               if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
                   {
                   HP.dEEV.get_paramEEV(x+1,strReturn);	
-                  strcat(strReturn,"&") ; 
-                  continue;	 
+                  strcat(strReturn,"&"); continue;	 
                   }
-               else  if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
+               else if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
                   {
                   if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
-                    if (HP.dEEV.set_paramEEV(strReturn,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
+                    if (HP.dEEV.set_paramEEV(x+1,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
                     else  strcat(strReturn,"E11");  // выход за диапазон значений   
                   } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
                   strcat(strReturn,"&") ; 
                   continue;	 
                   }
-                else   strcat(strReturn,"E10&");  continue;	 
+                else   strcat(strReturn,"E03&");  continue;	 
               #else
                strcat(strReturn,"no support EEV&");  continue;	 
               #endif   
               }  //  if (strstr(str,"EEV"))    
+              
+          // 2. Проверка для запросов содержащих MQTT  
+              if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
+              {
+			   #ifdef MQTT
+                   if (strcmp(str,"get_MQTT")==0){           // Функция получить настройки MQTT
+                        strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1));
+                        strcat(strReturn,"&") ; continue;
+                       // (strcmp(str,"get_MQTT")==0) 
+                   } else if (strcmp(str,"set_MQTT")==0) {          // Функция записать настройки MQTT
+                           if (HP.clMQTT.set_paramMQTT(x+1,strbuf))     // преобразование удачно
+                           strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1)); 
+                       else
+                          strcat(strReturn,"E32") ; // ошибка преобразования строки
+                      strcat(strReturn,"&") ; continue;
+                      } // (strcmp(str,"set_MQTT")==0) 
+				#else
+					 strcat(strReturn,"no support MQTT&");  continue; // не поддерживается
+				#endif
+               } //if ((strstr(str,"MQTT")>0)
+          
+           // 3. Расписание 
 		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
@@ -2065,6 +2089,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"LINK_SDM")==0)       { param=289;}  // Cостояние связи со счетчиком
         
               // Настройки MQTT клиента смещение 300 общее число 30 шт
+              /*
                else if (strcmp(x+1,"USE_THINGSPEAK")==0) { param=300;}  // флаг использования  ThingSpeak
                else if (strcmp(x+1,"USE_MQTT")==0)       { param=301;}  // флаг использования MQTT
                else if (strcmp(x+1,"BIG_MQTT")==0)       { param=302;}  // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
@@ -2086,6 +2111,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"LOGIN_NARMON")==0)   { param=318;}  // логин сервера народный мониторинг
                else if (strcmp(x+1,"PASSWORD_NARMON")==0){ param=319;}  // пароль сервера народный мониторинг
                else if (strcmp(x+1,"ID_NARMON")==0)      { param=320;}  // Идентификатор клиента на народный мониторинг
+              */ 
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2770,7 +2796,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   }  // else end 
                 } //if ((strstr(str,"SDM")>0)      
             #endif
-
+/*
               //16.  Настройки клиента смещение 300 занимает 30
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
 			   #ifdef MQTT
@@ -2798,7 +2824,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 					 strcat(strReturn,"&") ; continue;
 				#endif
                } //if ((strstr(str,"MQTT")>0)
-
+*/
             
         // НОВОЕ вставлять сюда!
         // ------------------------ конец разбора -------------------------------------------------

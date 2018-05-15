@@ -592,11 +592,11 @@ boolean sendNarodMon(boolean debug)
  uint8_t i;
   
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon ignore: Wrong MAC address, change MAC from default.\n"); return false;}
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT(pADR_NARMON));  
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));  
      
-     strcpy(root,HP.clMQTT.get_paramMQTT(pLOGIN_NARMON));
+     strcpy(root,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON));
      strcat(root,"/");
-     strcat(root,HP.clMQTT.get_paramMQTT(pID_NARMON));  
+     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON));  
      strcat(root,"/");
      
      // посылка отдельных топиков
@@ -693,8 +693,8 @@ boolean sendNarodMon(boolean debug)
 boolean sendMQTT(boolean debug)
 {
  uint8_t i; 
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT(pADR_MQTT)); if (!debug) journal.jprintf(" OK\n"); 
-     strcpy(root,HP.clMQTT.get_paramMQTT(pID_MQTT));
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT)); if (!debug) journal.jprintf(" OK\n"); 
+     strcpy(root,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT));
      strcat(root,"/");
      
      strcpy(topic,root);
@@ -882,9 +882,9 @@ boolean  sendThingSpeak(boolean debug)
  //uint8_t i;
       // Готовим данные
      strcpy(root,"channels/");  // Название топика едино посылаем одним запросом
-     strcat(root,HP.clMQTT.get_paramMQTT(pLOGIN_MQTT));
+     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT));
      strcat(root,"/publish/");
-     strcat(root,HP.clMQTT.get_paramMQTT(pPASSWORD_MQTT));
+     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT));
     
      // Формируем данные и посылаем данные  сразу на много полей
      strcpy(topic,"field1=");
@@ -932,7 +932,7 @@ boolean  sendThingSpeak(boolean debug)
      // Проверка на длины
      if((strlen(root)>=sizeof(root)-2)||(strlen(topic)>sizeof(topic)-2)) { journal.jprintf("$WARNING: Long topic or data string, is problem.\n"); return false;}
      // Отправка
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT(pADR_MQTT));
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));
      if (HP.clMQTT.sendTopic(root,topic,false,debug,true)) { if (debug) journal.jprintf(" %s %s\n", root,topic);else journal.jprintf((char*)MQTTPublishOK);return true;} else return false;  
      return true;
 }

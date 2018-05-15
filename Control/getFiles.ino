@@ -350,26 +350,26 @@ void get_txtSettings(uint8_t thread)
       // MQTT
      strcpy(Socket[thread].outBuf,"\n  1.8 Настройка MQTT\r\n");
       #ifdef MQTT
-     strcat(Socket[thread].outBuf,"Включить отправку на сервер MQTT: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pUSE_MQTT),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
-     strcat(Socket[thread].outBuf,"Отправка на сервер ThingSpeak: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pUSE_TS),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
-     strcat(Socket[thread].outBuf,"Включить отсылку дополнительных данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pBIG_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
-     strcat(Socket[thread].outBuf,"Включить передачу данных с электросчетчика SDM120: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pSDM_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
-     strcat(Socket[thread].outBuf,"Включить передачу данных об инверторе: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pFC_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
-     strcat(Socket[thread].outBuf,"Включить передачу данных об эффективности ТН: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pCOP_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
-     strcat(Socket[thread].outBuf,"Интервал передачи данных [1...1000] (минут): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pTIME_MQTT));STR_END;
-     strcat(Socket[thread].outBuf,"Адрес MQTT сервера: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pADR_MQTT));STR_END;
-     strcat(Socket[thread].outBuf,"Порт MQTT сервера: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pPORT_MQTT));STR_END;
-     strcat(Socket[thread].outBuf,"Логин для входа: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pLOGIN_MQTT));STR_END;
-     strcat(Socket[thread].outBuf,"Пароль для входа: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pPASSWORD_MQTT));STR_END;
-     strcat(Socket[thread].outBuf,"Идентификатор клиента: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pID_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Включить отправку на сервер MQTT: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_USE_MQTT),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
+     strcat(Socket[thread].outBuf,"Отправка на сервер ThingSpeak: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_USE_TS),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
+     strcat(Socket[thread].outBuf,"Включить отсылку дополнительных данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_BIG_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
+     strcat(Socket[thread].outBuf,"Включить передачу данных с электросчетчика SDM120: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_SDM_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
+     strcat(Socket[thread].outBuf,"Включить передачу данных об инверторе: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_FC_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
+     strcat(Socket[thread].outBuf,"Включить передачу данных об эффективности ТН: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_COP_MQTT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
+     strcat(Socket[thread].outBuf,"Интервал передачи данных [1...1000] (минут): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_TIME_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Адрес MQTT сервера: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Порт MQTT сервера: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_PORT_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Логин для входа: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Пароль для входа: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT));STR_END;
+     strcat(Socket[thread].outBuf,"Идентификатор клиента: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT));STR_END;
      strcat(Socket[thread].outBuf," Сервис <Народный мониторинг>\r\n");
-     strcat(Socket[thread].outBuf,"Включить передачу данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pUSE_NARMON),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
-     strcat(Socket[thread].outBuf,"Посылать расширенный набор данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT(pBIG_NARMON),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
-     strcat(Socket[thread].outBuf,"Адрес сервиса: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT( pADR_NARMON));STR_END;
-     strcat(Socket[thread].outBuf,"Порт сервиса: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pPORT_NARMON));STR_END;
-     strcat(Socket[thread].outBuf,"Логин для входа (получается при регистрации): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pLOGIN_NARMON));STR_END;
-     strcat(Socket[thread].outBuf,"Личный код для передачи (смотреть в разделе API MQTT сервиса): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pPASSWORD_NARMON));STR_END;
-     strcat(Socket[thread].outBuf,"Имя устройства (корень всех топиков): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT(pID_NARMON));STR_END;
+     strcat(Socket[thread].outBuf,"Включить передачу данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_USE_NARMON),cOne)) strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);  STR_END;
+     strcat(Socket[thread].outBuf,"Посылать расширенный набор данных: "); if(!strcmp(HP.clMQTT.get_paramMQTT((char*)mqtt_BIG_NARMON),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo); STR_END;
+     strcat(Socket[thread].outBuf,"Адрес сервиса: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));STR_END;
+     strcat(Socket[thread].outBuf,"Порт сервиса: "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_PORT_NARMON));STR_END;
+     strcat(Socket[thread].outBuf,"Логин для входа (получается при регистрации): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON));STR_END;
+     strcat(Socket[thread].outBuf,"Личный код для передачи (смотреть в разделе API MQTT сервиса): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_NARMON));STR_END;
+     strcat(Socket[thread].outBuf,"Имя устройства (корень всех топиков): "); strcat(Socket[thread].outBuf,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON));STR_END;
      #else
       strcat(Socket[thread].outBuf,"Не поддерживается, нет в прошивке");
      #endif

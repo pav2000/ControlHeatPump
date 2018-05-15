@@ -1515,142 +1515,129 @@ void clientMQTT::initMQTT()
 }
 
 // Установить параметр Уведомления из строки
-boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
+ boolean clientMQTT::set_paramMQTT(char *var, char *c)         
 {
-  float x;
- //  Serial.print(p);Serial.print(" : c=");Serial.print(c);Serial.println(">>>");
- switch (p)
-   {
-    case pUSE_TS:      if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fTSUse); return true;}          // флаг использования ThingSpeak
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fTSUse);  return true;}
-                       else return false;  
-                       break;  
-   case pUSE_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttUse); return true;}          // флаг использования MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttUse);  return true;}
-                       else return false;  
-                       break; 
-   case pBIG_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttBig); return true;}          // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttBig);  return true;}
-                       else return false;  
-                       break; 
-   case pSDM_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttSDM120); return true;}       //  флаг отправки данных электросчетчика на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttSDM120);  return true;}
-                       else return false;  
-                       break; 
-   case pFC_MQTT:     if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fMqttFC); return true;}           //  флаг отправки данных инвертора на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttFC);  return true;}
-                       else return false;  
-                       break;
-   case pCOP_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttCOP); return true;}          // флаг отправки данных COP на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttCOP);  return true;}
-                       else return false;  
-                       break;
-               
-   case  pTIME_MQTT:   x=my_atof(c);                                                                             // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<1)||(x>=1000)) return   false;    
-                       else mqttSettintg.ttime=(int)x*60; return true;
-                       break; 
-   case  pADR_MQTT:    if(m_strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
-                       else // ок сохраняем
-                        {  
-                        strcpy(mqttSettintg.mqtt_server,c); 
-                        dnsUpadateMQTT=true;
-                        return true;  
-                        }                        
-                       break; 
-   case pIP_MQTT:      return true; break;                                                                       // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-   case pPORT_MQTT:    x=my_atof(c);                                                                             // Порт сервера
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<=1)||(x>=65535-1)) return   false;   
-                       else mqttSettintg.mqtt_port=(int)x; return true;
-                       break;  
-   case pLOGIN_MQTT:   if(m_strlen(c)==0) return false;                                                            // логин сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_login,c); return true;  }                         
-                       break;
-   case pPASSWORD_MQTT:if(m_strlen(c)==0) return false;                                                            // пароль сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_password,c); return true;  }                         
-                       break;
-   case pID_MQTT:      if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_id,c); return true;  }                         
-                       break;
-                       // --------------------- NARMON -------------------------
-  case  pUSE_NARMON:   if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fNarodMonUse); return true;}     // флаг отправки данных на народный мониторинг
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonUse);  return true;}
-                       else return false;  
-                       break;
-   case  pBIG_NARMON:  if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fNarodMonBig); return true;}    // флаг отправки данных на народный мониторинг расширенная версия
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonBig);  return true;}
-                       else return false;  
-                       break;    
-  case  pADR_NARMON:   if(m_strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
-                       else // ок сохраняем
-                        {  
-                        strcpy(mqttSettintg.narodMon_server,c); 
-                        dnsUpadateNARMON=true;
-                        return true;  
-                        }                        
-                       break; 
-   case pIP_NARMON:    return true; break;                                                                       // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-   case pPORT_NARMON:  x=my_atof(c);                                                                             // Порт сервера
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<=1)||(x>=65535-1)) return   false;   
-                       else mqttSettintg.narodMon_port=(int)x; return true;
-                       break;  
-   case pLOGIN_NARMON: if(m_strlen(c)==0) return false;                                                            // логин сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_login,c); return true;  }                         
-                       break;
-   case pPASSWORD_NARMON:if(m_strlen(c)==0) return false;                                                          // пароль сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_password,c); return true;  }                         
-                       break;
-   case pID_NARMON:    if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_id,c); return true;  }                         
-                       break;
- default:              return false;                               break;   
-   }
-   
+   	if(strcmp(var, mqtt_USE_TS)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fTSUse); return true;}          // флаг использования ThingSpeak
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fTSUse);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_USE_MQTT)==0){
+   	      if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttUse); return true;}          // флаг использования MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttUse);  return true;}
+          else return false;  
+  	} else if(strcmp(var, mqtt_BIG_MQTT)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttBig); return true;}          // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttBig);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_SDM_MQTT)==0){
+   		  if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttSDM120); return true;}       //  флаг отправки данных электросчетчика на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttSDM120);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_FC_MQTT)==0){
+          if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fMqttFC); return true;}           //  флаг отправки данных инвертора на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttFC);  return true;}
+          else return false;  
+    } else if(strcmp(var, mqtt_COP_MQTT)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttCOP); return true;}          // флаг отправки данных COP на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttCOP);  return true;}
+          else return false;  
+    } else if(strcmp(var, mqtt_TIME_MQTT)==0){
+          x=my_atof(c);                                                                             // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
+          if (x==ATOF_ERROR) return   false;
+          else if((x<1)||(x>=1000)) return   false;    
+          else mqttSettintg.ttime=(int)x*60; return true;
+    } else if(strcmp(var, mqtt_ADR_MQTT)==0){
+          if(m_strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
+          if(m_strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
+           else // ок сохраняем
+            {  
+            strcpy(mqttSettintg.mqtt_server,c); 
+            dnsUpadateMQTT=true;
+            return true;  
+            }                        
+    } else if(strcmp(var, mqtt_IP_MQTT)==0){
+           return true;                                                                        // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
+    } else if(strcmp(var, mqtt_PORT_MQTT)==0){
+           x=my_atof(c);                                                                             // Порт сервера
+	       if (x==ATOF_ERROR) return   false;
+	       else if((x<=1)||(x>=65535-1)) return   false;   
+	       else mqttSettintg.mqtt_port=(int)x; return true;
+    } else if(strcmp(var, mqtt_LOGIN_MQTT)==0){
+           if(m_strlen(c)==0) return false;                                                            // логин сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;
+           else { strcpy(mqttSettintg.mqtt_login,c); return true;  }                         
+    } else if(strcmp(var, mqtt_PASSWORD_MQTT)==0){
+           if(m_strlen(c)==0) return false;                                                            // пароль сервера
+	       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;
+	       else { strcpy(mqttSettintg.mqtt_password,c); return true;  }                         
+	 } else if(strcmp(var, mqtt_ID_MQTT)==0){
+	       if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+           if(m_strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;
+           else { strcpy(mqttSettintg.mqtt_id,c); return true;  }                                      // --------------------- NARMON -------------------------            
+    } else if(strcmp(var, mqtt_USE_NARMON)==0){
+           if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fNarodMonUse); return true;}     // флаг отправки данных на народный мониторинг
+           else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonUse);  return true;}
+           else return false; 
+    } else if(strcmp(var, mqtt_BIG_NARMON)==0){  if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fNarodMonBig); return true;}    // флаг отправки данных на народный мониторинг расширенная версия
+           else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonBig);  return true;}
+           else return false;  
+    } else if(strcmp(var, mqtt_ADR_NARMON)==0){  
+       	   if(m_strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
+	       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
+	       else // ок сохраняем
+	            {  
+	            strcpy(mqttSettintg.narodMon_server,c); 
+	            dnsUpadateNARMON=true;
+	            return true;  
+	            }                        
+    } else if(strcmp(var, mqtt_IP_NARMON)==0){  
+           return true; 
+    } else if(strcmp(var, mqtt_PORT_NARMON)==0){  
+           x=my_atof(c);                                                                             // Порт сервера
+           if (x==ATOF_ERROR) return   false;
+           else if((x<=1)||(x>=65535-1)) return   false;   
+           else mqttSettintg.narodMon_port=(int)x; return true;
+     } else if(strcmp(var, mqtt_LOGIN_NARMON)==0){
+           if(m_strlen(c)==0) return false;                                                            // логин сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;
+           else { strcpy(mqttSettintg.narodMon_login,c); return true;  }                         
+      } else if(strcmp(var, mqtt_PASSWORD_NARMON)==0){  if(m_strlen(c)==0) return false;                                                          // пароль сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;
+           else { strcpy(mqttSettintg.narodMon_password,c); return true;  }                         
+      } else if(strcmp(var, mqtt_ID_NARMON)==0){
+         	if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+            if(m_strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;
+            else { strcpy(mqttSettintg.narodMon_id,c); return true;  }   
+       }                          
   return false;                        
 }
 
 // Получить параметр MQTT из строки
-char* clientMQTT::get_paramMQTT(TYPE_PARAM_MQTT p)
+char*   clientMQTT::get_paramMQTT(char *var)
 {
-  
- switch (p)
-   {
-    case pUSE_TS:          if (GETBIT(mqttSettintg.flags,fTSUse))      return  (char*)cOne; else return  (char*)cZero;   break;     // флаг использования ThingSpeak
-    case pUSE_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttUse))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг использования MQTT
-    case pBIG_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttBig))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-    case pSDM_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных электросчетчика на MQTT
-    case pFC_MQTT:         if (GETBIT(mqttSettintg.flags,fMqttFC))     return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных инвертора на MQTT
-    case pCOP_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttCOP))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных COP на MQTT
-    case pTIME_MQTT:       return int2str(mqttSettintg.ttime/60);                                                     break;     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
-    case pADR_MQTT:        return mqttSettintg.mqtt_server;                                                           break;     // Адрес сервера
-    case pIP_MQTT:         return IPAddress2String(mqttSettintg.mqtt_serverIP);                                       break;     // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-    case pPORT_MQTT:       return int2str(mqttSettintg.mqtt_port);                                                    break;     // Порт сервера
-    case pLOGIN_MQTT:      return mqttSettintg.mqtt_login;                                                            break;     // логин сервера
-    case pPASSWORD_MQTT:   return mqttSettintg.mqtt_password;                                                         break;     // пароль сервера
-    case pID_MQTT:         return mqttSettintg.mqtt_id;                                                               break;     // дентификатор клиента на MQTT сервере
+    if(strcmp(var, mqtt_USE_TS)==0){if (GETBIT(mqttSettintg.flags,fTSUse))      return  (char*)cOne; else return (char*)cZero;} else     // флаг использования ThingSpeak
+    if(strcmp(var, mqtt_USE_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttUse))    return (char*)cOne; else return (char*)cZero;} else       // флаг использования MQTT
+    if(strcmp(var, mqtt_BIG_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttBig))    return (char*)cOne; else return  (char*)cZero;} else      // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+    if(strcmp(var, mqtt_SDM_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return (char*)cOne; else return (char*)cZero;} else     // флаг отправки данных электросчетчика на MQTT
+    if(strcmp(var, mqtt_FC_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttFC))     return  (char*)cOne; else return (char*)cZero;} else      // флаг отправки данных инвертора на MQTT
+    if(strcmp(var, mqtt_COP_MQTT)==0){    if (GETBIT(mqttSettintg.flags,fMqttCOP))    return (char*)cOne; else return (char*)cZero;} else     // флаг отправки данных COP на MQTT
+    if(strcmp(var, mqtt_TIME_MQTT)==0){  return int2str(mqttSettintg.ttime/60);                                                    } else     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
+    if(strcmp(var, mqtt_ADR_MQTT)==0){  return mqttSettintg.mqtt_server;                                                          } else     // Адрес сервера
+    if(strcmp(var, mqtt_IP_MQTT)==0){    return IPAddress2String(mqttSettintg.mqtt_serverIP);                                      } else      // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
+    if(strcmp(var, mqtt_PORT_MQTT)==0){    return int2str(mqttSettintg.mqtt_port);                                                  } else      // Порт сервера
+    if(strcmp(var, mqtt_LOGIN_MQTT)==0){  return mqttSettintg.mqtt_login;                                                           } else     // логин сервера
+    if(strcmp(var, mqtt_PASSWORD_MQTT)==0){  return mqttSettintg.mqtt_password;                                                     } else     // пароль сервера
+    if(strcmp(var, mqtt_ID_MQTT)==0){      return mqttSettintg.mqtt_id;                                                         } else     // дентификатор клиента на MQTT сервере
     // ----------------------NARMON -------------------------
-    case pUSE_NARMON:      if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  (char*)cOne; else return  (char*)cZero;  break;     // флаг отправки данных на народный мониторинг
-    case pBIG_NARMON:      if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных на народный мониторинг  расширенная версия
-    case pADR_NARMON:      return mqttSettintg.narodMon_server;                                                       break;     // Адрес сервера народного мониторинга
-    case pIP_NARMON:       return IPAddress2String(mqttSettintg.narodMon_serverIP);                                   break;     // IP Адрес сервера народного мониторинга,
-    case pPORT_NARMON:     return int2str(mqttSettintg.narodMon_port);                                                break;     // Порт сервера народного мониторинга
-    case pLOGIN_NARMON:    return mqttSettintg.narodMon_login;                                                        break;     // логин сервера народного мониторинга
-    case pPASSWORD_NARMON: return mqttSettintg.narodMon_password;                                                     break;     // пароль сервера  народного мониторинга
-    case pID_NARMON:       return mqttSettintg.narodMon_id;                                                           break;     // дентификатор клиента на MQTT сервере народного мониторинга
-    default:               return (char*)cError;                                                                      break;   
-   }
-  return (char*)cError;                        
+    if(strcmp(var, mqtt_USE_NARMON)==0){if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  (char*)cOne; else return (char*)cZero;} else      // флаг отправки данных на народный мониторинг
+    if(strcmp(var, mqtt_BIG_NARMON)==0){ if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return (char*)cOne; else return (char*)cZero; } else      // флаг отправки данных на народный мониторинг  расширенная версия
+    if(strcmp(var, mqtt_ADR_NARMON)==0){ return  mqttSettintg.narodMon_server;                                                      } else   // Адрес сервера народного мониторинга
+    if(strcmp(var, mqtt_IP_NARMON)==0){return IPAddress2String(mqttSettintg.narodMon_serverIP);                                 } else    // IP Адрес сервера народного мониторинга,
+    if(strcmp(var, mqtt_PORT_NARMON)==0){ return int2str(mqttSettintg.narodMon_port);                                               } else   // Порт сервера народного мониторинга
+    if(strcmp(var, mqtt_LOGIN_NARMON)==0){ return mqttSettintg.narodMon_login;                                                      } else      // логин сервера народного мониторинга
+    if(strcmp(var, mqtt_PASSWORD_NARMON)==0){return mqttSettintg.narodMon_password;                                                  } else      // пароль сервера  народного мониторинга
+    if(strcmp(var, mqtt_ID_NARMON)==0){ return mqttSettintg.narodMon_id;                                                          } else     // дентификатор клиента на MQTT сервере народного мониторинга
+    return (char*)cError;                        
 }
 
 
@@ -1726,7 +1713,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrNARMON>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fNarodMonUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT(pADR_NARMON));   
+         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));   
          numErrNARMON=0;// сбросить счетчик
          }
       return numErrNARMON;
@@ -1737,7 +1724,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrMQTT>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fMqttUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT(pADR_MQTT));    
+         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));    
          numErrMQTT=0;// сбросить счетчик
          }
       return numErrMQTT;
@@ -1789,8 +1776,8 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
                            journal.jprintf((char*)ResDHCP);
                           _delay(50);
                           // Пытаемся еще раз узнать адрес через ДНС, возмлжно он поменялось, если поменялся то меняем не сохраняем настройки
-                          if (NM) {check_address(HP.clMQTT.get_paramMQTT(pADR_NARMON),tempIP);if (tempIP!=HP.clMQTT.get_narodMon_serverIP()){ HP.clMQTT.set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT(pADR_NARMON));}}
-                          else    {check_address(HP.clMQTT.get_paramMQTT(pADR_MQTT),tempIP);  if (tempIP!=HP.clMQTT.get_mqtt_serverIP())    { HP.clMQTT.set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT(pADR_MQTT));}}
+                          if (NM) {check_address(HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON),tempIP);if (tempIP!=HP.clMQTT.get_narodMon_serverIP()){ HP.clMQTT.set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));}}
+                          else    {check_address(HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT),tempIP);  if (tempIP!=HP.clMQTT.get_mqtt_serverIP())    { HP.clMQTT.set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));}}
                            _delay(50);
                           }
                           break;

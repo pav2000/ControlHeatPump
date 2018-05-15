@@ -447,6 +447,31 @@ const char *eev_cKF      =  {"cKF"};         // Коэффициент (/0.001):
 const char *eev_cOH_MAX  =  {"cOH_MAX"};     // Максимальный перегрев (сотые градуса)
 const char *eev_cOH_MIN  =  {"cOH_MIN"};     // Минимальный перегрев (сотые градуса)
 
+// Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
+const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
+const char *mqtt_USE_MQTT         =  {"USE_MQTT"};       // флаг использования MQTT
+const char *mqtt_BIG_MQTT         =  {"BIG_MQTT"};       // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+const char *mqtt_SDM_MQTT         =  {"SDM_MQTT"};       // флаг отправки данных электросчетчика на MQTT
+const char *mqtt_FC_MQTT          =  {"FC_MQTT"};        // флаг отправки данных инвертора на MQTT
+const char *mqtt_COP_MQTT         =  {"COP_MQTT"};       // флаг отправки данных COP на MQTT
+const char *mqtt_TIME_MQTT        =  {"TIME_MQTT"};      // период отправки на сервер в сек. 10...60000
+const char *mqtt_ADR_MQTT         =  {"ADR_MQTT"};       // Адрес сервера
+const char *mqtt_IP_MQTT          =  {"IP_MQTT"};        // IP Адрес сервера
+const char *mqtt_PORT_MQTT        =  {"PORT_MQTT"};      // Адрес порта сервера
+const char *mqtt_LOGIN_MQTT       =  {"LOGIN_MQTT"};     // логин сервера
+const char *mqtt_PASSWORD_MQTT    =  {"PASSWORD_MQTT"};  // пароль сервера
+const char *mqtt_ID_MQTT          =  {"ID_MQTT"};        // Идентификатор клиента на MQTT сервере
+   // народный мониторинг
+const char *mqtt_USE_NARMON       =  {"USE_NARMON"};     // флаг отправки данных на народный мониторинг
+const char *mqtt_BIG_NARMON       =  {"BIG_NARMON"};     // флаг отправки данных на народный мониторинг ,большую версию
+const char *mqtt_ADR_NARMON       =  {"ADR_NARMON"};     // Адрес сервера народного мониторинга
+const char *mqtt_IP_NARMON        =  {"IP_NARMON"};      // IP Адрес сервера народного мониторинга
+const char *mqtt_PORT_NARMON      =  {"PORT_NARMON"};    // Адрес порта сервера  народного мониторинга
+const char *mqtt_LOGIN_NARMON     =  {"LOGIN_NARMON"};   // логин сервера народного мониторинга
+const char *mqtt_PASSWORD_NARMON  =  {"PASSWORD_NARMON"};// пароль сервера народного мониторинга
+const char *mqtt_ID_NARMON        =  {"ID_NARMON"};      // Идентификатор клиента на MQTT сервере
+
+
 // Названия типы фреонов
 const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
 // Названия правило работы ЭРВ
@@ -581,6 +606,7 @@ enum TYPE_STAT
  pEND22                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
+/*
 //  Перечисляемый тип - Параметры MQTT клиента
 enum TYPE_PARAM_MQTT
 {
@@ -610,7 +636,7 @@ enum TYPE_PARAM_MQTT
    
    pEND21                             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
-
+*/
 
 
 //  Перечисляемый тип - Параметры счетчика

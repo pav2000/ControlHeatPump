@@ -411,8 +411,11 @@ class clientMQTT                              // Класс клиент MQTT
     void updateState(boolean NM,TYPE_STATE_MQTT state){if(NM) stateNARMON=state;else stateMQTT=state;}  // Установка состояния соединения MQTT
            
     // Установка параметров
-    boolean set_paramMQTT(TYPE_PARAM_MQTT p, char *c); // Установить параметр из строки
-    char*   get_paramMQTT(TYPE_PARAM_MQTT p);          // Получить параметр из строки
+//    boolean set_paramMQTT(TYPE_PARAM_MQTT p, char *c); // Установить параметр из строки
+//    char*   get_paramMQTT(TYPE_PARAM_MQTT p);          // Получить параметр из строки
+    boolean set_paramMQTT(char *var, char *c);           // Установить параметр из строки
+    char*   get_paramMQTT(char *var);                    // Получить параметр из строки
+     
     void set_mqtt_serverIP(IPAddress x){mqttSettintg.mqtt_serverIP=x; }           // Установить IP Адрес серверa MQTT
     void set_narodMon_serverIP(IPAddress x){mqttSettintg.narodMon_serverIP=x; }   // УстановитьIP Адрес сервера народного мониторинга
     // чтение настоек

@@ -1033,7 +1033,7 @@ void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
     }
 }
 
- // Получить параметр инвертора в виде строки
+ // Получить параметр ЭРВ в виде строки
  // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
 char* devEEV::get_paramEEV(char *var, char *ret)
 {
@@ -1055,7 +1055,7 @@ char temp[10+1];
 	  strcat(ret,"%)");	
 	  if (stepperEEV.isBuzy())  strcat(ret,">>");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-	  strcat(ret,ftoa(temp,round(Overheat*100.0)/100.0,2)); 	
+	  strcat(ret,ftoa(temp,round(Overheat*100.0+0.5)/100.0,2)); 	
 	} else if(strcmp(var, eev_ERROR)==0){
 	   strcat(ret,itoa(err,temp,10)); 
 	} else if(strcmp(var, eev_MIN)==0){
@@ -1065,15 +1065,15 @@ char temp[10+1];
 	} else if(strcmp(var, eev_TIME)==0){
 	   strcat(ret,itoa(timeIn,temp,10)); 
 	} else if(strcmp(var, eev_TARGET)==0){
-	   strcat(ret,ftoa(temp,round(tOverheat*100.0)/100.0,2)); 	
+	   strcat(ret,ftoa(temp,(float)(tOverheat/100.0),2));
 	} else if(strcmp(var, eev_KP)==0){
-	   strcat(ret,ftoa(temp,round(Kp*100.0)/100.0,3)); 
+	   strcat(ret,ftoa(temp,(float)(Kp/100.0),3)); 
 	} else if(strcmp(var, eev_KI)==0){
-	    strcat(ret,ftoa(temp,round(Ki*100.0)/100.0,3)); 
+	    strcat(ret,ftoa(temp,(float)(Ki/100.0),3)); 
 	} else if(strcmp(var, eev_KD)==0){
-	   strcat(ret,ftoa(temp,round(Kd*100.0)/100.0,3)); 
+	   strcat(ret,ftoa(temp,(float)(Kd/100.0),3)); 
 	} else if(strcmp(var, eev_CONST)==0){
-	    strcat(ret,ftoa(temp,round(Correction*100.0)/100.0,2)); 
+	    strcat(ret,ftoa(temp,(float)(Correction/100.0),2)); 
 	} else if(strcmp(var, eev_MANUAL)==0){
 	     strcat(ret,itoa(manualStep,temp,10)); 
 	} else if(strcmp(var, eev_FREON)==0){
@@ -1100,25 +1100,25 @@ char temp[10+1];
     } else if(strcmp(var, eev_cPERIOD)==0){
     	strcat(ret, itoa(OverHeatCor.Period, temp, 10));
     } else if(strcmp(var, eev_cDELTA)==0){
-    	strcat(ret, ftoa(temp, round(OverHeatCor.TDIS_TCON*100.0)/100.0, 2));
+    	strcat(ret, ftoa(temp, (float)(OverHeatCor.TDIS_TCON/100.0), 2));
     } else if(strcmp(var, eev_cDELTAT)==0){
-    	strcat(ret,ftoa(temp, round(OverHeatCor.TDIS_TCON_Thr*100.0)/100.0, 2));
+    	strcat(ret,ftoa(temp, (float)(OverHeatCor.TDIS_TCON_Thr/100.0), 2));
     } else if(strcmp(var, eev_cKF)==0){
-       	strcat(ret, ftoa(temp, round(OverHeatCor.K*1000.0)/1000.0, 3));
+       	strcat(ret, ftoa(temp, (float)(OverHeatCor.K/1000.0), 3));
     } else if(strcmp(var, eev_cOH_MIN)==0){
-    	strcat(ret,ftoa(temp, round(OverHeatCor.OverHeatMin*100.0)/100.0, 2));
+    	strcat(ret,ftoa(temp, (float)(OverHeatCor.OverHeatMin/100.0), 2));
     } else if(strcmp(var, eev_cOH_MAX)==0){
-    	strcat(ret,ftoa(temp, round(OverHeatCor.OverHeatMax*100.0)/100.0, 2));
-    } else strcat(ret,"E03");
+    	strcat(ret,ftoa(temp, (float)(OverHeatCor.OverHeatMax/100.0), 2));
+    } else strcat(ret,"E10");
    
   return ret;              
 }
-// Установить параметр инвертора из флоат параметр var
+// Установить параметр ЭРВ из флоат параметр var
 // в случае успеха возврщает true
 boolean devEEV::set_paramEEV(char *var,float x)
 {
 float temp;	
-if(strcmp(var, eev_POS)) {
+    if(strcmp(var, eev_POS)==0) {
 	  set_EEV((int)x); return true;
 	} else if(strcmp(var, eev_POSp)==0){
       temp=x*EEV/maxEEV; 		
@@ -1135,8 +1135,8 @@ if(strcmp(var, eev_POS)) {
 	  return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_TIME)==0){
 	  if ((x>=5)&&(x<=600)) { if(timeIn!=x) resetPID(); timeIn=x; return true;} else false;	// секунды
-	} else if(strcmp(var, eev_TARGET)==0){
-	  if ((x>0)&&(x<=15.0)) { x=x*100.0;if(tOverheat!=x) resetPID(); tOverheat=x;return true;}  else false;	// сотые градуса
+	} else if(strcmp(var, eev_TARGET)==0){ 
+	  if ((x>0.0)&&(x<=15.0)) { x=x*100;if(tOverheat!=x) resetPID(); tOverheat=(int)x; ;return true;}  else false;	// сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
 	   if ((x>=0)&&(x<=50.0)) {x=x*100.0; if(Kp!=x) resetPID(); Kp=(int)x;return true;} else false;	// сотые
 	} else if(strcmp(var, eev_KI)==0){
