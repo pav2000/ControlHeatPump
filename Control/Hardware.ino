@@ -2050,30 +2050,30 @@ boolean  devSDM::progConnect()
  }
 
 // Получить параметр счетчика в виде строки
-char* devSDM::get_paramSDM(char *var)           
+char* devSDM::get_paramSDM(char *var, char *ret)           
  {
- static char temp[10];
-   if(strcmp(var,sdm_NAME)==0){         return  (char*)name;                                                   }else      // Имя счетчика
-   if(strcmp(var,sdm_NOTE)==0){         return  (char*)note;                                                   }else      // Описание счетчика
-   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return int2str(settingSDM.maxVoltage);                                 }else      // мах напряжение контроля напряжения
-   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return int2str(settingSDM.minVoltage);                                 }else      // min напряжение контроля напряжения
-   if(strcmp(var,sdm_MAX_POWER)==0){    return int2str(settingSDM.maxPower);                                   }else      // максимальаня мощность контроля мощности
-   if(strcmp(var,sdm_VOLTAGE)==0){      return ftoa(temp,(float)Voltage,2);                                    }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){      return ftoa(temp,(float)Current,2);                                    }else      // Ток
-   if(strcmp(var,sdm_REPOWER)==0){      return ftoa(temp,(float)RePower,2);                                    }else      // Реактивная мощность
-   if(strcmp(var,sdm_ACPOWER)==0){      return ftoa(temp,(float)AcPower,2);                                    }else      // Активная мощность
-   if(strcmp(var,sdm_POWER)==0){        return ftoa(temp,(float)Power,2);                                      }else      // Полная мощность
-   if(strcmp(var,sdm_POW_FACTOR)==0){   return ftoa(temp,(float)PowerFactor,2);                                }else      // Коэффициент мощности
-   if(strcmp(var,sdm_PHASE)==0){        return ftoa(temp,(float)Phase,2);                                      }else      // Угол фазы (градусы)
-   if(strcmp(var,sdm_IACENERGY)==0){    return ftoa(temp,(float)iAcEnergy,2);                                  }else      // Потребленная активная энергия
-   if(strcmp(var,sdm_EACENERGY)==0){    return ftoa(temp,(float)eAcEnergy,2);                                  }else      // Переданная активная энергия
-   if(strcmp(var,sdm_IREENERGY)==0){    return ftoa(temp,(float)iReEnergy,2);                                  }else      // Потребленная реактивная энергия
-   if(strcmp(var,sdm_EREENERGY)==0){    return ftoa(temp,(float)eReEnergy,2);                                  }else      // Переданная реактивная энергия
-   if(strcmp(var,sdm_ACENERGY)==0){     return ftoa(temp,(float)AcEnergy,2);                                   }else      // Суммараная активная энергия
-   if(strcmp(var,sdm_REENERGY)==0){     return ftoa(temp,(float)ReEnergy,2);                                   }else      // Суммараная реактивная энергия
-   if(strcmp(var,sdm_ENERGY)==0){       return ftoa(temp,(float)Energy,2);                                     }else      // Суммараная  энергия
-   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return(char*)"Ok";else return(char*)"none";   }else      // Cостояние связи со счетчиком
-   return (char*)cInvalid;
+    char temp[12];
+   if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                                   }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                                   }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.maxVoltage));                                 }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.minVoltage));                                 }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){    return strcat(ret,int2str(settingSDM.maxPower));                                   }else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){      return strcat(ret,ftoa(temp,(float)Voltage,2));                                    }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      return strcat(ret,ftoa(temp,(float)Current,2));                                    }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){      return strcat(ret,ftoa(temp,(float)RePower,2));                                    }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){      return strcat(ret,ftoa(temp,(float)AcPower,2));                                    }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){        return strcat(ret,ftoa(temp,(float)Power,2));                                      }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){   return strcat(ret,ftoa(temp,(float)PowerFactor,2));                                }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){        return strcat(ret,ftoa(temp,(float)Phase,2));                                      }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_IACENERGY)==0){    return strcat(ret,ftoa(temp,(float)iAcEnergy,2));                                  }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){    return strcat(ret,ftoa(temp,(float)eAcEnergy,2));                                  }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){    return strcat(ret,ftoa(temp,(float)iReEnergy,2));                                  }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){    return strcat(ret,ftoa(temp,(float)eReEnergy,2));                                  }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){     return strcat(ret,ftoa(temp,(float)AcEnergy,2));                                   }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){     return strcat(ret,ftoa(temp,(float)ReEnergy,2));                                   }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){       return strcat(ret,ftoa(temp,(float)Energy,2));                                     }else      // Суммараная  энергия
+   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return strcat(ret,(char*)"Ok");else return strcat(ret,(char*)"none");}else      // Cостояние связи со счетчиком
+   return strcat(ret,(char*)cInvalid);
  }
 
 // Установить параметр счетчика в виде строки

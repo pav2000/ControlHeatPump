@@ -976,55 +976,35 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
   return OK;       
 }
 
- // Профиль Установить параметры ТН из числа (float)
-boolean Profile::set_paramProfile(TYPE_PARAM_PROFILE  p, char *c)
+// Профиль Установить параметры ТН из числа (float)
+boolean Profile::set_paramProfile(char *var, char *c)
 {
  uint8_t x;
- switch (p)
-   {
-    case pNAME_PROFILE:
-    					urldecode(dataProfile.name,c,sizeof(dataProfile.name));
-                        return true;
-    case ENABLE_PROFILE:
-    					if (strcmp(c,cZero)==0) { SETBIT0(dataProfile.flags,fEnabled); return true;}
-                        else if (strcmp(c,cOne)==0) { SETBIT1(dataProfile.flags,fEnabled);  return true;}
-                        break;
-    case ID_PROFILE:
-						x = atoi(c);
-						if(x >= I2C_PROFIL_NUM) break; // не верный номер профиля
-						dataProfile.id = x;
-						return true;
-    case NOTE_PROFILE:  urldecode(dataProfile.note,c,sizeof(dataProfile.note));
-                        return true;
-    case DATE_PROFILE:  // параметры только чтение
-    case CRC16_PROFILE: 
-    case NUM_PROFILE:	return true;
-    default:			break;
-   }
-  return false;
+ if(strcmp(var,prof_NAME_PROFILE)==0)  {urldecode(dataProfile.name,c,sizeof(dataProfile.name)); return true;} else
+ if(strcmp(var,prof_ENABLE_PROFILE)==0){if (strcmp(c,cZero)==0)     { SETBIT0(dataProfile.flags,fEnabled); return true;}
+                                        else if (strcmp(c,cOne)==0) { SETBIT1(dataProfile.flags,fEnabled);  return true;}} else
+ if(strcmp(var,prof_ID_PROFILE)==0) {x = atoi(c);
+									 if(x >= I2C_PROFIL_NUM) return false; // не верный номер профиля
+									 dataProfile.id = x;
+									 return true; } else
+if(strcmp(var,prof_NOTE_PROFILE)==0) {urldecode(dataProfile.note,c,sizeof(dataProfile.note)); return true;} else
+if(strcmp(var,prof_DATE_PROFILE)==0) {return true;}else // параметры только чтение
+if(strcmp(var,prof_CRC16_PROFILE)==0){return true;}else 
+if(strcmp(var,prof_NUM_PROFILE)==0)  {return true;}else
+return false;
 }
- // профиль Получить параметры
-char*   Profile::get_paramProfile(TYPE_PARAM_PROFILE p)
+ // профиль Получить параметры по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+char*   Profile::get_paramProfile(char *var, char *ret)
 {
-switch (p)
-   {
-    case pNAME_PROFILE:  return dataProfile.name;                              break;    
-    case ENABLE_PROFILE: if (GETBIT(dataProfile.flags,fEnabled)) return  (char*)cOne;
-                         else      return  (char*)cZero;                         break;
-    case ID_PROFILE:     return int2str(dataProfile.id);                       break; 
-    case NOTE_PROFILE:   return  dataProfile.note;                             break;    
-    case DATE_PROFILE:   return DecodeTimeDate(dataProfile.saveTime);          break;// параметры только чтение
-    case CRC16_PROFILE:  return uint16ToHex(crc16);                            break;  
-    case NUM_PROFILE:    return int2str(I2C_PROFIL_NUM);                       break;
-//    case SEL_PROFILE:	 {
-//    	for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {
-//    		int32_t adr=I2C_PROFILE_EEPROM + dataProfile.len * i;
-//    	}
-//    	break;
-//    }
-    default:             return  (char*)cInvalid;                             break;   
-   }
-  return  (char*)cInvalid;              
+if(strcmp(var,prof_NAME_PROFILE)==0)   { return strcat(ret,dataProfile.name);                             }else    
+if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled)) return  strcat(ret,(char*)cOne);
+                                         else                                    return  strcat(ret,(char*)cZero);}else
+if(strcmp(var,prof_ID_PROFILE)==0)     { return strcat(ret,int2str(dataProfile.id));                      }else 
+if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
+if(strcmp(var,prof_DATE_PROFILE)==0)   { return strcat(ret,DecodeTimeDate(dataProfile.saveTime));         }else// параметры только чтение
+if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
+if(strcmp(var,prof_NUM_PROFILE)==0)    { return strcat(ret,int2str(I2C_PROFIL_NUM));                      }else
+return  strcat(ret,(char*)cInvalid);              
 }
 
 // Временные данные для профиля
@@ -1613,31 +1593,31 @@ float x;
   return false;                        
 }
 
-// Получить параметр MQTT из строки
-char*   clientMQTT::get_paramMQTT(char *var)
+ // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+char*   clientMQTT::get_paramMQTT(char *var, char *ret)
 {
-    if(strcmp(var, mqtt_USE_TS)==0){if (GETBIT(mqttSettintg.flags,fTSUse))      return  (char*)cOne; else return (char*)cZero;} else     // флаг использования ThingSpeak
-    if(strcmp(var, mqtt_USE_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttUse))    return (char*)cOne; else return (char*)cZero;} else       // флаг использования MQTT
-    if(strcmp(var, mqtt_BIG_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttBig))    return (char*)cOne; else return  (char*)cZero;} else      // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-    if(strcmp(var, mqtt_SDM_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return (char*)cOne; else return (char*)cZero;} else     // флаг отправки данных электросчетчика на MQTT
-    if(strcmp(var, mqtt_FC_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttFC))     return  (char*)cOne; else return (char*)cZero;} else      // флаг отправки данных инвертора на MQTT
-    if(strcmp(var, mqtt_COP_MQTT)==0){    if (GETBIT(mqttSettintg.flags,fMqttCOP))    return (char*)cOne; else return (char*)cZero;} else     // флаг отправки данных COP на MQTT
-    if(strcmp(var, mqtt_TIME_MQTT)==0){  return int2str(mqttSettintg.ttime/60);                                                    } else     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
-    if(strcmp(var, mqtt_ADR_MQTT)==0){  return mqttSettintg.mqtt_server;                                                          } else     // Адрес сервера
-    if(strcmp(var, mqtt_IP_MQTT)==0){    return IPAddress2String(mqttSettintg.mqtt_serverIP);                                      } else      // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-    if(strcmp(var, mqtt_PORT_MQTT)==0){    return int2str(mqttSettintg.mqtt_port);                                                  } else      // Порт сервера
-    if(strcmp(var, mqtt_LOGIN_MQTT)==0){  return mqttSettintg.mqtt_login;                                                           } else     // логин сервера
-    if(strcmp(var, mqtt_PASSWORD_MQTT)==0){  return mqttSettintg.mqtt_password;                                                     } else     // пароль сервера
-    if(strcmp(var, mqtt_ID_MQTT)==0){      return mqttSettintg.mqtt_id;                                                         } else     // дентификатор клиента на MQTT сервере
+    if(strcmp(var, mqtt_USE_TS)==0){if (GETBIT(mqttSettintg.flags,fTSUse))      return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг использования ThingSpeak
+    if(strcmp(var, mqtt_USE_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttUse))    return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else       // флаг использования MQTT
+    if(strcmp(var, mqtt_BIG_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttBig))    return strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero);} else      // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+    if(strcmp(var, mqtt_SDM_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг отправки данных электросчетчика на MQTT
+    if(strcmp(var, mqtt_FC_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttFC))     return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else      // флаг отправки данных инвертора на MQTT
+    if(strcmp(var, mqtt_COP_MQTT)==0){    if (GETBIT(mqttSettintg.flags,fMqttCOP))    return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг отправки данных COP на MQTT
+    if(strcmp(var, mqtt_TIME_MQTT)==0){  return strcat(ret,int2str(mqttSettintg.ttime/60));                                                    } else     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
+    if(strcmp(var, mqtt_ADR_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_server);                                                          } else     // Адрес сервера
+    if(strcmp(var, mqtt_IP_MQTT)==0){    return strcat(ret,IPAddress2String(mqttSettintg.mqtt_serverIP));                                      } else      // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
+    if(strcmp(var, mqtt_PORT_MQTT)==0){    return strcat(ret,int2str(mqttSettintg.mqtt_port));                                                  } else      // Порт сервера
+    if(strcmp(var, mqtt_LOGIN_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_login);                                                           } else     // логин сервера
+    if(strcmp(var, mqtt_PASSWORD_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_password);                                                     } else     // пароль сервера
+    if(strcmp(var, mqtt_ID_MQTT)==0){      return strcat(ret,mqttSettintg.mqtt_id);                                                         } else     // дентификатор клиента на MQTT сервере
     // ----------------------NARMON -------------------------
-    if(strcmp(var, mqtt_USE_NARMON)==0){if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  (char*)cOne; else return (char*)cZero;} else      // флаг отправки данных на народный мониторинг
-    if(strcmp(var, mqtt_BIG_NARMON)==0){ if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return (char*)cOne; else return (char*)cZero; } else      // флаг отправки данных на народный мониторинг  расширенная версия
-    if(strcmp(var, mqtt_ADR_NARMON)==0){ return  mqttSettintg.narodMon_server;                                                      } else   // Адрес сервера народного мониторинга
-    if(strcmp(var, mqtt_IP_NARMON)==0){return IPAddress2String(mqttSettintg.narodMon_serverIP);                                 } else    // IP Адрес сервера народного мониторинга,
-    if(strcmp(var, mqtt_PORT_NARMON)==0){ return int2str(mqttSettintg.narodMon_port);                                               } else   // Порт сервера народного мониторинга
-    if(strcmp(var, mqtt_LOGIN_NARMON)==0){ return mqttSettintg.narodMon_login;                                                      } else      // логин сервера народного мониторинга
-    if(strcmp(var, mqtt_PASSWORD_NARMON)==0){return mqttSettintg.narodMon_password;                                                  } else      // пароль сервера  народного мониторинга
-    if(strcmp(var, mqtt_ID_NARMON)==0){ return mqttSettintg.narodMon_id;                                                          } else     // дентификатор клиента на MQTT сервере народного мониторинга
+    if(strcmp(var, mqtt_USE_NARMON)==0){if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else      // флаг отправки данных на народный мониторинг
+    if(strcmp(var, mqtt_BIG_NARMON)==0){ if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else      // флаг отправки данных на народный мониторинг  расширенная версия
+    if(strcmp(var, mqtt_ADR_NARMON)==0){ return  strcat(ret,mqttSettintg.narodMon_server);                                                      } else   // Адрес сервера народного мониторинга
+    if(strcmp(var, mqtt_IP_NARMON)==0){return strcat(ret,IPAddress2String(mqttSettintg.narodMon_serverIP));                                 } else    // IP Адрес сервера народного мониторинга,
+    if(strcmp(var, mqtt_PORT_NARMON)==0){ return strcat(ret,int2str(mqttSettintg.narodMon_port));                                               } else   // Порт сервера народного мониторинга
+    if(strcmp(var, mqtt_LOGIN_NARMON)==0){ return strcat(ret,mqttSettintg.narodMon_login);                                                      } else      // логин сервера народного мониторинга
+    if(strcmp(var, mqtt_PASSWORD_NARMON)==0){return strcat(ret,mqttSettintg.narodMon_password);                                                  } else      // пароль сервера  народного мониторинга
+    if(strcmp(var, mqtt_ID_NARMON)==0){ return strcat(ret,mqttSettintg.narodMon_id);                                                          } else     // дентификатор клиента на MQTT сервере народного мониторинга
     return (char*)cError;                        
 }
 
@@ -1714,7 +1694,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrNARMON>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fNarodMonUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));   
+         journal.jprintf(pP_TIME,(char*)BlockService,get_narodMon_server());   
          numErrNARMON=0;// сбросить счетчик
          }
       return numErrNARMON;
@@ -1725,7 +1705,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrMQTT>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fMqttUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));    
+         journal.jprintf(pP_TIME,(char*)BlockService,get_mqtt_server());    
          numErrMQTT=0;// сбросить счетчик
          }
       return numErrMQTT;
@@ -1777,8 +1757,8 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
                            journal.jprintf((char*)ResDHCP);
                           _delay(50);
                           // Пытаемся еще раз узнать адрес через ДНС, возмлжно он поменялось, если поменялся то меняем не сохраняем настройки
-                          if (NM) {check_address(HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON),tempIP);if (tempIP!=HP.clMQTT.get_narodMon_serverIP()){ HP.clMQTT.set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));}}
-                          else    {check_address(HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT),tempIP);  if (tempIP!=HP.clMQTT.get_mqtt_serverIP())    { HP.clMQTT.set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));}}
+                          if (NM) {check_address(get_narodMon_server(),tempIP);if (tempIP!=get_narodMon_serverIP()){ set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,get_narodMon_server());}}
+                          else    {check_address(get_mqtt_server(),tempIP);  if (tempIP!=get_mqtt_serverIP())    { set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,get_mqtt_server());}}
                            _delay(50);
                           }
                           break;

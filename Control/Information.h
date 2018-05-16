@@ -223,8 +223,8 @@ class Profile                         // Класс профиль
     int32_t load(int8_t num);                               // загрузить профайл num из еепром память
     int8_t  loadFromBuf(int32_t adr,byte *buf);             // Считать настройки из буфера на входе адрес с какого, на выходе код ошибки (меньше нуля)
     int32_t erase(int8_t num);                              // стереть профайл num из еепром  (ставится признак пусто)
-    boolean set_paramProfile(TYPE_PARAM_PROFILE  p,char *c);// Профиль Установить параметры ТН из строки
-    char*   get_paramProfile(TYPE_PARAM_PROFILE  p);        // профиль Получить параметр второй параметр - наличие частотника
+    boolean set_paramProfile(char *var,char *c);            // Профиль Установить параметры ТН из строки
+    char*   get_paramProfile(char *var,char *ver);          // профиль Получить параметр второй параметр - наличие частотника
     int16_t get_lenProfile(){return dataProfile.len;}       // получить длину профиля при записи
     int8_t  get_idProfile(){return dataProfile.id;}         // получить номер текущего профиля
       
@@ -411,10 +411,8 @@ class clientMQTT                              // Класс клиент MQTT
     void updateState(boolean NM,TYPE_STATE_MQTT state){if(NM) stateNARMON=state;else stateMQTT=state;}  // Установка состояния соединения MQTT
            
     // Установка параметров
-//    boolean set_paramMQTT(TYPE_PARAM_MQTT p, char *c); // Установить параметр из строки
-//    char*   get_paramMQTT(TYPE_PARAM_MQTT p);          // Получить параметр из строки
     boolean set_paramMQTT(char *var, char *c);           // Установить параметр из строки
-    char*   get_paramMQTT(char *var);                    // Получить параметр из строки
+    char*   get_paramMQTT(char *var, char *ret);          // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
      
     void set_mqtt_serverIP(IPAddress x){mqttSettintg.mqtt_serverIP=x; }           // Установить IP Адрес серверa MQTT
     void set_narodMon_serverIP(IPAddress x){mqttSettintg.narodMon_serverIP=x; }   // УстановитьIP Адрес сервера народного мониторинга
@@ -427,12 +425,15 @@ class clientMQTT                              // Класс клиент MQTT
     boolean get_MqttCOP() {return GETBIT(mqttSettintg.flags,fMqttCOP);}          // Получить флаг отправки данных COP на MQTT
      
     IPAddress get_mqtt_serverIP(){return mqttSettintg.mqtt_serverIP; }           // IP Адрес серверa MQTT
+    char*  get_mqtt_server(){return mqttSettintg.mqtt_server; }                  // Адрес серверa MQTT
+    
     uint16_t get_mqtt_port(){return mqttSettintg.mqtt_port;}                     // Адрес порта серверa MQTT
     uint16_t get_ttime(){return mqttSettintg.ttime;}                             // Время отправки
     
     boolean get_NarodMonUse() {return GETBIT(mqttSettintg.flags,fNarodMonUse);}  // Получить флаг отправки на народный мониторинг
     boolean get_NarodMonBig() {return GETBIT(mqttSettintg.flags,fNarodMonBig);}  // Получить флаг отправки на народный мониторинг
     IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
+    char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
     uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
   
  private:

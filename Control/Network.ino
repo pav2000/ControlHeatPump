@@ -592,11 +592,11 @@ boolean sendNarodMon(boolean debug)
  uint8_t i;
   
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon ignore: Wrong MAC address, change MAC from default.\n"); return false;}
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_NARMON));  
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
      
-     strcpy(root,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON));
+     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON,root);
      strcat(root,"/");
-     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON));  
+     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,root);  
      strcat(root,"/");
      
      // посылка отдельных топиков
@@ -693,8 +693,8 @@ boolean sendNarodMon(boolean debug)
 boolean sendMQTT(boolean debug)
 {
  uint8_t i; 
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT)); if (!debug) journal.jprintf(" OK\n"); 
-     strcpy(root,HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT));
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server()); if (!debug) journal.jprintf(" OK\n"); 
+     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT,root);
      strcat(root,"/");
      
      strcpy(topic,root);
@@ -812,17 +812,17 @@ boolean sendMQTT(boolean debug)
          if (debug) journal.jprintf("SDM120 data:");   
          strcpy(topic,root);
          strcat(topic,"fullPOWER");
-         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_POWER));
+         HP.dSDM.get_paramSDM((char*)sdm_POWER,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"CURRENT");
-         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_CURRENT));
+         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"VOLTAGE");
-         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE));
+         HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          if (debug) journal.jprintf(cStrEnd);  
         }
@@ -882,9 +882,9 @@ boolean  sendThingSpeak(boolean debug)
  //uint8_t i;
       // Готовим данные
      strcpy(root,"channels/");  // Название топика едино посылаем одним запросом
-     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT));
+     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT,root);
      strcat(root,"/publish/");
-     strcat(root,HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT));
+     HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT,root);
     
      // Формируем данные и посылаем данные  сразу на много полей
      strcpy(topic,"field1=");
@@ -932,7 +932,8 @@ boolean  sendThingSpeak(boolean debug)
      // Проверка на длины
      if((strlen(root)>=sizeof(root)-2)||(strlen(topic)>sizeof(topic)-2)) { journal.jprintf("$WARNING: Long topic or data string, is problem.\n"); return false;}
      // Отправка
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_paramMQTT((char*)mqtt_ADR_MQTT));
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server());
+     
      if (HP.clMQTT.sendTopic(root,topic,false,debug,true)) { if (debug) journal.jprintf(" %s %s\n", root,topic);else journal.jprintf((char*)MQTTPublishOK);return true;} else return false;  
      return true;
 }

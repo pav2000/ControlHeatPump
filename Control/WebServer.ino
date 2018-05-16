@@ -1043,14 +1043,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        
        if (strcmp(str,"test_Mail")==0)  // Функция test_mail
        {
-       if (HP.message.setTestMail()) { strcat(strReturn,"Send test mail to "); strcat(strReturn,HP.message.get_messageSetting(pSMTP_RCPTTO)); }
+       if (HP.message.setTestMail()) { strcat(strReturn,"Send test mail to "); HP.message.get_messageSetting((char*)mess_SMTP_RCPTTO,strReturn); }
        else { strcat(strReturn,"Error send test mail.");}
        strcat(strReturn,"&") ;   
         continue;  
        }   // test_Mail  
        if (strcmp(str,"test_SMS")==0)  // Функция test_mail
        {
-       if (HP.message.setTestSMS()) { strcat(strReturn,"Send SMS to ");  strcat(strReturn,HP.message.get_messageSetting(pSMS_PHONE));}
+       if (HP.message.setTestSMS()) { strcat(strReturn,"Send SMS to "); HP.message.get_messageSetting((char*)mess_SMS_PHONE,strReturn);}  //strcat(strReturn,HP.message.get_messageSetting(pSMS_PHONE));}
        else { strcat(strReturn,"Error send test sms.");}
        strcat(strReturn,"&") ;           
        continue;  
@@ -1636,10 +1636,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               {
 			   #ifdef MQTT
                    if (strcmp(str,"get_MQTT")==0){           // Функция получить настройки MQTT
-                        strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1));
+                        HP.clMQTT.get_paramMQTT(x+1,strReturn);
                         strcat(strReturn,"&") ; continue;
-                   } else if (strcmp(str,"set_MQTT")==0) {          // Функция записать настройки MQTT
-                         if (HP.clMQTT.set_paramMQTT(x+1,strbuf))  strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1));   // преобразование удачно
+                   } else if (strcmp(str,"set_MQTT")==0) {         // Функция записать настройки MQTT
+                         if (HP.clMQTT.set_paramMQTT(x+1,strbuf))  HP.clMQTT.get_paramMQTT(x+1,strReturn);   // преобразование удачно
                          else strcat(strReturn,"E32") ; // ошибка преобразования строки
                       strcat(strReturn,"&") ; continue;
                       } // (strcmp(str,"set_MQTT")==0) 
@@ -1672,13 +1672,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   #ifdef USE_ELECTROMETER_SDM  	
                    if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
                       {
-                        strcat(strReturn,HP.dSDM.get_paramSDM(x+1));
+                        HP.dSDM.get_paramSDM(x+1,strReturn);
                         strcat(strReturn,"&") ; continue;
                       } // (strcmp(str,"get_SDM")==0) 
                    else if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
                       {
-                       if (HP.dSDM.set_paramSDM(x+1,strbuf)) strcat(strReturn,HP.dSDM.get_paramSDM(x+1)); // преобразование удачно
-                       else                                  strcat(strReturn,"E31") ;                    // ошибка преобразования строки
+                       if (HP.dSDM.set_paramSDM(x+1,strbuf)) HP.dSDM.get_paramSDM(x+1,strReturn); // преобразование удачно
+                       else                                  strcat(strReturn,"E31") ;            // ошибка преобразования строки
                       strcat(strReturn,"&") ; continue;
                       }  strcat(strReturn,"E03&");  continue;	 
 	              	#else
@@ -1686,7 +1686,38 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 					#endif   
                   } //if ((strstr(str,"SDM")>0)  
 
-
+            // 5.  Настройки профилей ---------------------------------------------------------         
+		        if (strstr(str,"Profile"))          // Проверка для запросов содержащих Profile
+		          {
+		             if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
+		                  {
+		                    HP.Prof.get_paramProfile(x+1,strReturn);
+		                    strcat(strReturn,"&") ; continue;
+		                  } // (strcmp(str,"get_Profile")==0) 
+		              else if (strcmp(str,"set_Profile")==0)           // Функция записать настройки профиля
+		                  {
+		                   if (HP.Prof.set_paramProfile(x+1,strbuf)) HP.Prof.get_paramProfile(x+1,strReturn); // преобразование удачно
+		                   else                                      strcat(strReturn,"E28") ; // ошибка преобразования строки
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_Profile")==0) 
+		           } //if ((strstr(str,"Profile")>0)
+		           
+             //6.  Настройки Уведомлений --------------------------------------------------------
+             
+            if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
+             {
+              if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
+                  {
+                    HP.message.get_messageSetting(x+1,strReturn);
+                    strcat(strReturn,"&") ; continue;
+                  } // (strcmp(str,"get_messageSetting")==0) 
+              else if (strcmp(str,"set_Message")==0)           // Функция set_Message - установить значениена стройки уведомлений
+                  {
+                   if (HP.message.set_messageSetting(x+1,strbuf)) HP.message.get_messageSetting(x+1,strReturn); // преобразование удачно
+                   else                                                     strcat(strReturn,"E20") ; // ошибка преобразования строки
+                  strcat(strReturn,"&") ; continue;
+                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_messageSetting")==0) 
+              } //if ((strstr(str,"messageSetting")>0)   
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -2043,48 +2074,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"BOIL_TEMP")==0)      { param=218;}  // Целевая темпеартура ПИД ГВС
                else if (strcmp(x+1,"ADD_HEATING")==0)    { param=219;}  // флаг использования тена для догрева ГВС
                else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}  // температура включчения догрева бойлера
-               
-               // Настройка Уведомлений смещение 230 занимает 30 позиций
-               else if (strcmp(x+1,"MAIL")==0)           { param=230;}  // флаг уведомления скидывать на почту
-               else if (strcmp(x+1,"MAIL_AUTH")==0)      { param=231;}  // флаг необходимости авторизации на почтовом сервере
-               else if (strcmp(x+1,"MAIL_INFO")==0)      { param=232;}  // флаг необходимости добавления в письмо информации о состоянии ТН
-               else if (strcmp(x+1,"SMS")==0)            { param=233;}  // флаг уведомления скидывать на СМС (пока не реализовано)
-               else if (strcmp(x+1,"MESS_RESET")==0)     { param=234;}  // флаг уведомления Сброс
-               else if (strcmp(x+1,"MESS_ERROR")==0)     { param=235;}  // флаг уведомления Ошибка
-               else if (strcmp(x+1,"MESS_LIFE")==0)      { param=236;}  // флаг уведомления Сигнал жизни
-               else if (strcmp(x+1,"MESS_TEMP")==0)      { param=237;}  // флаг уведомления Достижение граничной температуры
-               else if (strcmp(x+1,"MESS_SD")==0)        { param=238;}  // флаг уведомления "Проблемы с sd картой"
-               else if (strcmp(x+1,"MESS_WARNING")==0)   { param=239;}  // флаг уведомления "Прочие уведомления"
-               else if (strcmp(x+1,"SMTP_SERVER")==0)    { param=240;}  // Адрес сервера SMTP_IP
-               else if (strcmp(x+1,"SMTP_IP")==0)        { param=241;}  // IP Адрес сервера
-               else if (strcmp(x+1,"SMTP_PORT")==0)      { param=242;}  // Адрес порта сервера
-               else if (strcmp(x+1,"SMTP_LOGIN")==0)     { param=243;}  // логин сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_PASS")==0)      { param=244;}  // пароль сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_MAILTO")==0)    { param=245;}  // адрес отправителя
-               else if (strcmp(x+1,"SMTP_RCPTTO")==0)    { param=246;}  // адрес получателя
-               else if (strcmp(x+1,"SMS_SERVICE")==0)    { param=247;}  // сервис для отправки смс
-               else if (strcmp(x+1,"SMS_IP")==0)         { param=248;}  // IP адрес сервера для отправки смс
-               else if (strcmp(x+1,"SMS_PHONE")==0)      { param=249;}  // телефон куда отправляется смс
-               else if (strcmp(x+1,"SMS_P1")==0)         { param=250;}  // первый параметр
-               else if (strcmp(x+1,"SMS_P2")==0)         { param=251;}  // второй параметр
-               else if (strcmp(x+1,"SMS_NAMEP1")==0)     { param=252;}  // описание первого параметра
-               else if (strcmp(x+1,"SMS_NAMEP2")==0)     { param=253;}  // описание второго параметра
-               else if (strcmp(x+1,"MESS_TIN")==0)       { param=254;}  // Критическая температура в доме (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TBOILER")==0)   { param=255;}  // Критическая температура бойлера (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TCOMP")==0)     { param=256;}  // Критическая температура компрессора (если больше то генериться уведомление)
-               else if (strcmp(x+1,"MAIL_RET")==0)       { param=257;}  // ответ на тестовое сообщение
-               else if (strcmp(x+1,"SMS_RET")==0)        { param=258;}  // ответ на тестовое SMS
-        
-               // Настройки Профиля  смещение 260 общее число 10 шт
-               else if (strcmp(x+1,"NAME_PROFILE")==0)   { param=260;}  // Имя профиля до 10 русских букв
-               else if (strcmp(x+1,"ENABLE_PROFILE")==0) { param=261;}  // разрешение использовать в списке
-               else if (strcmp(x+1,"ID_PROFILE")==0)     { param=262;}  // номер профиля
-               else if (strcmp(x+1,"NOTE_PROFILE")==0)   { param=263;}  // описание профиля
-               else if (strcmp(x+1,"DATE_PROFILE")==0)   { param=264;}  // дата профиля
-               else if (strcmp(x+1,"CRC16_PROFILE")==0)  { param=265;}  // контрольная сумма профиля
-               else if (strcmp(x+1,"NUM_PROFILE")==0)    { param=266;}  // максимальное число профилей
-               //else if (strcmp(x+1,"SEL_PROFILE")==0)    { param=257;}  // список профилей
-               
+       
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2699,52 +2689,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
             } //if ((strstr(str,"Boiler")>0)   
 
-         //13.  Настройки Уведомлений смещение 230 занимает 30
-          if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
-             {
-             if ((param>=260)||(param<230))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-230; 
-               if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
-                  {
-                    strcat(strReturn,HP.message.get_messageSetting((MESSAGE_HP)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_messageSetting")==0) 
-                  
-              if (strcmp(str,"set_Message")==0)           // Функция set_Message - установить значениена стройки уведомлений
-                  {
-                   if (HP.message.set_messageSetting((MESSAGE_HP)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.message.get_messageSetting((MESSAGE_HP)p));
-                   else
-                      strcat(strReturn,"E20") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_messageSetting")==0) 
-              }  // else end 
-            } //if ((strstr(str,"messageSetting")>0)   
-            
-         //14.  Настройки профилей смещение 260 занимает 10
-          if (strstr(str,"Profile"))          // Проверка для запросов содержащих messageSetting
-          {
-             if ((param>=270)||(param<260))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-260; 
-               if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
-                  {
-                    strcat(strReturn,HP.Prof.get_paramProfile((TYPE_PARAM_PROFILE)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Profile")==0) 
-                  
-              if (strcmp(str,"set_Profile")==0)           // Функция записать настройки профиля
-                  {
-                   if (HP.Prof.set_paramProfile((TYPE_PARAM_PROFILE)p,strbuf))     // преобразование удачно
-                       strcat(strReturn,HP.Prof.get_paramProfile((TYPE_PARAM_PROFILE)p)); 
-                   else
-                      strcat(strReturn,"E28") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Profile")==0) 
-              }  // else end 
-           } //if ((strstr(str,"Profile")>0)
-     
         // НОВОЕ вставлять сюда!
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:

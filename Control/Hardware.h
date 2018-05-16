@@ -614,7 +614,7 @@ class devSDM
          
       boolean uplinkSDM();                             // Проверить связь со счетчиком
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
-      char* get_paramSDM(char *var);                   // Получить параметр SDM в виде строки
+      char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки
       boolean set_paramSDM(char *var,char *c);         // Установить параметр SDM из строки
 
       
