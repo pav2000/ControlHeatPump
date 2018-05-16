@@ -1517,6 +1517,7 @@ void clientMQTT::initMQTT()
 // Установить параметр Уведомления из строки
  boolean clientMQTT::set_paramMQTT(char *var, char *c)         
 {
+float x;	
    	if(strcmp(var, mqtt_USE_TS)==0){
           if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fTSUse); return true;}          // флаг использования ThingSpeak
           else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fTSUse);  return true;}

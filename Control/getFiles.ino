@@ -134,20 +134,20 @@ void get_txtState(uint8_t thread, boolean header)
 
         strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
          #ifdef USE_ELECTROMETER_SDM
-  //         strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMAX_VOLTAGE_SDM)); STR_END;
-  //         strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMIN_VOLTAGE_SDM)); STR_END;
-  //         strcat(Socket[thread].outBuf,"MIN максимальаня мощность при контроле мощности [Вт]: ");    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMAX_POWER_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Текущее входное напряжение [В]: ");                          strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pVOLTAGE_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Текущий потребляемый ток ТН [А]: ");                         strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pCURRENT_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pREPOWER_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pACPOWER_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pPOWER_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Коэффициент мощности: ");                                    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pPOW_FACTOR_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Угол фазы (градусы): ");                                     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pPHASE_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Суммараная активная энергия [кВт/ч]: ");                     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pACENERGY_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Суммараная реактивная энергия [кВт/ч]: ");                   strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pREENERGY_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Суммараная потребленная энергия [кВт/ч]: ");                 strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pENERGY_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"Cостояние связи со счетчиком: ");                            strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pLINK_SDM)); STR_END;
+  //         strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE)); STR_END;
+  //         strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE)); STR_END;
+  //         strcat(Socket[thread].outBuf,"MIN максимальаня мощность при контроле мощности [Вт]: ");    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MAX_POWER)); STR_END;
+           strcat(Socket[thread].outBuf,"Текущее входное напряжение [В]: ");                          strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE)); STR_END;
+           strcat(Socket[thread].outBuf,"Текущий потребляемый ток ТН [А]: ");                         strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_CURRENT)); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_REPOWER)); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_ACPOWER)); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_POWER)); STR_END;
+           strcat(Socket[thread].outBuf,"Коэффициент мощности: ");                                    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR)); STR_END;
+           strcat(Socket[thread].outBuf,"Угол фазы (градусы): ");                                     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_PHASE)); STR_END;
+           strcat(Socket[thread].outBuf,"Суммараная активная энергия [кВт/ч]: ");                     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_ACENERGY)); STR_END;
+           strcat(Socket[thread].outBuf,"Суммараная реактивная энергия [кВт/ч]: ");                   strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_REENERGY)); STR_END;
+           strcat(Socket[thread].outBuf,"Суммараная потребленная энергия [кВт/ч]: ");                 strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_ENERGY)); STR_END;
+           strcat(Socket[thread].outBuf,"Cостояние связи со счетчиком: ");                            strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_LINK)); STR_END;
          #else
            strcat(Socket[thread].outBuf,"SDM120 absent\r\n");    
          #endif  
@@ -518,9 +518,9 @@ void get_txtSettings(uint8_t thread)
 
        strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
          #ifdef USE_ELECTROMETER_SDM
-           strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMAX_VOLTAGE_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMIN_VOLTAGE_SDM)); STR_END;
-           strcat(Socket[thread].outBuf,"MAX максимальная мощность при контроле мощности [Вт]: ");    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM(pMAX_POWER_SDM)); STR_END;
+           strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE)); STR_END;
+           strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");     strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE)); STR_END;
+           strcat(Socket[thread].outBuf,"MAX максимальная мощность при контроле мощности [Вт]: ");    strcat(Socket[thread].outBuf,HP.dSDM.get_paramSDM((char*)sdm_MAX_POWER)); STR_END;
         #else
            strcat(Socket[thread].outBuf,"SDM120 absent\r\n");    
          #endif  
@@ -872,17 +872,17 @@ char temp[10];
 
        strcpy(tempBuf,"\n  8. Электросчетчик SDM120"); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
          #ifdef USE_ELECTROMETER_SDM
-           strcpy(tempBuf,"Текущее входное напряжение [В]: ");                          strcat(tempBuf,HP.dSDM.get_paramSDM(pVOLTAGE_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Текущий потребляемый ток ТН [А]: ");                         strcat(tempBuf,HP.dSDM.get_paramSDM(pCURRENT_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        strcat(tempBuf,HP.dSDM.get_paramSDM(pREPOWER_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          strcat(tempBuf,HP.dSDM.get_paramSDM(pACPOWER_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        strcat(tempBuf,HP.dSDM.get_paramSDM(pPOWER_SDM)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Коэффициент мощности: ");                                    strcat(tempBuf,HP.dSDM.get_paramSDM(pPOW_FACTOR_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Угол фазы (градусы): ");                                     strcat(tempBuf,HP.dSDM.get_paramSDM(pPHASE_SDM)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Суммараная активная энергия [кВт/ч]: ");                     strcat(tempBuf,HP.dSDM.get_paramSDM(pACENERGY_SDM)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Суммараная реактивная энергия [кВт/ч]: ");                   strcat(tempBuf,HP.dSDM.get_paramSDM(pREENERGY_SDM)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Суммараная потребленная энергия [кВт/ч]: ");                 strcat(tempBuf,HP.dSDM.get_paramSDM(pENERGY_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Cостояние связи со счетчиком: ");                            strcat(tempBuf,HP.dSDM.get_paramSDM(pLINK_SDM));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущее входное напряжение [В]: ");                          strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущий потребляемый ток ТН [А]: ");                         strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_CURRENT));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_REPOWER));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_ACPOWER));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_POWER)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Коэффициент мощности: ");                                    strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Угол фазы (градусы): ");                                     strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_PHASE)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Суммараная активная энергия [кВт/ч]: ");                     strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_ACENERGY)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Суммараная реактивная энергия [кВт/ч]: ");                   strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_REENERGY)); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Суммараная потребленная энергия [кВт/ч]: ");                 strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_ENERGY));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Cостояние связи со счетчиком: ");                            strcat(tempBuf,HP.dSDM.get_paramSDM((char*)sdm_LINK));strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
          #else
            strcpy(tempBuf,"SDM120 absent");
            strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));     

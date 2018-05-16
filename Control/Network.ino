@@ -812,17 +812,17 @@ boolean sendMQTT(boolean debug)
          if (debug) journal.jprintf("SDM120 data:");   
          strcpy(topic,root);
          strcat(topic,"fullPOWER");
-         strcpy(temp,HP.dSDM.get_paramSDM(pPOWER_SDM));
+         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_POWER));
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"CURRENT");
-         strcpy(temp,HP.dSDM.get_paramSDM(pCURRENT_SDM));
+         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_CURRENT));
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"VOLTAGE");
-         strcpy(temp,HP.dSDM.get_paramSDM(pVOLTAGE_SDM));
+         strcpy(temp,HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE));
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          if (debug) journal.jprintf(cStrEnd);  
         }

@@ -614,8 +614,10 @@ class devSDM
          
       boolean uplinkSDM();                             // Проверить связь со счетчиком
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
-      char* get_paramSDM(TYPE_PARAM_SDM p);            // Получить параметр счетчика в виде строки
-      boolean set_paramSDM(TYPE_PARAM_SDM p, char *c); // Установить параметр счетчика из строки
+      char* get_paramSDM(char *var);                   // Получить параметр SDM в виде строки
+      boolean set_paramSDM(char *var,char *c);         // Установить параметр SDM из строки
+
+      
       int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t loadFromBuf(int32_t adr,byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки

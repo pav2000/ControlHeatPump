@@ -2050,69 +2050,58 @@ boolean  devSDM::progConnect()
  }
 
 // Получить параметр счетчика в виде строки
- char* devSDM::get_paramSDM(TYPE_PARAM_SDM p)         
+char* devSDM::get_paramSDM(char *var)           
  {
-static char temp[10];
-  switch (p)
-   {
-   case   pNAME_SDM:         return  (char*)name;                                                     break;      // Имя счетчика
-   case   pNOTE_SDM:         return  (char*)note;                                                     break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  return int2str(settingSDM.maxVoltage);                                   break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  return int2str(settingSDM.minVoltage);                                   break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    return int2str(settingSDM.maxPower);                                     break;      // максимальаня мощность контроля мощности
-   case   pVOLTAGE_SDM:      return ftoa(temp,(float)Voltage,2);                                      break;      // Напряжение
-   case   pCURRENT_SDM:      return ftoa(temp,(float)Current,2);                                      break;      // Ток
-   case   pREPOWER_SDM:      return ftoa(temp,(float)RePower,2);                                      break;      // Реактивная мощность
-   case   pACPOWER_SDM:      return ftoa(temp,(float)AcPower,2);                                      break;      // Активная мощность
-   case   pPOWER_SDM:        return ftoa(temp,(float)Power,2);                                        break;      // Полная мощность
-   case   pPOW_FACTOR_SDM:   return ftoa(temp,(float)PowerFactor,2);                                  break;      // Коэффициент мощности
-   case   pPHASE_SDM:        return ftoa(temp,(float)Phase,2);                                        break;      // Угол фазы (градусы)
-   case   pIACENERGY_SDM:    return ftoa(temp,(float)iAcEnergy,2);                                    break;      // Потребленная активная энергия
-   case   pEACENERGY_SDM:    return ftoa(temp,(float)eAcEnergy,2);                                    break;      // Переданная активная энергия
-   case   pIREENERGY_SDM:    return ftoa(temp,(float)iReEnergy,2);                                    break;      // Потребленная реактивная энергия
-   case   pEREENERGY_SDM:    return ftoa(temp,(float)eReEnergy,2);                                    break;      // Переданная реактивная энергия
-   case   pACENERGY_SDM:     return ftoa(temp,(float)AcEnergy,2);                                     break;      // Суммараная активная энергия
-   case   pREENERGY_SDM:     return ftoa(temp,(float)ReEnergy,2);                                     break;      // Суммараная реактивная энергия
-   case   pENERGY_SDM:       return ftoa(temp,(float)Energy,2);                                       break;      // Суммараная  энергия
-   case   pLINK_SDM:         if (GETBIT(flags,fLink)) return(char*)"Ok";else return(char*)"none";     break;      // Cостояние связи со счетчиком
-   default:                  return  (char*)cInvalid;                                                break;  
-   }
- return (char*)cInvalid;
+ static char temp[10];
+   if(strcmp(var,sdm_NAME)==0){         return  (char*)name;                                                   }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){         return  (char*)note;                                                   }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return int2str(settingSDM.maxVoltage);                                 }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return int2str(settingSDM.minVoltage);                                 }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){    return int2str(settingSDM.maxPower);                                   }else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){      return ftoa(temp,(float)Voltage,2);                                    }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      return ftoa(temp,(float)Current,2);                                    }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){      return ftoa(temp,(float)RePower,2);                                    }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){      return ftoa(temp,(float)AcPower,2);                                    }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){        return ftoa(temp,(float)Power,2);                                      }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){   return ftoa(temp,(float)PowerFactor,2);                                }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){        return ftoa(temp,(float)Phase,2);                                      }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_IACENERGY)==0){    return ftoa(temp,(float)iAcEnergy,2);                                  }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){    return ftoa(temp,(float)eAcEnergy,2);                                  }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){    return ftoa(temp,(float)iReEnergy,2);                                  }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){    return ftoa(temp,(float)eReEnergy,2);                                  }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){     return ftoa(temp,(float)AcEnergy,2);                                   }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){     return ftoa(temp,(float)ReEnergy,2);                                   }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){       return ftoa(temp,(float)Energy,2);                                     }else      // Суммараная  энергия
+   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return(char*)"Ok";else return(char*)"none";   }else      // Cостояние связи со счетчиком
+   return (char*)cInvalid;
  }
 
 // Установить параметр счетчика в виде строки
-boolean devSDM::set_paramSDM(TYPE_PARAM_SDM p, char *c)        
+boolean devSDM::set_paramSDM(char *var,char *c)        
  {
-  int16_t x;
-  x=atoi(c);
-  
-  switch (p)
-   {
-   case   pNAME_SDM:         return  true;                                    break;      // Имя счетчика
-   case   pNOTE_SDM:         return  true;                                    break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=30000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
-   case   pVOLTAGE_SDM:      return true;                                     break;      // Напряжение
-   case   pCURRENT_SDM:      return true;                                     break;      // Ток
-   case   pREPOWER_SDM:      return true;                                     break;      // Реактивная мощность
-   case   pACPOWER_SDM:      return true;                                     break;      // Активная мощность
-   case   pPOWER_SDM:        return true;                                     break;      // Полная мощность
-   case   pPOW_FACTOR_SDM:   return true;                                     break;      // Коэффициент мощности
-   case   pPHASE_SDM:        return true;                                     break;      // Угол фазы (градусы)
-   case   pIACENERGY_SDM:    return true;                                     break;      // Потребленная активная энергия
-   case   pEACENERGY_SDM:    return true;                                     break;      // Переданная активная энергия
-   case   pIREENERGY_SDM:    return true;                                     break;      // Потребленная реактивная энергия
-   case   pEREENERGY_SDM:    return true;                                     break;      // Переданная реактивная энергия
-   case   pACENERGY_SDM:     return true;                                     break;      // Суммараная активная энергия
-   case   pREENERGY_SDM:     return true;                                     break;      // Суммараная реактивная энергия
-   case   pENERGY_SDM:       return true;                                     break;      // Суммараная энергия
-   case   pLINK_SDM:         return true;                                     break;      // Cостояние связи со счетчиком
-   default:                  return false;                                    break;  
-   }
- return false;
+  int16_t x=atoi(c);
+   if(strcmp(var,sdm_NAME)==0){          return  true;                                    }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){          return  true;                                    }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){     if ((x>=0)&&(x<=15000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false;}else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){       return true;                                     }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){       return true;                                     }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){       return true;                                     }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){       return true;                                     }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){         return true;                                     }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){    return true;                                     }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){         return true;                                     }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_IACENERGY)==0){     return true;                                     }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){     return true;                                     }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){     return true;                                     }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){     return true;                                     }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){      return true;                                     }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){      return true;                                     }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){        return true;                                     }else      // Суммараная энергия
+   if(strcmp(var,sdm_LINK)==0){          return true;                                     }else      // Cостояние связи со счетчиком
+   return false;
  }
-
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::save(int32_t adr)

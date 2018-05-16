@@ -1607,7 +1607,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         // ВЫХОД strReturn  надо Добавлять + в конце &
         x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
 
-       // 1. Проверка для запросов содержащих EEV      
+       // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------    
        if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
@@ -1631,19 +1631,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               #endif   
               }  //  if (strstr(str,"EEV"))    
               
-          // 2. Проверка для запросов содержащих MQTT  
+          // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
               {
 			   #ifdef MQTT
                    if (strcmp(str,"get_MQTT")==0){           // Функция получить настройки MQTT
                         strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1));
                         strcat(strReturn,"&") ; continue;
-                       // (strcmp(str,"get_MQTT")==0) 
                    } else if (strcmp(str,"set_MQTT")==0) {          // Функция записать настройки MQTT
-                           if (HP.clMQTT.set_paramMQTT(x+1,strbuf))     // преобразование удачно
-                           strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1)); 
-                       else
-                          strcat(strReturn,"E32") ; // ошибка преобразования строки
+                         if (HP.clMQTT.set_paramMQTT(x+1,strbuf))  strcat(strReturn,HP.clMQTT.get_paramMQTT(x+1));   // преобразование удачно
+                         else strcat(strReturn,"E32") ; // ошибка преобразования строки
                       strcat(strReturn,"&") ; continue;
                       } // (strcmp(str,"set_MQTT")==0) 
 				#else
@@ -1651,7 +1648,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 				#endif
                } //if ((strstr(str,"MQTT")>0)
           
-           // 3. Расписание 
+           // 3. Расписание -------------------------------------------------------- 
 		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
@@ -1669,6 +1666,28 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			}
 		 #endif
 
+         // 4. Настройки счетчика SDM ------------------------------------------------
+               if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
+                 {
+                  #ifdef USE_ELECTROMETER_SDM  	
+                   if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
+                      {
+                        strcat(strReturn,HP.dSDM.get_paramSDM(x+1));
+                        strcat(strReturn,"&") ; continue;
+                      } // (strcmp(str,"get_SDM")==0) 
+                   else if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
+                      {
+                       if (HP.dSDM.set_paramSDM(x+1,strbuf)) strcat(strReturn,HP.dSDM.get_paramSDM(x+1)); // преобразование удачно
+                       else                                  strcat(strReturn,"E31") ;                    // ошибка преобразования строки
+                      strcat(strReturn,"&") ; continue;
+                      }  strcat(strReturn,"E03&");  continue;	 
+	              	#else
+					 strcat(strReturn,"no support SDM&");  continue; // не поддерживается
+					#endif   
+                  } //if ((strstr(str,"SDM")>0)  
+
+
+             
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
 		// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
@@ -2066,52 +2085,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"NUM_PROFILE")==0)    { param=266;}  // максимальное число профилей
                //else if (strcmp(x+1,"SEL_PROFILE")==0)    { param=257;}  // список профилей
                
-               // Настройки Счетчика смещение 270 общее число 30 шт
-               else if (strcmp(x+1,"NAME_SDM")==0)       { param=270;}  // Имя счетчика
-               else if (strcmp(x+1,"NOTE_SDM")==0)       { param=271;}  // Описание счетчика
-               else if (strcmp(x+1,"MAX_VOLTAGE_SDM")==0){ param=272;}  // Контроль напряжения max
-               else if (strcmp(x+1,"MIN_VOLTAGE_SDM")==0){ param=273;}  // Контроль напряжения min
-               else if (strcmp(x+1,"MAX_POWER_SDM")==0)  { param=274;}  // Контроль мощности max
-               else if (strcmp(x+1,"VOLTAGE_SDM")==0)    { param=275;}  // Напряжение
-               else if (strcmp(x+1,"CURRENT_SDM")==0)    { param=276;}  // Ток
-               else if (strcmp(x+1,"REPOWER_SDM")==0)    { param=277;}  // Реактивная мощность
-               else if (strcmp(x+1,"ACPOWER_SDM")==0)    { param=278;}  // Активная мощность
-               else if (strcmp(x+1,"POWER_SDM")==0)      { param=279;}  // Полная мощность
-               else if (strcmp(x+1,"POW_FACTOR_SDM")==0) { param=280;}  // Коэффициент мощности
-               else if (strcmp(x+1,"PHASE_SDM")==0)      { param=281;}  // Угол фазы (градусы)
-               else if (strcmp(x+1,"IACENERGY_SDM")==0)  { param=282;}  // Потребленная активная энергия
-               else if (strcmp(x+1,"EACENERGY_SDM")==0)  { param=283;}  // Переданная активная энергия
-               else if (strcmp(x+1,"IREENERGY_SDM")==0)  { param=284;}  // Потребленная реактивная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=285;}  // Переданная реактивная энергия
-               else if (strcmp(x+1,"ACENERGY_SDM")==0)   { param=286;}  // Суммараная активная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=287;}  // Суммараная реактивная энергия
-               else if (strcmp(x+1,"ENERGY_SDM")==0)     { param=288;}  // Суммараная  энергия
-               else if (strcmp(x+1,"LINK_SDM")==0)       { param=289;}  // Cостояние связи со счетчиком
-        
-              // Настройки MQTT клиента смещение 300 общее число 30 шт
-              /*
-               else if (strcmp(x+1,"USE_THINGSPEAK")==0) { param=300;}  // флаг использования  ThingSpeak
-               else if (strcmp(x+1,"USE_MQTT")==0)       { param=301;}  // флаг использования MQTT
-               else if (strcmp(x+1,"BIG_MQTT")==0)       { param=302;}  // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-               else if (strcmp(x+1,"SDM_MQTT")==0)       { param=303;}  // флаг отправки данных электросчетчика на MQTT
-               else if (strcmp(x+1,"FC_MQTT")==0)        { param=304;}  // флаг отправки данных инвертора на MQTT
-               else if (strcmp(x+1,"COP_MQTT")==0)       { param=305;}  // флаг отправки данных COP на MQTT
-               else if (strcmp(x+1,"TIME_MQTT")==0)      { param=306;}  // период отправки на сервер в сек. 10...60000
-               else if (strcmp(x+1,"ADR_MQTT")==0)       { param=307;}  // Адрес сервера
-               else if (strcmp(x+1,"IP_MQTT")==0)        { param=308;}  // IP Адрес сервера
-               else if (strcmp(x+1,"PORT_MQTT")==0)      { param=309;}  // Адрес порта сервера
-               else if (strcmp(x+1,"LOGIN_MQTT")==0)     { param=310;}  // логин сервера
-               else if (strcmp(x+1,"PASSWORD_MQTT")==0)  { param=311;}  // пароль сервера
-               else if (strcmp(x+1,"ID_MQTT")==0)        { param=312;}  // Идентификатор клиента на MQTT сервере
-               else if (strcmp(x+1,"USE_NARMON")==0)     { param=313;}  // флаг отправки данных на народный мониторинг
-               else if (strcmp(x+1,"BIG_NARMON")==0)     { param=314;}  // флаг отправки данных на народный мониторинг ,большую версию
-               else if (strcmp(x+1,"ADR_NARMON")==0)     { param=315;}  // Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"IP_NARMON")==0)      { param=316;}  // IP Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"PORT_NARMON")==0)    { param=317;}  // Адрес порта сервера народный мониторинг
-               else if (strcmp(x+1,"LOGIN_NARMON")==0)   { param=318;}  // логин сервера народный мониторинг
-               else if (strcmp(x+1,"PASSWORD_NARMON")==0){ param=319;}  // пароль сервера народный мониторинг
-               else if (strcmp(x+1,"ID_NARMON")==0)      { param=320;}  // Идентификатор клиента на народный мониторинг
-              */ 
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2771,61 +2744,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"set_Profile")==0) 
               }  // else end 
            } //if ((strstr(str,"Profile")>0)
-           #ifdef USE_ELECTROMETER_SDM  
-           
-              //15.  Настройки счетчика смещение 270 занимает 30
-              if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
-                 {
-                 if ((param>=300)||(param<270))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-                 else  // параметр верный
-                   {   p=param-270; 
-                   if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
-                      {
-                        strcat(strReturn,HP.dSDM.get_paramSDM((TYPE_PARAM_SDM)p));
-                        strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"get_SDM")==0) 
-                      
-                  if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
-                      {
-                       if (HP.dSDM.set_paramSDM((TYPE_PARAM_SDM)p,strbuf))     // преобразование удачно
-                           strcat(strReturn,HP.dSDM.get_paramSDM((TYPE_PARAM_SDM)p)); 
-                       else
-                          strcat(strReturn,"E31") ; // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"set_SDM")==0) 
-                  }  // else end 
-                } //if ((strstr(str,"SDM")>0)      
-            #endif
-/*
-              //16.  Настройки клиента смещение 300 занимает 30
-              if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
-			   #ifdef MQTT
-                 {
-                 if ((param>=330)||(param<300))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-                 else  // параметр верный
-                   {   p=param-300; 
-                   if (strcmp(str,"get_MQTT")==0)           // Функция получить настройки MQTT
-                      {
-                        strcat(strReturn,HP.clMQTT.get_paramMQTT((TYPE_PARAM_MQTT)p));
-                        strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"get_MQTT")==0) 
-                      
-                  if (strcmp(str,"set_MQTT")==0)           // Функция записать настройки MQTT
-                      {
-                       if (HP.clMQTT.set_paramMQTT((TYPE_PARAM_MQTT)p,strbuf))     // преобразование удачно
-                           strcat(strReturn,HP.clMQTT.get_paramMQTT((TYPE_PARAM_MQTT)p)); 
-                       else
-                          strcat(strReturn,"E32") ; // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"set_MQTT")==0) 
-                  }  // else end 
-				#else
-					 strcat(strReturn,"none") ; // не поддерживается
-					 strcat(strReturn,"&") ; continue;
-				#endif
-               } //if ((strstr(str,"MQTT")>0)
-*/
-            
+     
         // НОВОЕ вставлять сюда!
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:
