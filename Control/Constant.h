@@ -565,6 +565,25 @@ const char *time_UPDATE     = {"UPDATE"};       // Время синхрониз
 const char *time_TIMEZONE   = {"TIMEZONE"};     // Часовой пояс
 const char *time_UPDATE_I2C = {"UPDATE_I2C"};   // Синхронизация времени раз в час с i2c часами
 
+const char *net_IP         = {"IP"};               // Адрес 
+const char *net_SDNS       = {"SDNS"};             // DNS 
+const char *net_GATEWAY    = {"GATEWAY"};          // Шлюз
+const char *net_SUBNET     = {"SUBNET"};           // Маска подсети
+const char *net_DHSP       = {"DHSP"};             // Флаг использования DHCP
+const char *net_MAC        = {"MAC"};              // МАС адрес чипа
+const char *net_RES_SOCKET = {"RES_SOCKET"};       // Время сброса зависших сокетов
+const char *net_RES_W5200  = {"RES_W5200"};        // Время регулярного сброса сетевого чипа
+const char *net_PASS       = {"PASS"};             // Использование паролей (флаг)
+const char *net_PASSUSER   = {"PASSUSER"};         // Пароль пользователя 
+const char *net_PASSADMIN  = {"PASSADMIN"};        // Пароль администратора  
+const char *net_SIZE_PACKET= {"SIZE_PACKET"};      // размер пакета
+const char *net_INIT_W5200 = {"INIT_W5200"};       // Ежеминутный контроль SPI для сетевого чипа
+const char *net_PORT       = {"PORT"};             // Port веб сервера
+const char *net_NO_ACK     = {"NO_ACK"};           // Не ожидать ответа ack
+const char *net_DELAY_ACK  = {"DELAY_ACK"};        // Задержка перед посылкой следующего пакета
+const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинга
+const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
+const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
 
 
 // Названия типы фреонов
@@ -976,6 +995,7 @@ enum TEST_MODE
    HARD_TEST           // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
+/*
 //  Перечисляемый тип - параметры настройки сети
 enum PARAM_NETWORK          
 {
@@ -1000,7 +1020,7 @@ enum PARAM_NETWORK
    pNO_PING,                    // запрет пинга контроллера
    pEND3                        // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
-
+*/
 //  Перечисляемый тип - Время сброса сокетов
 enum TIME_RES_SOCKET       
 {

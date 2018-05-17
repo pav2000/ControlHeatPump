@@ -286,26 +286,26 @@ void get_txtSettings(uint8_t thread)
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
     
      strcpy(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
-     strcat(Socket[thread].outBuf,"Использование DHCP: "); if(!strcmp(HP.get_network(pDHSP),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"IP адрес контроллера: "); strcat(Socket[thread].outBuf,HP.get_network(pIP));STR_END;
-     strcat(Socket[thread].outBuf,"DNS сервер: "); strcat(Socket[thread].outBuf,HP.get_network(pSDNS)); STR_END;
-     strcat(Socket[thread].outBuf,"Шлюз: "); strcat(Socket[thread].outBuf,HP.get_network(pGATEWAY));STR_END;
-     strcat(Socket[thread].outBuf,"Маска подсети: "); strcat(Socket[thread].outBuf,HP.get_network(pSUBNET));STR_END;
-     strcat(Socket[thread].outBuf,"MAC адрес контроллера: "); strcat(Socket[thread].outBuf,HP.get_network(pMAC));STR_END;
+     strcat(Socket[thread].outBuf,"Использование DHCP: "); HP.get_network((char*)net_DHSP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"IP адрес контроллера: "); HP.get_network((char*)net_IP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"DNS сервер: "); HP.get_network((char*)net_SDNS,Socket[thread].outBuf); STR_END;
+     strcat(Socket[thread].outBuf,"Шлюз: "); HP.get_network((char*)net_GATEWAY,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Маска подсети: "); HP.get_network((char*)net_SUBNET,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"MAC адрес контроллера: "); HP.get_network((char*)net_MAC,Socket[thread].outBuf);STR_END;
 
-     strcat(Socket[thread].outBuf,"Запрет пинга контроллера: "); if(!strcmp(HP.get_network(pNO_PING),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Использование паролей: ");    if(!strcmp(HP.get_network(pPASS),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Пароль пользователя (user): "); strcat(Socket[thread].outBuf,HP.get_network(pPASSUSER));STR_END;
-     strcat(Socket[thread].outBuf,"Пароль администратора (admin): "); strcat(Socket[thread].outBuf,HP.get_network(pPASSADMIN)); STR_END;
+     strcat(Socket[thread].outBuf,"Запрет пинга контроллера: "); HP.get_network((char*)net_NO_PING,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование паролей: ");   HP.get_network((char*)net_PASS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Пароль пользователя (user): "); HP.get_network((char*)net_PASSUSER,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Пароль администратора (admin): "); HP.get_network((char*)net_PASSADMIN,Socket[thread].outBuf); STR_END;
 
-     strcat(Socket[thread].outBuf,"Проверка ping до сервера: "); strcat(Socket[thread].outBuf,HP.get_network(pPING_TIME));STR_END;
-     strcat(Socket[thread].outBuf,"Адрес пингуемого сервера: "); strcat(Socket[thread].outBuf,HP.get_network(pPING_ADR)); STR_END;
-     strcat(Socket[thread].outBuf,"Ежеминутный контроль связи с Wiznet W5xxx: "); if(!strcmp(HP.get_network(pINIT_W5200),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Время очистки сокетов: "); strcat(Socket[thread].outBuf,HP.get_network(pRES_SOCKET));STR_END;
-     strcat(Socket[thread].outBuf,"Время сброса чипа: "); strcat(Socket[thread].outBuf,nameWiznet);strcat(Socket[thread].outBuf,": "); strcat(Socket[thread].outBuf,HP.get_network(pRES_W5200));STR_END;
-     strcat(Socket[thread].outBuf,"Размер пакета для отправки в байтах: "); strcat(Socket[thread].outBuf,HP.get_network(pSIZE_PACKET));STR_END;
-     strcat(Socket[thread].outBuf,"Не ожидать получения ACK при посылке следующего пакета: "); if(!strcmp(HP.get_network(pNO_ACK),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Пауза перед отправкой следующего пакета, если нет ожидания ACK. (мсек): "); strcat(Socket[thread].outBuf,HP.get_network(pDELAY_ACK));STR_END;
+     strcat(Socket[thread].outBuf,"Проверка ping до сервера: "); HP.get_network((char*)net_PING_TIME,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Адрес пингуемого сервера: "); HP.get_network((char*)net_PING_ADR,Socket[thread].outBuf); STR_END;
+     strcat(Socket[thread].outBuf,"Ежеминутный контроль связи с Wiznet W5xxx: "); HP.get_network((char*)net_INIT_W5200,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время очистки сокетов: "); HP.get_network((char*)net_RES_SOCKET,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время сброса чипа: "); strcat(Socket[thread].outBuf,nameWiznet);strcat(Socket[thread].outBuf,": "); HP.get_network((char*)net_RES_W5200,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Размер пакета для отправки в байтах: "); HP.get_network((char*)net_SIZE_PACKET,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Не ожидать получения ACK при посылке следующего пакета: "); HP.get_network((char*)net_NO_ACK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Пауза перед отправкой следующего пакета, если нет ожидания ACK. (мсек): "); HP.get_network((char*)net_DELAY_ACK,Socket[thread].outBuf);STR_END;
 
      
      strcat(Socket[thread].outBuf,"\n  1.6 Настройки даты и времени\r\n");

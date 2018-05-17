@@ -1749,6 +1749,22 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		                  strcat(strReturn,"&") ; continue;
 		                  }  else strcat(strReturn,"E03&");  continue;// (strcmp(str,"set_datetime")==0) 
 		            } //if ((strstr(str,"datetime")>0)   
+
+	           //9.  Настройки сети -----------------------------------------------------------
+	          if (strstr(str,"Network"))          // Проверка для запросов содержащих Network
+	             {
+	               if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
+	                  {
+	                    HP.get_network(x+1,strReturn);
+	                    strcat(strReturn,"&") ; continue;
+	                  } // (strcmp(str,"get_Network")==0) 
+	              else if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
+	                  {
+	                   if (HP.set_network(x+1,strbuf))  HP.get_network(x+1,strReturn);     // преобразование удачно
+	                   else strcat(strReturn,"E15") ; // ошибка преобразования строки
+	                  strcat(strReturn,"&") ; continue;
+	                  }  else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Network")==0) 
+	             } //if ((strstr(str,"Network")>0)   
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -2054,36 +2070,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"ERROR_FC")==0)       { param=169;} // Получить ошибку частотника
                
                //  Запросы где второй параметр строка не ЧИСЛО а СТРОКА -----------------------------------
-               // Сетевые настройки  смещение 170  занимает 20 позиций
-               else if (strcmp(x+1,"ADDRESS")==0)        { param=170;}  // Адрес IP
-               else if (strcmp(x+1,"DNS")==0)            { param=171;}  // Адрес DNS
-               else if (strcmp(x+1,"GATEWAY")==0)        { param=172;}  // Адрес GATEWAY
-               else if (strcmp(x+1,"SUBNET")==0)         { param=173;}  // Адрес SUBNET
-               else if (strcmp(x+1,"DHCP")==0)           { param=174;}  // Адрес DHCP
-               else if (strcmp(x+1,"MAC")==0)            { param=175;}  // Адрес MAC
-               else if (strcmp(x+1,"RES_SOCKET")==0)     { param=176;}  // Время сброса «зависших» сокетов
-               else if (strcmp(x+1,"RES_W5200")==0)      { param=177;}  // Время сброса сетевого чипа w5200
-               else if (strcmp(x+1,"PASSWORD")==0)       { param=178;}  // Использование паролей
-               else if (strcmp(x+1,"PASSUSER")==0)       { param=179;}  // Пароль пользователя
-               else if (strcmp(x+1,"PASSADMIN")==0)      { param=180;}  // Пароль администратора
-               else if (strcmp(x+1,"SIZE_PACKET")==0)    { param=181;}  // Длина пакета
-               else if (strcmp(x+1,"INIT_W5200")==0)     { param=182;}  // Ежеминутный контроль SPI для сетевого чипа
-               else if (strcmp(x+1,"PORT")==0)           { param=183;}  // Порт веб сервера
-               else if (strcmp(x+1,"NO_ACK")==0)         { param=184;}  // Флаг Не ожидать ответа ACK
-               else if (strcmp(x+1,"DELAY_ACK")==0)      { param=185;}  // Задержка мсек перед отправкой пакета
-               else if (strcmp(x+1,"PING_ADR")==0)       { param=186;}  // Адрес для пинга
-               else if (strcmp(x+1,"PING_TIME")==0)      { param=187;}  // Время пинга в секундах
-               else if (strcmp(x+1,"NO_PING")==0)        { param=188;}  // Запрет пинга контроллера
-               /*
-                // Настройки дата время  смещение 190 общее число 10 шт
-               else if (strcmp(x+1,"TIME")==0)           { param=190;}  // время
-               else if (strcmp(x+1,"DATE")==0)           { param=191;}  // дата
-               else if (strcmp(x+1,"NTP")==0)            { param=192;}  // NTP сервер
-               else if (strcmp(x+1,"UPDATE")==0)         { param=193;}  // обновление по NTP
-               else if (strcmp(x+1,"TIMEZONE")==0)       { param=194;}  // часовой пояс
-               else if (strcmp(x+1,"UPDATE_I2C")==0)     { param=195;}  // обновление внутренних часов по i2c раз час
-               */
-   
+     
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2628,54 +2615,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                }  // else end 
             } //if ((strstr(str,"Stat")>0)  
             // --------------------------------------------------------------------------------------------------------------------------
-           // Запросы где второй параметр строка смещение 170 занимает 20 позиций
-           //10.  Настройки сети смещение 170
-          if (strstr(str,"Network"))          // Проверка для запросов содержащих Network
-             {
-             if ((param>=190)||(param<170))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-170; 
-               if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
-                  {
-                    strcat(strReturn,HP.get_network((PARAM_NETWORK)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Network")==0) 
-                  
-              if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
-                  {
-                   if (HP.set_network((PARAM_NETWORK)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.get_network((PARAM_NETWORK)p));
-                   else
-                      strcat(strReturn,"E15") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Network")==0) 
-              }  // else end 
-            } //if ((strstr(str,"Network")>0)       
 
-/*
-           //11.  Настройки дата время смещение 190
-          if (strstr(str,"datetime"))          // Проверка для запросов содержащих datetime
-             {
-             if ((param>=200)||(param<190))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-190; 
-               if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
-                  {
-                    strcat(strReturn,HP.get_datetime((DATE_TIME)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_datetime")==0) 
-                  
-              if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
-                  {
-                   if (HP.set_datetime((DATE_TIME)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.get_datetime((DATE_TIME)p));
-                   else
-                      strcat(strReturn,"E18") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_datetime")==0) 
-              }  // else end 
-            } //if ((strstr(str,"datetime")>0)   
-*/
         // НОВОЕ вставлять сюда!
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:

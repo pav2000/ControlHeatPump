@@ -1805,9 +1805,9 @@ w5200_MQTT.setSock(W5200_SOCK_SYS);       // Установить сокет с 
 if (NM) // В зависимости от того с кем надо соединяться
          {
          w5200_MQTT.setServer(mqttSettintg.narodMon_serverIP,mqttSettintg.narodMon_port);                       // установить параметры Народного мониторинга
-         w5200_MQTT.connect(HP.get_network(pMAC), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
+         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
          #ifdef MQTT_REPEAT            // разрешен повтор соединения
-         if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_network(pMAC), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
+         if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
          #endif
          }
          else 

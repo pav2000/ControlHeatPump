@@ -695,7 +695,7 @@ void HeatPump::resetSettingHP()
 // --------------------------------------------------------------------
 // Сетевые настройки --------------------------------------------------
 //Установить параметр из строки
-boolean HeatPump::set_network(PARAM_NETWORK p, char *c)
+boolean HeatPump::set_network(char *var, char *c)
 { 
  uint8_t x;
  float zp; 
@@ -707,119 +707,109 @@ boolean HeatPump::set_network(PARAM_NETWORK p, char *c)
  else if (strcmp(c,"5")==0) x=5;
  else if (strcmp(c,"6")==0) x=6;
  else x=-1;
- switch (p)
-   {
-    case pIP:          return parseIPAddress(c, '.', Network.ip);                 break;  
-    case pSDNS:        return parseIPAddress(c, '.', Network.sdns);               break;  
-    case pGATEWAY:     return parseIPAddress(c, '.', Network.gateway);            break;                
-    case pSUBNET:      return parseIPAddress(c, '.', Network.subnet);             break;  
-    case pDHSP:        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fDHCP);  return true;}
-                       else return false;  
-                       break;  
-    case pMAC:         return parseBytes(c, ':', Network.mac, 6, 16);             break;  
-    case pRES_SOCKET: 
-                       switch (x)
-                       {
-                        case 0: Network.resSocket=0;     return true;  break;
-                        case 1: Network.resSocket=10;    return true;  break;
-                        case 2: Network.resSocket=30;    return true;  break;
-                        case 3: Network.resSocket=90;    return true;  break;
-                        default:                    return false; break;   
-                       }                                          break;   
-    case pRES_W5200: 
-                       switch (x)
-                       {
-                        case 0: Network.resW5200=0;        return true;  break;
-                        case 1: Network.resW5200=60*60*6;  return true;  break;   // 6 часов хранение в секундах
-                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
-                        default:                      return false; break;   
-                       }                                          break;   
-    case pPASS:        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
-                       else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
-                       else return false;  
-                       break;
-    case pPASSUSER:    strcpy(Network.passUser,c);set_hashUser(); return true;   break;                 
-    case pPASSADMIN:   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; break;   
-    case pSIZE_PACKET: zp=my_atof(c);  
-                       if (zp==-9876543.00) return   false;    
-                       else if((zp<64)||(zp>2048)) return   false;   
-                       else Network.sizePacket=(int)zp; return true;
-                       break;  
-    case pINIT_W5200:    // флаг Ежеминутный контроль SPI для сетевого чипа
+ if(strcmp(var,net_IP)==0){          return parseIPAddress(c, '.', Network.ip);                 }else  
+ if(strcmp(var,net_SDNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else  
+ if(strcmp(var,net_GATEWAY)==0){     return parseIPAddress(c, '.', Network.gateway);            }else                
+ if(strcmp(var,net_SUBNET)==0){      return parseIPAddress(c, '.', Network.subnet);             }else  
+ if(strcmp(var,net_DHSP)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
+                                    else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fDHCP);  return true;}
+                                    else return false;  
+                                    }else  
+ if(strcmp(var,net_MAC)==0){         return parseBytes(c, ':', Network.mac, 6, 16);             }else  
+ if(strcmp(var,net_RES_SOCKET)==0){ switch (x)
+			                       {
+			                        case 0: Network.resSocket=0;     return true;  break;
+			                        case 1: Network.resSocket=10;    return true;  break;
+			                        case 2: Network.resSocket=30;    return true;  break;
+			                        case 3: Network.resSocket=90;    return true;  break;
+			                        default:                    return false; break;   
+			                       }                                          }else  
+ if(strcmp(var,net_RES_W5200)==0){ switch (x)
+			                       {
+			                        case 0: Network.resW5200=0;        return true;  break;
+			                        case 1: Network.resW5200=60*60*6;  return true;  break;   // 6 часов хранение в секундах
+			                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
+			                        default:                      return false; break;   
+			                       }                                          }else   
+ if(strcmp(var,net_PASS)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
+                                    else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
+                                    else return false;  
+                                    }else
+ if(strcmp(var,net_PASSUSER)==0){    strcpy(Network.passUser,c);set_hashUser(); return true;   }else                 
+ if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else  
+ if(strcmp(var,net_SIZE_PACKET)==0){ zp=my_atof(c);  
+                                    if (zp==-9876543.00) return   false;    
+                                    else if((zp<64)||(zp>2048)) return   false;   
+                                    else Network.sizePacket=(int)zp; return true;
+                                    }else  
+ if(strcmp(var,net_INIT_W5200)==0){    // флаг Ежеминутный контроль SPI для сетевого чипа
                        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fInitW5200); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fInitW5200);  return true;}
                        else return false;  
-                       break; 
-    case pPORT:        zp=my_atof(c);  
+                       }else 
+ if(strcmp(var,net_PORT)==0){        zp=my_atof(c);  
                        if (zp==-9876543.00) return        false;    
                        else if((zp<1)||(zp>65535)) return false;   
                        else Network.port=(int)zp; return  true;
-                       break;     
-    case pNO_ACK:      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
+                       }else     
+ if(strcmp(var,net_NO_ACK)==0){      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoAck);  return true;}
                        else return false;  
-                       break;  
-    case pDELAY_ACK:   zp=my_atof(c);  
+                       }else  
+ if(strcmp(var,net_DELAY_ACK)==0){   zp=my_atof(c);  
                        if (zp==-9876543.00) return            false;    
                        else if((zp<1)||(zp>50)) return        false;   
                        else Network.delayAck=(int)zp; return  true;
-                       break;         
-   case pPING_ADR:     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; break;    
-   case pPING_TIME:    switch (x)
-                       {
-                        case 0: Network.pingTime=0;        return true;  break;
-                        case 1: Network.pingTime=1*60;     return true;  break;
-                        case 2: Network.pingTime=5*60;     return true;  break;
-                        case 3: Network.pingTime=20*60;    return true;  break;
-                        case 4: Network.pingTime=60*60;    return true;  break;
-                        default:                           return false; break;   
-                       }                                          break;   
-    case pNO_PING:     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
+                       }else         
+ if(strcmp(var,net_PING_ADR)==0){     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; }else    
+ if(strcmp(var,net_PING_TIME)==0){switch (x)
+			                       {
+			                        case 0: Network.pingTime=0;        return true;  break;
+			                        case 1: Network.pingTime=1*60;     return true;  break;
+			                        case 2: Network.pingTime=5*60;     return true;  break;
+			                        case 3: Network.pingTime=20*60;    return true;  break;
+			                        case 4: Network.pingTime=60*60;    return true;  break;
+			                        default:                           return false; break;   
+			                       }                                          }else   
+ if(strcmp(var,net_NO_PING)==0){     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
                        else return false;  
-                       break;                                                                                                                                                                              
-    default:           return false;                           break;   
-   }
-  return false;
+                       }else                                                                                                                                                                               
+   return false;
 }
 // Сетевые настройки --------------------------------------------------
 //Получить параметр из строки
-char* HeatPump::get_network(PARAM_NETWORK p)
+char* HeatPump::get_network(char *var,char *ret)
 {
-  
- switch (p)
-   {
-    case pIP:        return IPAddress2String(Network.ip);                 break;  
-    case pSDNS:      return IPAddress2String(Network.sdns);               break;  
-    case pGATEWAY:   return IPAddress2String(Network.gateway);            break;                
-    case pSUBNET:    return IPAddress2String(Network.subnet);             break;  
-    case pDHSP:      if (GETBIT(Network.flags,fDHCP)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;
-    case pMAC:       return MAC2String(Network.mac);                      break;  
-    case pRES_SOCKET: 
+ if(strcmp(var,net_IP)==0){   return strcat(ret,IPAddress2String(Network.ip));          }else  
+ if(strcmp(var,net_SDNS)==0){      return strcat(ret,IPAddress2String(Network.sdns));   }else  
+ if(strcmp(var,net_GATEWAY)==0){   return strcat(ret,IPAddress2String(Network.gateway));}else                
+ if(strcmp(var,net_SUBNET)==0){    return strcat(ret,IPAddress2String(Network.subnet)); }else  
+ if(strcmp(var,net_DHSP)==0){      if (GETBIT(Network.flags,fDHCP)) return  strcat(ret,(char*)cOne);
+                                   else      return  strcat(ret,(char*)cZero);          }else
+ if(strcmp(var,net_MAC)==0){       return strcat(ret,MAC2String(Network.mac));          }else  
+ if(strcmp(var,net_RES_SOCKET)==0){ 
                      switch (Network.resSocket)
                        {
-                        case 0:   return (char*)"never:1;10 sec:0;30 sec:0;90 sec:0;";  break;
-                        case 10:  return (char*)"never:0;10 sec:1;30 sec:0;90 sec:0;";  break;
-                        case 30:  return (char*)"never:0;10 sec:0;30 sec:1;90 sec:0;";  break;  // 30 секунд
-                        case 90:  return (char*)"never:0;10 sec:0;30 sec:0;90 sec:1;";  break;
-                        default:  Network.resSocket=30; return (char*)"never:0;10 sec:0;30 sec:1;90 sec:0;"; break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      break;   
-    case pRES_W5200: 
+                        case 0:   return strcat(ret,(char*)"never:1;10 sec:0;30 sec:0;90 sec:0;");  break;
+                        case 10:  return strcat(ret,(char*)"never:0;10 sec:1;30 sec:0;90 sec:0;");  break;
+                        case 30:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;");  break;  // 30 секунд
+                        case 90:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:0;90 sec:1;");  break;
+                        default:  Network.resSocket=30; return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
+                      }                                                      }else   
+ if(strcmp(var,net_RES_W5200)==0){ 
                     switch (Network.resW5200)
                        {
-                        case 0:       return (char*)"never:1;6 hour:0;24 hour:0;";  break;
-                        case 60*60*6: return (char*)"never:0;6 hour:1;24 hour:0;";  break;   // 6 часов
-                        case 60*60*24:return (char*)"never:0;6 hour:0;24 hour:1;";  break;   // 24 часа
-                        default:      Network.resW5200=0;return (char*)"never:1;6 hour:0;24 hour:0;"; break;   // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                     break;    
-    case pPASS:      if (GETBIT(Network.flags,fPass)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;
-    case pPASSUSER:  return Network.passUser;                             break;                 
-    case pPASSADMIN: return Network.passAdmin;                            break;   
-    case pSIZE_PACKET:return int2str(Network.sizePacket);                 break;   
-
+                        case 0:       return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;");  break;
+                        case 60*60*6: return strcat(ret,(char*)"never:0;6 hour:1;24 hour:0;");  break;   // 6 часов
+                        case 60*60*24:return strcat(ret,(char*)"never:0;6 hour:0;24 hour:1;");  break;   // 24 часа
+                        default:      Network.resW5200=0;return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;"); break;   // Этого не должно быть, но если будет то установить по умолчанию
+                       }                                     }else   
+  if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
+                                    else      return  strcat(ret,(char*)cZero);               }else
+  if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
+  if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
+  if(strcmp(var,net_SIZE_PACKET)==0){return strcat(ret,int2str(Network.sizePacket));          }else   
     /*
                      switch (Network.sizePacket)
                        {
@@ -830,28 +820,27 @@ char* HeatPump::get_network(PARAM_NETWORK p)
                         default:    Network.sizePacket=2048; return (char*)"256 byte:0;512 byte:0;1024 byte:0;2048 byte:1;";  break;     // Этого не должно быть, но если будет то установить по умолчанию
                       }  
      */                 
-    case pINIT_W5200:if (GETBIT(Network.flags,fInitW5200)) return  (char*)cOne;       // флаг Ежеминутный контроль SPI для сетевого чипа
-                     else      return  (char*)cZero;                        break;      
-    case pPORT:return int2str(Network.port);                              break;    // Порт веб сервера
-    case pNO_ACK:    if (GETBIT(Network.flags,fNoAck)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;     
-    case pDELAY_ACK:return int2str(Network.delayAck);                     break;    
-    case pPING_ADR:  return Network.pingAdr;                              break;
-    case pPING_TIME: 
+    if(strcmp(var,net_INIT_W5200)==0){if (GETBIT(Network.flags,fInitW5200)) return  strcat(ret,(char*)cOne);       // флаг Ежеминутный контроль SPI для сетевого чипа
+                                      else      return  strcat(ret,(char*)cZero);               }else      
+    if(strcmp(var,net_PORT)==0){return strcat(ret,int2str(Network.port));                       }else    // Порт веб сервера
+    if(strcmp(var,net_NO_ACK)==0){    if (GETBIT(Network.flags,fNoAck)) return  strcat(ret,(char*)cOne);
+                                      else      return  strcat(ret,(char*)cZero);          }else     
+    if(strcmp(var,net_DELAY_ACK)==0){return strcat(ret,int2str(Network.delayAck));         }else    
+    if(strcmp(var,net_PING_ADR)==0){  return strcat(ret,Network.pingAdr);                  }else
+    if(strcmp(var,net_PING_TIME)==0){ 
                      switch (Network.pingTime)
                        {
-                        case 0:      return (char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;";  break; // никогда
-                        case 1*60:   return (char*)"never:0;1 min:1;5 min:0;20 min:0;60 min:0;";  break; // 1 минута
-                        case 5*60:   return (char*)"never:0;1 min:0;5 min:1;20 min:0;60 min:0;";  break; // 5 минут
-                        case 20*60:  return (char*)"never:0;1 min:0;5 min:0;20 min:1;60 min:0;";  break; // 20 миут
-                        case 60*60:  return (char*)"never:0;1 min:0;5 min:0;20 min:0;60 min:1;";  break; // 60 минут
-                        default:  Network.resSocket=0; return (char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;"; break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      break;   
-    case pNO_PING:   if (GETBIT(Network.flags,fNoPing)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;                                                                                          
-    default:         return  (char*)cInvalid;                              break;   
-   }
- return (char*)cInvalid;
+                        case 0:      return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;");  break; // никогда
+                        case 1*60:   return strcat(ret,(char*)"never:0;1 min:1;5 min:0;20 min:0;60 min:0;");  break; // 1 минута
+                        case 5*60:   return strcat(ret,(char*)"never:0;1 min:0;5 min:1;20 min:0;60 min:0;");  break; // 5 минут
+                        case 20*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:1;60 min:0;");  break; // 20 миут
+                        case 60*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:0;60 min:1;");  break; // 60 минут
+                        default:  Network.resSocket=0; return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
+                      }                                                      }else   
+    if(strcmp(var,net_NO_PING)==0){if (GETBIT(Network.flags,fNoPing)) return  strcat(ret,(char*)cOne);
+                                   else      return  strcat(ret,(char*)cZero);                        }else                                                                                          
+
+ return strcat(ret,(char*)cInvalid);
 }
 
 // Установить параметр дата и время из строки

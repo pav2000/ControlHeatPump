@@ -365,7 +365,7 @@ void Nextion::flushSerial(){
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
- char temp[10]; 
+ char temp[24]; 
   setComponentText((char*)"time", NowTimeToStr1());  // Обновить время
  // 1. Определение текущей страницы
   sendCommand("sendme");
@@ -397,21 +397,21 @@ else if (PageID==2)  // Обновление данных первой стра�
         Адрес шлюза  - web4
         Адрес DNS сервера - web5
         Аппаратный mac адрес - web6 */
-         if (strcmp(HP.get_network(pDHSP),cOne)==0) setComponentText((char*)"web1",(char*)_YES_8859); else setComponentText((char*)"web1",(char*)_NO_8859);
-         setComponentText((char*)"web2",HP.get_network(pIP));
-         setComponentText((char*)"web3",HP.get_network(pSUBNET)); 
-         setComponentText((char*)"web4",HP.get_network(pGATEWAY)); 
-         setComponentText((char*)"web5",HP.get_network(pSDNS)); 
-         setComponentText((char*)"web6",HP.get_network(pMAC)); 
+         if (HP.get_DHCP()) setComponentText((char*)"web1",(char*)_YES_8859); else setComponentText((char*)"web1",(char*)_NO_8859);
+         setComponentText((char*)"web2",HP.get_network((char*)net_IP,temp));
+         setComponentText((char*)"web3",HP.get_network((char*)net_SUBNET,temp)); 
+         setComponentText((char*)"web4",HP.get_network((char*)net_GATEWAY,temp)); 
+         setComponentText((char*)"web5",HP.get_network((char*)net_SDNS,temp)); 
+         setComponentText((char*)"web6",HP.get_network((char*)net_MAC,temp)); 
          /*         
          Использование паролей - pas1
         Имя - pas2 пароль - pas3
         Имя - pas4 пароль - pas5 */
-         if (strcmp(HP.get_network(pPASS),cOne)==0) setComponentText((char*)"pas1",(char*)_YES_8859); else setComponentText((char*)"pas1",(char*)_NO_8859);
+         if (HP.get_fPass()) setComponentText((char*)"pas1",(char*)_YES_8859); else setComponentText((char*)"pas1",(char*)_NO_8859);
          setComponentText((char*)"pas2",(char*)NAME_USER);
-         setComponentText((char*)"pas3",HP.get_network(pPASSUSER)); 
+         setComponentText((char*)"pas3",HP.get_network((char*)net_PASSUSER,temp)); 
          setComponentText((char*)"pas4",(char*)NAME_ADMIN); 
-         setComponentText((char*)"pas5",HP.get_network(pPASSADMIN));    
+         setComponentText((char*)"pas5",HP.get_network((char*)net_PASSADMIN,temp));    
       }       
 else if (PageID==3)  // Обновление данных 3 страницы "Система"
       {  

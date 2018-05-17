@@ -25,7 +25,8 @@
 #include "Information.h"
 #include "VaconFC.h" 
 #include "Scheduler.h"
-
+extern char *MAC2String(byte* mac);
+ 
 // Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
 {
@@ -231,8 +232,8 @@ class HeatPump
       Statistics Stat;                 // Статистика работы теплового насоса
    #endif
   // Сетевые настройки
-    boolean set_network(PARAM_NETWORK p, char *c);        // Установить параметр из строки
-    char*   get_network(PARAM_NETWORK p);                 // Получить параметр из строки
+    boolean set_network(char *var, char *c);        // Установить параметр из строки
+    char*   get_network(char *var,char *ret);       // Получить параметр из строки
   //  inline uint16_t get_sizePacket() {return Network.sizePacket;} // Получить размер пакета при передаче
     inline uint16_t get_sizePacket() {return 2048;} // Получить размер пакета при передаче
     
@@ -256,6 +257,7 @@ class HeatPump
     uint16_t get_pingTime() {return Network.pingTime;}     //  получить вермя пингования сервера, 0 если не надо
     char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
+    char *  get_netMAC() {return MAC2String(Network.mac);}  //  получить мас адрес контроллера
         
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
     byte *get_mac() { return Network.mac;}                 //  Получить mac адрес
