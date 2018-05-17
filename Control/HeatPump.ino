@@ -1232,7 +1232,7 @@ return str;
 // cat=true - не обнулять входную строку а добавить в конец
 char * HeatPump::get_Chart(char *var,char* str, boolean cat)
 {
- char buf[8]; 
+ char buf[10]; 
  if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг false
    if(strcmp(var,chart_NONE)==0){      strcat(str,""); return str;                           }else   
    if(strcmp(var,chart_TOUT)==0){      return sTemp[TOUT].Chart.get_PointsStr(100,str);      }else   

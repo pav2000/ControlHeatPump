@@ -1608,6 +1608,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
 
        // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------    
+/*
        if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
@@ -1630,7 +1631,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                strcat(strReturn,"no support EEV&");  continue;	 
               #endif   
               }  //  if (strstr(str,"EEV"))    
-              
+   */           
           // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
               {
