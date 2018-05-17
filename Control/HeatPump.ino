@@ -855,69 +855,58 @@ char* HeatPump::get_network(PARAM_NETWORK p)
 }
 
 // Установить параметр дата и время из строки
-boolean  HeatPump::set_datetime(DATE_TIME p, char *c)
+boolean  HeatPump::set_datetime(char *var, char *c)
 {
    float tz;
    int16_t m,h,d,mo,y;
    int16_t buf[4];
    uint32_t oldTime=rtcSAM3X8.unixtime(); // запомнить время
    int32_t  dTime=0;
-   switch (p)
-   {
-    case pTIME:       if (!parseInt16_t(c, ':',buf,2,10)) return false; 
+if(strcmp(var,time_TIME)==0){ if (!parseInt16_t(c, ':',buf,2,10)) return false; 
                       h=buf[0]; m=buf[1];
                       rtcSAM3X8.set_time (h,m,0);  // внутренние
                       setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds()); // внешние
                       dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-                //      return true;                     
-                      break;  
-    case pDATE:       if (!parseInt16_t(c, '/',buf,3,10)) return false;
+                      }else  
+if(strcmp(var,time_DATE)==0){       if (!parseInt16_t(c, '/',buf,3,10)) return false;
                       d=buf[0]; mo=buf[1]; y=buf[2];
                       rtcSAM3X8.set_date(d,mo,y); // внутренние
                       setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years()); // внешние
                       dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-              //        return true;                       
-                      break;  
-    case pNTP:        if(strlen(c)==0) return false;                                                 // пустая строка
+                      }else  
+if(strcmp(var,time_NTP)==0){if(strlen(c)==0) return false;                                                 // пустая строка
                       if(strlen(c)>NTP_SERVER_LEN) return false;                                     // слишком длиная строка
                       else { strcpy(DateTime.serverNTP,c); return true;  }                           // ок сохраняем
-                      break;                
-    case pUPDATE:     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
+                      }else                
+if(strcmp(var,time_UPDATE)==0){     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
                       else if (strcmp(c,cOne)==0) { SETBIT1( DateTime.flags,fUpdateNTP);countNTP=0; return true;}
                       else return false;  
-                      break;   
-    case pTIMEZONE:   tz=my_atof(c);  
+                      }else   
+if(strcmp(var,time_TIMEZONE)==0){  tz=my_atof(c);  
                       if (tz==-9876543.00) return   false;
                       else if((tz<-12)||(tz>12)) return   false;   
                       else DateTime.timeZone=(int)tz; return true;
-                      break;  
-    case pUPDATE_I2C: if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
+                      }else  
+if(strcmp(var,time_UPDATE_I2C)==0){ if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
                       else if (strcmp(c,cOne)==0) {SETBIT1( DateTime.flags,fUpdateI2C);countNTP=0; return true;}
                       else return false;  
-                      break;                      
-    default:          return   false; 
-                      break;   
-   }
-
-  if(dTime!=0)  {updateDateTime(dTime); return true; }    // было изменено время, надо скорректировать переменные времени
-  return  false;
+                      } else return  false;                      
+                      
+if(dTime!=0)  updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+return true;
 }
 // Получить параметр дата и время из строки
-char*   HeatPump::get_datetime(DATE_TIME p)
+char* HeatPump::get_datetime(char *var,char *ret)
 {
-   switch (p)
-   {
-    case pTIME:       return NowTimeToStr1();                      break;  
-    case pDATE:       return NowDateToStr();                       break;  
-    case pNTP:        return DateTime.serverNTP;                   break;                
-    case pUPDATE:     if (GETBIT(DateTime.flags,fUpdateNTP)) return  (char*)cOne;
-                      else      return  (char*)cZero;                break;  
-    case pTIMEZONE:   return  int2str(DateTime.timeZone);          break;  
-    case pUPDATE_I2C: if (GETBIT(DateTime.flags,fUpdateI2C)) return  (char*)cOne;
-                      else      return  (char*)cZero;                break;      
-    default:          return  (char*)cInvalid;                    break;   
-   }
- return (char*)cInvalid;
+if(strcmp(var,time_TIME)==0)  {return strcat(ret,NowTimeToStr1());                      }else  
+if(strcmp(var,time_DATE)==0)  {return strcat(ret,NowDateToStr());                       }else  
+if(strcmp(var,time_NTP)==0)   {return strcat(ret,DateTime.serverNTP);                   }else                
+if(strcmp(var,time_UPDATE)==0){if (GETBIT(DateTime.flags,fUpdateNTP)) return  strcat(ret,(char*)cOne);
+                               else                                   return  strcat(ret,(char*)cZero);}else  
+if(strcmp(var,time_TIMEZONE)==0){return  strcat(ret,int2str(DateTime.timeZone));         }else  
+if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) return  strcat(ret,(char*)cOne);
+                                    else                                   return  strcat(ret,(char*)cZero); }else      
+return strcat(ret,(char*)cInvalid);
 }
 
 // Установить опции ТН из числа (float)

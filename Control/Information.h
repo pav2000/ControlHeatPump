@@ -214,7 +214,7 @@ class Profile                         // Класс профиль
     
      // Функции работы с профилем
     void initProfile();                                     // инициализация профиля
-    char *get_list(char *c /*,int8_t num*/);                     // ДОБАВЛЯЕТ к строке с - список возможных конфигураций num - текущий профиль
+    char *get_list(char *c /*,int8_t num*/);                // ДОБАВЛЯЕТ к строке с - список возможных конфигураций num - текущий профиль
     int8_t set_list(int8_t num);                            // Устанавливает текущий профиль из номера списка, ДОБАВЛЯЕТ к строке с
     int8_t update_list(int8_t num);                         // обновить список имен профилей
 
@@ -233,8 +233,8 @@ class Profile                         // Класс профиль
     char*   get_paramCoolHP(PARAM_HP p, boolean fc);        // Охлаждение Получить параметр второй параметр - наличие частотника
     boolean set_paramHeatHP(PARAM_HP p, float x);           // Отопление  Установить параметры ТН из числа (float)
     char*   get_paramHeatHP(PARAM_HP p, boolean fc);        // отопление  Получить параметр  второй параметр - наличие частотника
-    boolean set_boiler(BOILER_HP p, char *c);               // Установить параметр из строки
-    char*   get_boiler(BOILER_HP p);                        // Получить параметр из строки
+    boolean set_boiler(char *var, char *c);                 // Установить параметр из строки
+    char*   get_boiler(char *var, char *ret);               // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
     int8_t  load_from_EEPROM_SaveON(type_SaveON *_SaveOn);	// Прочитать из EEPROM структуру: режим работы ТН (SaveON)
  
  private:
@@ -316,7 +316,6 @@ class Statistics                      // Класс статистика
   char *get_Stat(TYPE_STAT t,char* str, boolean cat);     // получить данные статистики по одному типу данных в виде строки
   char *get_OneDay(char* str,uint16_t index,boolean cat); // получить данные статистики по одному дню в виде строки
   char *get_Info(char* str, boolean cat);                 // получить информацию о накопленной стаитистики в виде строки
-  
   
 private:
   int8_t error;                                           // ошибка
@@ -411,8 +410,8 @@ class clientMQTT                              // Класс клиент MQTT
     void updateState(boolean NM,TYPE_STATE_MQTT state){if(NM) stateNARMON=state;else stateMQTT=state;}  // Установка состояния соединения MQTT
            
     // Установка параметров
-    boolean set_paramMQTT(char *var, char *c);           // Установить параметр из строки
-    char*   get_paramMQTT(char *var, char *ret);          // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+    boolean set_paramMQTT(char *var, char *c);    // Установить параметр из строки
+    char*   get_paramMQTT(char *var, char *ret);  // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
      
     void set_mqtt_serverIP(IPAddress x){mqttSettintg.mqtt_serverIP=x; }           // Установить IP Адрес серверa MQTT
     void set_narodMon_serverIP(IPAddress x){mqttSettintg.narodMon_serverIP=x; }   // УстановитьIP Адрес сервера народного мониторинга

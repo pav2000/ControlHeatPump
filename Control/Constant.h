@@ -535,6 +535,37 @@ const char *mess_MESS_TCOMP   = {"MESS_TCOMP"};          // Критическа
 const char *mess_MAIL_RET     = {"MAIL_RET"};            // Ответ на тестовую почту
 const char *mess_SMS_RET      = {"SMS_RET"};             // Ответ на тестовую  sms
 
+// Описание имен параметров бойлера для функций set_Boiler get_Boiler
+const char *boil_BOILER_ON    = {"BOILER_ON"};           // флаг Включения бойлера
+const char *boil_SCHEDULER_ON = {"SCHEDULER_ON"};        // флаг Использование расписани
+const char *boil_TURBO_BOILER = {"TURBO_BOILER"};        // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+const char *boil_SALLMONELA   = {"SALLMONELA"};          // флаг Сальмонела раз в неделю греть бойлер
+const char *boil_CIRCULATION  = {"CIRCULATION"};         // флаг Управления циркуляционным насосом ГВС
+const char *boil_TEMP_TARGET  = {"TEMP_TARGET"};         // Целевая температура бойлера
+const char *boil_DTARGET      = {"DTARGET"};             // гистерезис целевой температуры
+const char *boil_TEMP_MAX     = {"TEMP_MAX"};            // Tемпература подачи максимальная
+const char *boil_PAUSE1       = {"PAUSE1"};              // Минимальное время простоя компрессора в секундах
+const char *boil_SCHEDULER    = {"SCHEDULER"};           // Расписание
+const char *boil_CIRCUL_WORK  = {"CIRCUL_WORK"};         // Время  работы насоса ГВС секунды (fCirculation)
+const char *boil_CIRCUL_PAUSE = {"CIRCUL_PAUSE"};        // Пауза в работе насоса ГВС  секунды (fCirculation)
+const char *boil_RESET_HEAT   = {"RESET_HEAT"};          // флаг Сброса лишнего тепла в СО
+const char *boil_RESET_TIME   = {"RESET_TIME"};          // время сброса излишков тепла в СО в секундах (fResetHeat)
+const char *boil_BOIL_TIME    = {"BOIL_TIME"};           // Постоянная интегрирования времени в секундах ПИД ТН
+const char *boil_BOIL_PRO     = {"BOIL_PRO"};            // Пропорциональная составляющая ПИД ГВС
+const char *boil_BOIL_IN      = {"BOIL_IN"};             // Интегральная составляющая ПИД ГВС
+const char *boil_BOIL_DIF     = {"BOIL_DIF"};            // Дифференциальная составляющая ПИД ГВС
+const char *boil_BOIL_TEMP    = {"BOIL_TEMP"};           // Целевая температура ПИД ГВС
+const char *boil_ADD_HEATING  = {"ADD_HEATING"};         // флаг ДОГРЕВА ГВС ТЭНом
+const char *boil_TEMP_RBOILER = {"TEMP_RBOILER"};        // температура включения догрева бойлера
+
+const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд
+const char *time_DATE       = {"DATE"};         // текушая дата типа  12/04/2016
+const char *time_NTP        = {"NTP"};          // адрес NTP сервера строка до 60 символов.
+const char *time_UPDATE     = {"UPDATE"};       // Время синхронизации с NTP сервером.
+const char *time_TIMEZONE   = {"TIMEZONE"};     // Часовой пояс
+const char *time_UPDATE_I2C = {"UPDATE_I2C"};   // Синхронизация времени раз в час с i2c часами
+
+
 
 // Названия типы фреонов
 const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
@@ -902,42 +933,7 @@ enum MESSAGE
   pMESSAGE_WARNING,              // 8 Уведомление "Прочие уведомления"
   pEND10                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
-/*
-//  Перечисляемый тип - ПАРАМЕТРЫ Уведомления
-enum MESSAGE_HP 
-{
-  pMAIL=0,                       // флаг уведомления скидывать на почту
-  pMAIL_AUTH,                    // флаг необходимости авторизации на почтовом сервере
-  pMAIL_INFO,                    // флаг необходимости добавления в письмо информации о состоянии ТН
-  pSMS,                          // флаг уведомления скидывать на СМС (пока не реализовано)
-  pMESS_RESET,                   // флаг уведомления Сброс
-  pMESS_ERROR,                   // флаг уведомления Ошибка
-  pMESS_LIFE,                    // флаг уведомления Сигнал жизни
-  pMESS_TEMP,                    // флаг уведомления Достижение граничной температуры
-  pMESS_SD,                      // флаг уведомления "Проблемы с sd картой"
-  pMESS_WARNING,                 // флаг уведомления "Прочие уведомления"
-  pSMTP_SERVER,                  // Адрес сервера
-  pSMTP_IP,                      // IP Адрес сервера
-  pSMTP_PORT,                    // Адрес порта сервера
-  pSMTP_LOGIN,                   // логин сервера если включена авторизация
-  pSMTP_PASS,                    // пароль сервера если включена авторизация
-  pSMTP_MAILTO,                  // адрес отправителя
-  pSMTP_RCPTTO,                  // адрес получателя
-  pSMS_SERVICE,                  // сервис отправки смс
-  pSMS_IP,                       // IP Адрес сервера для отправки смс
-  pSMS_PHONE,                    // телефон куда отправляется смс
-  pSMS_P1,                       // первый параметр для отправки смс
-  pSMS_P2,                       // второй параметр для отправки смс
-  pSMS_NAMEP1,                   // описание первого параметра для отправки смс
-  pSMS_NAMEP2,                   // описание второго параметра для отправки смс
-  pMESS_TIN,                     // Критическая температура в доме (если меньше то генерится уведомление)
-  pMESS_TBOILER,                 // Критическая температура бойлера (если меньше то генерится уведомление)
-  pMESS_TCOMP,                   // Критическая температура компрессора (если больше то генериться уведомление)
-  pMAIL_RET,                     // Ответ на тестовую почту
-  pSMS_RET,                      // Ответ на тестовую  sms
-  pEND11                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-*/
+
 //  Перечисляемый тип - сервис для отправки смс
 enum SMS_SERVICE 
 { 
@@ -945,36 +941,6 @@ enum SMS_SERVICE
   pSMSC_RU,                      // Сервис smsc.ru
   pEND12
 };
-
-
-
-//  Перечисляемый тип - режим работы ГВС
-enum BOILER_HP          
-{
-    pBOILER_ON,                    // флаг Включения бойлера
-    pSCHEDULER_ON,                 // флаг Использование расписани
-    pTURBO_BOILER,                 // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
-    pSALLMONELA,                   // флаг Сальмонела раз в неделю греть бойлер
-    pCIRCULATION,                  // флаг Управления циркуляционным насосом ГВС
-    pTEMP_TARGET,                  // Целевая температура бойлера
-    pDTARGET,                      // гистерезис целевой температуры
-    pTEMP_MAX,                     // Tемпература подачи максимальная
-    pPAUSE1,                       // Минимальное время простоя компрессора в секундах
-    pSCHEDULER,                    // Расписание
-    pCIRCUL_WORK,                  // Время  работы насоса ГВС секунды (fCirculation)
-    pCIRCUL_PAUSE,                 // Пауза в работе насоса ГВС  секунды (fCirculation)
-    pRESET_HEAT,                   // флаг Сброса лишнего тепла в СО
-    pRESET_TIME,                   // время сброса излишков тепла в СО в секундах (fResetHeat)
-    pBOIL_TIME,                    // Постоянная интегрирования времени в секундах ПИД ТН
-    pBOIL_PRO,                     // Пропорциональная составляющая ПИД ГВС
-    pBOIL_IN,                      // Интегральная составляющая ПИД ГВС
-    pBOIL_DIF,                     // Дифференциальная составляющая ПИД ГВС
-    pBOIL_TEMP,                    // Целевая температура ПИД ГВС
-    pADD_HEATING,                   // флаг ДОГРЕВА ГВС ТЭНом
-    pTEMP_RBOILER,                 // температура включения догрева бойлера
-    pEND7                          // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
 
 //  Перечисляемый тип - тип фреона
 enum TYPEFREON           
@@ -1099,7 +1065,7 @@ enum OPTION_HP
     pEND2             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-
+/*
 //  Перечисляемый тип - Параметр даты и времени
 enum DATE_TIME       
 {
@@ -1111,6 +1077,7 @@ enum DATE_TIME
     pUPDATE_I2C,  // Синхронизация времени раз в час с i2c часами
     pEND5         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
+*/
 
 //  Перечисляемый тип - Тип графика
 enum TYPE_CHART       

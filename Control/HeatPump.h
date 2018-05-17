@@ -61,7 +61,6 @@ struct type_motoHour
  // uint32_t Q2;      // Объем прокаченного теплоносителя в СО (сезон)
   uint32_t Z1;      // Резервный параметр 1
   uint32_t Z2;      // Резервный параметр 2
-  
 };
 
 //  Работа с отдельными флагами type_optionHP
@@ -241,8 +240,8 @@ class HeatPump
     uint8_t set_hashAdmin();                              // расчитать хеш для администратора возвращает длину хеша
     
    // Дата время
-    boolean set_datetime(DATE_TIME p, char *c);            //  Установить параметр дата и время из строки
-    char*   get_datetime(DATE_TIME p);                     //  Получить параметр дата и время из строки
+    boolean set_datetime(char *var, char *c);              //  Установить параметр дата и время из строки
+    char*   get_datetime(char *var,char *ret);             //  Получить параметр дата и время из строки
     IPAddress get_ip() { return Network.ip;}               //  Получить ip адрес
     IPAddress get_sdns() { return Network.sdns;}           //  Получить sdns адрес
     IPAddress get_subnet() { return Network.subnet;}       //  Получить subnet адрес

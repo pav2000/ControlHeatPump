@@ -426,8 +426,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
    }
    if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
        {
-        strcat(strReturn,HP.get_datetime(pTIME));                        strcat(strReturn,"|");
-        strcat(strReturn,HP.get_datetime(pDATE));                        strcat(strReturn,"|");
+        HP.get_datetime((char*)time_TIME,strReturn);                     strcat(strReturn,"|");
+        HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
         strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
         strcat(strReturn,int2str(freeRam()+HP.startRAM));                strcat(strReturn,"b|");
         strcat(strReturn,int2str(100-HP.CPU_IDLE));                      strcat(strReturn,"%|");
@@ -1703,7 +1703,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		           } //if ((strstr(str,"Profile")>0)
 		           
              //6.  Настройки Уведомлений --------------------------------------------------------
-             
             if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
              {
               if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
@@ -1718,6 +1717,38 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   strcat(strReturn,"&") ; continue;
                   } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_messageSetting")==0) 
               } //if ((strstr(str,"messageSetting")>0)   
+              
+	          //7.  Настройки бойлера --------------------------------------------------
+	          if (strstr(str,"Boiler"))          // Проверка для запросов содержащих Boiler
+	           {
+	              if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
+	                  {
+	                    HP.Prof.get_boiler(x+1,strReturn);
+	                    strcat(strReturn,"&") ; continue;
+	                  } // (strcmp(str,"get_Boiler")==0) 
+	              else if (strcmp(str,"set_Boiler")==0)           // Функция set_Boiler - установить значениена стройки бойлера
+	                  {
+	                   if (HP.Prof.set_boiler(x+1,strbuf)) HP.Prof.get_boiler(x+1,strReturn);  // преобразование удачно
+	                   else 	                      strcat(strReturn,"E19") ; // ошибка преобразования строки
+	                  strcat(strReturn,"&") ; continue;
+	                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Boiler")==0) 
+	             } //if ((strstr(str,"Boiler")>0)   
+
+	           //8.  Настройки дата время --------------------------------------------------------
+		          if (strstr(str,"datetime"))          // Проверка для запросов содержащих datetime
+		             {
+		              if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
+		                  {
+		                    HP.get_datetime(x+1,strReturn);
+		                    strcat(strReturn,"&") ; continue;
+		                  } // (strcmp(str,"get_datetime")==0) 
+   		              else if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
+ 		                  {
+		                   if (HP.set_datetime(x+1,strbuf))  HP.get_datetime(x+1,strReturn);    // преобразование удачно
+	                       else  strcat(strReturn,"E18") ; // ошибка преобразования строки
+		                  strcat(strReturn,"&") ; continue;
+		                  }  else strcat(strReturn,"E03&");  continue;// (strcmp(str,"set_datetime")==0) 
+		            } //if ((strstr(str,"datetime")>0)   
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -2043,7 +2074,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"PING_ADR")==0)       { param=186;}  // Адрес для пинга
                else if (strcmp(x+1,"PING_TIME")==0)      { param=187;}  // Время пинга в секундах
                else if (strcmp(x+1,"NO_PING")==0)        { param=188;}  // Запрет пинга контроллера
-         
+               /*
                 // Настройки дата время  смещение 190 общее число 10 шт
                else if (strcmp(x+1,"TIME")==0)           { param=190;}  // время
                else if (strcmp(x+1,"DATE")==0)           { param=191;}  // дата
@@ -2051,30 +2082,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"UPDATE")==0)         { param=193;}  // обновление по NTP
                else if (strcmp(x+1,"TIMEZONE")==0)       { param=194;}  // часовой пояс
                else if (strcmp(x+1,"UPDATE_I2C")==0)     { param=195;}  // обновление внутренних часов по i2c раз час
-        
-               // Настройка бойлера смещение 200 занимает 30 позиций
-               else if (strcmp(x+1,"BOILER_ON")==0)      { param=200;}  // флаг Включения бойлера
-               else if (strcmp(x+1,"SCHEDULER_ON")==0)   { param=201;}  // флаг Использование расписания
-               else if (strcmp(x+1,"TURBO_BOILER")==0)   { param=202;}  // флаг использование ТУРБО нагрева бойлера
-               else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
-               else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
-               else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
-               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры
-               else if (strcmp(x+1,"TEMP_MAX")==0)       { param=207;}  // Температура подачи максимальная
-               else if (strcmp(x+1,"PAUSE1")==0)         { param=208;}  // Минимальное время простоя компрессора в минутах
-               else if (strcmp(x+1,"SCHEDULER")==0)      { param=209;}  // Расписание SCHEDULER
-               else if (strcmp(x+1,"CIRCUL_WORK")==0)    { param=210;}  // Время  работы насоса ГВС
-               else if (strcmp(x+1,"CIRCUL_PAUSE")==0)   { param=211;}  // Пауза в работе насоса ГВС
-               else if (strcmp(x+1,"RESET_HEAT")==0)     { param=212;}  // флаг Сброса лишнего тепла в СО
-               else if (strcmp(x+1,"RESET_TIME")==0)     { param=213;}  // время сброса излишков тепла в секундах (fResetHeat)
-               else if (strcmp(x+1,"BOIL_TIME")==0)      { param=214;}  // Постоянная интегрирования времени в секундах ПИД ТН
-               else if (strcmp(x+1,"BOIL_PRO")==0)       { param=215;}  // Пропорциональная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_IN")==0)        { param=216;}  // Интегральная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_DIF")==0)       { param=217;}  // Дифференциальная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_TEMP")==0)      { param=218;}  // Целевая темпеартура ПИД ГВС
-               else if (strcmp(x+1,"ADD_HEATING")==0)    { param=219;}  // флаг использования тена для догрева ГВС
-               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}  // температура включчения догрева бойлера
-       
+               */
+   
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2643,6 +2652,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
             } //if ((strstr(str,"Network")>0)       
 
+/*
            //11.  Настройки дата время смещение 190
           if (strstr(str,"datetime"))          // Проверка для запросов содержащих datetime
              {
@@ -2665,30 +2675,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"set_datetime")==0) 
               }  // else end 
             } //if ((strstr(str,"datetime")>0)   
-
-         //12.  Настройки бойлера смещение 200 занимает 30
-          if (strstr(str,"Boiler"))          // Проверка для запросов содержащих Boiler
-             {
-             if ((param>=230)||(param<200))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-200; 
-               if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
-                  {
-                    strcat(strReturn,HP.Prof.get_boiler((BOILER_HP)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Boiler")==0) 
-                  
-              if (strcmp(str,"set_Boiler")==0)           // Функция set_Boiler - установить значениена стройки бойлера
-                  {
-                   if (HP.Prof.set_boiler((BOILER_HP)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.Prof.get_boiler((BOILER_HP)p));
-                   else
-                      strcat(strReturn,"E19") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Boiler")==0) 
-              }  // else end 
-            } //if ((strstr(str,"Boiler")>0)   
-
+*/
         // НОВОЕ вставлять сюда!
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:
