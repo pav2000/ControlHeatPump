@@ -1765,6 +1765,21 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 	                  strcat(strReturn,"&") ; continue;
 	                  }  else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Network")==0) 
 	             } //if ((strstr(str,"Network")>0)   
+
+		         //10.  Статистика используется в одной функции get_Stat ---------------------------------------
+		          if (strstr(str,"Stat"))   // Проверка для запросов содержащих Stat
+		           {
+		               if (strcmp(str,"get_Stat")==0)           
+		                  {
+		                  #ifdef I2C_EEPROM_64KB    
+		                  HP.Stat.get_Stat(x+1,strReturn, true);
+		                  #else
+		                  strcat(strReturn,"");
+		                  #endif
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"get_Stat")==0) 
+		            } //if ((strstr(str,"Stat")>0) 
+
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -2038,20 +2053,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"_fullPOWER")==0)     { param=137;} // Статистика по Полная мощность
                else if (strcmp(x+1,"_kPOWER")==0)        { param=138;} // Статистика по Коэффициент мощности
                else if (strcmp(x+1,"_fullCOP")==0)       { param=139;} // Полный COP
-         
-               // Параметры для статистики смещение 140 занимает 15 позиций  используется в одной функции get_Stat
-               else if (strcmp(x+1,"none")==0)           { param=140;} // ничего не показываем
-               else if (strcmp(x+1,"Tin")==0)            { param=141;} // средняя температура дома
-               else if (strcmp(x+1,"Tout")==0)           { param=142;} // средняя температура улицы
-               else if (strcmp(x+1,"Tboiler")==0)        { param=143;} // средняя температура бойлера
-               else if (strcmp(x+1,"Hour")==0)           { param=144;} // число накопленных часов должно быть 24
-               else if (strcmp(x+1,"Hmoto")==0)          { param=145;} // моточасы за сутки
-               else if (strcmp(x+1,"EnergyCO")==0)       { param=146;} // выработанная энергия
-               else if (strcmp(x+1,"Energy220")==0)      { param=147;} // потраченная энергия
-               else if (strcmp(x+1,"-COP-")==0)          { param=148;} // Средний КОП за день
-               else if (strcmp(x+1,"PowerCO")==0)        { param=149;} // средняя мощность СО
-               else if (strcmp(x+1,"Power220")==0)       { param=150;} // средняя потребляемая мощность
-                      
+            
                // Частотник 155 только одно устройство поддерживается смещение 155 занимает 15 позиций
                else if (strcmp(x+1,"ON_OFF")==0)         { param=155;} // Флаг включения выключения (управление частотником)
                else if (strcmp(x+1,"MIN_FC")==0)         { param=156;} // Только чтение минимальная частота работы
@@ -2596,29 +2598,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"get_Chart")==0) 
                }  // else end 
             } //if ((strstr(str,"Chart")>0)  
-            
-         //10.  Статистика смещение param 100 занимает 40 позиций  используется в одной функции get_Stat
-          if (strstr(str,"Stat"))          // Проверка для запросов содержащих Stat
-             {
-             if ((param>=155)||(param<140))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-140; 
-               if (strcmp(str,"get_Stat")==0)           
-                  {
-                  #ifdef I2C_EEPROM_64KB    
-                  HP.Stat.get_Stat((TYPE_STAT) p,strReturn, true);
-                  #else
-                  strcat(strReturn,"");
-                  #endif
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Stat")==0) 
-               }  // else end 
-            } //if ((strstr(str,"Stat")>0)  
+         
             // --------------------------------------------------------------------------------------------------------------------------
 
-        // НОВОЕ вставлять сюда!
+       
         // ------------------------ конец разбора -------------------------------------------------
-x_FunctionNotFound:
+x_FunctionNotFound:    
        strcat(strReturn,"E01");                             // функция не найдена ошибка
        strcat(strReturn,"&") ;
        continue;

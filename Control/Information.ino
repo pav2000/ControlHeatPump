@@ -1313,30 +1313,30 @@ for(i=0;i<number;i++)  // герация и запись одной точки �
 char * Statistics::get_listStat(char* str, boolean cat)
 {
 if (!cat) strcpy(str,"");     // Обнулить строку если есть соответсвующий флаг
- strcat(str,"none:1;");
- strcat(str,"Tin:0;");        // средняя темпеартура дома
- strcat(str,"Tout:0;");       // средняя темпеартура улицы
- strcat(str,"Tboiler:0;");    // средняя темпеартура бойлера
- strcat(str,"Hour:0;");       // число накопленных часов должно быть 24
- strcat(str,"Hmoto:0;");      // моточасы за сутки
+ strcat(str,stat_NONE);strcat(str,":1;");
+ strcat(str,stat_TIN);strcat(str,":0;");        // средняя темпеартура дома
+ strcat(str,stat_TOUT);strcat(str,":0;");       // средняя темпеартура улицы
+ strcat(str,stat_TBOILER);strcat(str,":0;");    // средняя темпеартура бойлера
+ strcat(str,stat_HOUR);strcat(str,":0;");       // число накопленных часов должно быть 24
+ strcat(str,stat_HMOTO);strcat(str,":0;");      // моточасы за сутки
  #ifdef FLOWCON
- strcat(str,"EnergyCO:0;");   // выработанная энергия
+ strcat(str,stat_ENERGYCO);strcat(str,":0;");   // выработанная энергия
  #endif
  #ifdef USE_ELECTROMETER_SDM
- strcat(str,"Energy220:0;");  // потраченная энергия
- strcat(str,"-COP-:0;");        // КОП
+ strcat(str,stat_ENERGY220);strcat(str,":0;");  // потраченная энергия
+ strcat(str,stat_COP);strcat(str,":0;");        // КОП
  #endif
  #ifdef FLOWCON
- strcat(str,"PowerCO:0;");    // средння мощность СО
+ strcat(str,stat_POWERCO);strcat(str,":0;");    // средння мощность СО
  #endif
  #ifdef USE_ELECTROMETER_SDM
- strcat(str,"Power220:0;");   // средняя потребляемая мощность
+ strcat(str,stat_POWER220);strcat(str,":0;");   // средняя потребляемая мощность
  #endif
  return str;      
 }
 // получить данные статистики по одному типу данных в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char *Statistics::get_Stat(TYPE_STAT t,char* str, boolean cat)
+char *Statistics::get_Stat(char* var,char* str, boolean cat)
 {
 char buf[10];
 uint16_t index;           // индекс текущей точки
@@ -1344,7 +1344,6 @@ if (!cat) strcpy(str,""); // Обнулить строку если есть с�
 
 for(int i=0;i<num;i++) // цикл по всем точкам
   {
-   
    if (!full) index=i; // вычисление текущей точки
    else { if ((pos+i)<STAT_POINT) index=pos+i; else    index=pos+i-STAT_POINT;  }  
     // чтение данных одной точки
@@ -1356,22 +1355,20 @@ for(int i=0;i<num;i++) // цикл по всем точкам
   if (error==OK) // Если удачно
     { 
     strcat(str,StatDate(ReadDay.date,true)); strcat(str,(char*)":");    // готовим дату кратко
-      switch (t) // в зависимости от того чо нужно
-      {
-         case pNONE_STAT:      strcat(str,""); return str;  break;
-         case pTIN_STAT:       strcat(str,ftoa(buf,(float)(ReadDay.tin/100.0),2)); break;          // средняя темпеартура дома
-         case pTOUT_STAT:      strcat(str,ftoa(buf,(float)(ReadDay.tout/100.0),2)); break;         // средняя темпеартура улицы
-         case pTBOILER_STAT:   strcat(str,ftoa(buf,(float)(ReadDay.tbol/100.0),2)); break;         // средняя температура бойлера
-         case pHOUR_STAT:      strcat(str,int2str(ReadDay.Hour)); break;                           // число накопленных часов должно быть 24
-         case pHMOTO_STAT:     strcat(str,int2str(ReadDay.moto)); break;                           // моточасы за сутки
-         case pENERGYCO_STAT:  strcat(str,int2str(ReadDay.eCO));  break;                           // выработанная энергия
-         case pENERGY220_STAT: strcat(str,int2str(ReadDay.eEn)); break;                            // потраченная энергия
-         case pCOP_STAT:       strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.eEn),2)); break;    // КОП
-         case pPOWERCO_STAT:   strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.Hour),2)); break;   // средння мощность СО
-         case pPOWER220_STAT:  strcat(str,ftoa(buf,(float)(ReadDay.eEn/ReadDay.Hour),2)); break;   // средняя потребляемая мощность
-        default:  strcat(str,(char*)cZero); break; 
-      }  
-    strcat(str,(char*)";"); 
+      // в зависимости от того чо нужно
+         if(strcmp(var,stat_NONE)==0)     { strcat(str,""); return str;  }else
+         if(strcmp(var,stat_TIN)==0)      { strcat(str,ftoa(buf,(float)(ReadDay.tin/100.0),2)); }else          // средняя темпеартура дома
+         if(strcmp(var,stat_TOUT)==0)     { strcat(str,ftoa(buf,(float)(ReadDay.tout/100.0),2)); }else         // средняя темпеартура улицы
+         if(strcmp(var,stat_TBOILER)==0)  { strcat(str,ftoa(buf,(float)(ReadDay.tbol/100.0),2)); }else         // средняя температура бойлера
+         if(strcmp(var,stat_HOUR)==0)     { strcat(str,int2str(ReadDay.Hour)); }else                           // число накопленных часов должно быть 24
+         if(strcmp(var,stat_HMOTO)==0)    { strcat(str,int2str(ReadDay.moto)); }else                           // моточасы за сутки
+         if(strcmp(var,stat_ENERGYCO)==0) { strcat(str,int2str(ReadDay.eCO));  }else                           // выработанная энергия
+         if(strcmp(var,stat_ENERGY220)==0){ strcat(str,int2str(ReadDay.eEn)); }else                            // потраченная энергия
+         if(strcmp(var,stat_COP)==0)      { strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.eEn),2)); }else    // КОП
+         if(strcmp(var,stat_POWERCO)==0)  { strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.Hour),2));}else    // средння мощность СО
+         if(strcmp(var,stat_POWER220)==0) { strcat(str,ftoa(buf,(float)(ReadDay.eEn/ReadDay.Hour),2));}else    // средняя потребляемая мощность
+         strcat(str,(char*)cZero);  
+         strcat(str,(char*)";"); 
      } // if
   }  // for
     return str; 

@@ -272,11 +272,6 @@ class Profile                         // Класс профиль
 //  #define I2C_STAT_READY  (0xaa55)                                                                    // Признак создания журнала - если его нет по адресу I2C_JOURNAL_START-2 то надо форматировать журнал (первичная инициализация)
 // Работа с отдельными флагами type_OneDay
 #define fStatFull         0          // флаг полного дня  все 24 часа
-// Заголовок статистики внутри памяти еепром
-//struct type_headerStat               // Заголовок статистики
-//{
-// uint 
-//}
 
 // Данные об эффективности работы ТН  по дням
 struct type_OneDay                   // Хранение данных одной точки во флеше
@@ -313,7 +308,7 @@ class Statistics                      // Класс статистика
   uint8_t writeOneDay(uint32_t energyCO,uint32_t energy220,uint32_t motoH); // Записать один день в еепром
   void generate_TestData(uint16_t num);                   // Сгенерировать тестовые данные в памяти i2c на входе число точек
   char *get_listStat(char* str, boolean cat);             // получить список доступой статистики кладется в str
-  char *get_Stat(TYPE_STAT t,char* str, boolean cat);     // получить данные статистики по одному типу данных в виде строки
+  char *get_Stat(char* var,char* str, boolean cat);       // получить данные статистики по одному типу данных в виде строки
   char *get_OneDay(char* str,uint16_t index,boolean cat); // получить данные статистики по одному дню в виде строки
   char *get_Info(char* str, boolean cat);                 // получить информацию о накопленной стаитистики в виде строки
   
