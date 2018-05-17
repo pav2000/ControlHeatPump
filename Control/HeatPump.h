@@ -380,7 +380,7 @@ class HeatPump
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
     char * get_listChart(char* str, boolean cat);          // получить список доступных графиков
-    char * get_Chart(TYPE_CHART t,char* str, boolean cat); // получить данные графика
+    char * get_Chart(char *var,char* str, boolean cat);    // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора

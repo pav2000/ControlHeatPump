@@ -1779,7 +1779,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		                  strcat(strReturn,"&") ; continue;
 		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"get_Stat")==0) 
 		            } //if ((strstr(str,"Stat")>0) 
-
+                  
+		          //11.  Графики смещение  используется в одной функции get_Chart
+		          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
+		             {
+		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
+		                  {
+		                  HP.get_Chart(x+1,strReturn, true);
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
+		            } //if ((strstr(str,"Chart")>0)  
+         
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -2011,7 +2021,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
                else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
-    
+    /*
                // Параметры для графиков смещение 100 занимает 40 позиций  используется в одной функции get_Chart
                else if (strcmp(x+1,"_NONE")==0)          { param=100;} // ничего не показываем
                else if (strcmp(x+1,"_TOUT")==0)          { param=101;} // Температура улицы
@@ -2053,7 +2063,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"_fullPOWER")==0)     { param=137;} // Статистика по Полная мощность
                else if (strcmp(x+1,"_kPOWER")==0)        { param=138;} // Статистика по Коэффициент мощности
                else if (strcmp(x+1,"_fullCOP")==0)       { param=139;} // Полный COP
-            
+      */      
                // Частотник 155 только одно устройство поддерживается смещение 155 занимает 15 позиций
                else if (strcmp(x+1,"ON_OFF")==0)         { param=155;} // Флаг включения выключения (управление частотником)
                else if (strcmp(x+1,"MIN_FC")==0)         { param=156;} // Только чтение минимальная частота работы
@@ -2585,6 +2595,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                }  // else end -----------------------
             } //if ((strstr(str,"HP")>0)  
 
+/*
           //9.  Графики смещение param 100 занимает 40 позиций  используется в одной функции get_Chart
           if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
              {
@@ -2598,7 +2609,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"get_Chart")==0) 
                }  // else end 
             } //if ((strstr(str,"Chart")>0)  
-         
+ */        
             // --------------------------------------------------------------------------------------------------------------------------
 
        

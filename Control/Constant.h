@@ -600,6 +600,49 @@ const char *stat_COP       = {"COP"};              // КОП
 const char *stat_POWERCO   = {"PowerCO"};          // средння мощность СО
 const char *stat_POWER220  = {"Power220"};         // средняя потребляемая мощность
 
+// Описание имен параметров Графиков для функций get_Chart
+const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
+const char *chart_TOUT      = {"TOUT"};                     // 1 Температура улицы
+const char *chart_TIN       = {"TIN"};                      // 2 Температура в доме
+const char *chart_TEVAIN    = {"TEVAIN"};                   // 3 Температура на входе испарителя (по фреону)
+const char *chart_TEVAOUT   = {"TEVAOUT"};                  // 4 Температура на выходе испарителя (по фреону)
+const char *chart_TCONIN    = {"TCONIN"};                   // 5 Температура на входе конденсатора (по фреону)
+const char *chart_TCONOUT   = {"TCONOUT"};                  // 6 Температура на выходе конденсатора (по фреону)
+const char *chart_TBOILER   = {"TBOILER"};                  // 7 Температура в бойлере ГВС
+const char *chart_TACCUM    = {"TACCUM"};                    // 8 Температура на выходе теплоаккмулятора
+const char *chart_TRTOOUT   = {"TRTOOUT"};                   // 9 Температура на выходе RTO (по фреону)
+const char *chart_TCOMP     = {"TCOMP"};                     // 10 Температура нагнетания компрессора
+const char *chart_TEVAING   = {"TEVAING"};                   // 11 Температура на входе испарителя (по гликолю)
+const char *chart_TEVAOUTG  = {"TEVAOUTG"};                  // 12 Температура на выходе испарителя (по гликолю)
+const char *chart_TCONING   = {"TCONING"};                   // 13 Температура на входе конденсатора (по гликолю)
+const char *chart_TCONOUTG  = {"TCONOUTG"};                  // 14 Температура на выходе конденсатора (по гликолю)
+const char *chart_PEVA      = {"PEVA"};                      // 15 Давление
+const char *chart_PCON      = {"PCON"};                      // 16 Давление нагнетания
+const char *chart_FLOWCON   = {"FLOWCON"};                   // 17 Датчик потока по кондесатору
+const char *chart_FLOWEVA   = {"FLOWEVA"};                   // 18 Датчик потока по испарителю
+const char *chart_FLOWPCON  = {"FLOWPCON"};                  // 19 Датчик протока по предконденсатору
+const char *chart_posEEV    = {"posEEV"};                    // 20 позиция ЭРВ
+const char *chart_freqFC    = {"freqFC"};                    // 21 Частота инвертора
+const char *chart_powerFC   = {"powerFC"};                   // 22 Мощность инвертора
+const char *chart_currentFC = {"currentFC"};                 // 23 Ток компрессора
+const char *chart_RCOMP     = {"RCOMP"};                     // 24 включение компрессора
+const char *chart_OVERHEAT  = {"OVERHEAT"};                  // 25 перегрев
+const char *chart_dCO       = {"dCO"};                       // 26 дельта СО
+const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
+const char *chart_TPEVA     = {"TPEVA"};                     // 28 температура расчитанная из давления Испариенифя
+const char *chart_TPCON     = {"TPCON"};                     // 29 температура расчитанная из давления Конденсации
+const char *chart_PowerCO   = {"PowerCO"};                   // 30 Мощность выходная теплового насоса
+const char *chart_PowerGEO  = {"PowerGEO"};                  // 31 Мощность контура
+const char *chart_COP       = {"COP"};                       // 32 Коэффициент преобразования Холодильной машины (без насосов)
+const char *chart_VOLTAGE   = {"VOLTAGE"};                   // 33 Статистика по напряжению
+const char *chart_CURRENT   = {"CURRENT"};                   // 34 Статистика по току
+const char *chart_acPOWER   = {"acPOWER"};                   // 34 Статистика по активная мощность
+const char *chart_rePOWER   = {"rePOWER"};                   // 36 Статистика по Реактивная мощность
+const char *chart_fullPOWER = {"fullPOWER"};                 // 37 Статистика по Полная мощность
+const char *chart_kPOWER    = {"kPOWER"};                    // 38 Статистика по Коэффициент мощности
+const char *chart_fullCOP   = {"fullCOP"};                   // 39 Полный COP
+
+
 // Названия типы фреонов
 const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
 // Названия правило работы ЭРВ
@@ -992,32 +1035,6 @@ enum TEST_MODE
    HARD_TEST           // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-/*
-//  Перечисляемый тип - параметры настройки сети
-enum PARAM_NETWORK          
-{
-   pIP,        
-   pSDNS,
-   pGATEWAY,
-   pSUBNET,
-   pDHSP,
-   pMAC, 
-   pRES_SOCKET,
-   pRES_W5200,
-   pPASS,                       // Использование паролей
-   pPASSUSER,
-   pPASSADMIN,
-   pSIZE_PACKET,                // размер пакета
-   pINIT_W5200,                 // Ежеминутный контроль SPI для сетевого чипа
-   pPORT,                       // Port веб сервера
-   pNO_ACK,                     // Не ожидать ответа ack
-   pDELAY_ACK,                  // Задержка перед посылкой следующего пакета
-   pPING_ADR,                   // адрес для пинга
-   pPING_TIME,                  // время пинга в секундах
-   pNO_PING,                    // запрет пинга контроллера
-   pEND3                        // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-*/
 //  Перечисляемый тип - Время сброса сокетов
 enum TIME_RES_SOCKET       
 {
@@ -1083,19 +1100,6 @@ enum OPTION_HP
 };
 
 /*
-//  Перечисляемый тип - Параметр даты и времени
-enum DATE_TIME       
-{
-    pTIME,        // текущее время  12:45 без секунд
-    pDATE,        // текушая дата типа  12/04/2016
-    pNTP,         // адрес NTP сервера строка до 60 символов.
-    pUPDATE,      // Время синхронизации с NTP сервером.
-    pTIMEZONE,    // Часовой пояс
-    pUPDATE_I2C,  // Синхронизация времени раз в час с i2c часами
-    pEND5         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-*/
-
 //  Перечисляемый тип - Тип графика
 enum TYPE_CHART       
 {
@@ -1141,5 +1145,6 @@ enum TYPE_CHART
     pfullCOP,                  // 39 Полный COP
     pEND6                      // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
+*/
  #endif
 

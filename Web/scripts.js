@@ -575,7 +575,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if(idsel == "get_listchart") {
 													var elems = document.getElementsByName("chrt_sel");
 													for(var j = 0; j < elems.length; j++) {
-														elems[j].add(new Option(cont2[0], "_" + cont2[0], false, selected), null);
+														elems[j].add(new Option(cont2[0],cont2[0], false, selected), null); // "_"+
 													}
 												} else {
 													var opt = new Option(cont2[0], k, false, selected);

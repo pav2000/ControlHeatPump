@@ -1230,60 +1230,58 @@ return str;
 
 // получить данные графика  в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
+char * HeatPump::get_Chart(char *var,char* str, boolean cat)
 {
  char buf[8]; 
  if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг false
- switch (t)
-   {
-   case pNONE:      strcat(str,""); return str;                           break;   
-   case pTOUT:      return sTemp[TOUT].Chart.get_PointsStr(100,str);      break;   
-   case pTIN:       return sTemp[TIN].Chart.get_PointsStr(100,str);       break;   
-   case pTEVAIN:    return sTemp[TEVAIN].Chart.get_PointsStr(100,str);    break;   
-   case pTEVAOUT:   return sTemp[TEVAOUT].Chart.get_PointsStr(100,str);   break;   
-   case pTCONIN:    return sTemp[TCONIN].Chart.get_PointsStr(100,str);    break;   
-   case pTCONOUT:   return sTemp[TCONOUT].Chart.get_PointsStr(100,str);   break;   
-   case pTBOILER:   return sTemp[TBOILER].Chart.get_PointsStr(100,str);   break;   
-   case pTACCUM:    return sTemp[TACCUM].Chart.get_PointsStr(100,str);    break;   
-   case pTRTOOUT:   return sTemp[TRTOOUT].Chart.get_PointsStr(100,str);   break; 
-   case pTCOMP:     return sTemp[TCOMP].Chart.get_PointsStr(100,str);     break; 
-   case pTEVAING:   return sTemp[TEVAING].Chart.get_PointsStr(100,str);   break; 
-   case pTEVAOUTG:  return sTemp[TEVAOUTG].Chart.get_PointsStr(100,str);  break; 
-   case pTCONING:   return sTemp[TCONING].Chart.get_PointsStr(100,str);   break; 
-   case pTCONOUTG:  return sTemp[TCONOUTG].Chart.get_PointsStr(100,str);  break; 
+   if(strcmp(var,chart_NONE)==0){      strcat(str,""); return str;                           }else   
+   if(strcmp(var,chart_TOUT)==0){      return sTemp[TOUT].Chart.get_PointsStr(100,str);      }else   
+   if(strcmp(var,chart_TIN)==0){       return sTemp[TIN].Chart.get_PointsStr(100,str);       }else   
+   if(strcmp(var,chart_TEVAIN)==0){    return sTemp[TEVAIN].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TEVAOUT)==0){   return sTemp[TEVAOUT].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TCONIN)==0){    return sTemp[TCONIN].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TCONOUT)==0){   return sTemp[TCONOUT].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TBOILER)==0){   return sTemp[TBOILER].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TACCUM)==0){    return sTemp[TACCUM].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TRTOOUT)==0){   return sTemp[TRTOOUT].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TCOMP)==0){     return sTemp[TCOMP].Chart.get_PointsStr(100,str);     }else 
+   if(strcmp(var,chart_TEVAING)==0){   return sTemp[TEVAING].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TEVAOUTG)==0){  return sTemp[TEVAOUTG].Chart.get_PointsStr(100,str);  }else 
+   if(strcmp(var,chart_TCONING)==0){   return sTemp[TCONING].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TCONOUTG)==0){  return sTemp[TCONOUTG].Chart.get_PointsStr(100,str);  }else 
 
-   case pPEVA:      return sADC[PEVA].Chart.get_PointsStr(100,str);       break;
-   case pPCON:      return sADC[PCON].Chart.get_PointsStr(100,str);       break;
+   if(strcmp(var,chart_PEVA)==0){      return sADC[PEVA].Chart.get_PointsStr(100,str);       }else
+   if(strcmp(var,chart_PCON)==0){      return sADC[PCON].Chart.get_PointsStr(100,str);       }else
 
 
-   case pFLOWCON:   
+   if(strcmp(var,chart_FLOWCON)==0){   
                      #ifdef FLOWCON
                      return sFrequency[FLOWCON].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
-   case pFLOWEVA:   
+                     }else
+   if(strcmp(var,chart_FLOWEVA)==0){   
                      #ifdef FLOWEVA
                      return sFrequency[FLOWEVA].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
-   case pFLOWPCON:  
+                     }else
+   if(strcmp(var,chart_FLOWPCON)==0){  
                      #ifdef FLOWPCON
                      return sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
+                     }else
 
    #ifdef EEV_DEF
-   case pposEEV:    return dEEV.Chart.get_PointsStr(1,str);               break;
-   case pOVERHEAT:  return ChartOVERHEAT.get_PointsStr(100,str);          break;
-   case pTPEVA:     return ChartTPEVA.get_PointsStr(100,str);             break;
-   case pTPCON:     return ChartTPCON.get_PointsStr(100,str);             break;
+   if(strcmp(var,chart_posEEV)==0){    return dEEV.Chart.get_PointsStr(1,str);               }else
+   if(strcmp(var,chart_OVERHEAT)==0){  return ChartOVERHEAT.get_PointsStr(100,str);          }else
+   if(strcmp(var,chart_TPEVA)==0){     return ChartTPEVA.get_PointsStr(100,str);             }else
+   if(strcmp(var,chart_TPCON)==0){     return ChartTPCON.get_PointsStr(100,str);             }else
    #endif
-   case pfreqFC:    return dFC.ChartFC.get_PointsStr(100,str);            break;
-   case ppowerFC:   return dFC.ChartPower.get_PointsStr(10,str);          break;
-   case pcurrentFC: return dFC.ChartCurrent.get_PointsStr(100,str);       break;
+   if(strcmp(var,chart_freqFC)==0){    return dFC.ChartFC.get_PointsStr(100,str);            }else
+   if(strcmp(var,chart_powerFC)==0){   return dFC.ChartPower.get_PointsStr(10,str);          }else
+   if(strcmp(var,chart_currentFC)==0){ return dFC.ChartCurrent.get_PointsStr(100,str);       }else
 
-   case pRCOMP:     return ChartRCOMP.get_PointsStr(1,str);               break;
-   case pdCO:       if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
+   if(strcmp(var,chart_RCOMP)==0){     return ChartRCOMP.get_PointsStr(1,str);               }else
+   if(strcmp(var,chart_dCO)==0){       if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
                     {
                      for(int i=0;i<sTemp[TCONOUTG].Chart.get_num();i++) 
                         {
@@ -1292,8 +1290,8 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
                         }                  
                      }
                     else return (char*)";";// График не определен - нет данных
-                    break;
-   case pdGEO:      if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
+                    }else
+   if(strcmp(var,chart_dGEO)==0){      if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
                     {
                      for(int i=0;i<sTemp[TEVAING].Chart.get_num();i++) 
                         {
@@ -1302,27 +1300,22 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
                         }                  
                      }
                     else return (char*)";";// График не определен - нет данных
-                    break;
+                   }else
 
-   case pPowerCO:   return ChartPowerCO.get_PointsStr(1000,str);          break; 
-   case pPowerGEO:  return ChartPowerGEO.get_PointsStr(1000,str);         break;
-   case pCOP:       return ChartCOP.get_PointsStr(100,str);               break;
+   if(strcmp(var,chart_PowerCO)==0){   return ChartPowerCO.get_PointsStr(1000,str);          }else 
+   if(strcmp(var,chart_PowerGEO)==0){  return ChartPowerGEO.get_PointsStr(1000,str);         }else
+   if(strcmp(var,chart_COP)==0){       return ChartCOP.get_PointsStr(100,str);               }else
    
    #ifdef USE_ELECTROMETER_SDM 
-   case pVOLTAGE:   return dSDM.ChartVoltage.get_PointsStr(100,str);         break; 
-   case pCURRENT:   return dSDM.ChartCurrent.get_PointsStr(100,str);         break;
-//   case pacPOWER:   return dSDM.sAcPower.get_PointsStr(1,str);           break;
-//   case prePOWER:   return dSDM.sRePower.get_PointsStr(1,str);           break; 
-   case pfullPOWER: return dSDM.ChartPower.get_PointsStr(1,str);             break;
-//   case pkPOWER:    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     break;
-   case pfullCOP:   return ChartFullCOP.get_PointsStr(100,str);           break;
-   
+   if(strcmp(var,chart_VOLTAGE)==0){   return dSDM.ChartVoltage.get_PointsStr(100,str);         }else 
+   if(strcmp(var,chart_CURRENT)==0){   return dSDM.ChartCurrent.get_PointsStr(100,str);         }else
+//   if(strcmp(var,chart_acPOWER)==0){   return dSDM.sAcPower.get_PointsStr(1,str);           }else
+//   if(strcmp(var,chart_rePOWER)==0){   return dSDM.sRePower.get_PointsStr(1,str);           }else 
+   if(strcmp(var,chart_fullPOWER)==0){ return dSDM.ChartPower.get_PointsStr(1,str);             }else
+//   if(strcmp(var,chart_kPOWER)==0){    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
+   if(strcmp(var,chart_fullCOP)==0){   return ChartFullCOP.get_PointsStr(100,str);           }else
    #endif
-  
-   default:        strcat(str,""); return str;                           break;   
-   }
-
-return str;      
+  return str;      
 }
 
 // расчитать хеш для пользователя возвращает длину хеша
