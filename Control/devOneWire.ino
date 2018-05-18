@@ -294,7 +294,7 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
     if(rs == DS18B20_p12BIT) {
         if(!OneWireDrv.reset()){
         	err = ERR_ONEWIRE;
-        	if(!dont_lock_bus) release_bus();
+        	if(!dont_lock_bus) release_I2C_bus();
         	return err;
         }
         OneWireDrv.select(addr);
