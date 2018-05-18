@@ -161,7 +161,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
 										element.checked = onoff;
-										if(valueid == "get_mqtt-use_thingspeak") {
+										if(valueid == "get_mqtt-use_ts") {
 											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-fc_mqtt'))) element.disabled = onoff;

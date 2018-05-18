@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_MQTT(USE_THINGSPEAK),get_MQTT(USE_MQTT),get_MQTT(ID_NARMON),get_MQTT(BIG_MQTT),get_MQTT(SDM_MQTT),get_MQTT(FC_MQTT),get_MQTT(COP_MQTT),get_MQTT(TIME_MQTT),get_MQTT(ADR_MQTT),get_MQTT(PORT_MQTT),get_MQTT(IP_MQTT),get_MQTT(PASSWORD_MQTT),get_MQTT(LOGIN_MQTT),get_MQTT(ID_MQTT),get_MQTT(BIG_NARMON),get_MQTT(ADR_NARMON),get_MQTT(IP_NARMON),get_Network(MAC),get_MQTT(USE_NARMON),get_MQTT(PORT_NARMON),get_MQTT(LOGIN_NARMON),get_MQTT(PASSWORD_NARMON)");
+		loadParam("get_MQTT(USE_TS),get_MQTT(USE_MQTT),get_MQTT(ID_NARMON),get_MQTT(BIG_MQTT),get_MQTT(SDM_MQTT),get_MQTT(FC_MQTT),get_MQTT(COP_MQTT),get_MQTT(TIME_MQTT),get_MQTT(ADR_MQTT),get_MQTT(PORT_MQTT),get_MQTT(IP_MQTT),get_MQTT(PASSWORD_MQTT),get_MQTT(LOGIN_MQTT),get_MQTT(ID_MQTT),get_MQTT(BIG_NARMON),get_MQTT(ADR_NARMON),get_MQTT(IP_NARMON),get_Network(MAC),get_MQTT(USE_NARMON),get_MQTT(PORT_NARMON),get_MQTT(LOGIN_NARMON),get_MQTT(PASSWORD_NARMON)");
 		updateParam("get_MQTT(IP_MQTT),get_MQTT(IP_NARMON)");
 	}; 
 	</script>
@@ -35,7 +35,7 @@
 		<tr>
 			<td>Отсылка данных на ThingSpeak</td>
 			<td>
-				<input type="checkbox" name="get_mqtt-use_thingspeak" id="get_mqtt-use_thingspeak" onchange="setParam('get_MQTT(USE_THINGSPEAK)');" >
+				<input type="checkbox" name="get_mqtt-use_ts" id="get_mqtt-use_ts" onchange="setParam('get_MQTT(USE_TS)');" >
 			</td>
 		</tr>						
 		<tr>
