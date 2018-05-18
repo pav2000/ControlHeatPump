@@ -260,7 +260,7 @@ int32_t Journal::send_Data(uint8_t thread)
 	}  // for
 #else
 	num=bufferHead;                                                   // Начинаем с начала журнала, num позиция в буфере
-	for(i=0;i<(JOURNAL_LEN/W5200_MAX_LEN+1);i++)// Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
+	for(uint16_t i=0;i<(JOURNAL_LEN/W5200_MAX_LEN+1);i++)// Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
 	{
 		if((num>bufferTail))                              // Текущая позиция больше хвоста (начало передачи)
 		{
