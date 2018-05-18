@@ -1209,32 +1209,16 @@ function calcacp()
   k2.innerHTML = Math.abs(kk2.toFixed(3)); 
 }
 
-function dhcp(dcb)
-{
-  dhcpcheckbox = document.getElementById(dcb);
-  if (dhcpcheckbox.checked)
-  {
-    //console.log("dhcp:enabled");
-   document.getElementById('get_network-address').disabled = true;
-   document.getElementById('get_network-subnet').disabled = true;
-   document.getElementById('get_network-gateway').disabled = true;
-   document.getElementById('get_network-dns').disabled = true;
-   document.getElementById('get_network-address2').disabled = true;
-   document.getElementById('get_network-subnet2').disabled = true;
-   document.getElementById('get_network-gateway2').disabled = true;
-   document.getElementById('get_network-dns2').disabled = true;  
-  }
-  else 
-  {  //console.log("dhcp:disabled");
-   document.getElementById('get_network-address').disabled = false;
-   document.getElementById('get_network-subnet').disabled = false;
-   document.getElementById('get_network-gateway').disabled = false;
-   document.getElementById('get_network-dns').disabled = false;
-   document.getElementById('get_network-address2').disabled = false;
-   document.getElementById('get_network-subnet2').disabled = false;
-   document.getElementById('get_network-gateway2').disabled = false;
-   document.getElementById('get_network-dns2').disabled = false;
-  }
+function dhcp(dcb) {
+	var fl = document.getElementById(dcb).checked;
+	document.getElementById('get_network-ip').disabled = fl;
+	document.getElementById('get_network-subnet').disabled = fl;
+	document.getElementById('get_network-gateway').disabled = fl;
+	document.getElementById('get_network-dns').disabled = fl;
+	document.getElementById('get_network-ip2').disabled = fl;
+	document.getElementById('get_network-subnet2').disabled = fl;
+	document.getElementById('get_network-gateway2').disabled = fl;
+	document.getElementById('get_network-dns2').disabled = fl;
 }
 
 function validip(valip) {

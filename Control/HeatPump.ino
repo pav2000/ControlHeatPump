@@ -715,10 +715,10 @@ boolean HeatPump::set_network(char *var, char *c)
  else if (strcmp(c,"6")==0) x=6;
  else x=-1;
  if(strcmp(var,net_IP)==0){          return parseIPAddress(c, '.', Network.ip);                 }else  
- if(strcmp(var,net_SDNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else  
+ if(strcmp(var,net_DNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else
  if(strcmp(var,net_GATEWAY)==0){     return parseIPAddress(c, '.', Network.gateway);            }else                
  if(strcmp(var,net_SUBNET)==0){      return parseIPAddress(c, '.', Network.subnet);             }else  
- if(strcmp(var,net_DHSP)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
+ if(strcmp(var,net_DHCP)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
                                     else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fDHCP);  return true;}
                                     else return false;  
                                     }else  
@@ -789,10 +789,10 @@ boolean HeatPump::set_network(char *var, char *c)
 char* HeatPump::get_network(char *var,char *ret)
 {
  if(strcmp(var,net_IP)==0){   return strcat(ret,IPAddress2String(Network.ip));          }else  
- if(strcmp(var,net_SDNS)==0){      return strcat(ret,IPAddress2String(Network.sdns));   }else  
+ if(strcmp(var,net_DNS)==0){      return strcat(ret,IPAddress2String(Network.sdns));   }else
  if(strcmp(var,net_GATEWAY)==0){   return strcat(ret,IPAddress2String(Network.gateway));}else                
  if(strcmp(var,net_SUBNET)==0){    return strcat(ret,IPAddress2String(Network.subnet)); }else  
- if(strcmp(var,net_DHSP)==0){      if (GETBIT(Network.flags,fDHCP)) return  strcat(ret,(char*)cOne);
+ if(strcmp(var,net_DHCP)==0){      if (GETBIT(Network.flags,fDHCP)) return  strcat(ret,(char*)cOne);
                                    else      return  strcat(ret,(char*)cZero);          }else
  if(strcmp(var,net_MAC)==0){       return strcat(ret,MAC2String(Network.mac));          }else  
  if(strcmp(var,net_RES_SOCKET)==0){ 

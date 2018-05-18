@@ -401,7 +401,7 @@ else if (PageID==2)  // Обновление данных первой стра�
          setComponentText((char*)"web2",HP.get_network((char*)net_IP,temp));
          setComponentText((char*)"web3",HP.get_network((char*)net_SUBNET,temp)); 
          setComponentText((char*)"web4",HP.get_network((char*)net_GATEWAY,temp)); 
-         setComponentText((char*)"web5",HP.get_network((char*)net_SDNS,temp)); 
+         setComponentText((char*)"web5",HP.get_network((char*)net_DNS,temp));
          setComponentText((char*)"web6",HP.get_network((char*)net_MAC,temp)); 
          /*         
          Использование паролей - pas1

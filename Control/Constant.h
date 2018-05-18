@@ -570,10 +570,10 @@ const char *time_UPDATE_I2C = {"UPDATE_I2C"};   // Синхронизация в
 
 // Сеть
 const char *net_IP         = {"IP"};               // Адрес 
-const char *net_SDNS       = {"SDNS"};             // DNS 
+const char *net_DNS        = {"DNS"};              // DNS
 const char *net_GATEWAY    = {"GATEWAY"};          // Шлюз
 const char *net_SUBNET     = {"SUBNET"};           // Маска подсети
-const char *net_DHSP       = {"DHSP"};             // Флаг использования DHCP
+const char *net_DHCP       = {"DHCP"};             // Флаг использования DHCP
 const char *net_MAC        = {"MAC"};              // МАС адрес чипа
 const char *net_RES_SOCKET = {"RES_SOCKET"};       // Время сброса зависших сокетов
 const char *net_RES_W5200  = {"RES_W5200"};        // Время регулярного сброса сетевого чипа

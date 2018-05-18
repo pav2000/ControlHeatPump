@@ -286,9 +286,9 @@ void get_txtSettings(uint8_t thread)
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
     
      strcpy(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
-     strcat(Socket[thread].outBuf,"Использование DHCP: "); HP.get_network((char*)net_DHSP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование DHCP: "); HP.get_network((char*)net_DHCP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"IP адрес контроллера: "); HP.get_network((char*)net_IP,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"DNS сервер: "); HP.get_network((char*)net_SDNS,Socket[thread].outBuf); STR_END;
+     strcat(Socket[thread].outBuf,"DNS сервер: "); HP.get_network((char*)net_DNS,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Шлюз: "); HP.get_network((char*)net_GATEWAY,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Маска подсети: "); HP.get_network((char*)net_SUBNET,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"MAC адрес контроллера: "); HP.get_network((char*)net_MAC,Socket[thread].outBuf);STR_END;
