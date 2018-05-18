@@ -90,8 +90,8 @@ class Message
      boolean dnsUpdate();                                                   // Обновление IP адресов серверов через dns 
      boolean dnsUpdateStart();                                              // Обновление IP адресов серверов через dns при СТАРТЕ!!! семафоры не используются
      
-     boolean set_messageSetting(MESSAGE_HP p, char *c);                     // Установить параметр Уведомления из строки
-     char*   get_messageSetting(MESSAGE_HP p);                              // Получить параметр Уведомления в строке
+     boolean set_messageSetting(char *var, char *c);                        // Установить параметр Уведомления из строки
+     char*   get_messageSetting(char *var, char *ret);                      // Получить параметр Уведомления по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
      // Чтение отдельных параметров
      boolean get_fMessageTemp(){return GETBIT(messageSetting.flags,fMessageTemp);}// чтение флага уведомлений Достижение граничной температуры
      boolean get_fMessageLife(){return GETBIT(messageSetting.flags,fMessageLife);}// чтение флага уведомлений Сигнал жизния

@@ -25,7 +25,8 @@
 #include "Information.h"
 #include "VaconFC.h" 
 #include "Scheduler.h"
-
+extern char *MAC2String(byte* mac);
+ 
 // Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
 {
@@ -61,7 +62,6 @@ struct type_motoHour
  // uint32_t Q2;      // Объем прокаченного теплоносителя в СО (сезон)
   uint32_t Z1;      // Резервный параметр 1
   uint32_t Z2;      // Резервный параметр 2
-  
 };
 
 //  Работа с отдельными флагами type_optionHP
@@ -232,8 +232,8 @@ class HeatPump
       Statistics Stat;                 // Статистика работы теплового насоса
    #endif
   // Сетевые настройки
-    boolean set_network(PARAM_NETWORK p, char *c);        // Установить параметр из строки
-    char*   get_network(PARAM_NETWORK p);                 // Получить параметр из строки
+    boolean set_network(char *var, char *c);        // Установить параметр из строки
+    char*   get_network(char *var,char *ret);       // Получить параметр из строки
   //  inline uint16_t get_sizePacket() {return Network.sizePacket;} // Получить размер пакета при передаче
     inline uint16_t get_sizePacket() {return 2048;} // Получить размер пакета при передаче
     
@@ -241,8 +241,8 @@ class HeatPump
     uint8_t set_hashAdmin();                              // расчитать хеш для администратора возвращает длину хеша
     
    // Дата время
-    boolean set_datetime(DATE_TIME p, char *c);            //  Установить параметр дата и время из строки
-    char*   get_datetime(DATE_TIME p);                     //  Получить параметр дата и время из строки
+    boolean set_datetime(char *var, char *c);              //  Установить параметр дата и время из строки
+    char*   get_datetime(char *var,char *ret);             //  Получить параметр дата и время из строки
     IPAddress get_ip() { return Network.ip;}               //  Получить ip адрес
     IPAddress get_sdns() { return Network.sdns;}           //  Получить sdns адрес
     IPAddress get_subnet() { return Network.subnet;}       //  Получить subnet адрес
@@ -257,6 +257,7 @@ class HeatPump
     uint16_t get_pingTime() {return Network.pingTime;}     //  получить вермя пингования сервера, 0 если не надо
     char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
+    char *  get_netMAC() {return MAC2String(Network.mac);}  //  получить мас адрес контроллера
         
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
     byte *get_mac() { return Network.mac;}                 //  Получить mac адрес
@@ -379,7 +380,7 @@ class HeatPump
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
     char * get_listChart(char* str, boolean cat);          // получить список доступных графиков
-    char * get_Chart(TYPE_CHART t,char* str, boolean cat); // получить данные графика
+    char * get_Chart(char *var,char* str, boolean cat);    // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора

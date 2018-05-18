@@ -702,7 +702,7 @@ void HeatPump::resetSettingHP()
 // --------------------------------------------------------------------
 // Сетевые настройки --------------------------------------------------
 //Установить параметр из строки
-boolean HeatPump::set_network(PARAM_NETWORK p, char *c)
+boolean HeatPump::set_network(char *var, char *c)
 { 
  uint8_t x;
  float zp; 
@@ -714,119 +714,109 @@ boolean HeatPump::set_network(PARAM_NETWORK p, char *c)
  else if (strcmp(c,"5")==0) x=5;
  else if (strcmp(c,"6")==0) x=6;
  else x=-1;
- switch (p)
-   {
-    case pIP:          return parseIPAddress(c, '.', Network.ip);                 break;  
-    case pSDNS:        return parseIPAddress(c, '.', Network.sdns);               break;  
-    case pGATEWAY:     return parseIPAddress(c, '.', Network.gateway);            break;                
-    case pSUBNET:      return parseIPAddress(c, '.', Network.subnet);             break;  
-    case pDHSP:        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fDHCP);  return true;}
-                       else return false;  
-                       break;  
-    case pMAC:         return parseBytes(c, ':', Network.mac, 6, 16);             break;  
-    case pRES_SOCKET: 
-                       switch (x)
-                       {
-                        case 0: Network.resSocket=0;     return true;  break;
-                        case 1: Network.resSocket=10;    return true;  break;
-                        case 2: Network.resSocket=30;    return true;  break;
-                        case 3: Network.resSocket=90;    return true;  break;
-                        default:                    return false; break;   
-                       }                                          break;   
-    case pRES_W5200: 
-                       switch (x)
-                       {
-                        case 0: Network.resW5200=0;        return true;  break;
-                        case 1: Network.resW5200=60*60*6;  return true;  break;   // 6 часов хранение в секундах
-                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
-                        default:                      return false; break;   
-                       }                                          break;   
-    case pPASS:        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
-                       else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
-                       else return false;  
-                       break;
-    case pPASSUSER:    strcpy(Network.passUser,c);set_hashUser(); return true;   break;                 
-    case pPASSADMIN:   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; break;   
-    case pSIZE_PACKET: zp=my_atof(c);  
-                       if (zp==-9876543.00) return   false;    
-                       else if((zp<64)||(zp>2048)) return   false;   
-                       else Network.sizePacket=(int)zp; return true;
-                       break;  
-    case pINIT_W5200:    // флаг Ежеминутный контроль SPI для сетевого чипа
+ if(strcmp(var,net_IP)==0){          return parseIPAddress(c, '.', Network.ip);                 }else  
+ if(strcmp(var,net_SDNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else  
+ if(strcmp(var,net_GATEWAY)==0){     return parseIPAddress(c, '.', Network.gateway);            }else                
+ if(strcmp(var,net_SUBNET)==0){      return parseIPAddress(c, '.', Network.subnet);             }else  
+ if(strcmp(var,net_DHSP)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fDHCP); return true;}
+                                    else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fDHCP);  return true;}
+                                    else return false;  
+                                    }else  
+ if(strcmp(var,net_MAC)==0){         return parseBytes(c, ':', Network.mac, 6, 16);             }else  
+ if(strcmp(var,net_RES_SOCKET)==0){ switch (x)
+			                       {
+			                        case 0: Network.resSocket=0;     return true;  break;
+			                        case 1: Network.resSocket=10;    return true;  break;
+			                        case 2: Network.resSocket=30;    return true;  break;
+			                        case 3: Network.resSocket=90;    return true;  break;
+			                        default:                    return false; break;   
+			                       }                                          }else  
+ if(strcmp(var,net_RES_W5200)==0){ switch (x)
+			                       {
+			                        case 0: Network.resW5200=0;        return true;  break;
+			                        case 1: Network.resW5200=60*60*6;  return true;  break;   // 6 часов хранение в секундах
+			                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
+			                        default:                      return false; break;   
+			                       }                                          }else   
+ if(strcmp(var,net_PASS)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
+                                    else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
+                                    else return false;  
+                                    }else
+ if(strcmp(var,net_PASSUSER)==0){    strcpy(Network.passUser,c);set_hashUser(); return true;   }else                 
+ if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else  
+ if(strcmp(var,net_SIZE_PACKET)==0){ zp=my_atof(c);  
+                                    if (zp==-9876543.00) return   false;    
+                                    else if((zp<64)||(zp>2048)) return   false;   
+                                    else Network.sizePacket=(int)zp; return true;
+                                    }else  
+ if(strcmp(var,net_INIT_W5200)==0){    // флаг Ежеминутный контроль SPI для сетевого чипа
                        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fInitW5200); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fInitW5200);  return true;}
                        else return false;  
-                       break; 
-    case pPORT:        zp=my_atof(c);  
+                       }else 
+ if(strcmp(var,net_PORT)==0){        zp=my_atof(c);  
                        if (zp==-9876543.00) return        false;    
                        else if((zp<1)||(zp>65535)) return false;   
                        else Network.port=(int)zp; return  true;
-                       break;     
-    case pNO_ACK:      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
+                       }else     
+ if(strcmp(var,net_NO_ACK)==0){      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoAck);  return true;}
                        else return false;  
-                       break;  
-    case pDELAY_ACK:   zp=my_atof(c);  
+                       }else  
+ if(strcmp(var,net_DELAY_ACK)==0){   zp=my_atof(c);  
                        if (zp==-9876543.00) return            false;    
                        else if((zp<1)||(zp>50)) return        false;   
                        else Network.delayAck=(int)zp; return  true;
-                       break;         
-   case pPING_ADR:     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; break;    
-   case pPING_TIME:    switch (x)
-                       {
-                        case 0: Network.pingTime=0;        return true;  break;
-                        case 1: Network.pingTime=1*60;     return true;  break;
-                        case 2: Network.pingTime=5*60;     return true;  break;
-                        case 3: Network.pingTime=20*60;    return true;  break;
-                        case 4: Network.pingTime=60*60;    return true;  break;
-                        default:                           return false; break;   
-                       }                                          break;   
-    case pNO_PING:     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
+                       }else         
+ if(strcmp(var,net_PING_ADR)==0){     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; }else    
+ if(strcmp(var,net_PING_TIME)==0){switch (x)
+			                       {
+			                        case 0: Network.pingTime=0;        return true;  break;
+			                        case 1: Network.pingTime=1*60;     return true;  break;
+			                        case 2: Network.pingTime=5*60;     return true;  break;
+			                        case 3: Network.pingTime=20*60;    return true;  break;
+			                        case 4: Network.pingTime=60*60;    return true;  break;
+			                        default:                           return false; break;   
+			                       }                                          }else   
+ if(strcmp(var,net_NO_PING)==0){     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
                        else return false;  
-                       break;                                                                                                                                                                              
-    default:           return false;                           break;   
-   }
-  return false;
+                       }else                                                                                                                                                                               
+   return false;
 }
 // Сетевые настройки --------------------------------------------------
 //Получить параметр из строки
-char* HeatPump::get_network(PARAM_NETWORK p)
+char* HeatPump::get_network(char *var,char *ret)
 {
-  
- switch (p)
-   {
-    case pIP:        return IPAddress2String(Network.ip);                 break;  
-    case pSDNS:      return IPAddress2String(Network.sdns);               break;  
-    case pGATEWAY:   return IPAddress2String(Network.gateway);            break;                
-    case pSUBNET:    return IPAddress2String(Network.subnet);             break;  
-    case pDHSP:      if (GETBIT(Network.flags,fDHCP)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;
-    case pMAC:       return MAC2String(Network.mac);                      break;  
-    case pRES_SOCKET: 
+ if(strcmp(var,net_IP)==0){   return strcat(ret,IPAddress2String(Network.ip));          }else  
+ if(strcmp(var,net_SDNS)==0){      return strcat(ret,IPAddress2String(Network.sdns));   }else  
+ if(strcmp(var,net_GATEWAY)==0){   return strcat(ret,IPAddress2String(Network.gateway));}else                
+ if(strcmp(var,net_SUBNET)==0){    return strcat(ret,IPAddress2String(Network.subnet)); }else  
+ if(strcmp(var,net_DHSP)==0){      if (GETBIT(Network.flags,fDHCP)) return  strcat(ret,(char*)cOne);
+                                   else      return  strcat(ret,(char*)cZero);          }else
+ if(strcmp(var,net_MAC)==0){       return strcat(ret,MAC2String(Network.mac));          }else  
+ if(strcmp(var,net_RES_SOCKET)==0){ 
                      switch (Network.resSocket)
                        {
-                        case 0:   return (char*)"never:1;10 sec:0;30 sec:0;90 sec:0;";  break;
-                        case 10:  return (char*)"never:0;10 sec:1;30 sec:0;90 sec:0;";  break;
-                        case 30:  return (char*)"never:0;10 sec:0;30 sec:1;90 sec:0;";  break;  // 30 секунд
-                        case 90:  return (char*)"never:0;10 sec:0;30 sec:0;90 sec:1;";  break;
-                        default:  Network.resSocket=30; return (char*)"never:0;10 sec:0;30 sec:1;90 sec:0;"; break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      break;   
-    case pRES_W5200: 
+                        case 0:   return strcat(ret,(char*)"never:1;10 sec:0;30 sec:0;90 sec:0;");  break;
+                        case 10:  return strcat(ret,(char*)"never:0;10 sec:1;30 sec:0;90 sec:0;");  break;
+                        case 30:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;");  break;  // 30 секунд
+                        case 90:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:0;90 sec:1;");  break;
+                        default:  Network.resSocket=30; return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
+                      }                                                      }else   
+ if(strcmp(var,net_RES_W5200)==0){ 
                     switch (Network.resW5200)
                        {
-                        case 0:       return (char*)"never:1;6 hour:0;24 hour:0;";  break;
-                        case 60*60*6: return (char*)"never:0;6 hour:1;24 hour:0;";  break;   // 6 часов
-                        case 60*60*24:return (char*)"never:0;6 hour:0;24 hour:1;";  break;   // 24 часа
-                        default:      Network.resW5200=0;return (char*)"never:1;6 hour:0;24 hour:0;"; break;   // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                     break;    
-    case pPASS:      if (GETBIT(Network.flags,fPass)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;
-    case pPASSUSER:  return Network.passUser;                             break;                 
-    case pPASSADMIN: return Network.passAdmin;                            break;   
-    case pSIZE_PACKET:return int2str(Network.sizePacket);                 break;   
-
+                        case 0:       return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;");  break;
+                        case 60*60*6: return strcat(ret,(char*)"never:0;6 hour:1;24 hour:0;");  break;   // 6 часов
+                        case 60*60*24:return strcat(ret,(char*)"never:0;6 hour:0;24 hour:1;");  break;   // 24 часа
+                        default:      Network.resW5200=0;return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;"); break;   // Этого не должно быть, но если будет то установить по умолчанию
+                       }                                     }else   
+  if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
+                                    else      return  strcat(ret,(char*)cZero);               }else
+  if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
+  if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
+  if(strcmp(var,net_SIZE_PACKET)==0){return strcat(ret,int2str(Network.sizePacket));          }else   
     /*
                      switch (Network.sizePacket)
                        {
@@ -837,94 +827,82 @@ char* HeatPump::get_network(PARAM_NETWORK p)
                         default:    Network.sizePacket=2048; return (char*)"256 byte:0;512 byte:0;1024 byte:0;2048 byte:1;";  break;     // Этого не должно быть, но если будет то установить по умолчанию
                       }  
      */                 
-    case pINIT_W5200:if (GETBIT(Network.flags,fInitW5200)) return  (char*)cOne;       // флаг Ежеминутный контроль SPI для сетевого чипа
-                     else      return  (char*)cZero;                        break;      
-    case pPORT:return int2str(Network.port);                              break;    // Порт веб сервера
-    case pNO_ACK:    if (GETBIT(Network.flags,fNoAck)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;     
-    case pDELAY_ACK:return int2str(Network.delayAck);                     break;    
-    case pPING_ADR:  return Network.pingAdr;                              break;
-    case pPING_TIME: 
+    if(strcmp(var,net_INIT_W5200)==0){if (GETBIT(Network.flags,fInitW5200)) return  strcat(ret,(char*)cOne);       // флаг Ежеминутный контроль SPI для сетевого чипа
+                                      else      return  strcat(ret,(char*)cZero);               }else      
+    if(strcmp(var,net_PORT)==0){return strcat(ret,int2str(Network.port));                       }else    // Порт веб сервера
+    if(strcmp(var,net_NO_ACK)==0){    if (GETBIT(Network.flags,fNoAck)) return  strcat(ret,(char*)cOne);
+                                      else      return  strcat(ret,(char*)cZero);          }else     
+    if(strcmp(var,net_DELAY_ACK)==0){return strcat(ret,int2str(Network.delayAck));         }else    
+    if(strcmp(var,net_PING_ADR)==0){  return strcat(ret,Network.pingAdr);                  }else
+    if(strcmp(var,net_PING_TIME)==0){ 
                      switch (Network.pingTime)
                        {
-                        case 0:      return (char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;";  break; // никогда
-                        case 1*60:   return (char*)"never:0;1 min:1;5 min:0;20 min:0;60 min:0;";  break; // 1 минута
-                        case 5*60:   return (char*)"never:0;1 min:0;5 min:1;20 min:0;60 min:0;";  break; // 5 минут
-                        case 20*60:  return (char*)"never:0;1 min:0;5 min:0;20 min:1;60 min:0;";  break; // 20 миут
-                        case 60*60:  return (char*)"never:0;1 min:0;5 min:0;20 min:0;60 min:1;";  break; // 60 минут
-                        default:  Network.resSocket=0; return (char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;"; break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      break;   
-    case pNO_PING:   if (GETBIT(Network.flags,fNoPing)) return  (char*)cOne;
-                     else      return  (char*)cZero;                        break;                                                                                          
-    default:         return  (char*)cInvalid;                              break;   
-   }
- return (char*)cInvalid;
+                        case 0:      return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;");  break; // никогда
+                        case 1*60:   return strcat(ret,(char*)"never:0;1 min:1;5 min:0;20 min:0;60 min:0;");  break; // 1 минута
+                        case 5*60:   return strcat(ret,(char*)"never:0;1 min:0;5 min:1;20 min:0;60 min:0;");  break; // 5 минут
+                        case 20*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:1;60 min:0;");  break; // 20 миут
+                        case 60*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:0;60 min:1;");  break; // 60 минут
+                        default:  Network.resSocket=0; return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
+                      }                                                      }else   
+    if(strcmp(var,net_NO_PING)==0){if (GETBIT(Network.flags,fNoPing)) return  strcat(ret,(char*)cOne);
+                                   else      return  strcat(ret,(char*)cZero);                        }else                                                                                          
+
+ return strcat(ret,(char*)cInvalid);
 }
 
 // Установить параметр дата и время из строки
-boolean  HeatPump::set_datetime(DATE_TIME p, char *c)
+boolean  HeatPump::set_datetime(char *var, char *c)
 {
    float tz;
    int16_t m,h,d,mo,y;
    int16_t buf[4];
    uint32_t oldTime=rtcSAM3X8.unixtime(); // запомнить время
    int32_t  dTime=0;
-   switch (p)
-   {
-    case pTIME:       if (!parseInt16_t(c, ':',buf,2,10)) return false; 
+if(strcmp(var,time_TIME)==0){ if (!parseInt16_t(c, ':',buf,2,10)) return false; 
                       h=buf[0]; m=buf[1];
                       rtcSAM3X8.set_time (h,m,0);  // внутренние
                       setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds()); // внешние
                       dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-                //      return true;                     
-                      break;  
-    case pDATE:       if (!parseInt16_t(c, '/',buf,3,10)) return false;
+                      }else  
+if(strcmp(var,time_DATE)==0){       if (!parseInt16_t(c, '/',buf,3,10)) return false;
                       d=buf[0]; mo=buf[1]; y=buf[2];
                       rtcSAM3X8.set_date(d,mo,y); // внутренние
                       setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years()); // внешние
                       dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-              //        return true;                       
-                      break;  
-    case pNTP:        if(strlen(c)==0) return false;                                                 // пустая строка
+                      }else  
+if(strcmp(var,time_NTP)==0){if(strlen(c)==0) return false;                                                 // пустая строка
                       if(strlen(c)>NTP_SERVER_LEN) return false;                                     // слишком длиная строка
                       else { strcpy(DateTime.serverNTP,c); return true;  }                           // ок сохраняем
-                      break;                
-    case pUPDATE:     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
+                      }else                
+if(strcmp(var,time_UPDATE)==0){     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
                       else if (strcmp(c,cOne)==0) { SETBIT1( DateTime.flags,fUpdateNTP);countNTP=0; return true;}
                       else return false;  
-                      break;   
-    case pTIMEZONE:   tz=my_atof(c);  
+                      }else   
+if(strcmp(var,time_TIMEZONE)==0){  tz=my_atof(c);  
                       if (tz==-9876543.00) return   false;
                       else if((tz<-12)||(tz>12)) return   false;   
                       else DateTime.timeZone=(int)tz; return true;
-                      break;  
-    case pUPDATE_I2C: if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
+                      }else  
+if(strcmp(var,time_UPDATE_I2C)==0){ if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
                       else if (strcmp(c,cOne)==0) {SETBIT1( DateTime.flags,fUpdateI2C);countNTP=0; return true;}
                       else return false;  
-                      break;                      
-    default:          return   false; 
-                      break;   
-   }
-
-  if(dTime!=0)  {updateDateTime(dTime); return true; }    // было изменено время, надо скорректировать переменные времени
-  return  false;
+                      } else return  false;                      
+                      
+if(dTime!=0)  updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+return true;
 }
 // Получить параметр дата и время из строки
-char*   HeatPump::get_datetime(DATE_TIME p)
+char* HeatPump::get_datetime(char *var,char *ret)
 {
-   switch (p)
-   {
-    case pTIME:       return NowTimeToStr1();                      break;  
-    case pDATE:       return NowDateToStr();                       break;  
-    case pNTP:        return DateTime.serverNTP;                   break;                
-    case pUPDATE:     if (GETBIT(DateTime.flags,fUpdateNTP)) return  (char*)cOne;
-                      else      return  (char*)cZero;                break;  
-    case pTIMEZONE:   return  int2str(DateTime.timeZone);          break;  
-    case pUPDATE_I2C: if (GETBIT(DateTime.flags,fUpdateI2C)) return  (char*)cOne;
-                      else      return  (char*)cZero;                break;      
-    default:          return  (char*)cInvalid;                    break;   
-   }
- return (char*)cInvalid;
+if(strcmp(var,time_TIME)==0)  {return strcat(ret,NowTimeToStr1());                      }else  
+if(strcmp(var,time_DATE)==0)  {return strcat(ret,NowDateToStr());                       }else  
+if(strcmp(var,time_NTP)==0)   {return strcat(ret,DateTime.serverNTP);                   }else                
+if(strcmp(var,time_UPDATE)==0){if (GETBIT(DateTime.flags,fUpdateNTP)) return  strcat(ret,(char*)cOne);
+                               else                                   return  strcat(ret,(char*)cZero);}else  
+if(strcmp(var,time_TIMEZONE)==0){return  strcat(ret,int2str(DateTime.timeZone));         }else  
+if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) return  strcat(ret,(char*)cOne);
+                                    else                                   return  strcat(ret,(char*)cZero); }else      
+return strcat(ret,(char*)cInvalid);
 }
 
 // Установить опции ТН из числа (float)
@@ -1259,60 +1237,58 @@ return str;
 
 // получить данные графика  в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
+char * HeatPump::get_Chart(char *var,char* str, boolean cat)
 {
- char buf[8]; 
+ char buf[10]; 
  if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг false
- switch (t)
-   {
-   case pNONE:      strcat(str,""); return str;                           break;   
-   case pTOUT:      return sTemp[TOUT].Chart.get_PointsStr(100,str);      break;   
-   case pTIN:       return sTemp[TIN].Chart.get_PointsStr(100,str);       break;   
-   case pTEVAIN:    return sTemp[TEVAIN].Chart.get_PointsStr(100,str);    break;   
-   case pTEVAOUT:   return sTemp[TEVAOUT].Chart.get_PointsStr(100,str);   break;   
-   case pTCONIN:    return sTemp[TCONIN].Chart.get_PointsStr(100,str);    break;   
-   case pTCONOUT:   return sTemp[TCONOUT].Chart.get_PointsStr(100,str);   break;   
-   case pTBOILER:   return sTemp[TBOILER].Chart.get_PointsStr(100,str);   break;   
-   case pTACCUM:    return sTemp[TACCUM].Chart.get_PointsStr(100,str);    break;   
-   case pTRTOOUT:   return sTemp[TRTOOUT].Chart.get_PointsStr(100,str);   break; 
-   case pTCOMP:     return sTemp[TCOMP].Chart.get_PointsStr(100,str);     break; 
-   case pTEVAING:   return sTemp[TEVAING].Chart.get_PointsStr(100,str);   break; 
-   case pTEVAOUTG:  return sTemp[TEVAOUTG].Chart.get_PointsStr(100,str);  break; 
-   case pTCONING:   return sTemp[TCONING].Chart.get_PointsStr(100,str);   break; 
-   case pTCONOUTG:  return sTemp[TCONOUTG].Chart.get_PointsStr(100,str);  break; 
+   if(strcmp(var,chart_NONE)==0){      strcat(str,""); return str;                           }else   
+   if(strcmp(var,chart_TOUT)==0){      return sTemp[TOUT].Chart.get_PointsStr(100,str);      }else   
+   if(strcmp(var,chart_TIN)==0){       return sTemp[TIN].Chart.get_PointsStr(100,str);       }else   
+   if(strcmp(var,chart_TEVAIN)==0){    return sTemp[TEVAIN].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TEVAOUT)==0){   return sTemp[TEVAOUT].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TCONIN)==0){    return sTemp[TCONIN].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TCONOUT)==0){   return sTemp[TCONOUT].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TBOILER)==0){   return sTemp[TBOILER].Chart.get_PointsStr(100,str);   }else   
+   if(strcmp(var,chart_TACCUM)==0){    return sTemp[TACCUM].Chart.get_PointsStr(100,str);    }else   
+   if(strcmp(var,chart_TRTOOUT)==0){   return sTemp[TRTOOUT].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TCOMP)==0){     return sTemp[TCOMP].Chart.get_PointsStr(100,str);     }else 
+   if(strcmp(var,chart_TEVAING)==0){   return sTemp[TEVAING].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TEVAOUTG)==0){  return sTemp[TEVAOUTG].Chart.get_PointsStr(100,str);  }else 
+   if(strcmp(var,chart_TCONING)==0){   return sTemp[TCONING].Chart.get_PointsStr(100,str);   }else 
+   if(strcmp(var,chart_TCONOUTG)==0){  return sTemp[TCONOUTG].Chart.get_PointsStr(100,str);  }else 
 
-   case pPEVA:      return sADC[PEVA].Chart.get_PointsStr(100,str);       break;
-   case pPCON:      return sADC[PCON].Chart.get_PointsStr(100,str);       break;
+   if(strcmp(var,chart_PEVA)==0){      return sADC[PEVA].Chart.get_PointsStr(100,str);       }else
+   if(strcmp(var,chart_PCON)==0){      return sADC[PCON].Chart.get_PointsStr(100,str);       }else
 
 
-   case pFLOWCON:   
+   if(strcmp(var,chart_FLOWCON)==0){   
                      #ifdef FLOWCON
                      return sFrequency[FLOWCON].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
-   case pFLOWEVA:   
+                     }else
+   if(strcmp(var,chart_FLOWEVA)==0){   
                      #ifdef FLOWEVA
                      return sFrequency[FLOWEVA].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
-   case pFLOWPCON:  
+                     }else
+   if(strcmp(var,chart_FLOWPCON)==0){  
                      #ifdef FLOWPCON
                      return sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
                      #endif
-                     break;
+                     }else
 
    #ifdef EEV_DEF
-   case pposEEV:    return dEEV.Chart.get_PointsStr(1,str);               break;
-   case pOVERHEAT:  return ChartOVERHEAT.get_PointsStr(100,str);          break;
-   case pTPEVA:     return ChartTPEVA.get_PointsStr(100,str);             break;
-   case pTPCON:     return ChartTPCON.get_PointsStr(100,str);             break;
+   if(strcmp(var,chart_posEEV)==0){    return dEEV.Chart.get_PointsStr(1,str);               }else
+   if(strcmp(var,chart_OVERHEAT)==0){  return ChartOVERHEAT.get_PointsStr(100,str);          }else
+   if(strcmp(var,chart_TPEVA)==0){     return ChartTPEVA.get_PointsStr(100,str);             }else
+   if(strcmp(var,chart_TPCON)==0){     return ChartTPCON.get_PointsStr(100,str);             }else
    #endif
-   case pfreqFC:    return dFC.ChartFC.get_PointsStr(100,str);            break;
-   case ppowerFC:   return dFC.ChartPower.get_PointsStr(10,str);          break;
-   case pcurrentFC: return dFC.ChartCurrent.get_PointsStr(100,str);       break;
+   if(strcmp(var,chart_freqFC)==0){    return dFC.ChartFC.get_PointsStr(100,str);            }else
+   if(strcmp(var,chart_powerFC)==0){   return dFC.ChartPower.get_PointsStr(10,str);          }else
+   if(strcmp(var,chart_currentFC)==0){ return dFC.ChartCurrent.get_PointsStr(100,str);       }else
 
-   case pRCOMP:     return ChartRCOMP.get_PointsStr(1,str);               break;
-   case pdCO:       if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
+   if(strcmp(var,chart_RCOMP)==0){     return ChartRCOMP.get_PointsStr(1,str);               }else
+   if(strcmp(var,chart_dCO)==0){       if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
                     {
                      for(int i=0;i<sTemp[TCONOUTG].Chart.get_num();i++) 
                         {
@@ -1321,8 +1297,8 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
                         }                  
                      }
                     else return (char*)";";// График не определен - нет данных
-                    break;
-   case pdGEO:      if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
+                    }else
+   if(strcmp(var,chart_dGEO)==0){      if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
                     {
                      for(int i=0;i<sTemp[TEVAING].Chart.get_num();i++) 
                         {
@@ -1331,27 +1307,22 @@ char * HeatPump::get_Chart(TYPE_CHART t,char* str, boolean cat)
                         }                  
                      }
                     else return (char*)";";// График не определен - нет данных
-                    break;
+                   }else
 
-   case pPowerCO:   return ChartPowerCO.get_PointsStr(1000,str);          break; 
-   case pPowerGEO:  return ChartPowerGEO.get_PointsStr(1000,str);         break;
-   case pCOP:       return ChartCOP.get_PointsStr(100,str);               break;
+   if(strcmp(var,chart_PowerCO)==0){   return ChartPowerCO.get_PointsStr(1000,str);          }else 
+   if(strcmp(var,chart_PowerGEO)==0){  return ChartPowerGEO.get_PointsStr(1000,str);         }else
+   if(strcmp(var,chart_COP)==0){       return ChartCOP.get_PointsStr(100,str);               }else
    
    #ifdef USE_ELECTROMETER_SDM 
-   case pVOLTAGE:   return dSDM.ChartVoltage.get_PointsStr(100,str);         break; 
-   case pCURRENT:   return dSDM.ChartCurrent.get_PointsStr(100,str);         break;
-//   case pacPOWER:   return dSDM.sAcPower.get_PointsStr(1,str);           break;
-//   case prePOWER:   return dSDM.sRePower.get_PointsStr(1,str);           break; 
-   case pfullPOWER: return dSDM.ChartPower.get_PointsStr(1,str);             break;
-//   case pkPOWER:    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     break;
-   case pfullCOP:   return ChartFullCOP.get_PointsStr(100,str);           break;
-   
+   if(strcmp(var,chart_VOLTAGE)==0){   return dSDM.ChartVoltage.get_PointsStr(100,str);         }else 
+   if(strcmp(var,chart_CURRENT)==0){   return dSDM.ChartCurrent.get_PointsStr(100,str);         }else
+//   if(strcmp(var,chart_acPOWER)==0){   return dSDM.sAcPower.get_PointsStr(1,str);           }else
+//   if(strcmp(var,chart_rePOWER)==0){   return dSDM.sRePower.get_PointsStr(1,str);           }else 
+   if(strcmp(var,chart_fullPOWER)==0){ return dSDM.ChartPower.get_PointsStr(1,str);             }else
+//   if(strcmp(var,chart_kPOWER)==0){    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
+   if(strcmp(var,chart_fullCOP)==0){   return ChartFullCOP.get_PointsStr(100,str);           }else
    #endif
-  
-   default:        strcat(str,""); return str;                           break;   
-   }
-
-return str;      
+  return str;      
 }
 
 // расчитать хеш для пользователя возвращает длину хеша

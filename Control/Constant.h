@@ -418,6 +418,246 @@ const char *MutexSPIBuzy=      {"SPI"};
 const char *MutexCommandBuzy = {"Command"}; 
 
 
+// Описание имен параметров ЭРВ для функций get_paramEEV set_paramEEV
+const char *eev_POS      =  {"POS"};         // Положение ЭРВ шаги
+const char *eev_POSp     =  {"POSp"};        // Положение ЭРВ %
+const char *eev_POSpp    =  {"POSpp"};       // Положение ЭРВ шаги+%
+const char *eev_OVERHEAT =  {"OVERHEAT"};    // Текущий перегрев ЭРВ
+//const char *eev_OVERCOOL =  {"OVERCOOL"};    // Переохлаждение
+const char *eev_ERROR    =  {"ERROR"};       // Ошибка ЭРВ
+const char *eev_MIN      =  {"MIN"};         // Минимум ЭРВ
+const char *eev_MAX      =  {"MAX"};         // Максимум ЭРВ
+const char *eev_TIME     =  {"TIME"};        // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+const char *eev_TARGET   =  {"TARGET"};      // Перегрев ЦЕЛЬ (сотые градуса)
+const char *eev_KP       =  {"KP"};          // ПИД Коэф пропорц.  В СОТЫХ!!!
+const char *eev_KI       =  {"KI"};          // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+const char *eev_KD       =  {"KD"};          // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_CONST    =  {"CONST"};       // Корректировка перегрева (постоянная ошибка)
+const char *eev_MANUAL   =  {"MANUAL"};      // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
+const char *eev_FREON    =  {"FREON"};       // Тип фреона
+const char *eev_RULE     =  {"RULE"};        // Правило работы ЭРВ
+const char *eev_NAME     =  {"NAME"};        // Имя ЭРВ
+const char *eev_NOTE     =  {"NOTE"};        // Описание ЭРВ
+const char *eev_REMARK   =  {"REMARK"};      // Описание алгоритма ЭРВ
+const char *eev_PINS     =  {"PINS"};        // Перечисление ног куда привязана ЭРВ
+const char *eev_cCORRECT =  {"cCORRECT"};    // Флаг включения корректировки перегерва от разности температур конденсатора и испраителя
+const char *eev_cDELAY   =  {"cDELAY"};      // Задержка после старта компрессора, сек
+const char *eev_cPERIOD  =  {"cPERIOD"};     // Период в циклах ЭРВ, сколько пропустить
+const char *eev_cDELTA   =  {"cDELTA"};      // Температура нагнетания - конденсации (сотые градуса)
+const char *eev_cDELTAT  =  {"cDELTAT"};     // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
+const char *eev_cKF      =  {"cKF"};         // Коэффициент (/0.001): перегрев += дельта * K
+const char *eev_cOH_MAX  =  {"cOH_MAX"};     // Максимальный перегрев (сотые градуса)
+const char *eev_cOH_MIN  =  {"cOH_MIN"};     // Минимальный перегрев (сотые градуса)
+
+// Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
+const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
+const char *mqtt_USE_MQTT         =  {"USE_MQTT"};       // флаг использования MQTT
+const char *mqtt_BIG_MQTT         =  {"BIG_MQTT"};       // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+const char *mqtt_SDM_MQTT         =  {"SDM_MQTT"};       // флаг отправки данных электросчетчика на MQTT
+const char *mqtt_FC_MQTT          =  {"FC_MQTT"};        // флаг отправки данных инвертора на MQTT
+const char *mqtt_COP_MQTT         =  {"COP_MQTT"};       // флаг отправки данных COP на MQTT
+const char *mqtt_TIME_MQTT        =  {"TIME_MQTT"};      // период отправки на сервер в сек. 10...60000
+const char *mqtt_ADR_MQTT         =  {"ADR_MQTT"};       // Адрес сервера
+const char *mqtt_IP_MQTT          =  {"IP_MQTT"};        // IP Адрес сервера
+const char *mqtt_PORT_MQTT        =  {"PORT_MQTT"};      // Адрес порта сервера
+const char *mqtt_LOGIN_MQTT       =  {"LOGIN_MQTT"};     // логин сервера
+const char *mqtt_PASSWORD_MQTT    =  {"PASSWORD_MQTT"};  // пароль сервера
+const char *mqtt_ID_MQTT          =  {"ID_MQTT"};        // Идентификатор клиента на MQTT сервере
+   // народный мониторинг
+const char *mqtt_USE_NARMON       =  {"USE_NARMON"};     // флаг отправки данных на народный мониторинг
+const char *mqtt_BIG_NARMON       =  {"BIG_NARMON"};     // флаг отправки данных на народный мониторинг ,большую версию
+const char *mqtt_ADR_NARMON       =  {"ADR_NARMON"};     // Адрес сервера народного мониторинга
+const char *mqtt_IP_NARMON        =  {"IP_NARMON"};      // IP Адрес сервера народного мониторинга
+const char *mqtt_PORT_NARMON      =  {"PORT_NARMON"};    // Адрес порта сервера  народного мониторинга
+const char *mqtt_LOGIN_NARMON     =  {"LOGIN_NARMON"};   // логин сервера народного мониторинга
+const char *mqtt_PASSWORD_NARMON  =  {"PASSWORD_NARMON"};// пароль сервера народного мониторинга
+const char *mqtt_ID_NARMON        =  {"ID_NARMON"};      // Идентификатор клиента на MQTT сервере
+
+// Описание имен параметров SDM счетчика для функций get_paramSDM set_paramSDM
+const char *sdm_NAME        = {"NAME_SDM"};               // Имя счетчика
+const char *sdm_NOTE        = {"NOTE_SDM"};               // Описание счетчика
+const char *sdm_MAX_VOLTAGE = {"MAX_VOLTAGE_SDM"};        // Контроль напряжения максимум
+const char *sdm_MIN_VOLTAGE = {"MIN_VOLTAGE_SDM"};        // Контроль напряжения минимум
+const char *sdm_MAX_POWER   = {"MAX_POWER_SDM"};          // Контроль мощности
+const char *sdm_VOLTAGE     = {"VOLTAGE_SDM"};            // Напряжение
+const char *sdm_CURRENT     = {"CURRENT_SDM"};            // Ток
+const char *sdm_REPOWER     = {"REPOWER_SDM"};            // Реактивная мощность
+const char *sdm_ACPOWER     = {"ACPOWER_SDM"};            // Активная мощность
+const char *sdm_POWER       = {"POWER_SDM"};              // Полная мощность
+const char *sdm_POW_FACTOR  = {"POW_FACTOR_SDM"};         // Коэффициент мощности
+const char *sdm_PHASE       = {"PHASE_SDM"};              // Угол фазы (градусы)
+const char *sdm_IACENERGY   = {"IACENERGY_SDM"};          // Потребленная активная энергия
+const char *sdm_EACENERGY   = {"EACENERGY_SDM"};          // Переданная активная энергия
+const char *sdm_IREENERGY   = {"IREENERGY_SDM"};          // Потребленная реактивная энергия
+const char *sdm_EREENERGY   = {"EREENERGY_SDM"};          // Переданная реактивная энергия
+const char *sdm_ACENERGY    = {"ACENERGY_SDM"};           // Суммараная активная энергия
+const char *sdm_REENERGY    = {"REENERGY_SDM"};           // Суммараная реактивная энергия
+const char *sdm_ENERGY      = {"ENERGY_SDM"};             // Суммараная энергия
+const char *sdm_LINK        = {"LINK_SDM"};               // Cостояние связи со счетчиком
+
+// Описание имен параметров профиля для функций get_paramProfile set_paramProfile	
+const char *prof_NAME_PROFILE   = {"NAME_PROFILE"};       // Имя профиля до 10 русских букв
+const char *prof_ENABLE_PROFILE = {"ENABLE_PROFILE"};     // разрешение использовать в списке
+const char *prof_ID_PROFILE     = {"ID_PROFILE"};         // номер профиля
+const char *prof_NOTE_PROFILE   = {"NOTE_PROFILE"};       // описание профиля
+const char *prof_DATE_PROFILE   = {"DATE_PROFILE"};       // дата профиля
+const char *prof_CRC16_PROFILE  = {"CRC16_PROFILE"};      // контрольная сумма профиля
+const char *prof_NUM_PROFILE    = {"NUM_PROFILE"};        // максимальное число профилей
+const char *prof_SEL_PROFILE    = {"SEL_PROFILE"};        // список профилей (пока не используется)
+
+//  Перечисляемый тип - ПАРАМЕТРЫ Уведомления
+// Описание имен параметров уведомлений для функций set_messageSetting get_messageSetting
+const char *mess_MAIL         = {"MAIL"};                // флаг уведомления скидывать на почту
+const char *mess_MAIL_AUTH    = {"MAIL_AUTH"};           // флаг необходимости авторизации на почтовом сервере
+const char *mess_MAIL_INFO    = {"MAIL_INFO"};           // флаг необходимости добавления в письмо информации о состоянии ТН
+const char *mess_SMS          = {"SMS"};                 // флаг уведомления скидывать на СМС (пока не реализовано)
+const char *mess_MESS_RESET   = {"MESS_RESET"};          // флаг уведомления Сброс
+const char *mess_MESS_ERROR   = {"MESS_ERROR"};          // флаг уведомления Ошибка
+const char *mess_MESS_LIFE    = {"MESS_LIFE"};           // флаг уведомления Сигнал жизни
+const char *mess_MESS_TEMP    = {"MESS_TEMP"};           // флаг уведомления Достижение граничной температуры
+const char *mess_MESS_SD      = {"MESS_SD"};             // флаг уведомления "Проблемы с sd картой"
+const char *mess_MESS_WARNING = {"MESS_WARNING"};        // флаг уведомления "Прочие уведомления"
+const char *mess_SMTP_SERVER  = {"SMTP_SERVER"};         // Адрес сервера
+const char *mess_SMTP_IP      = {"SMTP_IP"};             // IP Адрес сервера
+const char *mess_SMTP_PORT    = {"SMTP_PORT"};           // Адрес порта сервера
+const char *mess_SMTP_LOGIN   = {"SMTP_LOGIN"};          // логин сервера если включена авторизация
+const char *mess_SMTP_PASS    = {"SMTP_PASS"};           // пароль сервера если включена авторизация
+const char *mess_SMTP_MAILTO  = {"SMTP_MAILTO"};         // адрес отправителя
+const char *mess_SMTP_RCPTTO  = {"SMTP_RCPTTO"};         // адрес получателя
+const char *mess_SMS_SERVICE  = {"SMS_SERVICE"};         // сервис отправки смс
+const char *mess_SMS_IP       = {"SMS_IP"};              // IP Адрес сервера для отправки смс
+const char *mess_SMS_PHONE    = {"SMS_PHONE"};           // телефон куда отправляется смс
+const char *mess_SMS_P1       = {"SMS_P1"};              // первый параметр для отправки смс
+const char *mess_SMS_P2       = {"SMS_P2"};              // второй параметр для отправки смс
+const char *mess_SMS_NAMEP1   = {"SMS_NAMEP1"};          // описание первого параметра для отправки смс
+const char *mess_SMS_NAMEP2   = {"SMS_NAMEP2"};          // описание второго параметра для отправки смс
+const char *mess_MESS_TIN     = {"MESS_TIN"};            // Критическая температура в доме (если меньше то генерится уведомление)
+const char *mess_MESS_TBOILER = {"MESS_TBOILER"};        // Критическая температура бойлера (если меньше то генерится уведомление)
+const char *mess_MESS_TCOMP   = {"MESS_TCOMP"};          // Критическая температура компрессора (если больше то генериться уведомление)
+const char *mess_MAIL_RET     = {"MAIL_RET"};            // Ответ на тестовую почту
+const char *mess_SMS_RET      = {"SMS_RET"};             // Ответ на тестовую  sms
+
+// Описание имен параметров бойлера для функций set_Boiler get_Boiler
+const char *boil_BOILER_ON    = {"BOILER_ON"};           // флаг Включения бойлера
+const char *boil_SCHEDULER_ON = {"SCHEDULER_ON"};        // флаг Использование расписани
+const char *boil_TURBO_BOILER = {"TURBO_BOILER"};        // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+const char *boil_SALLMONELA   = {"SALLMONELA"};          // флаг Сальмонела раз в неделю греть бойлер
+const char *boil_CIRCULATION  = {"CIRCULATION"};         // флаг Управления циркуляционным насосом ГВС
+const char *boil_TEMP_TARGET  = {"TEMP_TARGET"};         // Целевая температура бойлера
+const char *boil_DTARGET      = {"DTARGET"};             // гистерезис целевой температуры
+const char *boil_TEMP_MAX     = {"TEMP_MAX"};            // Tемпература подачи максимальная
+const char *boil_PAUSE1       = {"PAUSE1"};              // Минимальное время простоя компрессора в секундах
+const char *boil_SCHEDULER    = {"SCHEDULER"};           // Расписание
+const char *boil_CIRCUL_WORK  = {"CIRCUL_WORK"};         // Время  работы насоса ГВС секунды (fCirculation)
+const char *boil_CIRCUL_PAUSE = {"CIRCUL_PAUSE"};        // Пауза в работе насоса ГВС  секунды (fCirculation)
+const char *boil_RESET_HEAT   = {"RESET_HEAT"};          // флаг Сброса лишнего тепла в СО
+const char *boil_RESET_TIME   = {"RESET_TIME"};          // время сброса излишков тепла в СО в секундах (fResetHeat)
+const char *boil_BOIL_TIME    = {"BOIL_TIME"};           // Постоянная интегрирования времени в секундах ПИД ТН
+const char *boil_BOIL_PRO     = {"BOIL_PRO"};            // Пропорциональная составляющая ПИД ГВС
+const char *boil_BOIL_IN      = {"BOIL_IN"};             // Интегральная составляющая ПИД ГВС
+const char *boil_BOIL_DIF     = {"BOIL_DIF"};            // Дифференциальная составляющая ПИД ГВС
+const char *boil_BOIL_TEMP    = {"BOIL_TEMP"};           // Целевая температура ПИД ГВС
+const char *boil_ADD_HEATING  = {"ADD_HEATING"};         // флаг ДОГРЕВА ГВС ТЭНом
+const char *boil_TEMP_RBOILER = {"TEMP_RBOILER"};        // температура включения догрева бойлера
+
+// Дата время
+const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд
+const char *time_DATE       = {"DATE"};         // текушая дата типа  12/04/2016
+const char *time_NTP        = {"NTP"};          // адрес NTP сервера строка до 60 символов.
+const char *time_UPDATE     = {"UPDATE"};       // Время синхронизации с NTP сервером.
+const char *time_TIMEZONE   = {"TIMEZONE"};     // Часовой пояс
+const char *time_UPDATE_I2C = {"UPDATE_I2C"};   // Синхронизация времени раз в час с i2c часами
+
+// Сеть
+const char *net_IP         = {"IP"};               // Адрес 
+const char *net_SDNS       = {"SDNS"};             // DNS 
+const char *net_GATEWAY    = {"GATEWAY"};          // Шлюз
+const char *net_SUBNET     = {"SUBNET"};           // Маска подсети
+const char *net_DHSP       = {"DHSP"};             // Флаг использования DHCP
+const char *net_MAC        = {"MAC"};              // МАС адрес чипа
+const char *net_RES_SOCKET = {"RES_SOCKET"};       // Время сброса зависших сокетов
+const char *net_RES_W5200  = {"RES_W5200"};        // Время регулярного сброса сетевого чипа
+const char *net_PASS       = {"PASS"};             // Использование паролей (флаг)
+const char *net_PASSUSER   = {"PASSUSER"};         // Пароль пользователя 
+const char *net_PASSADMIN  = {"PASSADMIN"};        // Пароль администратора  
+const char *net_SIZE_PACKET= {"SIZE_PACKET"};      // размер пакета
+const char *net_INIT_W5200 = {"INIT_W5200"};       // Ежеминутный контроль SPI для сетевого чипа
+const char *net_PORT       = {"PORT"};             // Port веб сервера
+const char *net_NO_ACK     = {"NO_ACK"};           // Не ожидать ответа ack
+const char *net_DELAY_ACK  = {"DELAY_ACK"};        // Задержка перед посылкой следующего пакета
+const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинга
+const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
+const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
+
+// Статистика
+const char *stat_NONE      = {"none"};
+const char *stat_TIN       = {"Tin"};              // средняя темпеартура дома
+const char *stat_TOUT      = {"Tout"};             // средняя темпеартура улицы
+const char *stat_TBOILER   = {"Tboiler"};          // средняя температура бойлера
+const char *stat_HOUR      = {"Hour"};             // число накопленных часов должно быть 24
+const char *stat_HMOTO     = {"Hmoto"};            // моточасы за сутки
+const char *stat_ENERGYCO  = {"EnergyCO"};         // выработанная энергия
+const char *stat_ENERGY220 = {"Energy220"};        // потраченная энергия
+const char *stat_COP       = {"COP"};              // КОП
+const char *stat_POWERCO   = {"PowerCO"};          // средння мощность СО
+const char *stat_POWER220  = {"Power220"};         // средняя потребляемая мощность
+
+// Описание имен параметров Графиков для функций get_Chart
+const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
+const char *chart_TOUT      = {"TOUT"};                     // 1 Температура улицы
+const char *chart_TIN       = {"TIN"};                      // 2 Температура в доме
+const char *chart_TEVAIN    = {"TEVAIN"};                   // 3 Температура на входе испарителя (по фреону)
+const char *chart_TEVAOUT   = {"TEVAOUT"};                  // 4 Температура на выходе испарителя (по фреону)
+const char *chart_TCONIN    = {"TCONIN"};                   // 5 Температура на входе конденсатора (по фреону)
+const char *chart_TCONOUT   = {"TCONOUT"};                  // 6 Температура на выходе конденсатора (по фреону)
+const char *chart_TBOILER   = {"TBOILER"};                  // 7 Температура в бойлере ГВС
+const char *chart_TACCUM    = {"TACCUM"};                    // 8 Температура на выходе теплоаккмулятора
+const char *chart_TRTOOUT   = {"TRTOOUT"};                   // 9 Температура на выходе RTO (по фреону)
+const char *chart_TCOMP     = {"TCOMP"};                     // 10 Температура нагнетания компрессора
+const char *chart_TEVAING   = {"TEVAING"};                   // 11 Температура на входе испарителя (по гликолю)
+const char *chart_TEVAOUTG  = {"TEVAOUTG"};                  // 12 Температура на выходе испарителя (по гликолю)
+const char *chart_TCONING   = {"TCONING"};                   // 13 Температура на входе конденсатора (по гликолю)
+const char *chart_TCONOUTG  = {"TCONOUTG"};                  // 14 Температура на выходе конденсатора (по гликолю)
+const char *chart_PEVA      = {"PEVA"};                      // 15 Давление
+const char *chart_PCON      = {"PCON"};                      // 16 Давление нагнетания
+const char *chart_FLOWCON   = {"FLOWCON"};                   // 17 Датчик потока по кондесатору
+const char *chart_FLOWEVA   = {"FLOWEVA"};                   // 18 Датчик потока по испарителю
+const char *chart_FLOWPCON  = {"FLOWPCON"};                  // 19 Датчик протока по предконденсатору
+const char *chart_posEEV    = {"posEEV"};                    // 20 позиция ЭРВ
+const char *chart_freqFC    = {"freqFC"};                    // 21 Частота инвертора
+const char *chart_powerFC   = {"powerFC"};                   // 22 Мощность инвертора
+const char *chart_currentFC = {"currentFC"};                 // 23 Ток компрессора
+const char *chart_RCOMP     = {"RCOMP"};                     // 24 включение компрессора
+const char *chart_OVERHEAT  = {"OVERHEAT"};                  // 25 перегрев
+const char *chart_dCO       = {"dCO"};                       // 26 дельта СО
+const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
+const char *chart_TPEVA     = {"TPEVA"};                     // 28 температура расчитанная из давления Испариенифя
+const char *chart_TPCON     = {"TPCON"};                     // 29 температура расчитанная из давления Конденсации
+const char *chart_PowerCO   = {"PowerCO"};                   // 30 Мощность выходная теплового насоса
+const char *chart_PowerGEO  = {"PowerGEO"};                  // 31 Мощность контура
+const char *chart_COP       = {"COP"};                       // 32 Коэффициент преобразования Холодильной машины (без насосов)
+const char *chart_VOLTAGE   = {"VOLTAGE"};                   // 33 Статистика по напряжению
+const char *chart_CURRENT   = {"CURRENT"};                   // 34 Статистика по току
+const char *chart_acPOWER   = {"acPOWER"};                   // 34 Статистика по активная мощность
+const char *chart_rePOWER   = {"rePOWER"};                   // 36 Статистика по Реактивная мощность
+const char *chart_fullPOWER = {"fullPOWER"};                 // 37 Статистика по Полная мощность
+const char *chart_kPOWER    = {"kPOWER"};                    // 38 Статистика по Коэффициент мощности
+const char *chart_fullCOP   = {"fullCOP"};                   // 39 Полный COP
+
+
+// Названия типы фреонов
+const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
+// Названия правило работы ЭРВ
+const char *noteRuleEEV[]   =  {"TEVAOUT-TEVAIN","TRTOOUT-TEVAIN","TEVAOUT-T[PEVA]","TRTOOUT-T[PEVA]","Table[EVA CON]","Manual"};
+// Описание правила работы ЭРВ
+const char *noteRemarkEEV[] = {"Перегрев равен температуре на выходе испарителя - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
+                               "Перегрев равен температуре на выходе РТО - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
+                               "Перегрев равен температура на выходе испарителя - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
+                               "Перегрев равен температура на выходе РТО - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
+                               "Перегрев не вычисляется. ЭРВ открывается по значению из таблицы, которая увязывает температуры испарителя и конденсатора с шагами открытия ЭРВ.",
+                               "Перегрев не вычисляется. Ручной режим, ЭРВ открывается на заданное число шагов."};
+
+
 // Описание ВСЕХ Ошибок длина описания не более 160 байт (ограничение основной класс note_error[160+1])
 const char *noteError[] = {"Ok",                                                  //  0
                            "Выход за нижнюю границу температурного датчика",      // -1
@@ -521,97 +761,7 @@ const char *noteError[] = {"Ok",                                                
                            "NULL"
                            };
 // --------------------------------- ПЕРЕЧИСЛЯЕМЫЕ ТИПЫ ---------------------------------------------
-//  Перечисляемый тип - Тип статистики
-enum TYPE_STAT
-{
- pNONE_STAT,
- pTIN_STAT,                     // средняя темпеартура дома
- pTOUT_STAT,                    // средняя темпеартура улицы
- pTBOILER_STAT,                 // средняя температура бойлера
- pHOUR_STAT,                    // число накопленных часов должно быть 24
- pHMOTO_STAT,                   // моточасы за сутки
- pENERGYCO_STAT,                // выработанная энергия
- pENERGY220_STAT,               // потраченная энергия
- pCOP_STAT,                     // КОП
- pPOWERCO_STAT,                 // средння мощность СО
- pPOWER220_STAT,                // средняя потребляемая мощность
 
- pEND22                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
-//  Перечисляемый тип - Параметры MQTT клиента
-enum TYPE_PARAM_MQTT
-{
-//   pDEBUG_MQTT,                       // включить запись отладочной информации в журнал
-   pUSE_TS,                           // флаг использования ThingSpeak - формат передачи для клиента
-   pUSE_MQTT,                         // флаг использования MQTT
-   pBIG_MQTT,                         // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-   pSDM_MQTT,                         // флаг отправки данных электросчетчика на MQTT
-   pFC_MQTT,                          // флаг отправки данных инвертора на MQTT
-   pCOP_MQTT,                         // флаг отправки данных COP на MQTT
-   pTIME_MQTT,                        // период отправки на сервер в сек. 10...60000
-   pADR_MQTT,                         // Адрес сервера
-   pIP_MQTT,                          // IP Адрес сервера
-   pPORT_MQTT,                        // Адрес порта сервера
-   pLOGIN_MQTT,                       // логин сервера
-   pPASSWORD_MQTT,                    // пароль сервера
-   pID_MQTT,                          // Идентификатор клиента на MQTT сервере
-   // народный мониторинг
-   pUSE_NARMON,                       // флаг отправки данных на народный мониторинг
-   pBIG_NARMON,                       // флаг отправки данных на народный мониторинг ,большую версию
-   pADR_NARMON,                       // Адрес сервера народного мониторинга
-   pIP_NARMON,                        // IP Адрес сервера народного мониторинга
-   pPORT_NARMON,                      // Адрес порта сервера  народного мониторинга
-   pLOGIN_NARMON,                     // логин сервера народного мониторинга
-   pPASSWORD_NARMON,                  // пароль сервера народного мониторинга
-   pID_NARMON,                        // Идентификатор клиента на MQTT сервере
-   
-   pEND21                             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
-
-
-//  Перечисляемый тип - Параметры счетчика
-enum TYPE_PARAM_SDM
-{
-   pNAME_SDM,                         // Имя счетчика
-   pNOTE_SDM,                         // Описание счетчика
-   pMAX_VOLTAGE_SDM,                  // Контроль напряжения максимум
-   pMIN_VOLTAGE_SDM,                  // Контроль напряжения минимум
-   pMAX_POWER_SDM,                    // Контроль мощности
-   pVOLTAGE_SDM,                      // Напряжение
-   pCURRENT_SDM,                      // Ток
-   pREPOWER_SDM,                      // Реактивная мощность
-   pACPOWER_SDM,                      // Активная мощность
-   pPOWER_SDM,                        // Полная мощность
-   pPOW_FACTOR_SDM,                   // Коэффициент мощности
-   pPHASE_SDM,                        // Угол фазы (градусы)
-   pIACENERGY_SDM,                    // Потребленная активная энергия
-   pEACENERGY_SDM,                    // Переданная активная энергия
-   pIREENERGY_SDM,                    // Потребленная реактивная энергия
-   pEREENERGY_SDM,                    // Переданная реактивная энергия
-   pACENERGY_SDM,                     // Суммараная активная энергия
-   pREENERGY_SDM,                     // Суммараная реактивная энергия
-   pENERGY_SDM,                       // Суммараная энергия
-   pLINK_SDM,                         // Cостояние связи со счетчиком
-   
-   pEND20                             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
-//  Перечисляемый тип - Параметры профиля
-enum TYPE_PARAM_PROFILE         
-{
-  pNAME_PROFILE,                    // Имя профиля до 10 русских букв
-  ENABLE_PROFILE,                   // разрешение использовать в списке
-  ID_PROFILE,                       // номер профиля
-  NOTE_PROFILE,                     // описание профиля
-  DATE_PROFILE,                     // дата профиля
-  CRC16_PROFILE,                    // контрольная сумма профиля
-  NUM_PROFILE,                      // максимальное число профилей
-  SEL_PROFILE,
-  
-  pEND19                            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
 //  Перечисляемый тип - параметр инвертора
 enum TYPE_PARAM_FC         
 {
@@ -844,40 +994,6 @@ enum MESSAGE
   pMESSAGE_WARNING,              // 8 Уведомление "Прочие уведомления"
   pEND10                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
-//  Перечисляемый тип - ПАРАМЕТРЫ Уведомления
-enum MESSAGE_HP 
-{
-  pMAIL=0,                       // флаг уведомления скидывать на почту
-  pMAIL_AUTH,                    // флаг необходимости авторизации на почтовом сервере
-  pMAIL_INFO,                    // флаг необходимости добавления в письмо информации о состоянии ТН
-  pSMS,                          // флаг уведомления скидывать на СМС (пока не реализовано)
-  pMESS_RESET,                   // флаг уведомления Сброс
-  pMESS_ERROR,                   // флаг уведомления Ошибка
-  pMESS_LIFE,                    // флаг уведомления Сигнал жизни
-  pMESS_TEMP,                    // флаг уведомления Достижение граничной температуры
-  pMESS_SD,                      // флаг уведомления "Проблемы с sd картой"
-  pMESS_WARNING,                 // флаг уведомления "Прочие уведомления"
-  pSMTP_SERVER,                  // Адрес сервера
-  pSMTP_IP,                      // IP Адрес сервера
-  pSMTP_PORT,                    // Адрес порта сервера
-  pSMTP_LOGIN,                   // логин сервера если включена авторизация
-  pSMTP_PASS,                    // пароль сервера если включена авторизация
-  pSMTP_MAILTO,                  // адрес отправителя
-  pSMTP_RCPTTO,                  // адрес получателя
-  pSMS_SERVICE,                  // сервис отправки смс
-  pSMS_IP,                       // IP Адрес сервера для отправки смс
-  pSMS_PHONE,                    // телефон куда отправляется смс
-  pSMS_P1,                       // первый параметр для отправки смс
-  pSMS_P2,                       // второй параметр для отправки смс
-  pSMS_NAMEP1,                   // описание первого параметра для отправки смс
-  pSMS_NAMEP2,                   // описание второго параметра для отправки смс
-  pMESS_TIN,                     // Критическая температура в доме (если меньше то генерится уведомление)
-  pMESS_TBOILER,                 // Критическая температура бойлера (если меньше то генерится уведомление)
-  pMESS_TCOMP,                   // Критическая температура компрессора (если больше то генериться уведомление)
-  pMAIL_RET,                     // Ответ на тестовую почту
-  pSMS_RET,                      // Ответ на тестовую  sms
-  pEND11                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
 
 //  Перечисляемый тип - сервис для отправки смс
 enum SMS_SERVICE 
@@ -886,36 +1002,6 @@ enum SMS_SERVICE
   pSMSC_RU,                      // Сервис smsc.ru
   pEND12
 };
-
-
-
-//  Перечисляемый тип - режим работы ГВС
-enum BOILER_HP          
-{
-    pBOILER_ON,                    // флаг Включения бойлера
-    pSCHEDULER_ON,                 // флаг Использование расписани
-    pTURBO_BOILER,                 // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
-    pSALLMONELA,                   // флаг Сальмонела раз в неделю греть бойлер
-    pCIRCULATION,                  // флаг Управления циркуляционным насосом ГВС
-    pTEMP_TARGET,                  // Целевая температура бойлера
-    pDTARGET,                      // гистерезис целевой температуры
-    pTEMP_MAX,                     // Tемпература подачи максимальная
-    pPAUSE1,                       // Минимальное время простоя компрессора в секундах
-    pSCHEDULER,                    // Расписание
-    pCIRCUL_WORK,                  // Время  работы насоса ГВС секунды (fCirculation)
-    pCIRCUL_PAUSE,                 // Пауза в работе насоса ГВС  секунды (fCirculation)
-    pRESET_HEAT,                   // флаг Сброса лишнего тепла в СО
-    pRESET_TIME,                   // время сброса излишков тепла в СО в секундах (fResetHeat)
-    pBOIL_TIME,                    // Постоянная интегрирования времени в секундах ПИД ТН
-    pBOIL_PRO,                     // Пропорциональная составляющая ПИД ГВС
-    pBOIL_IN,                      // Интегральная составляющая ПИД ГВС
-    pBOIL_DIF,                     // Дифференциальная составляющая ПИД ГВС
-    pBOIL_TEMP,                    // Целевая температура ПИД ГВС
-    pADD_HEATING,                   // флаг ДОГРЕВА ГВС ТЭНом
-    pTEMP_RBOILER,                 // температура включения догрева бойлера
-    pEND7                          // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
 
 //  Перечисляемый тип - тип фреона
 enum TYPEFREON           
@@ -949,31 +1035,6 @@ enum TEST_MODE
    SAFE_TEST,
    TEST,
    HARD_TEST           // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
-//  Перечисляемый тип - параметры настройки сети
-enum PARAM_NETWORK          
-{
-   pIP,        
-   pSDNS,
-   pGATEWAY,
-   pSUBNET,
-   pDHSP,
-   pMAC, 
-   pRES_SOCKET,
-   pRES_W5200,
-   pPASS,                       // Использование паролей
-   pPASSUSER,
-   pPASSADMIN,
-   pSIZE_PACKET,                // размер пакета
-   pINIT_W5200,                 // Ежеминутный контроль SPI для сетевого чипа
-   pPORT,                       // Port веб сервера
-   pNO_ACK,                     // Не ожидать ответа ack
-   pDELAY_ACK,                  // Задержка перед посылкой следующего пакета
-   pPING_ADR,                   // адрес для пинга
-   pPING_TIME,                  // время пинга в секундах
-   pNO_PING,                    // запрет пинга контроллера
-   pEND3                        // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
 //  Перечисляемый тип - Время сброса сокетов
@@ -1040,19 +1101,7 @@ enum OPTION_HP
     pEND2             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-
-//  Перечисляемый тип - Параметр даты и времени
-enum DATE_TIME       
-{
-    pTIME,        // текущее время  12:45 без секунд
-    pDATE,        // текушая дата типа  12/04/2016
-    pNTP,         // адрес NTP сервера строка до 60 символов.
-    pUPDATE,      // Время синхронизации с NTP сервером.
-    pTIMEZONE,    // Часовой пояс
-    pUPDATE_I2C,  // Синхронизация времени раз в час с i2c часами
-    pEND5         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-
+/*
 //  Перечисляемый тип - Тип графика
 enum TYPE_CHART       
 {
@@ -1098,5 +1147,6 @@ enum TYPE_CHART
     pfullCOP,                  // 39 Полный COP
     pEND6                      // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
+*/
  #endif
 

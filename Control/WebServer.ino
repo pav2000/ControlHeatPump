@@ -43,17 +43,6 @@ extern void  noCsvChart_SD(uint8_t thread);
 
 // Названия режимов теста
 const char *noteTestMode[] =   {"NORMAL","SAFE_TEST","TEST","HARD_TEST"};
-// Названия типы фреонов
-const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
-// Названия правило работы ЭРВ
-const char *noteRuleEEV[]   =  {"TEVAOUT-TEVAIN","TRTOOUT-TEVAIN","TEVAOUT-T[PEVA]","TRTOOUT-T[PEVA]","Table[EVA CON]","Manual"};
-// Описание правила работы ЭРВ
-const char *noteRemarkEEV[] = {"Перегрев равен температуре на выходе испарителя - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
-                               "Перегрев равен температуре на выходе РТО - температура на входе испарителя. Есть возможность введения поправки (добавляется).",
-                               "Перегрев равен температура на выходе испарителя - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
-                               "Перегрев равен температура на выходе РТО - температура пересчитанной из давления на выходе испарителя. Есть выбор фреона и поправка (добавляется).",
-                               "Перегрев не вычисляется. ЭРВ открывается по значению из таблицы, которая увязывает температуры испарителя и конденсатора с шагами открытия ЭРВ.",
-                               "Перегрев не вычисляется. Ручной режим, ЭРВ открывается на заданное число шагов."};
 // Описание режима теста
 static const char *noteRemarkTest[] = {"Тестирование отключено. Основной режим работы",
                                        "Значения датчиков берутся из соответвующих полей ""Тест"", работа исполнительны устройств эмулируется. Безопасно.",
@@ -293,7 +282,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
   char *str,*x,*y, *z;
   int count=0;
   int param=-1,p=-1;
-  char temp[10];   
+  char temp[16];   // временный буфер
   float pm=0;
   int8_t i;
   // переменные для удаленных датчиков
@@ -427,8 +416,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
    }
    if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
        {
-        strcat(strReturn,HP.get_datetime(pTIME));                        strcat(strReturn,"|");
-        strcat(strReturn,HP.get_datetime(pDATE));                        strcat(strReturn,"|");
+        HP.get_datetime((char*)time_TIME,strReturn);                     strcat(strReturn,"|");
+        HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
         strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
         strcat(strReturn,int2str(freeRam()+HP.startRAM));                strcat(strReturn,"b|");
         strcat(strReturn,int2str(100-HP.CPU_IDLE));                      strcat(strReturn,"%|");
@@ -1044,14 +1033,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        
        if (strcmp(str,"test_Mail")==0)  // Функция test_mail
        {
-       if (HP.message.setTestMail()) { strcat(strReturn,"Send test mail to "); strcat(strReturn,HP.message.get_messageSetting(pSMTP_RCPTTO)); }
+       if (HP.message.setTestMail()) { strcat(strReturn,"Send test mail to "); HP.message.get_messageSetting((char*)mess_SMTP_RCPTTO,strReturn); }
        else { strcat(strReturn,"Error send test mail.");}
        strcat(strReturn,"&") ;   
         continue;  
        }   // test_Mail  
        if (strcmp(str,"test_SMS")==0)  // Функция test_mail
        {
-       if (HP.message.setTestSMS()) { strcat(strReturn,"Send SMS to ");  strcat(strReturn,HP.message.get_messageSetting(pSMS_PHONE));}
+       if (HP.message.setTestSMS()) { strcat(strReturn,"Send SMS to "); HP.message.get_messageSetting((char*)mess_SMS_PHONE,strReturn);}  //strcat(strReturn,HP.message.get_messageSetting(pSMS_PHONE));}
        else { strcat(strReturn,"Error send test sms.");}
        strcat(strReturn,"&") ;           
        continue;  
@@ -1311,7 +1300,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
        // Выделяем параметр функции на выходе число - номер параметра
        // применяется кодирование 0-19 - температуры 20-29 - сухой контакт 30-39 -аналоговые датчики
-       y[0]=0;                                  // Стираем скобку ")"  строка х содержит параметр
+       y[0]=0;                                  // Стираем скобку ")"  строка х+1 содержит параметр
        param=-1;                                // по умолчанию параметр не валидный
 
       // -----------------------------------------------------------------------------------------------------        
@@ -1600,8 +1589,57 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           strcat(strReturn,")=");
     //      if (pm==ATOF_ERROR)        // Ошибка преобразования   - завершить запрос с ошибкой
    //       { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
-         } //if "="
+         } else z=NULL; // "=" - не обнаружено, значит значение пустая строка
+         
+        // --------------------------------НОВЫЙ ПАРСЕР ------------------------------------------------------------------- 
+        // Вот сюда будет вставлятся код нового парсера (который не будет кодировать параметры в целые числа)
+        // ВХОД str - полное имя запроса до (), x+1 - содержит строку (имя параметра), z+1 - после = (значение), pm - флоат z+1
+        // ВЫХОД strReturn  надо Добавлять + в конце &
+        x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
 
+       // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------    
+/*
+       if (strstr(str,"EEV"))          
+              {
+              #ifdef EEV_DEF 
+              if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
+                  {
+                  HP.dEEV.get_paramEEV(x+1,strReturn);	
+                  strcat(strReturn,"&"); continue;	 
+                  }
+               else if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
+                  {
+                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+                    if (HP.dEEV.set_paramEEV(x+1,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
+                    else  strcat(strReturn,"E11");  // выход за диапазон значений   
+                  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+                  strcat(strReturn,"&") ; 
+                  continue;	 
+                  }
+                else   strcat(strReturn,"E03&");  continue;	 
+              #else
+               strcat(strReturn,"no support EEV&");  continue;	 
+              #endif   
+              }  //  if (strstr(str,"EEV"))    
+   */           
+          // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
+              if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
+              {
+			   #ifdef MQTT
+                   if (strcmp(str,"get_MQTT")==0){           // Функция получить настройки MQTT
+                        HP.clMQTT.get_paramMQTT(x+1,strReturn);
+                        strcat(strReturn,"&") ; continue;
+                   } else if (strcmp(str,"set_MQTT")==0) {         // Функция записать настройки MQTT
+                         if (HP.clMQTT.set_paramMQTT(x+1,strbuf))  HP.clMQTT.get_paramMQTT(x+1,strReturn);   // преобразование удачно
+                         else strcat(strReturn,"E32") ; // ошибка преобразования строки
+                      strcat(strReturn,"&") ; continue;
+                      } // (strcmp(str,"set_MQTT")==0) 
+				#else
+					 strcat(strReturn,"no support MQTT&");  continue; // не поддерживается
+				#endif
+               } //if ((strstr(str,"MQTT")>0)
+          
+           // 3. Расписание -------------------------------------------------------- 
 		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
@@ -1619,6 +1657,131 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			}
 		 #endif
 
+         // 4. Настройки счетчика SDM ------------------------------------------------
+               if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
+                 {
+                  #ifdef USE_ELECTROMETER_SDM  	
+                   if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
+                      {
+                        HP.dSDM.get_paramSDM(x+1,strReturn);
+                        strcat(strReturn,"&") ; continue;
+                      } // (strcmp(str,"get_SDM")==0) 
+                   else if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
+                      {
+                       if (HP.dSDM.set_paramSDM(x+1,strbuf)) HP.dSDM.get_paramSDM(x+1,strReturn); // преобразование удачно
+                       else                                  strcat(strReturn,"E31") ;            // ошибка преобразования строки
+                      strcat(strReturn,"&") ; continue;
+                      }  strcat(strReturn,"E03&");  continue;	 
+	              	#else
+					 strcat(strReturn,"no support SDM&");  continue; // не поддерживается
+					#endif   
+                  } //if ((strstr(str,"SDM")>0)  
+
+            // 5.  Настройки профилей ---------------------------------------------------------         
+		        if (strstr(str,"Profile"))          // Проверка для запросов содержащих Profile
+		          {
+		             if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
+		                  {
+		                    HP.Prof.get_paramProfile(x+1,strReturn);
+		                    strcat(strReturn,"&") ; continue;
+		                  } // (strcmp(str,"get_Profile")==0) 
+		              else if (strcmp(str,"set_Profile")==0)           // Функция записать настройки профиля
+		                  {
+		                   if (HP.Prof.set_paramProfile(x+1,strbuf)) HP.Prof.get_paramProfile(x+1,strReturn); // преобразование удачно
+		                   else                                      strcat(strReturn,"E28") ; // ошибка преобразования строки
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_Profile")==0) 
+		           } //if ((strstr(str,"Profile")>0)
+		           
+             //6.  Настройки Уведомлений --------------------------------------------------------
+            if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
+             {
+              if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
+                  {
+                    HP.message.get_messageSetting(x+1,strReturn);
+                    strcat(strReturn,"&") ; continue;
+                  } // (strcmp(str,"get_messageSetting")==0) 
+              else if (strcmp(str,"set_Message")==0)           // Функция set_Message - установить значениена стройки уведомлений
+                  {
+                   if (HP.message.set_messageSetting(x+1,strbuf)) HP.message.get_messageSetting(x+1,strReturn); // преобразование удачно
+                   else                                                     strcat(strReturn,"E20") ; // ошибка преобразования строки
+                  strcat(strReturn,"&") ; continue;
+                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_messageSetting")==0) 
+              } //if ((strstr(str,"messageSetting")>0)   
+              
+	          //7.  Настройки бойлера --------------------------------------------------
+	          if (strstr(str,"Boiler"))          // Проверка для запросов содержащих Boiler
+	           {
+	              if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
+	                  {
+	                    HP.Prof.get_boiler(x+1,strReturn);
+	                    strcat(strReturn,"&") ; continue;
+	                  } // (strcmp(str,"get_Boiler")==0) 
+	              else if (strcmp(str,"set_Boiler")==0)           // Функция set_Boiler - установить значениена стройки бойлера
+	                  {
+	                   if (HP.Prof.set_boiler(x+1,strbuf)) HP.Prof.get_boiler(x+1,strReturn);  // преобразование удачно
+	                   else 	                      strcat(strReturn,"E19") ; // ошибка преобразования строки
+	                  strcat(strReturn,"&") ; continue;
+	                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Boiler")==0) 
+	             } //if ((strstr(str,"Boiler")>0)   
+
+	           //8.  Настройки дата время --------------------------------------------------------
+		          if (strstr(str,"datetime"))          // Проверка для запросов содержащих datetime
+		             {
+		              if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
+		                  {
+		                    HP.get_datetime(x+1,strReturn);
+		                    strcat(strReturn,"&") ; continue;
+		                  } // (strcmp(str,"get_datetime")==0) 
+   		              else if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
+ 		                  {
+		                   if (HP.set_datetime(x+1,strbuf))  HP.get_datetime(x+1,strReturn);    // преобразование удачно
+	                       else  strcat(strReturn,"E18") ; // ошибка преобразования строки
+		                  strcat(strReturn,"&") ; continue;
+		                  }  else strcat(strReturn,"E03&");  continue;// (strcmp(str,"set_datetime")==0) 
+		            } //if ((strstr(str,"datetime")>0)   
+
+	           //9.  Настройки сети -----------------------------------------------------------
+	          if (strstr(str,"Network"))          // Проверка для запросов содержащих Network
+	             {
+	               if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
+	                  {
+	                    HP.get_network(x+1,strReturn);
+	                    strcat(strReturn,"&") ; continue;
+	                  } // (strcmp(str,"get_Network")==0) 
+	              else if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
+	                  {
+	                   if (HP.set_network(x+1,strbuf))  HP.get_network(x+1,strReturn);     // преобразование удачно
+	                   else strcat(strReturn,"E15") ; // ошибка преобразования строки
+	                  strcat(strReturn,"&") ; continue;
+	                  }  else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Network")==0) 
+	             } //if ((strstr(str,"Network")>0)   
+
+		         //10.  Статистика используется в одной функции get_Stat ---------------------------------------
+		          if (strstr(str,"Stat"))   // Проверка для запросов содержащих Stat
+		           {
+		               if (strcmp(str,"get_Stat")==0)           
+		                  {
+		                  #ifdef I2C_EEPROM_64KB    
+		                  HP.Stat.get_Stat(x+1,strReturn, true);
+		                  #else
+		                  strcat(strReturn,"");
+		                  #endif
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"get_Stat")==0) 
+		            } //if ((strstr(str,"Stat")>0) 
+                  
+		          //11.  Графики смещение  используется в одной функции get_Chart
+		          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
+		             {
+		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
+		                  {
+		                  HP.get_Chart(x+1,strReturn, true);
+		                  strcat(strReturn,"&") ; continue;
+		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
+		            } //if ((strstr(str,"Chart")>0)  
+         
+             
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
 		// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
@@ -1738,7 +1901,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                if (b==1) HP.sIP[a-1].set_fRule(true); else HP.sIP[a-1].set_fRule(false);
                strcat(strReturn,int2str(HP.sIP[a-1].get_fRule()));strcat(strReturn,"&") ;continue;  
               }              
-         #endif
+         #endif //  #ifdef SENSOR_IP  
        param=-1;
        // Температуры 0-19 смещение 0
             if (strcmp(x+1,"TOUT")==0)           { param=TOUT; }  // Температура улицы
@@ -1835,7 +1998,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
                else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
-    
+    /*
                // Параметры для графиков смещение 100 занимает 40 позиций  используется в одной функции get_Chart
                else if (strcmp(x+1,"_NONE")==0)          { param=100;} // ничего не показываем
                else if (strcmp(x+1,"_TOUT")==0)          { param=101;} // Температура улицы
@@ -1877,20 +2040,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"_fullPOWER")==0)     { param=137;} // Статистика по Полная мощность
                else if (strcmp(x+1,"_kPOWER")==0)        { param=138;} // Статистика по Коэффициент мощности
                else if (strcmp(x+1,"_fullCOP")==0)       { param=139;} // Полный COP
-         
-               // Параметры для статистики смещение 140 занимает 15 позиций  используется в одной функции get_Stat
-               else if (strcmp(x+1,"none")==0)           { param=140;} // ничего не показываем
-               else if (strcmp(x+1,"Tin")==0)            { param=141;} // средняя температура дома
-               else if (strcmp(x+1,"Tout")==0)           { param=142;} // средняя температура улицы
-               else if (strcmp(x+1,"Tboiler")==0)        { param=143;} // средняя температура бойлера
-               else if (strcmp(x+1,"Hour")==0)           { param=144;} // число накопленных часов должно быть 24
-               else if (strcmp(x+1,"Hmoto")==0)          { param=145;} // моточасы за сутки
-               else if (strcmp(x+1,"EnergyCO")==0)       { param=146;} // выработанная энергия
-               else if (strcmp(x+1,"Energy220")==0)      { param=147;} // потраченная энергия
-               else if (strcmp(x+1,"-COP-")==0)          { param=148;} // Средний КОП за день
-               else if (strcmp(x+1,"PowerCO")==0)        { param=149;} // средняя мощность СО
-               else if (strcmp(x+1,"Power220")==0)       { param=150;} // средняя потребляемая мощность
-                      
+      */      
                // Частотник 155 только одно устройство поддерживается смещение 155 занимает 15 позиций
                else if (strcmp(x+1,"ON_OFF")==0)         { param=155;} // Флаг включения выключения (управление частотником)
                else if (strcmp(x+1,"MIN_FC")==0)         { param=156;} // Только чтение минимальная частота работы
@@ -1909,143 +2059,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"ERROR_FC")==0)       { param=169;} // Получить ошибку частотника
                
                //  Запросы где второй параметр строка не ЧИСЛО а СТРОКА -----------------------------------
-               // Сетевые настройки  смещение 170  занимает 20 позиций
-               else if (strcmp(x+1,"ADDRESS")==0)        { param=170;}  // Адрес IP
-               else if (strcmp(x+1,"DNS")==0)            { param=171;}  // Адрес DNS
-               else if (strcmp(x+1,"GATEWAY")==0)        { param=172;}  // Адрес GATEWAY
-               else if (strcmp(x+1,"SUBNET")==0)         { param=173;}  // Адрес SUBNET
-               else if (strcmp(x+1,"DHCP")==0)           { param=174;}  // Адрес DHCP
-               else if (strcmp(x+1,"MAC")==0)            { param=175;}  // Адрес MAC
-               else if (strcmp(x+1,"RES_SOCKET")==0)     { param=176;}  // Время сброса «зависших» сокетов
-               else if (strcmp(x+1,"RES_W5200")==0)      { param=177;}  // Время сброса сетевого чипа w5200
-               else if (strcmp(x+1,"PASSWORD")==0)       { param=178;}  // Использование паролей
-               else if (strcmp(x+1,"PASSUSER")==0)       { param=179;}  // Пароль пользователя
-               else if (strcmp(x+1,"PASSADMIN")==0)      { param=180;}  // Пароль администратора
-               else if (strcmp(x+1,"SIZE_PACKET")==0)    { param=181;}  // Длина пакета
-               else if (strcmp(x+1,"INIT_W5200")==0)     { param=182;}  // Ежеминутный контроль SPI для сетевого чипа
-               else if (strcmp(x+1,"PORT")==0)           { param=183;}  // Порт веб сервера
-               else if (strcmp(x+1,"NO_ACK")==0)         { param=184;}  // Флаг Не ожидать ответа ACK
-               else if (strcmp(x+1,"DELAY_ACK")==0)      { param=185;}  // Задержка мсек перед отправкой пакета
-               else if (strcmp(x+1,"PING_ADR")==0)       { param=186;}  // Адрес для пинга
-               else if (strcmp(x+1,"PING_TIME")==0)      { param=187;}  // Время пинга в секундах
-               else if (strcmp(x+1,"NO_PING")==0)        { param=188;}  // Запрет пинга контроллера
-         
-                // Настройки дата время  смещение 190 общее число 10 шт
-               else if (strcmp(x+1,"TIME")==0)           { param=190;}  // время
-               else if (strcmp(x+1,"DATE")==0)           { param=191;}  // дата
-               else if (strcmp(x+1,"NTP")==0)            { param=192;}  // NTP сервер
-               else if (strcmp(x+1,"UPDATE")==0)         { param=193;}  // обновление по NTP
-               else if (strcmp(x+1,"TIMEZONE")==0)       { param=194;}  // часовой пояс
-               else if (strcmp(x+1,"UPDATE_I2C")==0)     { param=195;}  // обновление внутренних часов по i2c раз час
-        
-               // Настройка бойлера смещение 200 занимает 30 позиций
-               else if (strcmp(x+1,"BOILER_ON")==0)      { param=200;}  // флаг Включения бойлера
-               else if (strcmp(x+1,"SCHEDULER_ON")==0)   { param=201;}  // флаг Использование расписания
-               else if (strcmp(x+1,"TURBO_BOILER")==0)   { param=202;}  // флаг использование ТУРБО нагрева бойлера
-               else if (strcmp(x+1,"SALLMONELA")==0)     { param=203;}  // флаг Сальмонела раз в неделю греть бойлер
-               else if (strcmp(x+1,"CIRCULATION")==0)    { param=204;}  // флаг Управления циркуляционным насосом ГВС
-               else if (strcmp(x+1,"TEMP_TARGET")==0)    { param=205;}  // Целевая температура бойлера
-               else if (strcmp(x+1,"DTARGET")==0)        { param=206;}  // гистерезис целевой температуры
-               else if (strcmp(x+1,"TEMP_MAX")==0)       { param=207;}  // Температура подачи максимальная
-               else if (strcmp(x+1,"PAUSE1")==0)         { param=208;}  // Минимальное время простоя компрессора в минутах
-               else if (strcmp(x+1,"SCHEDULER")==0)      { param=209;}  // Расписание SCHEDULER
-               else if (strcmp(x+1,"CIRCUL_WORK")==0)    { param=210;}  // Время  работы насоса ГВС
-               else if (strcmp(x+1,"CIRCUL_PAUSE")==0)   { param=211;}  // Пауза в работе насоса ГВС
-               else if (strcmp(x+1,"RESET_HEAT")==0)     { param=212;}  // флаг Сброса лишнего тепла в СО
-               else if (strcmp(x+1,"RESET_TIME")==0)     { param=213;}  // время сброса излишков тепла в секундах (fResetHeat)
-               else if (strcmp(x+1,"BOIL_TIME")==0)      { param=214;}  // Постоянная интегрирования времени в секундах ПИД ТН
-               else if (strcmp(x+1,"BOIL_PRO")==0)       { param=215;}  // Пропорциональная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_IN")==0)        { param=216;}  // Интегральная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_DIF")==0)       { param=217;}  // Дифференциальная составляющая ПИД ГВС
-               else if (strcmp(x+1,"BOIL_TEMP")==0)      { param=218;}  // Целевая темпеартура ПИД ГВС
-               else if (strcmp(x+1,"ADD_HEATING")==0)    { param=219;}  // флаг использования тена для догрева ГВС
-               else if (strcmp(x+1,"TEMP_RBOILER")==0)   { param=220;}  // температура включчения догрева бойлера
-               
-               // Настройка Уведомлений смещение 230 занимает 30 позиций
-               else if (strcmp(x+1,"MAIL")==0)           { param=230;}  // флаг уведомления скидывать на почту
-               else if (strcmp(x+1,"MAIL_AUTH")==0)      { param=231;}  // флаг необходимости авторизации на почтовом сервере
-               else if (strcmp(x+1,"MAIL_INFO")==0)      { param=232;}  // флаг необходимости добавления в письмо информации о состоянии ТН
-               else if (strcmp(x+1,"SMS")==0)            { param=233;}  // флаг уведомления скидывать на СМС (пока не реализовано)
-               else if (strcmp(x+1,"MESS_RESET")==0)     { param=234;}  // флаг уведомления Сброс
-               else if (strcmp(x+1,"MESS_ERROR")==0)     { param=235;}  // флаг уведомления Ошибка
-               else if (strcmp(x+1,"MESS_LIFE")==0)      { param=236;}  // флаг уведомления Сигнал жизни
-               else if (strcmp(x+1,"MESS_TEMP")==0)      { param=237;}  // флаг уведомления Достижение граничной температуры
-               else if (strcmp(x+1,"MESS_SD")==0)        { param=238;}  // флаг уведомления "Проблемы с sd картой"
-               else if (strcmp(x+1,"MESS_WARNING")==0)   { param=239;}  // флаг уведомления "Прочие уведомления"
-               else if (strcmp(x+1,"SMTP_SERVER")==0)    { param=240;}  // Адрес сервера SMTP_IP
-               else if (strcmp(x+1,"SMTP_IP")==0)        { param=241;}  // IP Адрес сервера
-               else if (strcmp(x+1,"SMTP_PORT")==0)      { param=242;}  // Адрес порта сервера
-               else if (strcmp(x+1,"SMTP_LOGIN")==0)     { param=243;}  // логин сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_PASS")==0)      { param=244;}  // пароль сервера если включена авторизация
-               else if (strcmp(x+1,"SMTP_MAILTO")==0)    { param=245;}  // адрес отправителя
-               else if (strcmp(x+1,"SMTP_RCPTTO")==0)    { param=246;}  // адрес получателя
-               else if (strcmp(x+1,"SMS_SERVICE")==0)    { param=247;}  // сервис для отправки смс
-               else if (strcmp(x+1,"SMS_IP")==0)         { param=248;}  // IP адрес сервера для отправки смс
-               else if (strcmp(x+1,"SMS_PHONE")==0)      { param=249;}  // телефон куда отправляется смс
-               else if (strcmp(x+1,"SMS_P1")==0)         { param=250;}  // первый параметр
-               else if (strcmp(x+1,"SMS_P2")==0)         { param=251;}  // второй параметр
-               else if (strcmp(x+1,"SMS_NAMEP1")==0)     { param=252;}  // описание первого параметра
-               else if (strcmp(x+1,"SMS_NAMEP2")==0)     { param=253;}  // описание второго параметра
-               else if (strcmp(x+1,"MESS_TIN")==0)       { param=254;}  // Критическая температура в доме (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TBOILER")==0)   { param=255;}  // Критическая температура бойлера (если меньше то генерится уведомление)
-               else if (strcmp(x+1,"MESS_TCOMP")==0)     { param=256;}  // Критическая температура компрессора (если больше то генериться уведомление)
-               else if (strcmp(x+1,"MAIL_RET")==0)       { param=257;}  // ответ на тестовое сообщение
-               else if (strcmp(x+1,"SMS_RET")==0)        { param=258;}  // ответ на тестовое SMS
-        
-               // Настройки Профиля  смещение 260 общее число 10 шт
-               else if (strcmp(x+1,"NAME_PROFILE")==0)   { param=260;}  // Имя профиля до 10 русских букв
-               else if (strcmp(x+1,"ENABLE_PROFILE")==0) { param=261;}  // разрешение использовать в списке
-               else if (strcmp(x+1,"ID_PROFILE")==0)     { param=262;}  // номер профиля
-               else if (strcmp(x+1,"NOTE_PROFILE")==0)   { param=263;}  // описание профиля
-               else if (strcmp(x+1,"DATE_PROFILE")==0)   { param=264;}  // дата профиля
-               else if (strcmp(x+1,"CRC16_PROFILE")==0)  { param=265;}  // контрольная сумма профиля
-               else if (strcmp(x+1,"NUM_PROFILE")==0)    { param=266;}  // максимальное число профилей
-               //else if (strcmp(x+1,"SEL_PROFILE")==0)    { param=257;}  // список профилей
-               
-               // Настройки Счетчика смещение 270 общее число 30 шт
-               else if (strcmp(x+1,"NAME_SDM")==0)       { param=270;}  // Имя счетчика
-               else if (strcmp(x+1,"NOTE_SDM")==0)       { param=271;}  // Описание счетчика
-               else if (strcmp(x+1,"MAX_VOLTAGE_SDM")==0){ param=272;}  // Контроль напряжения max
-               else if (strcmp(x+1,"MIN_VOLTAGE_SDM")==0){ param=273;}  // Контроль напряжения min
-               else if (strcmp(x+1,"MAX_POWER_SDM")==0)  { param=274;}  // Контроль мощности max
-               else if (strcmp(x+1,"VOLTAGE_SDM")==0)    { param=275;}  // Напряжение
-               else if (strcmp(x+1,"CURRENT_SDM")==0)    { param=276;}  // Ток
-               else if (strcmp(x+1,"REPOWER_SDM")==0)    { param=277;}  // Реактивная мощность
-               else if (strcmp(x+1,"ACPOWER_SDM")==0)    { param=278;}  // Активная мощность
-               else if (strcmp(x+1,"POWER_SDM")==0)      { param=279;}  // Полная мощность
-               else if (strcmp(x+1,"POW_FACTOR_SDM")==0) { param=280;}  // Коэффициент мощности
-               else if (strcmp(x+1,"PHASE_SDM")==0)      { param=281;}  // Угол фазы (градусы)
-               else if (strcmp(x+1,"IACENERGY_SDM")==0)  { param=282;}  // Потребленная активная энергия
-               else if (strcmp(x+1,"EACENERGY_SDM")==0)  { param=283;}  // Переданная активная энергия
-               else if (strcmp(x+1,"IREENERGY_SDM")==0)  { param=284;}  // Потребленная реактивная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=285;}  // Переданная реактивная энергия
-               else if (strcmp(x+1,"ACENERGY_SDM")==0)   { param=286;}  // Суммараная активная энергия
-               else if (strcmp(x+1,"REENERGY_SDM")==0)   { param=287;}  // Суммараная реактивная энергия
-               else if (strcmp(x+1,"ENERGY_SDM")==0)     { param=288;}  // Суммараная  энергия
-               else if (strcmp(x+1,"LINK_SDM")==0)       { param=289;}  // Cостояние связи со счетчиком
-        
-              // Настройки MQTT клиента смещение 300 общее число 30 шт
-               else if (strcmp(x+1,"USE_THINGSPEAK")==0) { param=300;}  // флаг использования  ThingSpeak
-               else if (strcmp(x+1,"USE_MQTT")==0)       { param=301;}  // флаг использования MQTT
-               else if (strcmp(x+1,"BIG_MQTT")==0)       { param=302;}  // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-               else if (strcmp(x+1,"SDM_MQTT")==0)       { param=303;}  // флаг отправки данных электросчетчика на MQTT
-               else if (strcmp(x+1,"FC_MQTT")==0)        { param=304;}  // флаг отправки данных инвертора на MQTT
-               else if (strcmp(x+1,"COP_MQTT")==0)       { param=305;}  // флаг отправки данных COP на MQTT
-               else if (strcmp(x+1,"TIME_MQTT")==0)      { param=306;}  // период отправки на сервер в сек. 10...60000
-               else if (strcmp(x+1,"ADR_MQTT")==0)       { param=307;}  // Адрес сервера
-               else if (strcmp(x+1,"IP_MQTT")==0)        { param=308;}  // IP Адрес сервера
-               else if (strcmp(x+1,"PORT_MQTT")==0)      { param=309;}  // Адрес порта сервера
-               else if (strcmp(x+1,"LOGIN_MQTT")==0)     { param=310;}  // логин сервера
-               else if (strcmp(x+1,"PASSWORD_MQTT")==0)  { param=311;}  // пароль сервера
-               else if (strcmp(x+1,"ID_MQTT")==0)        { param=312;}  // Идентификатор клиента на MQTT сервере
-               else if (strcmp(x+1,"USE_NARMON")==0)     { param=313;}  // флаг отправки данных на народный мониторинг
-               else if (strcmp(x+1,"BIG_NARMON")==0)     { param=314;}  // флаг отправки данных на народный мониторинг ,большую версию
-               else if (strcmp(x+1,"ADR_NARMON")==0)     { param=315;}  // Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"IP_NARMON")==0)      { param=316;}  // IP Адрес сервера народный мониторинг
-               else if (strcmp(x+1,"PORT_NARMON")==0)    { param=317;}  // Адрес порта сервера народный мониторинг
-               else if (strcmp(x+1,"LOGIN_NARMON")==0)   { param=318;}  // логин сервера народный мониторинг
-               else if (strcmp(x+1,"PASSWORD_NARMON")==0){ param=319;}  // пароль сервера народный мониторинг
-               else if (strcmp(x+1,"ID_NARMON")==0)      { param=320;}  // Идентификатор клиента на народный мониторинг
+     
   //      }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
@@ -2558,6 +2572,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                }  // else end -----------------------
             } //if ((strstr(str,"HP")>0)  
 
+/*
           //9.  Графики смещение param 100 занимает 40 позиций  используется в одной функции get_Chart
           if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
              {
@@ -2571,198 +2586,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"get_Chart")==0) 
                }  // else end 
             } //if ((strstr(str,"Chart")>0)  
-            
-         //10.  Статистика смещение param 100 занимает 40 позиций  используется в одной функции get_Stat
-          if (strstr(str,"Stat"))          // Проверка для запросов содержащих Stat
-             {
-             if ((param>=155)||(param<140))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-140; 
-               if (strcmp(str,"get_Stat")==0)           
-                  {
-                  #ifdef I2C_EEPROM_64KB    
-                  HP.Stat.get_Stat((TYPE_STAT) p,strReturn, true);
-                  #else
-                  strcat(strReturn,"");
-                  #endif
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Stat")==0) 
-               }  // else end 
-            } //if ((strstr(str,"Stat")>0)  
+ */        
             // --------------------------------------------------------------------------------------------------------------------------
-           // Запросы где второй параметр строка смещение 170 занимает 20 позиций
-           //10.  Настройки сети смещение 170
-          if (strstr(str,"Network"))          // Проверка для запросов содержащих Network
-             {
-             if ((param>=190)||(param<170))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-170; 
-               if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
-                  {
-                    strcat(strReturn,HP.get_network((PARAM_NETWORK)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Network")==0) 
-                  
-              if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
-                  {
-                   if (HP.set_network((PARAM_NETWORK)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.get_network((PARAM_NETWORK)p));
-                   else
-                      strcat(strReturn,"E15") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Network")==0) 
-              }  // else end 
-            } //if ((strstr(str,"Network")>0)       
 
-           //11.  Настройки дата время смещение 190
-          if (strstr(str,"datetime"))          // Проверка для запросов содержащих datetime
-             {
-             if ((param>=200)||(param<190))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-190; 
-               if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
-                  {
-                    strcat(strReturn,HP.get_datetime((DATE_TIME)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_datetime")==0) 
-                  
-              if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
-                  {
-                   if (HP.set_datetime((DATE_TIME)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.get_datetime((DATE_TIME)p));
-                   else
-                      strcat(strReturn,"E18") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_datetime")==0) 
-              }  // else end 
-            } //if ((strstr(str,"datetime")>0)   
-
-         //12.  Настройки бойлера смещение 200 занимает 30
-          if (strstr(str,"Boiler"))          // Проверка для запросов содержащих Boiler
-             {
-             if ((param>=230)||(param<200))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-200; 
-               if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
-                  {
-                    strcat(strReturn,HP.Prof.get_boiler((BOILER_HP)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Boiler")==0) 
-                  
-              if (strcmp(str,"set_Boiler")==0)           // Функция set_Boiler - установить значениена стройки бойлера
-                  {
-                   if (HP.Prof.set_boiler((BOILER_HP)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.Prof.get_boiler((BOILER_HP)p));
-                   else
-                      strcat(strReturn,"E19") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Boiler")==0) 
-              }  // else end 
-            } //if ((strstr(str,"Boiler")>0)   
-
-         //13.  Настройки Уведомлений смещение 230 занимает 30
-          if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
-             {
-             if ((param>=260)||(param<230))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-230; 
-               if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
-                  {
-                    strcat(strReturn,HP.message.get_messageSetting((MESSAGE_HP)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_messageSetting")==0) 
-                  
-              if (strcmp(str,"set_Message")==0)           // Функция set_Message - установить значениена стройки уведомлений
-                  {
-                   if (HP.message.set_messageSetting((MESSAGE_HP)p,strbuf))     // преобразование удачно
-                      strcat(strReturn,HP.message.get_messageSetting((MESSAGE_HP)p));
-                   else
-                      strcat(strReturn,"E20") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_messageSetting")==0) 
-              }  // else end 
-            } //if ((strstr(str,"messageSetting")>0)   
-            
-         //14.  Настройки профилей смещение 260 занимает 10
-          if (strstr(str,"Profile"))          // Проверка для запросов содержащих messageSetting
-          {
-             if ((param>=270)||(param<260))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-260; 
-               if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
-                  {
-                    strcat(strReturn,HP.Prof.get_paramProfile((TYPE_PARAM_PROFILE)p));
-                    strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Profile")==0) 
-                  
-              if (strcmp(str,"set_Profile")==0)           // Функция записать настройки профиля
-                  {
-                   if (HP.Prof.set_paramProfile((TYPE_PARAM_PROFILE)p,strbuf))     // преобразование удачно
-                       strcat(strReturn,HP.Prof.get_paramProfile((TYPE_PARAM_PROFILE)p)); 
-                   else
-                      strcat(strReturn,"E28") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_Profile")==0) 
-              }  // else end 
-           } //if ((strstr(str,"Profile")>0)
-           #ifdef USE_ELECTROMETER_SDM  
-           
-              //15.  Настройки счетчика смещение 270 занимает 30
-              if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
-                 {
-                 if ((param>=300)||(param<270))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-                 else  // параметр верный
-                   {   p=param-270; 
-                   if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
-                      {
-                        strcat(strReturn,HP.dSDM.get_paramSDM((TYPE_PARAM_SDM)p));
-                        strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"get_SDM")==0) 
-                      
-                  if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
-                      {
-                       if (HP.dSDM.set_paramSDM((TYPE_PARAM_SDM)p,strbuf))     // преобразование удачно
-                           strcat(strReturn,HP.dSDM.get_paramSDM((TYPE_PARAM_SDM)p)); 
-                       else
-                          strcat(strReturn,"E31") ; // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"set_SDM")==0) 
-                  }  // else end 
-                } //if ((strstr(str,"SDM")>0)      
-            #endif
-
-              //16.  Настройки клиента смещение 300 занимает 30
-              if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
-			   #ifdef MQTT
-                 {
-                 if ((param>=330)||(param<300))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-                 else  // параметр верный
-                   {   p=param-300; 
-                   if (strcmp(str,"get_MQTT")==0)           // Функция получить настройки MQTT
-                      {
-                        strcat(strReturn,HP.clMQTT.get_paramMQTT((TYPE_PARAM_MQTT)p));
-                        strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"get_MQTT")==0) 
-                      
-                  if (strcmp(str,"set_MQTT")==0)           // Функция записать настройки MQTT
-                      {
-                       if (HP.clMQTT.set_paramMQTT((TYPE_PARAM_MQTT)p,strbuf))     // преобразование удачно
-                           strcat(strReturn,HP.clMQTT.get_paramMQTT((TYPE_PARAM_MQTT)p)); 
-                       else
-                          strcat(strReturn,"E32") ; // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"set_MQTT")==0) 
-                  }  // else end 
-				#else
-					 strcat(strReturn,"none") ; // не поддерживается
-					 strcat(strReturn,"&") ; continue;
-				#endif
-               } //if ((strstr(str,"MQTT")>0)
-
-            
-        // НОВОЕ вставлять сюда!
+       
         // ------------------------ конец разбора -------------------------------------------------
-x_FunctionNotFound:
+x_FunctionNotFound:    
        strcat(strReturn,"E01");                             // функция не найдена ошибка
        strcat(strReturn,"&") ;
        continue;
