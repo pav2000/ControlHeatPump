@@ -3035,7 +3035,7 @@ void HeatPump::sendCommand(TYPE_COMMAND c)
              case pRESTART:   journal.jprintf("RESTART");  break;
              case pREPEAT:    journal.jprintf("REPEAT");   break;
              case pNETWORK:   journal.jprintf("NETWORK");  break;
-             case pJFORMAT:   journal.jprintf("JFORMAT");  break;      
+             //case pJFORMAT:   journal.jprintf("JFORMAT");  break;
              case pSFORMAT:   journal.jprintf("SFORMAT");  break;                    
              case pSAVE:      journal.jprintf("SAVE");     break;                    
              case pWAIT:      journal.jprintf("WAIT");     break;                    
@@ -3054,7 +3054,7 @@ void HeatPump::sendCommand(TYPE_COMMAND c)
              case pRESTART:   journal.jprintf("RESTART\n");  break;
              case pREPEAT:    journal.jprintf("REPEAT\n");   break;
              case pNETWORK:   journal.jprintf("NETWORK\n");  break; 
-             case pJFORMAT:   journal.jprintf("JFORMAT\n");  break;         
+             //case pJFORMAT:   journal.jprintf("JFORMAT\n");  break;
              case pSFORMAT:   journal.jprintf("SFORMAT\n");  break;                    
              case pSAVE:      journal.jprintf("SAVE\n");     break;      
              case pWAIT:      journal.jprintf("WAIT\n");     break;                    
@@ -3085,7 +3085,7 @@ int8_t HeatPump::runCommand()
          case pRESTART:   journal.jprintf("RESTART\n");  break;
          case pREPEAT:    journal.jprintf("REPEAT\n");   break;
          case pNETWORK:   journal.jprintf("NETWORK\n");  break;
-         case pJFORMAT:   journal.jprintf("JFORMAT\n");  break; 
+         //case pJFORMAT:   journal.jprintf("JFORMAT\n");  break;
          case pSFORMAT:   journal.jprintf("SFORMAT\n");  break;                    
          case pSAVE:      journal.jprintf("SAVE\n");     break;                    
          case pWAIT:      journal.jprintf("WAIT\n");     break;                    
