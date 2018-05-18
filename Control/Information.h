@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -53,29 +53,28 @@ public:
  // SemaphoreHandle_t xJournalSemaphore;                    // Семафор Journal
   void Init();                                            // Инициализация
   void printf(const char *format, ...) ;                  // Печать только в консоль
-  uint16_t jprintf(const char *format, ...);              // Печать в консоль и журнал возвращает число записанных байт
-  uint16_t jprintf(type_promt pr,const char *format, ...);// Печать в консоль и журнал возвращает число записанных байт с типом промта
-  uint16_t jprintf_only(const char *format, ...);         // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
-  uint16_t send_Data(uint8_t thread);                     // отдать журнал в сеть клиенту  Возвращает число записанных байт
-  uint16_t available(void);                               // Возвращает размер журнала
+  void jprintf(const char *format, ...);                  // Печать в консоль и журнал возвращает число записанных байт
+  void jprintf(type_promt pr,const char *format, ...);    // Печать в консоль и журнал возвращает число записанных байт с типом промта
+  void jprintf_only(const char *format, ...);             // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
+  int32_t send_Data(uint8_t thread);                     // отдать журнал в сеть клиенту  Возвращает число записанных байт
+  int32_t available(void);                               // Возвращает размер журнала
   int8_t   get_err(void) { return err; };
   virtual size_t write (uint8_t c);                       // чтобы print работал для это класса
   #ifdef I2C_EEPROM_64KB                                  // Если журнал находится в i2c
-  void Format();                                          // форматирование журнала в еепром
+  void Format(char * buf);                               // форматирование журнала в еепром
   #else
   void Clear(){bufferTail=0;bufferHead=0;full=false;err=OK;} // очистка журнала в памяти
   #endif
 private:
   int8_t err;                                             // ошибка журнала
-  uint32_t bufferHead, bufferTail;                        // Начало и конец
-  boolean full;                                           // признак полного буфера
-  uint16_t _write(char *dataPtr);                         // Записать строку в журнал
-   // Переменнные
-  char pbuf[PRINTF_BUF+1];                                // Буфер для одной строки
+  int32_t bufferHead, bufferTail;                        // Начало и конец
+  uint8_t full;                                           // признак полного буфера
+  void _write(char *dataPtr);                            // Записать строку в журнал
+   // Переменные
+  char pbuf[PRINTF_BUF+2];                                // Буфер для одной строки + маркеры
   #ifndef I2C_EEPROM_64KB                                 // Если журнал находится в памяти
     char _data[JOURNAL_LEN+1];                            // Буфер журнала
   #else
-    char bufI2C[W5200_MAX_LEN+1];                         // буфер для работы с i2c памятью для ускорения работы и передачи по сети
     void writeTAIL();                                     // Записать символ "конец" значение bufferTail должно быть установлено
     void writeHEAD();                                     // Записать символ "начало" значение bufferHead должно быть установлено
     void writeREADY();                                    // Записать признак "форматирования" журнала - журналом можно пользоваться
@@ -321,7 +320,7 @@ class Statistics                      // Класс статистика
 private:
   int8_t error;                                           // ошибка
   uint16_t pos, num;                                      // позиция для записи и число точек
-  char bufI2C[256];                                       // буфер для работы с i2c памятью для ускорения работы
+  char bufferI2C[256];                                    // буфер для работы с i2c памятью для ускорения работы
   boolean full;                                           // признак полного буфера
   uint32_t dateUpdate;                                    // Время поледнего обновления статистики
   uint8_t Hour=0;                                         // 1 Сколько часов в точке

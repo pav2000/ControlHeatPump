@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
- * vad711 - vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav;
+ * by vad711 - vad7@yahoo.com
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -1958,7 +1958,7 @@ enum TYPE_SENSOR
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
     //#define DEMO                  // Включение демо режима
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхонник 3 фазы, ЭРВ, РТО, 2 датчика давления"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -1972,6 +1972,9 @@ enum TYPE_SENSOR
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
     #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
+    //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
+    //  #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
+    //  #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
     #define EXTERNAL_AREF     	  	// Использование внешней опоры для АЦП
     #ifdef EXTERNAL_AREF        	// Какая опора для АЦП используется
       #define SAM3X_ADC_REF  3.00   // Используется внешняя опора ADR4530ARZ
@@ -1998,12 +2001,6 @@ enum TYPE_SENSOR
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
 	#endif
 
-    #define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
-
-    //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
-    //  #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
-    //  #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
-
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	#ifndef  TEST_BOARD
      const boolean   defaultDHCP	=   false;
@@ -2016,7 +2013,8 @@ enum TYPE_SENSOR
      const IPAddress defaultSDNS        (192, 168, 0,   1);
      const IPAddress defaultGateway     (192, 168, 0,   1);
 	#endif
-     const IPAddress defaultSubnet       (255, 255, 255, 0);
+     const IPAddress defaultSubnet      (255, 255, 255, 0);
+
     // --------------------------------------------------------------------------------
     // ЖЕЛЕЗО  - привязка к ногам контроллера  В зависимости от конкретной схемы и платы
     // Для каждой конфигурации теперь свои определения!!!
@@ -2149,6 +2147,7 @@ enum TYPE_SENSOR
 
 
    // Исполнительные устройства (реле и сухие контакты) ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
+	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
     #define RNUMBER                    7        // Число исполнительных устройств (всех)
      // устройства DC 24V
     #define PIN_DEVICE_RCOMP           12 //[R_9(X1)3.3V] через FOD852(p1..4); X174.2->p2, X1.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
@@ -2353,9 +2352,9 @@ enum TYPE_SENSOR
                              "Датчик давления конденсации"};
 
   // Коэффициент преобразования отсчеты АЦП-давление
-  const float    TRANsADC[ANUMBER]  = {0.270, 1.36};
+  const float    TRANsADC[ANUMBER]  = {0.388, 1.391};
   // напряжение (отсчеты АЦП) соответсвующее cZero
-  const uint16_t ZEROPRESS[ANUMBER] = {100, 100};
+  const uint16_t ZEROPRESS[ANUMBER] = {309, 725};
 
   const boolean SENSORPRESS[ANUMBER]  = {true , true};
   const int16_t MINPRESS[ANUMBER]   = {  50 ,  200  };       // минимальные значения давления

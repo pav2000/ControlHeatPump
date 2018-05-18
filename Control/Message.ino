@@ -423,7 +423,6 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
 // true - сообщение принято (или запрещено), false - сообщение отвергнуто т.к оно уже посылалось (дубль) или внутренняя ошибка
 boolean Message::setMessage(MESSAGE ms, char *c, int p1)
 {
-char temp[10];    
 //  Serial.print(c);Serial.print(" : ");Serial.print(ms);Serial.println("-5");
    // Проверка необходимости отправки уведомления
        if (((GETBIT(messageSetting.flags,fMessageReset))==0)&&(ms==pMESSAGE_RESET))       return true;   // Попытка отправить не разрешенное сообщение, выходим без ошибок
@@ -436,17 +435,19 @@ char temp[10];
  
     // Проверка на дублирование сообщения. Тестовые сообщения и сообщения жизни  можно посылать многократно  подряд
     if ((rtcSAM3X8.unixtime()-sendTime<REPEAT_TIME)&&(messageData.ms==ms)&&((ms!=pMESSAGE_TESTMAIL)&&(ms!=pMESSAGE_TESTSMS)&&(ms!=pMESSAGE_LIFE)))   //дублирующие сообщения полылаются с интервалом
-      {
-        journal.jprintf("Ignore repeat message: #%d:%s\n",ms,c);
+    {
+        //journal.jprintf("Ignore repeat msg: #%d\n", ms);
         return false; 
-      }
+    } else {
+    	journal.jprintf(pP_TIME, "MSG: #%d: %s\n", ms, c);
+    }
       
     // Подготовить уведомление
     messageData.ms=ms;
     sendTime=rtcSAM3X8.unixtime(); // запомнить время отправки
     strcpy(messageData.data,c);
     // в сообщение pMESSAGE_TEMP добавить значение температуры
-    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  strcat(messageData.data,ftoa(temp,(float)p1/100.0,1)); }
+    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  ftoa(messageData.data + m_strlen(messageData.data), (float)p1/100.0,1); }
     messageData.p1=p1;
     // очистить ответы
     strcpy(retTest,"");             // обнулить ответ от посылки тестового письма

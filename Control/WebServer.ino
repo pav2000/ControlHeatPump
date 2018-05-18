@@ -1,4 +1,5 @@
-/* Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+/* 
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -382,24 +383,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            journal.Clear();       // Послать команду на очистку журнала в памяти
            journal.jprintf("Reset system RAM journal . . .\n"); 
        #else                      // Журнал в ЕЕПРОМ
-            strcat(strReturn,"Форматирование I2C EEPROM журнала, ожидайте 15 сек . . .&");
-            HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
+            journal.Format(strReturn);
+            //HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
+            strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
+            strcat(strReturn,"OK&");
        #endif
        continue;
        }        
-     if (strcmp(str,"RESET_JOURNAL")==0)   // Команда очистки журнала (в зависимости от типа)
-       {
-      
-       #ifndef I2C_EEPROM_64KB     // журнал в памяти
-           strcat(strReturn,"Сброс системного журнала в RAM . . .&");
-           journal.Clear();       // Послать команду на очистку журнала в памяти
-           journal.jprintf("Reset system RAM journal . . .\n"); 
-       #else                      // Журнал в ЕЕПРОМ
-            strcat(strReturn,"Форматирование I2C EEPROM журнала, ожидайте 15 сек . . .&");
-            HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
-       #endif
-       continue;
-       }  
     if (strcmp(str,"RESET")==0)   // Команда сброса контроллера
        {
        strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
@@ -1782,29 +1772,15 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         if (param==-1) for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} 
        
        if (param==-1)  // имя не найдено, дальше разбираем строку
-  //       {   
-         // Аналоговые датчики 30-35 смещение 30  количество до 6 штук
-              if (strcmp(x+1,"PEVA")==0)           { param=30;}  //  Датчик давления испарителя
-         else if (strcmp(x+1,"PCON")==0)           { param=31;}  //  Датчик давления кондесатора
-         // Реле  36-49 смещение 36  количество до 14 штук
-  //       }
-       /*
-       else if (strcmp(x+1,"RCOMP")==0)          { param=36;}  // Реле включения компрессора (через пускатель)
-       else if (strcmp(x+1,"RPUMPI")==0)         { param=37;}  // Реле включения насоса входного контура  (геоконтур)
-       else if (strcmp(x+1,"RPUMPO")==0)         { param=38;}  // Реле включения насоса выхордного контура  (отопление и ГВС)
-       else if (strcmp(x+1,"RBOILER")==0)        { param=39;}  // Включение ТЭНа бойлера
-       else if (strcmp(x+1,"RTRV")==0)           { param=40;}  // 4-ходовой клапан
-       else if (strcmp(x+1,"RFAN1")==0)          { param=41;}  // Реле включения вентилятора испарителя №1
-       else if (strcmp(x+1,"RFAN2")==0)          { param=42;}  // Реле включения вентилятора испарителя №2
-       else if (strcmp(x+1,"REVI")==0)           { param=43;}  // Соленойд для EVI. (испаритель ниже +3гр и конденсатор выше +40гр)
-       else if (strcmp(x+1,"R3WAY")==0)          { param=44;}  // Трех ходовой клапан. Переключение системы СО — ГВС (что сейчас греть)
-       else if (strcmp(x+1,"RHEAT")==0)          { param=45;}  // Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
-       else if (strcmp(x+1,"RPUMPB")==0)         { param=46;}  // Реле насоса циркуляции бойлера (ГВС)
-       */
-       else   // Поиск среди имен среди исполнительных устройств
-   //     {
-           for(i=0;i<RNUMBER;i++) if (strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;} 
-  //      }
+       {
+			 // Аналоговые датчики 30-35 смещение 30  количество до 6 штук
+    	   	 if (strcmp(x+1,"PEVA")==0)          		 { param=30;}  //  Датчик давления испарителя
+			 else if (strcmp(x+1,"PCON")==0)           	 { param=31;}  //  Датчик давления кондесатора
+			 // Реле  36-49 смещение 36  количество до 14 штук
+			 else { // Поиск среди имен среди исполнительных устройств
+				for(i=0;i<RNUMBER;i++) if (strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;}
+			 }
+       }
        if (param==-1)  // имя не найдено, дальше разбираем строку
   //      {
                // ЭРВ 50 только одно устройство поддерживается смещение 50, зато есть имена переменных

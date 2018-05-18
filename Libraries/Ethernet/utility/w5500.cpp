@@ -69,6 +69,7 @@ void W5500Class::send_data_processing(SOCKET s, const uint8_t *data, uint16_t le
 
 void W5500Class::send_data_processing_offset(SOCKET s, uint16_t data_offset, const uint8_t *data, uint16_t len)
 {
+	if(len == 0) return;
     uint16_t ptr = readSnTX_WR(s);
     uint8_t cntl_byte = (0x14+(s<<5));
     ptr += data_offset;

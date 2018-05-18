@@ -18,7 +18,7 @@
 		loadParam("get_error,get_WORK");
 		loadParam("get_optionHP(TIME_CHART),get_freonEEV,get_ruleEEV,get_paramEEV(TIME_IN),get_paramEEV(T_OWERHEAT),get_paramEEV(K_PRO),get_paramEEV(K_IN),get_paramEEV(K_DIF),get_paramEEV(M_STEP),get_paramEEV(CORRECTION),get_presentEEV,get_nameEEV,get_noteEEV,get_maxEEV,get_minEEV,get_pinEEV");
     updateParam("get_remarkEEV,get_EEV,get_overheatEEV,get_errcodeEEV");
-    loadParam("get_Chart(_posEEV)");
+    loadParam("get_Chart(posEEV)");
     setParam('get_listChart','chart1');
     
    // setParam('get_listChart2','chart2')
@@ -29,7 +29,7 @@
     }); */ 
     $("#autoupdate").change(function(){
     if(this.checked){
-      var timerId = setInterval(function() { loadParam("get_Chart(_posEEV)"); setParam('get_listChart','chart1'); }, 10000)
+      var timerId = setInterval(function() { loadParam("get_Chart(posEEV)"); setParam('get_listChart','chart1'); }, 10000)
       window.timerId = timerId
     }else{
       timerId = window.timerId

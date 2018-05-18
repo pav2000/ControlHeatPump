@@ -146,7 +146,7 @@ const char index_noSD[] =
 "             }\r\n"
 "           } else if(type == 'chart') {\r\n"
 "             if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) { \r\n"
-"               title = values[0].replace(/get_Chart\\(_/g,\"\").replace(/\\)[0-9]?/g,\"\");\r\n"
+"               title = values[0].replace(/get_Chart\\(/g,\"\").replace(/\\)[0-9]?/g,\"\");\r\n"
 "               var yizm = ''; var ytooltip = ''; var timeval = '';\r\n"
 "               var regexpt = /^(T|O|d)/g;var regexpp = /^P/g;var regexpe = /^pos/g;var regexpr = /^R/g;\r\n"
 "                 if(regexpt.test(title)) { yizm = \"Температура, °C\"; ytooltip = \" °C\"; }\r\n"

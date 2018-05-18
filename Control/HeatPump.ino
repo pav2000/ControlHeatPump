@@ -70,7 +70,6 @@ void HeatPump::initHeatPump()
      clMQTT.initMQTT();                                      // Инициализация MQTT
   #endif
   resetSettingHP();                                          // все переменные
-
 }
 // Стереть последнюю ошибку
 void HeatPump::eraseError()
@@ -113,23 +112,31 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
 // возвращает строку с найденными датчиками
 void HeatPump::scan_OneWire(char *result_str)
 {
-	char *_result_str = result_str + strlen(result_str);
-	if(get_State() == pWORK_HP)  // ТН работает
-	{
-		strcat(result_str, "-:Не доступно - ТН работает!:::;");
-	} else if(!OW_prepare_buffers()) {
+	if(get_State() == pWORK_HP) {   // ТН работает
+		//strcat(result_str, "-:Не доступно - ТН работает!:::;");
+		return;
+	}
+	if(!OW_prepare_buffers() && SemaphoreTake(xScan1WireSemaphore, 0)) {
+		char *_result_str = result_str + m_strlen(result_str);
 		OneWireBus.Scan(result_str);
 #ifdef ONEWIRE_DS2482_SECOND
 		OneWireBus2.Scan(result_str);
 #endif
-		journal.jprintf("OneWire found(%d): %s\n", OW_scanTableIdx, _result_str);
+		journal.jprintf("OneWire found(%d): ", OW_scanTableIdx);
+		while(m_strlen(_result_str)) {
+			journal.jprintf(_result_str);
+			uint16_t l = m_strlen(_result_str);
+			_result_str += l > PRINTF_BUF-1 ? PRINTF_BUF-1 : l;
+		}
+		journal.jprintf("\n");
+		xSemaphoreGive(xScan1WireSemaphore);
 	}
 }
 
 // Установить синхронизацию по NTP
 void HeatPump::set_updateNTP(boolean b)   
 {
-if (b) SETBIT1(DateTime.flags,fUpdateNTP); else SETBIT0(DateTime.flags,fUpdateNTP);    
+	if (b) SETBIT1(DateTime.flags,fUpdateNTP); else SETBIT0(DateTime.flags,fUpdateNTP);
 }
 
 // Получить флаг возможности синхронизации по NTP
@@ -2838,7 +2845,6 @@ const char *EEV_go={" EEV go "};  // экономим место
 const char *MinPauseOffCompressor={" Wait %d sec min pause off compressor . . .\n"};  // экономим место
 void HeatPump::compressorON(MODE_HP mod)
 {
-  uint8_t i;  
   uint32_t nTime=rtcSAM3X8.unixtime();
   if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
   
@@ -3159,14 +3165,14 @@ int8_t HeatPump::runCommand()
                       for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
                       SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
                       break;                 
-        case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
-                      #ifdef I2C_EEPROM_64KB 
-                       _delay(2000);           						   // задержка что бы вывести сообщение в консоль и на веб морду
-                       journal.Format();                                 // Послать команду форматирование журнала
-                      #else                                              // Этого не может быть, но на всякий случай
-                       journal.Init();                                   // Очистить журнал в оперативке
-                      #endif 
-                      break;      
+//        case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
+//                      #ifdef I2C_EEPROM_64KB
+//                       _delay(2000);           						   // задержка что бы вывести сообщение в консоль и на веб морду
+//                       journal.Format();                                 // Послать команду форматирование журнала
+//                      #else                                              // Этого не может быть, но на всякий случай
+//                       journal.Init();                                   // Очистить журнал в оперативке
+//                      #endif
+//                      break;
         case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
                       #ifdef I2C_EEPROM_64KB 
                        _delay(2000);              						           // задержка что бы вывести сообщение в консоль и на веб морду
@@ -3412,9 +3418,7 @@ int16_t HeatPump::get_temp_condensing(void)
 // пока только для режима отопления!
 int16_t HeatPump::get_overcool(void)
 {
-	if(HP.sADC[PCON].get_present()) {
-		return get_temp_condensing() - HP.sTemp[TCONOUT].get_Temp();
-	}
+	return get_temp_condensing() - HP.sTemp[TCONOUT].get_Temp();
 }
 
 // Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок

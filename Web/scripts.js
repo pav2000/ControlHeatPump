@@ -1,7 +1,7 @@
 ﻿/* ver 0.951 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+var urlcontrol = 'http://192.168.0.199';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -205,7 +205,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'chart') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
-										title = values[0].replace(/get_Chart\(_/g, "").replace(/\)[0-9]?/g, "");
+										title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
 										var yizm = '';
 										var ytooltip = '';
 										var timeval = '';
@@ -437,7 +437,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_presentpress-' + input + '">';
 												content = content + '<td>' + count[j] + '</td>';
 												content = content + '<td id="get_notepress-' + input + '"></td>';
-												content = content + '<td id="get_press-' + input + '">-</td>';
+												content = content + '<td id="get_press-' + input + '" nowrap>-</td>';
 												content = content + '<td id="get_minpress-' + input + '">-</td>';
 												content = content + '<td id="get_maxpress-' + input + '">-</td>';
 												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
@@ -903,19 +903,6 @@ function loadParam(paramid, noretry, resultdiv) {
 	}
 }
 
-function calcacp() {
-	var a1 = document.getElementById("a1").value;
-	var a2 = document.getElementById("a2").value;
-	var p1 = document.getElementById("p1").value;
-	var p2 = document.getElementById("p2").value;
-	var k1 = document.getElementById("k1");
-	var k2 = document.getElementById("k2");
-	kk2 = (p2 - p1) * 100 / (a2 - a1);
-	kk1 = p1 - kk2 * a1;
-	k1.innerHTML = Math.abs(Math.round(kk1));
-	k2.innerHTML = Math.abs(kk2.toFixed(3));
-}
-
 function dhcp(dcb) {
 	dhcpcheckbox = document.getElementById(dcb);
 	if(dhcpcheckbox.checked) {
@@ -1040,20 +1027,31 @@ function autoheight() {
 	}
 }
 
+function calcacp() {
+	var a1 = document.getElementById("a1").value;
+	var a2 = document.getElementById("a2").value;
+	var p1 = document.getElementById("p1").value;
+	var p2 = document.getElementById("p2").value;
+	kk2 = (p2 - p1) * 100 / (a2 - a1);
+	kk1 = p1 * 100 - kk2 * a1;
+	document.getElementById("k1").innerHTML = Math.abs(Math.round(kk1));
+	document.getElementById("k2").innerHTML = Math.abs(kk2.toFixed(3));
+}
+
 function setKanalog() {
 	var k1 = document.getElementById("k1").innerHTML;
 	var k2 = document.getElementById("k2").innerHTML;
 	var sens = document.getElementById("get_listpress").selectedOptions[0].text;
-	//if(sens="--") {return;}
-	zero = document.getElementById("get_zeropress-" + sens.toLowerCase());
-	if(zero) {
-		zero.value = k1;
-		zero.innerHTML = k1;
+	if(sens == "--") return;
+	var elem = document.getElementById("get_transpress-" + sens.toLowerCase());
+	if(elem) {
+		elem.value = k2;
+		elem.innerHTML = k2;
 	}
-	trans = document.getElementById("get_transpress-" + sens.toLowerCase());
-	if(trans) {
-		trans.value = k2;
-		trans.innerHTML = k2;
+	elem = document.getElementById("get_zeropress-" + sens.toLowerCase());
+	if(elem) {
+		elem.value = k1;
+		elem.innerHTML = k1;
 	}
 	setParam('get_zeroPress(' + sens + ')');
 	setParam('get_transPress(' + sens + ')');
@@ -1086,7 +1084,6 @@ function updatelog() {
 	$('#textarea').load(urlcontrol + '/journal.txt', function() {
 		document.getElementById("textarea").scrollTop = document.getElementById("textarea").scrollHeight;
 	});
-
 }
 
 function getCookie(name) {
@@ -1094,5 +1091,5 @@ function getCookie(name) {
 	return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 function setCookie(name, value) {
-	document.cookie = name + '="' + escape(value) + '";expires=' + (new Date(2019, 1, 1)).toUTCString();
+	document.cookie = name + '="' + escape(value) + '";expires=' + (new Date(2100, 1, 1)).toUTCString();
 }

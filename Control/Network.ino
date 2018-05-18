@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -245,41 +245,32 @@ x_TryStaticIP:
 // Используется системный сокет!! W5200_SOCK_SYS
 // Проверить и преобразовать тип адреса (буквы или цифры) и если это буквы то резольвить через dns
 // Задача определить  IP адрес. Если на входе был также IP то он и возвращается,
-// При не удаче возвращается false
-boolean check_address(char *adr,IPAddress &ip)
+// При не удаче возвращается 0, при удаче 1 - нашли сразу, 2 - был запрос к DNS
+uint8_t check_address(char *adr, IPAddress &ip)
 {
-        IPAddress tempIP(0,0,0,0);  
-        DNSClient dns;
-        int ret = 0;
-        // 1. Попытка преобразовать строку в IP (цифры, нам повезло DNS не нужен)
-        if (parseIPAddress(adr, '.', tempIP))  
-        {
-  //        journal.jprintf("Input string is address %s\n",adr);  // Сообщение что ДНС не требуется, входная строка и так является адресом
-          ip=tempIP; return true;
-         } // Удачно выходим
-        // 2. Это буквы, нужен dns
-        dns.begin(Ethernet.dnsServerIP());    // только запоминаем dnsServerIP ничего больше не делаем с сокетом
-        ret=dns.getHostByName(adr,tempIP,W5200_SOCK_SYS); // вот тут с сокетами начинаем рабоать
-        if (ret == 1)  // Адрес получен
-          {
-            journal.jprintf(" %s",adr);
-            journal.jprintf(" resolved to ");
-            journal.jprintf("%d",(int)tempIP[0]);
-            journal.jprintf(".");
-            journal.jprintf("%d",(int)tempIP[1]);
-            journal.jprintf(".");
-            journal.jprintf("%d",(int)tempIP[2]);
-            journal.jprintf(".");
-            journal.jprintf("%d\n",(int)tempIP[3]);
-            ip=tempIP; 
-          return true;
-           }
-          else
-          {
-           journal.jprintf(" %s DNS lookup failed! Return code: %d\n",adr,ret); 
-           ip=tempIP; 
-           return false;   
-          }  
+	IPAddress tempIP(0, 0, 0, 0);
+	DNSClient dns;
+	int8_t ret = 0;
+	// 1. Попытка преобразовать строку в IP (цифры, нам повезло DNS не нужен)
+	if(parseIPAddress(adr, '.', tempIP)) {
+		//        journal.jprintf("Input string is address %s\n",adr);  // Сообщение что ДНС не требуется, входная строка и так является адресом
+		ip = tempIP;
+		return 1;
+	} // Удачно выходим
+	// 2. Это буквы, нужен dns
+	dns.begin(Ethernet.dnsServerIP());    // только запоминаем dnsServerIP ничего больше не делаем с сокетом
+	ret = dns.getHostByName(adr, tempIP, W5200_SOCK_SYS); // вот тут с сокетами начинаем работать
+	if(ret == 1)  // Адрес получен
+	{
+		journal.jprintf(" %s", adr);
+		journal.jprintf(" resolved by %s to %d.%d.%d.%d\n", dns.get_protocol() ? "TCP" : "UDP", tempIP[0], tempIP[1], tempIP[2], tempIP[3]);
+		ip = tempIP;
+		return 2;
+	} else {
+		journal.jprintf(" %s DNS lookup by %s failed! Code: %d\n", adr, dns.get_protocol() ? "TCP" : "UDP", ret);
+		ip = tempIP;
+		return 0;
+	}
 }
 // Вывести состояние регистров сокета -------------------------------------------------------------
 void ShowSockRegisters(uint8_t s)

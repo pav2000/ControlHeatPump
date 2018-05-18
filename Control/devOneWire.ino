@@ -1,6 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
- * vad71 - vad7@yahoo.com
+ * Copyright (c) 2016-2018 by vad711 (vad7@yahoo.com); by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -61,33 +60,33 @@ int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data)
 int8_t	deviceOneWire::Init(void)
 {
 	err = 0;
-	if(lock_bus_reset(1) == OK) {
+	if(lock_I2C_bus_reset(1) == OK) {
 #ifdef ONEWIRE_DS2482
 		if(!OneWireDrv.reset_bridge()) err = ERR_DS2482_ONEWIRE;
 #if DS2482_CONFIG != 0
 		if(!err && !OneWireDrv.configure(DS2482_CONFIG)) err = ERR_DS2482_ONEWIRE;
 #endif
-		release_bus();
+		release_I2C_bus();
 #endif
 	}
 	return err;
 }
 
 // Возвращает OK или err. Если checkpresence=1, то только проверка на присутствие ds2482
-int8_t  deviceOneWire::lock_bus_reset(uint8_t checkpresence)
+int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 {
 	uint8_t presence;
 	err = OK;
 #ifdef ONEWIRE_DS2482
 	if(SemaphoreTake(xI2CSemaphore,(I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {
-		journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);
+		journal.printf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);
 		err = ERR_I2C_BUZY;
 		return err;
 	}
 	if(checkpresence) {
 		if(OneWireDrv.check_presence() == 0){    // Проверяем наличие на i2с шине  ds2482
 			err = ERR_DS2482_NOT_FOUND;
-			release_bus();
+			release_I2C_bus();
 			journal.jprintf("DS2482-%d not found . . .\n", bus + 1);
 		}
 		return err;
@@ -116,12 +115,12 @@ x_Reset_bridge:
 	}
 	if(!presence){
 		err = ERR_ONEWIRE;
-		release_bus();
+		release_I2C_bus();
 	}
 	return err;
 }
 
-inline void	deviceOneWire::release_bus()
+inline void	deviceOneWire::release_I2C_bus()
 {
 #ifdef ONEWIRE_DS2482
 		SemaphoreGive(xI2CSemaphore);
@@ -150,12 +149,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte data[12];
 	byte addr[8];
 	watchdogReset();
-#ifdef ONEWIRE_DS2482
-	if(lock_bus_reset(1)) return err; // check presense
-#endif
-	_delay(cDELAY_DS1820); // wait conversion
-	release_bus();
-	if(lock_bus_reset(0)) { // reset 1-wire
+	if(lock_I2C_bus_reset(1)) { // reset 1-wire, check presense
 #ifdef ONEWIRE_DS2482
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
 #else
@@ -163,6 +157,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 #endif
 		return err;
 	}
+	_delay(cDELAY_DS1820); // wait conversion
 	eepromI2C.use_RTOS_delay = 0;
 	OneWireDrv.reset_search();
 	while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
@@ -245,8 +240,8 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		strcat(result_str, ";");
 		if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
 	} // while по датчикам
-	release_bus();
 	eepromI2C.use_RTOS_delay = 1;
+	release_I2C_bus();
 #endif  // DEMO
 	return OK;
 }
@@ -259,7 +254,7 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	int8_t i;
 	byte data[9];
 
-	if((i = lock_bus_reset(0))) return i;
+	if((i = lock_I2C_bus_reset(0))) return i;
 #ifdef ONEWIRE_DS2482_SECOND
 	if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
 	else
@@ -269,12 +264,12 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	for(i = 0; i < 9; i++) {
 		int16_t r = OneWireDrv.read();
 		if(r < 0) { // ошибка во время чтения
-			release_bus();
+			release_I2C_bus();
 			return abs(r) | (i > 1 ? 0x40 : 0);
 		}
 		data[i] = r;
 	}
-	release_bus();
+	release_I2C_bus();
 
 	// Данные получены
 	i = OK;
@@ -288,7 +283,7 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock_bus)
 {
 	err = 0;
-	if(!dont_lock_bus && lock_bus_reset(0)) return err = ERR_ONEWIRE;
+	if(!dont_lock_bus && lock_I2C_bus_reset(0)) return err = ERR_ONEWIRE;
 	else if(!OneWireDrv.reset()) return err = ERR_ONEWIRE;
     OneWireDrv.select(addr);
     OneWireDrv.write(0x4E);  // WRITE SCRATCHPAD
@@ -313,20 +308,20 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
 #endif
     }
 #endif
-    if(!dont_lock_bus) release_bus();
+    if(!dont_lock_bus) release_I2C_bus();
     return err;
 }
 
 // запуск преобразования всех датчиков на шине возвращает код ошибки
 int8_t  deviceOneWire::PrepareTemp()
 {
-	if(lock_bus_reset(0)) return ERR_ONEWIRE;
+	if(lock_I2C_bus_reset(0)) return ERR_ONEWIRE;
 	// начать преобразование температурных ВСЕХ датчиков две команды
 	OneWireDrv.skip();    		// skip ROM command
 #ifdef ONEWIRE_DS2482_SECOND_2WAY
 	if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
 	OneWireDrv.write(0x44);	   	// convert temp
-	release_bus();
+	release_I2C_bus();
 	return OK;
 }

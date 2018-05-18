@@ -562,10 +562,10 @@ uint16_t get_binSettings(uint8_t thread)
 	for(j = 0; j < HP.Prof.get_lenProfile(); j++) {
 		readEEPROM_I2C(addr + j, &b, 1);
 		Socket[thread].outBuf[i + j] = b;
-		if(i + j > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных
+		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных
 	}
 #ifdef USE_SCHEDULER
-	if(i + j + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
+	if((uint16_t)(i + j) + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
 		i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + i + j);
 		if(i <= 0) return 0; // ошибка
 		len += i;

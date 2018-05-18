@@ -127,7 +127,7 @@ request.onreadystatechange = function()
               }
             } else if(type == 'chart') {
               if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) { //console.log(type + " values 0= " + values[0] + " values1="  + values[1] );
-                title = values[0].replace(/get_Chart\(_/g,"").replace(/\)[0-9]?/g,""); //console.log(" titul= " + title );
+                title = values[0].replace(/get_Chart\(/g,"").replace(/\)[0-9]?/g,""); //console.log(" titul= " + title );
                 var yizm = ''; var ytooltip = ''; var timeval = ''; var height = 250; var visible = false; 
                 timeval = window.time_chart;
                 timeval = Number(timeval.replace(/\D+/g,""));

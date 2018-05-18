@@ -94,7 +94,6 @@ void ModbusMaster::beginTransmission(uint16_t u16Address)
 // eliminate this function in favor of using existing MB request functions
 uint8_t ModbusMaster::requestFrom(uint16_t address, uint16_t quantity)
 {
-  uint8_t read;
   // clamp to buffer length
   if (quantity > ku8MaxBufferSize)
   {
@@ -102,9 +101,9 @@ uint8_t ModbusMaster::requestFrom(uint16_t address, uint16_t quantity)
   }
   // set rx buffer iterator vars
   _u8ResponseBufferIndex = 0;
-  _u8ResponseBufferLength = read;
+  _u8ResponseBufferLength = quantity;
 
-  return read;
+  return quantity;
 }
 
 

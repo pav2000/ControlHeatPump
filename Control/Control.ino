@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav;
+ * by vad711, vad7@yahoo.com
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -57,6 +57,7 @@ SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, 
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
 SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
 SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xScan1WireSemaphore;                // Семафор шины Scan1Wire
 static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
 static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
@@ -105,7 +106,6 @@ struct type_socketData
   };
 static type_socketData Socket[W5200_THREARD];   // Требует много памяти 4*W5200_MAX_LEN*W5200_THREARD=24 кб
 
-
 // Установка вачдога таймера вариант vad711 - адаптация для DUE 1.6.11
 // WDT_TIME период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ WDT_TIME=0 то Watchdog будет отключен!!!
 volatile unsigned long ulHighFrequencyTimerTicks;   // vad711 - адаптация для DUE 1.6.11
@@ -118,8 +118,7 @@ void watchdogSetup(void)
 #endif
 }
 
-// Функция задержки (мсек) в зависимости от шедулера задач FreeRtos
-__attribute__((always_inline)) inline void _delay(int t)
+__attribute__((always_inline)) inline void _delay(int t) // Функция задержки (мсек) в зависимости от шедулера задач FreeRtos
 {
   if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(t/portTICK_PERIOD_MS);
   else delay(t);
@@ -294,7 +293,7 @@ pinMode(21, OUTPUT);
 x_I2C_init_std_message:
 	   journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
 	}
-    
+
      // Сканирование шины i2c
 //    if (eepStatus==0)   // есть инициализация
     {
@@ -306,10 +305,10 @@ x_I2C_init_std_message:
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = OneWireBus.lock_bus_reset(1);
+            	  error = OneWireBus.lock_I2C_bus_reset(1);
 			    #ifdef ONEWIRE_DS2482_SECOND
               } else if(address == I2C_ADR_DS2482two) {
-               	  error = OneWireBus2.lock_bus_reset(1);
+               	  error = OneWireBus2.lock_I2C_bus_reset(1);
 		        #endif
               } else {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
@@ -416,7 +415,7 @@ x_I2C_init_std_message:
   // 13. Инициалазация Statistics
    #ifdef I2C_EEPROM_64KB  
      HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init counter statistic.\n");
+     journal.jprintf("10. Init statistic.\n");
   #else    
      journal.jprintf("10. Statistic no support (low memory).\n");
   #endif
@@ -445,7 +444,7 @@ x_I2C_init_std_message:
 
   #ifdef TEST_BOARD
   // Scan oneWire - TEST.
-  HP.scan_OneWire(Socket[0].outBuf);
+  //HP.scan_OneWire(Socket[0].outBuf);
   #endif
 
   // Создание задач Free RTOS  ----------------------
@@ -516,6 +515,8 @@ vSemaphoreCreateBinary(xI2CSemaphore);                     // Создание �
 if (xI2CSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
 //vSemaphoreCreateBinary(xSPISemaphore);                     // Создание мютекса
 //if (xSPISemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+vSemaphoreCreateBinary(xScan1WireSemaphore);
+if(xScan1WireSemaphore == NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 // Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
 if(Modbus.get_present())
 {  
@@ -545,9 +546,9 @@ vTaskSuspend(HP.xHandlePauseStart);
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("15. If you want to send a notification about resetting the controller . . .\n");
-HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
-journal.jprintf("16. Information about contoller:\n");
+journal.jprintf("15. Send a notification . . .\n");
+//HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
+journal.jprintf("16. Information:\n");
 freeRamShow();
 HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM); 
@@ -852,7 +853,7 @@ void vReadSensor(void *pvParameters)
 				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
 				rtcSAM3X8.set_clock(ttime, 0);                 // Установить внутренние часы по i2c
 				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
-				journal.jprintf((const char*) "Sync form i2c RTC DS3231: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
+				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
 				countI2C = ttime;                               // запомнить время
 			}
 		}
