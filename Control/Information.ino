@@ -947,19 +947,35 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
 // Профиль Установить параметры ТН из числа (float)
 boolean Profile::set_paramProfile(char *var, char *c)
 {
- uint8_t x;
- if(strcmp(var,prof_NAME_PROFILE)==0)  {urldecode(dataProfile.name,c,sizeof(dataProfile.name)); return true;} else
- if(strcmp(var,prof_ENABLE_PROFILE)==0){if (strcmp(c,cZero)==0)     { SETBIT0(dataProfile.flags,fEnabled); return true;}
-                                        else if (strcmp(c,cOne)==0) { SETBIT1(dataProfile.flags,fEnabled);  return true;}} else
- if(strcmp(var,prof_ID_PROFILE)==0) {x = atoi(c);
-									 if(x >= I2C_PROFIL_NUM) return false; // не верный номер профиля
-									 dataProfile.id = x;
-									 return true; } else
-if(strcmp(var,prof_NOTE_PROFILE)==0) {urldecode(dataProfile.note,c,sizeof(dataProfile.note)); return true;} else
-if(strcmp(var,prof_DATE_PROFILE)==0) {return true;}else // параметры только чтение
-if(strcmp(var,prof_CRC16_PROFILE)==0){return true;}else 
-if(strcmp(var,prof_NUM_PROFILE)==0)  {return true;}else
-return false;
+	uint8_t x;
+	if(strcmp(var, prof_NAME_PROFILE) == 0) {
+		urldecode(dataProfile.name, c, sizeof(dataProfile.name));
+		return true;
+	} else if(strcmp(var, prof_ENABLE_PROFILE) == 0) {
+		if(strcmp(c, cZero) == 0) {
+			SETBIT0(dataProfile.flags, fEnabled);
+			return true;
+		} else if(strcmp(c, cOne) == 0) {
+			SETBIT1(dataProfile.flags, fEnabled);
+			return true;
+		}
+	} else if(strcmp(var, prof_ID_PROFILE) == 0) {
+		x = atoi(c);
+		if(x >= I2C_PROFIL_NUM) return false; // не верный номер профиля
+		dataProfile.id = x;
+		return true;
+	} else if(strcmp(var, prof_NOTE_PROFILE) == 0) {
+		urldecode(dataProfile.note, c, sizeof(dataProfile.note));
+		return true;
+	} else if(strcmp(var, prof_DATE_PROFILE) == 0) {
+		return true;
+	} else // параметры только чтение
+	if(strcmp(var, prof_CRC16_PROFILE) == 0) {
+		return true;
+	} else if(strcmp(var, prof_NUM_PROFILE) == 0) {
+		return true;
+	} else
+	return false;
 }
  // профиль Получить параметры по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
 char*   Profile::get_paramProfile(char *var, char *ret)

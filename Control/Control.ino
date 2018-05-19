@@ -616,7 +616,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 // Сюда надо пихать все что связано с сетью иначе конфликты не избежны
 // Здесь также обслуживается посылка уведомлений MQTT
 // Первый поток веб сервера - дополнительно нагружен различными сервисами
-void vWeb0( void *pvParameters )
+void vWeb0( void *)
 { //const char *pcTaskName = "Web server is running\r\n";
    volatile unsigned long timeResetW5200=0;
    volatile unsigned long thisTime=0;
@@ -722,7 +722,7 @@ void vWeb0( void *pvParameters )
 }
 
 // Второй поток
-void vWeb1( void *pvParameters )
+void vWeb1( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -733,7 +733,7 @@ void vWeb1( void *pvParameters )
   vTaskDelete( NULL );  
 }
 // Третий поток
-void vWeb2( void *pvParameters )
+void vWeb2( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -744,7 +744,7 @@ void vWeb2( void *pvParameters )
   vTaskDelete( NULL );  
 }
 // Четвертый поток
-void vWeb3( void *pvParameters )
+void vWeb3( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -755,7 +755,7 @@ void vWeb3( void *pvParameters )
 }
 
 // Задача обслуживания Nextion
-void vNextion( void *pvParameters )
+void vNextion( void * )
 { 
   static unsigned long NextionTick=0;
     for( ;; )
@@ -774,7 +774,7 @@ void vNextion( void *pvParameters )
 }
 
 // Задача обновление статистики
-void vUpdateStat( void *pvParameters )
+void vUpdateStat( void * )
 { //const char *pcTaskName = "statChart is running\r\n";
    for( ;; )
     {
@@ -786,7 +786,7 @@ void vUpdateStat( void *pvParameters )
 
 //////////////////////////////////////////////////////////////////////////
 // Задача чтения датчиков
-void vReadSensor(void *pvParameters)
+void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	volatile unsigned long readFC = 0;
 	volatile unsigned long readSDM = 0;
@@ -909,9 +909,8 @@ void vReadSensor_delay10ms(uint16_t msec)
 }
 //////////////////////////////////////////////////////////////////////////
 // Задача Управление тепловым насосом
- void vUpdate( void *pvParameters )
+ void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
-	 static unsigned long RPUMPBTick=0;
 	 for( ;; )
 	 {
 		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
@@ -1057,7 +1056,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 
 // Задача Управление ЭРВ
 #ifdef EEV_DEF
- void vUpdateEEV(void *pvParameters)
+ void vUpdateEEV(void *)
  { //const char *pcTaskName = "HP_UpdateEEV\r\n";
 	 static int16_t cmd = 0;
 	 for(;;) {
@@ -1095,7 +1094,7 @@ void vReadSensor_delay10ms(uint16_t msec)
  }
 #endif
 // Задача Разбор очереди команд
-void vUpdateCommand( void *pvParameters )
+void vUpdateCommand( void * )
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
   for( ;; )
   {
@@ -1110,7 +1109,7 @@ void vUpdateCommand( void *pvParameters )
 
 // Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
-void vUpdateStepperEEV( void *pvParameters )
+void vUpdateStepperEEV( void * )
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   static int16_t  cmd=0;
   volatile int16_t steps_left=0, step_number=0, start_pos=0, pos=0;
@@ -1196,7 +1195,7 @@ void vUpdateStepperEEV( void *pvParameters )
 #endif
 
 // Задача "Работа насоса конденсатора при выключенном компрессоре"
-void vUpdatePump( void *pvParameters )
+void vUpdatePump( void * )
 { //const char *pcTaskName = "Pump is running\r\n";
  uint16_t i;
    for( ;; )
@@ -1226,7 +1225,7 @@ void vUpdatePump( void *pvParameters )
 // Задача отложеного старта ТН
 // используется при старте контроллера если есть запись состояния
 // также используется для повторных попыток пуска контроллера
-void vPauseStart( void *pvParameters )
+void vPauseStart( void * )
 { 
  volatile int16_t i, tt;
    for( ;; )

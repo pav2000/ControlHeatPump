@@ -76,16 +76,16 @@ done:
    * \param[in] way
    * \return true/false.
    */
-  bool seekoff(off_type off, seekdir way) {
-    return false;
-  }
+//  bool seekoff(off_type off, seekdir way) {
+//    return false;
+//  }
   /** Internal - do not use.
    * \param[in] pos
    * \return true/false.
    */
-  bool seekpos(pos_type pos) {
-    return false;
-  }
+//  bool seekpos(pos_type pos) {
+//    return false;
+//  }
 
  private:
   char *m_line;
@@ -120,12 +120,12 @@ class ArduinoOutStream : public ostream {
   void putstr(const char* str) {
     m_pr->write(str);
   }
-  bool seekoff(off_type off, seekdir way) {
-    return false;
-  }
-  bool seekpos(pos_type pos) {
-    return false;
-  }
+//  bool seekoff(off_type off, seekdir way) {
+//    return false;
+//  }
+//  bool seekpos(pos_type pos) {
+//    return false;
+//  }
   bool sync() {
     return true;
   }

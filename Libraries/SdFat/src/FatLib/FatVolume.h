@@ -282,9 +282,6 @@ class FatVolume {
       m_freeClusterCount += change;
     }
   }
-#else  // MAINTAIN_FREE_CLUSTER_COUNT
-  void setFreeClusterCount(int32_t value) {}
-  void updateFreeClusterCount(int32_t change) {}
 #endif  // MAINTAIN_FREE_CLUSTER_COUNT
 
 // block caches
