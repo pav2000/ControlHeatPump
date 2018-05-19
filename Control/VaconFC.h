@@ -68,19 +68,19 @@
 // Биты
 // FC_STATE
 #define FC_S_RDY		0x01	// Привод готов
-const char FC_S_RDY_str[]			= "Готов,";
+const char *FC_S_RDY_str			= {"Готов,"};
 #define FC_S_RUN		0x02	// Привод работает
-const char FC_S_RUN_str[]			= "Работает,";
+const char *FC_S_RUN_str			= {"Работает,"};
 #define FC_S_DIR		0x04	// 0 - По часовой стрелке, 1 - Против часовой стрелки
-const char FC_S_DIR_str[]			= "Против час.ст.,";
+const char *FC_S_DIR_str			= {"Против час.ст.,"};
 #define FC_S_FLT		0x08	// Действующий отказ
-const char FC_S_FLT_str[]			= "Ошибка,";
+const char *FC_S_FLT_str			= {"Ошибка,"};
 #define FC_S_W			0x10	// Сигнал тревоги
-const char FC_S_W_str[]				= "Тревога,";
+const char *FC_S_W_str				= {"Тревога,"};
 #define FC_S_AREF		0x20	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
-const char FC_S_AREF_str0[]			= "Изменение скорости,";
+const char *FC_S_AREF_str0			= {"Изменение скорости,"};
 #define FC_S_Z			0x40	// 1 - Привод работает на нулевой скорости
-const char FC_S_Z_str[]				= "Остановлен,";
+const char *FC_S_Z_str				= {"Остановлен,"};
 // FC_CONTROL
 #define FC_C_RUN		0x01	// 0 - Останов, 1 - Выполнение
 #define FC_C_STOP		0

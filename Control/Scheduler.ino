@@ -21,11 +21,11 @@
 
 #include "Scheduler.h"
 
-const char WEB_SCH_On[] = "On";
-const char WEB_SCH_Active[] = "Active";
-const char WEB_SCH_Names[] = "lstNames";
-const char WEB_SCH_Name[] = "Name";
-const char WEB_SCH_Calendar[] = "Calendar";
+const char *WEB_SCH_On = {"On"};
+const char *WEB_SCH_Active = {"Active"};
+const char *WEB_SCH_Names = {"lstNames"};
+const char *WEB_SCH_Name = {"Name"};
+const char *WEB_SCH_Calendar = {"Calendar"};
 
 #define ifparam(s) if(strncmp(param, s, sizeof(s)-1) == 0)
 

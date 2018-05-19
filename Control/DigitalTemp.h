@@ -111,7 +111,7 @@ class sensorTemp
     void     set_testMode(TEST_MODE t){testMode=t;}     // Установить значение текущий режим работы
     
     void     set_address(byte *addr, byte bus_type);    // Привязать адрес и тип шины
-    byte*    get_address(){return address;}             // Получить адрес датчика
+    uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline boolean get_bus(){ return GETBIT(setup_flags, fDS2482_second); } // Шина
@@ -131,6 +131,7 @@ class sensorTemp
     #endif
     
   private:
+   uint8_t number;  									// Номер датчика
    int16_t minTemp;                                     // минимальная разрешенная температура
    int16_t maxTemp;                                     // максимальная разрешенная температура
    int16_t lastTemp;                                    // последняя считанная температура с датчика

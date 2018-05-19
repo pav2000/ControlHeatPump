@@ -724,7 +724,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        #ifndef FC_ANALOG_CONTROL     
          HP.dFC.get_infoFC(strReturn);
        #else
-         strcat("Данные не доступны, работа через аналоговый вход|;","&") ;
+         strcat(strReturn, "|Данные не доступны, работа через аналоговый вход|;") ;
        #endif  
        strcat(strReturn,"&") ;    continue;
        }       
@@ -2117,7 +2117,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                 { strcat(strReturn,ftoa(temp,(float)HP.sTemp[p].get_errTemp()/100.0,1)); strcat(strReturn,"&"); continue; }
                                
               if (strcmp(str,"get_addressTemp")==0)           // Функция get_addressTemp
-                { strcat(strReturn,addressToHex(HP.sTemp[p].get_address())); strcat(strReturn,"&"); continue; }  
+                { strcat(strReturn,HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()): "не привязан"); strcat(strReturn,"&"); continue; }
                         
               if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
                 { strcat(strReturn,ftoa(temp,(float)HP.sTemp[p].get_testTemp()/100.0,1)); strcat(strReturn,"&"); continue; }

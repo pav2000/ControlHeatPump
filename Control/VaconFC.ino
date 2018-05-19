@@ -718,12 +718,15 @@ boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
 void devVaconFC::get_infoFC_status(char *buffer, uint16_t st)
 {
 	if(st & FC_S_RDY) 	strcat(buffer, FC_S_RDY_str);
-	if(st & FC_S_RUN) 	strcat(buffer, FC_S_RUN_str);
+	if(st & FC_S_RUN) 	{
+		strcat(buffer, FC_S_RUN_str);
+		if((st & FC_S_AREF)==0)	strcat(buffer, FC_S_AREF_str0);
+	}
 	if(st & FC_S_DIR) 	strcat(buffer, FC_S_DIR_str);
 	if(st & FC_S_FLT) 	strcat(buffer, FC_S_FLT_str);
 	if(st & FC_S_W) 	strcat(buffer, FC_S_W_str);
-	if((st & FC_S_AREF)==0)	strcat(buffer, FC_S_AREF_str0);
 	if(st & FC_S_Z) 	strcat(buffer, FC_S_Z_str);
+	if(st) *(buffer + m_strlen(buffer) - 1) = '\0'; // skip last ','
 }
 
 // Получить информацию о частотнике
@@ -738,14 +741,14 @@ void devVaconFC::get_infoFC(char* buf)
 			uint32_t i;
 			strcat(buf, "-|Состояние инвертора: ");
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
-			m_snprintf(buf + m_strlen(buf), 256, "|%d;", i);
+			buf += m_snprintf(buf += m_strlen(buf), 256, "|%X;", i);
 			if(err == OK) {
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
-				buf += m_snprintf(buf + m_strlen(buf), 256, "2103|Выходная скорость (%%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
-				buf += m_snprintf(buf, 256, "V1.3|Обороты (об/м)|%d;V1.4|Выходной ток (А)|%.2f;", i >> 16, (float)(i >> 16) / 100.0);
+				buf += m_snprintf(buf, 256, "V1.3|Обороты (об/м)|%d;V1.4|Выходной ток (А)|%.2f;", i >> 16, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.5|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				_delay(FC_DELAY_READ);
@@ -765,7 +768,7 @@ void devVaconFC::get_infoFC(char* buf)
 
 				i = read_0x03_16(FC_ERROR);
 				if(err == OK) {
-					m_snprintf(buf, 256, "2111|Активная ошибка|%s: %d;", get_fault_str(i), i);
+					m_snprintf(buf, 256, "2111|Активная ошибка|%s (%d);", get_fault_str(i), i);
 				} else {
 					m_snprintf(buf, 256, "-|Ошибка Modbus|%d;", err);
 				}
