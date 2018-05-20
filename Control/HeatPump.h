@@ -312,7 +312,7 @@ class HeatPump
    uint16_t get_flags() { return Option.flags; }						// Все флаги
    // Настройки опций
    type_optionHP Option;                                              // Опции теплового насоса
-   
+
    // Структура состояния ТН Prof.SaveON.
    inline void  set_HP_OFF()                                                // Сброс флага включения ТН
     { SETBIT0(Prof.SaveON.flags,fHP_ON); Status.State=pOFF_HP;}

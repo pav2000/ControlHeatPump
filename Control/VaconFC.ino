@@ -317,7 +317,7 @@ int32_t devVaconFC::save(int32_t adr)
         set_Error(ERR_SAVE_EEPROM, name);
         return ERR_SAVE_EEPROM;
     }
-    adr = adr + (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags);
+    adr += (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags);
     return adr;
 }
 
@@ -328,6 +328,7 @@ int32_t devVaconFC::load(int32_t adr)
         set_Error(ERR_LOAD_EEPROM, name);
         return ERR_SAVE_EEPROM;
     }
+    adr += (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags);
     return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -635,8 +636,7 @@ boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
         return true;
         break; // Только чтение Состояние ПЧ
     case pFC:
-        return true;
-        break; // Только чтение текущая скорость ПЧ
+    	return set_targetFreq(x * 100 + 0.005, true, FC_MIN_FREQ_USER, FC_MAX_FREQ_USER) == OK;
     case pPOWER:
         return true;
         break; // Только чтение Текущая мощность
@@ -721,7 +721,7 @@ void devVaconFC::get_infoFC(char* buf)
 			strcat(buf, "|Данные не доступны (инвертор заблокирован)|;");
 		} else {
 			uint32_t i;
-			strcat(buf, "-|Состояние инвертора: ");
+			strcat(buf, "2101|Состояние инвертора: ");
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", i);
 			if(err == OK) {

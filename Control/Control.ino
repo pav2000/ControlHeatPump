@@ -381,8 +381,7 @@ x_I2C_init_std_message:
    journal.jprintf("I2C memory is empty, save default setting\n");
   // HP.save();                                          //если ошибка ERR_HEADER2_EEPROM то скорее всего память чистая, считывать нечего и записывам настроки по умолчанию
    HP.save_motoHour();
-  } 
-  else HP.load();                                      // Загрузить настройки ТН и текущий профиль
+  } else HP.load();                                      // Загрузить настройки ТН и текущий профиль
 #ifdef USE_SCHEDULER
   HP.Schdlr.load();							// Загрузка настроек расписания
 #endif

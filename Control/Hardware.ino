@@ -2123,20 +2123,23 @@ boolean devSDM::set_paramSDM(char *var,char *c)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::save(int32_t adr)
 {
-if (writeEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(settingSDM);      // Вся структура настроек
+if (writeEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; }
+adr=adr+sizeof(settingSDM);      // Вся структура настроек
 return adr;                                 
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::load(int32_t adr)
 {
-if (readEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(settingSDM);      // вся струткра настроек
+if (readEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; }
+adr=adr+sizeof(settingSDM);      // вся струткра настроек
 return adr;                              
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::loadFromBuf(int32_t adr,byte *buf)
 {
-  memcpy((byte*)&settingSDM,buf+adr,sizeof(settingSDM)); adr=adr+sizeof(settingSDM);     
+  memcpy((byte*)&settingSDM,buf+adr,sizeof(settingSDM));
+  adr=adr+sizeof(settingSDM);
   return adr;  
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая

@@ -2194,7 +2194,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_Press")==0)           // Функция get_Press
               { if (HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
                 {
-                    uint16_t x=HP.sADC[p].get_Press();
+                    int16_t x=HP.sADC[p].get_Press();
                     strcat(strReturn,ftoa(temp,(float)x/100.0,2));
                     strcat(strReturn," [t:");
                     #ifdef EEV_DEF
