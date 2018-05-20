@@ -128,8 +128,10 @@ void get_txtState(uint8_t thread, boolean header)
               strcat(Socket[thread].outBuf,"Целевая частота [Гц]: ");    ftoa(Socket[thread].outBuf + strlen(Socket[thread].outBuf),(float)HP.dFC.get_targetFreq()/100.0,2); STR_END;
               strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    ftoa(Socket[thread].outBuf + strlen(Socket[thread].outBuf),(float)HP.dFC.get_freqFC()/100.0,2); STR_END;
               strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  ftoa(Socket[thread].outBuf + strlen(Socket[thread].outBuf),(float)HP.dFC.get_power()/10.0,1); STR_END;
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf,"ЦАП дискреты: ");            strcat(Socket[thread].outBuf,int2str(HP.dFC.get_DAC())); STR_END;
-         } 
+#endif
+              }
         else strcat(Socket[thread].outBuf,"FC absent\r\n");    
 
         strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
@@ -511,8 +513,9 @@ void get_txtSettings(uint8_t thread)
        if (HP.dFC.get_present()) 
          {
               strcat(Socket[thread].outBuf,"Текущее положение %: ");  strcat(Socket[thread].outBuf,int2str(HP.dFC.get_targetFreq())); STR_END;
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf,"ЦАП дискреты: ");         strcat(Socket[thread].outBuf,int2str(HP.dFC.get_DAC())); STR_END;
-            
+#endif
          } 
         else strcat(Socket[thread].outBuf,"FC absent \r\n");    
 
@@ -864,7 +867,9 @@ char temp[10];
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
               strcpy(tempBuf,"Tемпература радиатора [°С]: ");  strcat(tempBuf,ftoa(temp,(float)HP.dFC.read_tempFC()/10.0,2));
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcpy(tempBuf,"ЦАП дискреты: ");            strcat(tempBuf,int2str(HP.dFC.get_DAC()));
+#endif
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
               
         } 

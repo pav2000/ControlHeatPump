@@ -1013,7 +1013,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
+				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
 #endif
 				 break;
 			 case  pCOOL:                         // 2 Включить охлаждение
@@ -1023,7 +1023,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
 #endif
 				 break;
 
@@ -1032,7 +1032,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 				 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
 #endif
 				 break;
 			 default:
@@ -1061,7 +1061,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 	 static int16_t cmd = 0;
 	 for(;;) {
 		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > HP.dEEV.DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
 		 {
 			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
 			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
@@ -1184,7 +1184,7 @@ void vUpdateStepperEEV( void * )
       {
    //     Serial.println("6. vTaskSuspend ");   
         HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
-       if (!EEV_HOLD_MOTOR) HP.dEEV.stepperEEV.off();                                            // выключить двигатель если нет удержания
+       if (!HP.dEEV.EEV_HOLD_MOTOR) HP.dEEV.stepperEEV.off();                                            // выключить двигатель если нет удержания
         vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                      // Приостановить задучу
       } 
    // Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
@@ -1235,7 +1235,7 @@ void vPauseStart( void * )
      #ifdef DEMO
       tt=30;
      #else 
-        if (HP.isCommand()== pRESTART)   tt=DELAY_START_RES; else tt=DELAY_REPEAD_START;  // Определение времени задержки
+        if (HP.isCommand()== pRESTART)   tt=HP.Option.DELAY_START_RES; else tt=HP.Option.DELAY_REPEAD_START;  // Определение времени задержки
      #endif
       // задержка перед пуском ТН
       for(i=tt;i>0;i=i-10) // задержка перед стартом обратный отсчет
@@ -1246,7 +1246,7 @@ void vPauseStart( void * )
           vTaskDelay(10*1000/portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
           if (HP.PauseStart) break;               // если задача пущена не сначала
    //       if ((i==DELAY_REPEAD_START/2)&&(HP.get_State()== pREPEAT)) 
-          if ((i==DELAY_REPEAD_START/2)&&(HP.isCommand()== pREPEAT)) 
+          if ((i==HP.Option.DELAY_REPEAD_START/2)&&(HP.isCommand()== pREPEAT))
                 {
                   HP.eraseError();  
                   if (HP.PauseStart) break;               // если задача пущена не сначала

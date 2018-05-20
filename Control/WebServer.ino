@@ -802,16 +802,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|");strcat(strReturn,"SERIAL_8N1");strcat(strReturn,";");
        strcat(strReturn,"MODBUS_TIME_WAIT|Максимальное время ожидания освобождения порта (мсек)|");strcat(strReturn,int2str(MODBUS_TIME_WAIT));strcat(strReturn,";");
 
-       strcat(strReturn,"FC_MIN_FREQ|Минимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MIN_FREQ/100.0,2));strcat(strReturn,";");
-       strcat(strReturn,"FC_MAX_FREQ|Максимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_FREQ/100.0,2));strcat(strReturn,";");
-       strcat(strReturn,"FC_START_FREQ|Стартовая частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_START_FREQ/100.0,2));strcat(strReturn,";");
-       strcat(strReturn,"FC_PID_FREQ_STEP|Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_PID_FREQ_STEP/100.0,2));strcat(strReturn,";");
-         
-       strcat(strReturn,"FC_MAX_POWER|Максимальная мощность инвертора (кВт)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_POWER/10.0,1));strcat(strReturn,";");
-       strcat(strReturn,"FC_TIME_READ|Период опроса инвертора по Modbus (мсек)|");strcat(strReturn,int2str(FC_TIME_READ));strcat(strReturn,";");
-       strcat(strReturn,"FC_ACCEL_TIME|Время разгона компрессора (сек)|");strcat(strReturn,ftoa(temp,(float)FC_ACCEL_TIME/100.0,1));strcat(strReturn,";");
-       strcat(strReturn,"FC_STEP_FREQ|Шаг уменьшения частоты инвертора при необходимости ее уменьшения (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_STEP_FREQ/100.0,2));strcat(strReturn,";");
-       strcat(strReturn,"FC_UPTIME|Период обновления алгоритма ПИД регулятора (мсек)|");strcat(strReturn,int2str(FC_UPTIME));strcat(strReturn,";");
+//       strcat(strReturn,"FC_MIN_FREQ|Минимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MIN_FREQ/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"FC_MAX_FREQ|Максимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_FREQ/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"FC_START_FREQ|Стартовая частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_START_FREQ/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"FC_PID_FREQ_STEP|Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_PID_FREQ_STEP/100.0,2));strcat(strReturn,";");
+//
+//       strcat(strReturn,"FC_MAX_POWER|Максимальная мощность инвертора (кВт)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_POWER/10.0,1));strcat(strReturn,";");
+//       strcat(strReturn,"FC_TIME_READ|Период опроса инвертора по Modbus (мсек)|");strcat(strReturn,int2str(FC_TIME_READ));strcat(strReturn,";");
+//       strcat(strReturn,"FC_ACCEL_TIME|Время разгона компрессора (сек)|");strcat(strReturn,ftoa(temp,(float)FC_ACCEL_TIME/100.0,1));strcat(strReturn,";");
+//       strcat(strReturn,"FC_STEP_FREQ|Шаг уменьшения частоты инвертора при необходимости ее уменьшения (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_STEP_FREQ/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"FC_UPTIME|Период обновления алгоритма ПИД регулятора (мсек)|");strcat(strReturn,int2str(FC_UPTIME));strcat(strReturn,";");
        }
        else strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|Нет;");
       // NEXTION
@@ -876,9 +876,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"TIME_WEB_SERVER|Период опроса web сервера "); strcat(strReturn,nameWiznet);strcat(strReturn," (мсек)|");strcat(strReturn,int2str(TIME_WEB_SERVER));strcat(strReturn,";");
        strcat(strReturn,"TIME_COMMAND|Период разбора команд управления ТН (мсек)|");strcat(strReturn,int2str(TIME_COMMAND));strcat(strReturn,";");
        strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (сек)|");strcat(strReturn,int2str(TIME_I2C_UPDATE ));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_ON_PUMP|Задержка включения компрессора после включения насосов (сек)|");strcat(strReturn,int2str(DELAY_ON_PUMP));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_OFF_PUMP|Задержка выключения насосов после выключения компрессора (сек)|");strcat(strReturn,int2str(DELAY_OFF_PUMP));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_REPEAD_START|Задержка перед повторным включением ТН при ошибке (сек)|");strcat(strReturn,int2str(DELAY_REPEAD_START));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_ON_PUMP|Задержка включения компрессора после включения насосов (сек)|");strcat(strReturn,int2str(DELAY_ON_PUMP));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_OFF_PUMP|Задержка выключения насосов после выключения компрессора (сек)|");strcat(strReturn,int2str(DELAY_OFF_PUMP));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_REPEAD_START|Задержка перед повторным включением ТН при ошибке (сек)|");strcat(strReturn,int2str(DELAY_REPEAD_START));strcat(strReturn,";");
        // Датчики
        strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");strcat(strReturn,int2str(P_NUMSAMLES));strcat(strReturn,";");
        strcat(strReturn,"PRESS_FREQ|Частота опроса датчика давления (Гц)|");strcat(strReturn,int2str(PRESS_FREQ));strcat(strReturn,";");
@@ -889,12 +889,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        // ЭРВ
        #ifdef EEV_DEF
        strcat(strReturn,"EEV_STEPS|Максимальное число шагов ЭРВ|");strcat(strReturn,int2str(EEV_STEPS));strcat(strReturn,";");
-       strcat(strReturn,"EEV_MIN_STEPS|Минимальное число шагов открытия ЭРВ|");strcat(strReturn,int2str(EEV_MIN_STEPS));strcat(strReturn,";");
-       strcat(strReturn,"EEV_PSTART|Позиция открытия ЭРВ при пуске компрессора (пусковая позиция) - легкий пуск компрессора|");strcat(strReturn,int2str(EEV_PSTART));strcat(strReturn,";");
-       strcat(strReturn,"EEV_START|Позиция открытия ЭРВ в начале работы ПИД ЭРВ (стартовая позиция)|");strcat(strReturn,int2str(EEV_START));strcat(strReturn,";");
-       strcat(strReturn,"EEV_SPEED|Скорость шагового двигателя ЭРВ (шаги в сек)|");strcat(strReturn,int2str(EEV_SPEED));strcat(strReturn,";");
+//       strcat(strReturn,"EEV_MIN_STEPS|Минимальное число шагов открытия ЭРВ|");strcat(strReturn,int2str(EEV_MIN_STEPS));strcat(strReturn,";");
+//       strcat(strReturn,"EEV_PSTART|Позиция открытия ЭРВ при пуске компрессора (пусковая позиция) - легкий пуск компрессора|");strcat(strReturn,int2str(EEV_PSTART));strcat(strReturn,";");
+//       strcat(strReturn,"EEV_START|Позиция открытия ЭРВ в начале работы ПИД ЭРВ (стартовая позиция)|");strcat(strReturn,int2str(EEV_START));strcat(strReturn,";");
+//       strcat(strReturn,"EEV_SPEED|Скорость шагового двигателя ЭРВ (шаги в сек)|");strcat(strReturn,int2str(EEV_SPEED));strcat(strReturn,";");
        strcat(strReturn,"EEV_QUEUE|Длина очереди команд шагового двигателя ЭРВ|");strcat(strReturn,int2str(EEV_QUEUE));strcat(strReturn,";");
-       strcat(strReturn,"EEV_HOLD_MOTOR|Удержание шагового двигателя ЭРВ в простое|"); if (EEV_HOLD_MOTOR) strcat(strReturn,"ON;"); else strcat(strReturn,"OFF;");
+//       strcat(strReturn,"EEV_HOLD_MOTOR|Удержание шагового двигателя ЭРВ в простое|"); if (EEV_HOLD_MOTOR) strcat(strReturn,"ON;"); else strcat(strReturn,"OFF;");
        strcat(strReturn,"EEV_INVERT|Инвертирование направления движения ЭРВ (по выходам)|");
            #ifdef EEV_INVERT
              strcat(strReturn,"ON;");
@@ -912,9 +912,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
              strcat(strReturn,"Ошибочная;");
            #endif
     //   strcat(strReturn,"EVI_TEMP_CON|Температура кондесатора для включения соленойда EVI|");strcat(strReturn,ftoa(temp,(float)EVI_TEMP_CON/100.0,2));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_START_POS|Время после старта компрессора когда EEV уходит c пусковой на стартовую позицию - облегчение пуска (сек)|");strcat(strReturn,int2str(DELAY_START_POS));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_ON_PID_EEV|Задержка включения ПИД ЭРВ после включения компрессора (сек)|");strcat(strReturn,int2str(DELAY_ON_PID_EEV));strcat(strReturn,";");
-       strcat(strReturn,"DELAY_ON3_EEV|Задержка между открытием ЭРВ и включением компрессора, для выравнивания давлений (сек)|");strcat(strReturn,int2str(DELAY_ON3_EEV));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_START_POS|Время после старта компрессора когда EEV уходит c пусковой на стартовую позицию - облегчение пуска (сек)|");strcat(strReturn,int2str(DELAY_START_POS));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_ON_PID_EEV|Задержка включения ПИД ЭРВ после включения компрессора (сек)|");strcat(strReturn,int2str(DELAY_ON_PID_EEV));strcat(strReturn,";");
+//       strcat(strReturn,"DELAY_ON3_EEV|Задержка между открытием ЭРВ и включением компрессора, для выравнивания давлений (сек)|");strcat(strReturn,int2str(DELAY_ON3_EEV));strcat(strReturn,";");
         #endif   // EEV
        #ifdef MQTT
 //       strcat(strReturn,"MQTT_REPEAT|Число попыток соединениея с MQTT сервером за одну итерацию|");strcat(strReturn,int2str(MQTT_REPEAT));strcat(strReturn,";");
@@ -1224,7 +1224,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
          }      
         if (strcmp(str,"get_pinFC")==0)
          {
+		#ifdef FC_ANALOG_CONTROL // Аналоговое управление
          strcat(strReturn,"D"); strcat(strReturn,int2str(HP.dFC.get_pinA())); strcat(strReturn,"&"); continue;
+		#endif
          }         
         if (strcmp(str,"get_FC")==0)  // Функция get_FC выдает
          {
@@ -1233,7 +1235,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
          }  
         if (strcmp(str,"get_dacFC")==0)  // Функция get_dacFC
          {
-          strcat(strReturn,int2str(HP.dFC.get_DAC())); strcat(strReturn,"&") ;    continue;
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
+        	strcat(strReturn,int2str(HP.dFC.get_DAC())); strcat(strReturn,"&") ;    continue;
+#endif
          } 
         if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
          {
@@ -1518,7 +1522,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               else
                 {
               //  if(HP.dFC.set_targetFreq(pm*100)==0) strcat(strReturn,ftoa(temp,(float)HP.dFC.get_targetFreq()/100.0,2)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue; 
-                 if(HP.dFC.set_targetFreq(pm*100,true,FC_MIN_FREQ_USER ,FC_MAX_FREQ_USER)==0) strcat(strReturn,int2str(HP.dFC.get_targetFreq()/100)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
+                 if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.FC_MIN_FREQ_USER ,HP.dFC.FC_MAX_FREQ_USER)==0) strcat(strReturn,int2str(HP.dFC.get_targetFreq()/100)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  

@@ -602,9 +602,26 @@ void devEEV::initEEV()
   tOverheat= DEFAULT_OVERHEAT;          // Перегрев ЦЕЛЬ (сотые градуса)
   typeFreon = (TYPEFREON) DEFAULT_FREON_TYPE;
   ruleEEV = (RULE_EEV) DEFAULT_RULE_EEV;
-  Kp = 3;                               // Коэф пропорц.
-  Ki = 2;                               // Коэф интегр.  для настройки Ki=0
-  Kd = 1;                               // Коэф дифф.
+
+  #ifdef DEFAULT_EEV_Kp
+  Kp = DEFAULT_EEV_Kp;
+  Ki = DEFAULT_EEV_Ki;
+  Kd = DEFAULT_EEV_Kd;
+  EEV_KP_ERR 		= 100;
+  EEV_SPEED 		= 40;
+  EEV_PSTART     	= 150;
+  EEV_START      	= 100;
+  EEV_MIN_STEPS  	= 10;
+  EEV_HOLD_MOTOR 	= false;
+  DELAY_ON_PID_EEV  = 5;
+  DELAY_ON3_EEV     = 3;
+  DELAY_START_POS   = 5;
+  DELAY_OFF_EEV     = 3;
+  #else
+  Kp = 100;                             // Коэф пропорц.
+  Ki = 0;                               // Коэф интегр.  для настройки Ki=0
+  Kd = 100;                             // Коэф дифф.
+  #endif
   Correction=0;                         // Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
   manualStep=halfPos;                   // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
   testMode=NORMAL;                      // Значение режима тестирования
@@ -988,7 +1005,7 @@ int32_t devEEV::loadFromBuf(int32_t adr,byte *buf)
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devEEV::get_crc16(uint16_t crc) 
 {
-	uint8_t i;
+	uint16_t i;
 	for(i = 0; i < (byte*)&flags - (byte*)&timeIn + sizeof(flags); i++)
 		crc = _crc16(crc,*((byte*)&timeIn + i));  // CRC16 структуры
 	return crc;

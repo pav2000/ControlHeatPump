@@ -21,11 +21,11 @@
 
 #include "Scheduler.h"
 
-const char *WEB_SCH_On = {"On"};
-const char *WEB_SCH_Active = {"Active"};
-const char *WEB_SCH_Names = {"lstNames"};
-const char *WEB_SCH_Name = {"Name"};
-const char *WEB_SCH_Calendar = {"Calendar"};
+const char WEB_SCH_On[] = "On";
+const char WEB_SCH_Active[] = "Active";
+const char WEB_SCH_Names[] = "lstNames";
+const char WEB_SCH_Name[] = "Name";
+const char WEB_SCH_Calendar[] = "Calendar";
 
 #define ifparam(s) if(strncmp(param, s, sizeof(s)-1) == 0)
 
@@ -84,7 +84,6 @@ int8_t Scheduler::calc_active_profile(void)
 void 	Scheduler::web_get_param(char *param, char *result)
 {
 	uint8_t cnum;
-
 	result += strlen(result);
 	ifparam(WEB_SCH_On) {
 		strcat(result, sch_data.Flags & (1<<bScheduler_active) ? cOne : cZero);
@@ -101,16 +100,19 @@ void 	Scheduler::web_get_param(char *param, char *result)
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) {
 			strcat(result, "E33&");
-			return;
-		}
-		uint8_t ptr = Timetable_ptr(cnum);
-		uint8_t max = ptr + sch_data.Timetable[ptr];
-		for(ptr++; ptr <= max; ptr++) {
-			result += strlen(result);
-			if(sch_data.Timetable[ptr] != 255) itoa(sch_data.Timetable[ptr], result, 10);
-			if(ptr < max) strcat(result, ";");
+		} else {
+			uint8_t ptr = Timetable_ptr(cnum);
+			uint8_t max = ptr + sch_data.Timetable[ptr];
+			for(ptr++; ptr <= max; ptr++) {
+				result += strlen(result);
+				if(sch_data.Timetable[ptr] != 255) itoa(sch_data.Timetable[ptr], result, 10);
+				if(ptr < max) strcat(result, ";");
+			}
 		}
 	}
+//#if DEBUG
+//	journal.printf("WEB_GET: %s=%s\n", param, result);
+//#endif
 }
 
 // Установить параметр из веба, set_SCHDLR(param=val)

@@ -30,7 +30,33 @@ int8_t devVaconFC::initFC()
     startCompressor = 0; // время старта компрессора
     state = ERR_LINK_FC; // Состояние - нет связи с частотником
     flags = 0x00; // флаги  0 - наличие FC
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление графики не нужны
+	FC_UPTIME				= DEF_FC_UPTIME            ;
+    FC_PID_FREQ_STEP		= DEF_FC_PID_FREQ_STEP     ;
+    FC_PID_STOP				= DEF_FC_PID_STOP          ;
+    FC_DT_COMP_TEMP			= DEF_FC_DT_COMP_TEMP      ;
+    FC_DP_CON_PRESS			= DEF_FC_DP_CON_PRESS      ;
+    FC_START_FREQ			= DEF_FC_START_FREQ        ;
+    FC_START_FREQ_BOILER	= DEF_FC_START_FREQ_BOILER ;
+    FC_MIN_FREQ				= DEF_FC_MIN_FREQ          ;
+    FC_MIN_FREQ_COOL		= DEF_FC_MIN_FREQ_COOL     ;
+    FC_MIN_FREQ_BOILER		= DEF_FC_MIN_FREQ_BOILER   ;
+    FC_MIN_FREQ_USER		= DEF_FC_MIN_FREQ_USER     ;
+    FC_MAX_FREQ				= DEF_FC_MAX_FREQ          ;
+    FC_MAX_FREQ_COOL		= DEF_FC_MAX_FREQ_COOL     ;
+    FC_MAX_FREQ_BOILER		= DEF_FC_MAX_FREQ_BOILER   ;
+    FC_MAX_FREQ_USER		= DEF_FC_MAX_FREQ_USER     ;
+    FC_STEP_FREQ			= DEF_FC_STEP_FREQ         ;
+    FC_STEP_FREQ_BOILER		= DEF_FC_STEP_FREQ_BOILER  ;
+    FC_DT_TEMP				= DEF_FC_DT_TEMP           ;
+    FC_DT_TEMP_BOILER		= DEF_FC_DT_TEMP_BOILER    ;
+    FC_MAX_POWER			= DEF_FC_MAX_POWER         ;
+    FC_MAX_POWER_BOILER		= DEF_FC_MAX_POWER_BOILER  ;
+    FC_MAX_CURRENT			= DEF_FC_MAX_CURRENT       ;
+    FC_MAX_CURRENT_BOILER	= DEF_FC_MAX_CURRENT_BOILER;
+    FC_ACCEL_TIME			= DEF_FC_ACCEL_TIME        ;
+    FC_DEACCEL_TIME			= DEF_FC_DEACCEL_TIME      ;
+
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
     pin = PIN_DEVICE_FC; // Ножка куда прицеплено FC
     dac = 0; // Текущее значение ЦАП
     analogWriteResolution(12); // разрешение ЦАП 12 бит;
@@ -254,6 +280,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
 #endif // DEMO
 }
 
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
 // Установить Отсчеты ЦАП соответсвующие 0   мощности
 int8_t devVaconFC::set_level0(int16_t x)
 {
@@ -281,91 +308,42 @@ int8_t devVaconFC::set_levelOff(int16_t x)
     } // Только правильные значения
     return WARNING_VALUE;
 }
+#endif
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devVaconFC::save(int32_t adr)
 {
-    byte f = 0;
-    if(writeEEPROM_I2C(adr, (byte*)&level0, sizeof(level0))) {
+    if(writeEEPROM_I2C(adr, (byte*)&FC_UPTIME, (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags))) {
         set_Error(ERR_SAVE_EEPROM, name);
         return ERR_SAVE_EEPROM;
     }
-    adr = adr + sizeof(level0); // !save! Отсчеты ЦАП соответсвующие 0   мощности
-    if(writeEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(level100); // !save! Отсчеты ЦАП соответсвующие 100 мощности
-    if(writeEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(levelOff); // !save! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-    //if(GETBIT(flags,fAnalog)) f=f+(1<<fAnalog);                                                                                                      // Взять только флаги настроек
-    if(writeEEPROM_I2C(adr, (byte*)&f, sizeof(f))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(f); // !save! Флаги
+    adr = adr + (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags);
     return adr;
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devVaconFC::load(int32_t adr)
 {
-    byte f;
-    if(readEEPROM_I2C(adr, (byte*)&level0, sizeof(level0))) {
+    if(readEEPROM_I2C(adr, (byte*)&FC_UPTIME, (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags))) {
         set_Error(ERR_LOAD_EEPROM, name);
         return ERR_SAVE_EEPROM;
     }
-    adr = adr + sizeof(level0); // !load! Отсчеты ЦАП соответсвующие 0   мощности
-    if(readEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(level100); // !load! Отсчеты ЦАП соответсвующие 100 мощности
-    if(readEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(levelOff); // !load! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-    if(readEEPROM_I2C(adr, (byte*)&f, sizeof(f))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr = adr + sizeof(f); // !load! флаги
-    // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
-    //if(GETBIT(f,fAnalog)) SETBIT1(flags,fAnalog); else SETBIT0(flags,fAnalog);
     return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devVaconFC::loadFromBuf(int32_t adr, byte* buf)
 {
-    byte f;
-    memcpy((byte*)&level0, buf + adr, sizeof(level0));
-    adr = adr + sizeof(level0); // Отсчеты ЦАП соответсвующие 0   мощности
-    memcpy((byte*)&level100, buf + adr, sizeof(level100));
-    adr = adr + sizeof(level100); // Отсчеты ЦАП соответсвующие 100 мощности
-    memcpy((byte*)&levelOff, buf + adr, sizeof(levelOff));
-    adr = adr + sizeof(levelOff); // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-    memcpy((byte*)&f, buf + adr, sizeof(f));
-    adr = adr + sizeof(f); // флаги
-    // if(GETBIT(f,fAnalog)) SETBIT1(flags,fAnalog); else SETBIT0(flags,fAnalog);              // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
+    memcpy((byte*)&FC_UPTIME, buf + adr, (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags));
+    adr += (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags);
     return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devVaconFC::get_crc16(uint16_t crc)
 {
-    byte f = 0;
-    crc = _crc16(crc, lowByte(level0));
-    crc = _crc16(crc, highByte(level0)); //   Отсчеты ЦАП соответсвующие 0   мощности
-    crc = _crc16(crc, lowByte(level100));
-    crc = _crc16(crc, highByte(level100)); //   Отсчеты ЦАП соответсвующие 100 мощности
-    crc = _crc16(crc, lowByte(levelOff));
-    crc = _crc16(crc, highByte(levelOff)); //   Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-    //  if(GETBIT(flags,fAnalog)) f=f+(1<<fAnalog);
-    crc = _crc16(crc, f); //   Только флаги насроек
-    return crc;
+	uint16_t i;
+	for(i = 0; i < (byte*)&setup_flags - (byte*)&FC_UPTIME + sizeof(setup_flags); i++)
+		crc = _crc16(crc,*((byte*)&FC_UPTIME + i));  // CRC16 структуры
+	return crc;
 }
 
 // Установить запрет на использование инвертора если лимит ошибок исчерпан
@@ -604,6 +582,7 @@ char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
         return (char*)cZero;
 #endif
         break;
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
     case pLEVEL0:
         return int2str(level0);
         break; // Уровень частоты 0 в отсчетах ЦАП
@@ -613,6 +592,7 @@ char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
     case pLEVELOFF:
         return int2str(levelOff);
         break; // Уровень частоты в % при отключении
+#endif
     case pSTOP_FC:
         if(GETBIT(flags, fErrFC))
             return (char*)"Block";
@@ -671,7 +651,8 @@ boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
     case pANALOG:
         return true;
         break; // ТОЛЬКО ЧТЕНИЕ Флаг аналогового управления
-    case pLEVEL0:
+#ifdef FC_ANALOG_CONTROL // Аналоговое управление
+        case pLEVEL0:
         if((x >= 0) && (x <= 4096)) {
             level0 = x;
             return true;
@@ -692,6 +673,7 @@ boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
         } // Только правильные значения
         return false;
         break; // Уровень скорости в % при отключении
+#endif
     case pSTOP_FC:
         SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА
         if(x == 0) {
@@ -736,34 +718,34 @@ void devVaconFC::get_infoFC(char* buf)
 	if(testMode == NORMAL || testMode == HARD_TEST) {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
 		if(HP.dFC.get_blockFC()) {   // Инвертор заблокирован
-			strcat(buf, "|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;");
+			strcat(buf, "|Данные не доступны (инвертор заблокирован)|;");
 		} else {
 			uint32_t i;
 			strcat(buf, "-|Состояние инвертора: ");
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
-			buf += m_snprintf(buf += m_strlen(buf), 256, "|%X;", i);
+			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", i);
 			if(err == OK) {
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
-				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%%)|%.2f;V1.1|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%%)|%.2f;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
-				buf += m_snprintf(buf, 256, "V1.3|Обороты (об/м)|%d;V1.4|Выходной ток (А)|%.2f;", i >> 16, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;V1.4 (2106)|Выходной ток (А)|%.2f;", i >> 16, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
-				buf += m_snprintf(buf, 256, "V1.5|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
-				buf += m_snprintf(buf, 256, "V1.7|Выходное напряжение (В)|%.1f;V1.8|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "V1.7 (2109)|Выходное напряжение (В)|%.1f;V1.8 (2110)|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
 				_delay(FC_DELAY_READ);
-				buf += m_snprintf(buf, 256, "V1.9|Температура радиатора (°С)|%d;", read_tempFC());
+				buf += m_snprintf(buf, 256, "V1.9 (8)|Температура радиатора (°С)|%d;", read_tempFC());
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
-				buf += m_snprintf(buf, 256, "V3.3|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "V3.3 (828)|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RUN_DAYS); // +FC_RUN_HOURS (low word)
-				buf += m_snprintf(buf, 256, "V3.5|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "V3.5 (840)|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
 				_delay(FC_DELAY_READ);
-				buf += m_snprintf(buf, 256, "V3.6|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
+				buf += m_snprintf(buf, 256, "V3.6 (842)|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
 				_delay(FC_DELAY_READ);
 
 				i = read_0x03_16(FC_ERROR);

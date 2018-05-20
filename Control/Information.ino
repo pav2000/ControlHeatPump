@@ -196,6 +196,7 @@ void Journal::jprintf(type_promt pr,const char *format, ...)
 {
   switch (pr)
   {
+  case  pP_NONE: break;
   case  pP_TIME: jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
   case  pP_DATE: jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
   case  pP_USER: jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
