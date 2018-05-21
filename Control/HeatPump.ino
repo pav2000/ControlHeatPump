@@ -951,7 +951,7 @@ boolean HeatPump::set_optionHP(OPTION_HP p, float x)
                            else return false;  break;          // использование дисплея nextion
    case pEEV_CLOSE:        if (x==0) {SETBIT0(Option.flags,fEEV_close); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_close); return true;} else return false;               break;    // Закрытие ЭРВ при выключении компрессора
    case pEEV_LIGHT_START:  if (x==0) {SETBIT0(Option.flags,fEEV_light_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_light_start); return true;} else return false;   break;    // Облегчение старта компрессора
-   case pEEV_START:        if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;               break;    // Всегда начинать работу ЭРВ со стратовой позици
+   case pStartPos:        if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;               break;    // Всегда начинать работу ЭРВ со стратовой позици
      
    case pSD_CARD:          if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;                   break;    // Сбрасывать статистику на карту
    case pSAVE_ON:          if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;                     break;    // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
@@ -994,7 +994,7 @@ char*    HeatPump::get_optionHP(OPTION_HP p)
    
    case pEEV_CLOSE:        if(GETBIT(Option.flags,fEEV_close)) return (char*)cOne; else return (char*)cZero; break;            // Закрытие ЭРВ при выключении компрессора
    case pEEV_LIGHT_START:  if(GETBIT(Option.flags,fEEV_light_start)) return (char*)cOne; else return (char*)cZero; break;      // Облегчение старта компрессора
-   case pEEV_START:        if(GETBIT(Option.flags,fEEV_start)) return (char*)cOne; else return (char*)cZero; break;            // Всегда начинать работу ЭРВ со стратовой позици
+   case pStartPos:        if(GETBIT(Option.flags,fEEV_start)) return (char*)cOne; else return (char*)cZero; break;            // Всегда начинать работу ЭРВ со стратовой позици
      
    case pSD_CARD:          if(GETBIT(Option.flags,fSD_card)) return (char*)cOne; else return (char*)cZero;   break;            // Сбрасывать статистику на карту
    case pSAVE_ON:          if(GETBIT(Option.flags,fSaveON)) return (char*)cOne; else return (char*)cZero;    break;            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
@@ -1994,10 +1994,10 @@ int8_t HeatPump::StopWait(boolean stop)
   #ifdef EEV_DEF
   if(GETBIT(Option.flags,fEEV_close))            //ЭРВ само выключится по State
      { 
-     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.DELAY_OFF_EEV);
-     _delay(dEEV.DELAY_OFF_EEV*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
-     dEEV.set_EEV(dEEV.EEV_MIN_STEPS);                          // Если нужно, то закрыть ЭРВ
-     journal.jprintf(" EEV go EEV_MIN_STEPS\n"); 
+     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
+     _delay(dEEV.get_delayOff()*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
+     dEEV.set_EEV(dEEV.get_minSteps());                          // Если нужно, то закрыть ЭРВ
+     journal.jprintf(" EEV go minSteps\n"); 
      } 
    #endif
    
@@ -2772,12 +2772,12 @@ void HeatPump::ChangesPauseTRV()
   COMPRESSOR_OFF;                                                  //  Компрессор выключить
   stopCompressor=rtcSAM3X8.unixtime();                             // Запомнить время выключения компрессора
   #ifdef REVI
-   checkEVI();                                                      // выключить ЭВИ
+   checkEVI();                                                     // выключить ЭВИ
   #endif
     journal.jprintf(" Pause for pressure equalization . . .\n");
-  _delay(Option.DELAY_TRV*1000);                   // Пауза 120 секунд для выравнивания давлений
-  #ifdef EEV_DEF
-  lastEEV=dEEV.EEV_START;                                               // Выставление ЭРВ на стартовую позицию т.к идет смена режима тепло-холод
+  _delay(Option.DELAY_TRV*1000);                                   // Пауза 120 секунд для выравнивания давлений
+  #ifdef EEV_DEF  
+  lastEEV=dEEV.get_StartPos();                                     // Выставление ЭРВ на стартовую позицию т.к идет смена режима тепло-холод
   #endif
 }
 // UPDATE --------------------------------------------------------------------------------
@@ -2889,18 +2889,18 @@ void HeatPump::compressorON(MODE_HP mod)
 
       // 2. Разбираемся с ЭРВ
            journal.jprintf(EEV_go);   
-           if (GETBIT(Option.flags,fEEV_light_start)) {dEEV.set_EEV(dEEV.EEV_PSTART);journal.jprintf("EEV_PSTART: %d\n",dEEV.EEV_PSTART);  }    // Выйти на пусковую позицию
-           else if (GETBIT(Option.flags,fEEV_start))  {dEEV.set_EEV(dEEV.EEV_START); journal.jprintf("EEV_START: %d\n",dEEV.EEV_START);    }    // Всегда начинать работу ЭРВ со стратовой позиции
+           if (GETBIT(Option.flags,fEEV_light_start)) {dEEV.set_EEV(dEEV.get_preStartPos());journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }    // Выйти на пусковую позицию
+           else if (GETBIT(Option.flags,fEEV_start))  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // Всегда начинать работу ЭРВ со стратовой позиции
            else                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ
            if(GETBIT(Option.flags,fEEV_close))           // Если закрывали то пауза для выравнивания давлений
-           _delay(dEEV.DELAY_ON3_EEV);  // Задержка на DELAY_ON3_EEV сек  для выравнивания давлений
+           _delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
        
      }   //  if (lastEEV!=-1)   
      else // первое включение компресора lastEEV=-1
      { // 2. Разбираемся с ЭРВ
         journal.jprintf(EEV_go);      
-        if (GETBIT(Option.flags,fEEV_light_start)) { dEEV.set_EEV(dEEV.EEV_PSTART);  journal.jprintf("EEV_PSTART: %d\n",dEEV.EEV_PSTART);  }      // Выйти на пусковую позицию
-        else                                       { dEEV.set_EEV(dEEV.EEV_START);   journal.jprintf("EEV_START: %d\n",dEEV.EEV_START);    }      // Всегда начинать работу ЭРВ со стратовой позиции
+        if (GETBIT(Option.flags,fEEV_light_start)) { dEEV.set_EEV(dEEV.get_preStartPos());  journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }      // Выйти на пусковую позицию
+        else                                       { dEEV.set_EEV(dEEV.get_StartPos());   journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }      // Всегда начинать работу ЭРВ со стратовой позиции
      }
       #endif
           
@@ -2938,10 +2938,10 @@ void HeatPump::compressorON(MODE_HP mod)
     #ifdef EEV_DEF
     if(GETBIT(Option.flags,fEEV_light_start))                  //  ЭРВ ОБЛЕГЧЕННЫЙ ПУСК
          {
-         journal.jprintf(" Pause %d second before go starting position EEV . . .\n",dEEV.DELAY_START_POS);
-         _delay(dEEV.DELAY_START_POS*1000);  // Задержка после включения компрессора до ухода на рабочую позицию
+         journal.jprintf(" Pause %d second before go starting position EEV . . .\n",dEEV.get_DelayStartPos());
+         _delay(dEEV.get_DelayStartPos()*1000);  // Задержка после включения компрессора до ухода на рабочую позицию
          journal.jprintf(EEV_go);  
-         if ((GETBIT(Option.flags,fEEV_start))||((lastEEV==-1)  ))  {dEEV.set_EEV(dEEV.EEV_START); journal.jprintf("EEV_START: %d\n",dEEV.EEV_START);    }    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
+         if ((GETBIT(Option.flags,fEEV_start))||((lastEEV==-1)  ))  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
          else                                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ в противном случае
          }
      #endif      
@@ -2949,15 +2949,15 @@ void HeatPump::compressorON(MODE_HP mod)
      #ifdef EEV_DEF
      if (lastEEV>0)                                            // НЕ первое включение компрессора после старта ТН
       {  
- //      journal.jprintf(" Pause %d second before enabling tracking EEV . . .\n",DELAY_ON_PID_EEV);    // Задержка внутри задачи!!!
-       if (GETBIT(Option.flags,fEEV_start))  dEEV.Resume(dEEV.EEV_START);     // Снять с паузы задачу Обновления ЭРВ  PID  со стратовой позиции
+ //      journal.jprintf(" Pause %d second before enabling tracking EEV . . .\n",delayOnPid);    // Задержка внутри задачи!!!
+       if (GETBIT(Option.flags,fEEV_start))  dEEV.Resume(dEEV.get_StartPos());     // Снять с паузы задачу Обновления ЭРВ  PID  со стратовой позиции
        else                                  dEEV.Resume(lastEEV);       // Снять с паузы задачу Обновления ЭРВ  PID c последнего значения ЭРВ
        journal.jprintf(" Resume task update EEV\n"); 
        journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
      }
       else  // признак первой итерации
       {
-      lastEEV=dEEV.EEV_START;                                           // ЭРВ рабоатет запомнить
+      lastEEV=dEEV.get_StartPos();                                           // ЭРВ рабоатет запомнить
       set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
       vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
       journal.jprintf(" Start task update EEV\n");
@@ -3009,10 +3009,10 @@ void HeatPump::compressorOFF()
   #ifdef EEV_DEF
   if(GETBIT(Option.flags,fEEV_close))                                 // Hазбираемся с ЭРВ
      { 
-     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.DELAY_OFF_EEV);
-     _delay(dEEV.DELAY_OFF_EEV*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
-     dEEV.set_EEV(dEEV.EEV_MIN_STEPS);                         // Если нужно, то закрыть ЭРВ
-     journal.jprintf(" EEV go EEV_MIN_STEPS\n"); 
+     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
+     _delay(dEEV.get_delayOff()*1000);                                     // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
+     dEEV.set_EEV(dEEV.get_minSteps());                                    // Если нужно, то закрыть ЭРВ
+     journal.jprintf(" EEV go minSteps\n"); 
      } 
   #endif
   

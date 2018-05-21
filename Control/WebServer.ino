@@ -889,10 +889,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        // ЭРВ
        #ifdef EEV_DEF
        strcat(strReturn,"EEV_STEPS|Максимальное число шагов ЭРВ|");strcat(strReturn,int2str(EEV_STEPS));strcat(strReturn,";");
-//       strcat(strReturn,"EEV_MIN_STEPS|Минимальное число шагов открытия ЭРВ|");strcat(strReturn,int2str(EEV_MIN_STEPS));strcat(strReturn,";");
-//       strcat(strReturn,"EEV_PSTART|Позиция открытия ЭРВ при пуске компрессора (пусковая позиция) - легкий пуск компрессора|");strcat(strReturn,int2str(EEV_PSTART));strcat(strReturn,";");
-//       strcat(strReturn,"EEV_START|Позиция открытия ЭРВ в начале работы ПИД ЭРВ (стартовая позиция)|");strcat(strReturn,int2str(EEV_START));strcat(strReturn,";");
-//       strcat(strReturn,"EEV_SPEED|Скорость шагового двигателя ЭРВ (шаги в сек)|");strcat(strReturn,int2str(EEV_SPEED));strcat(strReturn,";");
+//       strcat(strReturn,"minSteps|Минимальное число шагов открытия ЭРВ|");strcat(strReturn,int2str(minSteps));strcat(strReturn,";");
+//       strcat(strReturn,"preStartPos|Позиция открытия ЭРВ при пуске компрессора (пусковая позиция) - легкий пуск компрессора|");strcat(strReturn,int2str(preStartPos));strcat(strReturn,";");
+//       strcat(strReturn,"StartPos|Позиция открытия ЭРВ в начале работы ПИД ЭРВ (стартовая позиция)|");strcat(strReturn,int2str(StartPos));strcat(strReturn,";");
+//       strcat(strReturn,"speedEEV|Скорость шагового двигателя ЭРВ (шаги в сек)|");strcat(strReturn,int2str(speedEEV));strcat(strReturn,";");
        strcat(strReturn,"EEV_QUEUE|Длина очереди команд шагового двигателя ЭРВ|");strcat(strReturn,int2str(EEV_QUEUE));strcat(strReturn,";");
 //       strcat(strReturn,"EEV_HOLD_MOTOR|Удержание шагового двигателя ЭРВ в простое|"); if (EEV_HOLD_MOTOR) strcat(strReturn,"ON;"); else strcat(strReturn,"OFF;");
        strcat(strReturn,"EEV_INVERT|Инвертирование направления движения ЭРВ (по выходам)|");
@@ -912,9 +912,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
              strcat(strReturn,"Ошибочная;");
            #endif
     //   strcat(strReturn,"EVI_TEMP_CON|Температура кондесатора для включения соленойда EVI|");strcat(strReturn,ftoa(temp,(float)EVI_TEMP_CON/100.0,2));strcat(strReturn,";");
-//       strcat(strReturn,"DELAY_START_POS|Время после старта компрессора когда EEV уходит c пусковой на стартовую позицию - облегчение пуска (сек)|");strcat(strReturn,int2str(DELAY_START_POS));strcat(strReturn,";");
-//       strcat(strReturn,"DELAY_ON_PID_EEV|Задержка включения ПИД ЭРВ после включения компрессора (сек)|");strcat(strReturn,int2str(DELAY_ON_PID_EEV));strcat(strReturn,";");
-//       strcat(strReturn,"DELAY_ON3_EEV|Задержка между открытием ЭРВ и включением компрессора, для выравнивания давлений (сек)|");strcat(strReturn,int2str(DELAY_ON3_EEV));strcat(strReturn,";");
+//       strcat(strReturn,"DelayStartPos|Время после старта компрессора когда EEV уходит c пусковой на стартовую позицию - облегчение пуска (сек)|");strcat(strReturn,int2str(DelayStartPos));strcat(strReturn,";");
+//       strcat(strReturn,"delayOnPid|Задержка включения ПИД ЭРВ после включения компрессора (сек)|");strcat(strReturn,int2str(delayOnPid));strcat(strReturn,";");
+//       strcat(strReturn,"delayOn|Задержка между открытием ЭРВ и включением компрессора, для выравнивания давлений (сек)|");strcat(strReturn,int2str(delayOn));strcat(strReturn,";");
         #endif   // EEV
        #ifdef MQTT
 //       strcat(strReturn,"MQTT_REPEAT|Число попыток соединениея с MQTT сервером за одну итерацию|");strcat(strReturn,int2str(MQTT_REPEAT));strcat(strReturn,";");
@@ -1050,18 +1050,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            strcat(strReturn,"&") ;    continue;
        }
        // ЭРВ запросы , те которые без параметра ------------------------------
-       if (strcmp(str,"get_pinEEV")==0)           // Функция get_pinEEV - строка с перечислением ного куда шаговик прицеплен
-                  {   
-                  #ifdef EEV_DEF 
-                  strcat(strReturn,"D");  strcat(strReturn,int2str(PIN_EEV1_D24));
-                  strcat(strReturn," D"); strcat(strReturn,int2str(PIN_EEV2_D25));
-                  strcat(strReturn," D"); strcat(strReturn,int2str(PIN_EEV3_D26));
-                  strcat(strReturn," D"); strcat(strReturn,int2str(PIN_EEV4_D27));
-                  #else
-                  strcat(strReturn,"- - - -");  
-                  #endif   
-                  strcat(strReturn,"&") ;    continue;
-                  } 
          if (strcmp(str,"set_zeroEEV")==0)  // Функция set_zeroEEV
          {  
             #ifdef EEV_DEF 
@@ -1071,15 +1059,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             #endif   
            strcat(strReturn,"&") ; continue;
          }          
-        if (strcmp(str,"get_overheatEEV")==0)  // Функция get_overheatEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Overheat()/100,2)); 
-          #else
-          strcat(strReturn,"-");  
-          #endif   
-          strcat(strReturn,"&") ;    continue;
-         }  
         if (strncmp(str,"get_EEV", 7)==0)  // Функция get_EEV
          {
            #ifdef EEV_DEF 
@@ -1104,111 +1083,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            #endif   
            strcat(strReturn,"&") ;    continue;
          }
-        if (strcmp(str,"get_minEEV")==0)  // Функция get_minEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,int2str(HP.dEEV.get_minEEV())); 
-          #else
-          strcat(strReturn,"-");  
-          #endif   
-        strcat(strReturn,"&") ;    continue;
-         }                
-        if (strcmp(str,"get_maxEEV")==0)  // Функция get_maxEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,int2str(HP.dEEV.get_maxEEV())); 
-          #else
-          strcat(strReturn,"-");  
-          #endif   
-          strcat(strReturn,"&") ;    continue;
-         } 
-        if (strcmp(str,"get_nameEEV")==0)  // Функция get_nameEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,HP.dEEV.get_name()); 
-          #else
-          strcat(strReturn,"none");  
-          #endif   
-         strcat(strReturn,"&") ;    continue;
-         }            
-         if (strcmp(str,"get_noteEEV")==0)  // Функция get_noteEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,HP.dEEV.get_note()); 
-          #else
-          strcat(strReturn,"EEV absent config");  
-          #endif   
-         strcat(strReturn,"&") ;    continue;
-         }   
-        if (strcmp(str,"get_errcodeEEV")==0)  // Функция get_errcodeEEV
-         {
-          #ifdef EEV_DEF 
-          strcat(strReturn,int2str(HP.dEEV.get_lastErr())); 
-          #else
-          strcat(strReturn,cZero);  
-          #endif   
-         strcat(strReturn,"&") ;    continue;
-         }   
-        if (strcmp(str,"get_presentEEV")==0)  // Функция get_presentEEV
-         {
-         #ifdef EEV_DEF  
-         if (HP.dEEV.get_present()) strcat(strReturn,cOne); else strcat(strReturn,cZero); 
-         #else
-          strcat(strReturn,cZero);  
-         #endif   
-         strcat(strReturn,"&"); continue;
-         }      
-        if (strcmp(str,"get_freonEEV")==0)  // Функция get_freonEEV
-         {
-         #ifdef EEV_DEF 
-         for(i=0;i<=R717;i++) // Формирование списка
-            { strcat(strReturn,noteFreon[i]); strcat(strReturn,":"); if(i==HP.dEEV.get_typeFreon()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }
-         #else
-          strcat(strReturn,"none:1;");  
-         #endif   
-           strcat(strReturn,"&");    continue;
-         }     
-       if (strcmp(str,"get_ruleEEV")==0)  // Функция get_ruleEEV
-         {
-          #ifdef EEV_DEF
-          for(i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка вариантов алгоритма расчета перегрева
-            { strcat(strReturn,noteRuleEEV[i]); strcat(strReturn,":"); 
-              if(i==HP.dEEV.get_ruleEEV())  strcat(strReturn,cOne); else strcat(strReturn,cZero);strcat(strReturn,":");
-              switch (i)  // определение доступности элемента
-              {
-                case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) strcat(strReturn,cOne); else strcat(strReturn,cZero); break;
-                case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) strcat(strReturn,cOne); else strcat(strReturn,cZero); break;
-                case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present())) strcat(strReturn,cOne); else strcat(strReturn,cZero);  break;
-                case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present())) strcat(strReturn,cOne); else strcat(strReturn,cZero);  break;
-                case  TABLE:           
-                case  MANUAL:         strcat(strReturn,cOne); break;
-                default:              strcat(strReturn,cZero); break;
-              }
-          strcat(strReturn,";");  } 
-          #else
-          strcat(strReturn,"none:1;");  
-          #endif      
-          strcat(strReturn,"&") ;    continue;
-         }     
-      if (strcmp(str,"get_remarkEEV")==0)  // Функция get_remarkEEV
-         { 
-          #ifdef EEV_DEF
-           switch (HP.dEEV.get_ruleEEV())
-           {
-             case TEVAOUT_TEVAIN:   strcat(strReturn,noteRemarkEEV[TEVAOUT_TEVAIN]);        break;
-             case TRTOOUT_TEVAIN:   strcat(strReturn,noteRemarkEEV[TRTOOUT_TEVAIN]);        break;
-             case TEVAOUT_PEVA:     if(!HP.sADC[PEVA].get_present()) {strcat(strReturn,"Отсутвует датчик давления! Выберите другое правило управления ЭРВ. ТН будет остановлен по ошибке."); break;}
-                                    else {strcat(strReturn,noteRemarkEEV[TEVAOUT_PEVA]);    break;}
-             case TRTOOUT_PEVA:     strcat(strReturn,noteRemarkEEV[ TRTOOUT_PEVA]);         break;                       
-             case TABLE:            strcat(strReturn,noteRemarkEEV[TABLE]);                 break;
-             case MANUAL:           strcat(strReturn,noteRemarkEEV[MANUAL]);                break;
-             default:               strcat(strReturn,"Unknown");                            break;      
-            }
-           #else
-           strcat(strReturn,"EEV absent in config");    
-           #endif 
-          strcat(strReturn,"&") ;    continue;
-         }    
+  
         // FC запросы, те которые без параметра ------------------------------
         if (strcmp(str,"get_nameFC")==0)  // Функция get_nameFC
          {
@@ -1466,38 +1341,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           strcat(strReturn,"&") ;    continue;
         } //  if (strcmp(str,"set_testMode")==0)  
 
-       // ------------------------------------------------------------------------
-       if (strstr(str,"set_freonEEV"))  // Функция set_freonEEV
-         {
-       #ifdef EEV_DEF   
-         if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
-          else
-            {
-            HP.dEEV.set_typeFreon((TYPEFREON)pm);
-            for(i=0;i<=R717;i++) // Формирование списка
-               { strcat(strReturn,noteFreon[i]); strcat(strReturn,":"); if(i==HP.dEEV.get_typeFreon()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }                
-              } // else  
-           strcat(strReturn,"&") ;    continue; 
-           #else
-            strcat(strReturn,"none:1;&") ;    continue;
-           #endif 
-           }  //  if (strcmp(str,"set_freonEEV")==0) 
-        // -----------------------------------------------------------------------------    
-        if (strstr(str,"set_ruleEEV"))  // Функция set_ruleEEV
-         {
-        #ifdef EEV_DEF  
-         if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
-          else
-            {
-            HP.dEEV.set_ruleEEV((RULE_EEV)pm);
-            for(i=0;i<=MANUAL;i++) // Формирование списка
-                 { strcat(strReturn,noteRuleEEV[i]); strcat(strReturn,":"); if(i==HP.dEEV.get_ruleEEV()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }                    
-              } // else  
-             strcat(strReturn,"&") ;    continue; 
-            #else
-            strcat(strReturn,"none:1;&") ;    continue;
-            #endif 
-           }  //  if (strcmp(str,"set_ruleEEV")==0)    
          // -----------------------------------------------------------------------------  
         if (strstr(str,"set_EEV"))  // Функция set_EEV
              {
@@ -1602,7 +1445,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
 
        // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------    
-/*
        if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
@@ -1625,7 +1467,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                strcat(strReturn,"no support EEV&");  continue;	 
               #endif   
               }  //  if (strstr(str,"EEV"))    
-   */           
           // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
               {
@@ -1775,7 +1616,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"get_Stat")==0) 
 		            } //if ((strstr(str,"Stat")>0) 
                   
-		          //11.  Графики смещение  используется в одной функции get_Chart
+		          //11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
 		          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
 		             {
 		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
@@ -1996,55 +1837,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"NEXTION")==0)        { param=87;}  // 7  использование дисплея nextion
                else if (strcmp(x+1,"EEV_CLOSE")==0)      { param=88;}  // 8  Закрытие ЭРВ при выключении компрессора
                else if (strcmp(x+1,"EEV_LIGHT_START")==0){ param=89;}  // 9  Облегчение старта компрессора
-               else if (strcmp(x+1,"EEV_START")==0)      { param=90;}  // 10 Всегда начинать работу ЭРВ со стратовой позици
+               else if (strcmp(x+1,"StartPos")==0)      { param=90;}  // 10 Всегда начинать работу ЭРВ со стратовой позици
                else if (strcmp(x+1,"SD_CARD")==0)        { param=91;}  // 11 Запись статистики на карту памяти
                else if (strcmp(x+1,"SAVE_ON")==0)        { param=92;}  // 12 Запись состояния ТН для воссановления его при перезагрузке
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
                else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
-    /*
-               // Параметры для графиков смещение 100 занимает 40 позиций  используется в одной функции get_Chart
-               else if (strcmp(x+1,"_NONE")==0)          { param=100;} // ничего не показываем
-               else if (strcmp(x+1,"_TOUT")==0)          { param=101;} // Температура улицы
-               else if (strcmp(x+1,"_TIN")==0)           { param=102;} // Температура в доме
-               else if (strcmp(x+1,"_TEVAIN")==0)        { param=103;} // Температура на входе испарителя (по фреону)
-               else if (strcmp(x+1,"_TEVAOUT")==0)       { param=104;} // Температура на выходе испарителя (по фреону)
-               else if (strcmp(x+1,"_TCONIN")==0)        { param=105;} // Температура на входе конденсатора (по фреону)
-               else if (strcmp(x+1,"_TCONOUT")==0)       { param=106;} // Температура на выходе конденсатора (по фреону)
-               else if (strcmp(x+1,"_TBOILER")==0)       { param=107;} // Температура в бойлере ГВС
-               else if (strcmp(x+1,"_TACCUM")==0)        { param=108;} // Температура на выходе теплоаккмулятора
-               else if (strcmp(x+1,"_TRTOOUT")==0)       { param=109;} // Температура на выходе RTO (по фреону)
-               else if (strcmp(x+1,"_TCOMP")==0)         { param=110;} // Температура нагнетания компрессора
-               else if (strcmp(x+1,"_TEVAING")==0)       { param=111;} // Температура на входе испарителя (по гликолю)
-               else if (strcmp(x+1,"_TEVAOUTG")==0)      { param=112;} // Температура на выходе испарителя (по гликолю)
-               else if (strcmp(x+1,"_TCONING")==0)       { param=113;} // Температура на входе конденсатора (по гликолю)
-               else if (strcmp(x+1,"_TCONOUTG")==0)      { param=114;} // Температура на выходе конденсатора (по гликолю)
-               else if (strcmp(x+1,"_PEVA")==0)          { param=115;} // Давление испарителя
-               else if (strcmp(x+1,"_PCON")==0)          { param=116;} // Давление конденсатора
-               else if (strcmp(x+1,"_FLOWCON")==0)       { param=117;} // Датчик потока по кондесатору
-               else if (strcmp(x+1,"_FLOWEVA")==0)       { param=118;} // Датчик потока по испарителю
-               else if (strcmp(x+1,"_FLOWPCON")==0)      { param=119;} // Датчик протока по предконденсатору
-               else if (strcmp(x+1,"_posEEV")==0)        { param=120;} // позиция ЭРВ
-               else if (strcmp(x+1,"_freqFC")==0)        { param=121;} // частота частотника
-               else if (strcmp(x+1,"_powerFC")==0)       { param=122;} // мощность частотника
-               else if (strcmp(x+1,"_currentFC")==0)     { param=123;} // Ток компрессора
-               else if (strcmp(x+1,"_RCOMP")==0)         { param=124;} // включение компрессора
-               else if (strcmp(x+1,"_OVERHEAT")==0)      { param=125;} // перегрев
-               else if (strcmp(x+1,"_dCO")==0)           { param=126;} // дельта СО
-               else if (strcmp(x+1,"_dGEO")==0)          { param=127;} // дельта геоконтура
-               else if (strcmp(x+1,"_T[PEVA]")==0)       { param=128;} // температура расчитанная из давления испариения
-               else if (strcmp(x+1,"_T[PCON]")==0)       { param=129;} // температура расчитанная из давления конденсации
-               else if (strcmp(x+1,"_PowerCO")==0)       { param=130;} // выходная мощность теплового насоса
-               else if (strcmp(x+1,"_PowerGEO")==0)      { param=131;} // Мощность геоконтура
-               else if (strcmp(x+1,"_COP")==0)           { param=132;} // Коэффициент преобразования холодилной машины
-               else if (strcmp(x+1,"_VOLTAGE")==0)       { param=133;} // Статистика по напряжению
-               else if (strcmp(x+1,"_CURRENT")==0)       { param=134;} // Статистика по току
-               else if (strcmp(x+1,"_acPOWER")==0)       { param=135;} // Статистика по активная мощность
-               else if (strcmp(x+1,"_rePOWER")==0)       { param=136;} // Статистика по Реактивная мощность
-               else if (strcmp(x+1,"_fullPOWER")==0)     { param=137;} // Статистика по Полная мощность
-               else if (strcmp(x+1,"_kPOWER")==0)        { param=138;} // Статистика по Коэффициент мощности
-               else if (strcmp(x+1,"_fullCOP")==0)       { param=139;} // Полный COP
-      */      
+  
                // Частотник 155 только одно устройство поддерживается смещение 155 занимает 15 позиций
                else if (strcmp(x+1,"ON_OFF")==0)         { param=155;} // Флаг включения выключения (управление частотником)
                else if (strcmp(x+1,"MIN_FC")==0)         { param=156;} // Только чтение минимальная частота работы
@@ -2443,58 +2242,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-          //6.  ЭРВ смещение param 50
-          if (strstr(str,"EEV"))          // Проверка для запросов содержащих EEV
-             {
-             if ((param>=60)||(param<50))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-50; 
-               if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
-                  {
-                   #ifdef EEV_DEF        
-                   switch (p)
-                     {
-                      case 0: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0 +0.005,2)); break;
-                      case 1: strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                     break;  
-                      case 2: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
-                      case 3: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
-                      case 4: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0 +0.005,2));      break;     // В СОТЫХ!!!
-                      case 5: strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                 break;  
-                      case 6: strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0 +0.005,2));break;
-
-                      case 7: HP.dEEV.variable(0, strReturn + m_strlen(strReturn), x+1, 0); break;
-
-                      default: strcat(strReturn,"E10");                                            break;   
-                     }
-                   #else
-                   strcat(strReturn,"-");
-                   #endif  
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_paramEEV")==0) 
-              if (strcmp(str,"set_paramEEV")==0)           // Функция set_paramEEV - установить значение паремтра ЭРВ
-                  {
-                  #ifdef EEV_DEF   
-                   switch (p)
-                     {
-                      case 0: if(HP.dEEV.set_tOverheat((int)(pm*100))==OK)strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_tOverheat()/100.0,2));  else strcat(strReturn,"E11"); break;
-                      case 1: if(HP.dEEV.set_timeIn(pm)==OK)              strcat(strReturn,int2str(HP.dEEV.get_timeIn()));                      else strcat(strReturn,"E11"); break;  
-                      case 2: if(HP.dEEV.set_Kpro((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kpro()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
-                      case 3: if(HP.dEEV.set_Kint((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kint()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
-                      case 4: if(HP.dEEV.set_Kdif((int)(pm*100.0))==OK)   strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Kdif()/100.0,2));       else strcat(strReturn,"E11"); break;   // В СОТЫХ!!!
-                      case 5: if(HP.dEEV.set_manualStep(pm)==OK)          strcat(strReturn,int2str(HP.dEEV.get_manualStep()));                  else strcat(strReturn,"E11"); break;  
-                      case 6: if(HP.dEEV.set_Correction(pm*100)==OK)      strcat(strReturn,ftoa(temp,(float)HP.dEEV.get_Correction()/100.0,2)); else strcat(strReturn,"E11"); break;
-
-                      case 7: HP.dEEV.variable(1, strReturn + m_strlen(strReturn), x+1, pm); break;
-
-                      default: strcat(strReturn,"E10");                                                                                                                       break;   
-                     }
-                    #else
-                    strcat(strReturn,"-");
-                    #endif 
-                   strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_paramEEV")==0) 
-              }  // else end 
-           } //if ((strstr(str,"EEV")>0)  
            
         //7.  Частотный преобразователь смещение param 155
           if (strstr(str,"FC"))          // Проверка для запросов содержащих FC
@@ -2576,22 +2323,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                }  // else end -----------------------
             } //if ((strstr(str,"HP")>0)  
 
-/*
-          //9.  Графики смещение param 100 занимает 40 позиций  используется в одной функции get_Chart
-          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
-             {
-             if ((param>=140)||(param<100))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-100; 
-               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
-                  {
-                  HP.get_Chart((TYPE_CHART) p,strReturn, true);
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"get_Chart")==0) 
-               }  // else end 
-            } //if ((strstr(str,"Chart")>0)  
- */        
-            // --------------------------------------------------------------------------------------------------------------------------
+      // --------------------------------------------------------------------------------------------------------------------------
 
        
         // ------------------------ конец разбора -------------------------------------------------

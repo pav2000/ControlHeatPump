@@ -153,7 +153,7 @@ const uint16_t  defaultPort=80;
 // 0xffff ---- конец 64 кбайтного чипа
 #define I2C_PROFIL_NUM			8             // Максимальное число сохряняемых профилей
 #define I2C_COUNT_EEPROM		0x00          // Адрес внутри чипа eeprom от куда пишется счетчики с начала чипа 0
-#define I2C_SETTING_EEPROM		0x080       // Адрес внутри чипа eeprom от куда пишутся настройки ТН  а перед ним пишется счетчики
+#define I2C_SETTING_EEPROM		0x080         // Адрес внутри чипа eeprom от куда пишутся настройки ТН  а перед ним пишется счетчики
 #define I2C_PROFILE_EEPROM		0x600         // Адрес внутри чипа eeprom от куда профили (адрес первого профиля)
 #define I2C_SCHEDULER_EEPROM	0xE60		  // Адрес внутри чипа eeprom для Расписаний
 #ifdef  I2C_EEPROM_64KB                  // Стартовые адреса -----------------------------------------------------
@@ -419,35 +419,46 @@ const char *MutexCommandBuzy = {"Command"};
 
 
 // Описание имен параметров ЭРВ для функций get_paramEEV set_paramEEV
-const char *eev_POS      =  {"POS"};         // Положение ЭРВ шаги
-const char *eev_POSp     =  {"POSp"};        // Положение ЭРВ %
-const char *eev_POSpp    =  {"POSpp"};       // Положение ЭРВ шаги+%
-const char *eev_OVERHEAT =  {"OVERHEAT"};    // Текущий перегрев ЭРВ
+const char *eev_POS           =  {"POS"};           // Положение ЭРВ шаги
+const char *eev_POSp          =  {"POSp"};          // Положение ЭРВ %
+const char *eev_POSpp         =  {"POSpp"};         // Положение ЭРВ шаги+%
+const char *eev_OVERHEAT      =  {"OVERHEAT"};      // Текущий перегрев ЭРВ
 //const char *eev_OVERCOOL =  {"OVERCOOL"};    // Переохлаждение
-const char *eev_ERROR    =  {"ERROR"};       // Ошибка ЭРВ
-const char *eev_MIN      =  {"MIN"};         // Минимум ЭРВ
-const char *eev_MAX      =  {"MAX"};         // Максимум ЭРВ
-const char *eev_TIME     =  {"TIME"};        // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-const char *eev_TARGET   =  {"TARGET"};      // Перегрев ЦЕЛЬ (сотые градуса)
-const char *eev_KP       =  {"KP"};          // ПИД Коэф пропорц.  В СОТЫХ!!!
-const char *eev_KI       =  {"KI"};          // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
-const char *eev_KD       =  {"KD"};          // ПИД Коэф дифф.   В СОТЫХ!!!
-const char *eev_CONST    =  {"CONST"};       // Корректировка перегрева (постоянная ошибка)
-const char *eev_MANUAL   =  {"MANUAL"};      // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-const char *eev_FREON    =  {"FREON"};       // Тип фреона
-const char *eev_RULE     =  {"RULE"};        // Правило работы ЭРВ
-const char *eev_NAME     =  {"NAME"};        // Имя ЭРВ
-const char *eev_NOTE     =  {"NOTE"};        // Описание ЭРВ
-const char *eev_REMARK   =  {"REMARK"};      // Описание алгоритма ЭРВ
-const char *eev_PINS     =  {"PINS"};        // Перечисление ног куда привязана ЭРВ
-const char *eev_cCORRECT =  {"cCORRECT"};    // Флаг включения корректировки перегерва от разности температур конденсатора и испраителя
-const char *eev_cDELAY   =  {"cDELAY"};      // Задержка после старта компрессора, сек
-const char *eev_cPERIOD  =  {"cPERIOD"};     // Период в циклах ЭРВ, сколько пропустить
-const char *eev_cDELTA   =  {"cDELTA"};      // Температура нагнетания - конденсации (сотые градуса)
-const char *eev_cDELTAT  =  {"cDELTAT"};     // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
-const char *eev_cKF      =  {"cKF"};         // Коэффициент (/0.001): перегрев += дельта * K
-const char *eev_cOH_MAX  =  {"cOH_MAX"};     // Максимальный перегрев (сотые градуса)
-const char *eev_cOH_MIN  =  {"cOH_MIN"};     // Минимальный перегрев (сотые градуса)
+const char *eev_ERROR         =  {"ERROR"};         // Ошибка ЭРВ
+const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
+const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
+const char *eev_TIME          =  {"TIME"};          // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+const char *eev_TARGET        =  {"TARGET"};        // Перегрев ЦЕЛЬ (сотые градуса)
+const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.  В СОТЫХ!!!
+const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_CONST         =  {"CONST"};         // Корректировка перегрева (постоянная ошибка)
+const char *eev_MANUAL        =  {"MANUAL"};        // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
+const char *eev_FREON         =  {"FREON"};         // Тип фреона
+const char *eev_RULE          =  {"RULE"};          // Правило работы ЭРВ
+const char *eev_NAME          =  {"NAME"};          // Имя ЭРВ
+const char *eev_NOTE          =  {"NOTE"};          // Описание ЭРВ
+const char *eev_REMARK        =  {"REMARK"};        // Описание алгоритма ЭРВ
+const char *eev_PINS          =  {"PINS"};          // Перечисление ног куда привязана ЭРВ
+const char *eev_cCORRECT      =  {"cCORRECT"};      // Флаг включения корректировки перегерва от разности температур конденсатора и испраителя
+const char *eev_cDELAY        =  {"cDELAY"};        // Задержка после старта компрессора, сек
+const char *eev_cPERIOD       =  {"cPERIOD"};       // Период в циклах ЭРВ, сколько пропустить
+const char *eev_cDELTA        =  {"cDELTA"};        // Температура нагнетания - конденсации (сотые градуса)
+const char *eev_cDELTAT       =  {"cDELTAT"};       // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
+const char *eev_cKF           =  {"cKF"};           // Коэффициент (/0.001): перегрев += дельта * K
+const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
+const char *eev_cOH_MIN       =  {"cOH_MIN"};       // Минимальный перегрев (сотые градуса)
+const char *eev_ERR_KP        =  {"ERR_KP"};        // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
+const char *eev_SPEED         =  {"SPEED"};         // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+const char *eev_PRE_START_POS =  {"PRE_START_POS"}; // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
+const char *eev_START_POS     =  {"START_POS"};     // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+const char *eev_DELAY_ON_PID  =  {"DELAY_ON_PID"};  // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
+const char *eev_DELAY_START_POS={"DELAY_START_POS"};// Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
+const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = DELAY_OFF_PUMP+delayOff
+const char *eev_DELAY_ON      =  {"DELAY_ON"};      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
+const char *eev_HOLD_MOTOR    =  {"HOLD_MOTOR"};    // Флаг удержания мотора
+const char *eev_PRESENT       =  {"PRESENT"};       // Флаг наличия ЭРВ в ТН
+
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
@@ -1006,7 +1017,7 @@ enum SMS_SERVICE
 //  Перечисляемый тип - тип фреона
 enum TYPEFREON           
 {
-    R22=0,        
+    R22,        
     R410A,
     R600A,
     R134A,
@@ -1020,7 +1031,7 @@ enum TYPEFREON
 //  Перечисляемый тип - правило работы ЭРВ пять вариантов выводятся в зависимости от наличия датчиков
 enum RULE_EEV           
 {
-   TEVAOUT_TEVAIN=0, 
+   TEVAOUT_TEVAIN, 
    TRTOOUT_TEVAIN, 
    TEVAOUT_PEVA,
    TRTOOUT_PEVA,
@@ -1091,7 +1102,7 @@ enum OPTION_HP
     pNEXTION,         // использование дисплея nextion
     pEEV_CLOSE,       // закрытие ЭРВ при выключении компрессора
     pEEV_LIGHT_START, // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-    pEEV_START,       // флаг Всегда начинать работу ЭРВ со стратовой позици
+    pStartPos,       // флаг Всегда начинать работу ЭРВ со стратовой позици
     pSD_CARD,         // запись статистики на карточку
     pSAVE_ON,         // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
     pNEXT_SLEEP,      // Время засыпания секунды NEXTION
@@ -1101,52 +1112,6 @@ enum OPTION_HP
     pEND2             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-/*
-//  Перечисляемый тип - Тип графика
-enum TYPE_CHART       
-{
-    pNONE,                     // 0 ничего не показываем
-    pTOUT,                     // 1 Температура улицы
-    pTIN,                      // 2 Температура в доме
-    pTEVAIN,                   // 3 Температура на входе испарителя (по фреону)
-    pTEVAOUT,                  // 4 Температура на выходе испарителя (по фреону)
-    pTCONIN,                   // 5 Температура на входе конденсатора (по фреону)
-    pTCONOUT,                  // 6 Температура на выходе конденсатора (по фреону)
-    pTBOILER,                  // 7 Температура в бойлере ГВС
-    pTACCUM,                   // 8 Температура на выходе теплоаккмулятора
-    pTRTOOUT,                  // 9 Температура на выходе RTO (по фреону)
-    pTCOMP,                    // 10 Температура нагнетания компрессора
-    pTEVAING,                  // 11 Температура на входе испарителя (по гликолю)
-    pTEVAOUTG,                 // 12 Температура на выходе испарителя (по гликолю)
-    pTCONING,                  // 13 Температура на входе конденсатора (по гликолю)
-    pTCONOUTG,                 // 14 Температура на выходе конденсатора (по гликолю)
-    pPEVA,                     // 15 Давление
-    pPCON,                     // 16 Давление нагнетания
-    pFLOWCON,                  // 17 Датчик потока по кондесатору
-    pFLOWEVA,                  // 18 Датчик потока по испарителю
-    pFLOWPCON,                 // 19 Датчик протока по предконденсатору
-    pposEEV,                   // 20 позиция ЭРВ
-    pfreqFC,                   // 21 Частота инвертора
-    ppowerFC,                  // 22 Мощность инвертора
-    pcurrentFC,                // 23 Ток компрессора
-    pRCOMP,                    // 24 включение компрессора
-    pOVERHEAT,                 // 25 перегрев
-    pdCO,                      // 26 дельта СО
-    pdGEO,                     // 27 дельта геоконтура
-    pTPEVA,                    // 28 температура расчитанная из давления Испариенифя
-    pTPCON,                    // 29 температура расчитанная из давления Конденсации
-    pPowerCO,                  // 30 Мощность выходная теплового насоса
-    pPowerGEO,                 // 31 Мощность контура
-    pCOP,                      // 32 Коэффициент преобразования Холодильной машины (без насосов)
-    pVOLTAGE,                  // 33 Статистика по напряжению
-    pCURRENT,                  // 34 Статистика по току
-    pacPOWER,                  // 34 Статистика по активная мощность
-    prePOWER,                  // 36 Статистика по Реактивная мощность
-    pfullPOWER,                // 37 Статистика по Полная мощность
-    pkPOWER,                   // 38 Статистика по Коэффициент мощности
-    pfullCOP,                  // 39 Полный COP
-    pEND6                      // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-*/
+
  #endif
 

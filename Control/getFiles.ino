@@ -278,7 +278,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); if(!strcmp(HP.get_optionHP(pADD_HEAT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pTEMP_RHEAT)) ;STR_END;
      strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_CLOSE),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); if(!strcmp(HP.get_optionHP(pEEV_START),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
+     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); if(!strcmp(HP.get_optionHP(pStartPos),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_LIGHT_START),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Использование звука: "); if(!strcmp(HP.get_optionHP(pBEEP),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); if(!strcmp(HP.get_optionHP(pNEXTION),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;

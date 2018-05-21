@@ -910,6 +910,9 @@ void vReadSensor_delay10ms(uint16_t msec)
 // Задача Управление тепловым насосом
  void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
+	#ifdef RPUMPB
+	static uint32_t RPUMPBTick=0;
+	#endif
 	 for( ;; )
 	 {
 		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
@@ -1060,7 +1063,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 	 static int16_t cmd = 0;
 	 for(;;) {
 		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > HP.dEEV.DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
 		 {
 			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
 			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
@@ -1086,7 +1089,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 						 HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
 				 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
 
-		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)
+		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>delayOnPid)
 		 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
 	 } // for
 	 vTaskDelete( NULL);
@@ -1123,7 +1126,7 @@ void vUpdateStepperEEV( void * )
      
     // 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
      pos=0; // текущее суммарное движение - обнулится
-     start_pos=HP.dEEV.EEV;  // получить текущее положение шаговика абсолютное в начале очереди
+     start_pos=HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
   //   step_number=HP.dEEV.EEV; 
   //  Serial.print("1. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV); 
       // 3. Движение
@@ -1183,7 +1186,7 @@ void vUpdateStepperEEV( void * )
       {
    //     Serial.println("6. vTaskSuspend ");   
         HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
-       if (!HP.dEEV.EEV_HOLD_MOTOR) HP.dEEV.stepperEEV.off();                                            // выключить двигатель если нет удержания
+       if (!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
         vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                      // Приостановить задучу
       } 
    // Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
