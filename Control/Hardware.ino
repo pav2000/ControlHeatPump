@@ -1023,7 +1023,7 @@ char temp[10+1];
 	  strcat(ret,"%)");	
 	  if (stepperEEV.isBuzy())  strcat(ret,">>");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-	  strcat(ret,ftoa(temp,(float)(Overheat/100.0,2)); 	
+	  strcat(ret,ftoa(temp,(float)(Overheat/100.0),2));
 	} else if(strcmp(var, eev_ERROR)==0){
 	   strcat(ret,itoa(err,temp,10)); 
 	} else if(strcmp(var, eev_MIN)==0){

@@ -1,8 +1,8 @@
 ﻿/* ver 0.951 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
-var urlcontrol = 'http://192.168.1.10';
+var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -125,7 +125,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var rep = new RegExp('^get_present');
 								var ret = new RegExp('[(]SCHEDULER[)]');
 								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|et_freon|et_rule|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
+								var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
 								var rev = new RegExp(/\([a-z0-9_]+\)/i);
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');
@@ -149,9 +149,11 @@ function loadParam(paramid, noretry, resultdiv) {
 										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
 									}
 									continue;
-								} else if(values[0].match(/^set_EEV/)) {
-									if((element = document.getElementById("get_eev"))) element.value = values[1];
-									if((element = document.getElementById("get_eev2"))) element.innerHTML = values[1];
+								} else if(values[0].match(/^set_paramEEV[(]POS/)) {
+									var s = "get_parameev-pos";
+									if(values[0].substr(-1) == 'p') s += "p";  
+									if((element = document.getElementById(s))) element.value = values[1];
+									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
@@ -403,22 +405,23 @@ function loadParam(paramid, noretry, resultdiv) {
 													}
 												}
 											}
-										} else if(idsel == "get_ruleeev") {
-											document.getElementById("get_freoneev").disabled = false;
-											document.getElementById("get_parameev-m_step").disabled = false;
-											document.getElementById("get_parameev-m_step2").disabled = false;
-											document.getElementById("get_parameev-correction").disabled = false;
-											document.getElementById("get_parameev-correction2").disabled = false;
-											document.getElementById("get_parameev-t_owerheat").disabled = false;
-											document.getElementById("get_parameev-t_owerheat2").disabled = false;
-											document.getElementById("get_parameev-time_in").disabled = false;
-											document.getElementById("get_parameev-time_in2").disabled = false;
-											document.getElementById("get_parameev-k_pro").disabled = false;
-											document.getElementById("get_parameev-k_pro2").disabled = false;
-											document.getElementById("get_parameev-k_in").disabled = false;
-											document.getElementById("get_parameev-k_in2").disabled = false;
-											document.getElementById("get_parameev-k_dif").disabled = false;
-											document.getElementById("get_parameev-k_dif2").disabled = false;
+										} else if(idsel == "get_parameev-rule") {
+											var s = "get_parameev-";
+											document.getElementById(s+"freon").disabled = false;
+											document.getElementById(s+"manual").disabled = false;
+											document.getElementById(s+"manual2").disabled = false;
+											document.getElementById(s+"const").disabled = false;
+											document.getElementById(s+"const2").disabled = false;
+											document.getElementById(s+"target").disabled = false;
+											document.getElementById(s+"target2").disabled = false;
+											document.getElementById(s+"time").disabled = false;
+											document.getElementById(s+"time2").disabled = false;
+											document.getElementById(s+"kp").disabled = false;
+											document.getElementById(s+"kp2").disabled = false;
+											document.getElementById(s+"ki").disabled = false;
+											document.getElementById(s+"ki2").disabled = false;
+											document.getElementById(s+"kd").disabled = false;
+											document.getElementById(s+"kd2").disabled = false;
 										} else if(idsel == "get_message-smtp_server") {
 											loadParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
 										} else if(idsel == "get_message-sms_service") {
@@ -472,40 +475,40 @@ function loadParam(paramid, noretry, resultdiv) {
 														var time_chart = cont2[0];
 														window.time_chart = time_chart;
 													}
-													if(idsel == "get_ruleeev") {
+													if(idsel == "get_parameev-rule") {
 														if(k == 0 || k == 1) {
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 2 || k == 3) {
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 4) {
-															document.getElementById("get_parameev-t_owerheat").disabled = true;
-															document.getElementById("get_parameev-t_owerheat2").disabled = true;
-															document.getElementById("get_parameev-k_pro").disabled = true;
-															document.getElementById("get_parameev-k_pro2").disabled = true;
-															document.getElementById("get_parameev-k_in").disabled = true;
-															document.getElementById("get_parameev-k_in2").disabled = true;
-															document.getElementById("get_parameev-k_dif").disabled = true;
-															document.getElementById("get_parameev-k_dif2").disabled = true;
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-correction").disabled = true;
-															document.getElementById("get_parameev-correction2").disabled = true;
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"target").disabled = true;
+															document.getElementById(s+"target2").disabled = true;
+															document.getElementById(s+"kp").disabled = true;
+															document.getElementById(s+"kp2").disabled = true;
+															document.getElementById(s+"ki").disabled = true;
+															document.getElementById(s+"ki2").disabled = true;
+															document.getElementById(s+"kd").disabled = true;
+															document.getElementById(s+"kd2").disabled = true;
+															document.getElementById(s+"const").disabled = true;
+															document.getElementById(s+"const2").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 5) {
-															document.getElementById("get_parameev-t_owerheat").disabled = true;
-															document.getElementById("get_parameev-t_owerheat2").disabled = true;
-															document.getElementById("get_parameev-k_pro").disabled = true;
-															document.getElementById("get_parameev-k_pro2").disabled = true;
-															document.getElementById("get_parameev-k_in").disabled = true;
-															document.getElementById("get_parameev-k_in2").disabled = true;
-															document.getElementById("get_parameev-k_dif").disabled = true;
-															document.getElementById("get_parameev-k_dif2").disabled = true;
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-correction").disabled = true;
-															document.getElementById("get_parameev-correction2").disabled = true;
+															document.getElementById(s+"target").disabled = true;
+															document.getElementById(s+"target2").disabled = true;
+															document.getElementById(s+"kp").disabled = true;
+															document.getElementById(s+"kp2").disabled = true;
+															document.getElementById(s+"ki").disabled = true;
+															document.getElementById(s+"ki2").disabled = true;
+															document.getElementById(s+"kd").disabled = true;
+															document.getElementById(s+"kd2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"const").disabled = true;
+															document.getElementById(s+"const2").disabled = true;
 														}
 													} else if(idsel == "get_paramcoolhp-rule") {
 														document.getElementById("get_paramcoolhp-target").disabled = false;

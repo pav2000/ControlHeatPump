@@ -716,6 +716,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			#else
     			strcat(strReturn,"1&");
 			#endif
+    	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
+			#ifdef TRTOUT
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
     	}
      }
      if (strcmp(str,"get_infoFC")==0)  // get_infoFC
