@@ -975,7 +975,7 @@ boolean Profile::set_paramProfile(char *var, char *c)
 		return true;
 	} else if(strcmp(var, prof_NUM_PROFILE) == 0) {
 		return true;
-	} else
+	} 
 	return false;
 }
  // профиль Получить параметры по имени var, результат ДОБАВЛЯЕТСЯ в строку ret

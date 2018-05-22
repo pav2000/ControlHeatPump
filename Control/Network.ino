@@ -825,12 +825,14 @@ boolean sendMQTT(boolean debug)
          if (debug) journal.jprintf("FC data:");  
          strcpy(topic,root);
          strcat(topic,"powerFC");
-         strcpy(temp,HP.dFC.get_paramFC(pPOWER));
+         strcpy(temp,"");
+         HP.dFC.get_paramFC((char*)fc_cPOWER,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          
          strcpy(topic,root);
          strcat(topic,"freqFC");
-         strcpy(temp,HP.dFC.get_paramFC(pFC));
+         strcpy(temp,"");
+         HP.dFC.get_paramFC((char*)fc_cFC,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
 
          strcpy(topic,root);
