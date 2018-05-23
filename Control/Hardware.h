@@ -482,8 +482,8 @@ public:
   // Управление по модбас Общее для всех частотников
   int16_t get_targetFreq() {return FC;}            // Получить целевую частоту в 0.01 герцах
   int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую частоту в 0.01 герцах show - выводить сообщение или нет + границы
-  uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
-  uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
+  __attribute__((always_inline)) inline uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  __attribute__((always_inline)) inline uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
   char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
   boolean reset_errorFC();                         // Сброс ошибок инвертора
   boolean reset_FC();                              // Сброс инвертора через модбас

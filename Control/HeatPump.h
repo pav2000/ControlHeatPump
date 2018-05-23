@@ -357,7 +357,7 @@ class HeatPump
    uint32_t get_motoHourD1(){return motoHour.D1;}          // Дата сброса общих счетчиков
    uint32_t get_motoHourP2(){return motoHour.P2;}          // Выработанная энергия в вт/часах сезон
    uint32_t get_motoHourP1(){return motoHour.P1;}          // Выработанная энергия в вт/часах общая
-   
+     
    void resetCount(boolean full);                          // Сборос сезонного счетчика моточасов
    void updateCount();                                     // Обновление счетчиков моточасов
    
@@ -406,9 +406,11 @@ class HeatPump
     statChart ChartCOP;                                     // Коэффициент преобразования
     statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
     
-    float powerCO;                                         // Мощность системы отопления
-    float powerGEO;                                        // Мощность системы GEO
-    float power220;                                        // Мощность системы 220
+    float powerCO;                                          // Мощность системы отопления
+    float powerGEO;                                         // Мощность системы GEO
+    float power220;                                         // Мощность системы 220
+    int16_t fullCOP;                                        // Полный СОР  сотые 
+    int16_t COP;                                            // Чистый COP сотые
     
     #ifdef I2C_EEPROM_64KB   // Статистика ----------------------------------------------------------------------
     void InitStatistics();    // Функция вызываемая для первого часа для инициализации первичных счетчиков

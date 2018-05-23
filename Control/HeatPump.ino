@@ -603,8 +603,10 @@ void HeatPump::resetSettingHP()
   num_resMutexI2C=0;                            // текущее число сброса митекса I2C
   num_resMQTT=0;                                // число повторных инициализация MQTT клиента
   num_resPing=0;                                // число не прошедших пингов
-  
-  
+
+  fullCOP=-1000;                                // Полный СОР  сотые -1000 признак невозможности расчета
+  COP=-1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
+   
   // Структура для хранения заголовка при сохранении настроек EEPROM
   headerEEPROM.magic=0xaa;                      // признак данных, должно быть  0xaa
   headerEEPROM.ver=VER_SAVE;                    // номер версии для сохранения
@@ -1021,7 +1023,7 @@ void HeatPump::set_profile()
 }
 
 // --------------------------------------------------------------------
-// ФУНКЦИИ РАБОТЫ СО СТАТИСТИКОЙ ТН -----------------------------------
+// ФУНКЦИИ РАБОТЫ С ГРАФИКАМИ ТН -----------------------------------
 // --------------------------------------------------------------------
 // обновить статистику, добавить одну точку и если надо записать ее на карту
 void  HeatPump::updateChart()
@@ -1044,20 +1046,21 @@ void  HeatPump::updateChart()
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
    
- if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
- {
-  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
-  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
-    #ifdef RHEAT
-      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
-    #endif    
-  #endif
-  ChartPowerCO.addPoint((int16_t)powerCO);
-  } 
+ if(ChartPowerCO.get_present())   ChartPowerCO.addPoint((int16_t)powerCO);  // Мощность контура в вт!!!!!!!!!
+ //{
+//  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
+//  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
+//    #ifdef RHEAT
+//      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+//    #endif    
+//  #endif
+//  ChartPowerCO.addPoint((int16_t)powerCO);
+//  }
+ 
  #ifdef FLOWEVA 
  if(ChartPowerGEO.get_present())  {powerGEO=(float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity(); ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура в Вт!!!!!!!!!
  #endif
- if(ChartCOP.get_present())       {if (dFC.get_power()>0) {ChartCOP.addPoint((int16_t)powerCO/dFC.get_power());}  else ChartCOP.addPoint(0);}  // в сотых долях !!!!!!
+ if(ChartCOP.get_present())       {if (dFC.get_power()>0) ChartCOP.addPoint(COP);  else ChartCOP.addPoint(0);}  // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
     if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
@@ -1065,7 +1068,7 @@ void  HeatPump::updateChart()
   //  if(dSDM.sRePower.get_present())   dSDM.sRePower.addPoint(dSDM.get_RePower());  
     if(dSDM.ChartPower.get_present())   power220=dSDM.get_Power();  dSDM.ChartPower.addPoint(power220); 
   //  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);    
-    if(ChartFullCOP.get_present())     { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) { ChartFullCOP.addPoint((float)(100.0*powerCO)/dSDM.get_Power());} else ChartFullCOP.addPoint(0);} // в сотых долях !!!!!!
+    if(ChartFullCOP.get_present())     { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) ChartFullCOP.addPoint(fullCOP); else  ChartFullCOP.addPoint(0);} // в сотых долях !!!!!!
  #endif
 
 
@@ -2856,7 +2859,20 @@ void HeatPump::vUpdate()
               case  pNONE_B: break;                                    // компрессор уже включен
               default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__); break;
            }
-      }    
+      } 
+// Обновление расчетных величин (djpvjжность расчета определяем пографикам)
+if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
+ {
+  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
+  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
+    #ifdef RHEAT
+      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+    #endif    
+  #endif
+  } 
+if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()); else COP=0;}  // в сотых долях !!!!!!
+if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power())/100.0); else  fullCOP=0;} // в сотых долях !!!!!!
+         
 }
 
 
