@@ -655,6 +655,7 @@ const char *chart_fullCOP   = {"fullCOP"};                   // 39 Полный 
 
 // Описание имен параметров инвертора  для функций get_paramFC set_paramFC
 const char *fc_ON_OFF            = {"ON_OFF"};            // Флаг включения выключения (управление частотником)
+const char *fc_INFO              = {"INFO"};              // Получить информацию из инвертора (таблица !!)
 const char *fc_NAME              = {"NAME"};              // Имя инвертора 
 const char *fc_NOTE              = {"NOTE"};              // Получение описания частотного преобразователя. Строка 80+1
 const char *fc_PIN               = {"PIN"};               // Получение номера пина куда прицеплен analog FC

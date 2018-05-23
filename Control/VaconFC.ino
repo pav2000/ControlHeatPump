@@ -581,6 +581,13 @@ char* devVaconFC::get_paramFC(char *var,char *ret)
 {
 static char temp[12];
     if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else 
+    if(strcmp(var,fc_INFO)==0)                  {
+    	                                        #ifndef FC_ANALOG_CONTROL  
+    	                                        get_infoFC(ret); return ret;
+    	                                        #else
+                                                return strcat(ret, "|Данные не доступны, работа через аналоговый вход|;") ;
+                                                #endif              
+    	                                        } else
     if(strcmp(var,fc_NAME)==0)                  { return strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  { return strcat(ret,note);             } else
     if(strcmp(var,fc_PIN)==0)                   { return strcat(ret,int2str(pin));     } else 
@@ -705,6 +712,7 @@ char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
 boolean devVaconFC::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
+    if(strcmp(var,fc_INFO)==0)                  { return true;                         } else  // только чтение
     if(strcmp(var,fc_NAME)==0)                  { return true;                         } else  // только чтение
     if(strcmp(var,fc_NOTE)==0)                  { return true;                         } else  // только чтение
     if(strcmp(var,fc_PIN)==0)                   { return true;                         } else  // только чтение

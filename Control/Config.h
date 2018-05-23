@@ -1895,12 +1895,12 @@ enum TYPE_SENSOR
     #define FNUMBER            1       // Максимальное число частотных датчиков цифровые входы (то что поддерживается) код поддерживает ТРИ датчика максимально
     //  Ноги куда прицепленны контактные датчики
     #define PIN_SENSOR_FLOWCON   35     // - DIN4 Датчик потока по кондесатору
-    #define PIN_SENSOR_FLOWEVA   36     // - DIN5 Датчик потока по испарителю
-    #define PIN_SENSOR_FLOWPCON  32     // - DIN6 Датчик протока предконденсатора
+ //   #define PIN_SENSOR_FLOWEVA   36     // - DIN5 Датчик потока по испарителю
+ //   #define PIN_SENSOR_FLOWPCON  32     // - DIN6 Датчик протока предконденсатора
      // Имена индексов ВАЖЕН ПОРЯДОК!
      #define FLOWCON        0        // Датчик потока по кондесатору
-     #define FLOWEVA        1        // Датчик потока по испарителю
-     #define FLOWPCON       2        // Датчик протока по предконденсатору
+ //    #define FLOWEVA        1        // Датчик потока по испарителю
+ //    #define FLOWPCON       2        // Датчик протока по предконденсатору
       // Массив ног соглано индексов
      const uint8_t pinsFrequency[FNUMBER] = {PIN_SENSOR_FLOWCON       // - DIN4 Датчик потока по кондесатору
  //                                            ,PIN_SENSOR_FLOWEVA        // - DIN5 Датчик потока по испарителю

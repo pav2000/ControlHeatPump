@@ -724,17 +724,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			#endif
     	}
      }
-     if (strcmp(str,"get_infoFC")==0)  // get_infoFC
-       {
-       // Все нормально опрашиваем инвертор
-       #ifndef FC_ANALOG_CONTROL     
-         HP.dFC.get_infoFC(strReturn);
-       #else
-         strcat(strReturn, "|Данные не доступны, работа через аналоговый вход|;") ;
-       #endif  
-       strcat(strReturn,"&") ;    continue;
-       }       
-       
+ 
     if (strcmp(str,"CONST")==0)   // Команда CONST  Информация очень большая по этому разбито на 2 запроса CONST CONST1
         {
        strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
@@ -1091,35 +1081,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
          }
   
         // FC запросы, те которые без параметра ------------------------------
-        if (strcmp(str,"get_nameFC")==0)  // Функция get_nameFC
-         {
-          strcat(strReturn,HP.dFC.get_name()); strcat(strReturn,"&") ;    continue;
-         }            
-         if (strcmp(str,"get_noteFC")==0)  // Функция get_noteFC
-         {
-          strcat(strReturn,HP.dFC.get_note()); strcat(strReturn,"&") ;    continue;
-         }   
-        if (strcmp(str,"get_presentFC")==0)
-         {
-         if (HP.dFC.get_present()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,"&"); continue;
-         }      
-        if (strcmp(str,"get_pinFC")==0)
-         {
-		#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-         strcat(strReturn,"D"); strcat(strReturn,int2str(HP.dFC.get_pinA())); strcat(strReturn,"&"); continue;
-		#endif
-         }         
-        if (strcmp(str,"get_FC")==0)  // Функция get_FC выдает
-         {
-     //    strcat(strReturn,ftoa(temp,(float)HP.dFC.get_targetFreq()/100.0,2)); strcat(strReturn,"&") ;    continue;
-          strcat(strReturn,int2str(HP.dFC.get_targetFreq()/100)); strcat(strReturn,"&") ;    continue;
-         }  
-        if (strcmp(str,"get_dacFC")==0)  // Функция get_dacFC
-         {
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-        	strcat(strReturn,int2str(HP.dFC.get_DAC())); strcat(strReturn,"&") ;    continue;
-#endif
-         } 
         if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
          {
           if (!HP.dFC.get_present()) {strcat(strReturn,"Инвертор отсутствует&"); ;continue;}
@@ -1129,7 +1090,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           #endif
           strcat(strReturn,"&") ;    continue;
          } 
-        if (strcmp(str,"reset_FC")==0)     // Функция get_dacFC
+        if (strcmp(str,"reset_FC")==0)    
          {
           if (!HP.dFC.get_present()) {strcat(strReturn,"Инвертор отсутствует&"); ;continue;}
            HP.dFC.reset_FC();                             // подать команду на сброс
