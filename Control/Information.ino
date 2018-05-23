@@ -547,152 +547,123 @@ void Profile::initProfile()
 }
 
 // Охлаждение Установить параметры ТН из числа (float)
-boolean Profile::set_paramCoolHP(PARAM_HP p, float x)
+boolean Profile::set_paramCoolHP(char *var, float x)
 { 
- switch (p)
-   {
-  case  pRULE:    switch ((int)x)
-                   {
-                    case 0: Cool.Rule=pHYSTERESIS; return true; break;
-                    case 1: Cool.Rule=pPID;        return true; break;
-                    case 2: Cool.Rule=pHYBRID;     return true; break;
-                    default:Cool.Rule=pHYSTERESIS; return true; break;  
-                   }                                                                                                                    break;             // целевая температура в доме
-  case  pTEMP1:   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=x*100.0; return true;} else return false;                                       break;             // целевая температура обратки
-  case  pTEMP2:   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=x*100.0; return true;} else return false;                                      break;             // целевая температура
-  case  pTARGET:  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; break; // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=x*100.0; return true;} else return false;                                       break;             // гистерезис целевой температуры
-  case  pHP_TIME: if ((x>=10)&&(x<=600))     {Cool.time=x; return true;} else return false;                                             break;             // Постоянная интегрирования времени в секундах ПИД ТН !
-  case  pHP_PRO:  if ((x>=0.0)&&(x<=100.0)) {Cool.Kp=x; return true;} else return false;                                                break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   if ((x>=0.0)&&(x<=20.0))  {Cool.Ki=x; return true;} else return false;                                                break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     break;             // температура обратки (максимальная)
-  case  pPAUSE:   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; break;     // Использование погодозависимости
-  case  pK_WEATHER:if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=(int)(x*1000.0); return true;} else return false;                             break;             // Коэффициент погодозависимости
-
- // case  pP1:      Cool.P1=x;                                                                                                          break;             // резервный параметр 1
-  default:        return  false;                                                                                                        break;   
-   }
-return false; 
+ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
+				                   {
+				                    case 0: Cool.Rule=pHYSTERESIS; return true; break;
+				                    case 1: Cool.Rule=pPID;        return true; break;
+				                    case 2: Cool.Rule=pHYBRID;     return true; break;
+				                    default:Cool.Rule=pHYSTERESIS; return true; break;  
+				                    }  }      else                                                                                                                    
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=x*100.0; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=x*100.0; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=x*100.0; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Cool.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Cool.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Cool.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=(int)(x*1000.0); return true;} else return false;                             }             // Коэффициент погодозависимости
+ return false; 
 }
 
 //Охлаждение Получить параметр в виде строки  второй параметр - наличие частотника
-char* Profile::get_paramCoolHP(PARAM_HP p, boolean fc)
+char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
 {
-char static temp[16];
-
- switch (p)
-   {
-  case  pRULE:     if (fc)   // Есть частотник
-                   switch (Cool.Rule)       // алгоритм работы
-                   {
-                    case 0: return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;
-                    case 1: return (char*)"HYSTERESIS:0;PID:1;HYBRID:0;"; break;
-                    case 2: return (char*)"HYSTERESIS:0;PID:0;HYBRID:1;"; break; 
-                    default:Cool.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;// исправить
-                   }                                                         
-                  else {Cool.Rule=pHYSTERESIS;return (char*)"HYSTERESIS:1;";}break;             // частотника нет единсвенный алгоритм гистрезис
-  case  pTEMP1:   return ftoa(temp,(float)Cool.Temp1/100.0,1);               break;             // целевая температура в доме
-  case  pTEMP2:   return ftoa(temp,(float)Cool.Temp2/100.0,1);               break;             // целевая температура обратки
-  case  pTARGET:  if (!(GETBIT(Cool.flags,fTarget))) return (char*)"Дом:1;Обратка:0;";
-                                 else return (char*)"Дом:0;Обратка:1;";      break;             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   return ftoa(temp,(float)Cool.dTemp/100.0,1);               break;             // гистерезис целевой температуры
-  case  pHP_TIME: return  int2str(Cool.time);                                break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  return  int2str(Cool.Kp);                                  break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   return  int2str(Cool.Ki);                                  break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  return  int2str(Cool.Kd);                                  break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: return ftoa(temp,(float)Cool.tempIn/100.0,1);              break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:return ftoa(temp,(float)Cool.tempOut/100.0,1);             break;             // температура обратки (максимальная)
-  case  pPAUSE:   return  int2str(Cool.pause/60);                            break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  return ftoa(temp,(float)Cool.dt/100.0,1);                  break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:return ftoa(temp,(float)Cool.tempPID/100.0,1);             break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (GETBIT(Cool.flags,fWeather)) return (char*)cOne;else return (char*)cZero; // Использование погодозависимости
-  case  pK_WEATHER:return ftoa(temp,(float)Cool.kWeather/1000.0,2);          break;             // Коэффициент погодозависимости
-//  case  pP1:      return int2str(Cool.P1);                                   break;             // резервный параметр 1
-  
-  case  pEND:     return (char*)"end";                                       break;             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-  default:        return  (char*)cInvalid;                                  break;   
-   }
- return  (char*)cInvalid;   
+char static temp[12];
+  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+				                   switch (Cool.Rule)       // алгоритм работы
+				                   {
+				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
+				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
+				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
+				                    default:Cool.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
+				                   }                                                         
+				                  else {Cool.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
+   if(strcmp(var,hp_TEMP1)==0)    {return strcat(ret,ftoa(temp,(float)Cool.Temp1/100.0,1));              } else             // целевая температура в доме
+   if(strcmp(var,hp_TEMP2)==0)    {return strcat(ret,ftoa(temp,(float)Cool.Temp2/100.0,1));               } else            // целевая температура обратки
+   if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Cool.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
+                                  else return strcat(ret,(char*)"Дом:0;Обратка:1;");      }else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
+   if(strcmp(var,hp_DTEMP)==0)    {return strcat(ret,ftoa(temp,(float)Cool.dTemp/100.0,1));              } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_HP_TIME)==0)  {return  strcat(ret,int2str(Cool.time));                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {return  strcat(ret,int2str(Cool.Kp));                                 } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {return  strcat(ret,int2str(Cool.Ki));                                 } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {return  strcat(ret,int2str(Cool.Kd));                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_TEMP_IN)==0)  {return strcat(ret,ftoa(temp,(float)Cool.tempIn/100.0,1));             } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {return strcat(ret,ftoa(temp,(float)Cool.tempOut/100.0,1));            } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_PAUSE)==0)    {return  strcat(ret,int2str(Cool.pause/60));                           } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,hp_D_TEMP)==0)   {return strcat(ret,ftoa(temp,(float)Cool.dt/100.0,1));                 } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {return strcat(ret,ftoa(temp,(float)Cool.tempPID/100.0,1));            } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Cool.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){return strcat(ret,ftoa(temp,(float)Cool.kWeather/1000.0,2));          }             // Коэффициент погодозависимости
+ return  strcat(ret,(char*)cInvalid);   
 }
 
 // Отопление Установить параметры ТН из числа (float)
-boolean Profile::set_paramHeatHP(PARAM_HP p, float x)
+boolean Profile::set_paramHeatHP(char *var, float x)
 { 
-
- switch (p)
-   {
-  case  pRULE:    switch ((int)x)
-                   {
-                    case 0: Heat.Rule=pHYSTERESIS; return true; break;
-                    case 1: Heat.Rule=pPID;        return true; break;
-                    case 2: Heat.Rule=pHYBRID;     return true; break;
-                    default:Heat.Rule=pHYSTERESIS; return true; break;    
-                   }                                                                                                                  break;             // целевая температура в доме
-  case  pTEMP1:   if ((x>=0.0)&&(x<=30.0))  {Heat.Temp1=x*100.0; return true;} else return false;                                     break;             // целевая температура обратки
-  case  pTEMP2:   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0; return true;} else return false;                                    break;             // целевая температура
-  case  pTARGET:  if (x==0) { SETBIT0(Heat.flags,fTarget); return true;} else if (x==1) { SETBIT1(Heat.flags,fTarget); return true;} else return false;break; // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=x*100.0; return true;} else return false;                                     break;             // гистерезис целевой температуры
-  case  pHP_TIME: if ((x>=10)&&(x<=600))     {Heat.time=x; return true;} else return false;                                           break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                              break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                              break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                              break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: if ((x>=10.0)&&(x<=55.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                   break;             // температура подачи (максимальная) отстанов компрессора
-  case  pTEMP_OUT:if ((x>=10.0)&&(x<=50.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                  break;             // температура обратки (минимальная) включение компрессора
-  case  pPAUSE:   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                        break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  if ((x>2.0)&&(x<=40.0))   {Heat.dt=x*100.0; return true;} else return false;                                         break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:if ((x>=0.0)&&(x<=50.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                   break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; break;   // Использование погодозависимости
-  case  pK_WEATHER:if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=(int)(x*1000.0); return true;} else return false;                           break;             // Коэффициент погодозависимости
-//  case  pP1:      Heat.P1=x;                                                                                                        break;             // резервный параметр 1
-
-  default:        return  false;                                                                                                      break;   
-   }
-return false; 
+if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
+				                   {
+				                    case 0: Heat.Rule=pHYSTERESIS; return true; break;
+				                    case 1: Heat.Rule=pPID;        return true; break;
+				                    case 2: Heat.Rule=pHYBRID;     return true; break;
+				                    default:Heat.Rule=pHYSTERESIS; return true; break;  
+				                    }  }      else                                                                                                                    
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Heat.Temp1=x*100.0; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Heat.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=x*100.0; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Heat.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=(int)(x*1000.0); return true;} else return false;                             }             // Коэффициент погодозависимости
+ return false; 
 }
 
 // Отопление Получить параметр в виде строки  второй параметр - наличие частотника
-char* Profile::get_paramHeatHP(PARAM_HP p, boolean fc)
+char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 {
-char static temp[16];
-
- switch (p)
-   {
- case  pRULE:     if (fc)   // Есть частотник
-                  switch (Heat.Rule)      // алгоритм работы
-                   {
-                    case 0: return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;
-                    case 1: return (char*)"HYSTERESIS:0;PID:1;HYBRID:0;"; break;
-                    case 2: return (char*)"HYSTERESIS:0;PID:0;HYBRID:1;"; break; 
-                    default:Heat.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;// исправить
-                   }  
-                  else {Heat.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;";}break;            // частотника нет единсвенный алгоритм гистрезис
-  case  pTEMP1:   return ftoa(temp,(float)Heat.Temp1/100.0,1);               break;             // целевая температура в доме
-  case  pTEMP2:   return ftoa(temp,(float)Heat.Temp2/100.0,1);               break;             // целевая температура обратки
-  case  pTARGET:  if (!(GETBIT(Heat.flags,fTarget))) { return (char*)"Дом:1;Обратка:0;";}
-                              else { return (char*)"Дом:0;Обратка:1;"; }     break;             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   return ftoa(temp,(float)Heat.dTemp/100.0,1);               break;             // гистерезис целевой температуры
-  case  pHP_TIME: return  int2str(Heat.time);                                break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  return  int2str(Heat.Kp);                                  break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   return  int2str(Heat.Ki);                                  break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  return  int2str(Heat.Kd);                                  break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: return ftoa(temp,(float)Heat.tempIn/100.0,1);              break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:return ftoa(temp,(float)Heat.tempOut/100.0,1);             break;             // температура обратки (максимальная)
-  case  pPAUSE:   return  int2str(Heat.pause/60);                            break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  return ftoa(temp,(float)Heat.dt/100.0,1);                  break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:return ftoa(temp,(float)Heat.tempPID/100.0,1);             break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (GETBIT(Heat.flags,fWeather)) return (char*)cOne;else return (char*)cZero;    // Использование погодозависимости
-  case  pK_WEATHER:return ftoa(temp,(float)Heat.kWeather/1000.0,2);          break;             // Коэффициент погодозависимости
-//  case  pP1:      return int2str(.Heat.P1);                                break;             // резервный параметр 1
-
-  case  pEND:     return (char*)"end";                                       break;             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-  default:        return (char*)cInvalid;                                   break;   
-   }
- return  (char*)cInvalid;   
+char static temp[12];
+  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+				                   switch (Heat.Rule)       // алгоритм работы
+				                   {
+				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
+				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
+				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
+				                    default:Heat.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
+				                   }                                                         
+				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
+   if(strcmp(var,hp_TEMP1)==0)    {return strcat(ret,ftoa(temp,(float)Heat.Temp1/100.0,1));              } else             // целевая температура в доме
+   if(strcmp(var,hp_TEMP2)==0)    {return strcat(ret,ftoa(temp,(float)Heat.Temp2/100.0,1));               } else            // целевая температура обратки
+   if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Heat.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
+                                  else return strcat(ret,(char*)"Дом:0;Обратка:1;");      }else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
+   if(strcmp(var,hp_DTEMP)==0)    {return strcat(ret,ftoa(temp,(float)Heat.dTemp/100.0,1));              } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_HP_TIME)==0)  {return  strcat(ret,int2str(Heat.time));                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {return  strcat(ret,int2str(Heat.Kp));                                 } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {return  strcat(ret,int2str(Heat.Ki));                                 } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {return  strcat(ret,int2str(Heat.Kd));                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_TEMP_IN)==0)  {return strcat(ret,ftoa(temp,(float)Heat.tempIn/100.0,1));             } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {return strcat(ret,ftoa(temp,(float)Heat.tempOut/100.0,1));            } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_PAUSE)==0)    {return  strcat(ret,int2str(Heat.pause/60));                           } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,hp_D_TEMP)==0)   {return strcat(ret,ftoa(temp,(float)Heat.dt/100.0,1));                 } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {return strcat(ret,ftoa(temp,(float)Heat.tempPID/100.0,1));            } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Heat.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){return strcat(ret,ftoa(temp,(float)Heat.kWeather/1000.0,2));          }             // Коэффициент погодозависимости
+ return  strcat(ret,(char*)cInvalid);  
 }
 
 // Настройка бойлера --------------------------------------------------

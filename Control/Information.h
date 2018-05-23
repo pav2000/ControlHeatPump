@@ -229,10 +229,10 @@ class Profile                         // Класс профиль
     int8_t  get_idProfile(){return dataProfile.id;}         // получить номер текущего профиля
       
     // Установка параметров
-    boolean set_paramCoolHP(PARAM_HP p, float x);           // Охлаждение Установить параметры ТН из числа (float)
-    char*   get_paramCoolHP(PARAM_HP p, boolean fc);        // Охлаждение Получить параметр второй параметр - наличие частотника
-    boolean set_paramHeatHP(PARAM_HP p, float x);           // Отопление  Установить параметры ТН из числа (float)
-    char*   get_paramHeatHP(PARAM_HP p, boolean fc);        // отопление  Получить параметр  второй параметр - наличие частотника
+    boolean set_paramCoolHP(char *var, float x);           // Охлаждение Установить параметры ТН из числа (float)
+    char*   get_paramCoolHP(char *var, char *ret, boolean fc);// Охлаждение Получить параметр второй параметр - наличие частотника
+    boolean set_paramHeatHP(char *var, float x);           // Отопление  Установить параметры ТН из числа (float)
+    char*   get_paramHeatHP(char *var, char *ret,boolean fc);// отопление  Получить параметр  второй параметр - наличие частотника
     boolean set_boiler(char *var, char *c);                 // Установить параметр из строки
     char*   get_boiler(char *var, char *ret);               // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
     int8_t  load_from_EEPROM_SaveON(type_SaveON *_SaveOn);	// Прочитать из EEPROM структуру: режим работы ТН (SaveON)

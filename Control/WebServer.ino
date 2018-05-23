@@ -318,16 +318,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        continue;
        }
 
-//   if (strcmp(str,"TASK_STAT")==0)  // Функция получение статистики по задачам
-//       {
-//       #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-//         strcat(strReturn,cStrEnd);
-//         vTaskGetRunTimeStats(strReturn+strlen(strReturn));
-//       #else
-//         strcat(strReturn,NO_SUPPORT);
-//       #endif
-//       strcat(strReturn,"&");  continue;
-//       }
+
   if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
        {
          #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
@@ -1626,6 +1617,31 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 				          strcat(strReturn,"&") ; continue;
 				          } else strcat(strReturn,"E03&");  continue;   
 		             }
+		          //14.  Параметры  отопления и охлаждения ТН
+		          if (strstr(str,"HP"))          // Проверка для запросов содержащих HP
+		             {
+		               if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
+		                  { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); strcat(strReturn,"&") ; continue;   } 
+		              else if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
+		                  {
+		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+		                    if (HP.Prof.set_paramCoolHP(x+1,pm))  HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
+		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
+		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
+		                  strcat(strReturn,"&") ; continue;
+		                  } // (strcmp(str,"paramCoolHP")==0) 
+		               else if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
+		                  { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); strcat(strReturn,"&") ; continue;   } 
+		               else if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
+		                  {
+		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+		                    if (HP.Prof.set_paramHeatHP(x+1,pm))  HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
+		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
+		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
+		                  strcat(strReturn,"&") ; continue;
+		                  } 
+		             }
+                   
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -1789,6 +1805,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 				for(i=0;i<RNUMBER;i++) if (strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;}
 			 }
        }
+ /*      
        if (param==-1)  // имя не найдено, дальше разбираем строку
         {
     
@@ -1809,27 +1826,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"TEMP_PID")==0)       { param=73;}  // 13 Целевая темпеартура ПИД
                else if (strcmp(x+1,"WEATHER")==0)        { param=74;}  // 14 Использование погодозависимости
                else if (strcmp(x+1,"K_WEATHER")==0)      { param=75;}  // 15 Коэффициент погодозависимости
- /*
-               // опции ТН
-               else if (strcmp(x+1,"ADD_HEAT")==0)       { param=80;}  // 0  использование дополнительного нагревателя (значения 1 и 0)
-               else if (strcmp(x+1,"TEMP_RHEAT")==0)     { param=81;}  // 1  температура управления RHEAT (градусы)
-               else if (strcmp(x+1,"PUMP_WORK")==0)      { param=82;}  // 2  работа насоса конденсатора при выключенном компрессоре секунды
-               else if (strcmp(x+1,"PUMP_PAUSE")==0)     { param=83;}  // 3  пауза между работой насоса конденсатора при выключенном компрессоре (секунды)
-               else if (strcmp(x+1,"ATTEMPT")==0)        { param=84;}  // 4  число попыток пуска ТН
-               else if (strcmp(x+1,"TIME_CHART")==0)     { param=85;}  // 5  период обновления статистики
-               else if (strcmp(x+1,"BEEP")==0)           { param=86;}  // 6  использование звука
-               else if (strcmp(x+1,"NEXTION")==0)        { param=87;}  // 7  использование дисплея nextion
-               else if (strcmp(x+1,"EEV_CLOSE")==0)      { param=88;}  // 8  Закрытие ЭРВ при выключении компрессора
-               else if (strcmp(x+1,"EEV_LIGHT_START")==0){ param=89;}  // 9  Облегчение старта компрессора
-               else if (strcmp(x+1,"StartPos")==0)      { param=90;}  // 10 Всегда начинать работу ЭРВ со стратовой позици
-               else if (strcmp(x+1,"SD_CARD")==0)        { param=91;}  // 11 Запись статистики на карту памяти
-               else if (strcmp(x+1,"SAVE_ON")==0)        { param=92;}  // 12 Запись состояния ТН для воссановления его при перезагрузке
-               else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
-               else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
-               else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
-   */         
+        
      
         }
+    */    
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
        
@@ -2208,64 +2208,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-           //8.  Параметры  и опции ТН смещение 60 занимает 40 !!!!!!!!!!!!!!!!!!
-          if (strstr(str,"HP"))          // Проверка для запросов содержащих HP
-             {
-             if ((param>=100)||(param<60))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {   p=param-60;  // смещение
-               if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
-                  {
-                    strcat(strReturn,HP.Prof.get_paramCoolHP((PARAM_HP)p,HP.dFC.get_present()));
-                    strcat(strReturn,"&") ; continue;
-                  } // strcmp(str,"get_paramCoolHP")==0)
-                  
-              if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
-                  {
-                    // Получить устанавливаемое значение
-                   if (HP.Prof.set_paramCoolHP((PARAM_HP)p,pm))     // преобразование удачно
-                      strcat(strReturn,HP.Prof.get_paramCoolHP((PARAM_HP)p,HP.dFC.get_present()));
-                   else
-                      strcat(strReturn,"E16") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"paramCoolHP")==0) 
-
-               if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
-                  {
-                    strcat(strReturn,HP.Prof.get_paramHeatHP((PARAM_HP)p,HP.dFC.get_present()));
-                    strcat(strReturn,"&") ; continue;
-                  } // strcmp(str,"get_paramHeatHP")==0)
-                  
-              if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
-                  {
-                    // Получить устанавливаемое значение
-                   if (HP.Prof.set_paramHeatHP((PARAM_HP)p,pm))     // преобразование удачно
-                      strcat(strReturn,HP.Prof.get_paramHeatHP((PARAM_HP)p,HP.dFC.get_present()));
-                   else
-                      strcat(strReturn,"E16") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"paramHeatHP")==0) 
-/*
-               if (strcmp(str,"get_optionHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
-                  {
-                    strcat(strReturn,HP.get_optionHP(OPTION_HP(p-20)));  // 20 смещение для параметров опций
-                    strcat(strReturn,"&") ; continue;
-                  } // strcmp(str,"get_optionHP")==0)
-                  
-              if (strcmp(str,"set_optionHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
-                  {
-                    // Получить устанавливаемое значение
-                   if (HP.set_optionHP(OPTION_HP(p-20),pm))     // преобразование удачно, 20 смещение для опций
-                      strcat(strReturn,HP.get_optionHP(OPTION_HP(p-20)));  // 20 смещение для параметров  опций
-                   else
-                      strcat(strReturn,"E17") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } // (strcmp(str,"set_optionHP")==0) 
-*/
-               }  // else end -----------------------
-            } //if ((strstr(str,"HP")>0)  
-
-      // --------------------------------------------------------------------------------------------------------------------------
+       // --------------------------------------------------------------------------------------------------------------------------
 
        
         // ------------------------ конец разбора -------------------------------------------------

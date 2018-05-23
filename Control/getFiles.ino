@@ -189,48 +189,48 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Бойлер:"); HP.Prof.get_boiler((char*)boil_BOILER_ON,Socket[thread].outBuf); STR_END;
  
      strcat(Socket[thread].outBuf,"\n  1.1 Отопление\r\n");
-     strcat(Socket[thread].outBuf,"Алгоритм работы отопления: "); strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pRULE,HP.dFC.get_present())); STR_END;
-     strcat(Socket[thread].outBuf,"Целевая температура дома: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP1,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Целевая температура обратки:");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP2,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Что является целью: ");  strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTARGET,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pDTEMP,HP.dFC.get_present()));STR_END;
+     strcat(Socket[thread].outBuf,"Алгоритм работы отопления: "); HP.Prof.get_paramHeatHP((char*)hp_RULE,Socket[thread].outBuf,HP.dFC.get_present()); STR_END;
+     strcat(Socket[thread].outBuf,"Целевая температура дома: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP1,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Целевая температура обратки:");HP.Prof.get_paramHeatHP((char*)hp_TEMP2,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Что является целью: ");  HP.Prof.get_paramHeatHP((char*)hp_TARGET,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");HP.Prof.get_paramHeatHP((char*)hp_DTEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      if (HP.get_ruleHeat()!=pHYSTERESIS)
          {
-         strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP_PID,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_TIME,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_PRO,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_IN,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pHP_DIF,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Использование погодозависимости: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pWEATHER,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pK_WEATHER,HP.dFC.get_present()));STR_END;
+         strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_PID,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_TIME,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_PRO,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_DIF,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          }
      strcat(Socket[thread].outBuf," Защиты\r\n");
-     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP_IN,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pTEMP_OUT,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pPAUSE,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramHeatHP(pD_TEMP,HP.dFC.get_present()));STR_END;
+     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_OUT,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_paramHeatHP((char*)hp_PAUSE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");HP.Prof.get_paramHeatHP((char*)hp_D_TEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
  
      strcat(Socket[thread].outBuf,"\n  1.2 Охлаждение\r\n");
-     strcat(Socket[thread].outBuf,"Алгоритм работы отопления: "); strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pRULE,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Целевая температура дома: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP1,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Целевая температура обратки:");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP2,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Что является целью: ");  strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTARGET,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pDTEMP,HP.dFC.get_present()));STR_END;
+     strcat(Socket[thread].outBuf,"Алгоритм работы отопления: "); HP.Prof.get_paramCoolHP((char*)hp_RULE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Целевая температура дома: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP1,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Целевая температура обратки:");HP.Prof.get_paramCoolHP((char*)hp_TEMP2,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Что является целью: ");  HP.Prof.get_paramCoolHP((char*)hp_TARGET,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");HP.Prof.get_paramCoolHP((char*)hp_DTEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      if (HP.get_ruleCool()!=pHYSTERESIS)
          {
-         strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP_PID,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_TIME,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_PRO,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_IN,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pHP_DIF,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Использование погодозависимости: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pWEATHER,HP.dFC.get_present()));STR_END;
-         strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pK_WEATHER,HP.dFC.get_present()));STR_END;
+         strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_PID,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_TIME,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_PRO,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Интегральная составляющая ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Дифференциальная составляющая ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_DIF,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          }
      strcat(Socket[thread].outBuf," Защиты\r\n");
-     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP_IN,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pTEMP_OUT,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pPAUSE,HP.dFC.get_present()));STR_END;
-     strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");strcat(Socket[thread].outBuf,HP.Prof.get_paramCoolHP(pD_TEMP,HP.dFC.get_present()));STR_END;
+     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_OUT,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_paramCoolHP((char*)hp_PAUSE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");HP.Prof.get_paramCoolHP((char*)hp_D_TEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
 
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));   
      
