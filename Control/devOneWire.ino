@@ -99,7 +99,9 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 #endif
 		if((presence = OneWireDrv.reset())) break;                     // Сброс прошел выходим
 #ifdef ONEWIRE_DS2482
+#ifdef ONEWIRE_DS2482_SECOND_2WAY
 x_Reset_bridge:
+#endif
 		if(!OneWireDrv.reset_bridge()) break;
 		#ifndef ONEWIRE_DS2482_SECOND_2WAY
 		#if DS2482_CONFIG != 0

@@ -605,8 +605,8 @@ static char temp[12];
 		                                        return strcat(ret,(char*)cZero);
 		                                        #endif
                                                 } else
+	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_DAC)==0)                   { return strcat(ret,int2str(dac));          } else 
-    #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { return strcat(ret,int2str(level0));       } else 
     if(strcmp(var,fc_LEVEL100)==0)              { return strcat(ret,int2str(level100));     } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { return strcat(ret,int2str(levelOff));     } else 
