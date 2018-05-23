@@ -427,7 +427,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         #else
         strcat(strReturn,"-°C|");
         #endif
-        if (HP.dFC.get_present()) {strcat(strReturn,HP.dFC.get_paramFC(pFC));strcat(strReturn,"Гц|");} // В зависимости от наличия инвертора
+        if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);strcat(strReturn,"Гц|");} // В зависимости от наличия инвертора
         else                      {strcat(strReturn," - ");strcat(strReturn,"Гц|");}
         if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStr());                   // Ошибок нет
         else {strcat(strReturn,"Error "); strcat(strReturn,int2str(HP.get_errcode()));} // есть ошибки
@@ -695,7 +695,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         #else
         strcat(strReturn,"-;");
         #endif
-        if (HP.dFC.get_present()) {strcat(strReturn,HP.dFC.get_paramFC(pFC));     strcat(strReturn,";");} // В зависимости от наличия инвертора
+        if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);    strcat(strReturn,";");} // В зависимости от наличия инвертора
         else                      {strcat(strReturn," - ");                       strcat(strReturn,";");}
       //  strcat(strReturn,HP.StateToStrEN());                                      strcat(strReturn,";");
         if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStrEN());                   // Ошибок нет
@@ -808,16 +808,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|");strcat(strReturn,"SERIAL_8N1");strcat(strReturn,";");
        strcat(strReturn,"MODBUS_TIME_WAIT|Максимальное время ожидания освобождения порта (мсек)|");strcat(strReturn,int2str(MODBUS_TIME_WAIT));strcat(strReturn,";");
 
-//       strcat(strReturn,"FC_MIN_FREQ|Минимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MIN_FREQ/100.0,2));strcat(strReturn,";");
-//       strcat(strReturn,"FC_MAX_FREQ|Максимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_FREQ/100.0,2));strcat(strReturn,";");
-//       strcat(strReturn,"FC_START_FREQ|Стартовая частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_START_FREQ/100.0,2));strcat(strReturn,";");
-//       strcat(strReturn,"FC_PID_FREQ_STEP|Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_PID_FREQ_STEP/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"minFreq|Минимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)minFreq/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"maxFreq|Максимальная частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)maxFreq/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"startFreq|Стартовая частота компрессора (Гц)|");strcat(strReturn,ftoa(temp,(float)startFreq/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"PidFreqStep|Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц)|");strcat(strReturn,ftoa(temp,(float)PidFreqStep/100.0,2));strcat(strReturn,";");
 //
 //       strcat(strReturn,"FC_MAX_POWER|Максимальная мощность инвертора (кВт)|");strcat(strReturn,ftoa(temp,(float)FC_MAX_POWER/10.0,1));strcat(strReturn,";");
 //       strcat(strReturn,"FC_TIME_READ|Период опроса инвертора по Modbus (мсек)|");strcat(strReturn,int2str(FC_TIME_READ));strcat(strReturn,";");
 //       strcat(strReturn,"FC_ACCEL_TIME|Время разгона компрессора (сек)|");strcat(strReturn,ftoa(temp,(float)FC_ACCEL_TIME/100.0,1));strcat(strReturn,";");
-//       strcat(strReturn,"FC_STEP_FREQ|Шаг уменьшения частоты инвертора при необходимости ее уменьшения (Гц)|");strcat(strReturn,ftoa(temp,(float)FC_STEP_FREQ/100.0,2));strcat(strReturn,";");
-//       strcat(strReturn,"FC_UPTIME|Период обновления алгоритма ПИД регулятора (мсек)|");strcat(strReturn,int2str(FC_UPTIME));strcat(strReturn,";");
+//       strcat(strReturn,"stepFreq|Шаг уменьшения частоты инвертора при необходимости ее уменьшения (Гц)|");strcat(strReturn,ftoa(temp,(float)stepFreq/100.0,2));strcat(strReturn,";");
+//       strcat(strReturn,"Uptime|Период обновления алгоритма ПИД регулятора (мсек)|");strcat(strReturn,int2str(Uptime));strcat(strReturn,";");
        }
        else strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|Нет;");
       // NEXTION
@@ -1371,7 +1371,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               else
                 {
               //  if(HP.dFC.set_targetFreq(pm*100)==0) strcat(strReturn,ftoa(temp,(float)HP.dFC.get_targetFreq()/100.0,2)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue; 
-                 if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.FC_MIN_FREQ_USER ,HP.dFC.FC_MAX_FREQ_USER)==0) strcat(strReturn,int2str(HP.dFC.get_targetFreq()/100)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
+                 if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) strcat(strReturn,int2str(HP.dFC.get_targetFreq()/100)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
@@ -1632,6 +1632,26 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
 		            } //if ((strstr(str,"Chart")>0)  
          
+                  //12.  Частотный преобразователь -----------------------------------------------------------------
+		          if (strstr(str,"FC"))          // Проверка для запросов содержащих FC get_paramFC set_paramFC 
+		             {
+     	               if (strcmp(str,"get_paramFC")==0)           // Функция get_paramFC - получить значение параметра FC
+		                  {
+		                    HP.dFC.get_paramFC(x+1,strReturn);
+		                    strcat(strReturn,"&") ; continue;
+		                  } 
+		              else if (strcmp(str,"set_paramFC")==0)           // Функция set_paramFC - установить значение паремтра FC
+		                  {
+							if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+                    		if (HP.dFC.set_paramFC(x+1,pm)) HP.dFC.get_paramFC(x+1,strReturn);
+                    		else  strcat(strReturn,"E27");  // выход за диапазон значений   
+                  			} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+                           strcat(strReturn,"&") ; 
+   		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_paramFC")==0) 
+		            } //if ((strstr(str,"FC")>0)  
+
+
+
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
@@ -1796,26 +1816,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			 }
        }
        if (param==-1)  // имя не найдено, дальше разбираем строку
-  //      {
-               // ЭРВ 50 только одно устройство поддерживается смещение 50, зато есть имена переменных
-                    if (strcmp(x+1,"T_OWERHEAT")==0)     { param=50;}  // ЭРВ целевой перегрев
-               else if (strcmp(x+1,"TIME_IN")==0)        { param=51;}  // Постоянная интегрирования времени в секундах
-               else if (strcmp(x+1,"K_PRO")==0)          { param=52;}  // ЭРВ Пропорциональная составляющая
-               else if (strcmp(x+1,"K_IN")==0)           { param=53;}  // ЭРВ Интегральная составляющая
-               else if (strcmp(x+1,"K_DIF")==0)          { param=54;}  // ЭРВ дифференциальная составляющая.
-               else if (strcmp(x+1,"M_STEP")==0)         { param=55;}  // ЭРВ Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-               else if (strcmp(x+1,"CORRECTION")==0)     { param=56;}  // ЭРВ поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
-               else if (strcmp(x+1,"cCOR")==0)	    	 { param=57;}
-               else if (strcmp(x+1,"cDELAY")==0)    	 { param=57;}
-               else if (strcmp(x+1,"cPERIOD")==0)    	 { param=57;}
-               else if (strcmp(x+1,"cDELTA")==0)    	 { param=57;}
-               else if (strcmp(x+1,"cDELTAT")==0)    	 { param=57;}
-               else if (strcmp(x+1,"cKF")==0)    		 { param=57;}
-               else if (strcmp(x+1,"cOH_MIN")==0)    	 { param=57;}
-               else if (strcmp(x+1,"cOH_MAX")==0)    	 { param=57;}
-        
+        {
+    
                 // Параметры и опции ТН  смещение 60 занимат 40 позиций не 10!!!!!!!!!!!!!!!!!!!! используется в двух разных функциях, единый список
-               else if (strcmp(x+1,"RULE")==0)           { param=60;}  // 0  Алгоритм отопления
+                    if (strcmp(x+1,"RULE")==0)           { param=60;}  // 0  Алгоритм отопления
                else if (strcmp(x+1,"TEMP1")==0)          { param=61;}  // 1  целевая температура в доме
                else if (strcmp(x+1,"TEMP2")==0)          { param=62;}  // 2  целевая температура обратки
                else if (strcmp(x+1,"TARGET")==0)         { param=63;}  // 3  что является целью ПИД - значения  0 (температура в доме), 1 (температура обратки).
@@ -1849,27 +1853,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                else if (strcmp(x+1,"NEXT_SLEEP")==0)     { param=93;}  // 13 Время засыпания секунды NEXTION
                else if (strcmp(x+1,"NEXT_DIM")==0)       { param=94;}  // 14 Якрость % NEXTION
                else if (strcmp(x+1,"OW2TS")==0)          { param=95;}  // 15 На второй шине 1-Wire(DS2482) только один датчик
-  
-               // Частотник 155 только одно устройство поддерживается смещение 155 занимает 15 позиций
-               else if (strcmp(x+1,"ON_OFF")==0)         { param=155;} // Флаг включения выключения (управление частотником)
-               else if (strcmp(x+1,"MIN_FC")==0)         { param=156;} // Только чтение минимальная частота работы
-               else if (strcmp(x+1,"MAX_FC")==0)         { param=157;} // Только чтение максимальная частота работы
-               else if (strcmp(x+1,"START_FC")==0)       { param=158;} // Только чтение стартовая частота работы
-               else if (strcmp(x+1,"MAX_POWER")==0)      { param=159;} // Только чтение максимальная мощность
-               else if (strcmp(x+1,"STATE")==0)          { param=160;} // Только чтение Состояние ПЧ
-               else if (strcmp(x+1,"FC")==0)             { param=161;} // Целевая частота ПЧ
-               else if (strcmp(x+1,"POWER")==0)          { param=162;} // Текущая мощность
-               else if (strcmp(x+1,"AUTO_FC")==0)        { param=163;} // Флаг автоматической подбора частоты
-               else if (strcmp(x+1,"ANALOG")==0)         { param=164;} // Флаг аналогового управления
-               else if (strcmp(x+1,"LEVEL0")==0)         { param=165;} // Уровень частоты 0 в отсчетах ЦАП
-               else if (strcmp(x+1,"LEVEL100")==0)       { param=166;} // Уровень частоты 100% в  отсчетах ЦАП
-               else if (strcmp(x+1,"LEVELOFF")==0)       { param=167;} // Уровень частоты в % при отключении
-               else if (strcmp(x+1,"STOP_FC")==0)        { param=168;} // флаг глобальная ошибка инвертора - работа инвертора запрещена блокировку можно сбросить установив в 0
-               else if (strcmp(x+1,"ERROR_FC")==0)       { param=169;} // Получить ошибку частотника
-               
-               //  Запросы где второй параметр строка не ЧИСЛО а СТРОКА -----------------------------------
+            
      
-  //      }
+        }
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
        
@@ -2248,7 +2234,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-           
+  /*         
         //7.  Частотный преобразователь смещение param 155
           if (strstr(str,"FC"))          // Проверка для запросов содержащих FC
              {
@@ -2271,6 +2257,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   } // (strcmp(str,"set_paramFC")==0) 
               }  // else end 
             } //if ((strstr(str,"FC")>0)  
+  */          
 
           //8.  Параметры  и опции ТН смещение 60 занимает 40 !!!!!!!!!!!!!!!!!!
           if (strstr(str,"HP"))          // Проверка для запросов содержащих HP

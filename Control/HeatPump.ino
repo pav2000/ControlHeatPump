@@ -1048,7 +1048,9 @@ void  HeatPump::updateChart()
   #endif
   ChartPowerCO.addPoint((int16_t)powerCO);
   } 
+ #ifdef FLOWEVA 
  if(ChartPowerGEO.get_present())  {powerGEO=(float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity(); ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура в Вт!!!!!!!!!
+ #endif
  if(ChartCOP.get_present())       {if (dFC.get_power()>0) {ChartCOP.addPoint((int16_t)powerCO/dFC.get_power());}  else ChartCOP.addPoint(0);}  // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
@@ -2175,47 +2177,47 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
      
    //    if (sTemp[TBOILER].get_Temp()<(Prof.Boiler.TempTarget-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
     // ПИД ----------------------------------
-   // ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на FC_STEP_FREQ
-   else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.FC_DT_TEMP_BOILER))             // Подача ограничение
+   // ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
+   else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
    { 
     Status.ret=pBp6;
-    journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ_BOILER/100.0,FEED/100.0);
-    if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER<dFC.FC_MIN_FREQ_BOILER)  return pCOMP_OFF;         // Уменьшать дальше некуда, выключаем компрессор
-    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER); return pCOMP_NONE;                // Уменьшить частоту
+    journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,FEED/100.0);
+    if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;         // Уменьшать дальше некуда, выключаем компрессор
+    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); return pCOMP_NONE;                // Уменьшить частоту
    }  
-  else if ((dFC.isfOnOff())&&(dFC.get_power()>dFC.FC_MAX_POWER_BOILER))                    // Мощность для ГВС меньшая мощность
+  else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER_BOILER))                    // Мощность для ГВС меньшая мощность
    { 
     Status.ret=pBp7;
-    journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.FC_STEP_FREQ_BOILER/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
-    if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER<dFC.FC_MIN_FREQ_BOILER)  return pCOMP_OFF;        // Уменьшать дальше некуда, выключаем компрессор
-    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER); return pCOMP_NONE;               // Уменьшить частоту
+    journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+    if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;        // Уменьшать дальше некуда, выключаем компрессор
+    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); return pCOMP_NONE;               // Уменьшить частоту
    } 
-  else if ((dFC.isfOnOff())&&(dFC.get_current()>dFC.FC_MAX_CURRENT_BOILER))                // ТОК для ГВС меньшая мощность
+  else if ((dFC.isfOnOff())&&(dFC.get_current()>FC_MAX_CURRENT_BOILER))                // ТОК для ГВС меньшая мощность
    { 
     Status.ret=pBp16;
-    journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ_BOILER/100.0,dFC.get_current()/100.0);
-    if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER<dFC.FC_MIN_FREQ_BOILER)  return pCOMP_OFF;        // Уменьшать дальше некуда, выключаем компрессор
-    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER); return pCOMP_NONE;               // Уменьшить частоту
+    journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,dFC.get_current()/100.0);
+    if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;        // Уменьшать дальше некуда, выключаем компрессор
+    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); return pCOMP_NONE;               // Уменьшить частоту
    } 
    
- else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
+ else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
    { 
     Status.ret=pBp8;
-    journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ_BOILER/100.0,sTemp[TCOMP].get_Temp()/100.0);
-    if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER<dFC.FC_MIN_FREQ_BOILER)  return pCOMP_OFF;       // Уменьшать дальше некуда, выключаем компрессор
-    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER); return pCOMP_NONE;              // Уменьшить частоту
+    journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,sTemp[TCOMP].get_Temp()/100.0);
+    if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;       // Уменьшать дальше некуда, выключаем компрессор
+    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); return pCOMP_NONE;              // Уменьшить частоту
    } 
- else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS))    // давление конденсатора до максимальной минус 0.5 бара
+ else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))    // давление конденсатора до максимальной минус 0.5 бара
    { 
     Status.ret=pBp9;
-    journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ_BOILER/100.0,sADC[PCON].get_Press()/100.0);
-    if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER<dFC.FC_MIN_FREQ_BOILER)  return pCOMP_OFF;      // Уменьшать дальше некуда, выключаем компрессор
-    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER);  return pCOMP_NONE;            // Уменьшить частоту
+    journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,sADC[PCON].get_Press()/100.0);
+    if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;      // Уменьшать дальше некуда, выключаем компрессор
+    dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());  return pCOMP_NONE;            // Уменьшить частоту
    } 
    
   //   else if (((Prof.Boiler.TempTarget-Prof.Boiler.dTemp)>sTemp[TBOILER].get_Temp())&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
      else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                             // Если компрессор не рабоатет то ничего не делаем и выходим
-     else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<dFC.FC_ACCEL_TIME/100 ){Status.ret=pBp10; return pCOMP_NONE;  }             // РАЗГОН частоту не трогаем
+     else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){Status.ret=pBp10; return pCOMP_NONE;  }             // РАЗГОН частоту не трогаем
      
      else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
      // Дошли до сюда - ПИД на подачу. Компресор работает
@@ -2253,28 +2255,28 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
          
          // Общее воздействие
          u=u_pro+u_int+u_dif;
-         if (u>dFC.FC_PID_FREQ_STEP/100.0) u=dFC.FC_PID_FREQ_STEP/100.0;                                    // Ограничить увеличение частоты на FC_PID_FREQ_STEP гц
+         if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
          
          newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
          pre_errPIDBoiler=errPIDBoiler;                                                               // Сохранние ошибки, теперь это прошлая ошибка                                                                           // запомнить предыдущую ошибку
        
-       if (newFC>dFC.FC_MAX_FREQ_BOILER)   newFC=dFC.FC_MAX_FREQ_BOILER;                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
-       if (newFC<dFC.FC_MIN_FREQ_BOILER)   newFC=dFC.FC_MIN_FREQ_BOILER; //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
+       if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
+       if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
        
        // Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
        if (dFC.get_targetFreq()<newFC)                                                                                     // Идет увеличение частоты проверяем подход к границам
          {
-         if ((dFC.isfOnOff())&&(FEED>((Prof.Boiler.tempIn-dFC.FC_DT_TEMP_BOILER)*dFC.FC_PID_STOP/100)) )                                                   {Status.ret=pBp17; return pCOMP_NONE;}   // Подача ограничение
-         if ((dFC.isfOnOff())&&(dFC.get_power()>(dFC.FC_MAX_POWER_BOILER*dFC.FC_PID_STOP/100)))                                                            {Status.ret=pBp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
-         if ((dFC.isfOnOff())&&(dFC.get_current()>(dFC.FC_MAX_CURRENT_BOILER*dFC.FC_PID_STOP/100)))                                                        {Status.ret=pBp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
-         if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>(sTemp[TCOMP].get_maxTemp()*dFC.FC_PID_STOP/100)))                           {Status.ret=pBp20; return pCOMP_NONE;}   // температура компрессора
-         if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>((sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS)*dFC.FC_PID_STOP/100))) {Status.ret=pBp21; return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
+         if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempIn-dFC.get_dtTempBoiler())*dFC.get_PidStop()/100))                                                 {Status.ret=pBp17; return pCOMP_NONE;}   // Подача ограничение
+         if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER_BOILER*dFC.get_PidStop()/100)))                                                            {Status.ret=pBp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
+         if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT_BOILER*dFC.get_PidStop()/100)))                                                        {Status.ret=pBp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
+         if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                      {Status.ret=pBp20; return pCOMP_NONE;}   // температура компрессора
+         if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>((sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))) {Status.ret=pBp21; return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
          }
        //    надо менять
        if (dFC.get_targetFreq()!=newFC)                                                                                     // Установка частоты если нужно менять
          {
          journal.jprintf((char*)STR_FREQUENCY,newFC/100.0); 
-         dFC.set_targetFreq(newFC,false,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER);
+         dFC.set_targetFreq(newFC,false,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());
          }
        return pCOMP_NONE;  
  }
@@ -2318,46 +2320,46 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
              else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }                       // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
              else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(onBoiler)) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (бойлер нагрет) ВКЛ
              
-             // ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на FC_STEP_FREQ
-              else if ((dFC.isfOnOff())&&(FEED>Prof.Heat.tempIn-dFC.FC_DT_TEMP))                  // Подача ограничение
+             // ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
+              else if ((dFC.isfOnOff())&&(FEED>Prof.Heat.tempIn-dFC.get_dtTemp()))                  // Подача ограничение
              { 
               Status.ret=pHp6;
-              journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,FEED/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  return pCOMP_NONE;                     // Уменьшить частоту
+              journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,FEED/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;                     // Уменьшить частоту
              }  
   
-            else if ((dFC.isfOnOff())&&(dFC.get_power()>dFC.FC_MAX_POWER))                    // Мощность в 100 ватт
+            else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER))                    // Мощность в 100 ватт
              { 
               Status.ret=pHp7;
-              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  return pCOMP_NONE;                     // Уменьшить частоту
+              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;                     // Уменьшить частоту
              } 
-            else if ((dFC.isfOnOff())&&(dFC.get_current()>dFC.FC_MAX_CURRENT))                // ТОК
+            else if ((dFC.isfOnOff())&&(dFC.get_current()>FC_MAX_CURRENT))                // ТОК
              { 
               Status.ret=pHp16;
-              journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,dFC.get_current()/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  return pCOMP_NONE;                     // Уменьшить частоту
+              journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_current()/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;                     // Уменьшить частоту
              } 
            
-           else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
+           else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
              { 
               Status.ret=pHp8;
-              journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,sTemp[TCOMP].get_Temp()/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  return pCOMP_NONE;                     // Уменьшить частоту
+              journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sTemp[TCOMP].get_Temp()/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;                     // Уменьшить частоту
              } 
-          else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
+          else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
            {
             Status.ret=pHp9; 
-            journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,sADC[PCON].get_Press()/100.0);
-            if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-            dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  return pCOMP_NONE;               // Уменьшить частоту
+            journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Press()/100.0);
+            if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+            dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;               // Уменьшить частоту
            }           
            else if(!(dFC.isfOnOff())) {Status.ret=pHp5; return pCOMP_NONE;  }                                               // Если компрессор не рабоатет то ничего не делаем и выходим
-           else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<dFC.FC_ACCEL_TIME/100 ){ Status.ret=pHp10; return pCOMP_NONE;}  // РАЗГОН частоту не трогаем
+           else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){ Status.ret=pHp10; return pCOMP_NONE;}  // РАЗГОН частоту не трогаем
 
            #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
                if (sTemp[TCOMP].get_Temp()-SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();// исправил плюс на минус
@@ -2411,7 +2413,7 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
            
            // Общее воздействие
            u=u_pro+u_int+u_dif;
-           if (u>dFC.FC_PID_FREQ_STEP/100.0) u=dFC.FC_PID_FREQ_STEP/100.0;                                    // Ограничить увеличение частоты на FC_PID_FREQ_STEP гц
+           if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
        
            newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
            pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
@@ -2426,23 +2428,23 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
            newFC=round(u)+dFC.get_targetFreq();                                                                  // Округление и добавление предудущего значения
            pre_errPID=errPID;                                                                            // Сохранние ошибки, теперь это прошлая ошибка
 */           
-           if (newFC>dFC.FC_MAX_FREQ)   newFC=dFC.FC_MAX_FREQ;                                                // ограничение диапазона
-           if (newFC<dFC.FC_MIN_FREQ)   newFC=dFC.FC_MIN_FREQ;
+           if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
+           if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
 
            // Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
            if (dFC.get_targetFreq()<newFC)                                                                                     // Идет увеличение частоты проверяем подход к границам
              {
-             if ((dFC.isfOnOff())&&(FEED>((Prof.Boiler.tempIn-dFC.FC_DT_TEMP)*dFC.FC_PID_STOP/100)))                                                           {Status.ret=pHp17; return pCOMP_NONE;}   // Подача ограничение
-             if ((dFC.isfOnOff())&&(dFC.get_power()>(dFC.FC_MAX_POWER*dFC.FC_PID_STOP/100)))                                                                   {Status.ret=pHp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
-             if ((dFC.isfOnOff())&&(dFC.get_current()>(dFC.FC_MAX_CURRENT*dFC.FC_PID_STOP/100)))                                                               {Status.ret=pHp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
-             if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>(sTemp[TCOMP].get_maxTemp()*dFC.FC_PID_STOP/100)))                           {Status.ret=pHp20; return pCOMP_NONE;}   // температура компрессора
-             if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>((sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS)*dFC.FC_PID_STOP/100))) {Status.ret=pHp21; return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
+             if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempIn-dFC.get_dtTemp())*dFC.get_PidStop()/100))                                                      {Status.ret=pHp17; return pCOMP_NONE;}   // Подача ограничение
+             if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                  {Status.ret=pHp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
+             if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                              {Status.ret=pHp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
+             if ((dFC.isfOnOff())&&(sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100))                       {Status.ret=pHp20; return pCOMP_NONE;}   // температура компрессора
+             if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>(sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))  {Status.ret=pHp21; return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
              }
             //    надо менять
            if (dFC.get_targetFreq()!=newFC)                                                                     // Установкка частоты если нужно менять
              {
              journal.jprintf((char*)STR_FREQUENCY,newFC/100.0); 
-             dFC.set_targetFreq(newFC,false,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);
+             dFC.set_targetFreq(newFC,false,dFC.get_minFreq(),dFC.get_maxFreq());
              }
            return pCOMP_NONE;                                                                            // компрессор состояние не меняет
            break;
@@ -2491,45 +2493,45 @@ switch (Prof.Cool.Rule)   // в зависмости от алгоритма
              else if ((t1>target+Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                          // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
              else if ((t1>target+Prof.Cool.dTemp)&&(dFC.isfOnOff())&&(onBoiler)) {Status.ret=pCp2; return pCOMP_ON;}  // Достигнут гистерезис (бойлер нагрет) ВКЛ
              
-             // ЗАЩИТА Компресор работает, достигнута минимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на FC_STEP_FREQ
-              else if ((dFC.isfOnOff())&&(FEED<Prof.Cool.tempIn+dFC.FC_DT_TEMP))                  // Подача
+             // ЗАЩИТА Компресор работает, достигнута минимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
+              else if ((dFC.isfOnOff())&&(FEED<Prof.Cool.tempIn+dFC.get_dtTemp()))                  // Подача
              { 
               Status.ret=pCp6;
-              journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,FEED/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ_COOL)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);  return pCOMP_NONE;               // Уменьшить частоту
+              journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,FEED/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
              }  
   
-            else if ((dFC.isfOnOff())&&(dFC.get_power()>dFC.FC_MAX_POWER))                    // Мощность
+            else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER))                    // Мощность
              { 
               Status.ret=pCp7;
-              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ_COOL)  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);  return pCOMP_NONE;               // Уменьшить частоту
+              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
              } 
-             else if ((dFC.isfOnOff())&&(dFC.get_current()>dFC.FC_MAX_CURRENT))                    // ТОК
+             else if ((dFC.isfOnOff())&&(dFC.get_current()>FC_MAX_CURRENT))                    // ТОК
              { 
               Status.ret=pCp16;
-              journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,dFC.get_current()/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ_COOL)  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);  return pCOMP_NONE;               // Уменьшить частоту
+              journal.jprintf("%s %.2f (CURRENT: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_current()/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
              } 
-           else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
+           else if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>sTemp[TCOMP].get_maxTemp()))  // температура компрессора
              { 
               Status.ret=pCp8;
-              journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,sTemp[TCOMP].get_Temp()/100.0);
-              if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ_COOL)  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
-              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);  return pCOMP_NONE;               // Уменьшить частоту
+              journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sTemp[TCOMP].get_Temp()/100.0);
+              if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
+              dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
              } 
-          else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
+          else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
            {
             Status.ret=pCp9; 
-            journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.FC_STEP_FREQ/100.0,sADC[PCON].get_Press()/100.0);
-            if (dFC.get_targetFreq()-dFC.FC_STEP_FREQ<dFC.FC_MIN_FREQ_COOL)  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
-            dFC.set_targetFreq(dFC.get_targetFreq()-dFC.FC_STEP_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);  return pCOMP_NONE;               // Уменьшить частоту
+            journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Press()/100.0);
+            if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
+            dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
            }           
            else if(!(dFC.isfOnOff())) {Status.ret=pCp5; return pCOMP_NONE;  }                                               // Если компрессор не рабоатет то ничего не делаем и выходим
-           else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<dFC.FC_ACCEL_TIME/100 ){ Status.ret=pCp10; return pCOMP_NONE;}  // РАЗГОН частоту не трогаем
+           else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){ Status.ret=pCp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
 
            #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
              if (sTemp[TCOMP].get_Temp()+SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();
@@ -2585,32 +2587,32 @@ switch (Prof.Cool.Rule)   // в зависмости от алгоритма
            
            // Общее воздействие
            u=u_pro+u_int+u_dif;
-           if (u>dFC.FC_PID_FREQ_STEP/100.0) u=dFC.FC_PID_FREQ_STEP/100.0;                                    // Ограничить увеличение частоты на FC_PID_FREQ_STEP гц
+           if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
   
            newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
            pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 
           
-           if (newFC>dFC.FC_MAX_FREQ_COOL)   newFC=dFC.FC_MAX_FREQ_COOL;                                       // ограничение диапазона
-           if (newFC<dFC.FC_MIN_FREQ_COOL)   newFC=dFC.FC_MIN_FREQ_COOL; // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=FC_MIN_FREQ;
+           if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
+           if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
       
        //    journal.jprintf("newFC=%.2f\n",newFC/100.0);
       
            // Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
            if (dFC.get_targetFreq()<newFC)                                                                                     // Идет увеличение частоты проверяем подход к границам
              {
-             if ((dFC.isfOnOff())&&(FEED<((Prof.Boiler.tempIn-dFC.FC_DT_TEMP)*dFC.FC_PID_STOP/100)))                                                           {Status.ret=pCp17; return pCOMP_NONE;}   // Подача ограничение
-             if ((dFC.isfOnOff())&&(dFC.get_power()>(dFC.FC_MAX_POWER*dFC.FC_PID_STOP/100)))                                                                   {Status.ret=pCp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
-             if ((dFC.isfOnOff())&&(dFC.get_current()>(dFC.FC_MAX_CURRENT*dFC.FC_PID_STOP/100)))                                                               {Status.ret=pCp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
-             if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.FC_DT_COMP_TEMP)>(sTemp[TCOMP].get_maxTemp()*dFC.FC_PID_STOP/100)))                           {Status.ret=pCp20; return pCOMP_NONE;}   // температура компрессора
-             if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>((sADC[PCON].get_maxPress()-dFC.FC_DP_CON_PRESS)*dFC.FC_PID_STOP/100))) {Status.ret=pCp21; return pCOMP_NONE;}    // давление конденсатора до максимальной минус 0.5 бара
+             if ((dFC.isfOnOff())&&(FEED<((Prof.Boiler.tempIn-dFC.get_dtTemp())*dFC.get_PidStop()/100)))                                                         {Status.ret=pCp17; return pCOMP_NONE;}   // Подача ограничение
+             if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                       {Status.ret=pCp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
+             if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                                   {Status.ret=pCp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
+             if ((dFC.isfOnOff())&&(sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp()>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                            {Status.ret=pCp20; return pCOMP_NONE;}   // температура компрессора
+             if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>(sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))       {Status.ret=pCp21; return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
              }
             //    надо менять
            
            if (dFC.get_targetFreq()!=newFC)                                                                     // Установкка частоты если нужно менять
              {
              journal.jprintf((char*)STR_FREQUENCY,newFC/100.0); 
-             dFC.set_targetFreq(newFC,false,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);
+             dFC.set_targetFreq(newFC,false,dFC.get_minFreqCool(),dFC.get_maxFreqCool());
              }
            return pCOMP_NONE;                                                                            // компрессор состояние не меняет
            break;
@@ -2699,7 +2701,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RHEAT
               //     if((GETBIT(Option.flags,fAddHeat))&&(dRelay[RHEAT].get_present())) dRelay[RHEAT].set_ON(); else dRelay[RHEAT].set_OFF(); // Если надо включить ТЭН отопления
                  #endif
-                 if (!(COMPRESSOR_IS_ON))  dFC.set_targetFreq(dFC.FC_START_FREQ,true,dFC.FC_MIN_FREQ,dFC.FC_MAX_FREQ);  // установить стартовую частоту если компрессор выключен
+                 if (!(COMPRESSOR_IS_ON))  dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  // установить стартовую частоту если компрессор выключен
                 break;    
       case  pCOOL:    // Охлаждение
                  PUMPS_ON;                                                     // включить насосы
@@ -2722,7 +2724,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RHEAT
                  if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
                  #endif 
-                 if (!(COMPRESSOR_IS_ON))   dFC.set_targetFreq(dFC.FC_START_FREQ,true,dFC.FC_MIN_FREQ_COOL,dFC.FC_MAX_FREQ_COOL);   // установить стартовую частоту
+                 if (!(COMPRESSOR_IS_ON))   dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());   // установить стартовую частоту
                 break;
        case  pBOILER:   // Бойлер
                  #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
@@ -2730,7 +2732,7 @@ void HeatPump::configHP(MODE_HP conf)
                     dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
                     dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
                     _delay(2*1000);                     // Задержка на 2 сек
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.FC_START_FREQ,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER);      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
                     PUMPS_ON; 
                     
@@ -2738,7 +2740,7 @@ void HeatPump::configHP(MODE_HP conf)
                     dRelay[RPUMPFL].set_OFF();     // ТП
                     #endif
                     // включить насосы
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.FC_START_FREQ_BOILER,true,dFC.FC_MIN_FREQ_BOILER,dFC.FC_MAX_FREQ_BOILER);// установить стартовую частоту
+                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
                  _delay(2*1000);                        // Задержка на 2 сек
 

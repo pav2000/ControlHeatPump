@@ -1015,7 +1015,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
 #endif
 				 break;
 			 case  pCOOL:                         // 2 Включить охлаждение
@@ -1025,7 +1025,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
 #endif
 				 break;
 
@@ -1034,7 +1034,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 				 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(HP.dFC.FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                    // Время интегрирования ПИД секунды
 #endif
 				 break;
 			 default:
