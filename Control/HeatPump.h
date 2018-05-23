@@ -441,6 +441,8 @@ class HeatPump
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
     int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
+    // Настройки опций
+   type_optionHP Option;                  // Опции теплового насоса
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
@@ -477,9 +479,6 @@ class HeatPump
     TYPE_COMMAND command;                 // Текущая команда управления ТН
     type_status Status;                   // Описание состояния ТН
 
-     // Настройки опций
-    type_optionHP Option;                  // Опции теплового насоса
-      
     // Ошибки и описания
     int8_t error;                         // Код ошибки
     char   source_error[16];              // источник ошибки
