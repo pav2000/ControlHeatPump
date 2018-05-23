@@ -36,16 +36,6 @@ void HeatPump::initHeatPump()
 {
   uint8_t i;
   eraseError();
-  // Временные задержки
-  Option.DELAY_ON_PUMP      = DEF_DELAY_ON_PUMP    	;
-  Option.DELAY_OFF_PUMP		= DEF_DELAY_OFF_PUMP  	;    
-  Option.DELAY_START_RES	= DEF_DELAY_START_RES  	;   
-  Option.DELAY_REPEAD_START = DEF_DELAY_REPEAD_START;        
-  Option.DELAY_DEFROST_ON	= DEF_DELAY_DEFROST_ON 	;         
-  Option.DELAY_DEFROST_OFF	= DEF_DELAY_DEFROST_OFF	;        
-  Option.DELAY_TRV			= DEF_DELAY_TRV        	;                
-  Option.DELAY_BOILER_SW	= DEF_DELAY_BOILER_SW   ;          
-  Option.DELAY_BOILER_OFF	= DEF_DELAY_BOILER_OFF 	;         
 
   for(i=0;i<TNUMBER;i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
 
@@ -664,6 +654,16 @@ void HeatPump::resetSettingHP()
   DateTime.timeZone=TIME_ZONE;                   // Часовой пояс
 
 // Опции теплового насоса
+  // Временные задержки
+  Option.delayOnPump         = DEF_DELAY_ON_PUMP;
+  Option.delayOffPump		 = DEF_DELAY_OFF_PUMP;    
+  Option.delayStartRes	     = DEF_DELAY_START_RES;   
+  Option.delayRepeadStart    = DEF_DELAY_REPEAD_START;        
+  Option.delayDefrostOn	     = DEF_DELAY_DEFROST_ON;         
+  Option.delayDefrostOff	 = DEF_DELAY_DEFROST_OFF;        
+  Option.delayTRV		     = DEF_DELAY_TRV;                
+  Option.delayBoilerSW	     = DEF_DELAY_BOILER_SW;          
+  Option.delayBoilerOff	     = DEF_DELAY_BOILER_OFF;         
   Option.numProf=Prof.get_idProfile(); //  Профиль не загружен по дефолту 0 профиль
   Option.nStart=3;                     //  Число попыток пуска компрессора
   Option.tempRHEAT=1000;               //  Значение температуры для управления RHEAT (по умолчанию режим резерв - 10 градусов в доме)
@@ -917,96 +917,102 @@ return strcat(ret,(char*)cInvalid);
 }
 
 // Установить опции ТН из числа (float)
-boolean HeatPump::set_optionHP(OPTION_HP p, float x)   
+boolean HeatPump::set_optionHP(char *var, float x)   
 {
- switch (p)
-    {
-    case pADD_HEAT:       switch ((int)x)  //использование дополнительного нагревателя (значения 1 и 0)
-                           {
-                            case 0:  SETBIT0(Option.flags,fAddHeat);                                    return true; break;  // использование запрещено
-                            case 1:  SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // резерв
-                            case 2:  SETBIT1(Option.flags,fAddHeat);SETBIT1(Option.flags,fTypeRHEAT);   return true; break;  // бивалент
-                            default: SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // Исправить по умолчанию
-                           }  
-                           break;
-   case pTEMP_RHEAT:      if ((x>=-30.0)&&(x<=30.0))  {Option.tempRHEAT=x*100.0; return true;} else return false;                                          break;                // температура управления RHEAT (градусы)
-   case pPUMP_WORK:       if ((x>=0.0)&&(x<=60.0)) {Option.workPump=x; return true;} else return false;                                                  break;                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
-   case pPUMP_PAUSE:      if ((x>=0.0)&&(x<=60.0)) {Option.pausePump=x; return true;} else return false;                                                 break;                // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
-   case pATTEMPT:         if ((x>=0.0)&&(x<10.0)) {Option.nStart=x; return true;} else return false;                                                     break;                // число попыток пуска
-   case pTIME_CHART:      if (get_State()==pWORK_HP) startChart(); // Сбросить статистистику, начать отсчет заново
-                           switch ((int)x)  // период обновления ститистики
-                           {
-                            case 0:  Option.tChart=10;    return true; break;
-                            case 1:  Option.tChart=60;    return true; break;
-                            case 2:  Option.tChart=3*60;  return true; break;
-                            case 3:  Option.tChart=10*60; return true; break;
-                            case 4:  Option.tChart=30*60; return true; break;
-                            case 5:  Option.tChart=60*60; return true; break;       
-                            default: Option.tChart=60;    return true; break;    // Исправить по умолчанию
-                           }  
-                           break;
-   case pBEEP:             if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;              break;    // Подача звукового сигнала
-   case pNEXTION:          if (x==0) {SETBIT0(Option.flags,fNextion); updateNextion(); return true;} 
-                           else if (x==1) {SETBIT1(Option.flags,fNextion); updateNextion(); return true;} 
-                           else return false;  break;          // использование дисплея nextion
-   case pEEV_CLOSE:        if (x==0) {SETBIT0(Option.flags,fEEV_close); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_close); return true;} else return false;               break;    // Закрытие ЭРВ при выключении компрессора
-   case pEEV_LIGHT_START:  if (x==0) {SETBIT0(Option.flags,fEEV_light_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_light_start); return true;} else return false;   break;    // Облегчение старта компрессора
-   case pStartPos:        if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;               break;    // Всегда начинать работу ЭРВ со стратовой позици
+   if(strcmp(var,option_ADD_HEAT)==0)         {switch ((int)x)  //использование дополнительного нагревателя (значения 1 и 0)
+						                           {
+						                            case 0:  SETBIT0(Option.flags,fAddHeat);                                    return true; break;  // использование запрещено
+						                            case 1:  SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // резерв
+						                            case 2:  SETBIT1(Option.flags,fAddHeat);SETBIT1(Option.flags,fTypeRHEAT);   return true; break;  // бивалент
+						                            default: SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // Исправить по умолчанию
+						                           } }else  // бивалент
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {if ((x>=-30.0)&&(x<=30.0))  {Option.tempRHEAT=x*100.0; return true;} else return false; }else     // температура управления RHEAT (градусы)
+   if(strcmp(var,option_PUMP_WORK)==0)        {if ((x>=0.0)&&(x<=60.0)) {Option.workPump=x; return true;} else return false;}else                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((x>=0.0)&&(x<=60.0)) {Option.pausePump=x; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_ATTEMPT)==0)          { if ((x>=0.0)&&(x<10.0)) {Option.nStart=x; return true;} else return false;  }else                // число попыток пуска
+   if(strcmp(var,option_TIME_CHART)==0)       { if (get_State()==pWORK_HP) startChart(); // Сбросить статистистику, начать отсчет заново
+						                           switch ((int)x)  // период обновления ститистики
+						                           {
+						                            case 0:  Option.tChart=10;    return true; break;
+						                            case 1:  Option.tChart=60;    return true; break;
+						                            case 2:  Option.tChart=3*60;  return true; break;
+						                            case 3:  Option.tChart=10*60; return true; break;
+						                            case 4:  Option.tChart=30*60; return true; break;
+						                            case 5:  Option.tChart=60*60; return true; break;       
+						                            default: Option.tChart=60;    return true; break;    // Исправить по умолчанию
+						                           }   } else
+   if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
+   if(strcmp(var,option_NEXTION)==0)          {if (x==0) {SETBIT0(Option.flags,fNextion); updateNextion(); return true;} 
+					                           else if (x==1) {SETBIT1(Option.flags,fNextion); updateNextion(); return true;} 
+					                           else return false;  } else            // использование дисплея nextion
+					   
+   if(strcmp(var,option_EEV_CLOSE)==0)        {if (x==0) {SETBIT0(Option.flags,fEEV_close); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_close); return true;} else return false;   }else            // Закрытие ЭРВ при выключении компрессора
+   if(strcmp(var,option_EEV_LIGHT_START)==0)  {if (x==0) {SETBIT0(Option.flags,fEEV_light_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_light_start); return true;} else return false; }else  // Облегчение старта компрессора
+   if(strcmp(var,option_START_POS)==0)        {if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;              }else  // Всегда начинать работу ЭРВ со стратовой позици
      
-   case pSD_CARD:          if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;                   break;    // Сбрасывать статистику на карту
-   case pSAVE_ON:          if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;                     break;    // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
- 
-   case pNEXT_SLEEP:       if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                                 break;    // Время засыпания секунды NEXTION минуты
-   case pNEXT_DIM:         if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                                  break;    // Якрость % NEXTION
-   case pOW2TS:			   Option.flags = (Option.flags & ~(1<<f1Wire2TSngl)) | (x == 0 ? 0 : (1<<f1Wire2TSngl)); return true;
- 
-   case pEND2:             return (char*)"end";                                                                                                                                        break;    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-   default:        return  (char*)cInvalid;                                                                                                                                           break;   
-   }
- return false; 
+   if(strcmp(var,option_SD_CARD)==0)          {if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;       }else       // Сбрасывать статистику на карту
+   if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
+   if(strcmp(var,option_NEXT_SLEEP)==0)       {if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                      }else       // Время засыпания секунды NEXTION минуты
+   if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                       }else       // Якрость % NEXTION
+   if(strcmp(var,option_OW2TS)==0)            {Option.flags = (Option.flags & ~(1<<f1Wire2TSngl)) | (x == 0 ? 0 : (1<<f1Wire2TSngl)); return true;}else
+   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
+   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
+   if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
+   if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((x>=0.0)&&(x<=6000.0)) {Option.delayRepeadStart=x; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOn=x; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOff=x; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+   if(strcmp(var,option_DELAY_TRV)==0)        {if ((x>=0.0)&&(x<=600.0)) {Option.delayTRV=x; return true;} else return false;}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerSW=x; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   return false; 
 }
 
-// Получить опции ТН
-char*    HeatPump::get_optionHP(OPTION_HP p)
+// Получить опции ТН, результат добавляется в ret
+char* HeatPump::get_optionHP(char *var, char *ret)
 {
+	
  char static temp[16];
- switch (p)
-   {
-   case pADD_HEAT:        if(!GETBIT(Option.flags,fAddHeat))     return (char*)"none:1;reserve:0;bivalent:0;";        // использование ТЭН запрещено
-                     else if(!GETBIT(Option.flags,fTypeRHEAT))   return (char*)"none:0;reserve:1;bivalent:0;";        // резерв
-                          else                                   return (char*)"none:0;reserve:0;bivalent:1;";break;  // бивалент
-   case pTEMP_RHEAT:      return ftoa(temp,(float)Option.tempRHEAT/100.0,1);        break;                   // температура управления RHEAT (градусы)
-   case pPUMP_WORK:       return  int2str(Option.workPump);                         break;                   // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
-   case pPUMP_PAUSE:      return  int2str(Option.pausePump);                        break;                   // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
-   case pATTEMPT:         return  int2str(Option.nStart);                           break;                   // число попыток пуска
-   case pTIME_CHART:      switch (Option.tChart)  // период обновления ститистики
-                           {
-                            case 10:    return (char*)"10 sec:1;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"; break;
-                            case 60:    return (char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"; break;
-                            case 3*60:  return (char*)"10 sec:0;1 min:0;3 min:1;10 min:0;30 min:0;60 min:0;"; break;
-                            case 10*60: return (char*)"10 sec:0;1 min:0;3 min:0;10 min:1;30 min:0;60 min:0;"; break;
-                            case 30*60: return (char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:1;60 min:0;"; break;
-                            case 60*60: return (char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:1;"; break;       
-                            default:    Option.tChart=60; return (char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"; break;  // Исправить по умолчанию
-                           } 
-   case pBEEP:             if(GETBIT(Option.flags,fBeep)) return (char*)cOne; else return (char*)cZero;      break;            // Подача звукового сигнала
-   case pNEXTION:          if(GETBIT(Option.flags,fNextion)) return (char*)cOne; else return (char*)cZero;   break;            // использование дисплея nextion
+   if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
+                                               else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
+                                               else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {return strcat(ret,ftoa(temp,(float)Option.tempRHEAT/100.0,1));}else                                         // температура управления RHEAT (градусы)
+   if(strcmp(var,option_PUMP_WORK)==0)        {return strcat(ret,int2str(Option.workPump));}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_PUMP_PAUSE)==0)       {return strcat(ret,int2str(Option.pausePump));}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_ATTEMPT)==0)          {return strcat(ret,int2str(Option.nStart));}else                                                             // число попыток пуска
+   if(strcmp(var,option_TIME_CHART)==0)       { switch (Option.tChart)  // период обновления ститистики
+						                           {
+						                            case 10:    return strcat(ret,(char*)"10 sec:1;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 60:    return strcat(ret,(char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 3*60:  return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:1;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 10*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:1;30 min:0;60 min:0;"); break;
+						                            case 30*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:1;60 min:0;"); break;
+						                            case 60*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:1;"); break;       
+						                            default:    Option.tChart=60; return strcat(ret,(char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;  // Исправить по умолчанию
+						                           } } else
+   if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
+   if(strcmp(var,option_NEXTION)==0)          {if(GETBIT(Option.flags,fNextion)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else         // использование дисплея nextion
    
-   case pEEV_CLOSE:        if(GETBIT(Option.flags,fEEV_close)) return (char*)cOne; else return (char*)cZero; break;            // Закрытие ЭРВ при выключении компрессора
-   case pEEV_LIGHT_START:  if(GETBIT(Option.flags,fEEV_light_start)) return (char*)cOne; else return (char*)cZero; break;      // Облегчение старта компрессора
-   case pStartPos:        if(GETBIT(Option.flags,fEEV_start)) return (char*)cOne; else return (char*)cZero; break;            // Всегда начинать работу ЭРВ со стратовой позици
+   if(strcmp(var,option_EEV_CLOSE)==0)        {if(GETBIT(Option.flags,fEEV_close)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Закрытие ЭРВ при выключении компрессора
+   if(strcmp(var,option_EEV_LIGHT_START)==0)  {if(GETBIT(Option.flags,fEEV_light_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else      // Облегчение старта компрессора
+   if(strcmp(var,option_START_POS)==0)        {if(GETBIT(Option.flags,fEEV_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else           // Всегда начинать работу ЭРВ со стратовой позици
      
-   case pSD_CARD:          if(GETBIT(Option.flags,fSD_card)) return (char*)cOne; else return (char*)cZero;   break;            // Сбрасывать статистику на карту
-   case pSAVE_ON:          if(GETBIT(Option.flags,fSaveON)) return (char*)cOne; else return (char*)cZero;    break;            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
-   case pNEXT_SLEEP:       return int2str(Option.sleep);                                                     break;            // Время засыпания секунды NEXTION минуты
-   case pNEXT_DIM:         return int2str(Option.dim);                                                       break;            // Якрость % NEXTION
-   case pOW2TS:			   return (char*)(GETBIT(Option.flags, f1Wire2TSngl) ? cOne : cZero); break;
-
-   case pEND2:             return (char*)"end";                                                           break;            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-   default:                return  (char*)cInvalid;                                                      break;   
-   }
- return  (char*)cInvalid;                
+   if(strcmp(var,option_SD_CARD)==0)          {if(GETBIT(Option.flags,fSD_card)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else            // Сбрасывать статистику на карту
+   if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
+   if(strcmp(var,option_NEXT_SLEEP)==0)       {return strcat(ret,int2str(Option.sleep));                                                     }else            // Время засыпания секунды NEXTION минуты
+   if(strcmp(var,option_NEXT_DIM)==0)         {return strcat(ret,int2str(Option.dim));                                                       }else            // Якрость % NEXTION
+   if(strcmp(var,option_OW2TS)==0)            {return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl) ? cOne : cZero)); }else
+   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return strcat(ret,int2str(Option.delayOnPump));}else     // Задержка включения компрессора после включения насосов (сек).
+   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return strcat(ret,int2str(Option.delayOffPump));}else      // Задержка выключения насосов после выключения компрессора (сек).
+   if(strcmp(var,option_DELAY_START_RES)==0)  {return strcat(ret,int2str(Option.delayStartRes));}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
+   if(strcmp(var,option_DELAY_REPEAD_START)==0){return strcat(ret,int2str(Option.delayRepeadStart));}else  // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {return strcat(ret,int2str(Option.delayDefrostOn));}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){return strcat(ret,int2str(Option.delayDefrostOff));}else   // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+   if(strcmp(var,option_DELAY_TRV)==0)        {return strcat(ret,int2str(Option.delayTRV));}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return strcat(ret,int2str(Option.delayBoilerSW));}else    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return strcat(ret,int2str(Option.delayBoilerOff));} // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   return  strcat(ret,(char*)cInvalid);                
 }
+
 
 // Установить рабочий профиль по текущему Prof
 void HeatPump::set_profile()
@@ -1638,10 +1644,10 @@ boolean HeatPump::switchBoiler(boolean b)
       }
    }
   #endif     
-   if(get_State()==pWORK_HP)   // Если было перекидывание 3-х ходового и ТН работает то обеспечить дополнительное время (DELAY_BOILER_SW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
+   if(get_State()==pWORK_HP)   // Если было перекидывание 3-х ходового и ТН работает то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
        {
-        journal.jprintf(" Pause %d sec after switching the 3-way valve . . .\n",HP.Option.DELAY_BOILER_SW);
-        _delay(HP.Option.DELAY_BOILER_SW*1000);  // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+        journal.jprintf(" Pause %d sec after switching the 3-way valve . . .\n",HP.Option.delayBoilerSW);
+        _delay(HP.Option.delayBoilerSW*1000);  // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
        }     
   return onBoiler;     
 }
@@ -1676,8 +1682,8 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	// пауза перед выключением насосов контуров, если нужно
 	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.DELAY_OFF_PUMP);
-		_delay(Option.DELAY_OFF_PUMP * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.delayOffPump);
+		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
 
 	// переключение насосов если есть что переключать (проверка была выше)
@@ -1706,8 +1712,8 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	// пауза после включения насосов, если нужно
 	if((b) && (!old))                                                // Насосы включены (старт компрессора), нужна пауза
 	{
-		journal.jprintf(" Pause %d seconds before starting compressor . . .\n", Option.DELAY_ON_PUMP);
-		_delay(Option.DELAY_ON_PUMP * 1000);                 // задержка перед включением компрессора
+		journal.jprintf(" Pause %d seconds before starting compressor . . .\n", Option.delayOnPump);
+		_delay(Option.delayOnPump * 1000);                 // задержка перед включением компрессора
 	}
 
 }
@@ -2293,7 +2299,7 @@ int16_t newFC;               //Новая частота инвертора
 
 if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
 
-if ((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&((abs(FEED-RET)>Prof.Heat.dt)&&(COMPRESSOR_IS_ON)))   {set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае
+if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&((abs(FEED-RET)>Prof.Heat.dt)&&(COMPRESSOR_IS_ON)))   {set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае
 #ifdef RTRV    
    if ((dRelay[RTRV].get_Relay())&&(COMPRESSOR_IS_ON))      dRelay[RTRV].set_OFF();  // отопление Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
 #endif
@@ -2303,7 +2309,7 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
           case pHYSTERESIS:  // Гистерезис нагрев.
                if (GETBIT(Prof.Heat.flags,fTarget)){ target=Prof.Heat.Temp2; t1=RET;}  else { target=Prof.Heat.Temp1; t1=sTemp[TIN].get_Temp();}  // вычислить темературы для сравнения Prof.Heat.Target 0-дом   1-обратка
                     if(t1>target)                  {Status.ret=pHh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
-               else if((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ
+               else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ
                  else if(t1<target-Prof.Heat.dTemp) {Status.ret=pHh2;   return pCOMP_ON; }                           // Достигнут гистерезис ВКЛ
                else if(RET<Prof.Heat.tempOut)      {Status.ret=pHh13;  return pCOMP_ON; }                            // Достигнут минимальная темература обратки ВКЛ
                else                                {Status.ret=pHh4;   return pCOMP_NONE;}                           // Ничего не делаем  (сохраняем состояние)
@@ -2313,7 +2319,7 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
             if (GETBIT(Prof.Heat.flags,fTarget)) { target=Prof.Heat.Temp2; t1=RET;}  else { target=Prof.Heat.Temp1; t1=sTemp[TIN].get_Temp();} // вычислить темературы для сравнения Prof.Heat.Target 0-дом  1-обратка
             
              if(t1>target)             { Status.ret=pHp3; return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
-             else if((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}        // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет
+             else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}        // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет
            //  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }                     // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
            //  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }                       // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
            //  else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (бойлер нагрет) ВКЛ
@@ -2466,7 +2472,7 @@ int16_t newFC;               //Новая частота инвертора
 
 if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
 
-if ((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&((abs(FEED-RET)>Prof.Cool.dt)&&(COMPRESSOR_IS_ON)))   {set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае
+if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&((abs(FEED-RET)>Prof.Cool.dt)&&(COMPRESSOR_IS_ON)))   {set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае
 #ifdef RTRV
   if ((!dRelay[RTRV].get_Relay())&&(COMPRESSOR_IS_ON))  dRelay[RTRV].set_ON();                                        // Охлаждение Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
 #endif
@@ -2476,7 +2482,7 @@ switch (Prof.Cool.Rule)   // в зависмости от алгоритма
           case pHYSTERESIS:  // Гистерезис охлаждение.
                if (GETBIT(Prof.Cool.flags,fTarget)) { target=Prof.Cool.Temp2; t1=RET;}  else { target=Prof.Cool.Temp1; t1=sTemp[TIN].get_Temp();}  // вычислить темературы для сравнения Prof.Heat.Target 0-дом   1-обратка
                     if(t1<target)             {Status.ret=pCh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
-               else if((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&(FEED<Prof.Cool.tempIn)){Status.ret=pCh1;return pCOMP_OFF;}// Достигнута минимальная температура подачи ВЫКЛ
+               else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)){Status.ret=pCh1;return pCOMP_OFF;}// Достигнута минимальная температура подачи ВЫКЛ
                else if(t1>target+Prof.Cool.dTemp)  {Status.ret=pCh2;   return pCOMP_ON; }                       // Достигнут гистерезис ВКЛ
                else if(RET>Prof.Cool.tempOut)      {Status.ret=pCh13;  return pCOMP_ON; }                       // Достигнут Максимальная темература обратки ВКЛ
                else  {Status.ret=pCh4;    return pCOMP_NONE;   }                                                // Ничего не делаем  (сохраняем состояние)
@@ -2486,7 +2492,7 @@ switch (Prof.Cool.Rule)   // в зависмости от алгоритма
             if (GETBIT(Prof.Cool.flags,fTarget)) { target=Prof.Cool.Temp2; t1=RET;}  else { target=Prof.Cool.Temp1; t1=sTemp[TIN].get_Temp();} // вычислить темературы для сравнения Prof.Heat.Target 0-дом  1-обратка
             
              if(t1<target)                     { Status.ret=pCp3; return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
-             else if ((rtcSAM3X8.unixtime()-offBoiler>Option.DELAY_BOILER_OFF)&&(FEED<Prof.Cool.tempIn)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет
+             else if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет
            //  else if ((t1<target-Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                        // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
 //             else if ((t1>target+Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                          // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
 //             else if ((t1>target+Prof.Cool.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pCp2; return pCOMP_ON;}  // Достигнут гистерезис (бойлер нагрет) ВКЛ
@@ -2777,7 +2783,7 @@ void HeatPump::ChangesPauseTRV()
    checkEVI();                                                     // выключить ЭВИ
   #endif
     journal.jprintf(" Pause for pressure equalization . . .\n");
-  _delay(Option.DELAY_TRV*1000);                                   // Пауза 120 секунд для выравнивания давлений
+  _delay(Option.delayTRV*1000);                                   // Пауза 120 секунд для выравнивания давлений
   #ifdef EEV_DEF  
   lastEEV=dEEV.get_StartPos();                                     // Выставление ЭРВ на стартовую позицию т.к идет смена режима тепло-холод
   #endif
@@ -2917,9 +2923,9 @@ void HeatPump::compressorON(MODE_HP mod)
                 journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
               } 
            // Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
-           if (!dRelay[PUMP_IN].get_Relay()) {journal.jprintf(" WARNING! PUMP_IN is off Compressor on\n");  dRelay[PUMP_IN].set_ON(); _delay(Option.DELAY_ON_PUMP * 1000); }
+           if (!dRelay[PUMP_IN].get_Relay()) {journal.jprintf(" WARNING! PUMP_IN is off Compressor on\n");  dRelay[PUMP_IN].set_ON(); _delay(Option.delayOnPump * 1000); }
            #ifndef SUPERBOILER  // для супербойлера это лишнее
-           if (!dRelay[PUMP_OUT].get_Relay()){journal.jprintf(" WARNING! PUMP_OUT is off Compressor on\n"); dRelay[PUMP_OUT].set_ON(); _delay(Option.DELAY_ON_PUMP * 1000); }
+           if (!dRelay[PUMP_OUT].get_Relay()){journal.jprintf(" WARNING! PUMP_OUT is off Compressor on\n"); dRelay[PUMP_OUT].set_ON(); _delay(Option.delayOnPump * 1000); }
            #endif
            
            #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
@@ -3036,7 +3042,7 @@ void HeatPump::defrost()
       
       // организация задержки перед включением
       if (startDefrost==0) startDefrost=xTaskGetTickCount();               // первое срабатывание датчика - запоминаем время (тики)
-      if (xTaskGetTickCount()-startDefrost<DELAY_DEFROST_ON*1000)  return; //  Еще рано размораживать
+      if (xTaskGetTickCount()-startDefrost<delayDefrostOn*1000)  return; //  Еще рано размораживать
       // придется размораживать
        journal.jprintf("Start defrost\n"); 
        #ifdef RTRV
@@ -3053,8 +3059,8 @@ void HeatPump::defrost()
         journal.jprintf(" Wait process defrost . . .\n"); 
         if((get_State()==pOFF_HP)||(get_State()==pSTARTING_HP)||(get_State()==pSTOPING_HP)) break;     // ТН выключен или включается или выключается выходим из разморозки
       }
-      journal.jprintf(" Finish defrost, wait DELAY_DEFROST_OFF min.\n"); 
-      _delay(DELAY_DEFROST_OFF*1000);               // Задержка перед выключением
+      journal.jprintf(" Finish defrost, wait delayDefrostOff min.\n"); 
+      _delay(delayDefrostOff*1000);               // Задержка перед выключением
       compressorOFF();                                                     // выключить компрессор
       journal.jprintf("Finish defrost\n"); 
       // выходим ТН сам определит что надо делать

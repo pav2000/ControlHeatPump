@@ -267,25 +267,38 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_boiler((char*)boil_PAUSE1,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf," Расписание работы\r\n");
      HP.Prof.get_boiler((char*)boil_SCHEDULER,Socket[thread].outBuf);STR_END;
-     
-     strcat(Socket[thread].outBuf,"\n  1.4 Опции ТН\r\n");
-     strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); if(!strcmp(HP.get_optionHP(pSAVE_ON),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); strcat(Socket[thread].outBuf,HP.get_optionHP(pTIME_CHART));STR_END;
-     strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); if(!strcmp(HP.get_optionHP(pSD_CARD),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Время работы конденсатора  насоса при выключенном компрессоре МИНУТЫ: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pPUMP_PAUSE));STR_END;
-     strcat(Socket[thread].outBuf,"Время паузы конденсатора насоса при выключенном компрессоре МИНУТЫ: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pPUMP_WORK));STR_END;
-     strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); strcat(Socket[thread].outBuf,HP.get_optionHP(pATTEMPT));STR_END;
-     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); if(!strcmp(HP.get_optionHP(pADD_HEAT),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pTEMP_RHEAT)) ;STR_END;
-     strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_CLOSE),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); if(!strcmp(HP.get_optionHP(pStartPos),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); if(!strcmp(HP.get_optionHP(pEEV_LIGHT_START),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Использование звука: "); if(!strcmp(HP.get_optionHP(pBEEP),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); if(!strcmp(HP.get_optionHP(pNEXTION),cOne))  strcat(Socket[thread].outBuf,cYes); else  strcat(Socket[thread].outBuf,cNo);STR_END;
-     strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); strcat(Socket[thread].outBuf,HP.get_optionHP(pNEXT_SLEEP));STR_END;
-     strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); strcat(Socket[thread].outBuf,HP.get_optionHP(pNEXT_DIM));STR_END;
-
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+
+     
+     strcpy(Socket[thread].outBuf,"\n  1.4 Опции ТН\r\n");
+     strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); HP.get_optionHP((char*)option_SAVE_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_SD_CARD,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время работы конденсатора  насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время паузы конденсатора насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.get_optionHP((char*)option_EEV_CLOSE,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.get_optionHP((char*)option_START_POS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.get_optionHP((char*)option_EEV_LIGHT_START,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование звука: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); HP.get_optionHP((char*)option_NEXT_SLEEP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); HP.get_optionHP((char*)option_NEXT_DIM,Socket[thread].outBuf);STR_END;
+     
+     strcat(Socket[thread].outBuf,"На второй шине 1-Wire(DS2482) только один датчик: "); HP.get_optionHP((char*)option_OW2TS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка перед повторным включениме ТН при ошибке, попытки пуска (сек): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка после срабатывания датчика перед включением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка перед выключением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_OFF,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка между переключением 4-х ходового клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
+     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+
     
      strcpy(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
      strcat(Socket[thread].outBuf,"Использование DHCP: "); HP.get_network((char*)net_DHCP,Socket[thread].outBuf);STR_END;

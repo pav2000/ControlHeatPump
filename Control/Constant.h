@@ -73,7 +73,7 @@ const uint16_t  defaultPort=80;
 #define W5200_NUM_LINK    2                 // Число попыток сброса чипа w5500 и проверки появления связи (кабель воткнут) используется для инициализаци чипа
 #define W5200_TIME_LINK   4000              // Максимальное время ожидания устанoвления связи (поднятие Link) кабель воткнут  используется для инициализаци чипа (мсек)
 #define W5200_TIME_WAIT   3000              // Время ожидания захвата мютекса (переключение потоков) мсек
-#define W5200_STACK_SIZE  220               // Размер стека (слова!!! - 4 байта) до обрезки стеков было 340 - работает
+#define W5200_STACK_SIZE  230               // Размер стека (слова!!! - 4 байта) до обрезки стеков было 340 - работает
 #define W5200_SPI_SPEED   SPI_RATE          // ЭТО ДЕЛИТЕЛЬ (SPI_RATE определен в w5100.h)!!! Частота SPI w5200 = 84/W5200_SPI_SPEED т.е. 2-42МГц 3-28МГц 4-21МГц 6-14МГц Диапазон 2-6
 #define W5200_SOCK_SYS    (MAX_SOCK_NUM-1)  // Номер системного сокета который не использутся в вебсервере, это последний сокет, НЕ МЕНЯТЬ
 #define W5200_RTR         (2*0x07D0)          // время таймаута в 100 мкс интервалах  (по умолчанию 200ms(100us X 2000(0x07D0))) актуально для комманд CONNECT, DISCON, CLOSE, SEND, SEND_MAC, SEND_KEEP
@@ -454,7 +454,7 @@ const char *eev_PRE_START_POS =  {"PRE_START_POS"}; // ПУСКОВАЯ пози
 const char *eev_START_POS     =  {"START_POS"};     // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
 const char *eev_DELAY_ON_PID  =  {"DELAY_ON_PID"};  // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
 const char *eev_DELAY_START_POS={"DELAY_START_POS"};// Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
-const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = DELAY_OFF_PUMP+delayOff
+const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
 const char *eev_DELAY_ON      =  {"DELAY_ON"};      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 const char *eev_HOLD_MOTOR    =  {"HOLD_MOTOR"};    // Флаг удержания мотора
 const char *eev_PRESENT       =  {"PRESENT"};       // Флаг наличия ЭРВ в ТН
@@ -691,6 +691,34 @@ const char *fc_STEP_FREQ_BOILER  = {"STEP_FREQ_BOILER"};  // Шаг уменьш
 const char *fc_DT_TEMP           = {"DT_TEMP"};           // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 const char *fc_DT_TEMP_BOILER    = {"DT_TEMP_BOILER"};    // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 
+
+// Описание имен параметров опций ТН  для функций get_optionHP set_optionHP
+const char *option_ADD_HEAT           = {"ADD_HEAT"};           // использование дополнительного нагревателя (значения 1 и 0)
+const char *option_TEMP_RHEAT         = {"TEMP_RHEAT"};         // температура для управления RHEAT (градусы)
+const char *option_PUMP_WORK          = {"PUMP_WORK"};          // работа насоса конденсатора при выключенном компрессоре секунды
+const char *option_PUMP_PAUSE         = {"PUMP_PAUSE"};         // пауза между работой насоса конденсатора при выключенном компрессоре (секунды)
+const char *option_ATTEMPT            = {"ATTEMPT"};            // число попыток пуска
+const char *option_TIME_CHART         = {"TIME_CHART"};         // период сбора статистики
+const char *option_BEEP               = {"BEEP"};               // включение звука
+const char *option_NEXTION            = {"NEXTION"};            // использование дисплея nextion
+const char *option_EEV_CLOSE          = {"EEV_CLOSE"};          // закрытие ЭРВ при выключении компрессора
+const char *option_EEV_LIGHT_START    = {"EEV_LIGHT_START"};    // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+const char *option_START_POS          = {"START_POS"};          // флаг Всегда начинать работу ЭРВ со стратовой позици
+const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
+const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
+const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
+const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION
+const char *option_OW2TS              = {"OW2TS"};			    // На второй шине 1-Wire(DS2482) только один датчик
+const char *option_DELAY_ON_PUMP      = {"DELAY_ON_PUMP"};      // Задержка включения компрессора после включения насосов (сек).
+const char *option_DELAY_OFF_PUMP     = {"DELAY_OFF_PUMP"};     // Задержка выключения насосов после выключения компрессора (сек).
+const char *option_DELAY_START_RES    = {"DELAY_START_RES"};    // Задержка включения ТН после внезапного сброса контроллера (сек.)
+const char *option_DELAY_REPEAD_START = {"DELAY_REPEAD_START"}; // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+const char *option_DELAY_DEFROST_ON   = {"DELAY_DEFROST_ON"};   // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+const char *option_DELAY_DEFROST_OFF  = {"DELAY_DEFROST_OFF"};  // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+const char *option_DELAY_TRV          = {"DELAY_TRV"};          // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+const char *option_DELAY_BOILER_SW    = {"DELAY_BOILER_SW"};    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+const char *option_DELAY_BOILER_OFF   = {"DELAY_BOILER_OFF"};   // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+	
 
 
 // Названия типы фреонов
@@ -1128,6 +1156,7 @@ enum RULE_HP
     pEND1             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
+/*
 //  Перечисляемый тип - Опции ТН
 enum OPTION_HP       
 {
@@ -1141,7 +1170,7 @@ enum OPTION_HP
     pNEXTION,         // использование дисплея nextion
     pEEV_CLOSE,       // закрытие ЭРВ при выключении компрессора
     pEEV_LIGHT_START, // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-    pStartPos,       // флаг Всегда начинать работу ЭРВ со стратовой позици
+    pSTART_POS,       // флаг Всегда начинать работу ЭРВ со стратовой позици
     pSD_CARD,         // запись статистики на карточку
     pSAVE_ON,         // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
     pNEXT_SLEEP,      // Время засыпания секунды NEXTION
@@ -1150,7 +1179,7 @@ enum OPTION_HP
         
     pEND2             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
-
+*/
 
  #endif
 

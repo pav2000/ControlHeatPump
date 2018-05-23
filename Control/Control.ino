@@ -1237,7 +1237,7 @@ void vPauseStart( void * )
      #ifdef DEMO
       tt=30;
      #else 
-        if (HP.isCommand()== pRESTART)   tt=HP.Option.DELAY_START_RES; else tt=HP.Option.DELAY_REPEAD_START;  // Определение времени задержки
+        if (HP.isCommand()== pRESTART)   tt=HP.Option.delayStartRes; else tt=HP.Option.delayRepeadStart;  // Определение времени задержки
      #endif
       // задержка перед пуском ТН
       for(i=tt;i>0;i=i-10) // задержка перед стартом обратный отсчет
@@ -1247,8 +1247,8 @@ void vPauseStart( void * )
 //          if (HP.PauseStart) break;               // если задача пущена не сначала
           vTaskDelay(10*1000/portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
           if (HP.PauseStart) break;               // если задача пущена не сначала
-   //       if ((i==DELAY_REPEAD_START/2)&&(HP.get_State()== pREPEAT)) 
-          if ((i==HP.Option.DELAY_REPEAD_START/2)&&(HP.isCommand()== pREPEAT))
+   //       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT)) 
+          if ((i==HP.get_delayRepeadStart()/2)&&(HP.isCommand()== pREPEAT))
                 {
                   HP.eraseError();  
                   if (HP.PauseStart) break;               // если задача пущена не сначала
