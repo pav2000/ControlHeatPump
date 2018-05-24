@@ -513,26 +513,67 @@ void get_txtSettings(uint8_t thread)
                     case R717:              strcat(Socket[thread].outBuf,"R717\r\n");              break;
                     default:                strcat(Socket[thread].outBuf,"error\r\n");             break;    
                    }    
-                        
              strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");     strcat(Socket[thread].outBuf,int2str(HP.dEEV.get_EEV())); STR_END;
-             strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");   strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dEEV.get_Overheat()/100.0,2));
-             STR_END;
+             strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");   strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dEEV.get_Overheat()/100.0,2)); STR_END;
+             strcat(Socket[thread].outBuf," Корректировка перегегрева:\r\n");
+             strcat(Socket[thread].outBuf,"Флаг включения корректировки перегерва от разности температур конденсатора и испраителя: ");  HP.dEEV.get_paramEEV((char*)eev_cCORRECT,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Задержка после старта компрессора (сек): ");  HP.dEEV.get_paramEEV((char*)eev_cDELAY,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Период в циклах ЭРВ, сколько пропустить (циклы): ");  HP.dEEV.get_paramEEV((char*)eev_cPERIOD,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Температура нагнетания - конденсации (С): ");  HP.dEEV.get_paramEEV((char*)eev_cDELTA,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев (С): ");  HP.dEEV.get_paramEEV((char*)eev_cDELTAT,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Коэффициент: ");  HP.dEEV.get_paramEEV((char*)eev_cKF,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Максимальный перегрев (С): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MAX,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Минимальный перегрев (С): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MIN,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf," Глобальные настройки:\r\n");
+             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ (С): ");  HP.dEEV.get_paramEEV((char*)eev_ERR_KP,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Скорость шагового двигателя ЭРВ (импульсы в сек.): ");  HP.dEEV.get_paramEEV((char*)eev_SPEED,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"ПУСКОВАЯ позиция ЭРВ - то что при старте компрессора, при раскрутке (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_PRE_START_POS,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. позиция скоторой начинается работа ПИД (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_START_POS,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Задержка включения ЭРВ после включения компрессора (сек): ");  HP.dEEV.get_paramEEV((char*)eev_DELAY_ON_PID,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Время после старта компрессора когда ЭРВ выходит на стартовую позицию - облегчение пуска вначале ЭРВ (сек): ");  HP.dEEV.get_paramEEV((char*)eev_DELAY_START_POS,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Задержка закрытия ЭРВ после выключения насосов (сек): ");  HP.dEEV.get_paramEEV((char*)eev_DELAY_OFF,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Задержка между открытием ЭРВ и включением компрессора, для выравнивания давлений (сек): ");  HP.dEEV.get_paramEEV((char*)eev_DELAY_ON,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Флаг удержания мотора шагового двигателя ЭРВ: ");  HP.dEEV.get_paramEEV((char*)eev_HOLD_MOTOR,Socket[thread].outBuf);STR_END; 
          }
         #else 
             strcat(Socket[thread].outBuf,"\n  3.2 EEV absent \r\n");    
         #endif
-
-       strcat(Socket[thread].outBuf,"\n  3.3 Частотный преобразователь\r\n");
+       sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));   
+        
+       strcpy(Socket[thread].outBuf,"\n  3.3 Частотный преобразователь\r\n");
        if (HP.dFC.get_present()) 
          {
-              strcat(Socket[thread].outBuf,"Текущее положение %: ");  strcat(Socket[thread].outBuf,int2str(HP.dFC.get_targetFreq())); STR_END;
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-              strcat(Socket[thread].outBuf,"ЦАП дискреты: ");         strcat(Socket[thread].outBuf,int2str(HP.dFC.get_DAC())); STR_END;
-#endif
-         } 
+         strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END;  STR_END;
+          #ifdef FC_ANALOG_CONTROL // Аналоговое управление
+              strcat(Socket[thread].outBuf," Аналоговое управление: \r\n");
+              strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие частоте 0 гц (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL0,Socket[thread].outBuf);STR_END; 
+              strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие максимальной частоте (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL100,Socket[thread].outBuf);STR_END; 
+              strcat(Socket[thread].outBuf,"Частота отключения инвертора  (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVELOFF,Socket[thread].outBuf);STR_END; 
+              strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
+          #endif
+	       strcat(Socket[thread].outBuf,"Время обновления алгоритма пид регулятора (сек): ");  HP.dFC.get_paramFC((char*)fc_UPTIME,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц): ");  HP.dFC.get_paramFC((char*)fc_PID_FREQ_STEP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты (%): ");  HP.dFC.get_paramFC((char*)fc_PID_STOP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Cколько градусов не доходит до максимальной температуры TCOMP, при при которой происходит уменьшение частоты (C): ");  HP.dFC.get_paramFC((char*)fc_DT_COMP_TEMP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Стартовая частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_START_FREQ,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Стартовая частота инвертора ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_START_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Mинимальная  частота инвертора при охлаждении (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_COOL,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора при нагреве ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_USER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора в режиме охлаждения (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_COOL,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора в режиме ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_USER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока (гц): ");  HP.dFC.get_paramFC((char*)fc_STEP_FREQ,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_STEP_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Привышение температуры от уставок (подача) при которой уменьшается частота (C): ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Привышение температуры от уставок (подача) при которой уменьшается частота для ГВС (C): ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP_BOILER,Socket[thread].outBuf);STR_END; 
+	     } 
         else strcat(Socket[thread].outBuf,"FC absent \r\n");    
-
-       strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
+        sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+        
+       strcpy(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
          #ifdef USE_ELECTROMETER_SDM
            strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE,Socket[thread].outBuf); STR_END;
