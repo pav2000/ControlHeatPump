@@ -167,6 +167,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 		if(err != OK) state = ERR_LINK_FC;
     } else {
     	state = 0;
+    	err = OK;
     }
     return state;
 }
@@ -595,7 +596,7 @@ static char temp[12];
     if(strcmp(var,fc_STATE)==0)                 { return strcat(ret,int2str(state));   } else 
     if(strcmp(var,fc_FC)==0)                    { return strcat(ret,ftoa(temp,(float)FC/100.0,2)); } else
     if(strcmp(var,fc_cFC)==0)                   { return strcat(ret,ftoa(temp,(float)FC_curr/100.0,2)); } else
-    if(strcmp(var,fc_cPOWER)==0)                { return strcat(ret,ftoa(temp,(float)power/10.0,1)); } else 
+    if(strcmp(var,fc_cPOWER)==0)                { return strcat(ret,ftoa(temp,(float)power/10.0,1)); strcat(ret, "%"); } else
     if(strcmp(var,fc_cCURRENT)==0)              { return strcat(ret,ftoa(temp,(float)current/100.0,2)); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
@@ -614,99 +615,25 @@ static char temp[12];
     if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ERROR)==0)                 { return strcat(ret,int2str(err));          } else                                    
     if(strcmp(var,fc_UPTIME)==0)                { return strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { return strcat(ret,ftoa(temp,(float)_data.PidFreqStep/100.0,2)); } else // Гц
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { return strcat(ret,ftoa(temp,(float)_data.PidFreqStep/100.0,2)); strcat(ret, "%"); } else // %
     if(strcmp(var,fc_PID_STOP)==0)              { return strcat(ret,int2str(_data.PidStop));          } else 
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { return strcat(ret,ftoa(temp,(float)_data.dtCompTemp/100.0,2)); } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            { return strcat(ret,ftoa(temp,(float)_data.startFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { return strcat(ret,ftoa(temp,(float)_data.startFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.minFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqCool/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.minFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqUser/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.maxFreq/100.0,2)); } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqCool/100.0,2)); } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.maxFreqBoiler/100.0,2)); } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqUser/100.0,2)); } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ)==0)             { return strcat(ret,ftoa(temp,(float)_data.stepFreq/100.0,2)); } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { return strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); } else // Гц 
+    if(strcmp(var,fc_START_FREQ)==0)            { return strcat(ret,ftoa(temp,(float)_data.startFreq/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { return strcat(ret,ftoa(temp,(float)_data.startFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MIN_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.minFreq/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqCool/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.minFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqUser/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MAX_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.maxFreq/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqCool/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.maxFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqUser/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_STEP_FREQ)==0)             { return strcat(ret,ftoa(temp,(float)_data.stepFreq/100.0,2)); strcat(ret, "%"); } else // %
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { return strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
     if(strcmp(var,fc_DT_TEMP)==0)               { return strcat(ret,ftoa(temp,(float)_data.dtTemp/100.0,2)); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { return strcat(ret,ftoa(temp,(float)_data.dtTempBoiler/100.0,2)); } else // градусы
     return strcat(ret,(char*)cInvalid);  
 }
-/*
-// Получить параметр инвертора в виде строки
-char* devVaconFC::get_paramFC(TYPE_PARAM_FC p)
-{
-    static char temp[12];
-    switch (p) {
-    case pON_OFF:
-        if(GETBIT(flags, fOnOff))
-            return (char*)cOne;
-        else
-            return (char*)cZero;
-        break; // Флаг включения выключения
-    case pMIN_FC:
-        return ftoa(temp, (float)minFreq / 100.0, 2);
-        break; // Только чтение минимальная % работы
-    case pMAX_FC:
-        return ftoa(temp, (float)maxFreq / 100.0, 2);
-        break; // Только чтение максимальная % работы
-    case pSTART_FC:
-        return ftoa(temp, (float)startFreq / 100.0, 2);
-        break; // Только чтение стартовая % работы
-    case pMAX_POWER:
-        return ftoa(temp, (float)FC_MAX_POWER / 10.0, 1);
-        break; // Только чтение максимальная мощность
-    case pSTATE:
-        return int2str(state);
-        break; // Только чтение Состояние ПЧ
-    case pFC:
-        return ftoa(temp, (float)FC / 100.0, 2);
-        break; // текущая скорость ПЧ
-    case pPOWER:
-        return ftoa(temp, (float)power / 10.0, 1);
-        break; // Текущая мощность
-    case pAUTO_FC:
-        if(GETBIT(flags, fAuto))
-            return (char*)cOne;
-        else
-            return (char*)cZero;
-        break; // Флаг автоматической подбора частоты
-    //    case   pANALOG:      if(GETBIT(flags,fAnalog)) return(char*)cOne;else return(char*)cZero;break; // Флаг аналогового управления
-    case pANALOG: // Флаг аналогового управления
-#ifdef FC_ANALOG_CONTROL
-        return (char*)cOne;
-#else
-        return (char*)cZero;
-#endif
-        break;
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-    case pLEVEL0:
-        return int2str(level0);
-        break; // Уровень частоты 0 в отсчетах ЦАП
-    case pLEVEL100:
-        return int2str(level100);
-        break; // Уровень частоты 100% в  отсчетах ЦАП
-    case pLEVELOFF:
-        return int2str(levelOff);
-        break; // Уровень частоты в % при отключении
-#endif
-    case pSTOP_FC:
-        if(GETBIT(flags, fErrFC))
-            return (char*)"Block";
-        else
-            return (char*)"No";
-        break; // флаг глобальная ошибка инвертора - работа инвертора запрещена
-    case pERROR_FC:
-        return int2str(err);
-        break; // Получить код ошибки
-    default:
-        return (char*)cInvalid;
-        break;
-    }
-    return (char*)cInvalid;
-}
-*/
 
 // Установить параметр инвертора из строки
 boolean devVaconFC::set_paramFC(char *var, float x)
@@ -737,113 +664,26 @@ boolean devVaconFC::set_paramFC(char *var, float x)
                                                 } else  // только чтение
     if(strcmp(var,fc_ERROR)==0)                 { return true;                         } else  // только чтение                                      
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // %
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>1)&&(x<25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<140)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<140)){_data.startFreqBoiler=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // %
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } else // %
     if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы
     return false;
 }
-/*
-// Установить параметр инвертора из строки
-boolean devVaconFC::set_paramFC(TYPE_PARAM_FC p, float x)
-{
-    switch (p) {
-    case pON_OFF:
-        if(x == 0)
-            stop_FC();
-        else
-            start_FC();
-        return true;
-        break; // Флаг включения выключения Включение-вуключение инвертора
-    case pMIN_FC:
-        return true;
-        break; // Только чтение минимальная скорость работы
-    case pMAX_FC:
-        return true;
-        break; // Только чтение максимальная скорость работы
-    case pSTART_FC:
-        return true;
-        break; // Только чтение стартовая скорость работы
-    case pMAX_POWER:
-        return true;
-        break; // Только чтение максимальная мощность
-    case pSTATE:
-        return true;
-        break; // Только чтение Состояние ПЧ
-    case pFC:
-    	return set_targetFreq(x * 100 + 0.005, true, minFreqUser, maxFreqUser) == OK;
-    case pPOWER:
-        return true;
-        break; // Только чтение Текущая мощность
-    case pAUTO_FC:
-        if(x == 0)
-            SETBIT0(flags, fAuto);
-        else
-            SETBIT1(flags, fAuto);
-        return true;
-        break; // Флаг автоматической подбора скорости
-    //  case   pANALOG:      if(x==0) SETBIT0(flags,fAnalog);else SETBIT1(flags,fAnalog);return true;break; // Флаг аналогового управления
-    case pANALOG:
-        return true;
-        break; // ТОЛЬКО ЧТЕНИЕ Флаг аналогового управления
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-        case pLEVEL0:
-        if((x >= 0) && (x <= 4096)) {
-            level0 = x;
-            return true;
-        } // Только правильные значения
-        return false;
-        break; // Уровень скорости 0 в отсчетах ЦАП
-    case pLEVEL100:
-        if((x >= 0) && (x <= 4096)) {
-            level100 = x;
-            return true;
-        } // Только правильные значения
-        return false;
-        break; // Уровень скорости 100% в  отсчетах ЦАП
-    case pLEVELOFF:
-        if((x >= 0) && (x <= 4096)) {
-            levelOff = x;
-            return true;
-        } // Только правильные значения
-        return false;
-        break; // Уровень скорости в % при отключении
-#endif
-    case pSTOP_FC:
-        SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА
-        if(x == 0) {
-            SETBIT0(flags, fErrFC);
-            note = (char*)noteFC_OK;
-        }
-        else {
-            SETBIT1(flags, fErrFC);
-            note = (char*)noteFC_NO;
-        }
-        return true;
-        break; // флаг глобальная ошибка инвертора - работа инвертора запрещена
-    case pERROR_FC:
-        return true;
-        break; // Код ошибки тлько чтение
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-*/
+
 // Вывести в buffer строковый статус.
 void devVaconFC::get_infoFC_status(char *buffer, uint16_t st)
 {
@@ -875,12 +715,12 @@ void devVaconFC::get_infoFC(char* buf)
 			if(err == OK) {
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
-				buf += m_snprintf(buf, 256, "2103|Выходная скорость (%%)|%.2f;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
 				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;V1.4 (2106)|Выходной ток (А)|%.2f;", i >> 16, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
-				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент (%%)|%.1f;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "V1.7 (2109)|Выходное напряжение (В)|%.1f;V1.8 (2110)|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
