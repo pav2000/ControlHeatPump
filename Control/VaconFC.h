@@ -146,7 +146,7 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(_data.flags,fFC);} // Наличие датчика в текущей конфигурации
   int8_t	get_err(){return err;}                  // Получить последню ошибку частотника
   uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
-  char*		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки
+  void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки
   boolean	set_paramFC(char *var, float x);        // Установить параметр инвертора из строки
 
    // Получение отдельных значений 

@@ -35,6 +35,7 @@ extern void  get_txtSettings(uint8_t thread);
 extern void  get_fileState(uint8_t thread);
 extern void  get_fileSettings(uint8_t thread);
 extern void  get_txtJournal(uint8_t thread);
+extern uint16_t get_csvStatistic(uint8_t thread);
 extern void  get_datTest(uint8_t thread);
 extern uint16_t get_csvChart(uint8_t thread);
 extern int16_t  get_indexNoSD(uint8_t thread);

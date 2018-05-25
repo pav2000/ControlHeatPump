@@ -106,7 +106,7 @@
 	</table>		
 	</div>
 	<div id="testmode2">
-		<h2>ЭРВ [pins: <span id="get_parameev-pins"></span>]  <button id="get_zeroEEV" onclick='loadParam("set_zeroEEV");'>Установка в 0</button></h2>
+		<h2>ЭРВ [pins: <span id="get_parameev-pins"></span>] <button id="set_zeroEEV" onclick='loadParam("set_zeroEEV");'>Установка в 0</button></h2>
 		<table>
 		<thead>
 		<tr>
@@ -122,8 +122,8 @@
 			<td id="get_parameev-name">-</td>
 			<td id="get_parameev-note">-</td>
 			<td id="get_parameev-pospp"></td>
-			<td><input id="get_parameev-pos" type="number" step="1" value=""><input id="get_eevi" type="submit" value=">" onclick="setParam('get_paramEEV(POS)');"></td>
-			<td><input id="get_parameev-posp" type="number" step="1" value=""><input id="get_eevpi" type="submit" value=">" onclick="setParam('get_paramEEV(POSp)');"></td>
+			<td><input id="get_parameev-pos" type="number" step="1" value=""><input id="set-eev" type="submit" value=">" onclick="setParam('get_paramEEV(POS)');"></td>
+			<td><input id="get_parameev-posp" type="number" step="1" value=""><input id="set-eevp" type="submit" value=">" onclick="setParam('get_paramEEV(POSp)');"></td>
 		</tr>
 		</tbody>
 		</table>						

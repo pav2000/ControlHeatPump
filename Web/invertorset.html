@@ -1,0 +1,80 @@
+<html>
+<head> 
+	<title>Настройки инвертора. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		loadParam("hide_fcanalog,get_paramFC(AUTO),get_paramFC(UPTIME),get_paramFC(PID_FREQ_STEP),get_paramFC(PID_STOP),get_paramFC(DT_COMP_TEMP),get_paramFC(START_FREQ),get_paramFC(START_FREQ_BOILER),get_paramFC(MIN_FREQ),get_paramFC(MIN_FREQ_COOL),get_paramFC(MIN_FREQ_BOILER),get_paramFC(MIN_FREQ_USER),get_paramFC(MAX_FREQ),get_paramFC(MAX_FREQ_COOL),get_paramFC(MAX_FREQ_BOILER),get_paramFC(MAX_FREQ_USER),get_paramFC(STEP_FREQ),get_paramFC(STEP_FREQ_BOILER),get_paramFC(DT_TEMP),get_paramFC(DT_TEMP_BOILER)");
+		};
+	</script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>Настройки инвертора <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+
+  <div class="row1">
+   <table>
+   <thead>
+    <tr>
+		<th>Описание</th>
+		<th>Значение</th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr><td>Флаг автоматического подбора частоты</td><td><input type="checkbox" id="get_paramfc-auto" onchange="setParam('get_paramFC(AUTO)');"></td></tr>
+    <tr><td>Время обновления алгоритма пид регулятора, сек.</td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
+    <tr><td>Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании</td><td><input type="number" id="get_paramfc-pid_freq_step"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_FREQ_STEP)');"></td></tr>
+    <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
+    <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты</td><td><input type="number" id="get_paramfc-dt_comp_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_COMP_TEMP)');"></td></tr>
+    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота)</td><td><input type="number" id="get_paramfc-dt_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP)');"></td></tr>
+    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита ГВС</td><td><input type="number" id="get_paramfc-dt_temp_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP_BOILER)');"></td></tr>
+    <tr><td>Стартовая установка инвертора</td><td><input type="number" id="get_paramfc-start_freq"> <input type="submit" value=">" onclick="setParam('get_paramFC(START_FREQ)');"></td></tr>
+    <tr><td>Стартовая установка инвертора при ГВС</td><td><input type="number" id="get_paramfc-start_freq_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(START_FREQ_BOILER)');"></td></tr>
+    <tr><td>Минимальная установка инвертора</td><td><input type="number" id="get_paramfc-min_freq"> <input type="submit" value=">" onclick="setParam('get_paramFC(MIN_FREQ)');"></td></tr>
+    <tr><td>Минимальная установка инвертора при охлаждении</td><td><input type="number" id="get_paramfc-min_freq_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(MIN_FREQ_COOL)');"></td></tr>
+    <tr><td>Минимальная установка инвертора при ГВС</td><td><input type="number" id="get_paramfc-min_freq_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(MIN_FREQ_BOILER)');"></td></tr>
+    <tr><td>Минимальная установка инвертора в ручном режиме</td><td><input type="number" id="get_paramfc-min_freq_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(MIN_FREQ_USER)');"></td></tr>
+    <tr><td>Максимальная установка инвертора</td><td><input type="number" id="get_paramfc-max_freq"> <input type="submit" value=">" onclick="setParam('get_paramFC(MAX_FREQ)');"></td></tr>
+    <tr><td>Максимальная установка инвертора при охлаждении</td><td><input type="number" id="get_paramfc-max_freq_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(MAX_FREQ_COOL)');"></td></tr>
+    <tr><td>Максимальная установка инвертора при ГВС</td><td><input type="number" id="get_paramfc-max_freq_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(MAX_FREQ_BOILER)');"></td></tr>
+    <tr><td>Максимальная установка инвертора в ручном режиме</td><td><input type="number" id="get_paramfc-max_freq_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(MAX_FREQ_USER)');"></td></tr>
+    <tr><td>Шаг уменьшения установки при достижении максимальной температуры, мощности и тока</td><td><input type="number" id="get_paramfc-step_freq"> <input type="submit" value=">" onclick="setParam('get_paramFC(STEP_FREQ)');"></td></tr>
+    <tr><td>Шаг уменьшения установки при достижении максимальной температуры, мощности и тока при ГВС</td><td><input type="number" id="get_paramfc-step_freq_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(STEP_FREQ_BOILER)');"></td></tr>
+
+   </tbody>
+   </table>            
+  </div>
+
+<div name="hide_fcanalog" class="row1">
+	<h2>Аналоговое управление</h2>
+	<table>
+	<thead>
+		<tr>
+			<th>Использовать аналоговый выход</th>
+			<th>Значение DAC</th>
+			<th>pin</th>
+			<th>Уровень «0» (диск. ЦАП)</th>
+			<th>Уровень «100» (диск. ЦАП)</th>
+			<th>Уровень выключения %</th>
+		</tr>
+		<tr>
+			<td><input type="checkbox" name="get_paramfc-analog" id="get_paramfc-analog" onchange="setParam('get_paramFC(ANALOG)');"></td>
+			<td id="get_paramfc-dac"></td>
+			<td id="get_paramfc-pin"></td> 
+			<td><input id="get_paramfc-level0" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_paramfc-level02"  type="submit" value=">"  onclick="setParam('get_paramFC(LEVEL0)');"></td>
+			<td><input id="get_paramfc-level100" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_paramfc-level1002" type="submit" value=">"  onclick="setParam('get_paramFC(LEVEL100)');"></td>
+			<td><input id="get_paramfc-leveloff" type="number"  min="0" max="100" step="1" value="-1"><input id="get_paramfc-leveloff2" type="submit" value=">"  onclick="setParam('get_paramFC(LEVELOFF)');"></td>
+		</tr>		
+	</thead>
+	<tbody>
+	</tbody>
+	</table>
+</div>
+
+</div>
+</body>
+</html>

@@ -11,7 +11,7 @@ function setParam(paramid, resultid) {
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "").toLowerCase();
 	var rec = new RegExp('et_listChart');
 	var rel = new RegExp('et_sensorListIP');
-	var res = new RegExp('et_sensorListIP|et_freon|et_rule|et_listProfile|et_testMode|et_FC|et_EEV|et_modeHP');
+	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
 	var recldr = new RegExp('Calendar');
 	var elval, clear = true;
@@ -119,7 +119,7 @@ function loadParam(paramid, noretry, resultdiv) {
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
 								var reerr = new RegExp('^E');
-								var rec = new RegExp('^CONST|get_infoFC|get_sysInfo|get_socketInfo|get_status');
+								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
 								var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
 								var reo = new RegExp('^scan_');
 								var rep = new RegExp('^get_present');
@@ -600,7 +600,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											cont2 = cont1.replace(/(\;)/g, "</td></tr><tr><td>");
 											var content = "<tr><td>" + cont2 + "</td></tr>";
 										}
-										document.getElementById(values[0].toLowerCase()).innerHTML = content;
+										document.getElementById(valueid).innerHTML = content;
 									}
 								} else if(type == 'table') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
@@ -828,7 +828,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.innerHTML = onoff ? "ВКЛ" : "ВЫКЛ";   
 									element = document.getElementById("onoffswitch");
 									if(element) element.checked = onoff;
-									if((element=document.getElementById('get_zeroEEV'))) element.disabled = onoff;
+									if((element=document.getElementById('set_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
 									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
 									if((element=document.getElementById('load-profile-0'))) element.disabled = onoff;
@@ -853,8 +853,10 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_relay-r3way'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-revi'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpb'))) element.disabled = onoff;
-									if((element=document.getElementById('get_eev'))) element.disabled = onoff;
-									if((element=document.getElementById('get_eev3'))) element.disabled = onoff;
+									if((element=document.getElementById('get_parameev-pos'))) element.disabled = onoff;
+									if((element=document.getElementById('get_parameev-posp'))) element.disabled = onoff;
+									if((element=document.getElementById('set-eev'))) element.disabled = onoff;
+									if((element=document.getElementById('set-eevp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;
 								} else if(values[0] == "get_uptime") {
 									if((element = document.getElementById("get_uptime"))) element.innerHTML = values[1];

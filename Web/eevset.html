@@ -1,0 +1,46 @@
+﻿<html>
+<head> 
+  <title>Настройки ЭРВ. Народный контроллер ТН</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script type="text/javascript" src="scripts.js"></script>
+  <script type="text/javascript">
+    window.onload = function() {
+    loadParam("get_paramEEV(MIN),get_paramEEV(MAX),get_paramEEV(SPEED),get_optionHP(PRE_START_POS),get_paramEEV(DELAY_START_POS),get_paramEEV(PRE_START_POS),get_paramEEV(START_POS),get_paramEEV(DELAY_ON_PID),get_paramEEV(DELAY_ON),get_paramEEV(DELAY_OFF),get_paramEEV(HOLD_MOTOR),get_paramEEV(ERR_KP)");
+  };
+  </script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+  <h1>Настройки ЭРВ <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'></h1>
+  
+  <div class="row1">
+   <table>
+   <thead>
+    <tr>
+		<th>Описание</th>
+		<th>Значение</th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr><td>Минимальное количество шагов</td><td><input type="number" id="get_parameev-min"> <input type="submit" value=">" onclick="setParam('get_paramEEV(MIN)');"></td></tr>
+    <tr><td>Максимальное количество шагов</td><td><input type="number" id="get_parameev-max"> <input type="submit" value=">" onclick="setParam('get_paramEEV(MAX)');"></td></tr>
+    <tr><td>Скорость, импульсы в сек.</td><td><input type="number" id="get_parameev-speed"> <input type="submit" value=">" onclick="setParam('get_paramEEV(SPEED)');"></td></tr>
+    <tr><td>Удержания шагового двигателя</td><td><input type="checkbox" id="get_parameev-hold_motor" onchange="setParam('get_paramEEV(HOLD_MOTOR)');"></td></tr>
+    <tr><td>Позиция при пуске компрессора, если задана специальная позиция в опциях</td><td><input type="number" id="get_parameev-pre_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(PRE_START_POS)');"></td></tr>
+    <tr><td>Позиция после пуска компрессора, если задана специальная позиция или до пуска, если нет</td><td><input type="number" id="get_parameev-start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(START_POS)');"></td></tr>
+    <tr><td>Задержка между открытием ЭРВ для старта и включением компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON)');"></td></tr>
+    <tr><td>Время на пуск компрессора, если задана спец. опция, сек.</td><td><input type="number" id="get_parameev-delay_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_START_POS)');"></td></tr>
+    <tr><td>Задержка начала регулирования от пуска компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on_pid"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON_PID)');"></td></tr>
+    <tr><td>Задержка закрытия EEV после выключения насосов, сек.</td><td><input type="number" id="get_parameev-delay_off"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_OFF)');"></td></tr>
+    <tr><td>Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, °C</td><td><input type="number" id="get_parameev-err_kp"> <input type="submit" value=">" onclick="setParam('get_paramEEV(ERR_KP)');"></td></tr>
+
+   </tbody>
+   </table>            
+  </div>
+
+</div>
+</body>
+</html>

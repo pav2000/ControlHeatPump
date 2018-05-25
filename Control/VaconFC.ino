@@ -578,61 +578,62 @@ int8_t devVaconFC::stop_FC()
 
 
 // Получить параметр инвертора в виде строки, результат ДОБАВЛЯЕТСЯ в ret
-char* devVaconFC::get_paramFC(char *var,char *ret)
+void devVaconFC::get_paramFC(char *var,char *ret)
 {
-static char temp[12];
-    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else 
+
+	ret += m_strlen(ret);
+    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_INFO)==0)                  {
     	                                        #ifndef FC_ANALOG_CONTROL  
-    	                                        get_infoFC(ret); return ret;
+    	                                        get_infoFC(ret);
     	                                        #else
-                                                return strcat(ret, "|Данные не доступны, работа через аналоговый вход|;") ;
+                                                 strcat(ret, "|Данные не доступны, работа через аналоговый вход|;") ;
                                                 #endif              
     	                                        } else
-    if(strcmp(var,fc_NAME)==0)                  { return strcat(ret,name);             } else
-    if(strcmp(var,fc_NOTE)==0)                  { return strcat(ret,note);             } else
-    if(strcmp(var,fc_PIN)==0)                   { return strcat(ret,int2str(pin));     } else 
-    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else 
-    if(strcmp(var,fc_STATE)==0)                 { return strcat(ret,int2str(state));   } else 
-    if(strcmp(var,fc_FC)==0)                    { return strcat(ret,ftoa(temp,(float)FC/100.0,2)); } else
-    if(strcmp(var,fc_cFC)==0)                   { return strcat(ret,ftoa(temp,(float)FC_curr/100.0,2)); } else
-    if(strcmp(var,fc_cPOWER)==0)                { return strcat(ret,ftoa(temp,(float)power/10.0,1)); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cCURRENT)==0)              { return strcat(ret,ftoa(temp,(float)current/100.0,2)); } else
-    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
+    if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
+    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     } else
+    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_STATE)==0)                 {  strcat(ret,int2str(state));   } else
+    if(strcmp(var,fc_FC)==0)                    {  ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cFC)==0)                   {  ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cPOWER)==0)                { ftoa(ret,(float)power/10.0,1);  strcat(ret, "%"); } else
+    if(strcmp(var,fc_cCURRENT)==0)              {  ftoa(ret,(float)current/100.0,2); } else
+    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
-		                                        return strcat(ret,(char*)cOne);
+		                                         strcat(ret,(char*)cOne);
 		                                        #else
-		                                        return strcat(ret,(char*)cZero);
+		                                         strcat(ret,(char*)cZero);
 		                                        #endif
                                                 } else
 	#ifdef FC_ANALOG_CONTROL
-    if(strcmp(var,fc_DAC)==0)                   { return strcat(ret,int2str(dac));          } else 
-    if(strcmp(var,fc_LEVEL0)==0)                { return strcat(ret,int2str(level0));       } else 
-    if(strcmp(var,fc_LEVEL100)==0)              { return strcat(ret,int2str(level100));     } else 
-    if(strcmp(var,fc_LEVELOFF)==0)              { return strcat(ret,int2str(levelOff));     } else 
+    if(strcmp(var,fc_DAC)==0)                   {  strcat(ret,int2str(dac));          } else
+    if(strcmp(var,fc_LEVEL0)==0)                {  strcat(ret,int2str(level0));       } else
+    if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
+    if(strcmp(var,fc_LEVELOFF)==0)              {  strcat(ret,int2str(levelOff));     } else
     #endif
-    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero); } else
-    if(strcmp(var,fc_ERROR)==0)                 { return strcat(ret,int2str(err));          } else                                    
-    if(strcmp(var,fc_UPTIME)==0)                { return strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { return strcat(ret,ftoa(temp,(float)_data.PidFreqStep/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_PID_STOP)==0)              { return strcat(ret,int2str(_data.PidStop));          } else 
-    if(strcmp(var,fc_DT_COMP_TEMP)==0)          { return strcat(ret,ftoa(temp,(float)_data.dtCompTemp/100.0,2)); } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            { return strcat(ret,ftoa(temp,(float)_data.startFreq/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { return strcat(ret,ftoa(temp,(float)_data.startFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MIN_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.minFreq/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqCool/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.minFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.minFreqUser/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MAX_FREQ)==0)              { return strcat(ret,ftoa(temp,(float)_data.maxFreq/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqCool/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { return strcat(ret,ftoa(temp,(float)_data.maxFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { return strcat(ret,ftoa(temp,(float)_data.maxFreqUser/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_STEP_FREQ)==0)             { return strcat(ret,ftoa(temp,(float)_data.stepFreq/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { return strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); strcat(ret, "%"); } else // %
-    if(strcmp(var,fc_DT_TEMP)==0)               { return strcat(ret,ftoa(temp,(float)_data.dtTemp/100.0,2)); } else // градусы
-    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { return strcat(ret,ftoa(temp,(float)_data.dtTempBoiler/100.0,2)); } else // градусы
-    return strcat(ret,(char*)cInvalid);  
+    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)"Yes"); } else
+    if(strcmp(var,fc_ERROR)==0)                 {  strcat(ret,int2str(err));          } else
+    if(strcmp(var,fc_UPTIME)==0)                {  strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // %
+    if(strcmp(var,fc_PID_STOP)==0)              {  strcat(ret,int2str(_data.PidStop));          } else
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_START_FREQ)==0)            {  ftoa(ret,(float)_data.startFreq/100.0,2); } else // %
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ)==0)              {  ftoa(ret,(float)_data.minFreq/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ)==0)              {  ftoa(ret,(float)_data.maxFreq/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // %
+    if(strcmp(var,fc_STEP_FREQ)==0)             {  ftoa(ret,(float)_data.stepFreq/100.0,2); } else // %
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_DT_TEMP)==0)               {  ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
+    	strcat(ret,(char*)cInvalid);
 }
 
 // Установить параметр инвертора из строки
@@ -717,8 +718,7 @@ void devVaconFC::get_infoFC(char* buf)
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
 				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
 				_delay(FC_DELAY_READ);
-				i = read_0x03_32(FC_RPM); // +FC_CURRENT (low word)
-				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;V1.4 (2106)|Выходной ток (А)|%.2f;", i >> 16, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
 				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				_delay(FC_DELAY_READ);
@@ -746,7 +746,7 @@ void devVaconFC::get_infoFC(char* buf)
 		}
 #endif
 	} else {
-		m_snprintf(buf, 256, "-|Режим тестирования...|;");
+		m_snprintf(buf, 256, "|Режим тестирования!|;");
 	}
 }
 // Сброс ошибок инвертора по модбасу
