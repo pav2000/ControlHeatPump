@@ -1689,6 +1689,7 @@ static char temp[12];
     if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); } else // Гц
     if(strcmp(var,fc_DT_TEMP)==0)               {  strcat(ret,ftoa(temp,(float)_data.dtTemp/100.0,2)); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  strcat(ret,ftoa(temp,(float)_data.dtTempBoiler/100.0,2)); } else // градусы
+    if(strcmp(var,fc_MB_ERR)==0)        		{  itoa(numErr, ret, 10); } else
      strcat(ret,(char*)cInvalid);
 }
 
@@ -2225,8 +2226,7 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
-//      _delay(1);  // задержка чтения отдельного символа из Modbus
-		delay(1); //
+		_delay(1);  // задержка чтения отдельного символа из Modbus
     }
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
@@ -2287,12 +2287,13 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+		SemaphoreGive (xModbusSemaphore);
 	} else {
 		err = translateErr(result);
+		SemaphoreGive (xModbusSemaphore);
 		journal.jprintf("Modbus reg #%d - ", cmd);
 		*ret = 0;
 	}
-	SemaphoreGive (xModbusSemaphore);
 	return err;
 }
 

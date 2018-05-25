@@ -146,7 +146,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
 										var elements = document.getElementsByName(valueid);
-										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
+										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
 									}
 									continue;
 								} else if(values[0].match(/^set_paramEEV[(]POS/)) {

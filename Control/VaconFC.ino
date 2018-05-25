@@ -613,7 +613,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
     if(strcmp(var,fc_LEVELOFF)==0)              {  strcat(ret,int2str(levelOff));     } else
     #endif
-    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)"Yes"); } else
+    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cYes); } else
     if(strcmp(var,fc_ERROR)==0)                 {  strcat(ret,int2str(err));          } else
     if(strcmp(var,fc_UPTIME)==0)                {  strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
     if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // %
@@ -633,6 +633,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // %
     if(strcmp(var,fc_DT_TEMP)==0)               {  ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
+    if(strcmp(var,fc_MB_ERR)==0)        		{  itoa(numErr, ret, 10); } else
     	strcat(ret,(char*)cInvalid);
 }
 
@@ -757,6 +758,8 @@ boolean devVaconFC::reset_errorFC()
         journal.jprintf("Error reset %s\r\n", name);
     }
 #endif
+    numErr = 0;
+    number_err = 0;
     return err == OK;
 }
 
@@ -806,10 +809,10 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
-        _delay(FC_DELAY_REPEAT);
+        numErr++; // число ошибок чтение по модбасу
         journal.jprintf("Modbus reg #%d - ", cmd);
         journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
-        numErr++; // число ошибок чтение по модбасу
+        _delay(FC_DELAY_REPEAT);
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
     check_blockFC(); // проверить необходимость блокировки
@@ -828,9 +831,9 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
     {
         err = Modbus.readHoldingRegisters32(FC_MODBUS_ADR, cmd - 1, (uint32_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
-        _delay(FC_DELAY_REPEAT);
-        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        _delay(FC_DELAY_REPEAT);
         //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
     check_blockFC(); // проверить необходимость блокировки
@@ -848,9 +851,9 @@ int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
     {
         err = Modbus.writeHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, data); // послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Записали удачно
-        _delay(FC_DELAY_REPEAT);
-        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         numErr++; // число ошибок чтение по модбасу
+        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        _delay(FC_DELAY_REPEAT);
         //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
     check_blockFC(); // проверить необходимость блокировки

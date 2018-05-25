@@ -718,6 +718,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     			strcat(strReturn,"1&");
 			#endif
     	}
+    	continue;
      }
  
     if (strcmp(str,"CONST")==0)   // Команда CONST  Информация очень большая по этому разбито на 2 запроса CONST CONST1
