@@ -58,6 +58,7 @@ ModbusMaster::ModbusMaster(void)
   _idle = 0;
   _preTransmission = 0;
   _postTransmission = 0;
+  last_transaction_time = 0;
 }
 
 /**
@@ -615,6 +616,11 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   uint8_t u8BytesLeft = 8;             // число оставшихся байт для чтения (минимальна длина ответа??)
   uint8_t u8MBStatus = ku8MBSuccess;   // текущий статус
   
+  if((u32StartTime = millis() - last_transaction_time) < MIN_TIME_BETWEEN_TRANSACTION) {
+	  u32StartTime = MIN_TIME_BETWEEN_TRANSACTION - u32StartTime;
+	  while(u32StartTime--) if(_idle) _idle(); else delay(1);
+  }
+
   // assemble Modbus Request Application Data Unit (ADU)
   // Сборка блока запроса Modbus Application Data (ADU)
   u8ModbusADU[u8ModbusADUSize++] = _u8MBSlave;     // номер устройства (Slave)
@@ -926,6 +932,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   _u8TransmitBufferIndex = 0;
   u16TransmitBufferLength = 0;
   _u8ResponseBufferIndex = 0;
+  last_transaction_time = millis();
   return u8MBStatus;
 }
 

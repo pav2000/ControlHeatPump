@@ -59,6 +59,7 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
 #include "FreeRTOS_ARM.h"                // поддержка многозадачности
 #endif
 
+#define MIN_TIME_BETWEEN_TRANSACTION	10 // ms
 
 /**
 Arduino class library for communicating with Modbus slaves over 
@@ -242,6 +243,7 @@ class ModbusMaster
     uint16_t* rxBuffer; // from Wire.h -- need to clean this up Rx
     uint8_t _u8ResponseBufferIndex;
     uint8_t _u8ResponseBufferLength;
+    uint32_t last_transaction_time;
 
     // Коды функций Modbus
     // Modbus function codes for bit access
