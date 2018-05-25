@@ -113,21 +113,23 @@ uint16_t send(SOCKET s, const uint8_t * buf, uint16_t len)
   else 
     ret = len;
 
-  // if freebuf is available, start.
-  do 
-  {
-    freesize = W5100.getTXFreeSize(s);
-    status = W5100.readSnSR(s);
-    if ((status != SnSR::ESTABLISHED) && (status != SnSR::CLOSE_WAIT))
-    {
-      ret = 0; 
-      break;
-    }
-  } 
-  while (freesize < ret);
-
-  // copy data
-  W5100.send_data_processing(s, (uint8_t *)buf, ret);
+  if(ret == 0) {
+	  ret = 1;
+  } else {
+	  // if freebuf is available, start.
+	  do
+	  {
+		freesize = W5100.getTXFreeSize(s);
+		status = W5100.readSnSR(s);
+		if ((status != SnSR::ESTABLISHED) && (status != SnSR::CLOSE_WAIT))
+		{
+		  ret = 0;
+		  break;
+		}
+	  } while (freesize < ret);
+	  // copy data
+	  W5100.send_data_processing(s, (uint8_t *)buf, ret);
+  }
   W5100.execCmdSn(s, Sock_SEND);
 
   /* +2008.01 bj */

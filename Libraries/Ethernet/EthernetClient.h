@@ -30,6 +30,7 @@ public:
   virtual operator bool();
   virtual bool operator==(const EthernetClient&);
   virtual bool operator!=(const EthernetClient& rhs) { return !this->operator==(rhs); };
+  size_t  write_buffer(const uint8_t *buffer, size_t size);
 
   friend class EthernetServer;
   
@@ -38,6 +39,7 @@ public:
 private:
   static uint16_t _srcport;
   uint8_t _sock;
+  uint16_t _offset; // offset into the packet being sent
 };
 
 #endif

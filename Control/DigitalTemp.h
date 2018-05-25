@@ -1,6 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -43,7 +42,8 @@
 #define STARTTEMP   -27321  // Значение инициализации датчика температуры, по нему определяется первая итерация (сотые градуса)
 
 enum TEMP_SETUP_FLAGS {
-	fDS2482_second = 0	// датчик на втором DS2482 (адрес I2C_ADR_DS2482two)
+	fDS2482_second = 0,	// датчик на втором DS2482 (адрес I2C_ADR_DS2482two)
+	fTEMP_ignory_errors // игнорировать ошибки датчика
 };
 
 // Удаленные датчики температуры -------------------------------------------------------------
@@ -112,7 +112,7 @@ class sensorTemp
     void     set_testMode(TEST_MODE t){testMode=t;}     // Установить значение текущий режим работы
     
     void     set_address(byte *addr, byte bus_type);    // Привязать адрес и тип шины
-    byte*    get_address(){return address;}             // Получить адрес датчика
+    uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline boolean get_bus(){ return GETBIT(setup_flags, fDS2482_second); } // Шина
@@ -132,6 +132,7 @@ class sensorTemp
     #endif
     
   private:
+   uint8_t number;  									// Номер датчика
    int16_t minTemp;                                     // минимальная разрешенная температура
    int16_t maxTemp;                                     // максимальная разрешенная температура
    int16_t lastTemp;                                    // последняя считанная температура с датчика
@@ -144,10 +145,10 @@ class sensorTemp
    uint8_t numErrorRead;                                // Счечик ошибок чтения датчика подряд если оно больше NUM_READ_TEMP_ERR генерация ошибки датчика
    uint32_t sumErrorRead;                               // Cуммарный счечик ошибок чтения датчика - число ошибок датчика с момента перегрузки
    
-   uint8_t  setup_flags;							    // флаги настройки (T_SETUP_FLAGS)
+   uint8_t setup_flags;							    // флаги настройки (TEMP_SETUP_FLAGS)
    byte    flags;                                       // флаги  датчика
    char    *note;                                       // Описание датчика
-   char   *name;                                        // Имя датчика
+   char    *name;                                        // Имя датчика
    // Кольцевой буфер для усреднения
    int16_t t[T_NUMSAMLES];                              // буфер для усреднения показаний температуры
    int32_t sum;                                         // Накопленная сумма

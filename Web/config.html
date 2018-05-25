@@ -7,7 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ON_DAY_TIME),get_optionHP(OFF_DAY_TIME),get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON)");
+		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(OW2TS)");
+		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF)");
 	}; 
 	</script>
 </head>
@@ -89,7 +90,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Использовать спецальную позицию ЭРВ при пуске компрессора<sup>7</sup></td>
+			<td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>7</sup></td>
 			<td>
 				<input type="checkbox" name="get_optionhp-eev_light_start" id="get_optionhp-eev_light_start" onchange="setParam('get_optionHP(EEV_LIGHT_START)');" >
 			</td>
@@ -126,7 +127,57 @@
 				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
 				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
 			</td>
-		</tr>											
+		</tr>
+		<tr>
+			<td>На второй шине 1-Wire только один датчик температуры</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-ow2ts" onchange="setParam('get_optionHP(OW2TS)');" >
+			</td>
+		</tr>	
+
+		<tr>
+			<td>Задержка включения компрессора после включения насосов (сек).</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_on_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Задержка выключения насосов после выключения компрессора (сек).</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Задержка включения ТН после внезапного сброса контроллера (сек.)</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.)</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.)</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Пауза после переключение ГВС (сек.)</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.)</td>
+			<td>
+				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
+			</td>
+		</tr>	
+
 	</tbody>
 	</table>
 	<p>1. При изменении периода графики обнуляются.</p>

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav;
+ * by vad711, vad7@yahoo.com
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -57,6 +57,7 @@ SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, 
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
 SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
 SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xScan1WireSemaphore;                // Семафор шины Scan1Wire
 static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
 static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
@@ -105,7 +106,6 @@ struct type_socketData
   };
 static type_socketData Socket[W5200_THREARD];   // Требует много памяти 4*W5200_MAX_LEN*W5200_THREARD=24 кб
 
-
 // Установка вачдога таймера вариант vad711 - адаптация для DUE 1.6.11
 // WDT_TIME период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ WDT_TIME=0 то Watchdog будет отключен!!!
 volatile unsigned long ulHighFrequencyTimerTicks;   // vad711 - адаптация для DUE 1.6.11
@@ -118,8 +118,7 @@ void watchdogSetup(void)
 #endif
 }
 
-// Функция задержки (мсек) в зависимости от шедулера задач FreeRtos
-__attribute__((always_inline)) inline void _delay(int t)
+__attribute__((always_inline)) inline void _delay(int t) // Функция задержки (мсек) в зависимости от шедулера задач FreeRtos
 {
   if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(t/portTICK_PERIOD_MS);
   else delay(t);
@@ -294,7 +293,7 @@ pinMode(21, OUTPUT);
 x_I2C_init_std_message:
 	   journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
 	}
-    
+
      // Сканирование шины i2c
 //    if (eepStatus==0)   // есть инициализация
     {
@@ -306,10 +305,10 @@ x_I2C_init_std_message:
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = OneWireBus.lock_bus_reset(1);
+            	  error = OneWireBus.lock_I2C_bus_reset(1);
 			    #ifdef ONEWIRE_DS2482_SECOND
               } else if(address == I2C_ADR_DS2482two) {
-               	  error = OneWireBus2.lock_bus_reset(1);
+               	  error = OneWireBus2.lock_I2C_bus_reset(1);
 		        #endif
               } else {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
@@ -382,8 +381,7 @@ x_I2C_init_std_message:
    journal.jprintf("I2C memory is empty, save default setting\n");
   // HP.save();                                          //если ошибка ERR_HEADER2_EEPROM то скорее всего память чистая, считывать нечего и записывам настроки по умолчанию
    HP.save_motoHour();
-  } 
-  else HP.load();                                      // Загрузить настройки ТН и текущий профиль
+  } else HP.load();                                      // Загрузить настройки ТН и текущий профиль
 #ifdef USE_SCHEDULER
   HP.Schdlr.load();							// Загрузка настроек расписания
 #endif
@@ -416,7 +414,7 @@ x_I2C_init_std_message:
   // 13. Инициалазация Statistics
    #ifdef I2C_EEPROM_64KB  
      HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init counter statistic.\n");
+     journal.jprintf("10. Init statistic.\n");
   #else    
      journal.jprintf("10. Statistic no support (low memory).\n");
   #endif
@@ -445,7 +443,7 @@ x_I2C_init_std_message:
 
   #ifdef TEST_BOARD
   // Scan oneWire - TEST.
-  HP.scan_OneWire(Socket[0].outBuf);
+  //HP.scan_OneWire(Socket[0].outBuf);
   #endif
 
   // Создание задач Free RTOS  ----------------------
@@ -516,6 +514,8 @@ vSemaphoreCreateBinary(xI2CSemaphore);                     // Создание �
 if (xI2CSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
 //vSemaphoreCreateBinary(xSPISemaphore);                     // Создание мютекса
 //if (xSPISemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+vSemaphoreCreateBinary(xScan1WireSemaphore);
+if(xScan1WireSemaphore == NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 // Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
 if(Modbus.get_present())
 {  
@@ -545,9 +545,9 @@ vTaskSuspend(HP.xHandlePauseStart);
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("15. If you want to send a notification about resetting the controller . . .\n");
-HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
-journal.jprintf("16. Information about contoller:\n");
+journal.jprintf("15. Send a notification . . .\n");
+//HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
+journal.jprintf("16. Information:\n");
 freeRamShow();
 HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM); 
@@ -615,7 +615,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 // Сюда надо пихать все что связано с сетью иначе конфликты не избежны
 // Здесь также обслуживается посылка уведомлений MQTT
 // Первый поток веб сервера - дополнительно нагружен различными сервисами
-void vWeb0( void *pvParameters )
+void vWeb0( void *)
 { //const char *pcTaskName = "Web server is running\r\n";
    volatile unsigned long timeResetW5200=0;
    volatile unsigned long thisTime=0;
@@ -721,7 +721,7 @@ void vWeb0( void *pvParameters )
 }
 
 // Второй поток
-void vWeb1( void *pvParameters )
+void vWeb1( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -732,7 +732,7 @@ void vWeb1( void *pvParameters )
   vTaskDelete( NULL );  
 }
 // Третий поток
-void vWeb2( void *pvParameters )
+void vWeb2( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -743,7 +743,7 @@ void vWeb2( void *pvParameters )
   vTaskDelete( NULL );  
 }
 // Четвертый поток
-void vWeb3( void *pvParameters )
+void vWeb3( void * )
 { //const char *pcTaskName = "Web server is running\r\n";
    for( ;; )
     {
@@ -754,7 +754,7 @@ void vWeb3( void *pvParameters )
 }
 
 // Задача обслуживания Nextion
-void vNextion( void *pvParameters )
+void vNextion( void * )
 { 
   static unsigned long NextionTick=0;
     for( ;; )
@@ -773,7 +773,7 @@ void vNextion( void *pvParameters )
 }
 
 // Задача обновление статистики
-void vUpdateStat( void *pvParameters )
+void vUpdateStat( void * )
 { //const char *pcTaskName = "statChart is running\r\n";
    for( ;; )
     {
@@ -785,7 +785,7 @@ void vUpdateStat( void *pvParameters )
 
 //////////////////////////////////////////////////////////////////////////
 // Задача чтения датчиков
-void vReadSensor(void *pvParameters)
+void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	volatile unsigned long readFC = 0;
 	volatile unsigned long readSDM = 0;
@@ -852,7 +852,7 @@ void vReadSensor(void *pvParameters)
 				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
 				rtcSAM3X8.set_clock(ttime, 0);                 // Установить внутренние часы по i2c
 				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
-				journal.jprintf((const char*) "Sync form i2c RTC DS3231: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
+				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
 				countI2C = ttime;                               // запомнить время
 			}
 		}
@@ -908,9 +908,11 @@ void vReadSensor_delay10ms(uint16_t msec)
 }
 //////////////////////////////////////////////////////////////////////////
 // Задача Управление тепловым насосом
- void vUpdate( void *pvParameters )
+ void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
-	 static unsigned long RPUMPBTick=0;
+	#ifdef RPUMPB
+	static uint32_t RPUMPBTick=0;
+	#endif
 	 for( ;; )
 	 {
 		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
@@ -1013,7 +1015,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
 #endif
 				 break;
 			 case  pCOOL:                         // 2 Включить охлаждение
@@ -1023,7 +1025,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 					 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
 #endif
 				 break;
 
@@ -1032,7 +1034,7 @@ void vReadSensor_delay10ms(uint16_t msec)
 #ifdef DEMO
 				 vTaskDelay(10*1000/portTICK_PERIOD_MS);                                           // для демо 10 сек
 #else
-				 vTaskDelay(FC_UPTIME/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
+				 vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                    // Время интегрирования ПИД секунды
 #endif
 				 break;
 			 default:
@@ -1056,12 +1058,12 @@ void vReadSensor_delay10ms(uint16_t msec)
 
 // Задача Управление ЭРВ
 #ifdef EEV_DEF
- void vUpdateEEV(void *pvParameters)
+ void vUpdateEEV(void *)
  { //const char *pcTaskName = "HP_UpdateEEV\r\n";
 	 static int16_t cmd = 0;
 	 for(;;) {
 		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > DELAY_ON_PID_EEV) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
 		 {
 			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
 			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
@@ -1087,14 +1089,14 @@ void vReadSensor_delay10ms(uint16_t msec)
 						 HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
 				 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
 
-		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>DELAY_ON_PID_EEV)
+		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>delayOnPid)
 		 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
 	 } // for
 	 vTaskDelete( NULL);
  }
 #endif
 // Задача Разбор очереди команд
-void vUpdateCommand( void *pvParameters )
+void vUpdateCommand( void * )
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
   for( ;; )
   {
@@ -1109,7 +1111,7 @@ void vUpdateCommand( void *pvParameters )
 
 // Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
-void vUpdateStepperEEV( void *pvParameters )
+void vUpdateStepperEEV( void * )
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   static int16_t  cmd=0;
   volatile int16_t steps_left=0, step_number=0, start_pos=0, pos=0;
@@ -1124,7 +1126,7 @@ void vUpdateStepperEEV( void *pvParameters )
      
     // 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
      pos=0; // текущее суммарное движение - обнулится
-     start_pos=HP.dEEV.EEV;  // получить текущее положение шаговика абсолютное в начале очереди
+     start_pos=HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
   //   step_number=HP.dEEV.EEV; 
   //  Serial.print("1. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV); 
       // 3. Движение
@@ -1184,7 +1186,7 @@ void vUpdateStepperEEV( void *pvParameters )
       {
    //     Serial.println("6. vTaskSuspend ");   
         HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
-       if (!EEV_HOLD_MOTOR) HP.dEEV.stepperEEV.off();                                            // выключить двигатель если нет удержания
+       if (!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
         vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                      // Приостановить задучу
       } 
    // Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
@@ -1195,7 +1197,7 @@ void vUpdateStepperEEV( void *pvParameters )
 #endif
 
 // Задача "Работа насоса конденсатора при выключенном компрессоре"
-void vUpdatePump( void *pvParameters )
+void vUpdatePump( void * )
 { //const char *pcTaskName = "Pump is running\r\n";
  uint16_t i;
    for( ;; )
@@ -1225,7 +1227,7 @@ void vUpdatePump( void *pvParameters )
 // Задача отложеного старта ТН
 // используется при старте контроллера если есть запись состояния
 // также используется для повторных попыток пуска контроллера
-void vPauseStart( void *pvParameters )
+void vPauseStart( void * )
 { 
  volatile int16_t i, tt;
    for( ;; )
@@ -1235,7 +1237,7 @@ void vPauseStart( void *pvParameters )
      #ifdef DEMO
       tt=30;
      #else 
-        if (HP.isCommand()== pRESTART)   tt=DELAY_START_RES; else tt=DELAY_REPEAD_START;  // Определение времени задержки
+        if (HP.isCommand()== pRESTART)   tt=HP.Option.delayStartRes; else tt=HP.Option.delayRepeadStart;  // Определение времени задержки
      #endif
       // задержка перед пуском ТН
       for(i=tt;i>0;i=i-10) // задержка перед стартом обратный отсчет
@@ -1245,8 +1247,8 @@ void vPauseStart( void *pvParameters )
 //          if (HP.PauseStart) break;               // если задача пущена не сначала
           vTaskDelay(10*1000/portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
           if (HP.PauseStart) break;               // если задача пущена не сначала
-   //       if ((i==DELAY_REPEAD_START/2)&&(HP.get_State()== pREPEAT)) 
-          if ((i==DELAY_REPEAD_START/2)&&(HP.isCommand()== pREPEAT)) 
+   //       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT)) 
+          if ((i==HP.get_delayRepeadStart()/2)&&(HP.isCommand()== pREPEAT))
                 {
                   HP.eraseError();  
                   if (HP.PauseStart) break;               // если задача пущена не сначала

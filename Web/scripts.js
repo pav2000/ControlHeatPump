@@ -1,7 +1,8 @@
 ﻿/* ver 0.951 beta */
-var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
+//var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -10,7 +11,7 @@ function setParam(paramid, resultid) {
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "").toLowerCase();
 	var rec = new RegExp('et_listChart');
 	var rel = new RegExp('et_sensorListIP');
-	var res = new RegExp('et_sensorListIP|et_freon|et_rule|et_listProfile|et_testMode|et_FC|et_EEV|et_modeHP');
+	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
 	var recldr = new RegExp('Calendar');
 	var elval, clear = true;
@@ -118,13 +119,13 @@ function loadParam(paramid, noretry, resultdiv) {
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
 								var reerr = new RegExp('^E');
-								var rec = new RegExp('^CONST|get_infoFC|get_sysInfo|get_socketInfo|get_status');
+								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
 								var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
 								var reo = new RegExp('^scan_');
 								var rep = new RegExp('^get_present');
 								var ret = new RegExp('[(]SCHEDULER[)]');
 								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|et_freon|et_rule|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
+								var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
 								var rev = new RegExp(/\([a-z0-9_]+\)/i);
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');
@@ -145,12 +146,14 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
 										var elements = document.getElementsByName(valueid);
-										for(i = 0; i < elements.length; i++) elements[i].innerHTML = "";
+										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
 									}
 									continue;
-								} else if(values[0].match(/^set_EEV/)) {
-									if((element = document.getElementById("get_eev"))) element.value = values[1];
-									if((element = document.getElementById("get_eev2"))) element.innerHTML = values[1];
+								} else if(values[0].match(/^set_paramEEV[(]POS/)) {
+									var s = "get_parameev-pos";
+									if(values[0].substr(-1) == 'p') s += "p";  
+									if((element = document.getElementById(s))) element.value = values[1];
+									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
@@ -161,7 +164,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
 										element.checked = onoff;
-										if(valueid == "get_mqtt-use_thingspeak") {
+										if(valueid == "get_mqtt-use_ts") {
 											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-fc_mqtt'))) element.disabled = onoff;
@@ -205,7 +208,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'chart') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
-										title = values[0].replace(/get_Chart\(_/g, "").replace(/\)[0-9]?/g, "");
+										title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
 										var yizm = '';
 										var ytooltip = '';
 										var timeval = '';
@@ -402,22 +405,23 @@ function loadParam(paramid, noretry, resultdiv) {
 													}
 												}
 											}
-										} else if(idsel == "get_ruleeev") {
-											document.getElementById("get_freoneev").disabled = false;
-											document.getElementById("get_parameev-m_step").disabled = false;
-											document.getElementById("get_parameev-m_step2").disabled = false;
-											document.getElementById("get_parameev-correction").disabled = false;
-											document.getElementById("get_parameev-correction2").disabled = false;
-											document.getElementById("get_parameev-t_owerheat").disabled = false;
-											document.getElementById("get_parameev-t_owerheat2").disabled = false;
-											document.getElementById("get_parameev-time_in").disabled = false;
-											document.getElementById("get_parameev-time_in2").disabled = false;
-											document.getElementById("get_parameev-k_pro").disabled = false;
-											document.getElementById("get_parameev-k_pro2").disabled = false;
-											document.getElementById("get_parameev-k_in").disabled = false;
-											document.getElementById("get_parameev-k_in2").disabled = false;
-											document.getElementById("get_parameev-k_dif").disabled = false;
-											document.getElementById("get_parameev-k_dif2").disabled = false;
+										} else if(idsel == "get_parameev-rule") {
+											var s = "get_parameev-";
+											document.getElementById(s+"freon").disabled = false;
+											document.getElementById(s+"manual").disabled = false;
+											document.getElementById(s+"manual2").disabled = false;
+											document.getElementById(s+"const").disabled = false;
+											document.getElementById(s+"const2").disabled = false;
+											document.getElementById(s+"target").disabled = false;
+											document.getElementById(s+"target2").disabled = false;
+											document.getElementById(s+"time").disabled = false;
+											document.getElementById(s+"time2").disabled = false;
+											document.getElementById(s+"kp").disabled = false;
+											document.getElementById(s+"kp2").disabled = false;
+											document.getElementById(s+"ki").disabled = false;
+											document.getElementById(s+"ki2").disabled = false;
+											document.getElementById(s+"kd").disabled = false;
+											document.getElementById(s+"kd2").disabled = false;
 										} else if(idsel == "get_message-smtp_server") {
 											loadParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
 										} else if(idsel == "get_message-sms_service") {
@@ -437,7 +441,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_presentpress-' + input + '">';
 												content = content + '<td>' + count[j] + '</td>';
 												content = content + '<td id="get_notepress-' + input + '"></td>';
-												content = content + '<td id="get_press-' + input + '">-</td>';
+												content = content + '<td id="get_press-' + input + '" nowrap>-</td>';
 												content = content + '<td id="get_minpress-' + input + '">-</td>';
 												content = content + '<td id="get_maxpress-' + input + '">-</td>';
 												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
@@ -471,40 +475,40 @@ function loadParam(paramid, noretry, resultdiv) {
 														var time_chart = cont2[0];
 														window.time_chart = time_chart;
 													}
-													if(idsel == "get_ruleeev") {
+													if(idsel == "get_parameev-rule") {
 														if(k == 0 || k == 1) {
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 2 || k == 3) {
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 4) {
-															document.getElementById("get_parameev-t_owerheat").disabled = true;
-															document.getElementById("get_parameev-t_owerheat2").disabled = true;
-															document.getElementById("get_parameev-k_pro").disabled = true;
-															document.getElementById("get_parameev-k_pro2").disabled = true;
-															document.getElementById("get_parameev-k_in").disabled = true;
-															document.getElementById("get_parameev-k_in2").disabled = true;
-															document.getElementById("get_parameev-k_dif").disabled = true;
-															document.getElementById("get_parameev-k_dif2").disabled = true;
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-correction").disabled = true;
-															document.getElementById("get_parameev-correction2").disabled = true;
-															document.getElementById("get_parameev-m_step").disabled = true;
-															document.getElementById("get_parameev-m_step2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"target").disabled = true;
+															document.getElementById(s+"target2").disabled = true;
+															document.getElementById(s+"kp").disabled = true;
+															document.getElementById(s+"kp2").disabled = true;
+															document.getElementById(s+"ki").disabled = true;
+															document.getElementById(s+"ki2").disabled = true;
+															document.getElementById(s+"kd").disabled = true;
+															document.getElementById(s+"kd2").disabled = true;
+															document.getElementById(s+"const").disabled = true;
+															document.getElementById(s+"const2").disabled = true;
+															document.getElementById(s+"manual").disabled = true;
+															document.getElementById(s+"manual2").disabled = true;
 														} else if(k == 5) {
-															document.getElementById("get_parameev-t_owerheat").disabled = true;
-															document.getElementById("get_parameev-t_owerheat2").disabled = true;
-															document.getElementById("get_parameev-k_pro").disabled = true;
-															document.getElementById("get_parameev-k_pro2").disabled = true;
-															document.getElementById("get_parameev-k_in").disabled = true;
-															document.getElementById("get_parameev-k_in2").disabled = true;
-															document.getElementById("get_parameev-k_dif").disabled = true;
-															document.getElementById("get_parameev-k_dif2").disabled = true;
-															document.getElementById("get_freoneev").disabled = true;
-															document.getElementById("get_parameev-correction").disabled = true;
-															document.getElementById("get_parameev-correction2").disabled = true;
+															document.getElementById(s+"target").disabled = true;
+															document.getElementById(s+"target2").disabled = true;
+															document.getElementById(s+"kp").disabled = true;
+															document.getElementById(s+"kp2").disabled = true;
+															document.getElementById(s+"ki").disabled = true;
+															document.getElementById(s+"ki2").disabled = true;
+															document.getElementById(s+"kd").disabled = true;
+															document.getElementById(s+"kd2").disabled = true;
+															document.getElementById(s+"freon").disabled = true;
+															document.getElementById(s+"const").disabled = true;
+															document.getElementById(s+"const2").disabled = true;
 														}
 													} else if(idsel == "get_paramcoolhp-rule") {
 														document.getElementById("get_paramcoolhp-target").disabled = false;
@@ -575,7 +579,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if(idsel == "get_listchart") {
 													var elems = document.getElementsByName("chrt_sel");
 													for(var j = 0; j < elems.length; j++) {
-														elems[j].add(new Option(cont2[0], "_" + cont2[0], false, selected), null);
+														elems[j].add(new Option(cont2[0],cont2[0], false, selected), null); // "_"+
 													}
 												} else {
 													var opt = new Option(cont2[0], k, false, selected);
@@ -596,7 +600,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											cont2 = cont1.replace(/(\;)/g, "</td></tr><tr><td>");
 											var content = "<tr><td>" + cont2 + "</td></tr>";
 										}
-										document.getElementById(values[0].toLowerCase()).innerHTML = content;
+										document.getElementById(valueid).innerHTML = content;
 									}
 								} else if(type == 'table') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
@@ -824,7 +828,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.innerHTML = onoff ? "ВКЛ" : "ВЫКЛ";   
 									element = document.getElementById("onoffswitch");
 									if(element) element.checked = onoff;
-									if((element=document.getElementById('get_zeroEEV'))) element.disabled = onoff;
+									if((element=document.getElementById('set_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
 									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
 									if((element=document.getElementById('load-profile-0'))) element.disabled = onoff;
@@ -849,8 +853,10 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_relay-r3way'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-revi'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpb'))) element.disabled = onoff;
-									if((element=document.getElementById('get_eev'))) element.disabled = onoff;
-									if((element=document.getElementById('get_eev3'))) element.disabled = onoff;
+									if((element=document.getElementById('get_parameev-pos'))) element.disabled = onoff;
+									if((element=document.getElementById('get_parameev-posp'))) element.disabled = onoff;
+									if((element=document.getElementById('set-eev'))) element.disabled = onoff;
+									if((element=document.getElementById('set-eevp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;
 								} else if(values[0] == "get_uptime") {
 									if((element = document.getElementById("get_uptime"))) element.innerHTML = values[1];
@@ -903,41 +909,16 @@ function loadParam(paramid, noretry, resultdiv) {
 	}
 }
 
-function calcacp() {
-	var a1 = document.getElementById("a1").value;
-	var a2 = document.getElementById("a2").value;
-	var p1 = document.getElementById("p1").value;
-	var p2 = document.getElementById("p2").value;
-	var k1 = document.getElementById("k1");
-	var k2 = document.getElementById("k2");
-	kk2 = (p2 - p1) * 100 / (a2 - a1);
-	kk1 = p1 - kk2 * a1;
-	k1.innerHTML = Math.abs(Math.round(kk1));
-	k2.innerHTML = Math.abs(kk2.toFixed(3));
-}
-
 function dhcp(dcb) {
-	dhcpcheckbox = document.getElementById(dcb);
-	if(dhcpcheckbox.checked) {
-		//console.log("dhcp:enabled");
-		document.getElementById('get_network-address').disabled = true;
-		document.getElementById('get_network-subnet').disabled = true;
-		document.getElementById('get_network-gateway').disabled = true;
-		document.getElementById('get_network-dns').disabled = true;
-		document.getElementById('get_network-address2').disabled = true;
-		document.getElementById('get_network-subnet2').disabled = true;
-		document.getElementById('get_network-gateway2').disabled = true;
-		document.getElementById('get_network-dns2').disabled = true;
-	} else { //console.log("dhcp:disabled");
-		document.getElementById('get_network-address').disabled = false;
-		document.getElementById('get_network-subnet').disabled = false;
-		document.getElementById('get_network-gateway').disabled = false;
-		document.getElementById('get_network-dns').disabled = false;
-		document.getElementById('get_network-address2').disabled = false;
-		document.getElementById('get_network-subnet2').disabled = false;
-		document.getElementById('get_network-gateway2').disabled = false;
-		document.getElementById('get_network-dns2').disabled = false;
-	}
+	var fl = document.getElementById(dcb).checked;
+	document.getElementById('get_network-ip').disabled = fl;
+	document.getElementById('get_network-subnet').disabled = fl;
+	document.getElementById('get_network-gateway').disabled = fl;
+	document.getElementById('get_network-dns').disabled = fl;
+	document.getElementById('get_network-ip2').disabled = fl;
+	document.getElementById('get_network-subnet2').disabled = fl;
+	document.getElementById('get_network-gateway2').disabled = fl;
+	document.getElementById('get_network-dns2').disabled = fl;
 }
 
 function validip(valip) {
@@ -1040,20 +1021,31 @@ function autoheight() {
 	}
 }
 
+function calcacp() {
+	var a1 = document.getElementById("a1").value;
+	var a2 = document.getElementById("a2").value;
+	var p1 = document.getElementById("p1").value;
+	var p2 = document.getElementById("p2").value;
+	kk2 = (p2 - p1) * 100 / (a2 - a1);
+	kk1 = p1 * 100 - kk2 * a1;
+	document.getElementById("k1").innerHTML = Math.abs(Math.round(kk1));
+	document.getElementById("k2").innerHTML = Math.abs(kk2.toFixed(3));
+}
+
 function setKanalog() {
 	var k1 = document.getElementById("k1").innerHTML;
 	var k2 = document.getElementById("k2").innerHTML;
 	var sens = document.getElementById("get_listpress").selectedOptions[0].text;
-	//if(sens="--") {return;}
-	zero = document.getElementById("get_zeropress-" + sens.toLowerCase());
-	if(zero) {
-		zero.value = k1;
-		zero.innerHTML = k1;
+	if(sens == "--") return;
+	var elem = document.getElementById("get_transpress-" + sens.toLowerCase());
+	if(elem) {
+		elem.value = k2;
+		elem.innerHTML = k2;
 	}
-	trans = document.getElementById("get_transpress-" + sens.toLowerCase());
-	if(trans) {
-		trans.value = k2;
-		trans.innerHTML = k2;
+	elem = document.getElementById("get_zeropress-" + sens.toLowerCase());
+	if(elem) {
+		elem.value = k1;
+		elem.innerHTML = k1;
 	}
 	setParam('get_zeroPress(' + sens + ')');
 	setParam('get_transPress(' + sens + ')');
@@ -1086,7 +1078,6 @@ function updatelog() {
 	$('#textarea').load(urlcontrol + '/journal.txt', function() {
 		document.getElementById("textarea").scrollTop = document.getElementById("textarea").scrollHeight;
 	});
-
 }
 
 function getCookie(name) {
@@ -1094,5 +1085,5 @@ function getCookie(name) {
 	return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 function setCookie(name, value) {
-	document.cookie = name + '="' + escape(value) + '";expires=' + (new Date(2019, 1, 1)).toUTCString();
+	document.cookie = name + '="' + escape(value) + '";expires=' + (new Date(2100, 1, 1)).toUTCString();
 }

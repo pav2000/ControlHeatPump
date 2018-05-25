@@ -299,8 +299,8 @@ class Sd2Card : public SdSpiCard {
     return begin(chipSelectPin, sckDivisor);
   }
  private:
-  bool begin(m_spi_t* spi, uint8_t chipSelectPin = SS,
-             uint8_t sckDivisor = SPI_FULL_SPEED) {
+  bool begin(/*m_spi_t* spi, uint8_t chipSelectPin = SS,
+             uint8_t sckDivisor = SPI_FULL_SPEED*/) {
     return false;
   }
   SpiDefault_t m_spi;

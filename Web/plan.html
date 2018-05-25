@@ -4,10 +4,15 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" type="text/css" href="style.css">
+	<style>
+	table { width: 80%; }
+	td, th { font-size: 1em; border: 0; text-align: left; }
+	</style>
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
+		urltimeout = 2000;
 		window.onload = function() {
-			updateParam("hide_rpumpfl,get_paramFC(FC),get_paramFC(POWER),get_EEVpp,get_overheatEEV,get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RPUMPFL),get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool");
+			updateParam("hide_tro_ei,get_paramFC(cFC),get_paramFC(cPOWER),get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_MODE,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TRTOOUT),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_targetTemp(TIN),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RPUMPFL),get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_SDM(ACPOWER_SDM),get_fullCOP");
 	};
 	</script>	
 </head>
@@ -23,30 +28,27 @@
 		<span id="get_temp-tconout" class="orange">-.-</span>
 		<span id="get_temp-tconoutg" class="red">-.-</span>
 		<span id="get_temp-tcomp" class="red">-.-</span>
+		<div name="hide_tro_ei">
 		<span id="get_temp-trtoout" class="blue">-.-</span>
-		<span id="get_temp-tevaout" class="blue">-.-</span>
 		<span id="get_temp-tevain" class="blue">-.-</span>
+		</div>
+		<span id="get_temp-tevaout" class="blue">-.-</span>
 		<span id="get_press-pcon" class="red">-.-</span>
 		<span id="get_press-peva" class="blue">-.-</span>
-		<span id="get_paramfc-fc" class="blue">-</span>
-		<span id="get_paramfc-power" class="blue">-</span>
-		<span id="get_overheateev">-.-</span>
-		<span id="get_eevpp">-</span>
+		<span id="get_paramfc-cfc" class="blue">-</span>
+		<span id="get_paramfc-cpower" class="blue">-</span>
+		<span id="get_parameev-overheat">-.-</span>
+		<span id="get_parameev-pospp">-</span>
 		<span id="get_flow-floweva" class="blue">-.-</span>
 		<span id="get_flow-flowcon" class="orange">-.-</span>
 		<span id="get_overcool" class="orange">-.-</span>
 	</div>
 	<div class="row1">
-		<dl>
-			<dt>Режим работы</dt><dd><span id="get_mode2">-</span></dd>
-			<dt>На улице</dt><dd><span id="get_temp-tout">-</span> &deg;C</dd>
-			<dt>В доме</dt><dd><span id="get_temp-tin">-</span> &deg;C</dd>
-
-			<dt>Насос ГК</dt><dd><span id="get_relay-rpumpi-ONOFF">-</span></dd>
-			<dt>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
-			<span name="hide_rpumpfl"><dt>Насос ТП</dt><dd><span id="get_relay-rpumpfl-ONOFF">-</span></dd></span>
-		</dl>
-							
+		<table >
+			<tr><td width="16%" style="font-weight: bold;">Режим работы:</td><td width="16%"><span id="get_mode2">-</span></td><td width="16%" style="font-weight: bold;">Потребление:</td><td width="16%"><span id="get_sdm-acpower_sdm">-</span> кВт</td><td width="16%" style="font-weight: bold;">COP:</td><td width="16%"><span id="get_fullcop">-</span></td></tr>
+			<tr><td style="font-weight: bold;">Насос ГК:</td><td><span id="get_relay-rpumpi-ONOFF">-</span></td><td style="font-weight: bold;">Насос СО:</td><td><span id="get_relay-rpumpo-ONOFF">-</span></td><td style="font-weight: bold;">Насос ТП</td><td><span id="get_relay-rpumpfl-ONOFF">-</span></td></tr>
+			<tr><td style="font-weight: bold;">На улице:</td><td><span id="get_temp-tout">-</span> &deg;C</td><td style="font-weight: bold;">В доме:</td><td><span id="get_temp-tin">-</span> &deg;C</td><td></td><td></td></tr>
+		</table>
 	</div>
 </div>
 </body>

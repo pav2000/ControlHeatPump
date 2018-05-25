@@ -127,54 +127,50 @@ boolean Message::dnsUpdateStart()
 }
  
 // Установить параметр Уведомления из строки
-boolean Message::set_messageSetting(MESSAGE_HP p, char *c)
+boolean Message::set_messageSetting(char *var, char *c)
 {
-  float x;
-//  return true;
-
- switch (p)
-   {
-    case pMAIL:        if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMail); return true;}
+float x;
+if(strcmp(var,mess_MAIL)==0){        if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMail); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMail);  return true;}
                        else return false;  
-                       break; 
-    case pMAIL_AUTH:   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMailAUTH); return true;}
+                       }else 
+if(strcmp(var,mess_MAIL_AUTH)==0){   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMailAUTH); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMailAUTH);  return true;}
                        else return false;  
-                       break; 
-    case pMAIL_INFO:   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMailInfo); return true;}
+                       }else 
+if(strcmp(var,mess_MAIL_INFO)==0){   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMailInfo); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMailInfo);  return true;}
                        else return false;  
-                       break;
-    case pSMS:         if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fSMS); return true;}
+                       }else
+if(strcmp(var,mess_SMS)==0){         if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fSMS); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fSMS);  return true;}
                        else return false;  
-                       break;
-    case pMESS_RESET:  if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageReset); return true;}
+                       }else
+if(strcmp(var,mess_MESS_RESET)==0){  if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageReset); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageReset);  return true;}
                        else return false;  
-                       break;
-    case pMESS_ERROR:  if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageError); return true;}
+                       }else
+if(strcmp(var,mess_MESS_ERROR)==0){  if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageError); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageError);  return true;}
                        else return false;  
-                       break;
-    case pMESS_LIFE:   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageLife); return true;}
+                       }else
+if(strcmp(var,mess_MESS_LIFE)==0){   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageLife); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageLife); return true;}
                        else return false;  
-                       break;
-    case pMESS_TEMP:   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageTemp); return true;}
+                       }else
+if(strcmp(var,mess_MESS_TEMP)==0){   if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageTemp); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageTemp);  return true;}
                        else return false;  
-                       break;
-    case pMESS_SD:     if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageSD); return true;}
+                       }else
+if(strcmp(var,mess_MESS_SD)==0){     if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageSD); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageSD);  return true;}
                        else return false;  
-                       break; 
-    case pMESS_WARNING:if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageWarning); return true;}
+                       }else 
+if(strcmp(var,mess_MESS_WARNING)==0){if (strcmp(c,cZero)==0)      { SETBIT0(messageSetting.flags,fMessageWarning); return true;}
                        else if (strcmp(c,cOne)==0) { SETBIT1(messageSetting.flags,fMessageWarning);  return true;}
                        else return false;  
-                       break;  
-    case pSMTP_SERVER: if(strlen(c)==0) return false;                                                // пустая строка
+                       }else  
+if(strcmp(var,mess_SMTP_SERVER)==0){ if(strlen(c)==0) return false;                                                // пустая строка
                        if(strlen(c)>sizeof(messageSetting.smtp_server)-1) return false;              // слишком длиная строка
                        else // ок сохраняем 
                         {  
@@ -183,131 +179,125 @@ boolean Message::set_messageSetting(MESSAGE_HP p, char *c)
                  //       check_address(messageSetting.smtp_server,&messageSetting.smtp_serverIP);      // Получить адрес IP через DNS
                         return true;  
                         }                        
-                       break; 
-    case pSMTP_IP:     return true; break;  //  Только на чтение. описание первого параметра для отправки смс                                  
-    case pSMTP_PORT:   x=my_atof(c);  
+                       }else 
+if(strcmp(var,mess_SMTP_IP)==0){     return true; }else  //  Только на чтение. описание первого параметра для отправки смс                                  
+if(strcmp(var,mess_SMTP_PORT)==0){   x=my_atof(c);  
                        if (x==ATOF_ERROR) return   false;
                        else if((x<=1)||(x>=65535-1)) return   false;   
                        else messageSetting.smtp_port=(int)x; return true;
-                       break;  
-    case pSMTP_LOGIN:  if(strlen(c)==0) return false;                                              
+                       }else  
+if(strcmp(var,mess_SMTP_LOGIN)==0){  if(strlen(c)==0) return false;                                              
                        if(strlen(c)>sizeof(messageSetting.smtp_login)-1) return false;                     
                        else { strcpy(messageSetting.smtp_login,c); return true;  }                         
-                       break;                
-    case pSMTP_PASS:   if(strlen(c)==0) return false;                                               
+                       }else                
+if(strcmp(var,mess_SMTP_PASS)==0){   if(strlen(c)==0) return false;                                               
                        if(strlen(c)>sizeof(messageSetting.smtp_password)-1) return false;                   
                        else { strcpy(messageSetting.smtp_password,c); return true;  }                       
-                       break; 
-    case pSMTP_MAILTO: if(strlen(c)==0) return false;                                             
+                       }else 
+if(strcmp(var,mess_SMTP_MAILTO)==0){ if(strlen(c)==0) return false;                                             
                        if(strlen(c)>sizeof(messageSetting.smtp_MailTo)-1) return false;                   
                        else { strcpy(messageSetting.smtp_MailTo,c); return true;  }                       
-                       break; 
-    case pSMTP_RCPTTO: if(strlen(c)==0) return false;                                              
+                       }else 
+if(strcmp(var,mess_SMTP_RCPTTO)==0){ if(strlen(c)==0) return false;                                              
                        if(strlen(c)>sizeof(messageSetting.smtp_RCPTTo)-1) return false;                   
                        else { strcpy(messageSetting.smtp_RCPTTo,c); return true;  }                       
-                       break; 
-    case pSMS_SERVICE: x=my_atof(c);    // При смене сервиса определяем новый IP поле sms_serviceIP
+                       }else 
+if(strcmp(var,mess_SMS_SERVICE)==0){ x=my_atof(c);    // При смене сервиса определяем новый IP поле sms_serviceIP
                        if (x==ATOF_ERROR) return   false;
                        messageSetting.sms_service=(SMS_SERVICE)x;
                        dnsUpadateSMS=true;
                        return true;
-                       break;
-    case pSMS_IP:      return true;    break;    // Только на чтение
-    case pSMS_PHONE:   if(strlen(c)==0) return false;                                            
+                       }else
+if(strcmp(var,mess_SMS_IP)==0){      return true;    }else    // Только на чтение
+if(strcmp(var,mess_SMS_PHONE)==0){   if(strlen(c)==0) return false;                                            
                        if(strlen(c)>sizeof(messageSetting.sms_phone)-1) return false;                   
                        else { strcpy(messageSetting.sms_phone,c); return true;  }                       
-                       break;   
-    case pSMS_P1:      if(strlen(c)==0) return false;          // первый параметр для отправки смс                                     
+                       }else   
+if(strcmp(var,mess_SMS_P1)==0){      if(strlen(c)==0) return false;          // первый параметр для отправки смс                                     
                        if(strlen(c)>sizeof(messageSetting.sms_p1)-1) return false;                   
                        else { strcpy(messageSetting.sms_p1,c); return true;  }                       
-                       break;
-    case pSMS_P2:      if(strlen(c)==0) return false;          // второй параметр для отправки смс                                     
+                       }else
+if(strcmp(var,mess_SMS_P2)==0){      if(strlen(c)==0) return false;          // второй параметр для отправки смс                                     
                        if(strlen(c)>sizeof(messageSetting.sms_p2)-1) return false;                   
                        else { strcpy(messageSetting.sms_p2,c); return true;  }                       
-                       break;
-    case pSMS_NAMEP1:  return true; break;  //  Только на чтение. описание первого параметра для отправки смс
-    case pSMS_NAMEP2:  return true; break;  //  Только на чтение. описание второго параметра для отправки смс
-    case pMESS_TIN:    x=my_atof(c);  
+                       }else
+if(strcmp(var,mess_SMS_NAMEP1)==0){  return true; }else  //  Только на чтение. описание первого параметра для отправки смс
+if(strcmp(var,mess_SMS_NAMEP2)==0){  return true; }else  //  Только на чтение. описание второго параметра для отправки смс
+if(strcmp(var,mess_MESS_TIN)==0){    x=my_atof(c);  
                        if (x==ATOF_ERROR) return   false;
                        else if((x<0)||(x>30)) return   false;   
                        else messageSetting.mTIN=(int)(x*100.0); return true;
-                       break;  
-    case pMESS_TBOILER:x=my_atof(c);  
+                       }else  
+if(strcmp(var,mess_MESS_TBOILER)==0){x=my_atof(c);  
                        if (x==ATOF_ERROR) return   false;
                        else if((x<0)||(x>70)) return   false;   
                        else messageSetting.mTBOILER=(int)(x*100.0); return true;
-                       break; 
-    case pMESS_TCOMP:  x=my_atof(c);  
+                       }else 
+if(strcmp(var,mess_MESS_TCOMP)==0){  x=my_atof(c);  
                        if (x==ATOF_ERROR) return   false;
                        else if((x<-5)||(x>80)) return   false;   
                        else messageSetting.mTCOMP=(int)(x*100.0); return true;
-                       break;
-    case pMAIL_RET:    return true;                                break;   
-    case pSMS_RET:     return true;                                break;                     
-   default:            return false;                               break;   
-   }
-   
-  return false;                        
+                       }else
+if(strcmp(var,mess_MAIL_RET)==0){    return true;                                }else   
+if(strcmp(var,mess_SMS_RET)==0){     return true;                                }else                     
+return false;   
+                
 }
-// Получить параметр Уведомления в строке 
-char*   Message::get_messageSetting(MESSAGE_HP p)
+// Получить параметр Уведомления по имени var, результат ДОБАВОЯЕТСЯ в строку ret
+char*   Message::get_messageSetting(char *var, char *ret)
 {
-  char static temp[16];   
-
-// return "test";
-   switch (p)
-   {
-    case pMAIL:        if (GETBIT(messageSetting.flags,fMail))           return  (char*)cOne; else return  (char*)cZero; break;
-    case pMAIL_AUTH:   if (GETBIT(messageSetting.flags,fMailAUTH))       return  (char*)cOne; else return  (char*)cZero; break;
-    case pMAIL_INFO:   if (GETBIT(messageSetting.flags,fMailInfo))       return  (char*)cOne; else return  (char*)cZero; break;
-    case pSMS:         if (GETBIT(messageSetting.flags,fSMS))            return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_RESET:  if (GETBIT(messageSetting.flags,fMessageReset))   return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_ERROR:  if (GETBIT(messageSetting.flags,fMessageError))   return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_LIFE:   if (GETBIT(messageSetting.flags,fMessageLife))    return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_TEMP:   if (GETBIT(messageSetting.flags,fMessageTemp))    return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_SD:     if (GETBIT(messageSetting.flags,fMessageSD))      return  (char*)cOne; else return  (char*)cZero; break;
-    case pMESS_WARNING:if (GETBIT(messageSetting.flags,fMessageWarning)) return  (char*)cOne; else return  (char*)cZero; break;
-    case pSMTP_SERVER: return messageSetting.smtp_server;                       break;  
-    case pSMTP_IP:     return IPAddress2String(messageSetting.smtp_serverIP);   break;   
-    case pSMTP_PORT:   return int2str(messageSetting.smtp_port);                break; 
-    case pSMTP_LOGIN:  return messageSetting.smtp_login;                        break;
-    case pSMTP_PASS:   return messageSetting.smtp_password;                     break; 
-    case pSMTP_MAILTO: return messageSetting.smtp_MailTo;                       break;
-    case pSMTP_RCPTTO: return messageSetting.smtp_RCPTTo;                       break;
-    case pSMS_SERVICE: switch (messageSetting.sms_service)
+	
+char temp[12];	
+if(strcmp(var,mess_MAIL)==0){        if (GETBIT(messageSetting.flags,fMail))           return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MAIL_AUTH)==0){   if (GETBIT(messageSetting.flags,fMailAUTH))       return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MAIL_INFO)==0){   if (GETBIT(messageSetting.flags,fMailInfo))       return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_SMS)==0){         if (GETBIT(messageSetting.flags,fSMS))            return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MESS_RESET)==0){  if (GETBIT(messageSetting.flags,fMessageReset))   return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MESS_ERROR)==0){  if (GETBIT(messageSetting.flags,fMessageError))   return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MESS_LIFE)==0){   if (GETBIT(messageSetting.flags,fMessageLife))    return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MESS_TEMP)==0){   if (GETBIT(messageSetting.flags,fMessageTemp))    return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_MESS_SD)==0){     if (GETBIT(messageSetting.flags,fMessageSD))      return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);  }else
+if(strcmp(var,mess_MESS_WARNING)==0){if (GETBIT(messageSetting.flags,fMessageWarning)) return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+if(strcmp(var,mess_SMTP_SERVER)==0){ return strcat(ret,messageSetting.smtp_server);                      }else  
+if(strcmp(var,mess_SMTP_IP)==0){     return strcat(ret,IPAddress2String(messageSetting.smtp_serverIP));  }else   
+if(strcmp(var,mess_SMTP_PORT)==0){   return strcat(ret,int2str(messageSetting.smtp_port));               }else 
+if(strcmp(var,mess_SMTP_LOGIN)==0){  return strcat(ret,messageSetting.smtp_login);                       }else
+if(strcmp(var,mess_SMTP_PASS)==0){   return strcat(ret,messageSetting.smtp_password);                    }else 
+if(strcmp(var,mess_SMTP_MAILTO)==0){ return strcat(ret,messageSetting.smtp_MailTo);                      }else
+if(strcmp(var,mess_SMTP_RCPTTO)==0){ return strcat(ret,messageSetting.smtp_RCPTTo);                      }else
+if(strcmp(var,mess_SMS_SERVICE)==0){ switch (messageSetting.sms_service)
                        {
-                        case pSMS_RU:  return (char*)"sms.ru:1;smsc.ru:0;";     break;
-                        case pSMSC_RU: return (char*)"sms.ru:0;smsc.ru:1;";     break;
-                        default: return (char*)"sms.ru:1;smsc.ru:0;";            break; // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                                        break; 
-    case pSMS_IP:      return IPAddress2String(messageSetting.sms_serviceIP);   break;    
-    case pSMS_PHONE:   return messageSetting.sms_phone;                         break;  
-    case pSMS_P1:      return messageSetting.sms_p1;                            break;  // первый параметр для отправки смс
-    case pSMS_P2:      return messageSetting.sms_p2;                            break;  // второй параметр для отправки смс
-    case pSMS_NAMEP1:  switch (messageSetting.sms_service)  // описание первого параметра для отправки смс
+                        case pSMS_RU:  return strcat(ret,(char*)"sms.ru:1;smsc.ru:0;");     break;
+                        case pSMSC_RU: return strcat(ret,(char*)"sms.ru:0;smsc.ru:1;");     break;
+                        default: return strcat(ret,(char*)"sms.ru:1;smsc.ru:0;");           break; // Этого не должно быть, но если будет то установить по умолчанию
+                       }                                                        }else
+if(strcmp(var,mess_SMS_IP)==0){      return strcat(ret,IPAddress2String(messageSetting.sms_serviceIP));  }else  
+if(strcmp(var,mess_SMS_PHONE)==0){   return strcat(ret,messageSetting.sms_phone);                        }else  
+if(strcmp(var,mess_SMS_P1)==0){      return strcat(ret,messageSetting.sms_p1);                           }else  // первый параметр для отправки смс
+if(strcmp(var,mess_SMS_P2)==0){      return strcat(ret,messageSetting.sms_p2);                           }else  // второй параметр для отправки смс
+if(strcmp(var,mess_SMS_NAMEP1)==0){  switch (messageSetting.sms_service)  // описание первого параметра для отправки смс
                        {
-                        case pSMS_RU:  return (char*)"API ID";  break;
-                        case pSMSC_RU: return (char*)"Login";   break;
-                        default: return (char*)"API ID";        break; // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                                        break;
-    case pSMS_NAMEP2:  switch (messageSetting.sms_service)   // описание второго параметра для отправки смс
+                        case pSMS_RU:  return strcat(ret,(char*)"API ID");  break;
+                        case pSMSC_RU: return strcat(ret,(char*)"Login");   break;
+                        default:       return strcat(ret,(char*)"API ID");  break; // Этого не должно быть, но если будет то установить по умолчанию
+                       }                                                        }else
+if(strcmp(var,mess_SMS_NAMEP2)==0){  switch (messageSetting.sms_service)   // описание второго параметра для отправки смс
                        {
-                        case pSMS_RU:  return (char*)"none";      break;
-                        case pSMSC_RU: return (char*)"Password";  break;
-                        default: return (char*)"none";            break; // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                                        break;
-    case pMESS_TIN:    return ftoa(temp,(float)messageSetting.mTIN/100.0,1);    break;
-    case pMESS_TBOILER:return ftoa(temp,(float)messageSetting.mTBOILER/100.0,1);break;
-    case pMESS_TCOMP:  return ftoa(temp,(float)messageSetting.mTCOMP/100.0,1);  break;
-    case pMAIL_RET:    if (waitSend) return (char*)"wait response...";                 // В зависимости готов ответ или нет
-                       else return retTest;                               
-                       break;   
-    case pSMS_RET:     if (waitSend) return (char*)"wait response...";                 // В зависимости готов ответ или нет                 
-                       else return retTest;                               
-                       break;   
-    default:           return false;                                     break;   
-   }
- return (char*)cInvalid;                                    
+                        case pSMS_RU:  return strcat(ret,(char*)"none");      break;
+                        case pSMSC_RU: return strcat(ret,(char*)"Password");  break;
+                        default:       return strcat(ret,(char*)"none");       break; // Этого не должно быть, но если будет то установить по умолчанию
+                       }                                                        }else
+if(strcmp(var,mess_MESS_TIN)==0){    return strcat(ret,ftoa(temp,(float)messageSetting.mTIN/100.0,1));    }else
+if(strcmp(var,mess_MESS_TBOILER)==0){return strcat(ret,ftoa(temp,(float)messageSetting.mTBOILER/100.0,1));}else
+if(strcmp(var,mess_MESS_TCOMP)==0){  return strcat(ret,ftoa(temp,(float)messageSetting.mTCOMP/100.0,1));  }else
+if(strcmp(var,mess_MAIL_RET)==0){    if (waitSend) return strcat(ret,(char*)"wait response...");                 // В зависимости готов ответ или нет
+                       else return strcat(ret,retTest);                               
+                       }else   
+if(strcmp(var,mess_SMS_RET)==0){     if (waitSend) return strcat(ret,(char*)"wait response...");                 // В зависимости готов ответ или нет                 
+                       else return strcat(ret,retTest);                               
+                       }else   
+return strcat(ret,(char*)cInvalid);  
+                                 
 }
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t Message::save(int32_t adr)    
@@ -423,7 +413,6 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
 // true - сообщение принято (или запрещено), false - сообщение отвергнуто т.к оно уже посылалось (дубль) или внутренняя ошибка
 boolean Message::setMessage(MESSAGE ms, char *c, int p1)
 {
-char temp[10];    
 //  Serial.print(c);Serial.print(" : ");Serial.print(ms);Serial.println("-5");
    // Проверка необходимости отправки уведомления
        if (((GETBIT(messageSetting.flags,fMessageReset))==0)&&(ms==pMESSAGE_RESET))       return true;   // Попытка отправить не разрешенное сообщение, выходим без ошибок
@@ -436,17 +425,19 @@ char temp[10];
  
     // Проверка на дублирование сообщения. Тестовые сообщения и сообщения жизни  можно посылать многократно  подряд
     if ((rtcSAM3X8.unixtime()-sendTime<REPEAT_TIME)&&(messageData.ms==ms)&&((ms!=pMESSAGE_TESTMAIL)&&(ms!=pMESSAGE_TESTSMS)&&(ms!=pMESSAGE_LIFE)))   //дублирующие сообщения полылаются с интервалом
-      {
-        journal.jprintf("Ignore repeat message: #%d:%s\n",ms,c);
+    {
+        //journal.jprintf("Ignore repeat msg: #%d\n", ms);
         return false; 
-      }
+    } else {
+    	journal.jprintf(pP_TIME, "MSG: #%d: %s\n", ms, c);
+    }
       
     // Подготовить уведомление
     messageData.ms=ms;
     sendTime=rtcSAM3X8.unixtime(); // запомнить время отправки
     strcpy(messageData.data,c);
     // в сообщение pMESSAGE_TEMP добавить значение температуры
-    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  strcat(messageData.data,ftoa(temp,(float)p1/100.0,1)); }
+    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  ftoa(messageData.data + m_strlen(messageData.data), (float)p1/100.0,1); }
     messageData.p1=p1;
     // очистить ответы
     strcpy(retTest,"");             // обнулить ответ от посылки тестового письма
@@ -485,14 +476,14 @@ uint16_t i;
          {
            // Отправка удачна
            for(i=0;i<strlen(retMail);i++) if(retMail[i]=='=') retMail[i]=':';  // замена знака = на : т.к. это запрещенный знак в запросах
-           strcpy(retTest,"Тестовое письмо отправлено на "); strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO)); 
+           strcpy(retTest,"Тестовое письмо отправлено на "); get_messageSetting((char*)mess_SMTP_RCPTTO,retTest);//strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO)); 
            strcat(retTest,"\nОтвет: "); strcat(retTest,retMail); 
          }
        else
          {
            // Отправка не удачна
            for(i=0;i<strlen(retMail);i++) if(retMail[i]=='=') retMail[i]=':';  // замена знака = на : т.к. это запрещенный знак в запросах           
-           strcpy(retTest,"Тестовое письмо НЕ отправлено на "); strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO)); 
+           strcpy(retTest,"Тестовое письмо НЕ отправлено на "); get_messageSetting((char*)mess_SMTP_RCPTTO,retTest);//strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO)); 
            strcat(retTest,"\nОтвет: "); strcat(retTest,retMail); 
          }
       }
@@ -507,12 +498,12 @@ uint16_t i;
               case pSMS_RU: 
                    if (sendSMS())
                       {  // Удачно
-                      strcpy(retTest,"Тестовое SMS отправлено на номер "); strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE)); 
+                      strcpy(retTest,"Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE,retTest);//strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE)); 
                       strcat(retTest,"\nОтвет: "); strcat(retTest,retSMS); 
                       }
                       else
                       { // Не удачно
-                      strcpy(retTest,"Тестовое SMS НЕ отправлено на номер "); strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE)); 
+                      strcpy(retTest,"Тестовое SMS НЕ отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE,retTest);//strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE)); 
                       strcat(retTest,"\nОтвет: "); strcat(retTest,retSMS); 
                       }
               break;

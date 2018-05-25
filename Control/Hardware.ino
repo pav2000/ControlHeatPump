@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -435,7 +435,9 @@ void sensorFrequency::initFrequency(int sensor)
    //   RISING прерывание вызывается только при смене значения на порту с LOW на HIGH
    //   FALLING прерывание вызывается только при смене значения на порту с HIGH на LOW
         if (sensor==FLOWCON)  attachInterrupt(pin,InterruptFLOWCON,CHANGE); 
+#ifdef FLOWEVA        
    else if (sensor==FLOWEVA)  attachInterrupt(pin,InterruptFLOWEVA,CHANGE); 
+#endif   
 #ifdef FLOWPCON   
    else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
 #endif     
@@ -594,25 +596,46 @@ void devEEV::initEEV()
   EEV=-1;                               // шаговик в непонятном положении
   setZero=true;                         // Признакнеобходимости обнуления счетчика шагов EEV
   err=OK;                               // Ошибок нет
-  Pid_start=EEV_START;                  // Откуда стартует ПИД
-  Resume(EEV_START);                    // Обнулить рабочие переменные
-  halfPos=(EEV_STEPS-EEV_MIN_STEPS)/2+EEV_MIN_STEPS;// Позиция шаговика - половина диапазона ЭРВ
-  timeIn=10;                            // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-  Overheat=0;                           // Перегрев текущий (сотые градуса)
-  tOverheat= DEFAULT_OVERHEAT;          // Перегрев ЦЕЛЬ (сотые градуса)
-  typeFreon = (TYPEFREON) DEFAULT_FREON_TYPE;
-  ruleEEV = (RULE_EEV) DEFAULT_RULE_EEV;
-  Kp = 3;                               // Коэф пропорц.
-  Ki = 2;                               // Коэф интегр.  для настройки Ki=0
-  Kd = 1;                               // Коэф дифф.
-  Correction=0;                         // Поправка в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
-  manualStep=halfPos;                   // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
+  Pid_start=_data.StartPos;             // Откуда стартует ПИД
+  Resume(_data.StartPos);               // Обнулить рабочие переменные
   testMode=NORMAL;                      // Значение режима тестирования
-  flags=0x00;                           // флаги  0 - наличие EEV
-  SETBIT1(flags,fPresent);              // наличие датчика в текушей конфигурации
-  Chart.init(true);                     // инициалазация статистики
+	
+// Устновка настроек по умолчанию (структара данных _data)
+ _data.timeIn=10;                                     // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+ _data.tOverheat = DEFAULT_OVERHEAT;                  // Перегрев ЦЕЛЬ (сотые градуса)
+ _data.Kp =  DEFAULT_EEV_Kp;                          // ПИД Коэф пропорц.  В СОТЫХ!!!
+ _data.Ki =  DEFAULT_EEV_Ki;                          // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+ _data.Kd =  DEFAULT_EEV_Kd;                          // ПИД Коэф дифф.   В СОТЫХ!!!
+ _data.Correction = 0;                                // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
+ _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
+ _data.typeFreon = DEFAULT_FREON_TYPE;                // Тип фреона
+ _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
+ _data.OverHeatCor.Delay = 10;			     		  // Задержка после старта компрессора, сек
+ _data.OverHeatCor.Period = 2;			     	      // Период в циклах ЭРВ, сколько пропустить
+ _data.OverHeatCor.TDIS_TCON = 400;			          // Температура нагнетания - конденсации
+ _data.OverHeatCor.TDIS_TCON_Thr = 100;		          // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
+ _data.OverHeatCor.K = 1;						      // Коэффициент (/0.001): перегрев += дельта * K
+ _data.OverHeatCor.OverHeatMin = 200;			      // Минимальный перегрев (сотые градуса)
+ _data.OverHeatCor.OverHeatMax = 400;			      // Максимальный перегрев (сотые градуса)
+ _data.errKp=DEFAULT_ERR_KP;                          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
+ _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+ _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
+ _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+ _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
+  // ЭРВ Времена и задержки
+ _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
+ _data.delayOn = DEFAULT_DELAY_ON;                    // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
+ _data.DelayStartPos = DEFAULT_DELAY_START_POS;       // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
+ _data.delayOff = DEFAULT_DELAY_OFF;                  // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
+ _data.flags = 0x00;                                  // флаги ЭРВ,
+ #ifdef EEV_DEF 
+  SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
+ #endif 
+  if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
+  SETBIT0(_data.flags,fCorrectOverHeat);  
+
+  Chart.init(get_present());                   // инициалазация статистики
   maxEEV=EEV_STEPS ;                    // Максимальное число шагов ЭРВ (диапазон)
-  minEEV=EEV_MIN_STEPS;                 // Тчисло шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
   name=(char*)nameEEV;                  // Присвоить имя
   note=(char*)noteEEV;                  // Присвоить описание
   
@@ -663,7 +686,7 @@ void devEEV::initEEV()
       #endif
     #endif  // DRV_EEV_L9333
 #endif // DEMO   
-stepperEEV.setSpeed(EEV_SPEED);   // Установить скорость движения
+stepperEEV.setSpeed(_data.speedEEV);   // Установить скорость движения
 //journal.jprintf(" EEV init: OK\r\n"); 
 }
 
@@ -680,14 +703,14 @@ void devEEV::Resume(uint16_t pos)
  int8_t devEEV::Start()
  {
   
-   Resume(EEV_START);
+   Resume(_data.StartPos);
    EEV=0;
    err=OK;                               // Ошибок нет
-   if(!GETBIT(flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
+   if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
    journal.jprintf(" EEV set zero\n"); 
    set_zero();                           // установить 0
- //  journal.jprintf(" EEV set EEV_START: %d\n",EEV_START); 
- //  set_EEV(EEV_START);      // Выставить положение ЭРВ - EEV_START
+ //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
+ //  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
   return OK;                  
  }
  // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
@@ -707,7 +730,7 @@ int8_t devEEV::set_EEV(int x)
   err=OK;
   if(x>EEV_STEPS)           { err=ERR_MAXERV; return err;   }    // Выход за верхнюю границу
   if(x<0)                   { err=ERR_MINERV; return err;   }    // Выход за нижнюю границу
-  if (!(GETBIT(flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
+  if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
   if (testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
  return err;  
@@ -723,18 +746,18 @@ int8_t devEEV::set_EEV(int x)
 //   Serial.print(rto);Serial.print("-");Serial.print(out);Serial.print("-");Serial.print(in);Serial.print("-"); Serial.println(p);
 if (testMode!=NORMAL)   // если режим тестирования приоритет выше чем у демо !!!
   {                                                                      
-       switch (ruleEEV)  // определение доступности элемента
+       switch (_data.ruleEEV)  // определение доступности элемента
         {
-          case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+Correction; else { err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,typeFreon)+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,typeFreon)+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+          case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+          case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+_data.Correction; else { err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+          case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+          case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
           case  TABLE:         // По умолчанию
           case  MANUAL:         
-          default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,typeFreon)+Correction; 
-                               else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,typeFreon)+Correction;
-                               else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+Correction; 
-                               else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+Correction; 
+          default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; 
+                               else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction;
+                               else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+_data.Correction; 
+                               else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; 
                                else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
         }
     
@@ -745,18 +768,18 @@ if (testMode!=NORMAL)   // если режим тестирования прио
       Overheat=abs(out-in);              // вычислить перегрев для демки всегда больше 0
     #else 
 
-             switch (ruleEEV)  // определение доступности элемента
+             switch (_data.ruleEEV)  // определение доступности элемента
               {
-                case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,typeFreon)+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,typeFreon)+Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+                case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+                case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+                case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
+                case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
                 case  TABLE:         // По умолчанию
                 case  MANUAL:         
-                default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,typeFreon)+Correction; 
-                                     else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,typeFreon)+Correction;
-                                     else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+Correction; 
-                                     else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+Correction; 
+                default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; 
+                                     else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction;
+                                     else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+_data.Correction; 
+                                     else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; 
                                      else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
               }
     #endif 
@@ -766,71 +789,6 @@ if (testMode!=NORMAL)   // если режим тестирования прио
  // if (Overheat<-100) err=set_Error(ERR_OVERHEAT,name);   // Отрицательный перегрев????? даем запас -1 градуса
  return Overheat;  
  }
-
-
-
-// УСТАНОВКА Установить целевой перегрев
-int8_t devEEV::set_tOverheat(int16_t x)
-{
-  err=OK;
-  if ((x>0)&&(x<=1500)) { if(tOverheat!=x) resetPID(); tOverheat=x;return OK;}
-  else err=WARNING_VALUE;
-  return  err;                        
-}   
-
-// УСТАНОВКА Установить постоянную интегрирования времени в секундах ЭРВ
-int8_t devEEV::set_timeIn(int16_t x)
-{
-  err=OK;
-  if ((x>=5)&&(x<=600)) { if(timeIn!=x) resetPID(); timeIn=x; return OK;}
-  else err=WARNING_VALUE;
-  return  err;                        
-}  
-
-// УСТАНОВКА Установить пропорциональную составляющую (хранится в СОТЫХ)
-int8_t devEEV::set_Kpro(int16_t x)
-{
-  err=OK;
-  if ((x>=0)&&(x<=5000)) { if(Kp!=x) resetPID(); Kp=x;return OK;}
-  else err=WARNING_VALUE;
-  return  err;                      
-}  
-
-// УСТАНОВКА Установить интегральнаяую составляющую (хранится в СОТЫХ)
-int8_t devEEV::set_Kint(int16_t x)
-{
-  err=OK;
-  if ((x>=0)&&(x<=1000)) { if(Ki!=x) resetPID(); Ki=x; return OK;}
-  else err=WARNING_VALUE;
-  return  err;                        
-} 
-
-// УСТАНОВКА Установить дифференциальную составляющую (хранится в СОТЫХ)
-int8_t devEEV::set_Kdif(int16_t x)
-{
-  err=OK;
-  if ((x>=0)&&(x<=1000)) { if(Kd!=x) resetPID(); Kd=x;return OK;}
-  else err=WARNING_VALUE;
-  return  err;               
-} 
-
-// УСТАНОВКА Установить поправку в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».
-// Допустимый диапазон поправок -5 +5 градусов
-int8_t  devEEV::set_Correction(int16_t x)
-{
-  err=OK;
-  if ((x>=-500)&&(x<=500)) {if(Correction!=x)  Correction=x; return OK;}
-  else err=WARNING_VALUE;
-  return  err;
-}
-// установить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-int8_t  devEEV::set_manualStep(int16_t x)
-{
-  err=OK;
-  if ((x>=minEEV)&&(x<=maxEEV)){ manualStep=x; return OK;}
-  else err=WARNING_VALUE;
-  return  err;
-}
 
 // Обновление ЭРВ - одна итерация алгоритма отслеживания
 // на входе две температуры, используется для алгоритма table
@@ -843,11 +801,11 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
    float u, u_dif, u_int, u_pro; 
   #endif 
   
-  if(!GETBIT(flags,fPresent)) {return err;}  // если ЭРВ нет то ничего не делаем
+  if(!GETBIT(_data.flags,fPresent)) {return err;}  // если ЭРВ нет то ничего не делаем
   if (fPause)  return err;      // если пауза то выходим
   newEEV=EEV;                   // в начале равно старому
   
-  switch (ruleEEV)     // В зависмости от правила вычисления перегрева
+  switch (_data.ruleEEV)     // В зависмости от правила вычисления перегрева
   {
   case TEVAOUT_TEVAIN:
   case TRTOOUT_TEVAIN:
@@ -867,9 +825,9 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
          #define EEV_PID_MAX_STEP  (int32_t)(50*EEV_PID_SCALE)      // максимальное изменение на одной итерации ПИД
          
          errPID=Overheat-tOverheat;                                 // Текущая ошибка, в СОТЫХ градуса (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
-         if (Ki>0)                                                  // Расчет интегральной составляющей
+         if (_data.Ki>0)                                                  // Расчет интегральной составляющей
          {
-          temp_int=temp_int+Ki*errPID;                              // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+          temp_int=temp_int+_data.Ki*errPID;                              // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
           // Ограничение диапзона изменения EEV_INT_MAX_STEP шагов за одну итерацию ПИД
           if (temp_int>EEV_INT_MAX_STEP)   temp_int=EEV_INT_MAX_STEP; 
           if (temp_int<-EEV_INT_MAX_STEP)  temp_int=-EEV_INT_MAX_STEP; 
@@ -878,16 +836,16 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
          u_int=temp_int;
         
          // Дифференцальная составляющая
-         u_dif=Kd*(errPID-pre_errPID);                               // ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+         u_dif=_data.Kd*(errPID-pre_errPID);                               // ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
          
          // Пропорциональная составляющая
-         u_pro=Kp*errPID;                                            // ДЕСЯТИТЫСЯЧНЫЕ
+         u_pro=_data.Kp*errPID;                                            // ДЕСЯТИТЫСЯЧНЫЕ
          
          // Общее воздействие
          u=u_pro+u_int+u_dif;                                       // В  градусы 100 коэффициенты 100 ДЕСЯТИТЫСЯЧНЫЕ
    //      Serial.print("u="); Serial.println(u);
 
-   //      if (abs(errPID)<EEV_KP_ERR) u=((abs(errPID*100/EEV_KP_ERR))*u)/100;       // В близи уменьшить воздействие
+   //      if (abs(errPID)<errKp) u=((abs(errPID*100/errKp))*u)/100;       // В близи уменьшить воздействие
    
          if (u>EEV_PID_MAX_STEP)   u=EEV_PID_MAX_STEP;              // ограничение одной итерации 50 шагами
          if (u<-EEV_PID_MAX_STEP)  u=-EEV_PID_MAX_STEP;
@@ -896,10 +854,10 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
 
          pre_errPID=errPID;                                         // запомнить предыдущую ошибку
     #else   // использование флоат, работатет
-         errPID=((float)(Overheat-tOverheat))/100.0;                // Текущая ошибка, переводим в градусы (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
-         if (Ki>0)                                                  // Расчет интегральной составляющей
+         errPID=((float)(Overheat-_data.tOverheat))/100.0;                // Текущая ошибка, переводим в градусы (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
+         if (_data.Ki>0)                                                  // Расчет интегральной составляющей
          {
-          temp_int=temp_int+((float)Ki*errPID)/100.0;               // Интегральная составляющая, с накоплением делить на 100
+          temp_int=temp_int+((float)_data.Ki*errPID)/100.0;               // Интегральная составляющая, с накоплением делить на 100
           // Ограничение диапзона изменения 20 шагов за один шаг ПИД
           #define EEV_MAX_STEP  5
           if (temp_int>EEV_MAX_STEP)  temp_int=EEV_MAX_STEP; 
@@ -909,25 +867,25 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
          u_int=temp_int;
         
          // Дифференцальная составляющая
-         u_dif=((float)Kd*(errPID-pre_errPID))/100.0;               // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+         u_dif=((float)_data.Kd*(errPID-pre_errPID))/100.0;               // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
          
          // Пропорциональная составляющая
-         u_pro=(float)Kp*errPID/100.0;
+         u_pro=(float)_data.Kp*errPID/100.0;
          
          // Общее воздействие
          u=u_pro+u_int+u_dif;
 
-         if (abs(errPID)<(EEV_KP_ERR/100.0)) u_pro=(abs((errPID*100.0)/EEV_KP_ERR))*u_pro;            // В близи уменьшить воздействие
+         if (abs(errPID)<(_data.errKp/100.0)) u_pro=(abs((errPID*100.0)/_data.errKp))*u_pro;            // В близи уменьшить воздействие
          newEEV=round(u)+EEV;                                        // Округление и добавление предудущего значения
          pre_errPID=errPID;                                          // запомнить предыдущую ошибку
     #endif   // EEV_INT_PID
      
         if (newEEV>=maxEEV)   newEEV=maxEEV;                         // ограничение диапазона
-        if (newEEV<=minEEV)   newEEV=minEEV;
+        if (newEEV<=_data.minSteps)   newEEV=_data.minSteps;
   //      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
     } break;
   case TABLE:  newEEV = TempToEEV(teva,tcon); break;
-  case MANUAL: newEEV = manualStep; break;
+  case MANUAL: newEEV = _data.manualStep; break;
  }
 
  //  Передвинуть шаговик ЭРВ в позицию (абсолютную) EEV если есть изменения
@@ -939,59 +897,71 @@ return err;
 static int16_t OverHeatCor_period = 0; // Только один ЭРВ.
 void   devEEV::CorrectOverheat(void)
 {
-	if(!GETBIT(flags, fCorrectOverHeat)) return;
-	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > OverHeatCor.Delay && ++OverHeatCor_period > OverHeatCor.Period) {
+	if(!GETBIT(_data.flags, fCorrectOverHeat)) return;
+	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OverHeatCor.Delay && ++OverHeatCor_period > _data.OverHeatCor.Period) {
 		OverHeatCor_period = 0;
 		uint16_t delta = HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing();
-		if(delta > OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr) {
-			delta = OverHeatCor.TDIS_TCON + OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев большой - уменьшаем
-		} else if(delta < OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr) {
-			delta = OverHeatCor.TDIS_TCON - OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев маленький - увеличиваем
+		if(delta > _data.OverHeatCor.TDIS_TCON + _data.OverHeatCor.TDIS_TCON_Thr) {
+			delta = _data.OverHeatCor.TDIS_TCON + _data.OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев большой - уменьшаем
+		} else if(delta < _data.OverHeatCor.TDIS_TCON - _data.OverHeatCor.TDIS_TCON_Thr) {
+			delta = _data.OverHeatCor.TDIS_TCON - _data.OverHeatCor.TDIS_TCON_Thr - delta;	// Перегрев маленький - увеличиваем
 		}
-		tOverheat += (int32_t) delta * OverHeatCor.K / 1000;
-		if(tOverheat > OverHeatCor.OverHeatMax) tOverheat = OverHeatCor.OverHeatMax;
-		else if(tOverheat < OverHeatCor.OverHeatMin) tOverheat = OverHeatCor.OverHeatMin;
+		_data.tOverheat += (int32_t) delta * _data.OverHeatCor.K / 1000;
+		if(_data.tOverheat > _data.OverHeatCor.OverHeatMax) _data.tOverheat = _data.OverHeatCor.OverHeatMax;
+		else if(_data.tOverheat < _data.OverHeatCor.OverHeatMin) _data.tOverheat = _data.OverHeatCor.OverHeatMin;
 	}
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::save(int32_t adr)
 {
+/*	
     if (writeEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
     	set_Error(ERR_SAVE_EEPROM,name);
     	return ERR_SAVE_EEPROM;
     }
     adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
+ */
+ 	if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);   
     return adr;   
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::load(int32_t adr)
 {
-	if (readEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
+/*	if (readEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
 		set_Error(ERR_LOAD_EEPROM,name);
 		return ERR_LOAD_EEPROM;
 	}
 	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
-	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
+*/
+    if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
+	SETBIT1(_data.flags, fPresent); 									// ЭРВ всегда есть!!!
 	return adr;
 }
 
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devEEV::loadFromBuf(int32_t adr,byte *buf) 
 {
+/*	
 	memcpy((byte*)&timeIn, buf+adr, (byte*)&flags - (byte*)&timeIn + sizeof(flags));
 	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
-	SETBIT1(flags, fPresent); 									// ЭРВ всегда есть!!!
-	return adr;
+*/
+memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 	
+SETBIT1(_data.flags, fPresent); // ЭРВ всегда есть!!!
+return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devEEV::get_crc16(uint16_t crc) 
 {
-	uint8_t i;
+/*
+	uint16_t i;
 	for(i = 0; i < (byte*)&flags - (byte*)&timeIn + sizeof(flags); i++)
 		crc = _crc16(crc,*((byte*)&timeIn + i));  // CRC16 структуры
-	return crc;
+*/
+ uint16_t i;
+ for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   	
+ return crc;
 }
 
 // Сброс пид регулятора
@@ -1000,37 +970,220 @@ void devEEV::resetPID()
   temp_int = 0;                          // Служебная переменная интегрирования
   errPID=0;                              // Текущая ошибка ПИД регулятора
   pre_errPID=0;                          // Предыдущая ошибка ПИД регулятора
-  tmpTime=timeIn;                        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
+  tmpTime=_data.timeIn;                  // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                           // Признак работы пид с начала (пропуск первой итерации)
 }
 
 void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
 {
 	if(strcmp(var, "cCOR")==0) {
-    	if(getset) flags = (flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
-    	itoa((flags & (1<<fCorrectOverHeat)) != 0, ret, 10);
+    	if(getset) _data.flags = (_data.flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
+    	itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret, 10);
 	} else if(strcmp(var, "cDELAY")==0) {
-    	if(getset) OverHeatCor.Delay = value;
-    	itoa(OverHeatCor.Delay, ret, 10);
+    	if(getset) _data.OverHeatCor.Delay = value;
+    	itoa(_data.OverHeatCor.Delay, ret, 10);
     } else if(strcmp(var, "cPERIOD")==0) {
-    	if(getset) OverHeatCor.Period = value;
-    	itoa(OverHeatCor.Period, ret, 10);
+    	if(getset) _data.OverHeatCor.Period = value;
+    	itoa(_data.OverHeatCor.Period, ret, 10);
     } else if(strcmp(var, "cDELTA")==0) {
-    	if(getset) OverHeatCor.TDIS_TCON = value * 100.0 +0.005;
-    	ftoa(ret, (float)OverHeatCor.TDIS_TCON / 100.0, 2);
+    	if(getset) _data.OverHeatCor.TDIS_TCON = value * 100.0 +0.005;
+    	ftoa(ret, (float)_data.OverHeatCor.TDIS_TCON / 100.0, 2);
     } else if(strcmp(var, "cDELTAT")==0) {
-    	if(getset) OverHeatCor.TDIS_TCON_Thr = value * 100.0  +0.005;
-    	ftoa(ret, (float)OverHeatCor.TDIS_TCON_Thr / 100.0, 2);
+    	if(getset) _data.OverHeatCor.TDIS_TCON_Thr = value * 100.0  +0.005;
+    	ftoa(ret, (float)_data.OverHeatCor.TDIS_TCON_Thr / 100.0, 2);
     } else if(strcmp(var, "cKF")==0) {
-    	if(getset) OverHeatCor.K = value * 1000.0 + 0.0005;
-    	ftoa(ret, (float)OverHeatCor.K / 1000.0, 3);
+    	if(getset) _data.OverHeatCor.K = value * 1000.0 + 0.0005;
+    	ftoa(ret, (float)_data.OverHeatCor.K / 1000.0, 3);
     } else if(strcmp(var, "cOH_MIN")==0) {
-    	if(getset) OverHeatCor.OverHeatMin = value * 100.0 +0.005;
-    	ftoa(ret, (float)OverHeatCor.OverHeatMin / 100.0, 2);
+    	if(getset) _data.OverHeatCor.OverHeatMin = value * 100.0 +0.005;
+    	ftoa(ret, (float)_data.OverHeatCor.OverHeatMin / 100.0, 2);
     } else if(strcmp(var, "cOH_MAX")==0) {
-    	if(getset) OverHeatCor.OverHeatMax = value * 100.0 +0.005;
-    	ftoa(ret, (float)OverHeatCor.OverHeatMax / 100.0, 2);
+    	if(getset) _data.OverHeatCor.OverHeatMax = value * 100.0 +0.005;
+    	ftoa(ret, (float)_data.OverHeatCor.OverHeatMax / 100.0, 2);
     }
+}
+
+ // Получить параметр ЭРВ в виде строки
+ // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
+char* devEEV::get_paramEEV(char *var, char *ret)
+{
+char temp[10+1];	
+	if(strcmp(var, eev_POS)==0) {
+	  strcat(ret,itoa(EEV,temp,10)); 
+	} else if(strcmp(var, eev_POSp)==0){
+	  strcat(ret,ftoa(temp,EEV * 100.0 / maxEEV, 1));
+	} else if(strcmp(var, eev_POSpp)==0){
+      if(stepperEEV.isBuzy())  strcat(ret,"<<");  // признак движения			
+	  strcat(ret,itoa(EEV,temp,10));
+	  strcat(ret," (");
+	  strcat(ret,itoa((int32_t) EEV * 100 / maxEEV,temp,10)); 
+	  strcat(ret,"%)");	
+	  if (stepperEEV.isBuzy())  strcat(ret,">>");  // признак движения
+	} else if(strcmp(var, eev_OVERHEAT)==0){
+	  strcat(ret,ftoa(temp,(float)(Overheat/100.0),2));
+	} else if(strcmp(var, eev_ERROR)==0){
+	   strcat(ret,itoa(err,temp,10)); 
+	} else if(strcmp(var, eev_MIN)==0){
+	   strcat(ret,itoa(_data.minSteps,temp,10)); 
+	} else if(strcmp(var, eev_MAX)==0){
+	   strcat(ret,itoa(maxEEV,temp,10)); 
+	} else if(strcmp(var, eev_TIME)==0){
+	   strcat(ret,itoa(_data.timeIn,temp,10)); 
+	} else if(strcmp(var, eev_TARGET)==0){
+	   strcat(ret,ftoa(temp,(float)(_data.tOverheat/100.0),2));
+	} else if(strcmp(var, eev_KP)==0){
+	   strcat(ret,ftoa(temp,(float)(_data.Kp/100.0),3)); 
+	} else if(strcmp(var, eev_KI)==0){
+	    strcat(ret,ftoa(temp,(float)(_data.Ki/100.0),3)); 
+	} else if(strcmp(var, eev_KD)==0){
+	   strcat(ret,ftoa(temp,(float)(_data.Kd/100.0),3)); 
+	} else if(strcmp(var, eev_CONST)==0){
+	    strcat(ret,ftoa(temp,(float)(_data.Correction/100.0),2)); 
+	} else if(strcmp(var, eev_MANUAL)==0){
+	     strcat(ret,itoa(_data.manualStep,temp,10)); 
+	} else if(strcmp(var, eev_FREON)==0){
+         for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
+            { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+	}   else if(strcmp(var, eev_RULE)==0){
+         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка фреонов
+            { strcat(ret,noteRuleEEV[i]); strcat(ret,":"); if(i==get_ruleEEV()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+	} else if(strcmp(var, eev_NAME)==0){
+	     strcat(ret,name); 
+	} else if(strcmp(var, eev_NOTE)==0){
+	     strcat(ret,note); 
+	} else if(strcmp(var, eev_REMARK)==0){
+	     strcat(ret,noteRemarkEEV[get_ruleEEV()]); 
+	} else if(strcmp(var, eev_PINS)==0){
+	      strcat(ret,"D");  strcat(ret,itoa(PIN_EEV1_D24,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV2_D25,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV3_D26,temp,10));
+	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV4_D27,temp,10));
+	} else if(strcmp(var, eev_cCORRECT)==0){
+    	strcat(ret,itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, temp, 10));
+	} else if(strcmp(var, eev_cDELAY)==0){
+    	strcat(ret,itoa(_data.OverHeatCor.Delay, temp, 10));
+    } else if(strcmp(var, eev_cPERIOD)==0){
+    	strcat(ret, itoa(_data.OverHeatCor.Period, temp, 10));
+    } else if(strcmp(var, eev_cDELTA)==0){
+    	strcat(ret, ftoa(temp, (float)(_data.OverHeatCor.TDIS_TCON/100.0), 2));
+    } else if(strcmp(var, eev_cDELTAT)==0){
+    	strcat(ret,ftoa(temp, (float)(_data.OverHeatCor.TDIS_TCON_Thr/100.0), 2));
+    } else if(strcmp(var, eev_cKF)==0){
+       	strcat(ret, ftoa(temp, (float)(_data.OverHeatCor.K/1000.0), 3));
+    } else if(strcmp(var, eev_cOH_MIN)==0){
+    	strcat(ret,ftoa(temp, (float)(_data.OverHeatCor.OverHeatMin/100.0), 2));
+    } else if(strcmp(var, eev_cOH_MAX)==0){
+    	strcat(ret,ftoa(temp, (float)(_data.OverHeatCor.OverHeatMax/100.0), 2));
+    } else if(strcmp(var, eev_ERR_KP)==0){
+    	strcat(ret,ftoa(temp, (float)(_data.errKp/100.0), 2));
+    } else if(strcmp(var, eev_SPEED)==0){
+    	strcat(ret, itoa(_data.speedEEV, temp, 10));  
+    } else if(strcmp(var, eev_PRE_START_POS)==0){
+    	strcat(ret, itoa(_data.preStartPos, temp, 10));    
+    } else if(strcmp(var, eev_START_POS)==0){
+    	strcat(ret, itoa(_data.StartPos, temp, 10)); 
+    } else if(strcmp(var, eev_DELAY_ON_PID)==0){
+    	strcat(ret, itoa(_data.delayOnPid, temp, 10)); 
+    } else if(strcmp(var, eev_DELAY_START_POS)==0){
+    	strcat(ret, itoa(_data.DelayStartPos, temp, 10)); 
+    } else if(strcmp(var, eev_DELAY_OFF)==0){
+    	strcat(ret, itoa(_data.delayOff, temp, 10));
+  	} else if(strcmp(var, eev_DELAY_ON)==0){
+    	strcat(ret, itoa(_data.delayOn, temp, 10));
+    } else if(strcmp(var, eev_HOLD_MOTOR)==0){
+    	strcat(ret,itoa((_data.flags&(1<<fHoldMotor))!=0, temp, 10));
+    } else if(strcmp(var, eev_PRESENT)==0){
+    	strcat(ret,itoa((_data.flags & (1<<fPresent))!=0, temp, 10));
+    } else strcat(ret,"E10");
+   
+  return ret;              
+}
+// Установить параметр ЭРВ из флоат параметр var
+// в случае успеха возврщает true
+boolean devEEV::set_paramEEV(char *var,float x)
+{
+float temp;	
+    if(strcmp(var, eev_POS)==0) {
+	  if ((x>=_data.minSteps)&&(x<=maxEEV)){ set_EEV((int)x); return true;} else return false;
+	} else if(strcmp(var, eev_POSp)==0){
+      temp = x * maxEEV / 100.0;
+       if ((temp>=_data.minSteps)&&(temp<=maxEEV)) { set_EEV((int)temp); return true;} else return false;
+	} else if(strcmp(var, eev_POSpp)==0){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_OVERHEAT)==0){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_ERROR)==0){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_MIN)==0){
+      if ((x>=0)&&(x<=maxEEV)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
+	  return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_MAX)==0){
+	  return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_TIME)==0){
+	  if ((x>=5)&&(x<=600)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
+	} else if(strcmp(var, eev_TARGET)==0){ 
+	  if ((x>0.0)&&(x<=15.0)) { x=x*100;if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x); ;return true;}  else return false;	// сотые градуса
+	} else if(strcmp(var, eev_KP)==0){
+	   if ((x>=0)&&(x<=50.0)) {x=x*100.0; if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x);return true;} else return false;	// сотые
+	} else if(strcmp(var, eev_KI)==0){
+	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x); return true;} else return false; // сотые
+	} else if(strcmp(var, eev_KD)==0){
+	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x);return true;} else return false;	// сотые
+	} else if(strcmp(var, eev_CONST)==0){
+	   if ((x>=-5.0)&&(x<=5.0)) {x=x*100.0; if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x); return true;}else return false;	// сотые градуса
+	} else if(strcmp(var, eev_MANUAL)==0){
+	   if ((x>=_data.minSteps)&&(x<=maxEEV)==0){ _data.manualStep=x; return true;} else return false;	// шаги
+	} else if(strcmp(var, eev_FREON)==0){
+        if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
+	}   else if(strcmp(var, eev_RULE)==0){
+		if ((x>=TEVAOUT_TEVAIN)&&(x<=MANUAL)){ _data.ruleEEV=(RULE_EEV)x; return true;} else return false;	// перечисляемый тип  
+ 	} else if(strcmp(var, eev_NAME)==0){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_NOTE)==0){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_REMARK)==0){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_PINS)==0){
+	    return true;  // не имеет смысла - только чтение
+	} else if(strcmp(var, eev_cCORRECT)==0){
+    	if (x==0) SETBIT0(_data.flags, fCorrectOverHeat); else SETBIT1(_data.flags, fCorrectOverHeat); 
+	} else if(strcmp(var, eev_cDELAY)==0){
+		if ((x>=0)&&(x<=10000)) { if(_data.OverHeatCor.Delay!=x) _data.OverHeatCor.Delay=x; return true;} else return false;	// секунды
+    } else if(strcmp(var, eev_cPERIOD)==0){
+		if ((x>=0)&&(x<=10000)) { if(_data.OverHeatCor.Period!=x) resetPID(); _data.OverHeatCor.Period=x; return true;} else return false;	// циклы ЭРВ
+    } else if(strcmp(var, eev_cDELTA)==0){
+        if ((x>=-10.0)&&(x<=50.0)) {_data.OverHeatCor.TDIS_TCON=(int)(x*100.0+0.005); return true;}else return false;	// сотые градуса
+    } else if(strcmp(var, eev_cDELTAT)==0){
+        if ((x>=-30.0)&&(x<=30.0)) {_data.OverHeatCor.TDIS_TCON_Thr=(int)(x*100.0+0.005); return true;}else return false;	// сотые градуса
+    } else if(strcmp(var, eev_cKF)==0){
+    	if ((x>=0.0)&&(x<=10.0)) {_data.OverHeatCor.K=(int)(x*1000.0+0.0005); return true;}else return false;	// тысячные
+    } else if(strcmp(var, eev_cOH_MIN)==0){
+        if ((x>=0.0)&&(x<=30.0)) {_data.OverHeatCor.OverHeatMin=(int)(x*100.0+0.005); return true;}else return false;	// сотые градуса
+    } else if(strcmp(var, eev_cOH_MAX)==0){
+        if ((x>=0.0)&&(x<=30.0)) {_data.OverHeatCor.OverHeatMax=(int)(x*100.0)+0.005; return true;}else return false;	// сотые градуса
+    } else if(strcmp(var, eev_ERR_KP)==0){
+      if ((x>=0.0)&&(x<=10.0)) {_data.errKp=(int)(x*100.0+0.005); return true;}else return false;	// сотые 
+    } else if(strcmp(var, eev_SPEED)==0){
+      if ((x>=0)&&(x<=120)) { if(_data.speedEEV!=x) _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
+    } else if(strcmp(var, eev_PRE_START_POS)==0){
+      if ((x>=0)&&(x<=maxEEV)) { if(_data.preStartPos!=x) _data.preStartPos=(int)x; return true;} else return false;	// шаги
+    } else if(strcmp(var, eev_START_POS)==0){
+      if ((x>=0)&&(x<=maxEEV)) { if(_data.StartPos!=x) _data.StartPos=(int)x; return true;} else return false;	// шаги 
+    } else if(strcmp(var, eev_DELAY_ON_PID)==0){
+      if ((x>=0)&&(x<=255)) { if(_data.delayOnPid!=x) _data.delayOnPid=(int)x; return true;} else return false;	// секунды размер 1 байт
+    } else if(strcmp(var, eev_DELAY_START_POS)==0){
+      if ((x>=0)&&(x<=255)) { if(_data.DelayStartPos!=x) _data.DelayStartPos=(int)x; return true;} else return false;	// секунды размер 1 байт    	
+    } else if(strcmp(var, eev_DELAY_OFF)==0){
+      if ((x>=0)&&(x<=255)) { if(_data.delayOff!=x) _data.delayOff=(int)x; return true;} else return false;	// секунды размер 1 байт    	
+  	} else if(strcmp(var, eev_DELAY_ON)==0){
+      if ((x>=0)&&(x<=255)) { if(_data.delayOn!=x) _data.delayOn=(int)x; return true;} else return false;	// секунды размер 1 байт    	
+    } else if(strcmp(var, eev_HOLD_MOTOR)==0){
+      if (x==0) SETBIT0(_data.flags, fHoldMotor); else SETBIT1(_data.flags, fHoldMotor); 
+    } else if(strcmp(var, eev_PRESENT)==0){
+    	return true;  // не имеет смысла - только чтение 	
+    } else return false; // ошибочное имя параметра
+    
+  return true;  // для флагов
 }
 
 #endif
@@ -1042,36 +1195,54 @@ void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
                                                    
 int8_t devOmronMX2::initFC()
 { 
- // uint16_t hWord,lWord;
-  
+
   err=OK;                           // ошибка частотника (работа) при ошибке останов ТН
-  numErr=0;                           // число ошибок чтение по модбасу для статистики
+  numErr=0;                         // число ошибок чтение по модбасу для статистики
   number_err=0;                     // Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
   FC=0;                             // Целевая частота частотика
-  freqFC=0;                          // текущая частота инвертора
+  freqFC=0;                         // текущая частота инвертора
   power=0;                          // Тееущая мощность частотника
   current=0;                        // Текуший ток частотника
   startCompressor=0;                // время старта компрессора
-  state=ERR_LINK_FC;               // Состояние - нет связи с частотником
+  state=ERR_LINK_FC;                // Состояние - нет связи с частотником
   dac=0;                            // Текущее значение ЦАП
-  level0=0;                         // Отсчеты ЦАП соответсвующие 0   мощности
-  level100=4096;                    // Отсчеты ЦАП соответсвующие 100 мощности
-  levelOff=10;                      // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-  testMode=NORMAL;                  // Значение режима тестирования
-  name=(char*)nameOmron;               // Имя
-  note=(char*)noteFC_NONE;          // Описание инвертора   типа нет его
+  testMode=NORMAL;                                 // Значение режима тестирования
+  name=(char*)nameOmron;                           // Имя
+  note=(char*)noteFC_NONE;                         // Описание инвертора   типа нет его
   
-  flags=0x00;                       // флаги  0 - наличие FC
-  SETBIT0(flags,fAuto);             // По умолчанию старт-стоп
-//  SETBIT0(flags,fAnalog);           // Нет аналогового выхода
-  if(!Modbus.get_present())         // modbus отсутствует
+  _data.Uptime=DEF_FC_UPTIME;				       // Время обновления алгоритма пид регулятора (мсек) Основной цикл управления
+  _data.PidFreqStep=DEF_FC_PID_FREQ_STEP;          // Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании в 0.01 Гц Необходимо что бы ЭРВ успевал
+  _data.PidStop=DEF_FC_PID_STOP;				   // Проценты от уровня защит (мощность, ток, давление, темпеартура) при которой происходит блокировка роста частоты пидом
+  _data.dtCompTemp=DEF_FC_DT_COMP_TEMP;    		   // Защита по температуре компрессора - сколько градусов не доходит до максимальной (TCOMP) и при этом происходит уменьшение частоты
+  _data.startFreq=DEF_FC_START_FREQ;               // Стартовая скорость инвертора (см компрессор) в 0.01 
+  _data.startFreqBoiler=DEF_FC_START_FREQ_BOILER;  // Стартовая скорость инвертора (см компрессор) в 0.01 ГВС
+  _data.minFreq=DEF_FC_MIN_FREQ;                   // Минимальная  скорость инвертора (см компрессор) в 0.01 
+  _data.minFreqCool=DEF_FC_MIN_FREQ_COOL;          // Минимальная  скорость инвертора при охлаждении в 0.01 
+  _data.minFreqBoiler=DEF_FC_MIN_FREQ_BOILER;      // Минимальная  скорость инвертора при нагреве ГВС в 0.01
+  _data.minFreqUser=DEF_FC_MIN_FREQ_USER;          // Минимальная  скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01
+  _data.maxFreq=DEF_FC_MAX_FREQ;                   // Максимальная скорость инвертора (см компрессор) в 0.01 
+  _data.maxFreqCool=DEF_FC_MAX_FREQ_COOL;          // Максимальная скорость инвертора в режиме охлаждения  в 0.01 
+  _data.maxFreqBoiler=DEF_FC_MAX_FREQ_BOILER;      // Максимальная скорость инвертора в режиме ГВС в 0.01 Гц поглощение бойлера обычно меньше чем СО
+  _data.maxFreqUser=DEF_FC_MAX_FREQ_USER;          // Максимальная скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01 
+  _data.stepFreq=DEF_FC_STEP_FREQ ;                // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока (см компрессор) в 0.01 
+  _data.stepFreqBoiler=DEF_FC_STEP_FREQ_BOILER;    // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01
+  _data.dtTemp=DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
+  _data.dtTempBoiler=DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
+ #ifdef FC_ANALOG_CONTROL
+  _data.level0=0;                                  // Отсчеты ЦАП соответсвующие 0   мощности
+  _data.level100=4096;                             // Отсчеты ЦАП соответсвующие 100 мощности
+  _data.levelOff=10;                               // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
+  #endif
+  _data.flags=0x00;                                // флаги  0 - наличие FC
+  SETBIT0(_data.flags,fAuto);                      // По умолчанию старт-стоп
+  if(!Modbus.get_present())                        // modbus отсутствует
       {
-       SETBIT0(flags,fFC);          // Инвертор не рабоатет
+       SETBIT0(_data.flags,fFC);          // Инвертор не рабоатет
        journal.jprintf("%s, modbus not found, block.\n",name); 
        err=ERR_NO_MODBUS;
        return err; 
       }
-  else if (DEVICEFC==true) SETBIT1(flags,fFC); // наличие частотника в текушей конфигурации
+  else if (DEVICEFC==true) SETBIT1(_data.flags,fFC); // наличие частотника в текушей конфигурации
                
   if(get_present())  journal.jprintf("Invertor %s: present config\r\n",name); 
   else {journal.jprintf("Invertor %s: none config\r\n",name);return err;  }  // выходим если нет инвертора
@@ -1128,7 +1299,7 @@ int8_t devOmronMX2::initFC()
         if ((err=write_0x06_16(MX2_BASE_FR, FC_BASE_FREQ/10))==OK) journal.jprintf(" Setting base frequency (A003) %s: %.2f [Hz]\r\n",name,FC_BASE_FREQ);
         else                                                        journal.jprintf(" Error setting base frequency (A003) %s code %d\r\n",name,err);
          // 4. установка максимальной частоты
-        if ((err=write_0x06_16(MX2_MAX_FR, FC_MAX_FREQ/10))==OK)   journal.jprintf(" Setting maximum frequency (A004) %s: %.2f [Hz]\r\n",name,FC_MAX_FREQ/100.0);
+        if ((err=write_0x06_16(MX2_MAX_FR, maxFreq/10))==OK)   journal.jprintf(" Setting maximum frequency (A004) %s: %.2f [Hz]\r\n",name,maxFreq/100.0);
         else                                                        journal.jprintf(" Error setting maximum frequency (A004) %s code %d\r\n",name,err);
         // 5. Время разгона
         if( write_0x10_32(MX2_ACCEL_TIME,FC_ACCEL_TIME)==OK)          journal.jprintf(" Setting acceleration time (F002) %s: %.2f [sec]\r\n",name,FC_ACCEL_TIME/100.0);
@@ -1149,7 +1320,7 @@ int8_t devOmronMX2::initFC()
 
 #endif  // #ifndef FC_ANALOG_CONTROL
   // 10.Установить стартовую частоту
-  set_targetFreq(FC_START_FREQ,true,FC_MIN_FREQ_USER ,FC_MAX_FREQ_USER);       // режим н знаем по этому границы развигаем
+  set_targetFreq(_data.startFreq,true,_data.minFreqUser ,_data.maxFreqUser);       // режим н знаем по этому границы развигаем
   return err;                       
 }
 
@@ -1165,7 +1336,7 @@ int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_
   #else   // Боевой вариант
   uint16_t hWord,lWord;
   uint8_t i;
-  if ((!get_present())||(GETBIT(flags,fErrFC))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+  if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
   if ((x>=_min)&&(x<=_max))                     // Проверка диапазона разрешенных частот
    {
   #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
@@ -1179,7 +1350,7 @@ int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_
             }
             
           if(err==OK)  { FC=x; if(show) journal.jprintf(" Set %s: %.2f [Hz]\r\n",name,FC/100.0);return err;} // установка частоты OK  - вывод сообщения если надо
-          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
+          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
    #else  // Аналоговое управление
          FC=x;
          dac=((level100-level0)*FC-0*level100)/(100-0);
@@ -1220,47 +1391,61 @@ int8_t devOmronMX2::set_levelOff(int16_t x)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devOmronMX2::save(int32_t adr)
 {
+/*	
 byte f=0;   
 if (writeEEPROM_I2C(adr, (byte*)&level0, sizeof(level0)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level0);       // !save! Отсчеты ЦАП соответсвующие 0   мощности
 if (writeEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level100);   // !save! Отсчеты ЦАП соответсвующие 100 мощности
 if (writeEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(levelOff);   // !save! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-//if(GETBIT(flags,fAnalog)) f=f+(1<<fAnalog);                                                                                                      // Взять только флаги настроек
+//if(GETBIT(_data.flags,fAnalog)) f=f+(1<<fAnalog);                                                                                                      // Взять только флаги настроек
 if (writeEEPROM_I2C(adr, (byte*)&f, sizeof(f))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(f);                        // !save! Флаги
+*/
+if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);     
 return adr;   
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devOmronMX2::load(int32_t adr)
 {
+/*	
 byte f;  
 if (readEEPROM_I2C(adr, (byte*)&level0, sizeof(level0)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level0);     // !load! Отсчеты ЦАП соответсвующие 0   мощности
 if (readEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level100);   // !load! Отсчеты ЦАП соответсвующие 100 мощности
 if (readEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(levelOff);   // !load! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 if (readEEPROM_I2C(adr, (byte*)&f,sizeof(f)))                { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(f);          // !load! флаги
 // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
-//if (GETBIT(f,fAnalog)) SETBIT1(flags,fAnalog); else SETBIT0(flags,fAnalog);  
+//if (GETBIT(f,fAnalog)) SETBIT1(_data.flags,fAnalog); else SETBIT0(_data.flags,fAnalog);  
+*/
+  if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
+  // SETBIT1(_data.flags, fPresent);
 return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devOmronMX2::loadFromBuf(int32_t adr,byte *buf)
 {
+/*	
   byte f;  
   memcpy((byte*)&level0,buf+adr,sizeof(level0)); adr=adr+sizeof(level0);                  // Отсчеты ЦАП соответсвующие 0   мощности
   memcpy((byte*)&level100,buf+adr,sizeof(level100)); adr=adr+sizeof(level100);            // Отсчеты ЦАП соответсвующие 100 мощности
   memcpy((byte*)&levelOff,buf+adr,sizeof(levelOff)); adr=adr+sizeof(levelOff);            // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
   memcpy((byte*)&f,buf+adr,sizeof(f)); adr=adr+sizeof(f);                                 // флаги
-// if (GETBIT(f,fAnalog)) SETBIT1(flags,fAnalog); else SETBIT0(flags,fAnalog);              // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
+// if (GETBIT(f,fAnalog)) SETBIT1(_data.flags,fAnalog); else SETBIT0(_data.flags,fAnalog);              // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
+*/
+memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 
   return adr;      
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devOmronMX2::get_crc16(uint16_t crc)         
 {
+/*	
    byte f=0;
    crc=_crc16(crc,lowByte(level0)); crc=_crc16(crc,highByte(level0));              //   Отсчеты ЦАП соответсвующие 0   мощности
    crc=_crc16(crc,lowByte(level100)); crc=_crc16(crc,highByte(level100));          //   Отсчеты ЦАП соответсвующие 100 мощности
    crc=_crc16(crc,lowByte(levelOff)); crc=_crc16(crc,highByte(levelOff));          //   Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
- //  if(GETBIT(flags,fAnalog)) f=f+(1<<fAnalog);
+ //  if(GETBIT(_data.flags,fAnalog)) f=f+(1<<fAnalog);
    crc=_crc16(crc,f);                                                              //   Только флаги насроек
+ */  
+   uint16_t i;
+   for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   
    return crc;
 }
 
@@ -1270,7 +1455,7 @@ void  devOmronMX2::check_blockFC()
    #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
     if((xTaskGetSchedulerState()==taskSCHEDULER_NOT_STARTED)&&(err!=OK))   // если не запущена free rtos то блокируем с первого раза
        {
-        SETBIT1(flags,fErrFC);                                                  // Установить флаг
+        SETBIT1(_data.flags,fErrFC);                                                  // Установить флаг
         note=(char*)noteFC_NO;
         set_Error(err,(char*)name);                                        // Подъем ошибки на верх и останов ТН
         return; 
@@ -1280,7 +1465,7 @@ void  devOmronMX2::check_blockFC()
     if (number_err>FC_NUM_READ)                                // если привышено число ошибок то блокировка
       {
        SemaphoreGive(xModbusSemaphore); // разблокировать семафор
-       SETBIT1(flags,fErrFC);                                         // Установить флаг
+       SETBIT1(_data.flags,fErrFC);                                         // Установить флаг
        note=(char*)noteFC_NO;
        set_Error(err,(char*)name);                        // Подъем ошибки на верх и останов ТН
       }
@@ -1292,7 +1477,7 @@ void  devOmronMX2::check_blockFC()
 int8_t devOmronMX2::get_readState()
 {
 uint8_t i;
-if ((!get_present())||(GETBIT(flags,fErrFC))) return err;  // выходим если нет инвертора или он заблокирован по ошибке
+if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;  // выходим если нет инвертора или он заблокирован по ошибке
 err=OK;
 #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
   // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
@@ -1302,7 +1487,7 @@ err=OK;
         err=Modbus.get_err();                              // Скопировать ошибку
         if (err==OK)                                       // Прочитано верно
          {
-          if ((GETBIT(flags,fOnOff))&&(state!=3)) continue; else break;  // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
+          if ((GETBIT(_data.flags,fOnOff))&&(state!=3)) continue; else break;  // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
          } 
         _delay(FC_DELAY_REPEAT); 
         journal.jprintf(cErrorRS485,name,__FUNCTION__,err);// Выводим сообщение о повторном чтении
@@ -1312,12 +1497,12 @@ err=OK;
   if (err!=OK)                                              // Ошибка модбаса
       {
        state=ERR_LINK_FC;                                  // признак потери связи с инвертором
-       SETBIT1(flags,fErrFC);                              // Блок инвертора
+       SETBIT1(_data.flags,fErrFC);                              // Блок инвертора
        set_Error(err,name);                                 // генерация ошибки
        return err;                                          // Возврат
       }
 //  else  if ((testMode==NORMAL)||(testMode==HARD_TEST))     //   Режим работа и хард тест, анализируем состояние,
-//        if ((GETBIT(flags,fOnOff))&&(state!=3))                  // Не верное состояние
+//        if ((GETBIT(_data.flags,fOnOff))&&(state!=3))                  // Не верное состояние
 //         {
 //         err=ERR_MODBUS_STATE;                            // Ошибка не верное состояние инвертора
 //         journal.jprintf(" %s:Compressor ON and wrong read state: %d \n",name,state); 
@@ -1351,20 +1536,20 @@ return err;
 // Может быть подана команда через реле и через модбас в зависимости от ключей компиляции
 int8_t devOmronMX2::start_FC()
 {
-if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((FC<FC_MIN_FREQ)||(FC>FC_MAX_FREQ)))) {journal.jprintf(" %s: Wrong frequency, ignore start\n",name);  return err;} // проверка частоты не в режиме теста
+if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((FC<_data.minFreq)||(FC>_data.maxFreq)))) {journal.jprintf(" %s: Wrong frequency, ignore start\n",name);  return err;} // проверка частоты не в режиме теста
 err=OK;
  #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
       #ifdef DEMO
              #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                  HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
              #endif // FC_USE_RCOMP   
-            if (err==OK) {SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
-            else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+            if (err==OK) {SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
+            else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #else // DEMO
              // Боевая часть
-            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;         // выходим если нет инвертора или он заблокирован по ошибке
+            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;         // выходим если нет инвертора или он заблокирован по ошибке
           
-           // set_targetFreq(FC_START_FREQ,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда частота стартовая - супербойлер
+           // set_targetFreq(startFreq,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда частота стартовая - супербойлер
            
             err=OK;
             if ((testMode==NORMAL)||(testMode==HARD_TEST))  //   Режим работа и хард тест, все включаем,
@@ -1375,28 +1560,28 @@ err=OK;
                 err= write_0x05_bit(MX2_START, true);   // Команда Ход
             #endif    
             }
-            if (err==OK) {SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
-            else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+            if (err==OK) {SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
+            else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #endif
   #else  //  FC_ANALOG_CONTROL
        #ifdef DEMO
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                  HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-            SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
+            SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
         #else // DEMO
              // Боевая часть
-            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;   // выходим если нет инвертора или он заблокирован по ошибке
+            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;   // выходим если нет инвертора или он заблокирован по ошибке
             err=OK;
             if ((testMode==NORMAL)||(testMode==HARD_TEST))  //   Режим работа и хард тест, все включаем,
             {  
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                 HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
             #else               
-                state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
+                state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(_data.flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
             #endif    
             }
-            SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
+            SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
       #endif 
   #endif    
 return err;
@@ -1411,10 +1596,10 @@ err=OK;
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                HP.dRelay[RCOMP].set_OFF();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-          if (err==OK) {SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
-          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+          if (err==OK) {SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
+          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #else // DEMO
-          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
           err=OK;   
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
@@ -1424,95 +1609,143 @@ err=OK;
               err=write_0x05_bit(MX2_START, false);   // Команда стоп
           #endif   
            }
-          if (err==OK) {SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
-          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}                          // генерация ошибки
+          if (err==OK) {SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
+          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}                          // генерация ошибки
       #endif
  #else  // FC_ANALOG_CONTROL 
       #ifdef DEMO
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                HP.dRelay[RCOMP].set_OFF();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-            SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
+            SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
       #else // DEMO
-          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
           #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
               HP.dRelay[RCOMP].set_OFF();                    // ПЛОХО через глобальную переменную
           #else                  // подать команду ход/стоп через модбас
-              state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
+              state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(_data.flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
           #endif   
            }
-          SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
+          SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
       #endif 
  #endif // FC_ANALOG_CONTROL 
 return err;
 }
 
-// Получить параметр инвертора в виде строки
-char* devOmronMX2::get_paramFC(TYPE_PARAM_FC p)
+// Получить параметр инвертора в виде строки, результат ДОБАВЛЯЕТСЯ в ret
+void devOmronMX2::get_paramFC(char *var,char *ret)
 {
-static char temp[10];
-  switch (p)
-   {
-    case   pON_OFF:      if (GETBIT(flags,fOnOff)) return(char*)cOne;else return(char*)cZero; break; // Флаг включения выключения
-    case   pMIN_FC:      return ftoa(temp,(float)FC_MIN_FREQ/100.0,2);              break;       // Только чтение минимальная частота работы
-    case   pMAX_FC:      return ftoa(temp,(float)FC_MAX_FREQ/100.0,2);              break;       // Только чтение максимальная частота работы
-    case   pSTART_FC:    return ftoa(temp,(float)FC_START_FREQ/100.0,2);            break;       // Только чтение стартовая частота работы
-    case   pMAX_POWER:   return ftoa(temp,(float)FC_MAX_POWER/10.0,1);            break;       // Только чтение максимальная мощность
-    case   pSTATE:       return int2str(state);                                      break;       // Только чтение Состояние ПЧ
-    case   pFC:          return ftoa(temp,(float)freqFC/100.0,2);                     break;       // текущая частота ПЧ
-    case   pPOWER:       return ftoa(temp,(float)power/10.0,1);                      break;       // Текущая мощность
-    case   pAUTO_FC:     if (GETBIT(flags,fAuto)) return(char*)cOne;else return(char*)cZero;  break; // Флаг автоматической подбора частоты
-//    case   pANALOG:      if (GETBIT(flags,fAnalog)) return(char*)cOne;else return(char*)cZero;break; // Флаг аналогового управления
-    case   pANALOG:      // Флаг аналогового управления
-                         #ifdef FC_ANALOG_CONTROL                                                    
-                           return(char*)cOne;
-                         #else
-                           return(char*)cZero;
-                         #endif
-                         break;
-    case   pLEVEL0:      return int2str(level0);                                     break;       // Уровень частоты 0 в отсчетах ЦАП
-    case   pLEVEL100:    return int2str(level100);                                   break;       // Уровень частоты 100% в  отсчетах ЦАП
-    case   pLEVELOFF:    return int2str(levelOff);                                   break;       // Уровень частоты в % при отключении
-    case   pSTOP_FC:    if (GETBIT(flags,fErrFC)) return(char*)"Block";else return(char*)"No";break;  // флаг глобальная ошибка инвертора - работа инвертора запрещена
-    case   pERROR_FC:   return int2str(err);                                        break;       // Получить код ошибки
-    default:             return  (char*)cInvalid;                                   break;  
-   }
- return (char*)cInvalid;
+static char temp[12];
+    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_INFO)==0)                  {
+    	                                        #ifndef FC_ANALOG_CONTROL  
+    	                                        get_infoFC(ret);
+    	                                        #else
+                                                 strcat(ret, "|Данные не доступны, работа через аналоговый вход|;") ;
+                                                #endif              
+    	                                        } else
+    if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
+    if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
+    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     } else
+    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_STATE)==0)                 {  strcat(ret,int2str(state));   } else
+    if(strcmp(var,fc_FC)==0)                    {  strcat(ret,ftoa(temp,(float)FC/100.0,2)); } else
+    if(strcmp(var,fc_cFC)==0)                   {  strcat(ret,ftoa(temp,(float)freqFC/100.0,2)); } else
+    if(strcmp(var,fc_cPOWER)==0)                {  strcat(ret,ftoa(temp,(float)power/10.0,1)); } else
+    if(strcmp(var,fc_cCURRENT)==0)              {  strcat(ret,ftoa(temp,(float)current/100.0,2)); } else
+    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
+		                                        #ifdef FC_ANALOG_CONTROL                                                    
+		                                         strcat(ret,(char*)cOne);
+		                                        #else
+		                                         strcat(ret,(char*)cZero);
+		                                        #endif
+                                                } else
+    if(strcmp(var,fc_DAC)==0)                   {  strcat(ret,int2str(dac));          } else
+    #ifdef FC_ANALOG_CONTROL
+    if(strcmp(var,fc_LEVEL0)==0)                {  strcat(ret,int2str(level0));       } else
+    if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
+    if(strcmp(var,fc_LEVELOFF)==0)              {  strcat(ret,int2str(levelOff));     } else
+    #endif
+    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_ERROR)==0)                 {  strcat(ret,int2str(err));          } else
+    if(strcmp(var,fc_UPTIME)==0)                {  strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  strcat(ret,ftoa(temp,(float)_data.PidFreqStep/100.0,2)); } else // Гц
+    if(strcmp(var,fc_PID_STOP)==0)              {  strcat(ret,int2str(_data.PidStop));          } else
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  strcat(ret,ftoa(temp,(float)_data.dtCompTemp/100.0,2)); } else // градусы
+    if(strcmp(var,fc_START_FREQ)==0)            {  strcat(ret,ftoa(temp,(float)_data.startFreq/100.0,2)); } else // Гц
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  strcat(ret,ftoa(temp,(float)_data.startFreqBoiler/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ)==0)              {  strcat(ret,ftoa(temp,(float)_data.minFreq/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  strcat(ret,ftoa(temp,(float)_data.minFreqCool/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  strcat(ret,ftoa(temp,(float)_data.minFreqBoiler/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  strcat(ret,ftoa(temp,(float)_data.minFreqUser/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ)==0)              {  strcat(ret,ftoa(temp,(float)_data.maxFreq/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  strcat(ret,ftoa(temp,(float)_data.maxFreqCool/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  strcat(ret,ftoa(temp,(float)_data.maxFreqBoiler/100.0,2)); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  strcat(ret,ftoa(temp,(float)_data.maxFreqUser/100.0,2)); } else // Гц
+    if(strcmp(var,fc_STEP_FREQ)==0)             {  strcat(ret,ftoa(temp,(float)_data.stepFreq/100.0,2)); } else // Гц
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); } else // Гц
+    if(strcmp(var,fc_DT_TEMP)==0)               {  strcat(ret,ftoa(temp,(float)_data.dtTemp/100.0,2)); } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  strcat(ret,ftoa(temp,(float)_data.dtTempBoiler/100.0,2)); } else // градусы
+    if(strcmp(var,fc_MB_ERR)==0)        		{  itoa(numErr, ret, 10); } else
+     strcat(ret,(char*)cInvalid);
 }
+
+
 // Установить параметр инвертора из строки
-boolean devOmronMX2::set_paramFC(TYPE_PARAM_FC p, float x)
+boolean devOmronMX2::set_paramFC(char *var, float x)
 {
- switch (p)
-   {
-    case   pON_OFF:      if (x==0) stop_FC();else start_FC();return true;               break;       // Флаг включения выключения Включение-вуключение инвертора
-    case   pMIN_FC:      return true;                                                 break;       // Только чтение минимальная частота работы
-    case   pMAX_FC:      return true;                                                 break;       // Только чтение максимальная частота работы
-    case   pSTART_FC:    return true;                                                 break;       // Только чтение стартовая частота работы
-    case   pMAX_POWER:   return true;                                                 break;       // Только чтение максимальная мощность
-    case   pSTATE:       return true;                                                 break;       // Только чтение Состояние ПЧ
-    case   pFC:          return true;                                                 break;       // Только чтение текущая частота ПЧ
-    case   pPOWER:       return true;                                                 break;       // Только чтение Текущая мощность
-    case   pAUTO_FC:     if (x==0) SETBIT0(flags,fAuto);else SETBIT1(flags,fAuto);return true;    break; // Флаг автоматической подбора частоты
-  //  case   pANALOG:      if (x==0) SETBIT0(flags,fAnalog);else SETBIT1(flags,fAnalog);return true;break; // Флаг аналогового управления
-    case   pANALOG:      return true;break;                                                        // ТОЛЬКО ЧТЕНИЕ Флаг аналогового управления
-    case   pLEVEL0:      if ((x>=0)&&(x<=4096)) { level0=x; return true;}                          // Только правильные значения
-                         return false;                                                break;       // Уровень частоты 0 в отсчетах ЦАП
-    case   pLEVEL100:    if ((x>=0)&&(x<=4096)) { level100=x; return true;}                        // Только правильные значения
-                         return false;                                                break;       // Уровень частоты 100% в  отсчетах ЦАП
-    case   pLEVELOFF:    if ((x>=0)&&(x<=4096)) { levelOff=x; return true;}                        // Только правильные значения
-                         return false;                                                break;       // Уровень частоты в % при отключении
-    case   pSTOP_FC:    SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА
-                         if (x==0) { SETBIT0(flags,fErrFC); note=(char*)noteFC_OK; }
-                         else      { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
-                         return true;                                                 break;       // флаг глобальная ошибка инвертора - работа инвертора запрещена
-    case   pERROR_FC:   return true;                                                 break;       // Код ошибки тлько чтение
-    default:             return false;                                                break;  
-   }
- return false;     
+    if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
+    if(strcmp(var,fc_INFO)==0)                  { return true;                         } else  // только чтение
+    if(strcmp(var,fc_NAME)==0)                  { return true;                         } else  // только чтение
+    if(strcmp(var,fc_NOTE)==0)                  { return true;                         } else  // только чтение
+    if(strcmp(var,fc_PIN)==0)                   { return true;                         } else  // только чтение
+    if(strcmp(var,fc_PRESENT)==0)               { return true;                         } else  // только чтение
+    if(strcmp(var,fc_STATE)==0)                 { return true;                         } else  // только чтение
+    if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
+    if(strcmp(var,fc_cFC)==0)                   { return true;                         } else  // только чтение
+    if(strcmp(var,fc_cPOWER)==0)                { return true;                         } else  // только чтение
+    if(strcmp(var,fc_cCURRENT)==0)              { return true;                         } else  // только чтение
+    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
+    if(strcmp(var,fc_ANALOG)==0)                { return true;                         } else  // только чтение
+    if(strcmp(var,fc_DAC)==0)                   { return true;                         } else  // только чтение
+    #ifdef FC_ANALOG_CONTROL
+    if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
+    if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
+    if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
+    #endif
+    if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА  
+                                                if (x==0) { SETBIT0(_data.flags,fErrFC); note=(char*)noteFC_OK; }
+                                                else      { SETBIT1(_data.flags,fErrFC); note=(char*)noteFC_NO; }
+                                                return true;            
+                                                } else  
+    if(strcmp(var,fc_ERROR)==0)                 { return true;                         } else  // только чтение                                      
+    if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>1)&&(x<25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
+    if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц 
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц 
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц 
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц 
+    if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц 
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } else // Гц
+    if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы
+    return false;
 }
- // Получить информацию о частотнике
+
+	
+ 
+ // Получить информацию о частотнике, информация добавляется в buf
 char * devOmronMX2::get_infoFC(char *buf)
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
@@ -1614,7 +1847,7 @@ int16_t devOmronMX2::read_tempFC()
     { uint8_t i;
       boolean result;
       err=OK;  
-      if ((!get_present())||(GETBIT(flags,fErrFC))) return false;             // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return false;             // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
          { 
          err=Modbus.readCoil(FC_MODBUS_ADR,cmd-1, &result);              // послать запрос, Нумерация регистров MX2 с НУЛЯ!!!!
@@ -1634,7 +1867,7 @@ int16_t devOmronMX2::read_tempFC()
     {   uint8_t i;
         uint16_t result;  
         err=OK;
-        if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
+        if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     
         for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
             { 
@@ -1657,7 +1890,7 @@ int16_t devOmronMX2::read_tempFC()
         uint8_t i;
         uint32_t result;  
         err=OK;
-        if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;            // выходим если нет инвертора или он заблокирован по ошибке
+        if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;            // выходим если нет инвертора или он заблокирован по ошибке
         for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
           { 
            err=Modbus.readHoldingRegisters32(FC_MODBUS_ADR,cmd-1,&result);  // послать запрос, Нумерация регистров MX2 с НУЛЯ!!!!
@@ -1678,7 +1911,7 @@ int16_t devOmronMX2::read_tempFC()
     { uint8_t i;
       uint16_t tmp;
       err=OK;
-      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<0x0a;i++) error.inputBuf[i]=0;
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
          { 
@@ -1703,7 +1936,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x05_bit(uint16_t cmd, boolean f)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;     // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;     // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток записи
          {   
             if (f) err=Modbus.writeSingleCoil(FC_MODBUS_ADR,cmd-1,1);   // послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -1722,7 +1955,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x06_16(uint16_t cmd, uint16_t data)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
        for(i=0;i<FC_NUM_READ;i++)                                          // делаем FC_NUM_READ попыток записи
          {
            err=Modbus.writeHoldingRegisters16(FC_MODBUS_ADR,cmd-1,data);  // послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -1740,7 +1973,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x10_32(uint16_t cmd, uint32_t data)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;             // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;             // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)                                          // делаем FC_NUM_READ попыток записи
          {  
            err=Modbus.writeHoldingRegisters32(FC_MODBUS_ADR, cmd-1, data);// послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -1905,87 +2138,79 @@ boolean  devSDM::progConnect()
  }
 
 // Получить параметр счетчика в виде строки
- char* devSDM::get_paramSDM(TYPE_PARAM_SDM p)         
+char* devSDM::get_paramSDM(char *var, char *ret)           
  {
-static char temp[10];
-  switch (p)
-   {
-   case   pNAME_SDM:         return  (char*)name;                                                     break;      // Имя счетчика
-   case   pNOTE_SDM:         return  (char*)note;                                                     break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  return int2str(settingSDM.maxVoltage);                                   break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  return int2str(settingSDM.minVoltage);                                   break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    return int2str(settingSDM.maxPower);                                     break;      // максимальаня мощность контроля мощности
-   case   pVOLTAGE_SDM:      return ftoa(temp,(float)Voltage,2);                                      break;      // Напряжение
-   case   pCURRENT_SDM:      return ftoa(temp,(float)Current,2);                                      break;      // Ток
-   case   pREPOWER_SDM:      return ftoa(temp,(float)RePower,2);                                      break;      // Реактивная мощность
-   case   pACPOWER_SDM:      return ftoa(temp,(float)AcPower,2);                                      break;      // Активная мощность
-   case   pPOWER_SDM:        return ftoa(temp,(float)Power,2);                                        break;      // Полная мощность
-   case   pPOW_FACTOR_SDM:   return ftoa(temp,(float)PowerFactor,2);                                  break;      // Коэффициент мощности
-   case   pPHASE_SDM:        return ftoa(temp,(float)Phase,2);                                        break;      // Угол фазы (градусы)
-   case   pIACENERGY_SDM:    return ftoa(temp,(float)iAcEnergy,2);                                    break;      // Потребленная активная энергия
-   case   pEACENERGY_SDM:    return ftoa(temp,(float)eAcEnergy,2);                                    break;      // Переданная активная энергия
-   case   pIREENERGY_SDM:    return ftoa(temp,(float)iReEnergy,2);                                    break;      // Потребленная реактивная энергия
-   case   pEREENERGY_SDM:    return ftoa(temp,(float)eReEnergy,2);                                    break;      // Переданная реактивная энергия
-   case   pACENERGY_SDM:     return ftoa(temp,(float)AcEnergy,2);                                     break;      // Суммараная активная энергия
-   case   pREENERGY_SDM:     return ftoa(temp,(float)ReEnergy,2);                                     break;      // Суммараная реактивная энергия
-   case   pENERGY_SDM:       return ftoa(temp,(float)Energy,2);                                       break;      // Суммараная  энергия
-   case   pLINK_SDM:         if (GETBIT(flags,fLink)) return(char*)"Ok";else return(char*)"none";     break;      // Cостояние связи со счетчиком
-   default:                  return  (char*)cInvalid;                                                break;  
-   }
- return (char*)cInvalid;
+    char temp[12];
+   if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                                   }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                                   }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.maxVoltage));                                 }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.minVoltage));                                 }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){    return strcat(ret,int2str(settingSDM.maxPower));                                   }else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){      return strcat(ret,ftoa(temp,(float)Voltage,2));                                    }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      return strcat(ret,ftoa(temp,(float)Current,2));                                    }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){      return strcat(ret,ftoa(temp,(float)RePower,2));                                    }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){      return strcat(ret,ftoa(temp,(float)AcPower,2));                                    }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){        return strcat(ret,ftoa(temp,(float)Power,2));                                      }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){   return strcat(ret,ftoa(temp,(float)PowerFactor,2));                                }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){        return strcat(ret,ftoa(temp,(float)Phase,2));                                      }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_IACENERGY)==0){    return strcat(ret,ftoa(temp,(float)iAcEnergy,2));                                  }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){    return strcat(ret,ftoa(temp,(float)eAcEnergy,2));                                  }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){    return strcat(ret,ftoa(temp,(float)iReEnergy,2));                                  }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){    return strcat(ret,ftoa(temp,(float)eReEnergy,2));                                  }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){     return strcat(ret,ftoa(temp,(float)AcEnergy,2));                                   }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){     return strcat(ret,ftoa(temp,(float)ReEnergy,2));                                   }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){       return strcat(ret,ftoa(temp,(float)Energy,2));                                     }else      // Суммараная  энергия
+   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return strcat(ret,(char*)"Ok");else return strcat(ret,(char*)"none");}else      // Cостояние связи со счетчиком
+   return strcat(ret,(char*)cInvalid);
  }
 
 // Установить параметр счетчика в виде строки
-boolean devSDM::set_paramSDM(TYPE_PARAM_SDM p, char *c)        
+boolean devSDM::set_paramSDM(char *var,char *c)        
  {
-  int16_t x;
-  x=atoi(c);
-  
-  switch (p)
-   {
-   case   pNAME_SDM:         return  true;                                    break;      // Имя счетчика
-   case   pNOTE_SDM:         return  true;                                    break;      // Описание счетчика
-   case   pMAX_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; break;      // мах напряжение контроля напряжения
-   case   pMIN_VOLTAGE_SDM:  if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; break;      // min напряжение контроля напряжения
-   case   pMAX_POWER_SDM:    if ((x>=0)&&(x<=30000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false; break;      // максимальаня мощность контроля мощности
-   case   pVOLTAGE_SDM:      return true;                                     break;      // Напряжение
-   case   pCURRENT_SDM:      return true;                                     break;      // Ток
-   case   pREPOWER_SDM:      return true;                                     break;      // Реактивная мощность
-   case   pACPOWER_SDM:      return true;                                     break;      // Активная мощность
-   case   pPOWER_SDM:        return true;                                     break;      // Полная мощность
-   case   pPOW_FACTOR_SDM:   return true;                                     break;      // Коэффициент мощности
-   case   pPHASE_SDM:        return true;                                     break;      // Угол фазы (градусы)
-   case   pIACENERGY_SDM:    return true;                                     break;      // Потребленная активная энергия
-   case   pEACENERGY_SDM:    return true;                                     break;      // Переданная активная энергия
-   case   pIREENERGY_SDM:    return true;                                     break;      // Потребленная реактивная энергия
-   case   pEREENERGY_SDM:    return true;                                     break;      // Переданная реактивная энергия
-   case   pACENERGY_SDM:     return true;                                     break;      // Суммараная активная энергия
-   case   pREENERGY_SDM:     return true;                                     break;      // Суммараная реактивная энергия
-   case   pENERGY_SDM:       return true;                                     break;      // Суммараная энергия
-   case   pLINK_SDM:         return true;                                     break;      // Cостояние связи со счетчиком
-   default:                  return false;                                    break;  
-   }
- return false;
+  int16_t x=atoi(c);
+   if(strcmp(var,sdm_NAME)==0){          return  true;                                    }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){          return  true;                                    }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){     if ((x>=0)&&(x<=15000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false;}else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){       return true;                                     }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){       return true;                                     }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){       return true;                                     }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){       return true;                                     }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){         return true;                                     }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){    return true;                                     }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){         return true;                                     }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_IACENERGY)==0){     return true;                                     }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){     return true;                                     }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){     return true;                                     }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){     return true;                                     }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){      return true;                                     }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){      return true;                                     }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){        return true;                                     }else      // Суммараная энергия
+   if(strcmp(var,sdm_LINK)==0){          return true;                                     }else      // Cостояние связи со счетчиком
+   return false;
  }
-
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::save(int32_t adr)
 {
-if (writeEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(settingSDM);      // Вся структура настроек
+if (writeEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; }
+adr=adr+sizeof(settingSDM);      // Вся структура настроек
 return adr;                                 
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::load(int32_t adr)
 {
-if (readEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(settingSDM);      // вся струткра настроек
+if (readEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; }
+adr=adr+sizeof(settingSDM);      // вся струткра настроек
 return adr;                              
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devSDM::loadFromBuf(int32_t adr,byte *buf)
 {
-  memcpy((byte*)&settingSDM,buf+adr,sizeof(settingSDM)); adr=adr+sizeof(settingSDM);     
+  memcpy((byte*)&settingSDM,buf+adr,sizeof(settingSDM));
+  adr=adr+sizeof(settingSDM);
   return adr;  
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
@@ -2001,8 +2226,7 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
-//      _delay(1);  // задержка чтения отдельного символа из Modbus
-		delay(1); //
+		_delay(1);  // задержка чтения отдельного символа из Modbus
     }
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
@@ -2063,12 +2287,13 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+		SemaphoreGive (xModbusSemaphore);
 	} else {
 		err = translateErr(result);
+		SemaphoreGive (xModbusSemaphore);
 		journal.jprintf("Modbus reg #%d - ", cmd);
 		*ret = 0;
 	}
-	SemaphoreGive (xModbusSemaphore);
 	return err;
 }
 

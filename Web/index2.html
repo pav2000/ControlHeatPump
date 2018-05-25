@@ -119,7 +119,7 @@ request.onreadystatechange = function()
 							}
 						} else if(type == 'chart') {
 							if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {	
-								title = values[0].replace(/get_Chart\(_/g,"").replace(/\)[0-9]?/g,"");
+								title = values[0].replace(/get_Chart\(/g,"").replace(/\)[0-9]?/g,"");
 								var yizm = ''; var ytooltip = ''; var timeval = '';
 								var regexpt = /^(T|O|d)/g;var regexpp = /^P/g;var regexpe = /^pos/g;var regexpr = /^R/g;
 									if(regexpt.test(title)) { yizm = "Температура, °C"; ytooltip = " °C"; }

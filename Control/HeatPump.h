@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -25,7 +25,8 @@
 #include "Information.h"
 #include "VaconFC.h" 
 #include "Scheduler.h"
-
+extern char *MAC2String(byte* mac);
+ 
 // Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
 {
@@ -61,19 +62,20 @@ struct type_motoHour
  // uint32_t Q2;      // Объем прокаченного теплоносителя в СО (сезон)
   uint32_t Z1;      // Резервный параметр 1
   uint32_t Z2;      // Резервный параметр 2
-  
 };
 
 //  Работа с отдельными флагами type_optionHP
-#define fAddHeat           0                // флаг Использование дополнительного тена при нагреве
-#define fBeep              1                // флаг Использование звука
-#define fNextion           2                // флаг Использование nextion дисплея
-#define fEEV_close         3                // флаг Закрытие ЭРВ при выключении компрессора
-#define fSD_card           4                // флаг записи статистики на карту памяти
-#define fSaveON            5                // флаг записи в EEPROM включения ТН
-#define fEEV_start         6                // флаг Всегда начинать работу ЭРВ со стратовой позиции
-#define fEEV_light_start   7                // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
-#define fTypeRHEAT         8                // флаг как используется доболнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
+#define fBeep               1               // флаг Использование звука
+#define fNextion            2               // флаг Использование nextion дисплея
+#define fEEV_close          3               // флаг Закрытие ЭРВ при выключении компрессора
+#define fSD_card            4               // флаг записи статистики на карту памяти
+#define fSaveON             5               // флаг записи в EEPROM включения ТН
+#define fEEV_start          6               // флаг Всегда начинать работу ЭРВ со стратовой позиции
+#define fEEV_light_start    7               // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
+#define fTypeRHEAT          8               // флаг как используется доболнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define f1Wire2TSngl		9				// На 2-ой шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl		9				// На 3-ей шине 1-Wire(DS2482) только один датчик
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -87,6 +89,16 @@ struct type_optionHP
  int16_t tempRHEAT;                    //  Значение температуры для управления дополнительным ТЭН для нагрева СО
  uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре МИНУТЫ
  uint16_t workPump;                    //  Время работы  насоса при выключенном компрессоре МИНУТЫ
+ // Временные задержки
+ uint16_t delayOnPump;   		       // Задержка включения компрессора после включения насосов (сек).
+ uint16_t delayOffPump;                // Задержка выключения насосов после выключения компрессора (сек).
+ uint16_t delayStartRes;               // Задержка включения ТН после внезапного сброса контроллера (сек.)
+ uint16_t delayRepeadStart;            // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+ uint16_t delayDefrostOn;              // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+ uint16_t delayDefrostOff;             // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+ uint16_t delayTRV;                    // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+ uint16_t delayBoilerSW;               // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+ uint16_t delayBoilerOff;              // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
  uint16_t P0;                          //  резерв два байта
  uint16_t P1;                          //  резерв два байта
  uint16_t P2;                          //  резерв два байта
@@ -167,18 +179,18 @@ class HeatPump
     void eraseError();                                       // стереть последнюю ошибку
 
     __attribute__((always_inline)) inline int8_t get_errcode(){return error;} // Получить код последней ошибки
-    char *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
-    void scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
+    char    *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
+    void     scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
     TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
-    void  set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
-    boolean get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
-    boolean get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
-    void set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
+    void     set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
+    boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
+    boolean  get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
+    void     set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
 
-    void sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
+    void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
-    int8_t  runCommand();               // Выполнить команду по управлению ТН
+    int8_t   runCommand();               // Выполнить команду по управлению ТН
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -230,8 +242,8 @@ class HeatPump
       Statistics Stat;                 // Статистика работы теплового насоса
    #endif
   // Сетевые настройки
-    boolean set_network(PARAM_NETWORK p, char *c);        // Установить параметр из строки
-    char*   get_network(PARAM_NETWORK p);                 // Получить параметр из строки
+    boolean set_network(char *var, char *c);        // Установить параметр из строки
+    char*   get_network(char *var,char *ret);       // Получить параметр из строки
   //  inline uint16_t get_sizePacket() {return Network.sizePacket;} // Получить размер пакета при передаче
     inline uint16_t get_sizePacket() {return 2048;} // Получить размер пакета при передаче
     
@@ -239,8 +251,8 @@ class HeatPump
     uint8_t set_hashAdmin();                              // расчитать хеш для администратора возвращает длину хеша
     
    // Дата время
-    boolean set_datetime(DATE_TIME p, char *c);            //  Установить параметр дата и время из строки
-    char*   get_datetime(DATE_TIME p);                     //  Получить параметр дата и время из строки
+    boolean set_datetime(char *var, char *c);              //  Установить параметр дата и время из строки
+    char*   get_datetime(char *var,char *ret);             //  Получить параметр дата и время из строки
     IPAddress get_ip() { return Network.ip;}               //  Получить ip адрес
     IPAddress get_sdns() { return Network.sdns;}           //  Получить sdns адрес
     IPAddress get_subnet() { return Network.subnet;}       //  Получить subnet адрес
@@ -253,8 +265,9 @@ class HeatPump
     boolean get_NoAck() { return GETBIT(Network.flags,fNoAck);}  //  Получить флаг Не ожидать ответа ACK
     uint8_t get_delayAck() {return Network.delayAck;}      //  получить задержку перед отсылкой следующего пакета
     uint16_t get_pingTime() {return Network.pingTime;}     //  получить вермя пингования сервера, 0 если не надо
-    char * get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
+    char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
+    char *  get_netMAC() {return MAC2String(Network.mac);}  //  получить мас адрес контроллера
         
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
     byte *get_mac() { return Network.mac;}                 //  Получить mac адрес
@@ -266,10 +279,11 @@ class HeatPump
     boolean get_fInitW5200() { return GETBIT(Network.flags,fInitW5200);}  //  Получить флаг Контроля w5200
 
   // Параметры ТН
-   boolean set_optionHP(OPTION_HP p, float x);             // Установить опции ТН из числа (float)
-   char*   get_optionHP(OPTION_HP p);                      // Получить опции ТН
-   void set_mode(MODE_HP b) {Prof.SaveON.mode=b;}          // Установить режим работы отопления
-   void set_nextMode();                                    // Переключение на следующий режим работы отопления (последовательный перебор режимов)
+   boolean set_optionHP(char *var, float x);                // Установить опции ТН из числа (float)
+   char*   get_optionHP(char *var, char *ret);              // Получить опции ТН
+   uint16_t get_delayRepeadStart(){return Option.delayRepeadStart;} // Получить время между повторными попытками старта
+   void set_mode(MODE_HP b) {Prof.SaveON.mode=b;}           // Установить режим работы отопления
+   void set_nextMode();                                     // Переключение на следующий режим работы отопления (последовательный перебор режимов)
    void set_profile();										// Установить рабочий профиль по текущему Prof
 
    MODE_HP get_mode() {return Prof.SaveON.mode;}                // Получить режим работы 
@@ -294,8 +308,9 @@ class HeatPump
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    void     updateNextion();                                           // Обновить настройки дисплея
-   uint8_t  get_sleep() {return Option.sleep;};                        // 
-   
+   uint8_t  get_sleep() {return Option.sleep;}                         //
+   uint16_t get_flags() { return Option.flags; }						// Все флаги
+  
    // Структура состояния ТН Prof.SaveON.
    inline void  set_HP_OFF()                                                // Сброс флага включения ТН
     { SETBIT0(Prof.SaveON.flags,fHP_ON); Status.State=pOFF_HP;}
@@ -342,7 +357,7 @@ class HeatPump
    uint32_t get_motoHourD1(){return motoHour.D1;}          // Дата сброса общих счетчиков
    uint32_t get_motoHourP2(){return motoHour.P2;}          // Выработанная энергия в вт/часах сезон
    uint32_t get_motoHourP1(){return motoHour.P1;}          // Выработанная энергия в вт/часах общая
-   
+     
    void resetCount(boolean full);                          // Сборос сезонного счетчика моточасов
    void updateCount();                                     // Обновление счетчиков моточасов
    
@@ -376,7 +391,7 @@ class HeatPump
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
     char * get_listChart(char* str, boolean cat);          // получить список доступных графиков
-    char * get_Chart(TYPE_CHART t,char* str, boolean cat); // получить данные графика
+    char * get_Chart(char *var,char* str, boolean cat);    // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора
@@ -391,9 +406,11 @@ class HeatPump
     statChart ChartCOP;                                     // Коэффициент преобразования
     statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
     
-    float powerCO;                                         // Мощность системы отопления
-    float powerGEO;                                        // Мощность системы GEO
-    float power220;                                        // Мощность системы 220
+    float powerCO;                                          // Мощность системы отопления
+    float powerGEO;                                         // Мощность системы GEO
+    float power220;                                         // Мощность системы 220
+    int16_t fullCOP;                                        // Полный СОР  сотые 
+    int16_t COP;                                            // Чистый COP сотые
     
     #ifdef I2C_EEPROM_64KB   // Статистика ----------------------------------------------------------------------
     void InitStatistics();    // Функция вызываемая для первого часа для инициализации первичных счетчиков
@@ -423,9 +440,11 @@ class HeatPump
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
-    int16_t get_temp_condensing(void);	  // Расчитать температуру конденсации
-    int16_t get_overcool(void);			// Расчитать переохлаждение
+    int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
+    int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
+    // Настройки опций
+   type_optionHP Option;                  // Опции теплового насоса
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
@@ -461,7 +480,7 @@ class HeatPump
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
     type_status Status;                   // Описание состояния ТН
-      
+
     // Ошибки и описания
     int8_t error;                         // Код ошибки
     char   source_error[16];              // источник ошибки
@@ -484,9 +503,6 @@ class HeatPump
     type_NetworkHP Network;                 // !save! Структура для хранения сетевых настроек
     uint32_t countResSocket;                // Число сбросов сокетов
 
-     // Настройки опций
-    type_optionHP Option;                 // Опции теплового насоса
- 
     // Переменные пид регулятора Отопление
     float temp_int;                       // Служебная переменная интегрирования
     float errPID;                         // Текущая ошибка ПИД регулятора

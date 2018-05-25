@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_Network(NO_PING),get_Network(PING_ADR),get_Network(PING_TIME),get_Network(NO_ACK),get_Network(DELAY_ACK),get_Network(SIZE_PACKET),get_Network(MAC),get_Network(PORT),get_Network(ADDRESS),get_Network(SUBNET),get_Network(GATEWAY),get_Network(DNS),get_Network(DHCP),get_Network(PASSWORD),get_Network(PASSADMIN),get_Network(PASSUSER),get_Network(INIT_W5200),get_Network(RES_SOCKET),get_Network(RES_W5200)");
+		loadParam("get_Network(NO_PING),get_Network(PING_ADR),get_Network(PING_TIME),get_Network(NO_ACK),get_Network(DELAY_ACK),get_Network(SIZE_PACKET),get_Network(MAC),get_Network(PORT),get_Network(IP),get_Network(SUBNET),get_Network(GATEWAY),get_Network(DNS),get_Network(DHCP),get_Network(PASSWORD),get_Network(PASSADMIN),get_Network(PASSUSER),get_Network(INIT_W5200),get_Network(RES_SOCKET),get_Network(RES_W5200)");
 		updateParam("get_socketInfo,get_socketRes");
 	};
 	</script>
@@ -27,7 +27,7 @@
 		</tr>
 		<tr>
 			<td>IP адрес контроллера</td>
-			<td><input id="get_network-address" type="text" ><input id="get_network-address2" type="submit" value=">"  onclick="validip('get_network-address');setParam('get_Network(ADDRESS)');"></td>
+			<td><input id="get_network-ip" type="text" ><input id="get_network-ip2" type="submit" value=">"  onclick="validip('get_network-ip');setParam('get_Network(IP)');"></td>
 		</tr>
 		<tr>
 			<td>Маска подсети</td>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления 
  * различными типами тепловых насосов для отопления и ГВС.
@@ -23,7 +23,7 @@
 // Объявление функций 
 // NTP ----------------------------
 #define NTP_PACKET_SIZE 48                  // временная отметка NTP находится в первых 48 байтах сообщения
-byte packetBuffer[NTP_PACKET_SIZE+1];       // буфер, в котором будут храниться входящие и исходящие пакеты 
+byte packetBuffer[NTP_PACKET_SIZE+1];       // буфер, в котором будут храниться входящие и исходящие пакеты
 
 // Установка веремени системы (сначала читаем из i2c часов)
 // Возвращает код ошибки
@@ -47,96 +47,105 @@ int8_t set_time(void)
 // Запрос времени от NTP сервера, возвращает время как long
 boolean set_time_NTP(void)
 {
-   unsigned long secsSince1900=0;
-   unsigned long  epoch=0;
-   int i;
-   boolean flag=false;
-   IPAddress ip(0,0,0,0);
-   journal.jprintf(pP_TIME," Update time from NTP server: %s\n",HP.get_serverNTP()); 
-   //1. Установить адрес  не забываем работаетм через один сокет, опреации строго последовательные,иначе настройки сбиваются
-   WDT_Restart(WDT);                                        // Сбросить вачдог  при ошибке долго ждем
- 
-  // Если запущен шедулер то захватываем семафор
-     if (SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  {return false;}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-   // DNS запрос для определения адреса
-   if (!check_address(HP.get_serverNTP(),ip)) { SemaphoreGive(xWebThreadSemaphore); return false;}  // DNS - ошибка выходим
- 
-   // 2. Посылка пакета 
-   if(!Udp.begin(NTP_LOCAL_PORT,W5200_SOCK_SYS)) 
-   { 
-   journal.jprintf(" UDP fail\n"); 
-   SemaphoreGive(xWebThreadSemaphore);
-   return false; 
-   }
-   for(i=0;i<NTP_REPEAT;i++)                                       // Делам 5 попыток получить время
-   {  
-      WDT_Restart(WDT);                                            // Сбросить вачдог  
-      journal.jprintf(" Send packet NTP, wait . . .\n"); 
-      if(!sendNTPpacket(ip)) { SemaphoreGive(xWebThreadSemaphore);return false;}   // Отсылаем время-серверу NTP-пакет по IP что DNS не задействовать
-       _delay(NTP_REPEAT_TIME);                                                    // Ждем, чтобы увидеть, доступен ли ответ: 
-       if (Udp.parsePacket() ) 
-       {  
-           // Пакет получен, значит считываем данные оттуда:
-           Udp.read(packetBuffer,NTP_PACKET_SIZE); // считываем содержимое пакета в буфер
-           // Временная отметка начинается с 40 байта полученного пакета и его длина составляет четыре байта или два слова.
-           // Для начала извлекаем два этих слова:
-           unsigned long highWord = packetBuffer[40]<<8 | packetBuffer[41];
-           unsigned long lowWord =  packetBuffer[42]<<8 | packetBuffer[43];
-           // Совмещаем четыре байта (два слова) в длинное целое. Это и будет NTP-временем (секунды начиная с 1 января 1990 года):
-           secsSince1900 = highWord << 16 | lowWord;
-           const unsigned long seventyYears = 2208988800UL; // Время Unix стартует с 1 января 1970 года. В секундах это 2208988800:
-           epoch = secsSince1900-seventyYears;              // Вычитаем 70 лет 
-           flag=true;                                       // Время получили
-           break;                                           // ответ получен выходим
-        } 
-   } // for
-   SemaphoreGive(xWebThreadSemaphore);
-   if (flag)   // Обновление времени если оно получено
-     {
-         rtcSAM3X8.set_clock(epoch,TIME_ZONE);                    // обновить внутренние часы
-         // обновились, можно и часы i2c обновить   
-         setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds());
-         setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years());
-         journal.jprintf(" Set time from NTP server: %s ",NowDateToStr());journal.jprintf("%s\n",NowTimeToStr());  // Одним оператором есть косяк
-     }
-     else 
-     {
-       journal.jprintf(" ERROR update time from NTP server! %s ",NowDateToStr());
-       journal.jprintf("%s\n",NowTimeToStr());// Одним оператором есть косяк
-     }
-      
-return flag;  
-}  
+	unsigned long secsSince1900 = 0;
+	unsigned long epoch = 0;
+	int8_t i;
+	boolean flag = false;
+	IPAddress ip(0, 0, 0, 0);
+	journal.jprintf(pP_TIME, "Update time from NTP server: %s\n", HP.get_serverNTP());
+	//1. Установить адрес  не забываем работаетм через один сокет, опреации строго последовательные,иначе настройки сбиваются
+	WDT_Restart(WDT);                                        // Сбросить вачдог  при ошибке долго ждем
 
- // send an NTP request to the time server at the given address
- // true если нет ошибок
+	// Если запущен шедулер то захватываем семафор
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+		return false;
+	}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+	// DNS запрос для определения адреса
+
+	if(check_address(HP.get_serverNTP(), ip) == 0) {
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}  // DNS - ошибка выходим
+
+	// 2. Посылка пакета
+	if(!Udp.begin(NTP_LOCAL_PORT, W5200_SOCK_SYS)) {
+		journal.jprintf(" UDP fail\n");
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	for(i = 0; i < NTP_REPEAT; i++)                                       // Делам 5 попыток получить время
+	{
+		WDT_Restart(WDT);                                            // Сбросить вачдог
+		journal.jprintf(" Send packet NTP, wait . . .\n");
+		flag = sendNTPpacket(ip);
+		_delay(NTP_REPEAT_TIME);                                             // Ждем, чтобы увидеть, доступен ли ответ:
+		if(flag) {
+			flag = false;
+			if(Udp.parsePacket()) {
+				// Пакет получен, значит считываем данные оттуда:
+				Udp.read(packetBuffer, NTP_PACKET_SIZE); // считываем содержимое пакета в буфер
+				flag = true;                                       // Время получили
+			}
+		}
+		if(flag) {
+			// Временная отметка начинается с 40 байта полученного пакета и его длина составляет четыре байта или два слова.
+			// Для начала извлекаем два этих слова:
+			unsigned long highWord = packetBuffer[40] << 8 | packetBuffer[41];
+			unsigned long lowWord = packetBuffer[42] << 8 | packetBuffer[43];
+			// Совмещаем четыре байта (два слова) в длинное целое. Это и будет NTP-временем (секунды начиная с 1 января 1990 года):
+			secsSince1900 = highWord << 16 | lowWord;
+			const unsigned long seventyYears = 2208988800UL; // Время Unix стартует с 1 января 1970 года. В секундах это 2208988800:
+			epoch = secsSince1900 - seventyYears;              // Вычитаем 70 лет
+			break;                                           // ответ получен выходим
+		}
+	} // for
+	Udp.stop();
+	SemaphoreGive (xWebThreadSemaphore);
+	if(flag)   // Обновление времени если оно получено
+	{
+		rtcSAM3X8.set_clock(epoch, TIME_ZONE);                    // обновить внутренние часы
+		// обновились, можно и часы i2c обновить
+		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
+		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
+		journal.jprintf(" Set time from NTP server: %s ", NowDateToStr());
+		journal.jprintf("%s\n", NowTimeToStr());  // Одним оператором есть косяк
+	} else {
+		journal.jprintf(" ERROR update time from NTP server! %s ", NowDateToStr());
+		journal.jprintf("%s\n", NowTimeToStr());  // Одним оператором есть косяк
+	}
+
+	return flag;
+}
+
+// send an NTP request to the time server at the given address
+// true если нет ошибок
 boolean sendNTPpacket(IPAddress &ip)
 {
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;            // Stratum, or type of clock
-  packetBuffer[2] = 6;            // Polling Interval
-  packetBuffer[3] = 0xEC;         // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
-  // all NTP fields have been given values, now
-  // you can send a packet requesting a timestamp:
-if(Udp.beginPacket(ip, 123, W5200_SOCK_SYS) == 1) 
-  { 
-    Udp.write(packetBuffer,NTP_PACKET_SIZE);
-    if(Udp.endPacket() != 1) { journal.jprintf("Send packet NTP error\n"); return false;}
-  }
-  else 
-  {
-    journal.jprintf("Socket error\n");
-    return false;
-  }
-return true;
+	memset(packetBuffer, 0, NTP_PACKET_SIZE);
+	// Initialize values needed to form NTP request
+	// (see URL above for details on the packets)
+	packetBuffer[0] = 0b11100011;   // LI, Version, Mode
+	packetBuffer[1] = 0;            // Stratum, or type of clock
+	packetBuffer[2] = 6;            // Polling Interval
+	packetBuffer[3] = 0xEC;         // Peer Clock Precision
+	// 8 bytes of zero for Root Delay & Root Dispersion
+	packetBuffer[12] = 49;
+	packetBuffer[13] = 0x4E;
+	packetBuffer[14] = 49;
+	packetBuffer[15] = 52;
+	// all NTP fields have been given values, now
+	// you can send a packet requesting a timestamp:
+	if(Udp.beginPacket(ip, NTP_PORT, W5200_SOCK_SYS) == 1) {
+		Udp.write(packetBuffer, NTP_PACKET_SIZE);
+		if(Udp.endPacket() != 1) {
+			journal.jprintf("Send packet NTP error\n");
+			return false;
+		}
+	} else {
+		journal.jprintf("Socket error\n");
+		return false;
+	}
+	return true;
 }
 
 

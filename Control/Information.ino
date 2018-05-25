@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
+ *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -17,6 +18,8 @@
 
 //  описание вспомогательных Kлассов данных, предназначенных для получения информации о ТН
 #include "Information.h"
+
+#define bufI2C Socket[0].outBuf
 
 // --------------------------------------------------------------------------------------------------------------- 
 //  Класс системный журнал пишет в консоль и в память ------------------------------------------------------------
@@ -41,7 +44,7 @@ void Journal::Init()
     #else                      // журнал во флеше
 
     #ifdef DEBUG
-     Serial.println("\nInit I2C EEPROM journal . . .");   
+     Serial.println("\nInit I2C journal . . .");
     #endif  
      uint8_t eepStatus=0;
      uint16_t i;
@@ -50,7 +53,7 @@ void Journal::Init()
      if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
      {
       #ifdef DEBUG
-       Serial.println("$ERROR - open I2C journal, check chip i2C eeprom");   // ошибка открытия чипа
+       Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
       #endif
       err=ERR_OPEN_I2C_JOURNAL; 
       return;
@@ -61,7 +64,7 @@ void Journal::Init()
       #ifdef DEBUG
         Serial.print("I2C journal not found\n"); 
        #endif  
-      Format(); 
+      Format(bufI2C);
      }   
      #ifdef DEBUG  
        else Serial.print("I2C journal is ready for use\n");
@@ -85,35 +88,12 @@ void Journal::Init()
        }
       if  (bufferTail<bufferHead) full=true;                   // Буфер полный
       jprintf("\nSTART ----------------------\n"); 
-      jprintf("Found journal I2C EEPROM: total size %d bytes, head=0x%x, tail=0x%x \n",JOURNAL_LEN,bufferHead,bufferTail);  
+      jprintf("Found journal I2C: total size %d bytes, head=0x%x, tail=0x%x \n",JOURNAL_LEN,bufferHead,bufferTail);
     #endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
   }
 
   
 #ifdef I2C_EEPROM_64KB  // функции долько для I2C журнала
-// Записать символ "начало" значение bufferHead должно быть установлено
-void Journal::writeHEAD()
-{  
-    byte  b=I2C_JOURNAL_HEAD; 
-    if (writeEEPROM_I2C(I2C_JOURNAL_START+bufferHead, (byte*)&b,sizeof(byte))) 
-       { err=ERR_WRITE_I2C_JOURNAL; 
-         #ifdef DEBUG
-         Serial.println(errorWriteI2C);
-         #endif
-        }
-}
-
-// Записать символ "конец" значение bufferTail должно быть установлено
-void Journal::writeTAIL()
-{  
-    byte  b=I2C_JOURNAL_TAIL; 
-    if (writeEEPROM_I2C(I2C_JOURNAL_START+bufferTail, (byte*)&b,sizeof(byte))) 
-       { err=ERR_WRITE_I2C_JOURNAL; 
-         #ifdef DEBUG
-         Serial.println(errorWriteI2C);
-         #endif
-        }
-}
 // Записать признак "форматирования" журнала - журналом можно пользоваться
 void Journal::writeREADY()
 {  
@@ -138,38 +118,42 @@ boolean Journal::checkREADY()
     if (w!=I2C_JOURNAL_READY) return false; else return true;
 }
 
-// Форматирование журнала (инициализация I2C памяти уже проведена)
-void Journal::Format()
-{   
-    uint16_t i;
-    err=OK;
-    memset(bufI2C,I2C_JOURNAL_FORMAT,W5200_MAX_LEN); 
-    #ifdef DEBUG
-     Serial.print("Formating journal I2C EEPROM ");
-    #endif
-    for (i=0;i<JOURNAL_LEN/W5200_MAX_LEN;i++) 
-       { 
-          #ifdef DEBUG  
-          Serial.print("*");
-          #endif 
-          if (writeEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C, W5200_MAX_LEN))   
-              { err=ERR_WRITE_I2C_JOURNAL; 
-                #ifdef DEBUG
-                Serial.println(errorWriteI2C); 
-                #endif
-                break; }; 
-          WDT_Restart(WDT);      
-       }    
-    full=false;                   // Буфер не полный
-    bufferHead = 0;
-    bufferTail = 1;
-    writeHEAD();
-    writeTAIL();
-    if (err==OK)
-    {
-    writeREADY();                 // было форматирование
-    jprintf("\nFormat I2C EEPROM journal (size %d bytes) - Ok\n",JOURNAL_LEN);
-    }
+// Форматирование журнала (инициализация I2C памяти уже проведена), sizeof(buf)=W5200_MAX_LEN
+void Journal::Format(char *buf)
+{
+	uint16_t i;
+	err = OK;
+	memset(buf, I2C_JOURNAL_FORMAT, W5200_MAX_LEN);
+	#ifdef DEBUG
+	Serial.print("Formating journal I2C ");
+	#endif
+	for(i = 0; i < JOURNAL_LEN / W5200_MAX_LEN; i++) {
+		#ifdef DEBUG
+		Serial.print("*");
+		#endif
+		if(i == 0) {
+			buf[0] = I2C_JOURNAL_HEAD;
+			buf[1] = I2C_JOURNAL_TAIL;
+		} else {
+			buf[0] = I2C_JOURNAL_FORMAT;
+			buf[1] = I2C_JOURNAL_FORMAT;
+		}
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + i * W5200_MAX_LEN, (byte*)&buf, W5200_MAX_LEN)) {
+			err = ERR_WRITE_I2C_JOURNAL;
+			#ifdef DEBUG
+			Serial.println(errorWriteI2C);
+			#endif
+			break;
+		};
+		WDT_Restart(WDT);
+	}
+	full = 0;                   // Буфер не полный
+	bufferHead = 0;
+	bufferTail = 1;
+	if(err == OK) {
+		writeREADY();                 // было форматирование
+		jprintf("\nFormat I2C journal (size %d bytes) - Ok\n", JOURNAL_LEN);
+	}
 }
 #endif
     
@@ -178,10 +162,10 @@ void Journal::printf(const char *format, ...)
   {
   #ifdef DEBUG
   va_list ap;
-    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+//    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
     {
     va_start(ap, format);
-    m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
+    m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
     va_end(ap);
     }
     Serial.print(pbuf);
@@ -189,14 +173,14 @@ void Journal::printf(const char *format, ...)
   }
   
 // Печать в консоль и журнал возвращает число записанных байт
-uint16_t Journal::jprintf(const char *format, ...)
+void Journal::jprintf(const char *format, ...)
   {
       va_list ap;
-      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-      else
+//      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+//      else
       {
       va_start(ap, format);
-      m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
+      m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
       va_end(ap);
       }
       #ifdef DEBUG
@@ -204,103 +188,99 @@ uint16_t Journal::jprintf(const char *format, ...)
         Serial.print(pbuf);
       #endif 
    // добавить строку в журнал
-   return _write(pbuf);
+   _write(pbuf);
   }
 
 //type_promt вставляется в начале журнала а далее печать в консоль и журнал возвращает число записанных байт с типом промта
-uint16_t Journal::jprintf(type_promt pr,const char *format, ...)
+void Journal::jprintf(type_promt pr,const char *format, ...)
 {
-  uint16_t len_promt=0;
   switch (pr)
   {
-  case  pP_NONE: len_promt=0;break;                                                           // ничего
-  case  pP_TIME: len_promt=jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
-  case  pP_DATE: len_promt=jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
-  case  pP_USER: len_promt=jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
-  default: len_promt=0;break;
+  case  pP_NONE: break;
+  case  pP_TIME: jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
+  case  pP_DATE: jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
+  case  pP_USER: jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
   }
      va_list ap;
-      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-      else
+//      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+//      else
       {
       va_start(ap, format);
-      m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
+      m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
       va_end(ap);
       }
       #ifdef DEBUG
        Serial.print(pbuf);
       #endif 
-    return _write(pbuf)+len_promt;   // добавить строку в журнал
+    _write(pbuf);   // добавить строку в журнал
 }   
   
 // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
-uint16_t Journal::jprintf_only(const char *format, ...)
+void Journal::jprintf_only(const char *format, ...)
 {
   va_list ap;
-    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
+//    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
     {
     va_start(ap, format);
-    m_vsnprintf(pbuf, sizeof(pbuf), format, ap);
+    m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
     va_end(ap);
     }
-   return _write(pbuf);   
+   _write(pbuf);
 }
 
 // отдать журнал в сеть клиенту  Возвращает число записанных байт
-uint16_t Journal::send_Data(uint8_t thread)
-  {
-    uint16_t i,num,len,sum=0;
-   #ifdef I2C_EEPROM_64KB // чтение еепром
-    num=bufferHead+1;                                                                          // Начинаем с начала журнала, num позиция в буфере пропуская символ начала
-    for(i=0;i<(JOURNAL_LEN/W5200_MAX_LEN+1);i++)                                             // Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
-     {
-      if((num>bufferTail))                                                                     // Текущая позиция больше хвоста (начало передачи)
-        {
-        if (JOURNAL_LEN-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=JOURNAL_LEN-num;   // Контроль достижения границы буфера
-        }
-      else                                                                                   // Текущая позиция меньше хвоста (конец передачи)
-        {
-          if (bufferTail-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=bufferTail-num;     // Контроль достижения хвоста журнала
-        }
-     if (readEEPROM_I2C(I2C_JOURNAL_START+num, (byte*)&bufI2C,len))                           // чтение из памяти
-       { err=ERR_READ_I2C_JOURNAL; 
-         #ifdef DEBUG
-            Serial.print(errorReadI2C); 
-         #endif
-         return 0;
-       };     
-  //    Serial.println(strlen(bufI2C)); 
-  //    Serial.println(bufI2C);  
-      if(sendPacketRTOS(thread,(byte*)bufI2C,len,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
-      sum=sum+len;                                                                           // сколько байт передано
-      if (sum>=available()) break;                                                           // Все передано уходим
-      num=num+len;                                                                           // Указатель на переданные данные
-      if (num>=JOURNAL_LEN) num=0;                                                           // переходим на начало
-    }  // for
-   #else
-    num=bufferHead;                                                                          // Начинаем с начала журнала, num позиция в буфере
-    for(i=0;i<(JOURNAL_LEN/W5200_MAX_LEN+1);i++)                                             // Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
-     {
-      if((num>bufferTail))                                                                   // Текущая позиция больше хвоста (начало передачи)
-        {
-        if (JOURNAL_LEN-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=JOURNAL_LEN-num;     // Контроль достижения границы буфера
-        }
-      else                                                                                   // Текущая позиция меньше хвоста (конец передачи)
-        {
-          if (bufferTail-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=bufferTail-num;     // Контроль достижения хвоста журнала
-        }
-      if(sendPacketRTOS(thread,(byte*)_data+num,len,0)==0) return 0 ;                         // передать пакет, при ошибке выйти
-      sum=sum+len;                                                                           // сколько байт передано
-      if (sum>=available()) break;                                                           // Все передано уходим
-      num=num+len;                                                                           // Указатель на переданные данные
-      if (num>=JOURNAL_LEN) num=0;                                                           // переходим на начало
-    }  // for
-  #endif  
-return sum;
-  }
+int32_t Journal::send_Data(uint8_t thread)
+{
+	int32_t num, len, sum = 0;
+#ifdef I2C_EEPROM_64KB // чтение еепром
+	num = bufferHead + 1;                     // Начинаем с начала журнала, num позиция в буфере пропуская символ начала
+	for(uint16_t i = 0; i < (JOURNAL_LEN / W5200_MAX_LEN + 1); i++) // Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
+	{
+		__asm__ volatile ("" ::: "memory");
+		if((num > bufferTail))                                        // Текущая позиция больше хвоста (начало передачи)
+		{
+			if(JOURNAL_LEN - num >= W5200_MAX_LEN) len = W5200_MAX_LEN;
+			else len = JOURNAL_LEN - num;   // Контроль достижения границы буфера
+		} else {                                                        // Текущая позиция меньше хвоста (конец передачи)
+			if(bufferTail - num >= W5200_MAX_LEN) len = W5200_MAX_LEN;
+			else len = bufferTail - num;     // Контроль достижения хвоста журнала
+		}
+		if(readEEPROM_I2C(I2C_JOURNAL_START + num, (byte*) Socket[thread].outBuf, len))                           // чтение из памяти
+		{
+			err = ERR_READ_I2C_JOURNAL;
+#ifdef DEBUG
+			Serial.print(errorReadI2C);
+#endif
+			return 0;
+		}
+		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0;            // передать пакет, при ошибке выйти
+		sum = sum + len;                                                                        // сколько байт передано
+		if(sum >= available()) break;                                                           // Все передано уходим
+		num = num + len;                                                               // Указатель на переданные данные
+		if(num >= JOURNAL_LEN) num = 0;                                                           // переходим на начало
+	}  // for
+#else
+	num=bufferHead;                                                   // Начинаем с начала журнала, num позиция в буфере
+	for(uint16_t i=0;i<(JOURNAL_LEN/W5200_MAX_LEN+1);i++)// Передаем пакетами по W5200_MAX_LEN байт, может быть два неполных пакета!!
+	{
+		if((num>bufferTail))                              // Текущая позиция больше хвоста (начало передачи)
+		{
+			if (JOURNAL_LEN-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=JOURNAL_LEN-num; // Контроль достижения границы буфера
+		} else {                                                           // Текущая позиция меньше хвоста (конец передачи)
+			if (bufferTail-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=bufferTail-num; // Контроль достижения хвоста журнала
+		}
+		if(sendPacketRTOS(thread,(byte*)_data+num,len,0)==0) return 0;          // передать пакет, при ошибке выйти
+		sum=sum+len;// сколько байт передано
+		if (sum>=available()) break;// Все передано уходим
+		num=num+len;// Указатель на переданные данные
+		if (num>=JOURNAL_LEN) num=0;// переходим на начало
+	}  // for
+#endif
+	return sum;
+}
 
 // Возвращает размер журнала
-uint16_t Journal::available(void)
+int32_t Journal::available(void)
 { 
   #ifdef I2C_EEPROM_64KB
     if (full) return JOURNAL_LEN; else return bufferTail-1;
@@ -317,54 +297,55 @@ size_t Journal::write (uint8_t c)
   }  // end of myOutputtingClass::write
          
 // Записать строку в журнал
-uint16_t Journal::_write(char *dataPtr)
+void Journal::_write(char *dataPtr)
 {
-	uint16_t numBytes;
-	numBytes = m_strlen(dataPtr);
-	if(dataPtr == NULL || numBytes == 0) return 0;  // Записывать нечего
+	uint16_t numBytes = m_strlen(dataPtr);
+	if(dataPtr == NULL || numBytes == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
-	if(numBytes >= JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
+	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
 	// Запись в eeprom
-	if(numBytes > (JOURNAL_LEN - bufferTail - 1)) //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
-	{
-		int len = JOURNAL_LEN - bufferTail - 1;          // сколько можно записать в конец
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, len)) {
-#ifdef DEBUG
-			if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
-#endif
+	dataPtr[numBytes] = I2C_JOURNAL_TAIL;
+	if(full) dataPtr[numBytes + 1] = I2C_JOURNAL_HEAD;
+	if(bufferTail + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
+		int32_t n = bufferTail;
+		bufferTail = 0;
+		__asm__ volatile ("" ::: "memory");
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, JOURNAL_LEN - n)) {
+			#ifdef DEBUG
+				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return 0;
+			return;
 		}
 		err = OK;
-		if(writeEEPROM_I2C(I2C_JOURNAL_START, (byte*) dataPtr + len, numBytes - len)) {
+		n = JOURNAL_LEN - n;
+		dataPtr += n;
+		numBytes -= n;
+		n = bufferTail;
+		if(n + numBytes + 2 > JOURNAL_LEN) return; // Перегруз
+		bufferTail += numBytes;
+		bufferHead = bufferTail + 1;
+		if(bufferTail < 0) bufferTail += JOURNAL_LEN;
+		full = 1;                                       // буфер полный
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 2)) {
 			err = ERR_WRITE_I2C_JOURNAL;
-#ifdef DEBUG
-			Serial.print(errorWriteI2C);
-#endif
-			return len;
+			#ifdef DEBUG
+				Serial.print(errorWriteI2C);
+			#endif
+			return;
 		}
-		bufferTail = numBytes - len + 1;                     // Хвост начинает рости с начала буфера
-		writeTAIL();                                     // записать символ конца
-		if(err) return numBytes;
-		bufferHead = bufferTail + 1;            // Буфер полный по этому начало стоит сразу за концом (затирание данных)
-		writeHEAD();                                     // записать символ начала
-		full = true;                                       // буфер полный
 	} else {  // Запись в один прием Буфер не полный
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes)) {
-#ifdef DEBUG
-			if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
-#endif
+		int32_t n = bufferTail;
+		bufferTail += numBytes;
+		if(full) bufferHead = bufferTail + 1;
+		__asm__ volatile ("" ::: "memory");
+		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 1 + full)) {
+			#ifdef DEBUG
+				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return numBytes;
+			return;
 		}
-		err = OK;
-		bufferTail = bufferTail + numBytes;               // Хвост вырос
-		writeTAIL();                                      // записать символ конца
-		if(full && !err) {
-			bufferHead = bufferTail + 1;
-			writeHEAD();
-		}  // голова изменяется только при полном буфере (затирание данных)
-		//        else {bufferHead=0;writeHEAD();}
 	}
 #else   // Запись в память
 	// Serial.print(">"); Serial.print(numBytes); Serial.println("<");
@@ -387,7 +368,6 @@ uint16_t Journal::_write(char *dataPtr)
 		else bufferHead=0;
 	}
 #endif
-	return numBytes;
 }
 
     
@@ -567,253 +547,213 @@ void Profile::initProfile()
 }
 
 // Охлаждение Установить параметры ТН из числа (float)
-boolean Profile::set_paramCoolHP(PARAM_HP p, float x)
+boolean Profile::set_paramCoolHP(char *var, float x)
 { 
- switch (p)
-   {
-  case  pRULE:    switch ((int)x)
-                   {
-                    case 0: Cool.Rule=pHYSTERESIS; return true; break;
-                    case 1: Cool.Rule=pPID;        return true; break;
-                    case 2: Cool.Rule=pHYBRID;     return true; break;
-                    default:Cool.Rule=pHYSTERESIS; return true; break;  
-                   }                                                                                                                    break;             // целевая температура в доме
-  case  pTEMP1:   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=x*100.0; return true;} else return false;                                       break;             // целевая температура обратки
-  case  pTEMP2:   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=x*100.0; return true;} else return false;                                      break;             // целевая температура
-  case  pTARGET:  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; break; // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=x*100.0; return true;} else return false;                                       break;             // гистерезис целевой температуры
-  case  pHP_TIME: if ((x>=10)&&(x<=600))     {Cool.time=x; return true;} else return false;                                             break;             // Постоянная интегрирования времени в секундах ПИД ТН !
-  case  pHP_PRO:  if ((x>=0.0)&&(x<=100.0)) {Cool.Kp=x; return true;} else return false;                                                break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   if ((x>=0.0)&&(x<=20.0))  {Cool.Ki=x; return true;} else return false;                                                break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     break;             // температура обратки (максимальная)
-  case  pPAUSE:   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; break;     // Использование погодозависимости
-  case  pK_WEATHER:if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=(int)(x*1000.0); return true;} else return false;                             break;             // Коэффициент погодозависимости
-
- // case  pP1:      Cool.P1=x;                                                                                                          break;             // резервный параметр 1
-  default:        return  false;                                                                                                        break;   
-   }
-return false; 
+ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
+				                   {
+				                    case 0: Cool.Rule=pHYSTERESIS; return true; break;
+				                    case 1: Cool.Rule=pPID;        return true; break;
+				                    case 2: Cool.Rule=pHYBRID;     return true; break;
+				                    default:Cool.Rule=pHYSTERESIS; return true; break;  
+				                    }  }      else                                                                                                                    
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=x*100.0; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=x*100.0; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=x*100.0; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Cool.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Cool.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Cool.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=(int)(x*1000.0); return true;} else return false;                             }             // Коэффициент погодозависимости
+ return false; 
 }
 
 //Охлаждение Получить параметр в виде строки  второй параметр - наличие частотника
-char* Profile::get_paramCoolHP(PARAM_HP p, boolean fc)
+char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
 {
-char static temp[16];
-
- switch (p)
-   {
-  case  pRULE:     if (fc)   // Есть частотник
-                   switch (Cool.Rule)       // алгоритм работы
-                   {
-                    case 0: return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;
-                    case 1: return (char*)"HYSTERESIS:0;PID:1;HYBRID:0;"; break;
-                    case 2: return (char*)"HYSTERESIS:0;PID:0;HYBRID:1;"; break; 
-                    default:Cool.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;// исправить
-                   }                                                         
-                  else {Cool.Rule=pHYSTERESIS;return (char*)"HYSTERESIS:1;";}break;             // частотника нет единсвенный алгоритм гистрезис
-  case  pTEMP1:   return ftoa(temp,(float)Cool.Temp1/100.0,1);               break;             // целевая температура в доме
-  case  pTEMP2:   return ftoa(temp,(float)Cool.Temp2/100.0,1);               break;             // целевая температура обратки
-  case  pTARGET:  if (!(GETBIT(Cool.flags,fTarget))) return (char*)"Дом:1;Обратка:0;";
-                                 else return (char*)"Дом:0;Обратка:1;";      break;             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   return ftoa(temp,(float)Cool.dTemp/100.0,1);               break;             // гистерезис целевой температуры
-  case  pHP_TIME: return  int2str(Cool.time);                                break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  return  int2str(Cool.Kp);                                  break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   return  int2str(Cool.Ki);                                  break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  return  int2str(Cool.Kd);                                  break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: return ftoa(temp,(float)Cool.tempIn/100.0,1);              break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:return ftoa(temp,(float)Cool.tempOut/100.0,1);             break;             // температура обратки (максимальная)
-  case  pPAUSE:   return  int2str(Cool.pause/60);                            break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  return ftoa(temp,(float)Cool.dt/100.0,1);                  break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:return ftoa(temp,(float)Cool.tempPID/100.0,1);             break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (GETBIT(Cool.flags,fWeather)) return (char*)cOne;else return (char*)cZero; // Использование погодозависимости
-  case  pK_WEATHER:return ftoa(temp,(float)Cool.kWeather/1000.0,2);          break;             // Коэффициент погодозависимости
-//  case  pP1:      return int2str(Cool.P1);                                   break;             // резервный параметр 1
-  
-  case  pEND:     return (char*)"end";                                       break;             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-  default:        return  (char*)cInvalid;                                  break;   
-   }
- return  (char*)cInvalid;   
+char static temp[12];
+  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+				                   switch (Cool.Rule)       // алгоритм работы
+				                   {
+				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
+				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
+				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
+				                    default:Cool.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
+				                   }                                                         
+				                  else {Cool.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
+   if(strcmp(var,hp_TEMP1)==0)    {return strcat(ret,ftoa(temp,(float)Cool.Temp1/100.0,1));              } else             // целевая температура в доме
+   if(strcmp(var,hp_TEMP2)==0)    {return strcat(ret,ftoa(temp,(float)Cool.Temp2/100.0,1));               } else            // целевая температура обратки
+   if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Cool.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
+                                  else return strcat(ret,(char*)"Дом:0;Обратка:1;");      }else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
+   if(strcmp(var,hp_DTEMP)==0)    {return strcat(ret,ftoa(temp,(float)Cool.dTemp/100.0,1));              } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_HP_TIME)==0)  {return  strcat(ret,int2str(Cool.time));                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {return  strcat(ret,int2str(Cool.Kp));                                 } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {return  strcat(ret,int2str(Cool.Ki));                                 } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {return  strcat(ret,int2str(Cool.Kd));                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_TEMP_IN)==0)  {return strcat(ret,ftoa(temp,(float)Cool.tempIn/100.0,1));             } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {return strcat(ret,ftoa(temp,(float)Cool.tempOut/100.0,1));            } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_PAUSE)==0)    {return  strcat(ret,int2str(Cool.pause/60));                           } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,hp_D_TEMP)==0)   {return strcat(ret,ftoa(temp,(float)Cool.dt/100.0,1));                 } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {return strcat(ret,ftoa(temp,(float)Cool.tempPID/100.0,1));            } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Cool.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){return strcat(ret,ftoa(temp,(float)Cool.kWeather/1000.0,2));          }             // Коэффициент погодозависимости
+ return  strcat(ret,(char*)cInvalid);   
 }
 
 // Отопление Установить параметры ТН из числа (float)
-boolean Profile::set_paramHeatHP(PARAM_HP p, float x)
+boolean Profile::set_paramHeatHP(char *var, float x)
 { 
-
- switch (p)
-   {
-  case  pRULE:    switch ((int)x)
-                   {
-                    case 0: Heat.Rule=pHYSTERESIS; return true; break;
-                    case 1: Heat.Rule=pPID;        return true; break;
-                    case 2: Heat.Rule=pHYBRID;     return true; break;
-                    default:Heat.Rule=pHYSTERESIS; return true; break;    
-                   }                                                                                                                  break;             // целевая температура в доме
-  case  pTEMP1:   if ((x>=0.0)&&(x<=30.0))  {Heat.Temp1=x*100.0; return true;} else return false;                                     break;             // целевая температура обратки
-  case  pTEMP2:   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0; return true;} else return false;                                    break;             // целевая температура
-  case  pTARGET:  if (x==0) { SETBIT0(Heat.flags,fTarget); return true;} else if (x==1) { SETBIT1(Heat.flags,fTarget); return true;} else return false;break; // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=x*100.0; return true;} else return false;                                     break;             // гистерезис целевой температуры
-  case  pHP_TIME: if ((x>=10)&&(x<=600))     {Heat.time=x; return true;} else return false;                                           break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                              break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                              break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                              break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: if ((x>=10.0)&&(x<=55.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                   break;             // температура подачи (максимальная) отстанов компрессора
-  case  pTEMP_OUT:if ((x>=10.0)&&(x<=50.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                  break;             // температура обратки (минимальная) включение компрессора
-  case  pPAUSE:   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                        break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  if ((x>2.0)&&(x<=40.0))   {Heat.dt=x*100.0; return true;} else return false;                                         break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:if ((x>=0.0)&&(x<=50.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                   break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; break;   // Использование погодозависимости
-  case  pK_WEATHER:if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=(int)(x*1000.0); return true;} else return false;                           break;             // Коэффициент погодозависимости
-//  case  pP1:      Heat.P1=x;                                                                                                        break;             // резервный параметр 1
-
-  default:        return  false;                                                                                                      break;   
-   }
-return false; 
+if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
+				                   {
+				                    case 0: Heat.Rule=pHYSTERESIS; return true; break;
+				                    case 1: Heat.Rule=pPID;        return true; break;
+				                    case 2: Heat.Rule=pHYBRID;     return true; break;
+				                    default:Heat.Rule=pHYSTERESIS; return true; break;  
+				                    }  }      else                                                                                                                    
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Heat.Temp1=x*100.0; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Heat.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=x*100.0; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Heat.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=(int)(x*1000.0); return true;} else return false;                             }             // Коэффициент погодозависимости
+ return false; 
 }
 
 // Отопление Получить параметр в виде строки  второй параметр - наличие частотника
-char* Profile::get_paramHeatHP(PARAM_HP p, boolean fc)
+char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 {
-char static temp[16];
-
- switch (p)
-   {
- case  pRULE:     if (fc)   // Есть частотник
-                  switch (Heat.Rule)      // алгоритм работы
-                   {
-                    case 0: return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;
-                    case 1: return (char*)"HYSTERESIS:0;PID:1;HYBRID:0;"; break;
-                    case 2: return (char*)"HYSTERESIS:0;PID:0;HYBRID:1;"; break; 
-                    default:Heat.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;PID:0;HYBRID:0;"; break;// исправить
-                   }  
-                  else {Heat.Rule=pHYSTERESIS; return (char*)"HYSTERESIS:1;";}break;            // частотника нет единсвенный алгоритм гистрезис
-  case  pTEMP1:   return ftoa(temp,(float)Heat.Temp1/100.0,1);               break;             // целевая температура в доме
-  case  pTEMP2:   return ftoa(temp,(float)Heat.Temp2/100.0,1);               break;             // целевая температура обратки
-  case  pTARGET:  if (!(GETBIT(Heat.flags,fTarget))) { return (char*)"Дом:1;Обратка:0;";}
-                              else { return (char*)"Дом:0;Обратка:1;"; }     break;             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-  case  pDTEMP:   return ftoa(temp,(float)Heat.dTemp/100.0,1);               break;             // гистерезис целевой температуры
-  case  pHP_TIME: return  int2str(Heat.time);                                break;             // Постоянная интегрирования времени в секундах ПИД ТН
-  case  pHP_PRO:  return  int2str(Heat.Kp);                                  break;             // Пропорциональная составляющая ПИД ТН
-  case  pHP_IN:   return  int2str(Heat.Ki);                                  break;             // Интегральная составляющая ПИД ТН
-  case  pHP_DIF:  return  int2str(Heat.Kd);                                  break;             // Дифференциальная составляющая ПИД ТН
-  case  pTEMP_IN: return ftoa(temp,(float)Heat.tempIn/100.0,1);              break;             // температура подачи (минимальная)
-  case  pTEMP_OUT:return ftoa(temp,(float)Heat.tempOut/100.0,1);             break;             // температура обратки (максимальная)
-  case  pPAUSE:   return  int2str(Heat.pause/60);                            break;             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
-  case  pD_TEMP:  return ftoa(temp,(float)Heat.dt/100.0,1);                  break;             // максимальная разность температур конденсатора.
-  case  pTEMP_PID:return ftoa(temp,(float)Heat.tempPID/100.0,1);             break;             // Целевая темпеартура ПИД
-  case  pWEATHER: if (GETBIT(Heat.flags,fWeather)) return (char*)cOne;else return (char*)cZero;    // Использование погодозависимости
-  case  pK_WEATHER:return ftoa(temp,(float)Heat.kWeather/1000.0,2);          break;             // Коэффициент погодозависимости
-//  case  pP1:      return int2str(.Heat.P1);                                break;             // резервный параметр 1
-
-  case  pEND:     return (char*)"end";                                       break;             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-  default:        return (char*)cInvalid;                                   break;   
-   }
- return  (char*)cInvalid;   
+char static temp[12];
+  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+				                   switch (Heat.Rule)       // алгоритм работы
+				                   {
+				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
+				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
+				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
+				                    default:Heat.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
+				                   }                                                         
+				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
+   if(strcmp(var,hp_TEMP1)==0)    {return strcat(ret,ftoa(temp,(float)Heat.Temp1/100.0,1));              } else             // целевая температура в доме
+   if(strcmp(var,hp_TEMP2)==0)    {return strcat(ret,ftoa(temp,(float)Heat.Temp2/100.0,1));               } else            // целевая температура обратки
+   if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Heat.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
+                                  else return strcat(ret,(char*)"Дом:0;Обратка:1;");      }else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
+   if(strcmp(var,hp_DTEMP)==0)    {return strcat(ret,ftoa(temp,(float)Heat.dTemp/100.0,1));              } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_HP_TIME)==0)  {return  strcat(ret,int2str(Heat.time));                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {return  strcat(ret,int2str(Heat.Kp));                                 } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {return  strcat(ret,int2str(Heat.Ki));                                 } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {return  strcat(ret,int2str(Heat.Kd));                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_TEMP_IN)==0)  {return strcat(ret,ftoa(temp,(float)Heat.tempIn/100.0,1));             } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {return strcat(ret,ftoa(temp,(float)Heat.tempOut/100.0,1));            } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_PAUSE)==0)    {return  strcat(ret,int2str(Heat.pause/60));                           } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,hp_D_TEMP)==0)   {return strcat(ret,ftoa(temp,(float)Heat.dt/100.0,1));                 } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {return strcat(ret,ftoa(temp,(float)Heat.tempPID/100.0,1));            } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Heat.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){return strcat(ret,ftoa(temp,(float)Heat.kWeather/1000.0,2));          }             // Коэффициент погодозависимости
+ return  strcat(ret,(char*)cInvalid);  
 }
 
 // Настройка бойлера --------------------------------------------------
 //Установить параметр из строки
-boolean Profile::set_boiler(BOILER_HP p, char *c)
+boolean Profile::set_boiler(char *var, char *c)
 { 
- float x;
- x=my_atof(c);
-// Serial.print(x);Serial.print(" ");Serial.println(c);
- if ((x==ATOF_ERROR)&&(p!=pSCHEDULER)) return false;   // Ошибка преобразования короме расписания - это не число
+float x=my_atof(c);
+if ((x==ATOF_ERROR)&&(strcmp(var,boil_SCHEDULER)!=0)) return false;   // Ошибка преобразования короме расписания - это не число
  
- switch (p)
-   {
-    case pBOILER_ON:   if (strcmp(c,cZero)==0)      { SETBIT0(SaveON.flags,fBoilerON); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(SaveON.flags,fBoilerON);  return true;}
-                       else return false;  
-                       break; 
-    case pSCHEDULER_ON:if (strcmp(c,cZero)==0)      { SETBIT0(Boiler.flags,fSchedule); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSchedule);  return true;}
-                       else return false;  
-                       break; 
-    case pTURBO_BOILER: if (strcmp(c,cZero)==0)      { SETBIT0(Boiler.flags,fTurboBoiler); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fTurboBoiler);  return true;}
-                       else return false;  
-                       break; 
-    case pSALLMONELA:  if (strcmp(c,cZero)==0)      {SETBIT0(Boiler.flags,fSalmonella); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSalmonella);  return true;}
-                       else return false;  
-                       break; 
-    case pCIRCULATION: if (strcmp(c,cZero)==0)      { SETBIT0(Boiler.flags,fCirculation); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fCirculation);  return true;}
-                       else return false;  
-                       break; 
-    case pTEMP_TARGET: if ((x>=5)&&(x<=60))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевай температура бойлера
-                       break;             
-    case pDTARGET:     if ((x>=1)&&(x<=20))       {Boiler.dTemp=x*100.0; return true;} else return false;            // гистерезис целевой температуры
-                       break;      
-    case pTEMP_MAX:    if ((x>=20)&&(x<=70))      {Boiler.tempIn=x*100.0; return true;} else return false;           // Tемпература подачи максимальная
-                       break; 
-    case pPAUSE1:      if ((x>=3)&&(x<=20))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
-                       break;                                                         
+if(strcmp(var,boil_BOILER_ON)==0){ if (strcmp(c,cZero)==0){SETBIT0(SaveON.flags,fBoilerON); return true;}
+                                   else if (strcmp(c,cOne)==0){SETBIT1(SaveON.flags,fBoilerON);  return true;}
+                                   else return false;  
+                                  }else 
+if(strcmp(var,boil_SCHEDULER_ON)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSchedule); return true;}
+                                     else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSchedule);  return true;}
+                                     else return false;  
+                                    }else 
+if(strcmp(var,boil_TURBO_BOILER)==0){ if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fTurboBoiler); return true;}
+				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fTurboBoiler);  return true;}
+				                       else return false;  
+				                       }else 
+if(strcmp(var,boil_SALLMONELA)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSalmonella); return true;}
+				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSalmonella);  return true;}
+				                       else return false;  
+				                       }else 
+if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.flags,fCirculation); return true;}
+			                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fCirculation);  return true;}
+			                       else return false;  
+			                       }else 
+if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=60))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевай температура бойлера
+                       }else             
+if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=x*100.0; return true;} else return false;            // гистерезис целевой температуры
+                       }else      
+if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=x*100.0; return true;} else return false;           // Tемпература подачи максимальная
+                       }else 
+if(strcmp(var,boil_PAUSE1)==0){      if ((x>=3)&&(x<=20))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
+                       }else  
+                                                                              
+if(strcmp(var,boil_SCHEDULER)==0){  return set_Schedule(c,Boiler.Schedule); }else                                                  // разбор строки расписания
 
-    case pSCHEDULER:  return set_Schedule(c,Boiler.Schedule); break;                                                  // разбор строки расписания
-
-    case pCIRCUL_WORK: if ((x>=0)&&(x<=60))   {Boiler.Circul_Work=60*x; return true;} else return false;             // Время  работы насоса ГВС секунды (fCirculation)
-                       break; 
+if(strcmp(var,boil_CIRCUL_WORK)==0){if ((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;}else            // Время  работы насоса ГВС секунды (fCirculation)
                         
-    case pCIRCUL_PAUSE: if ((x>=0)&&(x<=60))   {Boiler.Circul_Pause=60*x; return true;} else return false;            // Пауза в работе насоса ГВС  секунды (fCirculation)
-                       break;  
-    case pRESET_HEAT: if (strcmp(c,cZero)==0)       { SETBIT0(Boiler.flags,fResetHeat); return true;}                   // флаг Сброса лишнего тепла в СО
+if(strcmp(var,boil_CIRCUL_PAUSE)==0){ if ((x>=0)&&(x<=60))   {Boiler.Circul_Pause=60*x; return true;} else return false;            // Пауза в работе насоса ГВС  секунды (fCirculation)
+                       }else  
+if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.flags,fResetHeat); return true;}                      // флаг Сброса лишнего тепла в СО
                        else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fResetHeat);  return true;}
                        else return false;  
-                       break; 
-    case pRESET_TIME: if ((x>=3)&&(x<=20))   {Boiler.Reset_Time=60*x; return true;} else return false;                // время сброса излишков тепла в секундах (fResetHeat)
-                       break;      
-    case pBOIL_TIME:   if ((x>=5)&&(x<=300))     {Boiler.time=x; return true;} else return false;  break;             // Постоянная интегрирования времени в секундах ПИД ГВС
-    case pBOIL_PRO:    if ((x>=0.0)&&(x<=100.0)) {Boiler.Kp=x; return true;} else return false;  break;               // Пропорциональная составляющая ПИД ГВС
-    case pBOIL_IN:     if ((x>=0.0)&&(x<=20.0))  {Boiler.Ki=x; return true;} else return false;  break;               // Интегральная составляющая ПИД ГВС
-    case pBOIL_DIF:    if ((x>=0.0)&&(x<=10.0))  {Boiler.Kd=x; return true;} else return false;   break;              // Дифференциальная составляющая ПИД ГВС
-    case pBOIL_TEMP:   if ((x>=30.0)&&(x<=60))   {Boiler.tempPID=x*100.0; return true;} else return false;            // Целевая темпеартура ПИД ГВС
-    case pADD_HEATING: if (strcmp(c,cZero)==0)      { SETBIT0(Boiler.flags,fAddHeating); return true;}                // флаг использования тена для догрева ГВС
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fAddHeating);  return true;}
-                       else return false;  
-                       break;
-    case pTEMP_RBOILER:if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;break; // температура включения догрева бойлера
-                                                                                               
-    default:       return false;                               break;   
-   }
-  return false;
+                       }else 
+if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=3)&&(x<=20))   {Boiler.Reset_Time=60*x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
+                       }else      
+if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.time=x; return true;} else return false;  }else             // Постоянная интегрирования времени в секундах ПИД ГВС
+if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.Kp=x; return true;} else return false;  }else               // Пропорциональная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.Ki=x; return true;} else return false;  }else               // Интегральная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.Kd=x; return true;} else return false;   }else              // Дифференциальная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=60))   {Boiler.tempPID=x*100.0; return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
+if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.flags,fAddHeating); return true;}                   // флаг использования тена для догрева ГВС
+                                     else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
+                                     else return false;  
+                                    }else
+if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
+return false;
+
 }
 
-//Получить параметр из строки
-char* Profile::get_boiler(BOILER_HP p)
-{
-  char static temp[16];   
-  switch (p)
-   {
-    case pBOILER_ON:       if (GETBIT(SaveON.flags,fBoilerON))   return  (char*)cOne; else return  (char*)cZero; break;
-    case pSCHEDULER_ON:    if (GETBIT(Boiler.flags,fSchedule))   return  (char*)cOne; else return  (char*)cZero; break;
-    case pTURBO_BOILER:    if (GETBIT(Boiler.flags,fTurboBoiler))return  (char*)cOne; else return  (char*)cZero; break;
-    case pSALLMONELA:      if (GETBIT(Boiler.flags,fSalmonella)) return  (char*)cOne; else return  (char*)cZero; break;
-    case pCIRCULATION:     if (GETBIT(Boiler.flags,fCirculation))return  (char*)cOne; else return  (char*)cZero; break;
-    case pTEMP_TARGET:     return ftoa(temp,(float)Boiler.TempTarget/100.0,1);      break;             
-    case pDTARGET:         return ftoa(temp,(float)Boiler.dTemp/100.0,1);           break;      
-    case pTEMP_MAX:        return ftoa(temp,(float)Boiler.tempIn/100.0,1);          break; 
-    case pPAUSE1:          return int2str(Boiler.pause/60);                         break;                                                         
-    case pSCHEDULER:       return get_Schedule(Boiler.Schedule);                    break;  
-    case pCIRCUL_WORK:     return int2str(Boiler.Circul_Work/60);                   break;                            // Время  работы насоса ГВС секунды (fCirculation)
-    case pCIRCUL_PAUSE:    return int2str(Boiler.Circul_Pause/60);                  break;                            // Пауза в работе насоса ГВС  секунды (fCirculation)
-    case pRESET_HEAT:      if (GETBIT(Boiler.flags,fResetHeat))   return  (char*)cOne; else return  (char*)cZero; break;       // флаг Сброса лишнего тепла в СО
-    case pRESET_TIME:      return int2str(Boiler.Reset_Time/60);                    break;                            // время сброса излишков тепла в секундах (fResetHeat)
-    case pBOIL_TIME:       return  int2str(Boiler.time);                            break;                            // Постоянная интегрирования времени в секундах ПИД ГВС
-    case pBOIL_PRO:        return  int2str(Boiler.Kp);                              break;                            // Пропорциональная составляющая ПИД ГВС
-    case pBOIL_IN:         return  int2str(Boiler.Ki);                              break;                            // Интегральная составляющая ПИД ГВС
-    case pBOIL_DIF:        return  int2str(Boiler.Kd);                              break;                            // Дифференциальная составляющая ПИД ГВС
-    case pBOIL_TEMP:       return ftoa(temp,(float)Boiler.tempPID/100.0,1);         break;                            // Целевая темпеартура ПИД ГВС
-    case pADD_HEATING:     if(GETBIT(Boiler.flags,fAddHeating)) return (char*)cOne; else return (char*)cZero; break;   // флаг использования тена для догрева ГВС
-    case pTEMP_RBOILER:    return ftoa(temp,(float)Boiler.tempRBOILER/100.0,1);     break;                            // температура включения догрева бойлера
-    default:               return false;                                            break;   
-   }
- return (char*)cInvalid;
+// Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+char* Profile::get_boiler(char *var, char *ret)
+{ 
+ char static temp[16];   
+ if(strcmp(var,boil_BOILER_ON)==0){       if (GETBIT(SaveON.flags,fBoilerON))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_SCHEDULER_ON)==0){    if (GETBIT(Boiler.flags,fSchedule))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_TURBO_BOILER)==0){    if (GETBIT(Boiler.flags,fTurboBoiler))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_SALLMONELA)==0){      if (GETBIT(Boiler.flags,fSalmonella)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_CIRCULATION)==0){     if (GETBIT(Boiler.flags,fCirculation))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_TEMP_TARGET)==0){     return strcat(ret,ftoa(temp,(float)Boiler.TempTarget/100.0,1));      }else             
+ if(strcmp(var,boil_DTARGET)==0){         return strcat(ret,ftoa(temp,(float)Boiler.dTemp/100.0,1));           }else      
+ if(strcmp(var,boil_TEMP_MAX)==0){        return strcat(ret,ftoa(temp,(float)Boiler.tempIn/100.0,1));          }else 
+ if(strcmp(var,boil_PAUSE1)==0){          return strcat(ret,int2str(Boiler.pause/60));                         }else                                                         
+ if(strcmp(var,boil_SCHEDULER)==0){       return strcat(ret,get_Schedule(Boiler.Schedule));                    }else  
+ if(strcmp(var,boil_CIRCUL_WORK)==0){     return strcat(ret,int2str(Boiler.Circul_Work/60));                   }else                            // Время  работы насоса ГВС секунды (fCirculation)
+ if(strcmp(var,boil_CIRCUL_PAUSE)==0){    return strcat(ret,int2str(Boiler.Circul_Pause/60));                  }else                            // Пауза в работе насоса ГВС  секунды (fCirculation)
+ if(strcmp(var,boil_RESET_HEAT)==0){      if (GETBIT(Boiler.flags,fResetHeat))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else       // флаг Сброса лишнего тепла в СО
+ if(strcmp(var,boil_RESET_TIME)==0){      return  strcat(ret,int2str(Boiler.Reset_Time/60));                    }else                            // время сброса излишков тепла в секундах (fResetHeat)
+ if(strcmp(var,boil_BOIL_TIME)==0){       return  strcat(ret,int2str(Boiler.time));                            }else                            // Постоянная интегрирования времени в секундах ПИД ГВС
+ if(strcmp(var,boil_BOIL_PRO)==0){        return  strcat(ret,int2str(Boiler.Kp));                              }else                            // Пропорциональная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_IN)==0){         return  strcat(ret,int2str(Boiler.Ki));                              }else                            // Интегральная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_DIF)==0){        return  strcat(ret,int2str(Boiler.Kd));                              }else                            // Дифференциальная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_TEMP)==0){       return strcat(ret,ftoa(temp,(float)Boiler.tempPID/100.0,1));         }else                            // Целевая темпеартура ПИД ГВС
+ if(strcmp(var,boil_ADD_HEATING)==0){     if(GETBIT(Boiler.flags,fAddHeating)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else   // флаг использования тена для догрева ГВС
+ if(strcmp(var,boil_TEMP_RBOILER)==0){    return strcat(ret,ftoa(temp,(float)Boiler.tempRBOILER/100.0,1));     }else                           // температура включения догрева бойлера
+ return strcat(ret,(char*)cInvalid);
 }
 
 // Порядок записи профиля
@@ -976,55 +916,51 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
   return OK;       
 }
 
- // Профиль Установить параметры ТН из числа (float)
-boolean Profile::set_paramProfile(TYPE_PARAM_PROFILE  p, char *c)
+// Профиль Установить параметры ТН из числа (float)
+boolean Profile::set_paramProfile(char *var, char *c)
 {
- uint8_t x;
- switch (p)
-   {
-    case pNAME_PROFILE:
-    					urldecode(dataProfile.name,c,sizeof(dataProfile.name));
-                        return true;
-    case ENABLE_PROFILE:
-    					if (strcmp(c,cZero)==0) { SETBIT0(dataProfile.flags,fEnabled); return true;}
-                        else if (strcmp(c,cOne)==0) { SETBIT1(dataProfile.flags,fEnabled);  return true;}
-                        break;
-    case ID_PROFILE:
-						x = atoi(c);
-						if(x >= I2C_PROFIL_NUM) break; // не верный номер профиля
-						dataProfile.id = x;
-						return true;
-    case NOTE_PROFILE:  urldecode(dataProfile.note,c,sizeof(dataProfile.note));
-                        return true;
-    case DATE_PROFILE:  // параметры только чтение
-    case CRC16_PROFILE: 
-    case NUM_PROFILE:	return true;
-    default:			break;
-   }
-  return false;
+	uint8_t x;
+	if(strcmp(var, prof_NAME_PROFILE) == 0) {
+		urldecode(dataProfile.name, c, sizeof(dataProfile.name));
+		return true;
+	} else if(strcmp(var, prof_ENABLE_PROFILE) == 0) {
+		if(strcmp(c, cZero) == 0) {
+			SETBIT0(dataProfile.flags, fEnabled);
+			return true;
+		} else if(strcmp(c, cOne) == 0) {
+			SETBIT1(dataProfile.flags, fEnabled);
+			return true;
+		}
+	} else if(strcmp(var, prof_ID_PROFILE) == 0) {
+		x = atoi(c);
+		if(x >= I2C_PROFIL_NUM) return false; // не верный номер профиля
+		dataProfile.id = x;
+		return true;
+	} else if(strcmp(var, prof_NOTE_PROFILE) == 0) {
+		urldecode(dataProfile.note, c, sizeof(dataProfile.note));
+		return true;
+	} else if(strcmp(var, prof_DATE_PROFILE) == 0) {
+		return true;
+	} else // параметры только чтение
+	if(strcmp(var, prof_CRC16_PROFILE) == 0) {
+		return true;
+	} else if(strcmp(var, prof_NUM_PROFILE) == 0) {
+		return true;
+	} 
+	return false;
 }
- // профиль Получить параметры
-char*   Profile::get_paramProfile(TYPE_PARAM_PROFILE p)
+ // профиль Получить параметры по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+char*   Profile::get_paramProfile(char *var, char *ret)
 {
-switch (p)
-   {
-    case pNAME_PROFILE:  return dataProfile.name;                              break;    
-    case ENABLE_PROFILE: if (GETBIT(dataProfile.flags,fEnabled)) return  (char*)cOne;
-                         else      return  (char*)cZero;                         break;
-    case ID_PROFILE:     return int2str(dataProfile.id);                       break; 
-    case NOTE_PROFILE:   return  dataProfile.note;                             break;    
-    case DATE_PROFILE:   return DecodeTimeDate(dataProfile.saveTime);          break;// параметры только чтение
-    case CRC16_PROFILE:  return uint16ToHex(crc16);                            break;  
-    case NUM_PROFILE:    return int2str(I2C_PROFIL_NUM);                       break;
-//    case SEL_PROFILE:	 {
-//    	for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {
-//    		int32_t adr=I2C_PROFILE_EEPROM + dataProfile.len * i;
-//    	}
-//    	break;
-//    }
-    default:             return  (char*)cInvalid;                             break;   
-   }
-  return  (char*)cInvalid;              
+if(strcmp(var,prof_NAME_PROFILE)==0)   { return strcat(ret,dataProfile.name);                             }else    
+if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled)) return  strcat(ret,(char*)cOne);
+                                         else                                    return  strcat(ret,(char*)cZero);}else
+if(strcmp(var,prof_ID_PROFILE)==0)     { return strcat(ret,int2str(dataProfile.id));                      }else 
+if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
+if(strcmp(var,prof_DATE_PROFILE)==0)   { return strcat(ret,DecodeTimeDate(dataProfile.saveTime));         }else// параметры только чтение
+if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
+if(strcmp(var,prof_NUM_PROFILE)==0)    { return strcat(ret,int2str(I2C_PROFIL_NUM));                      }else
+return  strcat(ret,(char*)cInvalid);              
 }
 
 // Временные данные для профиля
@@ -1194,12 +1130,12 @@ void Statistics::Format()
 {   
     uint16_t i;
     error=OK;
-    memset(bufI2C,I2C_STAT_FORMAT,sizeof(bufI2C)); 
+    memset(bufferI2C,I2C_STAT_FORMAT,sizeof(bufferI2C));
     journal.jprintf("Formating I2C memory for statistic: ");
-    for (i=0;i<STAT_LEN/sizeof(bufI2C);i++) 
+    for (i=0;i<STAT_LEN/sizeof(bufferI2C);i++)
        { 
           journal.jprintf("*");
-          if (writeEEPROM_I2C(I2C_STAT_EEPROM+i*sizeof(bufI2C), (byte*)&bufI2C, sizeof(bufI2C)))   
+          if (writeEEPROM_I2C(I2C_STAT_EEPROM+i*sizeof(bufferI2C), (byte*)&bufferI2C, sizeof(bufferI2C)))
               { error=ERR_WRITE_I2C_STAT; 
                 journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
                 break; 
@@ -1296,7 +1232,7 @@ if (writeEEPROM_I2C(I2C_STAT_START+pos*sizeof(type_OneDay), (byte*)&OneDay,sizeo
     }  
 if (error==OK) // Если удачно индекс и число точек поправить
   {  if (!full) {num++;writeNUM();}                            // ЧИСЛО ТОЧЕК буфер пока не полный, отсчет с 0 идет не забыть
-     journal.jprintf(pP_TIME," Save statictic day pos=%d num=%d\n", pos,num);   // вывод именно здесть - правильные значения
+     journal.jprintf(pP_TIME,"Save statictic day pos=%d num=%d\n", pos,num);   // вывод именно здесть - правильные значения
      if (pos<STAT_POINT-1) pos++; else { pos=0; full=true; }   // ПОЗИЦИЯ ДЛЯ СЛЕДУЮЩЕЙ ЗАПИСИ (Следующей!!!!!)
      writePOS(); 
   } 
@@ -1344,30 +1280,30 @@ for(i=0;i<number;i++)  // герация и запись одной точки �
 char * Statistics::get_listStat(char* str, boolean cat)
 {
 if (!cat) strcpy(str,"");     // Обнулить строку если есть соответсвующий флаг
- strcat(str,"none:1;");
- strcat(str,"Tin:0;");        // средняя темпеартура дома
- strcat(str,"Tout:0;");       // средняя темпеартура улицы
- strcat(str,"Tboiler:0;");    // средняя темпеартура бойлера
- strcat(str,"Hour:0;");       // число накопленных часов должно быть 24
- strcat(str,"Hmoto:0;");      // моточасы за сутки
+ strcat(str,stat_NONE);strcat(str,":1;");
+ strcat(str,stat_TIN);strcat(str,":0;");        // средняя темпеартура дома
+ strcat(str,stat_TOUT);strcat(str,":0;");       // средняя темпеартура улицы
+ strcat(str,stat_TBOILER);strcat(str,":0;");    // средняя темпеартура бойлера
+ strcat(str,stat_HOUR);strcat(str,":0;");       // число накопленных часов должно быть 24
+ strcat(str,stat_HMOTO);strcat(str,":0;");      // моточасы за сутки
  #ifdef FLOWCON
- strcat(str,"EnergyCO:0;");   // выработанная энергия
+ strcat(str,stat_ENERGYCO);strcat(str,":0;");   // выработанная энергия
  #endif
  #ifdef USE_ELECTROMETER_SDM
- strcat(str,"Energy220:0;");  // потраченная энергия
- strcat(str,"-COP-:0;");        // КОП
+ strcat(str,stat_ENERGY220);strcat(str,":0;");  // потраченная энергия
+ strcat(str,stat_COP);strcat(str,":0;");        // КОП
  #endif
  #ifdef FLOWCON
- strcat(str,"PowerCO:0;");    // средння мощность СО
+ strcat(str,stat_POWERCO);strcat(str,":0;");    // средння мощность СО
  #endif
  #ifdef USE_ELECTROMETER_SDM
- strcat(str,"Power220:0;");   // средняя потребляемая мощность
+ strcat(str,stat_POWER220);strcat(str,":0;");   // средняя потребляемая мощность
  #endif
  return str;      
 }
 // получить данные статистики по одному типу данных в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char *Statistics::get_Stat(TYPE_STAT t,char* str, boolean cat)
+char *Statistics::get_Stat(char* var,char* str, boolean cat)
 {
 char buf[10];
 uint16_t index;           // индекс текущей точки
@@ -1375,7 +1311,6 @@ if (!cat) strcpy(str,""); // Обнулить строку если есть с�
 
 for(int i=0;i<num;i++) // цикл по всем точкам
   {
-   
    if (!full) index=i; // вычисление текущей точки
    else { if ((pos+i)<STAT_POINT) index=pos+i; else    index=pos+i-STAT_POINT;  }  
     // чтение данных одной точки
@@ -1387,22 +1322,20 @@ for(int i=0;i<num;i++) // цикл по всем точкам
   if (error==OK) // Если удачно
     { 
     strcat(str,StatDate(ReadDay.date,true)); strcat(str,(char*)":");    // готовим дату кратко
-      switch (t) // в зависимости от того чо нужно
-      {
-         case pNONE_STAT:      strcat(str,""); return str;  break;
-         case pTIN_STAT:       strcat(str,ftoa(buf,(float)(ReadDay.tin/100.0),2)); break;          // средняя темпеартура дома
-         case pTOUT_STAT:      strcat(str,ftoa(buf,(float)(ReadDay.tout/100.0),2)); break;         // средняя темпеартура улицы
-         case pTBOILER_STAT:   strcat(str,ftoa(buf,(float)(ReadDay.tbol/100.0),2)); break;         // средняя температура бойлера
-         case pHOUR_STAT:      strcat(str,int2str(ReadDay.Hour)); break;                           // число накопленных часов должно быть 24
-         case pHMOTO_STAT:     strcat(str,int2str(ReadDay.moto)); break;                           // моточасы за сутки
-         case pENERGYCO_STAT:  strcat(str,int2str(ReadDay.eCO));  break;                           // выработанная энергия
-         case pENERGY220_STAT: strcat(str,int2str(ReadDay.eEn)); break;                            // потраченная энергия
-         case pCOP_STAT:       strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.eEn),2)); break;    // КОП
-         case pPOWERCO_STAT:   strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.Hour),2)); break;   // средння мощность СО
-         case pPOWER220_STAT:  strcat(str,ftoa(buf,(float)(ReadDay.eEn/ReadDay.Hour),2)); break;   // средняя потребляемая мощность
-        default:  strcat(str,(char*)cZero); break; 
-      }  
-    strcat(str,(char*)";"); 
+      // в зависимости от того чо нужно
+         if(strcmp(var,stat_NONE)==0)     { strcat(str,""); return str;  }else
+         if(strcmp(var,stat_TIN)==0)      { strcat(str,ftoa(buf,(float)(ReadDay.tin/100.0),2)); }else          // средняя темпеартура дома
+         if(strcmp(var,stat_TOUT)==0)     { strcat(str,ftoa(buf,(float)(ReadDay.tout/100.0),2)); }else         // средняя темпеартура улицы
+         if(strcmp(var,stat_TBOILER)==0)  { strcat(str,ftoa(buf,(float)(ReadDay.tbol/100.0),2)); }else         // средняя температура бойлера
+         if(strcmp(var,stat_HOUR)==0)     { strcat(str,int2str(ReadDay.Hour)); }else                           // число накопленных часов должно быть 24
+         if(strcmp(var,stat_HMOTO)==0)    { strcat(str,int2str(ReadDay.moto)); }else                           // моточасы за сутки
+         if(strcmp(var,stat_ENERGYCO)==0) { strcat(str,int2str(ReadDay.eCO));  }else                           // выработанная энергия
+         if(strcmp(var,stat_ENERGY220)==0){ strcat(str,int2str(ReadDay.eEn)); }else                            // потраченная энергия
+         if(strcmp(var,stat_COP)==0)      { strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.eEn),2)); }else    // КОП
+         if(strcmp(var,stat_POWERCO)==0)  { strcat(str,ftoa(buf,(float)(ReadDay.eCO/ReadDay.Hour),2));}else    // средння мощность СО
+         if(strcmp(var,stat_POWER220)==0) { strcat(str,ftoa(buf,(float)(ReadDay.eEn/ReadDay.Hour),2));}else    // средняя потребляемая мощность
+         strcat(str,(char*)cZero);  
+         strcat(str,(char*)";"); 
      } // if
   }  // for
     return str; 
@@ -1515,142 +1448,130 @@ void clientMQTT::initMQTT()
 }
 
 // Установить параметр Уведомления из строки
-boolean clientMQTT::set_paramMQTT(TYPE_PARAM_MQTT p, char *c)
+ boolean clientMQTT::set_paramMQTT(char *var, char *c)         
 {
-  float x;
- //  Serial.print(p);Serial.print(" : c=");Serial.print(c);Serial.println(">>>");
- switch (p)
-   {
-    case pUSE_TS:      if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fTSUse); return true;}          // флаг использования ThingSpeak
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fTSUse);  return true;}
-                       else return false;  
-                       break;  
-   case pUSE_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttUse); return true;}          // флаг использования MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttUse);  return true;}
-                       else return false;  
-                       break; 
-   case pBIG_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttBig); return true;}          // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttBig);  return true;}
-                       else return false;  
-                       break; 
-   case pSDM_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttSDM120); return true;}       //  флаг отправки данных электросчетчика на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttSDM120);  return true;}
-                       else return false;  
-                       break; 
-   case pFC_MQTT:     if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fMqttFC); return true;}           //  флаг отправки данных инвертора на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttFC);  return true;}
-                       else return false;  
-                       break;
-   case pCOP_MQTT:     if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttCOP); return true;}          // флаг отправки данных COP на MQTT
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttCOP);  return true;}
-                       else return false;  
-                       break;
-               
-   case  pTIME_MQTT:   x=my_atof(c);                                                                             // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<1)||(x>=1000)) return   false;    
-                       else mqttSettintg.ttime=(int)x*60; return true;
-                       break; 
-   case  pADR_MQTT:    if(m_strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
-                       else // ок сохраняем
-                        {  
-                        strcpy(mqttSettintg.mqtt_server,c); 
-                        dnsUpadateMQTT=true;
-                        return true;  
-                        }                        
-                       break; 
-   case pIP_MQTT:      return true; break;                                                                       // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-   case pPORT_MQTT:    x=my_atof(c);                                                                             // Порт сервера
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<=1)||(x>=65535-1)) return   false;   
-                       else mqttSettintg.mqtt_port=(int)x; return true;
-                       break;  
-   case pLOGIN_MQTT:   if(m_strlen(c)==0) return false;                                                            // логин сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_login,c); return true;  }                         
-                       break;
-   case pPASSWORD_MQTT:if(m_strlen(c)==0) return false;                                                            // пароль сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_password,c); return true;  }                         
-                       break;
-   case pID_MQTT:      if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;
-                       else { strcpy(mqttSettintg.mqtt_id,c); return true;  }                         
-                       break;
-                       // --------------------- NARMON -------------------------
-  case  pUSE_NARMON:   if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fNarodMonUse); return true;}     // флаг отправки данных на народный мониторинг
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonUse);  return true;}
-                       else return false;  
-                       break;
-   case  pBIG_NARMON:  if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fNarodMonBig); return true;}    // флаг отправки данных на народный мониторинг расширенная версия
-                       else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonBig);  return true;}
-                       else return false;  
-                       break;    
-  case  pADR_NARMON:   if(m_strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
-                       else // ок сохраняем
-                        {  
-                        strcpy(mqttSettintg.narodMon_server,c); 
-                        dnsUpadateNARMON=true;
-                        return true;  
-                        }                        
-                       break; 
-   case pIP_NARMON:    return true; break;                                                                       // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-   case pPORT_NARMON:  x=my_atof(c);                                                                             // Порт сервера
-                       if (x==ATOF_ERROR) return   false;
-                       else if((x<=1)||(x>=65535-1)) return   false;   
-                       else mqttSettintg.narodMon_port=(int)x; return true;
-                       break;  
-   case pLOGIN_NARMON: if(m_strlen(c)==0) return false;                                                            // логин сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_login,c); return true;  }                         
-                       break;
-   case pPASSWORD_NARMON:if(m_strlen(c)==0) return false;                                                          // пароль сервера
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_password,c); return true;  }                         
-                       break;
-   case pID_NARMON:    if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
-                       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;
-                       else { strcpy(mqttSettintg.narodMon_id,c); return true;  }                         
-                       break;
- default:              return false;                               break;   
-   }
-   
+float x;	
+   	if(strcmp(var, mqtt_USE_TS)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fTSUse); return true;}          // флаг использования ThingSpeak
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fTSUse);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_USE_MQTT)==0){
+   	      if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttUse); return true;}          // флаг использования MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttUse);  return true;}
+          else return false;  
+  	} else if(strcmp(var, mqtt_BIG_MQTT)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttBig); return true;}          // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttBig);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_SDM_MQTT)==0){
+   		  if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttSDM120); return true;}       //  флаг отправки данных электросчетчика на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttSDM120);  return true;}
+          else return false;  
+   	} else if(strcmp(var, mqtt_FC_MQTT)==0){
+          if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fMqttFC); return true;}           //  флаг отправки данных инвертора на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttFC);  return true;}
+          else return false;  
+    } else if(strcmp(var, mqtt_COP_MQTT)==0){
+          if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fMqttCOP); return true;}          // флаг отправки данных COP на MQTT
+          else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fMqttCOP);  return true;}
+          else return false;  
+    } else if(strcmp(var, mqtt_TIME_MQTT)==0){
+          x=my_atof(c);                                                                             // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
+          if (x==ATOF_ERROR) return   false;
+          else if((x<1)||(x>=1000)) return   false;    
+          else mqttSettintg.ttime=(int)x*60; return true;
+    } else if(strcmp(var, mqtt_ADR_MQTT)==0){
+          if(m_strlen(c)==0) return false;                                                            // Адрес сервера  пустая строка
+          if(m_strlen(c)>sizeof(mqttSettintg.mqtt_server)-1) return false;                            // слишком длиная строка
+           else // ок сохраняем
+            {  
+            strcpy(mqttSettintg.mqtt_server,c); 
+            dnsUpadateMQTT=true;
+            return true;  
+            }                        
+    } else if(strcmp(var, mqtt_IP_MQTT)==0){
+           return true;                                                                        // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
+    } else if(strcmp(var, mqtt_PORT_MQTT)==0){
+           x=my_atof(c);                                                                             // Порт сервера
+	       if (x==ATOF_ERROR) return   false;
+	       else if((x<=1)||(x>=65535-1)) return   false;   
+	       else mqttSettintg.mqtt_port=(int)x; return true;
+    } else if(strcmp(var, mqtt_LOGIN_MQTT)==0){
+           if(m_strlen(c)==0) return false;                                                            // логин сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.mqtt_login)-1) return false;
+           else { strcpy(mqttSettintg.mqtt_login,c); return true;  }                         
+    } else if(strcmp(var, mqtt_PASSWORD_MQTT)==0){
+           if(m_strlen(c)==0) return false;                                                            // пароль сервера
+	       if(m_strlen(c)>sizeof(mqttSettintg.mqtt_password)-1) return false;
+	       else { strcpy(mqttSettintg.mqtt_password,c); return true;  }                         
+	 } else if(strcmp(var, mqtt_ID_MQTT)==0){
+	       if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+           if(m_strlen(c)>sizeof(mqttSettintg.mqtt_id)-1) return false;
+           else { strcpy(mqttSettintg.mqtt_id,c); return true;  }                                      // --------------------- NARMON -------------------------            
+    } else if(strcmp(var, mqtt_USE_NARMON)==0){
+           if (strcmp(c,cZero)==0)      { SETBIT0(mqttSettintg.flags,fNarodMonUse); return true;}     // флаг отправки данных на народный мониторинг
+           else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonUse);  return true;}
+           else return false; 
+    } else if(strcmp(var, mqtt_BIG_NARMON)==0){  if (strcmp(c,cZero)==0)       { SETBIT0(mqttSettintg.flags,fNarodMonBig); return true;}    // флаг отправки данных на народный мониторинг расширенная версия
+           else if (strcmp(c,cOne)==0) { SETBIT1(mqttSettintg.flags,fNarodMonBig);  return true;}
+           else return false;  
+    } else if(strcmp(var, mqtt_ADR_NARMON)==0){  
+       	   if(m_strlen(c)==0) return false;                                                             // Адрес сервера  пустая строка
+	       if(m_strlen(c)>sizeof(mqttSettintg.narodMon_server)-1) return false;                         // слишком длиная строка
+	       else // ок сохраняем
+	            {  
+	            strcpy(mqttSettintg.narodMon_server,c); 
+	            dnsUpadateNARMON=true;
+	            return true;  
+	            }                        
+    } else if(strcmp(var, mqtt_IP_NARMON)==0){  
+           return true; 
+    } else if(strcmp(var, mqtt_PORT_NARMON)==0){  
+           x=my_atof(c);                                                                             // Порт сервера
+           if (x==ATOF_ERROR) return   false;
+           else if((x<=1)||(x>=65535-1)) return   false;   
+           else mqttSettintg.narodMon_port=(int)x; return true;
+     } else if(strcmp(var, mqtt_LOGIN_NARMON)==0){
+           if(m_strlen(c)==0) return false;                                                            // логин сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.narodMon_login)-1) return false;
+           else { strcpy(mqttSettintg.narodMon_login,c); return true;  }                         
+      } else if(strcmp(var, mqtt_PASSWORD_NARMON)==0){  if(m_strlen(c)==0) return false;                                                          // пароль сервера
+           if(m_strlen(c)>sizeof(mqttSettintg.narodMon_password)-1) return false;
+           else { strcpy(mqttSettintg.narodMon_password,c); return true;  }                         
+      } else if(strcmp(var, mqtt_ID_NARMON)==0){
+         	if(m_strlen(c)==0) return false;                                                            // дентификатор клиента на MQTT сервере
+            if(m_strlen(c)>sizeof(mqttSettintg.narodMon_id)-1) return false;
+            else { strcpy(mqttSettintg.narodMon_id,c); return true;  }   
+       }                          
   return false;                        
 }
 
-// Получить параметр MQTT из строки
-char* clientMQTT::get_paramMQTT(TYPE_PARAM_MQTT p)
+ // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
+char*   clientMQTT::get_paramMQTT(char *var, char *ret)
 {
-  
- switch (p)
-   {
-    case pUSE_TS:          if (GETBIT(mqttSettintg.flags,fTSUse))      return  (char*)cOne; else return  (char*)cZero;   break;     // флаг использования ThingSpeak
-    case pUSE_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttUse))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг использования MQTT
-    case pBIG_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttBig))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
-    case pSDM_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных электросчетчика на MQTT
-    case pFC_MQTT:         if (GETBIT(mqttSettintg.flags,fMqttFC))     return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных инвертора на MQTT
-    case pCOP_MQTT:        if (GETBIT(mqttSettintg.flags,fMqttCOP))    return  (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных COP на MQTT
-    case pTIME_MQTT:       return int2str(mqttSettintg.ttime/60);                                                     break;     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
-    case pADR_MQTT:        return mqttSettintg.mqtt_server;                                                           break;     // Адрес сервера
-    case pIP_MQTT:         return IPAddress2String(mqttSettintg.mqtt_serverIP);                                       break;     // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
-    case pPORT_MQTT:       return int2str(mqttSettintg.mqtt_port);                                                    break;     // Порт сервера
-    case pLOGIN_MQTT:      return mqttSettintg.mqtt_login;                                                            break;     // логин сервера
-    case pPASSWORD_MQTT:   return mqttSettintg.mqtt_password;                                                         break;     // пароль сервера
-    case pID_MQTT:         return mqttSettintg.mqtt_id;                                                               break;     // дентификатор клиента на MQTT сервере
+    if(strcmp(var, mqtt_USE_TS)==0){if (GETBIT(mqttSettintg.flags,fTSUse))      return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг использования ThingSpeak
+    if(strcmp(var, mqtt_USE_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttUse))    return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else       // флаг использования MQTT
+    if(strcmp(var, mqtt_BIG_MQTT)==0){  if (GETBIT(mqttSettintg.flags,fMqttBig))    return strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero);} else      // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
+    if(strcmp(var, mqtt_SDM_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttSDM120)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг отправки данных электросчетчика на MQTT
+    if(strcmp(var, mqtt_FC_MQTT)==0){   if (GETBIT(mqttSettintg.flags,fMqttFC))     return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else      // флаг отправки данных инвертора на MQTT
+    if(strcmp(var, mqtt_COP_MQTT)==0){    if (GETBIT(mqttSettintg.flags,fMqttCOP))    return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else     // флаг отправки данных COP на MQTT
+    if(strcmp(var, mqtt_TIME_MQTT)==0){  return strcat(ret,int2str(mqttSettintg.ttime/60));                                                    } else     // ПРИХОДЯТ МИНУТЫ храним СЕКУНДЫ период отправки на сервер в сек. 10...60000
+    if(strcmp(var, mqtt_ADR_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_server);                                                          } else     // Адрес сервера
+    if(strcmp(var, mqtt_IP_MQTT)==0){    return strcat(ret,IPAddress2String(mqttSettintg.mqtt_serverIP));                                      } else      // IP Адрес сервера,  Только на чтение. описание первого параметра для отправки смс
+    if(strcmp(var, mqtt_PORT_MQTT)==0){    return strcat(ret,int2str(mqttSettintg.mqtt_port));                                                  } else      // Порт сервера
+    if(strcmp(var, mqtt_LOGIN_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_login);                                                           } else     // логин сервера
+    if(strcmp(var, mqtt_PASSWORD_MQTT)==0){  return strcat(ret,mqttSettintg.mqtt_password);                                                     } else     // пароль сервера
+    if(strcmp(var, mqtt_ID_MQTT)==0){      return strcat(ret,mqttSettintg.mqtt_id);                                                         } else     // дентификатор клиента на MQTT сервере
     // ----------------------NARMON -------------------------
-    case pUSE_NARMON:      if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  (char*)cOne; else return  (char*)cZero;  break;     // флаг отправки данных на народный мониторинг
-    case pBIG_NARMON:      if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return (char*)cOne; else return  (char*)cZero;   break;     // флаг отправки данных на народный мониторинг  расширенная версия
-    case pADR_NARMON:      return mqttSettintg.narodMon_server;                                                       break;     // Адрес сервера народного мониторинга
-    case pIP_NARMON:       return IPAddress2String(mqttSettintg.narodMon_serverIP);                                   break;     // IP Адрес сервера народного мониторинга,
-    case pPORT_NARMON:     return int2str(mqttSettintg.narodMon_port);                                                break;     // Порт сервера народного мониторинга
-    case pLOGIN_NARMON:    return mqttSettintg.narodMon_login;                                                        break;     // логин сервера народного мониторинга
-    case pPASSWORD_NARMON: return mqttSettintg.narodMon_password;                                                     break;     // пароль сервера  народного мониторинга
-    case pID_NARMON:       return mqttSettintg.narodMon_id;                                                           break;     // дентификатор клиента на MQTT сервере народного мониторинга
-    default:               return (char*)cError;                                                                      break;   
-   }
-  return (char*)cError;                        
+    if(strcmp(var, mqtt_USE_NARMON)==0){if (GETBIT(mqttSettintg.flags,fNarodMonUse)) return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else      // флаг отправки данных на народный мониторинг
+    if(strcmp(var, mqtt_BIG_NARMON)==0){ if (GETBIT(mqttSettintg.flags,fNarodMonBig)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else      // флаг отправки данных на народный мониторинг  расширенная версия
+    if(strcmp(var, mqtt_ADR_NARMON)==0){ return  strcat(ret,mqttSettintg.narodMon_server);                                                      } else   // Адрес сервера народного мониторинга
+    if(strcmp(var, mqtt_IP_NARMON)==0){return strcat(ret,IPAddress2String(mqttSettintg.narodMon_serverIP));                                 } else    // IP Адрес сервера народного мониторинга,
+    if(strcmp(var, mqtt_PORT_NARMON)==0){ return strcat(ret,int2str(mqttSettintg.narodMon_port));                                               } else   // Порт сервера народного мониторинга
+    if(strcmp(var, mqtt_LOGIN_NARMON)==0){ return strcat(ret,mqttSettintg.narodMon_login);                                                      } else      // логин сервера народного мониторинга
+    if(strcmp(var, mqtt_PASSWORD_NARMON)==0){return strcat(ret,mqttSettintg.narodMon_password);                                                  } else      // пароль сервера  народного мониторинга
+    if(strcmp(var, mqtt_ID_NARMON)==0){ return strcat(ret,mqttSettintg.narodMon_id);                                                          } else     // дентификатор клиента на MQTT сервере народного мониторинга
+    return (char*)cError;                        
 }
 
 
@@ -1726,7 +1647,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrNARMON>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fNarodMonUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT(pADR_NARMON));   
+         journal.jprintf(pP_TIME,(char*)BlockService,get_narodMon_server());   
          numErrNARMON=0;// сбросить счетчик
          }
       return numErrNARMON;
@@ -1737,7 +1658,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrMQTT>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fMqttUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,HP.clMQTT.get_paramMQTT(pADR_MQTT));    
+         journal.jprintf(pP_TIME,(char*)BlockService,get_mqtt_server());    
          numErrMQTT=0;// сбросить счетчик
          }
       return numErrMQTT;
@@ -1789,8 +1710,8 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
                            journal.jprintf((char*)ResDHCP);
                           _delay(50);
                           // Пытаемся еще раз узнать адрес через ДНС, возмлжно он поменялось, если поменялся то меняем не сохраняем настройки
-                          if (NM) {check_address(HP.clMQTT.get_paramMQTT(pADR_NARMON),tempIP);if (tempIP!=HP.clMQTT.get_narodMon_serverIP()){ HP.clMQTT.set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT(pADR_NARMON));}}
-                          else    {check_address(HP.clMQTT.get_paramMQTT(pADR_MQTT),tempIP);  if (tempIP!=HP.clMQTT.get_mqtt_serverIP())    { HP.clMQTT.set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,HP.clMQTT.get_paramMQTT(pADR_MQTT));}}
+                          if (NM) {check_address(get_narodMon_server(),tempIP);if (tempIP!=get_narodMon_serverIP()){ set_narodMon_serverIP(tempIP);journal.jprintf((char*)ChangeIP,get_narodMon_server());}}
+                          else    {check_address(get_mqtt_server(),tempIP);  if (tempIP!=get_mqtt_serverIP())    { set_mqtt_serverIP(tempIP);    journal.jprintf((char*)ChangeIP,get_mqtt_server());}}
                            _delay(50);
                           }
                           break;
@@ -1848,9 +1769,9 @@ w5200_MQTT.setSock(W5200_SOCK_SYS);       // Установить сокет с 
 if (NM) // В зависимости от того с кем надо соединяться
          {
          w5200_MQTT.setServer(mqttSettintg.narodMon_serverIP,mqttSettintg.narodMon_port);                       // установить параметры Народного мониторинга
-         w5200_MQTT.connect(HP.get_network(pMAC), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
+         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
          #ifdef MQTT_REPEAT            // разрешен повтор соединения
-         if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_network(pMAC), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
+         if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
          #endif
          }
          else 

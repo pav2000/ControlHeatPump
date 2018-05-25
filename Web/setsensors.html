@@ -6,6 +6,7 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
+	urlupdate = 2000;
 	window.onload = function() {
 		loadParam("get_OneWirePin,get_noteTemp(TEVAING),get_noteTemp(TEVAOUTG),get_noteTemp(TCONING),get_noteTemp(TCONOUTG),get_noteTemp(TOUT),get_noteTemp(TIN),get_noteTemp(TEVAIN),get_noteTemp(TEVAOUT),get_noteTemp(TCONIN),get_noteTemp(TCONOUT),get_noteTemp(TBOILER),get_noteTemp(TACCUM),get_noteTemp(TRTOOUT),get_noteTemp(TCOMP),get_presentTemp(TEVAING),get_presentTemp(TEVAOUTG),get_presentTemp(TCONING),get_presentTemp(TCONOUTG),get_presentTemp(TOUT),get_presentTemp(TIN),get_presentTemp(TEVAIN),get_presentTemp(TEVAOUT),get_presentTemp(TCONIN),get_presentTemp(TCONOUT),get_presentTemp(TBOILER),get_presentTemp(TACCUM),get_presentTemp(TRTOOUT),get_presentTemp(TCOMP)");
 		loadParam("get_addressTemp(TEVAING),get_addressTemp(TEVAOUTG),get_addressTemp(TCONING),get_addressTemp(TCONOUTG),get_addressTemp(TOUT),get_addressTemp(TIN),get_addressTemp(TEVAIN),get_addressTemp(TEVAOUT),get_addressTemp(TCONIN),get_addressTemp(TCONOUT),get_addressTemp(TBOILER),get_addressTemp(TACCUM),get_addressTemp(TRTOOUT),get_addressTemp(TCOMP),get_errcodeTemp(TEVAING),get_errcodeTemp(TEVAOUTG),get_errcodeTemp(TCONING),get_errcodeTemp(TCONOUTG),get_errcodeTemp(TOUT),get_errcodeTemp(TIN),get_errcodeTemp(TEVAIN),get_errcodeTemp(TEVAOUT),get_errcodeTemp(TCONIN),get_errcodeTemp(TCONOUT),get_errcodeTemp(TBOILER),get_errcodeTemp(TACCUM),get_errcodeTemp(TRTOOUT),get_errcodeTemp(TCOMP)");
@@ -42,7 +43,6 @@
 		</tbody>
 		</table>
 	</div>
-	
 	<div class="row1" id="temps">
 		<h2>Датчики системы</h2>
 		<table id="scan_table">
@@ -73,38 +73,6 @@
 			<td><select id="set_addresstemp-tin" onchange="setParam('set_addressTemp(TIN)','get_addresstemp-tin');"></select></td>
 			<td id="get_errcodetemp-tin">-</td>
 		</tr>
-		<tr id="get_presenttemp-tevain">
-			<td>TEVAIN</td>
-			<td id="get_notetemp-tevain"></td>
-			<td id="get_rawtemp-tevain">-</td>
-			<td id="get_addresstemp-tevain">-</td>
-			<td><select id="set_addresstemp-tevain" onchange="setParam('set_addressTemp(TEVAIN)','get_addresstemp-tevain');"></select></td>
-			<td id="get_errcodetemp-tevain">-</td>
-		</tr>
-		<tr id="get_presenttemp-tevaout">
-			<td>TEVAOUT</td>
-			<td id="get_notetemp-tevaout"></td>
-			<td id="get_rawtemp-tevaout">-</td>
-			<td id="get_addresstemp-tevaout">-</td>
-			<td><select id="set_addresstemp-tevaout" onchange="setParam('set_addressTemp(TEVAOUT)','get_addresstemp-tevaout');"></select></td>
-			<td id="get_errcodetemp-tevaout">-</td>
-		</tr>
-		<tr id="get_presenttemp-tconin">
-			<td>TCONIN</td>
-			<td id="get_notetemp-tconin"></td>
-			<td id="get_rawtemp-tconin">-</td>
-			<td id="get_addresstemp-tconin">-</td>
-			<td><select id="set_addresstemp-tconin" onchange="setParam('set_addressTemp(TCONIN)','get_addresstemp-tconin');"></select></td>
-			<td id="get_errcodetemp-tconin">-</td>
-		</tr>
-		<tr id="get_presenttemp-tconout">
-			<td>TCONOUT</td>
-			<td id="get_notetemp-tconout"></td>
-			<td id="get_rawtemp-tconout">-</td>
-			<td id="get_addresstemp-tconout">-</td>
-			<td><select id="set_addresstemp-tconout" onchange="setParam('set_addressTemp(TCONOUT)','get_addresstemp-tconout');"></select></td>
-			<td id="get_errcodetemp-tconout">-</td>
-		</tr>		
 		<tr id="get_presenttemp-tboiler">
 			<td>TBOILER</td>
 			<td id="get_notetemp-tboiler"></td>
@@ -112,22 +80,6 @@
 			<td id="get_addresstemp-tboiler">-</td>
 			<td><select id="set_addresstemp-tboiler" onchange="setParam('set_addressTemp(TBOILER)','get_addresstemp-tboiler');"></select></td>
 			<td id="get_errcodetemp-tboiler">-</td>
-		</tr>	
-		<tr id="get_presenttemp-taccum">
-			<td>TACCUM</td>
-			<td id="get_notetemp-taccum"></td>
-			<td id="get_rawtemp-taccum">-</td>
-			<td id="get_addresstemp-taccum">-</td>
-			<td><select id="set_addresstemp-taccum" onchange="setParam('set_addressTemp(TACCUM)','get_addresstemp-taccum');"></select></td>
-			<td id="get_errcodetemp-taccum">-</td>
-		</tr>	
-		<tr id="get_presenttemp-trtoout">
-			<td>TRTOOUT</td>
-			<td id="get_notetemp-trtoout"></td>
-			<td id="get_rawtemp-trtoout">-</td>
-			<td id="get_addresstemp-trtoout">-</td>
-			<td><select id="set_addresstemp-trtoout" onchange="setParam('set_addressTemp(TRTOOUT)','get_addresstemp-trtoout');"></select></td>
-			<td id="get_errcodetemp-trtoout">-</td>
 		</tr>	
 		<tr id="get_presenttemp-tcomp">
 			<td>TCOMP</td>
@@ -169,6 +121,54 @@
 			<td><select id="set_addresstemp-tconoutg" onchange="setParam('set_addressTemp(TCONOUTG)','get_addresstemp-tconoutg');"></select></td>
 			<td id="get_errcodetemp-tconoutg">-</td>
 		</tr>										
+		<tr id="get_presenttemp-tevain">
+			<td>TEVAIN</td>
+			<td id="get_notetemp-tevain"></td>
+			<td id="get_rawtemp-tevain">-</td>
+			<td id="get_addresstemp-tevain">-</td>
+			<td><select id="set_addresstemp-tevain" onchange="setParam('set_addressTemp(TEVAIN)','get_addresstemp-tevain');"></select></td>
+			<td id="get_errcodetemp-tevain">-</td>
+		</tr>
+		<tr id="get_presenttemp-tevaout">
+			<td>TEVAOUT</td>
+			<td id="get_notetemp-tevaout"></td>
+			<td id="get_rawtemp-tevaout">-</td>
+			<td id="get_addresstemp-tevaout">-</td>
+			<td><select id="set_addresstemp-tevaout" onchange="setParam('set_addressTemp(TEVAOUT)','get_addresstemp-tevaout');"></select></td>
+			<td id="get_errcodetemp-tevaout">-</td>
+		</tr>
+		<tr id="get_presenttemp-tconin">
+			<td>TCONIN</td>
+			<td id="get_notetemp-tconin"></td>
+			<td id="get_rawtemp-tconin">-</td>
+			<td id="get_addresstemp-tconin">-</td>
+			<td><select id="set_addresstemp-tconin" onchange="setParam('set_addressTemp(TCONIN)','get_addresstemp-tconin');"></select></td>
+			<td id="get_errcodetemp-tconin">-</td>
+		</tr>
+		<tr id="get_presenttemp-tconout">
+			<td>TCONOUT</td>
+			<td id="get_notetemp-tconout"></td>
+			<td id="get_rawtemp-tconout">-</td>
+			<td id="get_addresstemp-tconout">-</td>
+			<td><select id="set_addresstemp-tconout" onchange="setParam('set_addressTemp(TCONOUT)','get_addresstemp-tconout');"></select></td>
+			<td id="get_errcodetemp-tconout">-</td>
+		</tr>		
+		<tr id="get_presenttemp-taccum">
+			<td>TACCUM</td>
+			<td id="get_notetemp-taccum"></td>
+			<td id="get_rawtemp-taccum">-</td>
+			<td id="get_addresstemp-taccum">-</td>
+			<td><select id="set_addresstemp-taccum" onchange="setParam('set_addressTemp(TACCUM)','get_addresstemp-taccum');"></select></td>
+			<td id="get_errcodetemp-taccum">-</td>
+		</tr>	
+		<tr id="get_presenttemp-trtoout">
+			<td>TRTOOUT</td>
+			<td id="get_notetemp-trtoout"></td>
+			<td id="get_rawtemp-trtoout">-</td>
+			<td id="get_addresstemp-trtoout">-</td>
+			<td><select id="set_addresstemp-trtoout" onchange="setParam('set_addressTemp(TRTOOUT)','get_addresstemp-trtoout');"></select></td>
+			<td id="get_errcodetemp-trtoout">-</td>
+		</tr>	
 	</tbody>
 	</table>
 					

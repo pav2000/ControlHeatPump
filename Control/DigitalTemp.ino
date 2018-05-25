@@ -1,6 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -60,6 +59,7 @@ void sensorTemp::initTemp(int sensor)
       err=OK;                                  // ошибка датчика (работа)
       numErrorRead=0;                          // Ошибок нет
       sumErrorRead=0;                          // ошибок нет
+      number = sensor;
       minTemp=MINTEMP[sensor];                 // минимальная разрешенная температура
       maxTemp=MAXTEMP[sensor];                 // максимальная разрешенная температура
       errTemp=ERRTEMP[sensor];                 // статическая ошибка датчика
@@ -92,40 +92,45 @@ int8_t sensorTemp::Read()
 {  
 	if(!(GETBIT(flags, fPresent))) return err;          // датчик запрещен в конфигурации ничего не делаем
 	if(testMode!=NORMAL) lastTemp=testTemp;             // В режиме теста присвоить значение теста
-	else                                                 // Чтение датчиков
-	{
+	else {                                              // Чтение датчиков
 #ifdef DEMO
 		if (strcmp(name,"TBOILER")==0) lastTemp=4500;       // В демо бойлер всегда 45 градусов нужно для отладки
 		else lastTemp=random(101,1190);                     // В демо режиме генерим значения
 #else   // чтение датчика
 		if(!(GETBIT(flags,fAddress))) { // Адрес не установлен
-			err = ERR_ADDRESS;
-			set_Error(err,name);
-			return err;
-		}
-		int16_t ttemp;
-		err = busOneWire->Read(address, ttemp);
-		if(err) {
-            journal.jprintf(pP_TIME, " %s: Error %s (%d)\n", name, err == ERR_ONEWIRE ? "RESET" : err == ERR_ONEWIRE_CRC ? "CRC" : "read", err);
-//            err = ERR_READ_TEMP;
-            sumErrorRead++;
-            if(++numErrorRead == 0) numErrorRead--;
-            if(numErrorRead > NUM_READ_TEMP_ERR) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
-            return err;
+			if(number == TCOMP) { // эти датчики должны быть привязаны
+				err = ERR_ADDRESS;
+				set_Error(err,name);
+				return err;
+			} else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
-			numErrorRead = 0; // Сброс счетчика ошибок
-			//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
-			// Защита от скачков
-			if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp)<GAP_TEMP_VAL)) {
-				lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-			} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
-			   nGap++;
-			   if (nGap>GAP_NUMBER) { // Больше максимальной длительности данные используем, счетчик сбрасываем
-				   nGap=0;
-				   lastTemp=ttemp;
-			   } else {  // Пропуск данных
-				   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\r\n",name,(float)ttemp/100.0);
-			   }
+			int16_t ttemp;
+			err = busOneWire->Read(address, ttemp);
+			if(err) {
+	            journal.jprintf(pP_TIME, "%s: Error ", name);
+	            if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+	            	journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+	            } else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
+	//            err = ERR_READ_TEMP;
+	            sumErrorRead++;
+	            if(++numErrorRead == 0) numErrorRead--;
+	            if(numErrorRead > NUM_READ_TEMP_ERR) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
+	            return err;
+			} else {
+				numErrorRead = 0; // Сброс счетчика ошибок
+				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
+				// Защита от скачков
+				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp)<GAP_TEMP_VAL)) {
+					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
+				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
+				   nGap++;
+				   if (nGap>GAP_NUMBER) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+					   nGap=0;
+					   lastTemp=ttemp;
+				   } else {  // Пропуск данных
+					   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
+				   }
+				}
 			}
 		}
 #endif

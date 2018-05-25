@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -814,55 +814,71 @@ void urldecode(char *dst, char *src, uint16_t len)
 // Функции работы с шиной I2C под free RTOS   На шине висят 3 устройства и шину надо делить
 static byte _retEEPROM_I2C;
 // Запись в eeprom, 0 - успешно
- __attribute__((always_inline)) inline byte writeEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
- {
-  if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);return 0;}  // Если шедулер запущен то захватываем семафор
-  _retEEPROM_I2C=eepromI2C.write(addr, values, nBytes);
-  SemaphoreGive(xI2CSemaphore);
-  return _retEEPROM_I2C;
-  }
+__attribute__((always_inline))  inline byte writeEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return 0;
+	}
+	_retEEPROM_I2C = eepromI2C.write(addr, values, nBytes);
+	SemaphoreGive (xI2CSemaphore);
+	return _retEEPROM_I2C;
+}
 // Чтение в eeprom, 0 - успешно
- __attribute__((always_inline))  inline byte readEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
- {
-  if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);return 0;}  // Если шедулер запущен то захватываем семафор
-  _retEEPROM_I2C=eepromI2C.read(addr, values, nBytes);
-  SemaphoreGive(xI2CSemaphore);
-  return _retEEPROM_I2C;
-  }
+__attribute__((always_inline))   inline byte readEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return 0;
+	}
+	_retEEPROM_I2C = eepromI2C.read(addr, values, nBytes);
+	SemaphoreGive (xI2CSemaphore);
+	return _retEEPROM_I2C;
+}
 // ЧАСЫ  есть проблема - работают на прямую с i2c не через wire ----------------------------------
 // Часы на I2C   Чтение температуры
- __attribute__((always_inline))  inline float getTemp_RtcI2C()
- {
-   if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);return 0;}  // Если шедулер запущен то захватываем семафор
-   static volatile float ret = rtcI2C.temperature()/100.0;
-   SemaphoreGive(xI2CSemaphore);
-   return ret;
-   }
+__attribute__((always_inline)) inline float getTemp_RtcI2C()
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return 0;
+	}
+	static volatile float ret = rtcI2C.temperature() / 100.0;
+	SemaphoreGive (xI2CSemaphore);
+	return ret;
+}
 
 // Часы на I2C   Чтение времени
 tmElements_t ret_getTime_RtcI2C;
- __attribute__((always_inline))  inline tmElements_t getTime_RtcI2C()
- {
-   if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf("getTime_RtcI2C %s",MutexI2CBuzy);return ret_getTime_RtcI2C;}  // Если шедулер запущен то захватываем семафор
-   rtcI2C.read(ret_getTime_RtcI2C);
-   SemaphoreGive(xI2CSemaphore);
-   return ret_getTime_RtcI2C;
-   }
+__attribute__((always_inline))   inline tmElements_t getTime_RtcI2C()
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf("getTime_RtcI2C %s", MutexI2CBuzy);
+		return ret_getTime_RtcI2C;
+	}
+	rtcI2C.read(ret_getTime_RtcI2C);
+	SemaphoreGive (xI2CSemaphore);
+	return ret_getTime_RtcI2C;
+}
 
 // Часы на I2C   Установка времени
- __attribute__((always_inline))  inline void setTime_RtcI2C(uint8_t hour, uint8_t min, uint8_t sec)
- {
-  if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);return;}  // Если шедулер запущен то захватываем семафор
-  rtcI2C.setTime( hour, min, sec);
-  SemaphoreGive(xI2CSemaphore);
-  }
+__attribute__((always_inline)) inline void setTime_RtcI2C(uint8_t hour, uint8_t min, uint8_t sec)
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return;
+	}
+	rtcI2C.setTime(hour, min, sec);
+	SemaphoreGive (xI2CSemaphore);
+}
 
 // Часы на I2C   Установка даты
- __attribute__((always_inline))  inline void setDate_RtcI2C(uint8_t date, uint8_t mon, uint16_t year)
- {
-   if(SemaphoreTake(xI2CSemaphore,I2C_TIME_WAIT/portTICK_PERIOD_MS)==pdFALSE){journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);return;}  // Если шедулер запущен то захватываем семафор
-   rtcI2C.setDate(date, mon, year);
-   SemaphoreGive(xI2CSemaphore);
-   }
-
-
+__attribute__((always_inline)) inline void setDate_RtcI2C(uint8_t date, uint8_t mon, uint16_t year)
+{
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return;
+	}
+	rtcI2C.setDate(date, mon, year);
+	SemaphoreGive (xI2CSemaphore);
+}

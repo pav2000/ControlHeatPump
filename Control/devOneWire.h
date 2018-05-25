@@ -1,6 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav,
- * vad711, vad7@yahoo.com
+ * Copyright (c) 2016-2018 by vad711 (vad7@yahoo.com); by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -54,9 +53,9 @@ class deviceOneWire 									       // Класс шина   OneWire
 {
   public:
 #ifdef ONEWIRE_DS2482
-	deviceOneWire(uint8_t addr, uint8_t _bus): OneWireDrv(addr) { err = 0; bus = _bus; };
+	deviceOneWire(uint8_t addr, uint8_t _bus): OneWireDrv(addr) { err = 0; bus = _bus; }
 #else
-	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; };
+	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; }
 #endif
 	int8_t	Init(void);
     int16_t	CalcTemp(uint8_t addr_0, uint8_t *data);	// Вычислить температуру в сотых градуса по считанному scratchpad
@@ -65,8 +64,8 @@ class deviceOneWire 									       // Класс шина   OneWire
 	int8_t  Read(uint8_t *addr, int16_t &val);          // чтение данных DS18B20, возвращает код ошибки, делает все преобразования
 	int8_t  SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock_bus = 0);	// установить разрешение конкретного датчика
 	int8_t  GetLastErr() { return err; }       			// Получить последнюю ошибку
-	int8_t  lock_bus_reset(uint8_t checkpresence);		// блокирование семафора, проверка наличия ds2482, reset 1-wire.
-	void	release_bus();
+	int8_t  lock_I2C_bus_reset(uint8_t checkpresence);	// блокирование семафора, проверка наличия ds2482, reset 1-wire.
+	void	release_I2C_bus();
   private:
 	int8_t err;                                         // ошибка шины (работа) при ошибке останов ТН
 #ifdef ONEWIRE_DS2482

@@ -11,6 +11,9 @@ extern "C" {
 #include "EthernetServer.h"
 #include "Dns.h"
 
+#include "FreeRTOS_ARM.h"
+#define RTOS_delay(ms) { if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(ms/portTICK_PERIOD_MS); else delay(ms); }
+
 uint16_t EthernetClient::_srcport = 1024;
 
 EthernetClient::EthernetClient() : _sock(MAX_SOCK_NUM) {
@@ -22,6 +25,7 @@ EthernetClient::EthernetClient(uint8_t sock) : _sock(sock) {
 int EthernetClient::connect(const char* host, uint16_t port) {
   // Look up the host first
   int ret = 0;
+  _offset = 0;
   DNSClient dns;
   IPAddress remote_addr;
   dns.begin(Ethernet.dnsServerIP());
@@ -35,6 +39,7 @@ int EthernetClient::connect(const char* host, uint16_t port) {
 }
 
 int EthernetClient::connect(IPAddress ip, uint16_t port) {
+  _offset = 0;
   if (_sock != MAX_SOCK_NUM) {
  //   Serial.println("EXCEPTION: Not all sockets are available");
     return 0;
@@ -64,15 +69,16 @@ int EthernetClient::connect(IPAddress ip, uint16_t port) {
   }
 //   Serial.println(ip);
 
-
+  uint32_t start = millis();
   while (status() != SnSR::ESTABLISHED) {
-    delay(1);
+    RTOS_delay(1);
 
     if (status() == SnSR::CLOSED) {
       _sock = MAX_SOCK_NUM;
 //      Serial.println("EXCEPTION: Socket was closed after being established");
       return 0;
     }
+    if(millis() - start > 2000) return 0; // timeout
   }
 
   return 1;
@@ -94,6 +100,7 @@ int EthernetClient::connect(const char *host, uint16_t port,uint8_t sock)// pav2
 // Открыть клиента  по IP на конкретный сокет, сокет перед этим сбрасывается
 int EthernetClient::connect(IPAddress ip, uint16_t port,uint8_t sock)// pav2000
  {
+  _offset = 0;
    // Сброс сокета  возможно после сброса нужна задержка для выполения сброса???
   W5100.execCmdSn(sock, Sock_CLOSE);
   W5100.writeSnMR(sock, 0x00);
@@ -109,13 +116,15 @@ int EthernetClient::connect(IPAddress ip, uint16_t port,uint8_t sock)// pav2000
   }
 //   Serial.println(ip);
 
+  uint32_t start = millis();
   while (status() != SnSR::ESTABLISHED) {
-    delay(1);
+    RTOS_delay(1);
 
     if (status() == SnSR::CLOSED) {
       _sock = MAX_SOCK_NUM;
       return 0;
     }
+    if(millis() - start > 2000) return 0; // timeout
   }
   return 1;
 }
@@ -125,15 +134,23 @@ size_t EthernetClient::write(uint8_t b) {
 }
 
 size_t EthernetClient::write(const uint8_t *buf, size_t size) {
+  _offset = 0;
   if (_sock == MAX_SOCK_NUM) {
     setWriteError();
     return 0;
   }
-  if (!send(_sock, buf, size)) {
+  if(!send(_sock, buf, size)) {
     setWriteError();
     return 0;
   }
-  return size;
+  return size ? size : 1;
+}
+
+size_t EthernetClient::write_buffer(const uint8_t *buffer, size_t size)
+{
+  uint16_t bytes_written = bufferData(_sock, _offset, buffer, size);
+  _offset += bytes_written;
+  return bytes_written;
 }
 
 int EthernetClient::available() {
@@ -183,7 +200,7 @@ void EthernetClient::stop() {
 
   // wait a second for the connection to close
   while (status() != SnSR::CLOSED && millis() - start < 1000)
-    delay(1);
+    RTOS_delay(1);
 
   // if it hasn't closed, close it forcefully
   if (status() != SnSR::CLOSED)

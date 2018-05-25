@@ -64,9 +64,9 @@ class ibufstream : public istream {
   void getpos(FatPos_t *pos) {
     pos->position = m_pos;
   }
-  bool seekoff(off_type off, seekdir way) {
-    return false;
-  }
+//  bool seekoff(off_type off, seekdir way) {
+//    return false;
+//  }
   bool seekpos(pos_type pos) {
     if (pos < m_len) {
       m_pos = pos;
@@ -136,9 +136,9 @@ class obufstream : public ostream {
       putch(*str++);
     }
   }
-  bool seekoff(off_type off, seekdir way) {
-    return false;
-  }
+//  bool seekoff(off_type off, seekdir way) {
+//    return false;
+//  }
   bool seekpos(pos_type pos) {
     if (pos > m_in) {
       return false;

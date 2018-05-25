@@ -1,7 +1,7 @@
 ﻿/* ver 0.895 beta */
-var urlcontrol = 'http://62.140.252.108:2545';
+//var urlcontrol = 'http://62.140.252.108:2545';
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = ''; //  если адрес сервера совпадает с адресом контроллера (рекомендуется)
+var urlcontrol = ''; //  если адрес сервера совпадает с адресом контроллера (рекомендуется)
 var urltimeout = 2800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 5000; // время обновления параметров в в миллисекундах
 
@@ -14,7 +14,7 @@ var rel = new RegExp('et_sensorListIP');
 var res = new RegExp('et_sensorListIP|et_freon|et_rule|et_listProfile|et_testMode|et_FC|et_EEV|et_modeHP');
 //var ren = new RegExp('et_ON|et_OFF');
 var ret = new RegExp('[(]SCHEDULER[)]');
-var rer = new RegExp('BIG_NARMON|USE_THINGSPEAK|ADD_BOILER|USE_NARMON|USE_MQTT|BIG_MQTT|SDM_MQTT|FC_MQTT|COP_MQTT|NO_PING|set_SDM|ENABLE_PROFILE|ON_OFF|get_paramFC[(]ANALOG[)]|sensorUseIP|sensorRuleIP|NO_ACK|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|et_Relay|UPDATE_I2C|et_optionHP[(]SAVE_ON|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|Boiler[(]SALLMONELA|et_Network[(]DHCP|INIT_W5200|et_Network[(]PASSWORD|RESET_HEAT|CIRCULATION|et_optionHP[(]SD_CARD|[(]WEATHER[)]|et_optionHP[(]BEEP|RTV_OFF|et_optionHP[(]NEXTION|et_optionHP[(]EEV_CLOSE|et_optionHP[(]EEV_START|get_datetime[(]UPDATE');
+var rer = new RegExp('BIG_NARMON|USE_TS|ADD_BOILER|USE_NARMON|USE_MQTT|BIG_MQTT|SDM_MQTT|FC_MQTT|COP_MQTT|NO_PING|set_SDM|ENABLE_PROFILE|ON_OFF|get_paramFC[(]ANALOG[)]|sensorUseIP|sensorRuleIP|NO_ACK|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|et_Relay|UPDATE_I2C|et_optionHP[(]SAVE_ON|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|Boiler[(]SALLMONELA|et_Network[(]DHCP|INIT_W5200|et_Network[(]PASSWORD|RESET_HEAT|CIRCULATION|et_optionHP[(]SD_CARD|[(]WEATHER[)]|et_optionHP[(]BEEP|RTV_OFF|et_optionHP[(]NEXTION|et_optionHP[(]EEV_CLOSE|et_optionHP[(]EEV_START|get_datetime[(]UPDATE');
 if (rer.test(paramid)) { swichid = document.getElementById(elid); if (swichid.checked) { elval =1; } else { elval = 0; } }
 //else if (ren.test(paramid)) { swichid = document.getElementById(elid); if (swichid.checked) { elval =""; } else { elval = ""; } }
 else if (ret.test(paramid)) {//console.log("sended sheduler");
@@ -98,7 +98,7 @@ request.onreadystatechange = function()
             var rec = new RegExp('^CONST|get_infoFC|get_sysInfo|get_socketInfo|get_status');
             var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE');
             var reo = new RegExp('^scan_');
-            var rer = new RegExp('^get_Relay|ENABLE_PROFILE|BIG_NARMON|ADD_BOILER|USE_NARMON|USE_THINGSPEAK|USE_MQTT|BIG_MQTT|SDM_MQTT|FC_MQTT|COP_MQTT|NO_PING|ON_OFF|get_paramFC[(]ANALOG[)]|sensorRuleIP|sensorUseIP|NO_ACK|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|CIRCULATION|RESET_HEAT|Boiler[(]SALLMONELA|et_Network[(]DHCP|INIT_W5200|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEA|et_optionHP[(]BEEP|RTV_OFF|get_optionHP[(]SAVE_ON|et_optionHP[(]NEXTION|et_optionHP[(]SD_CARD|[(]WEATHER[)]|et_optionHP[(]EEV_CLOSE|et_optionHP[(]EEV_START|get_datetime[(]UPDATE');
+            var rer = new RegExp('^get_Relay|ENABLE_PROFILE|BIG_NARMON|ADD_BOILER|USE_NARMON|USE_TS|USE_MQTT|BIG_MQTT|SDM_MQTT|FC_MQTT|COP_MQTT|NO_PING|ON_OFF|get_paramFC[(]ANALOG[)]|sensorRuleIP|sensorUseIP|NO_ACK|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADD_HEATING|CIRCULATION|RESET_HEAT|Boiler[(]SALLMONELA|et_Network[(]DHCP|INIT_W5200|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEA|et_optionHP[(]BEEP|RTV_OFF|get_optionHP[(]SAVE_ON|et_optionHP[(]NEXTION|et_optionHP[(]SD_CARD|[(]WEATHER[)]|et_optionHP[(]EEV_CLOSE|et_optionHP[(]EEV_START|get_datetime[(]UPDATE');
             var rep = new RegExp('^get_present');
             var ret = new RegExp('[(]SCHEDULER[)]');
             var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|et_freon|et_rule|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT');
@@ -127,7 +127,7 @@ request.onreadystatechange = function()
               }
             } else if(type == 'chart') {
               if (values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) { //console.log(type + " values 0= " + values[0] + " values1="  + values[1] );
-                title = values[0].replace(/get_Chart\(_/g,"").replace(/\)[0-9]?/g,""); //console.log(" titul= " + title );
+                title = values[0].replace(/get_Chart\(/g,"").replace(/\)[0-9]?/g,""); //console.log(" titul= " + title );
                 var yizm = ''; var ytooltip = ''; var timeval = ''; var height = 250; var visible = false; 
                 timeval = window.time_chart;
                 timeval = Number(timeval.replace(/\D+/g,""));
@@ -1209,32 +1209,16 @@ function calcacp()
   k2.innerHTML = Math.abs(kk2.toFixed(3)); 
 }
 
-function dhcp(dcb)
-{
-  dhcpcheckbox = document.getElementById(dcb);
-  if (dhcpcheckbox.checked)
-  {
-    //console.log("dhcp:enabled");
-   document.getElementById('get_network-address').disabled = true;
-   document.getElementById('get_network-subnet').disabled = true;
-   document.getElementById('get_network-gateway').disabled = true;
-   document.getElementById('get_network-dns').disabled = true;
-   document.getElementById('get_network-address2').disabled = true;
-   document.getElementById('get_network-subnet2').disabled = true;
-   document.getElementById('get_network-gateway2').disabled = true;
-   document.getElementById('get_network-dns2').disabled = true;  
-  }
-  else 
-  {  //console.log("dhcp:disabled");
-   document.getElementById('get_network-address').disabled = false;
-   document.getElementById('get_network-subnet').disabled = false;
-   document.getElementById('get_network-gateway').disabled = false;
-   document.getElementById('get_network-dns').disabled = false;
-   document.getElementById('get_network-address2').disabled = false;
-   document.getElementById('get_network-subnet2').disabled = false;
-   document.getElementById('get_network-gateway2').disabled = false;
-   document.getElementById('get_network-dns2').disabled = false;
-  }
+function dhcp(dcb) {
+	var fl = document.getElementById(dcb).checked;
+	document.getElementById('get_network-ip').disabled = fl;
+	document.getElementById('get_network-subnet').disabled = fl;
+	document.getElementById('get_network-gateway').disabled = fl;
+	document.getElementById('get_network-dns').disabled = fl;
+	document.getElementById('get_network-ip2').disabled = fl;
+	document.getElementById('get_network-subnet2').disabled = fl;
+	document.getElementById('get_network-gateway2').disabled = fl;
+	document.getElementById('get_network-dns2').disabled = fl;
 }
 
 function validip(valip) {

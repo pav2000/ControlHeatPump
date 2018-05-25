@@ -78,7 +78,7 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
       <tr>
         <td>Точка 1</td>
         <td><input id="a1" type="number" min="0" max="4095" step="1" value="0"></td>
-        <td><input id="p1" type="number" min="0" max="100" step="0.1" value="0"></td>
+        <td><input id="p1" type="number" min="0" max="100" step="0.01" value="0"></td>
         <td rowspan="2"><input type="submit" value="Рассчитать коэффициенты"  onclick="calcacp();"></td>
         <td>"0" датчика: <span id="k1"></span></td>
         <td rowspan="2"><select id="get_listpress" onChange="setKanalog();"><option value="-" class="">--</option></select></td>
@@ -86,7 +86,7 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
       <tr>
         <td>Точка 2</td>
         <td><input id="a2" type="number" min="0" max="4095" step="1" value="2500"></td>
-        <td><input id="p2" type="number" min="0" max="100" step="0.1" value="12"></td>
+        <td><input id="p2" type="number" min="0" max="100" step="0.01" value="12"></td>
         <td>Коэффициент: <span id="k2"></span></td>
       </tr>     
     </tbody>
