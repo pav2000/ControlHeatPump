@@ -16,15 +16,8 @@
 /**
 @file
 Arduino library for communicating with Modbus slaves over RS232/485 (via RTU protocol).
-
-@defgroup setup ModbusMaster Object Instantiation/Initialization
-@defgroup buffer ModbusMaster Buffer Management
-@defgroup discrete Modbus Function Codes for Discrete Coils/Inputs
-@defgroup register Modbus Function Codes for Holding/Input Registers
-@defgroup constant Modbus Function Codes, Exception Codes
 */
 /*
-
   ModbusMaster.h - Arduino library for communicating with Modbus slaves
   over RS232/485 (via RTU protocol).
 
@@ -43,9 +36,7 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
-
   
 #ifndef ModbusMaster_h
 #define ModbusMaster_h
@@ -61,7 +52,7 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
 #include "FreeRTOS_ARM.h"                // поддержка многозадачности
 #endif
 
-#define MIN_TIME_BETWEEN_TRANSACTION	20 // ms
+#define MIN_TIME_BETWEEN_TRANSACTION	30 // ms
 
 /**
 Arduino class library for communicating with Modbus slaves over 
@@ -264,7 +255,7 @@ class ModbusMaster
     static const uint8_t ku8MBLinkTestOmronMX2Only       = 0x08; ///< Modbus function 0x08 Тест связи с инвертром Omron MX2 функция только для него
     
     // Modbus timeout [milliseconds] Depend on serial speed
-    static const uint16_t ku16MBResponseTimeout          = 30;   ///< Modbus timeout, every byte [milliseconds]
+    static const uint16_t ku16MBResponseTimeout          = 100;   ///< Modbus timeout, every byte [milliseconds]
     
     // master function that conducts Modbus transactions
     uint8_t ModbusMasterTransaction(uint8_t u8MBFunction);

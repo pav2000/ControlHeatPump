@@ -148,6 +148,8 @@ int8_t devVaconFC::initFC()
         // 10.Установить стартовую частоту
         set_targetFreq(_data.startFreq, true, _data.minFreqUser, _data.maxFreqUser); // режим н знаем по этому границы развигаем
     }
+    // Вычисление номигальной мощности двигателя компрессора = U*I*cos
+   	nominal_power = (uint32_t) (380) * (900) / 100 * (75) / 100; // W
 #endif // #ifndef FC_ANALOG_CONTROL
     return err;
 }
@@ -592,7 +594,6 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     	                                        } else
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
-    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     } else
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  strcat(ret,int2str(state));   } else
     if(strcmp(var,fc_FC)==0)                    {  ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
@@ -608,6 +609,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 		                                        #endif
                                                 } else
 	#ifdef FC_ANALOG_CONTROL
+    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     	  } else
     if(strcmp(var,fc_DAC)==0)                   {  strcat(ret,int2str(dac));          } else
     if(strcmp(var,fc_LEVEL0)==0)                {  strcat(ret,int2str(level0));       } else
     if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
@@ -653,8 +655,8 @@ boolean devVaconFC::set_paramFC(char *var, float x)
     if(strcmp(var,fc_cCURRENT)==0)              { return true;                         } else  // только чтение
     if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
     if(strcmp(var,fc_ANALOG)==0)                { return true;                         } else  // только чтение
+	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_DAC)==0)                   { return true;                         } else  // только чтение
-    #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
@@ -715,27 +717,18 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", i);
 			if(err == OK) {
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
 				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "V1.7 (2109)|Выходное напряжение (В)|%.1f;V1.8 (2110)|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.9 (8)|Температура радиатора (°С)|%d;", read_tempFC());
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
 				buf += m_snprintf(buf, 256, "V3.3 (828)|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RUN_DAYS); // +FC_RUN_HOURS (low word)
 				buf += m_snprintf(buf, 256, "V3.5 (840)|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V3.6 (842)|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
-				_delay(FC_DELAY_READ);
 
 				i = read_0x03_16(FC_ERROR);
 				if(err == OK) {

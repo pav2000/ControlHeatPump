@@ -795,7 +795,7 @@ void vReadSensor(void *)
 	static uint8_t prtemp = 0;
 	for(;;) {
 		int8_t i;
-		watchdogReset();
+		WDT_Restart(WDT);
 
 #ifndef DEMO  // Если не демо
 		prtemp = HP.Prepare_Temp(0);

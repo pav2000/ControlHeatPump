@@ -173,7 +173,7 @@ public:
   // Управление по модбас Общее для всех частотников
   int16_t	get_targetFreq() {return FC;}                    // Получить целевую скорость в %
   int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
-  uint16_t	get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  uint16_t	get_power(){return (uint32_t)nominal_power * power / 100000L;}   // Получить текущую мощность в 0.1 кВт. В 100 ваттах единица измерения
   uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
   void		get_infoFC(char *buf);                   // Получить информацию о частотнике
   void		get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
@@ -230,15 +230,18 @@ public:
   uint16_t FC_curr;                                // Чтение: текущая скорость инвертора в 0.01 %
   uint16_t power;                                  // Чтение: Текущая мощность инвертора  в 0.1% от номинала
   uint16_t current;                                // Чтение: Текущий ток инвертора  в 0.01 Ампера единицах
+  uint16_t nominal_power;							// Номинальная мощность Вт
   
   int16_t  state;                                   // Чтение: Состояние ПЧ регистр FC_STATUS
   uint16_t minFC;                                  // Минимальная скорость инвертора в 0.01 %
   uint16_t maxFC;                                  // Максимальная скорость инвертора в 0.01 %
   uint32_t startCompressor;                        // время старта компрессора
-        
+
+#ifdef ANALOG_CONTROL
   // Аналоговое управление
   int16_t dac;                                     // Текущее значение ЦАП
   uint8_t pin;                                     // Ножка куда прицеплено FC
+#endif
   
   TEST_MODE testMode;                              // Значение режима тестирования
   char *note;                                      // Описание

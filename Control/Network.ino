@@ -189,7 +189,7 @@ boolean initW5200(boolean flag)
 		if(HP.get_DHCP()) // Работаем по DHCP
 		{
 			journal.jprintf("Configure Ethernet using DHCP: ");
-			watchdogReset();
+			WDT_Restart(WDT);
 			if(Ethernet.begin((uint8_t*) HP.get_mac()) == 0) {
 				journal.jprintf("Failed!\n");
 				goto x_TryStaticIP;

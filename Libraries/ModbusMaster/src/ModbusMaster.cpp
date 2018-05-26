@@ -9,6 +9,9 @@
 - сделана обработка ошибок инвертора (в коде функции добавляется 0х80)
 при этом возвращается состяние ku8MBErrorOmronMX2,
 первый элемент буфера при этом содержит код ошибки
+*
+* Some additional - vad7@yahoo.com
+*
 */
 /**
 @file
@@ -34,25 +37,9 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
-
-
-/* _____PROJECT INCLUDES_____________________________________________________ */
 #include "ModbusMaster.h"
 
-
-/* _____GLOBAL VARIABLES_____________________________________________________ */
-
-
-/* _____PUBLIC FUNCTIONS_____________________________________________________ */
-/**
-Constructor.
-
-Creates class object; initialize it using ModbusMaster::begin().
-
-@ingroup setup
-*/
 ModbusMaster::ModbusMaster(void)
 {
   _idle = 0;
@@ -613,6 +600,9 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   uint8_t u8MBStatus = ku8MBSuccess;   // текущий статус
   
   if((u32StartTime = millis() - last_transaction_time) < MIN_TIME_BETWEEN_TRANSACTION) {
+#ifdef MODBUSMASTER_DEBUG
+	  Serial.print("#");
+#endif
 	  u32StartTime = MIN_TIME_BETWEEN_TRANSACTION - u32StartTime;
 #ifdef MODBUS_FREERTOS
 	  while(u32StartTime--) if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(1); else delay(1);
@@ -620,7 +610,9 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
 	  while(u32StartTime--) delay(1);
 #endif
   }
-
+#ifdef MODBUSMASTER_DEBUG
+   Serial.print("MB"); Serial.print(_u8MBSlave); Serial.print(": ");
+#endif
   // assemble Modbus Request Application Data Unit (ADU)
   // Сборка блока запроса Modbus Application Data (ADU)
   u8ModbusADU[u8ModbusADUSize++] = _u8MBSlave;     // номер устройства (Slave)
@@ -732,14 +724,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   for (i = 0; i < u8ModbusADUSize; i++)
   {
     _serial->write(u8ModbusADU[i]);
-    #ifdef MODBUSMASTER_DEBUG
-       Serial.print(u8ModbusADU[i],HEX);Serial.print(" ");   // вывод переданных данных
-    #endif
   }
-
-   #ifdef MODBUSMASTER_DEBUG
-    Serial.print(" write "); Serial.println(u8ModbusADUSize);  // вывод числа переданных байт
-   #endif
 
    _serial->flush();           // Очистить передающий буфер
   // вызов функции в конце передачи - дернуть ногу передачи max485 + задержка перед чтением(помним про полудуплекс)
@@ -748,6 +733,10 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   // -------------------- ЧТЕНИЕ ОТВЕТА --------------------------------------
    u8ModbusADUSize = 0;       // Сбросить длину буфера
 
+#ifdef MODBUSMASTER_DEBUG
+   Serial.print("St: "); Serial.print(millis()); Serial.print(" ");
+#endif
+
   // Цикл чтения из входного буфера пока нет ошибок и не прошло время ожидания
    u32StartTime = millis();   // время начала
   // Ожидание и чтение ответа
@@ -755,12 +744,12 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   {
     if (_serial->available())    // есть символы во входном буфере
     {
+#ifdef MODBUSMASTER_DEBUG
+    	if(u8ModbusADUSize == 0) { Serial.print("1: "); Serial.print(millis()); Serial.print(" "); }
+#endif
       u8ModbusADU[u8ModbusADUSize++] = _serial->read();
       u8BytesLeft--;   // байт прочли уменьшили счетчик
       u32StartTime = millis();   // время продолжения
-#ifdef MODBUSMASTER_DEBUG
-      Serial.print(u8ModbusADU[u8ModbusADUSize-1],HEX);Serial.print(" ");   // вывод полученных данных
-#endif
     } else {                        // нет символов во входном буфере
     	if (_idle) {_idle(); }      // если разрешено - операция ожидания
     }
@@ -800,41 +789,35 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
       
       // evaluate returned Modbus function code
       // Оценить в зависимости от функции требуемое число байт
-      if(u8MBStatus != ku8MBErrorOmronMX2) // нет ошибки омрона
-      switch(u8ModbusADU[1])   // код функции
-      {
-        case ku8MBReadCoils:
-        case ku8MBReadDiscreteInputs:
-        case ku8MBReadInputRegisters:
-        case ku8MBReadHoldingRegisters:
-        case ku8MBReadWriteMultipleRegisters:
-          u8BytesLeft = u8ModbusADU[2];
-          break;
-        case ku8MBWriteSingleCoil:
-        case ku8MBWriteMultipleCoils:
-        case ku8MBWriteSingleRegister:
-        case ku8MBWriteMultipleRegisters:
-          u8BytesLeft = 3;
-          break;
-        case ku8MBMaskWriteRegister:
-          u8BytesLeft = 5;
-          break;
-        case ku8MBLinkTestOmronMX2Only:
-          u8BytesLeft = 3;
-          break;
-      }
-      else  u8BytesLeft=3; // при ошибки омрона прочитать еще 3 байта
+      if(u8MBStatus != ku8MBErrorOmronMX2) { // нет ошибки омрона
+    	  switch(u8ModbusADU[1])   // код функции
+    	  {
+    	  case ku8MBReadCoils:
+    	  case ku8MBReadDiscreteInputs:
+    	  case ku8MBReadInputRegisters:
+    	  case ku8MBReadHoldingRegisters:
+    	  case ku8MBReadWriteMultipleRegisters:
+    		  u8BytesLeft = u8ModbusADU[2];
+    		  break;
+    	  case ku8MBWriteSingleCoil:
+    	  case ku8MBWriteMultipleCoils:
+    	  case ku8MBWriteSingleRegister:
+    	  case ku8MBWriteMultipleRegisters:
+    		  u8BytesLeft = 3;
+    		  break;
+    	  case ku8MBMaskWriteRegister:
+    		  u8BytesLeft = 5;
+    		  break;
+    	  case ku8MBLinkTestOmronMX2Only:
+    		  u8BytesLeft = 3;
+    		  break;
+    	  }
+      } else  u8BytesLeft=3; // при ошибки омрона прочитать еще 3 байта
     } // if (u8ModbusADUSize == 5)
 
     // проверка привышения времени ожидания
     if ((millis()-u32StartTime)>ku16MBResponseTimeout) {u8MBStatus = ku8MBResponseTimedOut;break;}
   }   //Конец цикла приема while (u8BytesLeft && !u8MBStatus)
-
-  #ifdef MODBUSMASTER_DEBUG
-   if (u8ModbusADUSize>0)
-     { Serial.print(" read "); Serial.println(u8ModbusADUSize); } // вывод числа полученных байт
-  #endif
-
 
   // verify response is large enough to inspect further
   // Проверить является ли длина ответ достаточно большой
@@ -913,6 +896,9 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   u16TransmitBufferLength = 0;
   _u8ResponseBufferIndex = 0;
   last_transaction_time = millis();
+#ifdef MODBUSMASTER_DEBUG
+  Serial.print(" E: "); Serial.println(millis());
+#endif
   return u8MBStatus;
 }
 

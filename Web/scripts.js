@@ -848,7 +848,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_relay-rcomp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpi'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpo'))) element.disabled = onoff;
-									if((element=document.getElementById('get_relay-rboiler'))) element.disabled = onoff;
+									if((element=document.getElementById('get_relay-rpumpbh'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rheat'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rtrv'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rfan1'))) element.disabled = onoff;
