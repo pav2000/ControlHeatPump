@@ -107,14 +107,16 @@ int8_t sensorTemp::Read()
 			int16_t ttemp;
 			err = busOneWire->Read(address, ttemp);
 			if(err) {
-	            journal.jprintf(pP_TIME, "%s: Error ", name);
-	            if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
-	            	journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
-	            } else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
-	//            err = ERR_READ_TEMP;
+				if(!GETBIT(setup_flags, fTEMP_dont_log_errors)) {
+					journal.jprintf(pP_TIME, "%s: Error ", name);
+					if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+						journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+					} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
+					//err = ERR_READ_TEMP;
+				}
 	            sumErrorRead++;
 	            if(++numErrorRead == 0) numErrorRead--;
-	            if(numErrorRead > NUM_READ_TEMP_ERR) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
+	            if(numErrorRead > NUM_READ_TEMP_ERR && !GETBIT(setup_flags, fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
 	            return err;
 			} else {
 				numErrorRead = 0; // Сброс счетчика ошибок

@@ -10,6 +10,8 @@
 	window.onload = function() {
 		loadParam("get_OneWirePin,get_noteTemp(TEVAING),get_noteTemp(TEVAOUTG),get_noteTemp(TCONING),get_noteTemp(TCONOUTG),get_noteTemp(TOUT),get_noteTemp(TIN),get_noteTemp(TEVAIN),get_noteTemp(TEVAOUT),get_noteTemp(TCONIN),get_noteTemp(TCONOUT),get_noteTemp(TBOILER),get_noteTemp(TACCUM),get_noteTemp(TRTOOUT),get_noteTemp(TCOMP),get_presentTemp(TEVAING),get_presentTemp(TEVAOUTG),get_presentTemp(TCONING),get_presentTemp(TCONOUTG),get_presentTemp(TOUT),get_presentTemp(TIN),get_presentTemp(TEVAIN),get_presentTemp(TEVAOUT),get_presentTemp(TCONIN),get_presentTemp(TCONOUT),get_presentTemp(TBOILER),get_presentTemp(TACCUM),get_presentTemp(TRTOOUT),get_presentTemp(TCOMP)");
 		loadParam("get_addressTemp(TEVAING),get_addressTemp(TEVAOUTG),get_addressTemp(TCONING),get_addressTemp(TCONOUTG),get_addressTemp(TOUT),get_addressTemp(TIN),get_addressTemp(TEVAIN),get_addressTemp(TEVAOUT),get_addressTemp(TCONIN),get_addressTemp(TCONOUT),get_addressTemp(TBOILER),get_addressTemp(TACCUM),get_addressTemp(TRTOOUT),get_addressTemp(TCOMP),get_errcodeTemp(TEVAING),get_errcodeTemp(TEVAOUTG),get_errcodeTemp(TCONING),get_errcodeTemp(TCONOUTG),get_errcodeTemp(TOUT),get_errcodeTemp(TIN),get_errcodeTemp(TEVAIN),get_errcodeTemp(TEVAOUT),get_errcodeTemp(TCONIN),get_errcodeTemp(TCONOUT),get_errcodeTemp(TBOILER),get_errcodeTemp(TACCUM),get_errcodeTemp(TRTOOUT),get_errcodeTemp(TCOMP)");
+		loadParam("get_flagTemp1(TOUT),get_flagTemp1(TEVAOUTG),get_flagTemp1(TCONING),get_flagTemp1(TCONOUTG),get_flagTemp1(TIN),get_flagTemp1(TEVAOUT),get_flagTemp1(TCONOUT),get_flagTemp1(TBOILER),get_flagTemp1(TCOMP),get_flagTemp1(TEVAING),get_flagTemp1(TEVAOUTG),get_flagTemp1(TCONING),get_flagTemp1(TCONOUTG)");
+		loadParam("get_flagTemp2(TOUT),get_flagTemp2(TEVAOUTG),get_flagTemp2(TCONING),get_flagTemp2(TCONOUTG),get_flagTemp2(TIN),get_flagTemp2(TEVAOUT),get_flagTemp2(TCONOUT),get_flagTemp2(TBOILER),get_flagTemp2(TCOMP),get_flagTemp2(TEVAING),get_flagTemp2(TEVAOUTG),get_flagTemp2(TCONING),get_flagTemp2(TCONOUTG)");
 		updateParam("get_rawTemp(TEVAING),get_rawTemp(TEVAOUTG),get_rawTemp(TCONING),get_rawTemp(TCONOUTG),get_rawTemp(TIN),get_rawTemp(TOUT),get_rawTemp(TEVAIN),get_rawTemp(TEVAOUT),get_rawTemp(TCONIN),get_rawTemp(TCONOUT),get_rawTemp(TBOILER),get_rawTemp(TACCUM),get_rawTemp(TRTOOUT),get_rawTemp(TCOMP)");
 	};
 	function ScanOneWire() {
@@ -53,6 +55,7 @@
 			<th>Температура</th>
 			<th>Адрес</th>
 			<th>Привязка</th>
+			<th width="10%">Ошибки: игнор./ не лог.</th>
 			<th>Код ошибки</th>
 		</tr>
 		</thead>
@@ -63,6 +66,7 @@
 			<td id="get_rawtemp-tout">-</td>
 			<td id="get_addresstemp-tout">-</td>
 			<td><select id="set_addresstemp-tout" onchange="setParam('set_addressTemp(TOUT)','get_addresstemp-tout');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tout" onchange="setParam('get_flagTemp1(TOUT)');"><input type="checkbox" id="get_flagtemp2-tout" onchange="setParam('get_flagTemp2(TOUT)');"></td>
 			<td id="get_errcodetemp-tout">-</td>
 		</tr>
 		<tr id="get_presenttemp-tin">
@@ -71,6 +75,7 @@
 			<td id="get_rawtemp-tin">-</td>
 			<td id="get_addresstemp-tin">-</td>
 			<td><select id="set_addresstemp-tin" onchange="setParam('set_addressTemp(TIN)','get_addresstemp-tin');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tin" onchange="setParam('get_flagTemp1(TIN)');"><input type="checkbox" id="get_flagtemp2-tin" onchange="setParam('get_flagTemp2(TIN)');"></td>
 			<td id="get_errcodetemp-tin">-</td>
 		</tr>
 		<tr id="get_presenttemp-tboiler">
@@ -79,6 +84,7 @@
 			<td id="get_rawtemp-tboiler">-</td>
 			<td id="get_addresstemp-tboiler">-</td>
 			<td><select id="set_addresstemp-tboiler" onchange="setParam('set_addressTemp(TBOILER)','get_addresstemp-tboiler');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tboiler" onchange="setParam('get_flagTemp1(TBOILER)');"><input type="checkbox" id="get_flagtemp2-tboiler" onchange="setParam('get_flagTemp2(TBOILER)');"></td>
 			<td id="get_errcodetemp-tboiler">-</td>
 		</tr>	
 		<tr id="get_presenttemp-tcomp">
@@ -87,6 +93,7 @@
 			<td id="get_rawtemp-tcomp">-</td>
 			<td id="get_addresstemp-tcomp">-</td>
 			<td><select id="set_addresstemp-tcomp" onchange="setParam('set_addressTemp(TCOMP)','get_addresstemp-tcomp');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tcomp" onchange="setParam('get_flagTemp1(TCOMP)');"><input type="checkbox" id="get_flagtemp2-tcomp" onchange="setParam('get_flagTemp2(TCOMP)');"></td>
 			<td id="get_errcodetemp-tcomp">-</td>
 		</tr>
 		<tr id="get_presenttemp-tevaing">
@@ -95,6 +102,7 @@
 			<td id="get_rawtemp-tevaing">-</td>
 			<td id="get_addresstemp-tevaing">-</td>
 			<td><select id="set_addresstemp-tevaing" onchange="setParam('set_addressTemp(TEVAING)','get_addresstemp-tevaing');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tevaing" onchange="setParam('get_flagTemp1(TEVAING)');"><input type="checkbox" id="get_flagtemp2-tevaing" onchange="setParam('get_flagTemp2(TEVAING)');"></td>
 			<td id="get_errcodetemp-tevaing">-</td>
 		</tr>
 		<tr id="get_presenttemp-tevaoutg">
@@ -103,6 +111,7 @@
 			<td id="get_rawtemp-tevaoutg">-</td>
 			<td id="get_addresstemp-tevaoutg">-</td>
 			<td><select id="set_addresstemp-tevaoutg" onchange="setParam('set_addressTemp(TEVAOUTG)','get_addresstemp-tevaoutg');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tevaoutg" onchange="setParam('get_flagTemp1(TEVAOUTG)');"><input type="checkbox" id="get_flagtemp2-tevaoutg" onchange="setParam('get_flagTemp2(TEVAOUTG)');"></td>
 			<td id="get_errcodetemp-tevaoutg">-</td>
 		</tr>
 		<tr id="get_presenttemp-tconing">
@@ -111,6 +120,7 @@
 			<td id="get_rawtemp-tconing">-</td>
 			<td id="get_addresstemp-tconing">-</td>
 			<td><select id="set_addresstemp-tconing" onchange="setParam('set_addressTemp(TCONING)','get_addresstemp-tconing');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tconing" onchange="setParam('get_flagTemp1(TCONING)');"><input type="checkbox" id="get_flagtemp2-tconing" onchange="setParam('get_flagTemp2(TCONING)');"></td>
 			<td id="get_errcodetemp-tconing">-</td>
 		</tr>
 		<tr id="get_presenttemp-tconoutg">
@@ -119,6 +129,7 @@
 			<td id="get_rawtemp-tconoutg">-</td>
 			<td id="get_addresstemp-tconoutg">-</td>
 			<td><select id="set_addresstemp-tconoutg" onchange="setParam('set_addressTemp(TCONOUTG)','get_addresstemp-tconoutg');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tconoutg" onchange="setParam('get_flagTemp1(TCONOUTG)');"><input type="checkbox" id="get_flagtemp2-tconoutg" onchange="setParam('get_flagTemp2(TCONOUTG)');"></td>
 			<td id="get_errcodetemp-tconoutg">-</td>
 		</tr>										
 		<tr id="get_presenttemp-tevain">
@@ -127,6 +138,7 @@
 			<td id="get_rawtemp-tevain">-</td>
 			<td id="get_addresstemp-tevain">-</td>
 			<td><select id="set_addresstemp-tevain" onchange="setParam('set_addressTemp(TEVAIN)','get_addresstemp-tevain');"></select></td>
+			<td></td>
 			<td id="get_errcodetemp-tevain">-</td>
 		</tr>
 		<tr id="get_presenttemp-tevaout">
@@ -135,6 +147,7 @@
 			<td id="get_rawtemp-tevaout">-</td>
 			<td id="get_addresstemp-tevaout">-</td>
 			<td><select id="set_addresstemp-tevaout" onchange="setParam('set_addressTemp(TEVAOUT)','get_addresstemp-tevaout');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tevaout" onchange="setParam('get_flagTemp1(TEVAOUT)');"><input type="checkbox" id="get_flagtemp2-tevaout" onchange="setParam('get_flagTemp2(TEVAOUT)');"></td>
 			<td id="get_errcodetemp-tevaout">-</td>
 		</tr>
 		<tr id="get_presenttemp-tconin">
@@ -143,6 +156,7 @@
 			<td id="get_rawtemp-tconin">-</td>
 			<td id="get_addresstemp-tconin">-</td>
 			<td><select id="set_addresstemp-tconin" onchange="setParam('set_addressTemp(TCONIN)','get_addresstemp-tconin');"></select></td>
+			<td></td>
 			<td id="get_errcodetemp-tconin">-</td>
 		</tr>
 		<tr id="get_presenttemp-tconout">
@@ -151,6 +165,7 @@
 			<td id="get_rawtemp-tconout">-</td>
 			<td id="get_addresstemp-tconout">-</td>
 			<td><select id="set_addresstemp-tconout" onchange="setParam('set_addressTemp(TCONOUT)','get_addresstemp-tconout');"></select></td>
+			<td><input type="checkbox" id="get_flagtemp1-tconout" onchange="setParam('get_flagTemp1(TCONOUT)');"><input type="checkbox" id="get_flagtemp2-tconout" onchange="setParam('get_flagTemp2(TCONOUT)');"></td>
 			<td id="get_errcodetemp-tconout">-</td>
 		</tr>		
 		<tr id="get_presenttemp-taccum">
@@ -159,6 +174,7 @@
 			<td id="get_rawtemp-taccum">-</td>
 			<td id="get_addresstemp-taccum">-</td>
 			<td><select id="set_addresstemp-taccum" onchange="setParam('set_addressTemp(TACCUM)','get_addresstemp-taccum');"></select></td>
+			<td></td>
 			<td id="get_errcodetemp-taccum">-</td>
 		</tr>	
 		<tr id="get_presenttemp-trtoout">
@@ -167,6 +183,7 @@
 			<td id="get_rawtemp-trtoout">-</td>
 			<td id="get_addresstemp-trtoout">-</td>
 			<td><select id="set_addresstemp-trtoout" onchange="setParam('set_addressTemp(TRTOOUT)','get_addresstemp-trtoout');"></select></td>
+			<td></td>
 			<td id="get_errcodetemp-trtoout">-</td>
 		</tr>	
 	</tbody>

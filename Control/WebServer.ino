@@ -1878,6 +1878,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_errcodeTemp")==0)           // Функция get_errcodeTemp
                  { strcat(strReturn,int2str(HP.sTemp[p].get_lastErr())); strcat(strReturn,"&"); continue; }
                  
+              if (strcmp(str, "get_errorsTemp") == 0)           // Функция get_errorsTemp
+                 { strcat(strReturn,int2str(HP.sTemp[p].get_sumErrorRead())); strcat(strReturn,"&"); continue; }
+
               if (strcmp(str,"get_presentTemp")==0)           // Функция get_presentTemp
                   {
                   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
@@ -1886,7 +1889,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
                  { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }    
 
-             /*    
+              if(strncmp(str, "get_flagTemp", 12)==0){  // get_flagTempX(N): X - номер бита, N - имя датчика
+            	  strcat(strReturn, int2str(HP.sTemp[p].get_setup_flag(atoi(str + 12))));
+            	  strcat(strReturn,"&");  continue;
+              }
+
+              /*
              if (strcmp(str,"get_targetTemp")==0)           // Функция get_targetTemp резрешены не все датчики при этом.
                  {
                   if (p==1) {strcat(strReturn,ftoa(temp,HP.get_TempTargetIn()/100.0,1));  }
@@ -1908,7 +1916,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
 
-                /*  
+               if(strncmp(str, "set_flagTemp", 12) == 0) {   // set_flagTempX(N=V): X - номер бита, N - имя датчика
+            	   i = atoi(str + 12);
+            	   HP.sTemp[p].set_setup_flag(i, int(pm));
+            	   strcat(strReturn, int2str(HP.sTemp[p].get_setup_flag(i)));
+            	   strcat(strReturn, "&"); continue;
+               }
+
+               /*
               if (strcmp(str,"set_targetTemp")==0)           // Функция set_targetTemp резрешены не все датчики при этом.
                  {
                   if (p==1) {HP.set_TempTargetIn(pm*100);  }

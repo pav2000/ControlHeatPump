@@ -802,9 +802,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 {
     uint8_t i;
     int16_t result;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
-
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -825,7 +823,6 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 {
     uint8_t i;
     uint32_t result;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
@@ -845,7 +842,6 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
 {
     uint8_t i;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток записи
     {

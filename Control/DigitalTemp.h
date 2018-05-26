@@ -43,7 +43,8 @@
 
 enum TEMP_SETUP_FLAGS {
 	fDS2482_second = 0,	// датчик на втором DS2482 (адрес I2C_ADR_DS2482two)
-	fTEMP_ignory_errors // игнорировать ошибки датчика
+	fTEMP_ignory_errors, // игнорировать ошибки датчика
+	fTEMP_dont_log_errors // не логировать ошибки
 };
 
 // Удаленные датчики температуры -------------------------------------------------------------
@@ -116,6 +117,8 @@ class sensorTemp
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline boolean get_bus(){ return GETBIT(setup_flags, fDS2482_second); } // Шина
+    __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
+    inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
     char*    get_note(){return note;}                   // Получить оисание датчика
