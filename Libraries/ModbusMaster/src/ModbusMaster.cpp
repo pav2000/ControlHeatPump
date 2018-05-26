@@ -78,10 +78,6 @@ void ModbusMaster::begin(uint8_t slave, Stream &serial)
   _serial = &serial;
   _u8TransmitBufferIndex = 0;
   u16TransmitBufferLength = 0;
-#ifdef MODBUS_FREERTOS
-//Serial.println("define MODBUS_FREERTOS");
-#endif
-
 }
 
 
@@ -618,7 +614,11 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   
   if((u32StartTime = millis() - last_transaction_time) < MIN_TIME_BETWEEN_TRANSACTION) {
 	  u32StartTime = MIN_TIME_BETWEEN_TRANSACTION - u32StartTime;
-	  while(u32StartTime--) if(_idle) _idle(); else delay(1);
+#ifdef MODBUS_FREERTOS
+	  while(u32StartTime--) if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(1); else delay(1);
+#else
+	  while(u32StartTime--) delay(1);
+#endif
   }
 
   // assemble Modbus Request Application Data Unit (ADU)
@@ -724,14 +724,9 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   // Очистка приемного буфера перед передачей запроса
   while (_serial->read() != -1);
 
-
   // transmit request
   // вызов функции перед началом передачи - дернуть ногу передачи max485 (помним про полудуплекс)
   if (_preTransmission)  { _preTransmission();  }
-
-  #ifdef MODBUS_FREERTOS   //начало критической секции
-  if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED) taskENTER_CRITICAL();
-  #endif
 
   // передаем данные
   for (i = 0; i < u8ModbusADUSize; i++)
@@ -741,11 +736,6 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
        Serial.print(u8ModbusADU[i],HEX);Serial.print(" ");   // вывод переданных данных
     #endif
   }
-
-  #ifdef MODBUS_FREERTOS  // конец критической секции
-  if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED) taskEXIT_CRITICAL();
-  #endif
-
 
    #ifdef MODBUSMASTER_DEBUG
     Serial.print(" write "); Serial.println(u8ModbusADUSize);  // вывод числа переданных байт
@@ -759,11 +749,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
    u8ModbusADUSize = 0;       // Сбросить длину буфера
 
   // Цикл чтения из входного буфера пока нет ошибок и не прошло время ожидания
-  u32StartTime = millis();   // время начала
-
-  #ifdef MODBUS_FREERTOS   //начало критической секции
-  if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED) taskENTER_CRITICAL();
-  #endif
+   u32StartTime = millis();   // время начала
   // Ожидание и чтение ответа
   while (u8BytesLeft && !u8MBStatus)
   {
@@ -771,13 +757,12 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
     {
       u8ModbusADU[u8ModbusADUSize++] = _serial->read();
       u8BytesLeft--;   // байт прочли уменьшили счетчик
-    #ifdef MODBUSMASTER_DEBUG
-       Serial.print(u8ModbusADU[u8ModbusADUSize-1],HEX);Serial.print(" ");   // вывод полученных данных
-    #endif
-    }
-    else                         // нет символов во входном буфере
-    {
-     if (_idle) {_idle(); }      // если разрешено - операция ожидания
+      u32StartTime = millis();   // время продолжения
+#ifdef MODBUSMASTER_DEBUG
+      Serial.print(u8ModbusADU[u8ModbusADUSize-1],HEX);Serial.print(" ");   // вывод полученных данных
+#endif
+    } else {                        // нет символов во входном буфере
+    	if (_idle) {_idle(); }      // если разрешено - операция ожидания
     }
 
     // evaluate slave ID, function code once enough bytes have been read
@@ -842,13 +827,8 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
     } // if (u8ModbusADUSize == 5)
 
     // проверка привышения времени ожидания
-    if ((millis()-u32StartTime)>ku16MBResponseTimeout)
-       {u8MBStatus = ku8MBResponseTimedOut;break;}
+    if ((millis()-u32StartTime)>ku16MBResponseTimeout) {u8MBStatus = ku8MBResponseTimedOut;break;}
   }   //Конец цикла приема while (u8BytesLeft && !u8MBStatus)
-
-  #ifdef MODBUS_FREERTOS  // конец критической секции
-  if(xTaskGetSchedulerState()!=taskSCHEDULER_NOT_STARTED) taskEXIT_CRITICAL();
-  #endif
 
   #ifdef MODBUSMASTER_DEBUG
    if (u8ModbusADUSize>0)

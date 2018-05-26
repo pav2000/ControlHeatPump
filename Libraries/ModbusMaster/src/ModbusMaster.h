@@ -9,6 +9,8 @@
 - сделана обработка ошибок инвертора (в коде функции добавляется 0х80)
 при этом возвращается состяние ku8MBErrorOmronMX2,
 первый элемент буфера при этом содержит код ошибки
+*
+* Some additional - vad7@yahoo.com
 */
 
 /**
@@ -49,7 +51,7 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
 #define ModbusMaster_h
 
 //#define MODBUSMASTER_DEBUG             // Отладка - посылка приема и передачи в Serial
-//#define MODBUS_FREERTOS                  // Настроить либу на многозадачность
+#define MODBUS_FREERTOS                  // Настроить либу на многозадачность
 
 #include "Arduino.h"                     // include types & constants of Wiring core API
 #include "util/crc16.h"                  // functions to calculate Modbus Application Data Unit CRC
@@ -59,7 +61,7 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
 #include "FreeRTOS_ARM.h"                // поддержка многозадачности
 #endif
 
-#define MIN_TIME_BETWEEN_TRANSACTION	10 // ms
+#define MIN_TIME_BETWEEN_TRANSACTION	20 // ms
 
 /**
 Arduino class library for communicating with Modbus slaves over 
@@ -261,8 +263,8 @@ class ModbusMaster
     static const uint8_t ku8MBReadWriteMultipleRegisters = 0x17; ///< Modbus function 0x17 Read Write Multiple Registers
     static const uint8_t ku8MBLinkTestOmronMX2Only       = 0x08; ///< Modbus function 0x08 Тест связи с инвертром Omron MX2 функция только для него
     
-    // Modbus timeout [milliseconds]
-    static const uint16_t ku16MBResponseTimeout          = 1000; ///< Modbus timeout [milliseconds]
+    // Modbus timeout [milliseconds] Depend on serial speed
+    static const uint16_t ku16MBResponseTimeout          = 30;   ///< Modbus timeout, every byte [milliseconds]
     
     // master function that conducts Modbus transactions
     uint8_t ModbusMasterTransaction(uint8_t u8MBFunction);

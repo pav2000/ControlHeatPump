@@ -787,8 +787,8 @@ void vUpdateStat( void * )
 // Задача чтения датчиков
 void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
-	volatile unsigned long readFC = 0;
-	volatile unsigned long readSDM = 0;
+	static unsigned long readFC = 0;
+	static unsigned long readSDM = 0;
 	static uint32_t ttime;                                                 // новое время
 	static uint32_t oldTime;                                               // старое вермя
 	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
@@ -803,7 +803,15 @@ void vReadSensor(void *)
 		prtemp |= HP.Prepare_Temp(1);
 #endif
 #endif     // не DEMO
-		vReadSensor_delay10ms(cDELAY_DS1820 / 10); 						 // Ожитать время преобразования
+		ttime = xTaskGetTickCount();
+#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
+		HP.dSDM.get_readState(0); // Основная группа регистров
+		vReadSensor_delay10ms(10);
+		if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ)) {
+			HP.dSDM.get_readState(1); // Вторая группа регистров
+		}
+#endif
+		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
@@ -821,18 +829,21 @@ void vReadSensor(void *)
 		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
 #endif
 
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 10);     // Ожитать время нужное для цикла чтения
+		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 		//  Опрос состояния инвертора
 		if((HP.dFC.get_present()) && (xTaskGetTickCount() - readFC > FC_TIME_READ)) {
 			readFC = xTaskGetTickCount();
 			HP.dFC.get_readState();
 		}
-#ifdef USE_ELECTROMETER_SDM   // Опрос состяния счетчика
+
+		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
+
+#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 		if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
 		{
 			readSDM=xTaskGetTickCount();
-			HP.dSDM.get_readState();
+			HP.dSDM.get_readState(2);     // Последняя группа регистров
 		}
 #endif
 
@@ -859,6 +870,8 @@ void vReadSensor(void *)
 		// Проверка и сброс митекса шины I2C
 //       if (SemaphoreTake(xI2CSemaphore,(3*I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) { SemaphoreGive(xI2CSemaphore);journal.jprintf("UNLOCK mutex xI2CSemaphore\n");  HP.num_resMutexI2C++;} // Захват мютекса I2C или ОЖИДАНИНЕ 3 времен I2C_TIME_WAIT  и его освобождение
 //       else  SemaphoreGive(xI2CSemaphore);
+
+		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 		// Проверки граничных температур для уведомлений, если разрешено!
 		static uint16_t countTEMP = 0;        // Для проверки критических температур для рассылки уведомлений
@@ -889,8 +902,9 @@ void vReadSensor(void *)
 }
 
 // Вызывается во время задержек в задаче чтения датчиков
-void vReadSensor_delay10ms(uint16_t msec)
+void vReadSensor_delay10ms(int16_t msec)
 {
+	if(msec <= 0) msec = 1;
 	while(msec--) {
 		_delay(10);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН нажимать надо более 4 сек  по хорошему надо это переделать - переместить в более быстрыю задачу

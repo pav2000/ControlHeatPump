@@ -1,5 +1,4 @@
-﻿
-<html>
+﻿<html>
 <head>
   <title>Датчики. Народный контроллер ТН</title>
   <meta charset="utf-8" />
@@ -11,8 +10,8 @@
     loadParam("get_listInput");
     loadParam("get_listPress");
     loadParam("get_listFlow");
-loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM),get_SDM(ENERGY_SDM)");
-updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(ENERGY_SDM)");                      
+	loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM)");
+	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(FREQ_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(ENERGY_SDM)");                      
     };
   </script>
 </head>
@@ -92,9 +91,44 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
     </tbody>
     </table>
 </div>  
+  
 <div class="row1">
-    <h2>Датчики сухой контакт</h2>
-    <table>
+  <h2>Электрический счётчик <span id="get_sdm-name_sdm"></span> Modbus <input type="submit" value="Программирование (2)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (1) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
+  <table>
+    <thead>
+    <tr>
+      <th>Напряжение (V)</th>
+      <th>Ток (А)</th>
+      <th>Активная мощность (W)</th>
+      <th>Реактивная мощность (VAr)</th>
+      <th>Полная мощность (VA)</th>
+      <th>Коэффициент мощности (cos φ)</th>
+      <th>Частота (Hz)</th>
+      <th>Активная энергия (kW/h)</th>
+      <th>Реактивная энергия (kVAr/h)</th>
+      <th>Полная энергия (kVA/h)</th>
+      <th>Связь</th>
+    </tr>
+    <tr>
+        <td id="get_sdm-voltage_sdm"></td>
+        <td id="get_sdm-current_sdm"></td>
+        <td id="get_sdm-acpower_sdm"></td>
+        <td id="get_sdm-repower_sdm"></td>
+        <td id="get_sdm-power_sdm"></td>
+        <td id="get_sdm-pow_factor_sdm"></td>
+        <td id="get_sdm-freq_sdm"></td>
+        <td id="get_sdm-acenergy_sdm"></td>
+        <td id="get_sdm-reenergy_sdm"></td>
+        <td id="get_sdm-energy_sdm"></td>
+        <td id="get_sdm-link_sdm"></td>
+      </tr>
+    </thead>
+  </table>
+</div>    
+
+<div class="row1">
+  <h2>Датчики сухой контакт</h2>
+  <table>
     <thead>
     <tr>
       <th>Имя</th>
@@ -110,62 +144,30 @@ updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_
     <tbody id="get_listinput">
     </tbody>
   </table>            
-  </div>
-  
-  <div class="row1">
-    <h2>Электрический счётчик с MODBUS "SDM120" <input type="submit" value="Программирование (2)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (1) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
-    <table>
-    <thead>
-    <tr>
-      <th>Напряжение (V)</th>
-      <th>Ток (А)</th>
-      <th>Реактивная мощность (W)</th>
-      <th>Активная мощность (W)</th>
-      <th>Полная мощность (W)</th>
-      <th>Коэффициент мощности (cos φ)</th>
-      <th>Активная энергия (kW/h)</th>
-      <th>Реактивная энергия (kW/h)</th>
-      <th>Полная энергия (kW/h)</th>
-      <th>Связь с SDM120</th>
-    </tr>
-    <tr>
-        <td id="get_sdm-voltage_sdm"></td>
-        <td id="get_sdm-current_sdm"></td>
-        <td id="get_sdm-repower_sdm"></td>
-        <td id="get_sdm-acpower_sdm"></td>
-        <td id="get_sdm-power_sdm"></td>
-        <td id="get_sdm-pow_factor_sdm"></td>
-        <td id="get_sdm-acenergy_sdm"></td>
-        <td id="get_sdm-reenergy_sdm"></td>
-        <td id="get_sdm-energy_sdm"></td>
-        <td id="get_sdm-link_sdm"></td>
-      </tr>
-    </thead>
-  </table>
-</div>    
-  
-  <div class="row1">
-    <h2>Защиты по входному напряжению</h2>
-    <table>
+</div>
+
+<div class="row1">
+  <h2>Защиты по входному напряжению</h2>
+  <table>
     <thead>
     <tr>
       <th>Максимальное напряжения<sup>3</sup> [0...400] (V)</th>
       <th>Минимальное напряжения<sup>4</sup> [0...400] (V)</th>
-      <th>Контроль мощности<sup>4</sup> [0...10000] (W)</th>      
+      <th>Контроль мощности<sup>4</sup> [0...30000] (W)</th>      
     </tr>
     <tr>
     <td nowrap><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>
     <td nowrap><input id="get_sdm-min_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MIN_VOLTAGE_SDM)');"></td>
-    <td nowrap><input id="get_sdm-max_power_sdm" type="number" min="0" max="10000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
+    <td nowrap><input id="get_sdm-max_power_sdm" type="number" min="0" max="30000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
     </tr>  
     </thead>
-    </table>
-    <br><br>
-    <p>1. При нажатии кнопки флаг сбоя связи сбрасывается и делается попытка прочитать данные со счетчика.</p>
-	<p>2. Производится установка параметров связи счетчика под требуемые. Перед нажатием необходимо перевести счетчик в режим программирования (долгое нажате на кнопку, надпись  Set на экране). После этой операции счетчик надо сбросить (выключить питание).</p>  
-  	<p>3. При выполнении условия, ТН останавливается по ошибке.</p>
-    <p>4. При выполнении условия, ТН не останавливается, генерируется уведомление.</p>
-  </div> 
+  </table>
+<br><br>
+<p>1. При нажатии кнопки флаг сбоя связи сбрасывается и делается попытка прочитать данные со счетчика.</p>
+<p>2. Производится установка параметров связи счетчика под требуемые. Перед нажатием необходимо перевести счетчик в режим программирования (долгое нажате на кнопку, надпись  Set на экране). После этой операции счетчик надо сбросить (выключить питание).</p>  
+<p>3. При выполнении условия, ТН останавливается по ошибке.</p>
+<p>4. При выполнении условия, ТН не останавливается, генерируется уведомление.</p>
+</div> 
 </div>
 </body>
 </html>

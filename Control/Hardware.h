@@ -597,8 +597,12 @@ private:
 
 
 
-// Класс Электрический счетчик SDM120 -----------------------------------------------------------------------------------------------
+// Класс Электрический счетчик SDM -----------------------------------------------------------------------------------------------
+#ifdef USE_SDM630
+const char *nameSDM = {"SDM630"};                               // Имя счетчика
+#else
 const char *nameSDM = {"SDM120"};                               // Имя счетчика
+#endif
 const char *noteSDM = {"Электрический счетчик с modbus"};       // Описание счетчика
 const char *noteSDM_NONE = {"Отсутствует в конфигурации"};      //
 
@@ -617,7 +621,8 @@ uint32_t P3;                            // Резерв 3
 
 };
 // Input register Function code 04 to read input parameters:
-#ifdef USE_SDM630                          // Регистры 3-х фазного счетчика SDM630
+#ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
+	// Адрес уже уменьшен на 1
     #define SDM_VOLTAGE     42 
     #define SDM_CURRENT     48
     #define SDM_AC_POWER    52
@@ -662,16 +667,16 @@ class devSDM
    public:  
        int8_t initSDM();                               // Инициализация счетчика и проверка и если надо программирование
        __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fSDM);} // Наличие счетчика в текущей конфигурации
-      int8_t  get_readState();                         // Прочитать инфо с счетчика
+      int8_t  get_readState(uint8_t group);            // Прочитать инфо с счетчика
       int8_t  get_lastErr(){return err;}               // Получить последнюю ошибку счетчика
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
-       __attribute__((always_inline)) inline float get_AcPower(){return AcPower;}          // Aктивная мощность
+       __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_RePower(){return RePower;}          // Реактивная мощность
-       __attribute__((always_inline)) inline float get_Power(){return Power;}              // Полная мощность
+       __attribute__((always_inline)) inline float get_FullPower(){return Power;}          // Полная мощность
        __attribute__((always_inline)) inline float get_PowerFactor(){return PowerFactor;}  //   Коэффициент мощности
        __attribute__((always_inline)) inline float get_Energy(){return Energy;}            //   Суммараная энергия
          
@@ -679,7 +684,6 @@ class devSDM
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
       char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки
       boolean set_paramSDM(char *var,char *c);         // Установить параметр SDM из строки
-
       
       int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -701,13 +705,14 @@ class devSDM
       float Power;                                     // Полная мощность
       float PowerFactor;                               // Коэффициент мощности
       float Phase;                                     // угол фазы (градусы)
+      float Freq;									   // Частота
       float iAcEnergy;                                 // Потребленная активная энергия
       float eAcEnergy;                                 // Переданная активная энергия
       float iReEnergy;                                 // Потребленная реактивная энергия
       float eReEnergy;                                 // Переданная реактивная энергия
-      float AcEnergy;                                  // Суммараная активная энергия
-      float ReEnergy;                                  // Суммараная реактивная энергия
-      float Energy;                                    // Суммараная энергия
+      float AcEnergy;                                  // Суммарная активная энергия
+      float ReEnergy;                                  // Суммарная реактивная энергия
+      float Energy;                                    // Суммарная энергия
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание

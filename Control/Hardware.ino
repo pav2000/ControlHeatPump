@@ -2095,47 +2095,52 @@ boolean  devSDM::progConnect()
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
 }                           
 
-// Прочитать инфо с счетчика
- int8_t devSDM::get_readState()              
- {
- static float tmp; 
- int8_t i;
- if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fLink))) return err;  // Если нет счетчика или нет связи выходим
- err=OK;
-      // Чтение состояния счетчика,
-      for(i=0;i<SDM_NUM_READ;i++)   // делаем SDM_NUM_READ попыток чтения
-      {
-        // Читаем значения счетчика
-        _delay(SDM_DELAY_READ); 
-        err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) { Voltage=tmp;_delay(SDM_DELAY_READ);     }            // Напряжение
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_CURRENT,&tmp);       if(err==OK) Current=tmp;_delay(SDM_DELAY_READ);       }            // Ток
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_POWER,&tmp);      if(err==OK) AcPower=tmp;_delay(SDM_DELAY_READ);       }            // Активная мощность
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_POWER,&tmp);      if(err==OK) RePower=tmp;_delay(SDM_DELAY_READ);       }            // Реактивная мощность
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POWER,&tmp);         if(err==OK) Power=tmp;_delay(SDM_DELAY_READ);         }            // Полная мощность
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POW_FACTOR,&tmp);    if(err==OK) PowerFactor=tmp;_delay(SDM_DELAY_READ);   }            // Коэффициент мощности
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_PHASE,&tmp);         if(err==OK) Phase=tmp;_delay(SDM_DELAY_READ);         }            // Угол фазы (градусы)
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_ENERGY,&tmp);     if(err==OK) AcEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная активная энергия
-        if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_ENERGY,&tmp);     if(err==OK) ReEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная реактивная энергия
-      //  if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_ENERGY,&tmp);        if(err==OK) Energy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная энергия
-        Energy=AcEnergy+ReEnergy;
-        if (err==OK) break;
-        numErr++;                  // число ошибок чтение по модбасу
-        journal.jprintf(pP_TIME, cErrorRS485,name,__FUNCTION__,err);      // Выводим сообщение о повторном чтении
-        WDT_Restart(WDT);          // Сбросить вачдог
-        _delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
-      }
- if (err==OK)
- {
- // Serial.println((int)(Voltage*100));
-  if ((settingSDM.maxVoltage>1)&&(settingSDM.maxVoltage< Voltage)) {err=ERR_MAX_VOLTAGE;set_Error(err,name);return err; }       // Контроль входного напряжения
-  if ((settingSDM.maxPower>1)&&(settingSDM.maxPower< Power))       {err=ERR_MAX_POWER;set_Error(err,name);return err; }         // Контроль мощности потребления
-  if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
-  return err;                       // все прочиталось, выходим
- } 
- SETBIT0(flags,fLink);             // связь со счетчиком потеряна
-// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
- return err;    
- }
+// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 1,2 - через SDM_TIME_READ
+int8_t devSDM::get_readState(uint8_t group)
+{
+	static float tmp;
+	int8_t i;
+	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fLink))) return err;  // Если нет счетчика или нет связи выходим
+	err=OK;
+	// Чтение состояния счетчика,
+	for(i=0;i<SDM_NUM_READ;i++)   // делаем SDM_NUM_READ попыток чтения
+	{
+		// Читаем значения счетчика
+		_delay(SDM_DELAY_READ);
+		if(group == 0) {
+			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) { Voltage=tmp;_delay(SDM_DELAY_READ);     }            // Напряжение
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_POWER,&tmp);      if(err==OK) AcPower=tmp;_delay(SDM_DELAY_READ);       }            // Активная мощность
+		} else if(group == 1) {
+			{err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_CURRENT,&tmp);       			if(err==OK) Current=tmp;_delay(SDM_DELAY_READ);       }            // Ток
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POW_FACTOR,&tmp);    if(err==OK) PowerFactor=tmp;_delay(SDM_DELAY_READ);   }            // Коэффициент мощности
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_FREQUENCY,&tmp);     if(err==OK) Freq=tmp;_delay(SDM_DELAY_READ);   		  }            // Частота
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_PHASE,&tmp);         if(err==OK) Phase=tmp;_delay(SDM_DELAY_READ);         }            // Угол фазы (градусы)
+		} else {
+			{err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_POWER,&tmp);      			if(err==OK) RePower=tmp;_delay(SDM_DELAY_READ);       }            // Реактивная мощность
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POWER,&tmp);         if(err==OK) Power=tmp;_delay(SDM_DELAY_READ);         }            // Полная мощность
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_ENERGY,&tmp);     if(err==OK) AcEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная активная энергия
+			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_ENERGY,&tmp);     if(err==OK) ReEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная реактивная энергия
+			//if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_ENERGY,&tmp);        if(err==OK) Energy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная энергия
+			Energy=AcEnergy+ReEnergy;
+		}
+		if (err==OK) break;
+		numErr++;                  // число ошибок чтение по модбасу
+		journal.jprintf(pP_TIME, cErrorRS485,name,__FUNCTION__,err);      // Выводим сообщение о повторном чтении
+		WDT_Restart(WDT);          // Сбросить вачдог
+		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
+	}
+	if (err==OK)
+	{
+		// Serial.println((int)(Voltage*100));
+		if ((settingSDM.maxVoltage>1)&&(settingSDM.maxVoltage< Voltage)) {err=ERR_MAX_VOLTAGE;set_Error(err,name);return err; }       // Контроль входного напряжения
+		if ((settingSDM.maxPower>1)&&(settingSDM.maxPower< AcPower))     {err=ERR_MAX_POWER;set_Error(err,name);return err; }         // Контроль мощности потребления
+		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
+		return err;                       // все прочиталось, выходим
+	}
+	SETBIT0(flags,fLink);             // связь со счетчиком потеряна
+	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
+	return err;
+}
 
 // Получить параметр счетчика в виде строки
 char* devSDM::get_paramSDM(char *var, char *ret)           
@@ -2153,6 +2158,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
    if(strcmp(var,sdm_POWER)==0){        return strcat(ret,ftoa(temp,(float)Power,2));                                      }else      // Полная мощность
    if(strcmp(var,sdm_POW_FACTOR)==0){   return strcat(ret,ftoa(temp,(float)PowerFactor,2));                                }else      // Коэффициент мощности
    if(strcmp(var,sdm_PHASE)==0){        return strcat(ret,ftoa(temp,(float)Phase,2));                                      }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_FREQ)==0){         return strcat(ret,ftoa(temp,(float)Freq,2));                                       }else      // Частота
    if(strcmp(var,sdm_IACENERGY)==0){    return strcat(ret,ftoa(temp,(float)iAcEnergy,2));                                  }else      // Потребленная активная энергия
    if(strcmp(var,sdm_EACENERGY)==0){    return strcat(ret,ftoa(temp,(float)eAcEnergy,2));                                  }else      // Переданная активная энергия
    if(strcmp(var,sdm_IREENERGY)==0){    return strcat(ret,ftoa(temp,(float)iReEnergy,2));                                  }else      // Потребленная реактивная энергия
@@ -2226,7 +2232,8 @@ uint16_t devSDM::get_crc16(uint16_t crc)
 static uint8_t Modbus_Entered_Critical = 0;
 static inline void idle() // задержка между чтениями отдельных байт по Modbus
     {
-		_delay(1);  // задержка чтения отдельного символа из Modbus
+		delay(1);		// Не отдает время другим задачам
+//		_delay(1);		// Отдает время другим задачам
     }
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
@@ -2241,7 +2248,6 @@ static inline void postTransmission() // Функция вызываемая П�
 		xTaskResumeAll();
 		Modbus_Entered_Critical = 0;
 	}
-//    _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
     #ifdef PIN_MODBUS_RSE
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
     #endif

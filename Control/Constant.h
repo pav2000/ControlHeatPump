@@ -111,7 +111,7 @@ const uint16_t  defaultPort=80;
 // Требуемые настройки связи (после программирования)
 #define SDM_SPEED           2              // скорость счетчика в константах 0 = 2400 bps. 1 = 4800 bps. 2 = 9600 bps 5=1200 bps  Скорости обмена должны совпадать см MODBUS_PORT_SPEED
 #define SDM_MODBUS_ADR      2              // Адрес счетчика на шине не должно совпадать с FC_MODBUS_ADR
-#define SDM_TIME_READ      (10*1000)       // Время опроса счетчика в мск
+#define SDM_TIME_READ       (10*1000)       // Время опроса счетчика в мск
 #define SDM_NUM_READ        8              // Число попыток чтения счетчика (подряд) по модбас до его отключения (ошибка не генерится)
 #define SDM_DELAY_REPEAD    200            // мсек Время между ПОВТОРНЫМИ попытками чтения                      было 150
 #define SDM_DELAY_READ      80             // Время между последовательными запросами на чтение счетчика (мсек) было 20
@@ -494,6 +494,7 @@ const char *sdm_ACPOWER     = {"ACPOWER_SDM"};            // Активная м
 const char *sdm_POWER       = {"POWER_SDM"};              // Полная мощность
 const char *sdm_POW_FACTOR  = {"POW_FACTOR_SDM"};         // Коэффициент мощности
 const char *sdm_PHASE       = {"PHASE_SDM"};              // Угол фазы (градусы)
+const char *sdm_FREQ        = {"FREQ_SDM"};               // Частота
 const char *sdm_IACENERGY   = {"IACENERGY_SDM"};          // Потребленная активная энергия
 const char *sdm_EACENERGY   = {"EACENERGY_SDM"};          // Переданная активная энергия
 const char *sdm_IREENERGY   = {"IREENERGY_SDM"};          // Потребленная реактивная энергия
