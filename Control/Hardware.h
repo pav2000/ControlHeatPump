@@ -383,8 +383,6 @@ private:
 #define fOnOff      4               // флаг включения-выключения частотника
 #define fErrFC      5               // флаг глобальная ошибка инвертора - работа инвертора запрещена
 
-#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
-
 const char *noteFC_OK   = {" связь по Modbus установлена" };                     // Все впорядке
 const char *noteFC_NO   = {" связь по Modbus потеряна, инвертор заблокирован" };
 const char *noteFC_NONE = {" отсутствует в данной конфигурации" };
@@ -443,11 +441,16 @@ struct type_errorMX2       // структура ошибки
   uint32_t time2;          // Общее время работы ПЧ при включенном питании в момент отключения
 };
 
+
+#ifndef FC_VACON
+
 union union_errorFC
 {
   type_errorMX2 MX2;
   uint16_t  inputBuf[10]; 
 };
+
+#define ERR_LINK_FC 0xFF  	    // Состояние инертора - нет связи.
 
 class devOmronMX2   // Класс частотный преобразователь Omron MX2
 {
@@ -595,7 +598,7 @@ private:
   #endif
  };
 
-
+#endif
 
 // Класс Электрический счетчик SDM -----------------------------------------------------------------------------------------------
 #ifdef USE_SDM630

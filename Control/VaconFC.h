@@ -21,6 +21,9 @@
 #define _VaconFC_h
 
 #define FC_VACON_NAME "Vacon 10"
+#ifdef FC_VACON
+#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
+#endif
 
 // Регистры Vacon 10
 // Чтение
@@ -138,6 +141,8 @@ const char *FC_Faults_str[] = {	"Ok", // нет ошибки
 								"Idenfication fault",
 
 								"Unknown"}; // sizeof(FC_Faults_code)+1
+
+#define FC_SAVED_FLAGS (1<<fAuto)
 
 class devVaconFC
 {
@@ -272,7 +277,7 @@ public:
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t  flags;                   // флаги настройки
+	  uint8_t flags;                   // флаги настройки - см. define FC_SAVED_FLAGS
 	  int16_t P1;                       // Резерв 1
       int16_t P2;                       // Резерв 2	  
    } _data;  // Структура для сохранения настроек

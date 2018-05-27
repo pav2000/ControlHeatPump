@@ -30,45 +30,6 @@ int8_t devVaconFC::initFC()
     startCompressor = 0; // время старта компрессора
     state = ERR_LINK_FC; // Состояние - нет связи с частотником
 
- /*   
-    flags = 0x00; // флаги  0 - наличие FC
-	Uptime				= DEF_Uptime            ;
-    PidFreqStep		= DEF_PidFreqStep     ;
-    PidStop				= DEF_PidStop          ;
-    dtCompTemp			= DEF_dtCompTemp      ;
-    FC_DT_CON_PRESS			= DEF_FC_DT_CON_PRESS      ;
-    startFreq			= DEF_startFreq        ;
-    startFreq_BOILER	= DEF_startFreq_BOILER ;
-    minFreq				= DEF_minFreq          ;
-    minFreqCool		= DEF_minFreqCool     ;
-    minFreqBoiler		= DEF_minFreqBoiler   ;
-    minFreqUser		= DEF_minFreqUser     ;
-    maxFreq				= DEF_maxFreq          ;
-    maxFreqCool		= DEF_maxFreqCool     ;
-    maxFreqBoiler		= DEF_maxFreqBoiler   ;
-    maxFreqUser		= DEF_maxFreqUser     ;
-    stepFreq			= DEF_stepFreq         ;
-    stepFreqBoiler		= DEF_stepFreqBoiler  ;
-    dtTemp				= DEF_dtTemp           ;
-    dtTemp_BOILER		= DEF_dtTemp_BOILER    ;
-    FC_MAX_POWER			= DEF_FC_MAX_POWER         ;
-    FC_MAX_POWER_BOILER		= DEF_FC_MAX_POWER_BOILER  ;
-    FC_MAX_CURRENT			= DEF_FC_MAX_CURRENT       ;
-    FC_MAX_CURRENT_BOILER	= DEF_FC_MAX_CURRENT_BOILER;
-    FC_ACCEL_TIME			= DEF_FC_ACCEL_TIME        ;
-    FC_DEACCEL_TIME			= DEF_FC_DEACCEL_TIME      ;
-
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-    pin = PIN_DEVICE_FC; // Ножка куда прицеплено FC
-    dac = 0; // Текущее значение ЦАП
-    analogWriteResolution(12); // разрешение ЦАП 12 бит;
-    analogWrite(pin, dac);
-    level0 = 0; // Отсчеты ЦАП соответсвующие 0   мощности
-    level100 = 4096; // Отсчеты ЦАП соответсвующие 100 мощности
-    levelOff = 10; // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-//  SETBIT0(flags,fAnalog);           // Нет аналогового выхода
-#endif
-*/
     testMode = NORMAL; // Значение режима тестирования
     name = (char*)FC_VACON_NAME; // Имя
     note = (char*)noteFC_NONE; // Описание инвертора   типа нет его
@@ -98,7 +59,6 @@ int8_t devVaconFC::initFC()
 	  #endif
 	  _data.flags=0x00;                                // флаги  0 - наличие FC
 	 
-
     SETBIT0(_data.flags, fAuto); // По умолчанию старт-стоп
     if(!Modbus.get_present()) // modbus отсутствует
     {
@@ -131,7 +91,7 @@ int8_t devVaconFC::initFC()
     journal.jprintf("Test link Modbus %s: OK\r\n", name); // Тест пройден
 
     uint8_t i = 3;
-    while(state >= 0 && (state & FC_S_RUN)) // Если частотник работает то остановить его
+    while((state & FC_S_RUN)) // Если частотник работает то остановить его
     {
     	if(i-- == 0) break;
         stop_FC();
@@ -168,7 +128,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 		}
 		if(err != OK) state = ERR_LINK_FC;
     } else {
-    	state = 0;
+    	state = FC_S_RDY;
     	err = OK;
     }
     return state;
@@ -195,10 +155,9 @@ int8_t devVaconFC::get_readState()
         err = Modbus.get_err(); // Скопировать ошибку
         if(err == OK) // Прочитано верно
         {
-            if((GETBIT(_data.flags, fOnOff)) && (state != 3))
-                continue;
-            else
-                break; // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
+            if((GETBIT(_data.flags, fOnOff)) && ((state & (FC_S_RDY | FC_S_RUN | FC_S_DIR)) != (FC_S_RDY | FC_S_RUN)))
+                continue; // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в противном случае все ок выходим
+            else break;
         }
         _delay(FC_DELAY_REPEAT);
         journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
@@ -218,21 +177,21 @@ int8_t devVaconFC::get_readState()
     err = Modbus.get_err(); // Скопировать ошибку
     if(err != OK) {
         state = ERR_LINK_FC;
-    } // Ошибка выходим
-
-    _delay(FC_DELAY_READ);
-    power = read_0x03_16(FC_POWER); // прочитать мощность
-    err = Modbus.get_err(); // Скопировать ошибку
-    if(err != OK) {
-        state = ERR_LINK_FC;
-    } // Ошибка выходим
-
-    _delay(FC_DELAY_READ);
-    current = read_0x03_16(FC_CURRENT); // прочитать ток
-    err = Modbus.get_err(); // Скопировать ошибку
-    if(err != OK) {
-        state = ERR_LINK_FC;
-    } // Ошибка выходим
+    } else {
+		_delay(FC_DELAY_READ);
+		power = read_0x03_16(FC_POWER); // прочитать мощность
+		err = Modbus.get_err(); // Скопировать ошибку
+		if(err != OK) {
+			state = ERR_LINK_FC;
+		} else {
+		    _delay(FC_DELAY_READ);
+		    current = read_0x03_16(FC_CURRENT); // прочитать ток
+		    err = Modbus.get_err(); // Скопировать ошибку
+		    if(err != OK) {
+		        state = ERR_LINK_FC;
+		    }
+		}
+    }
 #else // Аналоговое управление
     FC_curr = FC;
     power = 0;
@@ -352,30 +311,33 @@ int32_t devVaconFC::save(int32_t adr)
     }
     adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
  */
- 	if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);     
+	if(writeEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
+		set_Error(ERR_SAVE_EEPROM, (char*) name);
+		return ERR_SAVE_EEPROM;
+	}
+	adr += sizeof(_data);
     return adr;
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devVaconFC::load(int32_t adr)
 {
-/*	
-    if(readEEPROM_I2C(adr, (byte*)&Uptime, (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
- */
-   if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
-  // SETBIT1(_data.flags, fPresent); 							   
+	decltype(_data.flags) save_flags = _data.flags;;
+	if(readEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
+		set_Error(ERR_LOAD_EEPROM, (char*) name);
+		return ERR_LOAD_EEPROM;
+	}
+	adr += sizeof(_data);
+	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
     return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devVaconFC::loadFromBuf(int32_t adr, byte* buf)
 {
- //   memcpy((byte*)&Uptime, buf + adr, (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags));
- //   adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
- memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 	
+	decltype(_data.flags) save_flags = _data.flags;;
+	memcpy((byte*) &_data, buf + adr, sizeof(_data));
+	adr += sizeof(_data);
+	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
     return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
@@ -384,7 +346,7 @@ uint16_t devVaconFC::get_crc16(uint16_t crc)
 	uint16_t i;
 //	for(i = 0; i < (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags); i++)
 //		crc = _crc16(crc,*((byte*)&Uptime + i));  // CRC16 структуры
-    for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   
+	for(i = 0; i < sizeof(_data); i++) crc = _crc16(crc, *((byte*) &_data + i));
 	return crc;
 }
 
