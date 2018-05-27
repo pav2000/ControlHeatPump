@@ -280,7 +280,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.get_optionHP((char*)option_EEV_CLOSE,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.get_optionHP((char*)option_START_POS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.get_optionHP((char*)option_EEV_START_POS,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.get_optionHP((char*)option_EEV_LIGHT_START,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование звука: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;

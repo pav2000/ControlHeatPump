@@ -615,11 +615,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }  
     if (strcmp(str,"get_fullCOP")==0)  //  получение полного COP
        {
-       if (HP.fullCOP!=-1000) strcat(strReturn,ftoa(temp,HP.fullCOP/100.0,2)); else strcat(strReturn,"-"); strcat(strReturn,"&"); continue;
+       if (HP.fullCOP!=-1000) strcat(strReturn,ftoa(temp,(float)HP.fullCOP/100.0,2)); else strcat(strReturn,"-"); strcat(strReturn,"&"); continue;
        }  
     if (strcmp(str,"get_PowerCO") == 0)
        {
-    		ftoa(temp + m_strlen(temp), HP.powerCO/100.0,2); strcat(strReturn,"&"); continue;
+    		ftoa(strReturn + m_strlen(strReturn), HP.powerCO/1000.0,3); strcat(strReturn,"&"); continue;
        }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
@@ -1022,6 +1022,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }   // test_Mail    
        if(strcmp(str, "get_OverCool") == 0) {
            ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
+           strcat(strReturn,"&") ;    continue;
+       }
+       if(strcmp(str, "get_TCOMP_TCON") == 0) { // Нагнетание - Конденсация
+           ftoa(strReturn + m_strlen(strReturn), (HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing()) / 100.0, 2);
            strcat(strReturn,"&") ;    continue;
        }
        // ЭРВ запросы , те которые без параметра ------------------------------

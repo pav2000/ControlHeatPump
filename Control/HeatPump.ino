@@ -649,8 +649,8 @@ void HeatPump::resetSettingHP()
   SETBIT0(Network.flags,fNoPing);               // !save! Запрет пинга контроллера
   
 // Время
-  SETBIT1(DateTime.flags,fUpdateNTP);           // Обновление часов по NTP  запрещено
-  SETBIT1(DateTime.flags,fUpdateI2C);           // Обновление часов I2C     запрещено
+  SETBIT1(DateTime.flags,fUpdateNTP);           // Обновление часов по NTP
+  SETBIT1(DateTime.flags,fUpdateI2C);           // Обновление часов I2C
   
   strcpy(DateTime.serverNTP,(char*)NTP_SERVER);  // NTP сервер по умолчанию
   DateTime.timeZone=TIME_ZONE;                   // Часовой пояс
@@ -677,6 +677,7 @@ void HeatPump::resetSettingHP()
   SETBIT1(Option.flags,fBeep);         //  Звук
   SETBIT1(Option.flags,fNextion);      //  дисплей Nextion
   SETBIT0(Option.flags,fEEV_close);    //  Закрытие ЭРВ при выключении компрессора
+  SETBIT1(Option.flags,fEEV_start);    //  Всегда начинать работу ЭРВ со стратовой позиции
   SETBIT0(Option.flags,fSD_card);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
   Option.sleep=5;                      //  Время засыпания минуты
@@ -950,7 +951,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
 					   
    if(strcmp(var,option_EEV_CLOSE)==0)        {if (x==0) {SETBIT0(Option.flags,fEEV_close); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_close); return true;} else return false;   }else            // Закрытие ЭРВ при выключении компрессора
    if(strcmp(var,option_EEV_LIGHT_START)==0)  {if (x==0) {SETBIT0(Option.flags,fEEV_light_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_light_start); return true;} else return false; }else  // Облегчение старта компрессора
-   if(strcmp(var,option_START_POS)==0)        {if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;              }else  // Всегда начинать работу ЭРВ со стратовой позици
+   if(strcmp(var,option_EEV_START_POS)==0)    {if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;              }else  // Всегда начинать работу ЭРВ со стратовой позици
      
    if(strcmp(var,option_SD_CARD)==0)          {if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;       }else       // Сбрасывать статистику на карту
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
@@ -996,7 +997,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    
    if(strcmp(var,option_EEV_CLOSE)==0)        {if(GETBIT(Option.flags,fEEV_close)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Закрытие ЭРВ при выключении компрессора
    if(strcmp(var,option_EEV_LIGHT_START)==0)  {if(GETBIT(Option.flags,fEEV_light_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else      // Облегчение старта компрессора
-   if(strcmp(var,option_START_POS)==0)        {if(GETBIT(Option.flags,fEEV_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else           // Всегда начинать работу ЭРВ со стратовой позици
+   if(strcmp(var,option_EEV_START_POS)==0)    {if(GETBIT(Option.flags,fEEV_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else           // Всегда начинать работу ЭРВ со стратовой позици
      
    if(strcmp(var,option_SD_CARD)==0)          {if(GETBIT(Option.flags,fSD_card)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else            // Сбрасывать статистику на карту
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
@@ -1686,6 +1687,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.delayOffPump);
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		// Насосы будут остановлены, обнуляем энергию
+		powerCO = 0;
+		powerGEO = 0;
+		COP = 0;
+		fullCOP = 0;
 	}
 
 	// переключение насосов если есть что переключать (проверка была выше)
@@ -1762,181 +1768,181 @@ int8_t HeatPump::ResetFC()
 // Параметр задает что делаем true-старт, false-возобновление
 int8_t HeatPump::StartResume(boolean start)
 {
-  volatile MODE_HP mod; 
+	volatile MODE_HP mod;
 
- // Дана команда старт - но возможно надо переходить в ожидание
+	// Дана команда старт - но возможно надо переходить в ожидание
 #ifdef USE_SCHEDULER  // Определяем что делать
-  int8_t profile = HP.Schdlr.calc_active_profile();
-  if((profile != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
-	  if (profile == SCHDLR_Profile_off)
-	  {
-		  startWait=true;                    // Начало работы с ожидания=true;
-		  setState(pWAIT_HP);
-		  vTaskResume(xHandleUpdate);
-      journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
-      journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
-		  return error;
-	  }
-  if (startWait)
-  {
-	  startWait=false;
-	  start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)
-  }
+	int8_t profile = HP.Schdlr.calc_active_profile();
+	if((profile != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
+		if (profile == SCHDLR_Profile_off)
+		{
+			startWait=true;                    // Начало работы с ожидания=true;
+			setState(pWAIT_HP);
+			vTaskResume(xHandleUpdate);
+			journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
+			return error;
+		}
+	if (startWait)
+	{
+		startWait=false;
+		start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)
+	}
 #endif
 
- 
-  #ifndef DEMO   // проверка блокировки инвертора
-  if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
-       {
-        journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
-        setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
-        error=ERR_MODBUS_BLOCK; set_Error(error,(char*)__FUNCTION__);  return error;
-       }   
-  #endif
-  
-   // 1. Переменные  установка, остановка ТН имеет более высокий приоритет чем пуск ! -------------------------
-  if (start)  // Команда старт
-    {
-    if ((get_State()==pWORK_HP)||(get_State()==pSTOPING_HP)||(get_State()==pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
-    journal.jprintf(pP_DATE,"  Start . . .\n");
- 
-    eraseError();                                      // Обнулить ошибку
-    if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
-      {
-        setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
-        set_Error(error,(char*)__FUNCTION__);  
-        return error; 
-      } 
-    //lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
-    }
-  else
-    {
-    if (get_State()!=pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
-    journal.jprintf(pP_DATE,"  Resume . . .\n");
-    }
 
-    setState(pSTARTING_HP);                              // Производится старт -  флаг
-    Status.ret=pNone;                                    // Состояние алгоритма
-    lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
+#ifndef DEMO   // проверка блокировки инвертора
+	if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
+	{
+		journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
+		setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
+		error=ERR_MODBUS_BLOCK; set_Error(error,(char*)__FUNCTION__);  return error;
+	}
+#endif
 
-    if (startPump)                                       // Проверка задачи насос
-        {
-          startPump=false;                               // Поставить признак останова задачи насос
-          vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
-          journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
-        } 
-        
-    stopCompressor=0;                                    // Компрессор никогда не выключался пауза при старте не нужна
-    offBoiler=0;                                         // Бойлер никогда не выключался
-    onSallmonela=false;                                  // Если true то идет Обеззараживание
-    onBoiler=false;                                      // Если true то идет нагрев бойлера
-    // Сбросить переменные пид регулятора
-    temp_int = 0;                                        // Служебная переменная интегрирования
-    errPID=0;                                            // Текущая ошибка ПИД регулятора
-    pre_errPID=0;                                        // Предыдущая ошибка ПИД регулятора
-    updatePidTime=0;                                     // время обновления ПИДа
-    // ГВС Сбросить переменные пид регулятора
-    temp_intBoiler = 0;                                  // Служебная переменная интегрирования
-    errPIDBoiler=0;                                      // Текущая ошибка ПИД регулятора
-    pre_errPIDBoiler=0;                                  // Предыдущая ошибка ПИД регулятора
-    updatePidBoiler=0;                                   // время обновления ПИДа
-    
-    
-   // 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
-      if ((Prof.SaveON.mode==pOFF)&&(!(GETBIT(Prof.SaveON.flags,fBoilerON))))   // Нет работы для ТН - ничего не включено
-         {
-          setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
-          error=ERR_NO_WORK;
-          set_Error(error,(char*)__FUNCTION__);  
-          return error; 
-         }
-         
-       #ifdef EEV_DEF
-      if ((!sADC[PEVA].get_present())&&(dEEV.get_ruleEEV()==TEVAOUT_PEVA))  //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует",
-        {
-         setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-         error=ERR_PEVA_EEV;
-         set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
-         return error;
-        }
-       #endif
-       
-      // 2.2 Проверка конфигурации, которые определены конфигом (поменять нельзя), по этому проверяем один раз при страте ТН ----------------------------------------
-      if (start)  // Команда старт
-        {
-          if (!dRelay[PUMP_OUT].get_present())  // отсутсвует насос на конденсаторе, пользователь НЕ может изменить в процессе работы проверка при старте
-           {
-            setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-            error=ERR_PUMP_CON;
-            set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
-             return error;
-            }
-          if (!dRelay[PUMP_IN].get_present())   // отсутсвует насос на испарителе, пользователь может изменить в процессе работы
-           {
-             setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-             error=ERR_PUMP_EVA;
-             set_Error(ERR_PUMP_EVA,(char*)__FUNCTION__);        // остановить по ошибке;
-             return error;
-            }
-          if ((!dRelay[RCOMP].get_present())&&(!dFC.get_present()))   // отсутсвует компрессор, пользователь может изменить в процессе работы
-            {
-             setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-             error=ERR_NO_COMPRESS;
-             set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
-             return error;
-            }
-        } //  if (start)  // Команда старт
-      
-  // 3.  ПОДГОТОВКА ------------------------------------------------------------------------
-    relayAllOFF();                                          // Выключить все реле, в принципе это лишнее
-   
-   if (start)  // Команда старт - Инициализация ЭРВ и очистка графиков при восстановлени не нужны
-     {
-     #ifdef EEV_DEF
-     journal.jprintf(" EEV init\n");
-     if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-     else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
-     #endif
-        
-     journal.jprintf(" Charts clear and start\n");
-     if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-     else  startChart();                                      // Запустить графики
-     }
-     
-     // 4. Определяем что нужно делать -----------------------------------------------------------
-   if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-   else  mod=get_Work();                                   // определяем что делаем с компрессором
-   if (mod>pBOILER) mod=pOFF;                              // При первом пуске могут быть только состояния pOFF,pHEAT,pCOOL,pBOILER
-   journal.jprintf( " Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
+	// 1. Переменные  установка, остановка ТН имеет более высокий приоритет чем пуск ! -------------------------
+	if (start)  // Команда старт
+	{
+		if ((get_State()==pWORK_HP)||(get_State()==pSTOPING_HP)||(get_State()==pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
+		journal.jprintf(pP_DATE,"  Start . . .\n");
 
-   // 5. Конфигурируем ТН -----------------------------------------------------------------------
-   if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-   else  configHP(mod);                                    // Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
+		eraseError();                                      // Обнулить ошибку
+		if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
+		{
+			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
+			set_Error(error,(char*)__FUNCTION__);
+			return error;
+		}
+		//lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
+	}
+	else
+	{
+		if (get_State()!=pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
+		journal.jprintf(pP_DATE,"  Resume . . .\n");
+	}
 
-   // 7. Дополнительнеая проверка перед пуском компрессора ----------------------------------------
-   if (get_State()!=pSTARTING_HP) return error;          // Могли нажать кнопку стоп, выход из процесса запуска
-     if (get_errcode()!=OK)                              // ОШИБКА компрессор уже работает
-     {
-      journal.jprintf(" There is an error, the compressor is not on\n");
-      set_Error(ERR_COMP_ERR,(char*)__FUNCTION__); return error; 
-     }   
-     
-    // 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
-    if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
-    if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
-          
-     // 10. Запуск задачи обновления ТН ---------------------------------------------------------------------------
-     if(start)
-     {
-     vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
-     journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__); 
-     }
-     
-     // 11. Сохранение состояния  -------------------------------------------------------------------------------
-     if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
-     setState(pWORK_HP);
-     journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
-  return error;
+	setState(pSTARTING_HP);                              // Производится старт -  флаг
+	Status.ret=pNone;                                    // Состояние алгоритма
+	lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
+
+	if (startPump)                                       // Проверка задачи насос
+	{
+		startPump=false;                               // Поставить признак останова задачи насос
+		vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
+		journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
+	}
+
+	stopCompressor=0;                                    // Компрессор никогда не выключался пауза при старте не нужна
+	offBoiler=0;                                         // Бойлер никогда не выключался
+	onSallmonela=false;                                  // Если true то идет Обеззараживание
+	onBoiler=false;                                      // Если true то идет нагрев бойлера
+	// Сбросить переменные пид регулятора
+	temp_int = 0;                                        // Служебная переменная интегрирования
+	errPID=0;                                            // Текущая ошибка ПИД регулятора
+	pre_errPID=0;                                        // Предыдущая ошибка ПИД регулятора
+	updatePidTime=0;                                     // время обновления ПИДа
+	// ГВС Сбросить переменные пид регулятора
+	temp_intBoiler = 0;                                  // Служебная переменная интегрирования
+	errPIDBoiler=0;                                      // Текущая ошибка ПИД регулятора
+	pre_errPIDBoiler=0;                                  // Предыдущая ошибка ПИД регулятора
+	updatePidBoiler=0;                                   // время обновления ПИДа
+
+
+	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
+	if ((Prof.SaveON.mode==pOFF)&&(!(GETBIT(Prof.SaveON.flags,fBoilerON))))   // Нет работы для ТН - ничего не включено
+	{
+		setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
+		error=ERR_NO_WORK;
+		set_Error(error,(char*)__FUNCTION__);
+		return error;
+	}
+
+#ifdef EEV_DEF
+	if ((!sADC[PEVA].get_present())&&(dEEV.get_ruleEEV()==TEVAOUT_PEVA))  //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует",
+	{
+		setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
+		error=ERR_PEVA_EEV;
+		set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+		return error;
+	}
+#endif
+
+	// 2.2 Проверка конфигурации, которые определены конфигом (поменять нельзя), по этому проверяем один раз при страте ТН ----------------------------------------
+	if (start)  // Команда старт
+	{
+		if (!dRelay[PUMP_OUT].get_present())  // отсутсвует насос на конденсаторе, пользователь НЕ может изменить в процессе работы проверка при старте
+		{
+			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
+			error=ERR_PUMP_CON;
+			set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+			return error;
+		}
+		if (!dRelay[PUMP_IN].get_present())   // отсутсвует насос на испарителе, пользователь может изменить в процессе работы
+		{
+			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
+			error=ERR_PUMP_EVA;
+			set_Error(ERR_PUMP_EVA,(char*)__FUNCTION__);        // остановить по ошибке;
+			return error;
+		}
+		if ((!dRelay[RCOMP].get_present())&&(!dFC.get_present()))   // отсутсвует компрессор, пользователь может изменить в процессе работы
+		{
+			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
+			error=ERR_NO_COMPRESS;
+			set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+			return error;
+		}
+	} //  if (start)  // Команда старт
+
+	// 3.  ПОДГОТОВКА ------------------------------------------------------------------------
+	relayAllOFF();                                          // Выключить все реле, в принципе это лишнее
+
+	if (start)  // Команда старт - Инициализация ЭРВ и очистка графиков при восстановлени не нужны
+	{
+#ifdef EEV_DEF
+		journal.jprintf(" EEV init\n");
+		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
+#endif
+
+		journal.jprintf(" Charts clear and start\n");
+		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+		else  startChart();                                      // Запустить графики
+	}
+
+	// 4. Определяем что нужно делать -----------------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+	else  mod=get_Work();                                   // определяем что делаем с компрессором
+	if (mod>pBOILER) mod=pOFF;                              // При первом пуске могут быть только состояния pOFF,pHEAT,pCOOL,pBOILER
+	journal.jprintf( " Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
+
+	// 5. Конфигурируем ТН -----------------------------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+	else  configHP(mod);                                    // Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
+
+	// 7. Дополнительнеая проверка перед пуском компрессора ----------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;          // Могли нажать кнопку стоп, выход из процесса запуска
+	if (get_errcode()!=OK)                              // ОШИБКА компрессор уже работает
+	{
+		journal.jprintf(" There is an error, the compressor is not on\n");
+		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__); return error;
+	}
+
+	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
+	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
+
+	// 10. Запуск задачи обновления ТН ---------------------------------------------------------------------------
+	if(start)
+	{
+		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
+		journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+	}
+
+	// 11. Сохранение состояния  -------------------------------------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
+	setState(pWORK_HP);
+	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
+	return error;
 }
 
                      
@@ -2700,7 +2706,7 @@ void HeatPump::configHP(MODE_HP conf)
                   #endif 
                            
                  #ifdef RTRV
-                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
+                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
                  _delay(2*1000);                        // Задержка на 2 сек
                  #endif
@@ -2876,8 +2882,8 @@ if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!
     #endif    
   #endif
   } 
-if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()); else COP=0;}  // в сотых долях !!!!!!
-if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power())/100.0); else  fullCOP=0;} // в сотых долях !!!!!!
+if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;}  // в сотых долях !!!!!!
+if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0;} // в сотых долях !!!!!!
          
 }
 
@@ -2922,8 +2928,9 @@ void HeatPump::compressorON(MODE_HP mod)
            if (GETBIT(Option.flags,fEEV_light_start)) {dEEV.set_EEV(dEEV.get_preStartPos());journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }    // Выйти на пусковую позицию
            else if (GETBIT(Option.flags,fEEV_start))  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // Всегда начинать работу ЭРВ со стратовой позиции
            else                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ
-           if(GETBIT(Option.flags,fEEV_close))           // Если закрывали то пауза для выравнивания давлений
-           _delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
+           if(GETBIT(Option.flags,fEEV_close)) {      // Если закрывали то пауза для выравнивания давлений
+        	   _delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
+           }
        
      }   //  if (lastEEV!=-1)   
      else // первое включение компресора lastEEV=-1

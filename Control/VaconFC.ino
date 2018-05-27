@@ -127,7 +127,6 @@ int8_t devVaconFC::initFC()
 
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     CheckLinkStatus(); // проверка связи с инвертором
-    check_blockFC();
     if(err != OK) return err; // связи нет выходим
     journal.jprintf("Test link Modbus %s: OK\r\n", name); // Тест пройден
 
@@ -159,13 +158,14 @@ int16_t devVaconFC::CheckLinkStatus(void)
 {
     //    if((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     if(testMode == NORMAL || testMode == HARD_TEST){
-		for (uint8_t i = 0; i < 3; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
+		for (uint8_t i = 0; i < FC_NUM_READ+1; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		{
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
 			if(err == OK) break; // Прочитали удачно
+			check_blockFC(); // проверить необходимость блокировки
+			if(GETBIT(_data.flags, fErrFC)) break; // превысили кол-во ошибок
 			_delay(FC_DELAY_READ);
 		}
-		check_blockFC(); // проверить необходимость блокировки
 		if(err != OK) state = ERR_LINK_FC;
     } else {
     	state = 0;
@@ -407,7 +407,7 @@ void devVaconFC::check_blockFC()
         note = (char*)noteFC_OK; // Описание инвертора есть
         return;
     } // Увеличить счетчик ошибок
-    if(number_err > FC_NUM_READ) // если привышено число ошибок то блокировка
+    if(number_err > FC_NUM_READ) // если превышено число ошибок то блокировка
     {
         //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
         SETBIT1(_data.flags, fErrFC); // Установить флаг
