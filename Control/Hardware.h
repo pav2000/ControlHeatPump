@@ -382,6 +382,7 @@ private:
 //#define fAnalog   3               // флаг использования аналогового выхода для управления
 #define fOnOff      4               // флаг включения-выключения частотника
 #define fErrFC      5               // флаг глобальная ошибка инвертора - работа инвертора запрещена
+#define FC_SAVED_FLAGS (1<<fAuto)
 
 const char *noteFC_OK   = {" связь по Modbus установлена" };                     // Все впорядке
 const char *noteFC_NO   = {" связь по Modbus потеряна, инвертор заблокирован" };
