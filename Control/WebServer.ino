@@ -1771,25 +1771,25 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        else if (strcmp(x+1,"TEVAOUTG")==0)       { param=TEVAOUTG;} // Температура на выходе испарителя (по гликолю)
        else if (strcmp(x+1,"TCONING")==0)        { param=TCONING;} // Температура на входе конденсатора (по гликолю)
        else if (strcmp(x+1,"TCONOUTG")==0)       { param=TCONOUTG;} // Температура на выходе конденсатора (по гликолю)
-       // Сухой контакт 20-25 смещение 20
-       /*
-       else if (strcmp(x+1,"SEVA")==0)           { param=20;}  // Датчик протока по испарителю
-       else if (strcmp(x+1,"SLOWP")==0)          { param=21;}  // Датчик низкого давления
-       else if (strcmp(x+1,"SHIGHP")==0)         { param=22;}  // Датчик высокого давления
-       else if (strcmp(x+1,"SFROZEN")==0)        { param=23;}  // Датчик заморозки SFROZEN
-       */
-        else   // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
+
+       else if (strcmp(x+1,"PEVA")==0)     		 { param=30;}  //  Датчик давления испарителя
+	   else if (strcmp(x+1,"PCON")==0)         	 { param=31;}  //  Датчик давления кондесатора
+	   else {for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {param=20+i; break;}} // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
+       if (param==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} } // Частотные датчики смещение 26 (максимум 4)
+
+       if (pm==ATOF_ERROR)  { strcat(strReturn,"E04");strcat(strReturn,"&");continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
+         
+/*  
+       else   // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
        {
          for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {param=20+i; break;} 
        }
-   //    if (param==-1)  // имя не найдено, дальше разбираем строку
-       
-       // Частотные датчики смещение 26 (максимум 4)
-        if (param==-1) for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} 
-       
-       if (param==-1)  // имя не найдено, дальше разбираем строку
-       {
-			 // Аналоговые датчики 30-35 смещение 30  количество до 6 штук
+       if (param==-1)   // Частотные датчики смещение 26 (максимум 4)
+        { 
+        for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} 
+        }       
+      if (param==-1)  // Аналоговые датчики 30-35 смещение 30  количество до 6 штук
+       { 
     	   	 if (strcmp(x+1,"PEVA")==0)          		 { param=30;}  //  Датчик давления испарителя
 			 else if (strcmp(x+1,"PCON")==0)           	 { param=31;}  //  Датчик давления кондесатора
 			 // Реле  36-49 смещение 36  количество до 14 штук
@@ -1797,36 +1797,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 				for(i=0;i<RNUMBER;i++) if (strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;}
 			 }
        }
- /*      
-       if (param==-1)  // имя не найдено, дальше разбираем строку
-        {
-    
-                // Параметры и опции ТН  смещение 60 занимат 40 позиций не 10!!!!!!!!!!!!!!!!!!!! используется в двух разных функциях, единый список
-                    if (strcmp(x+1,"RULE")==0)           { param=60;}  // 0  Алгоритм отопления
-               else if (strcmp(x+1,"TEMP1")==0)          { param=61;}  // 1  целевая температура в доме
-               else if (strcmp(x+1,"TEMP2")==0)          { param=62;}  // 2  целевая температура обратки
-               else if (strcmp(x+1,"TARGET")==0)         { param=63;}  // 3  что является целью ПИД - значения  0 (температура в доме), 1 (температура обратки).
-               else if (strcmp(x+1,"DTEMP")==0)          { param=64;}  // 4  гистерезис целевой температуры
-               else if (strcmp(x+1,"HP_TIME")==0)        { param=65;}  // 5  Постоянная интегрирования времени в секундах ПИД ТН
-               else if (strcmp(x+1,"HP_PRO")==0)         { param=66;}  // 6  Пропорциональная составляющая ПИД ТН
-               else if (strcmp(x+1,"HP_IN")==0)          { param=67;}  // 7  Интегральная составляющая ПИД ТН
-               else if (strcmp(x+1,"HP_DIF")==0)         { param=68;}  // 8  Дифференциальная составляющая ПИД ТН
-               else if (strcmp(x+1,"TEMP_IN")==0)        { param=69;}  // 9  температура подачи
-               else if (strcmp(x+1,"TEMP_OUT")==0)       { param=70;}  // 10 температура обратки
-               else if (strcmp(x+1,"PAUSE")==0)          { param=71;}  // 11 минимальное время простоя компрессора
-               else if (strcmp(x+1,"D_TEMP")==0)         { param=72;}  // 12 максимальная разность температур конденсатора
-               else if (strcmp(x+1,"TEMP_PID")==0)       { param=73;}  // 13 Целевая темпеартура ПИД
-               else if (strcmp(x+1,"WEATHER")==0)        { param=74;}  // 14 Использование погодозависимости
-               else if (strcmp(x+1,"K_WEATHER")==0)      { param=75;}  // 15 Коэффициент погодозависимости
         
-     
-        }
-    */    
         if ((pm==ATOF_ERROR)&&((param<170)||(param>320)))        // Ошибка преобразования для чисел но не для строк (смещение 170)! - завершить запрос с ошибкой
           { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
-       
+*/       
        if (param==-1)  { strcat(strReturn,"E02");strcat(strReturn,"&");  continue; }  // Не верный параметр
-       x[0]=0;                                                                        // Обрезаем строку до скобки (
+  //     x[0]=0;                                                                        // Обрезаем строку до скобки (
        // Все готово к разбору имен функций c параметром
        // 1. Датчики температуры смещение param 0
        if (strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
@@ -2215,7 +2191,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5
 
-       // --------------------------------------------------------------------------------------------------------------------------
 
        
         // ------------------------ конец разбора -------------------------------------------------
