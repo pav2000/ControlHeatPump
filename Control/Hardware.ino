@@ -610,15 +610,15 @@ void devEEV::initEEV()
  _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
  _data.typeFreon = DEFAULT_FREON_TYPE;                // Тип фреона
  _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
- _data.OHCor_Delay = 300;			     		  // Задержка после старта компрессора, сек
- _data.OHCor_Period = 7;			     	      // Период в циклах ЭРВ, сколько пропустить
- _data.OHCor_TDIS_TCON = 1500;		          // Температура нагнетания - конденсации при 20С
+ _data.OHCor_Delay = 600;			     		  // Задержка после старта компрессора, сек
+ _data.OHCor_Period = 10;			     	      // Период в циклах ЭРВ, сколько пропустить
+ _data.OHCor_TDIS_TCON = 1500;		              // Температура нагнетания - конденсации при 20С
  _data.OHCor_TDIS_TCON_Thr = 20;		          // (/0.1) Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
  _data.OHCor_TDIS_ADD = 20;						  // (/0.1) Корректировка в + для TDIS_TCON на каждые 10 градусов выше 20.
  _data.OHCor_K = 100;						      // Коэффициент (/0.001): перегрев += дельта * K
  _data.OHCor_OverHeatMin = 100;			      // Минимальный перегрев (сотые градуса)
  _data.OHCor_OverHeatMax = 400;			      // Максимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatStart = 200;				  // Начальный перегрев (сотые градуса)
+ _data.OHCor_OverHeatStart = 300;				  // Начальный перегрев (сотые градуса)
  _data.errKp=DEFAULT_ERR_KP;                          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
  _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
