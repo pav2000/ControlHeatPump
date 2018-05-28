@@ -1393,16 +1393,18 @@ return adr;
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devOmronMX2::load(int32_t adr)
 {
-  if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
-  // SETBIT1(_data.flags, fPresent);
+decltype(_data.flags) save_flags = _data.flags;	
+if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
+_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
 return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devOmronMX2::loadFromBuf(int32_t adr,byte *buf)
 {
-
+decltype(_data.flags) save_flags = _data.flags;	
 memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 
-  return adr;      
+_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
+return adr;      
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devOmronMX2::get_crc16(uint16_t crc)         
