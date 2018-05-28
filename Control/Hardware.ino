@@ -1117,15 +1117,9 @@ float temp;
        if ((temp>=_data.minSteps)&&(temp<=maxEEV)) { set_EEV((int)temp); return true;} else return false;
 	} else if(strcmp(var, eev_POSpp)==0){
 	  return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_OVERHEAT)==0){
-	  return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_ERROR)==0){
-	  return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_MIN)==0){
       if ((x>=0)&&(x<=maxEEV)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
-	  return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_MAX)==0){
-	  return true;  // не имеет смысла - только чтение
+	  return true;  
 	} else if(strcmp(var, eev_TIME)==0){
 	  if ((x>=5)&&(x<=600)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
@@ -1144,14 +1138,6 @@ float temp;
         if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
 	}   else if(strcmp(var, eev_RULE)==0){
 		if ((x>=TEVAOUT_TEVAIN)&&(x<=MANUAL)){ _data.ruleEEV=(RULE_EEV)x; return true;} else return false;	// перечисляемый тип  
- 	} else if(strcmp(var, eev_NAME)==0){
-	    return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_NOTE)==0){
-	    return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_REMARK)==0){
-	    return true;  // не имеет смысла - только чтение
-	} else if(strcmp(var, eev_PINS)==0){
-	    return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_cCORRECT)==0){
     	if (x==0) SETBIT0(_data.flags, fCorrectOverHeat); else SETBIT1(_data.flags, fCorrectOverHeat); 
 	} else if(strcmp(var, eev_cDELAY)==0){
@@ -1190,8 +1176,6 @@ float temp;
       if ((x>=0)&&(x<=255)) { if(_data.delayOn!=x) _data.delayOn=(int)x; return true;} else return false;	// секунды размер 1 байт    	
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
       if (x==0) SETBIT0(_data.flags, fHoldMotor); else SETBIT1(_data.flags, fHoldMotor); 
-    } else if(strcmp(var, eev_PRESENT)==0){
-    	return true;  // не имеет смысла - только чтение 	
     } else return false; // ошибочное имя параметра
     
   return true;  // для флагов
@@ -1402,14 +1386,6 @@ int8_t devOmronMX2::set_levelOff(int16_t x)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devOmronMX2::save(int32_t adr)
 {
-/*	
-byte f=0;   
-if (writeEEPROM_I2C(adr, (byte*)&level0, sizeof(level0)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level0);       // !save! Отсчеты ЦАП соответсвующие 0   мощности
-if (writeEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level100);   // !save! Отсчеты ЦАП соответсвующие 100 мощности
-if (writeEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(levelOff);   // !save! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-//if(GETBIT(_data.flags,fAnalog)) f=f+(1<<fAnalog);                                                                                                      // Взять только флаги настроек
-if (writeEEPROM_I2C(adr, (byte*)&f, sizeof(f))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(f);                        // !save! Флаги
-*/
 if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);     
 return adr;   
 }
@@ -1417,15 +1393,6 @@ return adr;
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devOmronMX2::load(int32_t adr)
 {
-/*	
-byte f;  
-if (readEEPROM_I2C(adr, (byte*)&level0, sizeof(level0)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level0);     // !load! Отсчеты ЦАП соответсвующие 0   мощности
-if (readEEPROM_I2C(adr, (byte*)&level100, sizeof(level100))) { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(level100);   // !load! Отсчеты ЦАП соответсвующие 100 мощности
-if (readEEPROM_I2C(adr, (byte*)&levelOff, sizeof(levelOff))) { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(levelOff);   // !load! Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-if (readEEPROM_I2C(adr, (byte*)&f,sizeof(f)))                { set_Error(ERR_LOAD_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(f);          // !load! флаги
-// проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
-//if (GETBIT(f,fAnalog)) SETBIT1(_data.flags,fAnalog); else SETBIT0(_data.flags,fAnalog);  
-*/
   if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
   // SETBIT1(_data.flags, fPresent);
 return adr;
@@ -1433,28 +1400,13 @@ return adr;
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devOmronMX2::loadFromBuf(int32_t adr,byte *buf)
 {
-/*	
-  byte f;  
-  memcpy((byte*)&level0,buf+adr,sizeof(level0)); adr=adr+sizeof(level0);                  // Отсчеты ЦАП соответсвующие 0   мощности
-  memcpy((byte*)&level100,buf+adr,sizeof(level100)); adr=adr+sizeof(level100);            // Отсчеты ЦАП соответсвующие 100 мощности
-  memcpy((byte*)&levelOff,buf+adr,sizeof(levelOff)); adr=adr+sizeof(levelOff);            // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-  memcpy((byte*)&f,buf+adr,sizeof(f)); adr=adr+sizeof(f);                                 // флаги
-// if (GETBIT(f,fAnalog)) SETBIT1(_data.flags,fAnalog); else SETBIT0(_data.flags,fAnalog);              // проблема при чтении некоторые флаги не настройки? по этому устанавливаем их отдельно побитно
-*/
+
 memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 
   return adr;      
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devOmronMX2::get_crc16(uint16_t crc)         
 {
-/*	
-   byte f=0;
-   crc=_crc16(crc,lowByte(level0)); crc=_crc16(crc,highByte(level0));              //   Отсчеты ЦАП соответсвующие 0   мощности
-   crc=_crc16(crc,lowByte(level100)); crc=_crc16(crc,highByte(level100));          //   Отсчеты ЦАП соответсвующие 100 мощности
-   crc=_crc16(crc,lowByte(levelOff)); crc=_crc16(crc,highByte(levelOff));          //   Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
- //  if(GETBIT(_data.flags,fAnalog)) f=f+(1<<fAnalog);
-   crc=_crc16(crc,f);                                                              //   Только флаги насроек
- */  
    uint16_t i;
    for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   
    return crc;
@@ -1709,19 +1661,8 @@ static char temp[12];
 boolean devOmronMX2::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_INFO)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_NAME)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_NOTE)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_PIN)==0)                   { return true;                         } else  // только чтение
-    if(strcmp(var,fc_PRESENT)==0)               { return true;                         } else  // только чтение
-    if(strcmp(var,fc_STATE)==0)                 { return true;                         } else  // только чтение
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
-    if(strcmp(var,fc_cFC)==0)                   { return true;                         } else  // только чтение
-    if(strcmp(var,fc_cPOWER)==0)                { return true;                         } else  // только чтение
-    if(strcmp(var,fc_cCURRENT)==0)              { return true;                         } else  // только чтение
     if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
-    if(strcmp(var,fc_ANALOG)==0)                { return true;                         } else  // только чтение
-    if(strcmp(var,fc_DAC)==0)                   { return true;                         } else  // только чтение
     #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
@@ -1732,7 +1673,6 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
                                                 else      { SETBIT1(_data.flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  
-    if(strcmp(var,fc_ERROR)==0)                 { return true;                         } else  // только чтение                                      
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
     if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
@@ -2184,26 +2124,9 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 boolean devSDM::set_paramSDM(char *var,char *c)        
  {
   int16_t x=atoi(c);
-   if(strcmp(var,sdm_NAME)==0){          return  true;                                    }else      // Имя счетчика
-   if(strcmp(var,sdm_NOTE)==0){          return  true;                                    }else      // Описание счетчика
    if(strcmp(var,sdm_MAX_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.maxVoltage=(uint16_t)x;return true;} else  return false; }else      // мах напряжение контроля напряжения
    if(strcmp(var,sdm_MIN_VOLTAGE)==0){   if ((x>=0)&&(x<=400)) {settingSDM.minVoltage=(uint16_t)x;return true;} else  return false; }else      // min напряжение контроля напряжения
    if(strcmp(var,sdm_MAX_POWER)==0){     if ((x>=0)&&(x<=25000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false;}else      // максимальаня мощность контроля мощности
-   if(strcmp(var,sdm_VOLTAGE)==0){       return true;                                     }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){       return true;                                     }else      // Ток
-   if(strcmp(var,sdm_REPOWER)==0){       return true;                                     }else      // Реактивная мощность
-   if(strcmp(var,sdm_ACPOWER)==0){       return true;                                     }else      // Активная мощность
-   if(strcmp(var,sdm_POWER)==0){         return true;                                     }else      // Полная мощность
-   if(strcmp(var,sdm_POW_FACTOR)==0){    return true;                                     }else      // Коэффициент мощности
-   if(strcmp(var,sdm_PHASE)==0){         return true;                                     }else      // Угол фазы (градусы)
-   if(strcmp(var,sdm_IACENERGY)==0){     return true;                                     }else      // Потребленная активная энергия
-   if(strcmp(var,sdm_EACENERGY)==0){     return true;                                     }else      // Переданная активная энергия
-   if(strcmp(var,sdm_IREENERGY)==0){     return true;                                     }else      // Потребленная реактивная энергия
-   if(strcmp(var,sdm_EREENERGY)==0){     return true;                                     }else      // Переданная реактивная энергия
-   if(strcmp(var,sdm_ACENERGY)==0){      return true;                                     }else      // Суммараная активная энергия
-   if(strcmp(var,sdm_REENERGY)==0){      return true;                                     }else      // Суммараная реактивная энергия
-   if(strcmp(var,sdm_ENERGY)==0){        return true;                                     }else      // Суммараная энергия
-   if(strcmp(var,sdm_LINK)==0){          return true;                                     }else      // Cостояние связи со счетчиком
    return false;
  }
 
