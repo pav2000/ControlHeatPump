@@ -2259,6 +2259,9 @@ static inline void postTransmission() // Функция вызываемая П�
 		Modbus_Entered_Critical = 0;
 	}
     #ifdef PIN_MODBUS_RSE
+	#if MODBUS_TIME_TRANSMISION != 0
+    _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
+	#endif
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
     #endif
 }

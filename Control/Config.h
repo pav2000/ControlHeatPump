@@ -2218,7 +2218,7 @@ enum TYPE_SENSOR
     #define MODBUS_PORT_SPEED       9600        // Скорость порта куда прицеплен частотник и счетчик
     #define MODBUS_PORT_CONFIG      SERIAL_8N1  // Конфигурация порта куда прицеплен частотник и счетчик
     #define MODBUS_TIME_WAIT        2000        // Время ожидания захвата мютекса для modbus мсек
-    #define MODBUS_TIME_TRANSMISION 4           // Пауза (msec) между запросом и ответом по модбас было 4
+    #define MODBUS_TIME_TRANSMISION 0           // Пауза (msec) между запросом и ответом по модбас было 4
     #define PIN_MODBUS_RSE          22          // Управление направлением передачи 485 для связи с инвертором по Modbus (1-передача 0-прием)
 
     // Защиты по входному напряжению. Используется счетчик SDM*
