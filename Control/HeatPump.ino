@@ -825,13 +825,13 @@ char* HeatPump::get_network(char *var,char *ret)
                                     else      return  strcat(ret,(char*)cZero);               }else
   if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
   if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
-  if(strcmp(var,net_SIZE_PACKET)==0){return strcat(ret,int2str(Network.sizePacket));          }else   
+  if(strcmp(var,net_SIZE_PACKET)==0){return _itoa(Network.sizePacket,ret);          }else   
     if(strcmp(var,net_INIT_W5200)==0){if (GETBIT(Network.flags,fInitW5200)) return  strcat(ret,(char*)cOne);       // флаг Ежеминутный контроль SPI для сетевого чипа
                                       else      return  strcat(ret,(char*)cZero);               }else      
-    if(strcmp(var,net_PORT)==0){return strcat(ret,int2str(Network.port));                       }else    // Порт веб сервера
+    if(strcmp(var,net_PORT)==0){return _itoa(Network.port,ret);                       }else    // Порт веб сервера
     if(strcmp(var,net_NO_ACK)==0){    if (GETBIT(Network.flags,fNoAck)) return  strcat(ret,(char*)cOne);
                                       else      return  strcat(ret,(char*)cZero);          }else     
-    if(strcmp(var,net_DELAY_ACK)==0){return strcat(ret,int2str(Network.delayAck));         }else    
+    if(strcmp(var,net_DELAY_ACK)==0){return _itoa(Network.delayAck,ret);         }else    
     if(strcmp(var,net_PING_ADR)==0){  return strcat(ret,Network.pingAdr);                  }else
     if(strcmp(var,net_PING_TIME)==0){
     	return web_fill_tag_select(ret, "never:0;1 min:0;5 min:0;20 min:0;60 min:0;120 min:0;",
@@ -896,7 +896,7 @@ if(strcmp(var,time_DATE)==0)  {return strcat(ret,NowDateToStr());               
 if(strcmp(var,time_NTP)==0)   {return strcat(ret,DateTime.serverNTP);                   }else                
 if(strcmp(var,time_UPDATE)==0){if (GETBIT(DateTime.flags,fUpdateNTP)) return  strcat(ret,(char*)cOne);
                                else                                   return  strcat(ret,(char*)cZero);}else  
-if(strcmp(var,time_TIMEZONE)==0){return  strcat(ret,int2str(DateTime.timeZone));         }else  
+if(strcmp(var,time_TIMEZONE)==0){return  _itoa(DateTime.timeZone,ret);         }else  
 if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) return  strcat(ret,(char*)cOne);
                                     else                                   return  strcat(ret,(char*)cZero); }else      
 return strcat(ret,(char*)cInvalid);
@@ -958,15 +958,13 @@ boolean HeatPump::set_optionHP(char *var, float x)
 // Получить опции ТН, результат добавляется в ret
 char* HeatPump::get_optionHP(char *var, char *ret)
 {
-	
- char static temp[12];
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
                                                else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
                                                else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
-   if(strcmp(var,option_TEMP_RHEAT)==0)       {return strcat(ret,ftoa(temp,(float)Option.tempRHEAT/100.0,1));}else                                         // температура управления RHEAT (градусы)
-   if(strcmp(var,option_PUMP_WORK)==0)        {return strcat(ret,int2str(Option.workPump));}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
-   if(strcmp(var,option_PUMP_PAUSE)==0)       {return strcat(ret,int2str(Option.pausePump));}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
-   if(strcmp(var,option_ATTEMPT)==0)          {return strcat(ret,int2str(Option.nStart));}else                                                             // число попыток пуска
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {return _ftoa(ret,(float)Option.tempRHEAT/100.0,1);}else                                         // температура управления RHEAT (градусы)
+   if(strcmp(var,option_PUMP_WORK)==0)        {return _itoa(Option.workPump,ret);}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
+   if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
    if(strcmp(var,option_TIME_CHART)==0)       {
 	   	   	   	   	   	   	   	   	   	   	   return web_fill_tag_select(ret, "10 sec:0;20 sec:0;30 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;",
 															Option.tChart == 10 ? 0 :
@@ -987,18 +985,18 @@ char* HeatPump::get_optionHP(char *var, char *ret)
      
    if(strcmp(var,option_SD_CARD)==0)          {if(GETBIT(Option.flags,fSD_card)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else            // Сбрасывать статистику на карту
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
-   if(strcmp(var,option_NEXT_SLEEP)==0)       {return strcat(ret,int2str(Option.sleep));                                                     }else            // Время засыпания секунды NEXTION минуты
-   if(strcmp(var,option_NEXT_DIM)==0)         {return strcat(ret,int2str(Option.dim));                                                       }else            // Якрость % NEXTION
+   if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
+   if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
    if(strcmp(var,option_OW2TS)==0)            {return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl) ? cOne : cZero)); }else
-   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return strcat(ret,int2str(Option.delayOnPump));}else     // Задержка включения компрессора после включения насосов (сек).
-   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return strcat(ret,int2str(Option.delayOffPump));}else      // Задержка выключения насосов после выключения компрессора (сек).
-   if(strcmp(var,option_DELAY_START_RES)==0)  {return strcat(ret,int2str(Option.delayStartRes));}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
-   if(strcmp(var,option_DELAY_REPEAD_START)==0){return strcat(ret,int2str(Option.delayRepeadStart));}else  // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
-   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {return strcat(ret,int2str(Option.delayDefrostOn));}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
-   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){return strcat(ret,int2str(Option.delayDefrostOff));}else   // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-   if(strcmp(var,option_DELAY_TRV)==0)        {return strcat(ret,int2str(Option.delayTRV));}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
-   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return strcat(ret,int2str(Option.delayBoilerSW));}else    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
-   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return strcat(ret,int2str(Option.delayBoilerOff));} // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else     // Задержка включения компрессора после включения насосов (сек).
+   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
+   if(strcmp(var,option_DELAY_START_RES)==0)  {return _itoa(Option.delayStartRes,ret);}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
+   if(strcmp(var,option_DELAY_REPEAD_START)==0){return _itoa(Option.delayRepeadStart,ret);}else  // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {return _itoa(Option.delayDefrostOn,ret);}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){return _itoa(Option.delayDefrostOff,ret);}else   // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+   if(strcmp(var,option_DELAY_TRV)==0)        {return _itoa(Option.delayTRV,ret);}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return _itoa(Option.delayBoilerSW,ret);}else    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);} // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    return  strcat(ret,(char*)cInvalid);                
 }
 
@@ -1314,8 +1312,7 @@ char * HeatPump::get_Chart(char *var, char* str, boolean cat)
 		if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
 				{
 			for(int i = 0; i < sTemp[TCONOUTG].Chart.get_num(); i++) {
-				strcat(str, ftoa(buf,
-								((float) sTemp[TCONOUTG].Chart.get_Point(i) - (float) sTemp[TCONING].Chart.get_Point(i)) / 100, 2));
+				_ftoa(str,((float) sTemp[TCONOUTG].Chart.get_Point(i) - (float) sTemp[TCONING].Chart.get_Point(i)) / 100, 2);
 				strcat(str, (char*) ";");
 			}
 		} else return (char*) ";"; // График не определен - нет данных
@@ -1323,7 +1320,7 @@ char * HeatPump::get_Chart(char *var, char* str, boolean cat)
 		if((sTemp[TEVAING].Chart.get_present()) && (sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
 				{
 			for(int i = 0; i < sTemp[TEVAING].Chart.get_num(); i++) {
-				strcat(str,	ftoa(buf, ((float) sTemp[TEVAING].Chart.get_Point(i) - (float) sTemp[TEVAOUTG].Chart.get_Point(i)) / 100, 2));
+				_ftoa(str, ((float) sTemp[TEVAING].Chart.get_Point(i) - (float) sTemp[TEVAOUTG].Chart.get_Point(i)) / 100, 2);
 				strcat(str, (char*) ";");
 			}
 		} else return (char*) ";"; // График не определен - нет данных
@@ -1393,7 +1390,7 @@ void HeatPump::updateNextion()
           if(Option.sleep>0)   // установлено засыпание дисплея
               {
               strcpy(temp,"thsp=");
-              strcat(temp,int2str(Option.sleep*60)); // секунды
+              _itoa(Option.sleep*60,temp); // секунды
               myNextion.sendCommand(temp);
               myNextion.sendCommand("thup=1");     // sleep режим активировать
               }  
@@ -1412,7 +1409,7 @@ void HeatPump::updateNextion()
            }
            
           strcpy(temp,"dim=");
-          strcat(temp,int2str(Option.dim));
+          _itoa(Option.dim,temp);
           myNextion.sendCommand(temp);
           myNextion.set_fPageID();
           vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
