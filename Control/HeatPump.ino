@@ -1049,21 +1049,12 @@ void  HeatPump::updateChart()
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
    
- if(ChartPowerCO.get_present())   ChartPowerCO.addPoint((int16_t)powerCO);  // Мощность контура в вт!!!!!!!!!
- //{
-//  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
-//  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
-//    #ifdef RHEAT
-//      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
-//    #endif    
-//  #endif
-//  ChartPowerCO.addPoint((int16_t)powerCO);
-//  }
- 
+ if(ChartPowerCO.get_present())   ChartPowerCO.addPoint((int16_t)powerCO);  // Мощность контура отопления в вт!!!!!!!!!
+  
  #ifdef FLOWEVA 
- if(ChartPowerGEO.get_present())  {powerGEO=(float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity(); ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура в Вт!!!!!!!!!
+ if(ChartPowerGEO.get_present())  ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура ГЕО в Вт!!!!!!!!!
  #endif
- if(ChartCOP.get_present())       {if (dFC.get_power()>0) ChartCOP.addPoint(COP);  else ChartCOP.addPoint(0);}  // в сотых долях !!!!!!
+ if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
     if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
@@ -1071,7 +1062,7 @@ void  HeatPump::updateChart()
   //  if(dSDM.sRePower.get_present())   dSDM.sRePower.addPoint(dSDM.get_RePower());  
     if(dSDM.ChartPower.get_present())   power220=dSDM.get_Power();  dSDM.ChartPower.addPoint(power220); 
   //  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);    
-    if(ChartFullCOP.get_present())     { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) ChartFullCOP.addPoint(fullCOP); else  ChartFullCOP.addPoint(0);} // в сотых долях !!!!!!
+    if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
  #endif
 
 
@@ -1107,9 +1098,9 @@ void  HeatPump::updateChart()
            if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  { statFile.print((float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())/100.0); statFile.print(";");}
 
                 
-           if(ChartPowerCO.get_present())  { statFile.print((int16_t)(powerCO)); statFile.print(";"); } // Мощность контура в ваттах!!!!!!!!!
-           if(ChartPowerGEO.get_present()) { statFile.print((int16_t)(powerGEO)); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
-           if(ChartCOP.get_present())      { statFile.print((float)(powerCO/dFC.get_power())/100.0); statFile.print(";"); }    // в еденицах
+           if(ChartPowerCO.get_present())  { statFile.print((int16_t)powerCO); statFile.print(";"); } // Мощность контура в ваттах!!!!!!!!!
+           if(ChartPowerGEO.get_present()) { statFile.print((int16_t)powerGEO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
+           if(ChartCOP.get_present())      { statFile.print((float)COP); statFile.print(";"); }    // в еденицах
            #ifdef USE_ELECTROMETER_SDM 
            if(dSDM.ChartVoltage.get_present())     { statFile.print((float)dSDM.get_Voltage());    statFile.print(";");} 
            if(dSDM.ChartCurrent.get_present())     { statFile.print((float)dSDM.get_Current());    statFile.print(";");} 
@@ -1117,7 +1108,7 @@ void  HeatPump::updateChart()
  //          if(dSDM.sRePower.get_present())     { statFile.print((float)dSDM.get_RePower());    statFile.print(";");}   
            if(dSDM.ChartPower.get_present())       { statFile.print((float)dSDM.get_Power());      statFile.print(";");}  
  //          if(dSDM.ChartPowerFactor.get_present()) { statFile.print((float)dSDM.get_PowerFactor());statFile.print(";");}  
-           if(ChartFullCOP.get_present())       { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)){ statFile.print((float)(powerCO/dSDM.get_Power())/100.0);statFile.print(";");}  else statFile.print("0.0;");}
+           if(ChartFullCOP.get_present())          {  statFile.print((float)fullCOP);statFile.print(";");}  
            #endif
            statFile.println("");
            statFile.flush();
@@ -2875,15 +2866,20 @@ void HeatPump::vUpdate()
            }
       } 
 // Обновление расчетных величин (djpvjжность расчета определяем пографикам)
+#ifdef  FLOWCON 
 if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
  {
-  powerCO=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
+  powerCO=(float)(abs(FEED-RET))*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
   #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
     #ifdef RHEAT
       if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
     #endif    
   #endif
   } 
+#endif  
+#ifdef  FLOWEVA 
+if(ChartPowerGEO.get_present()) powerGEO=(float)(abs(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()))*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity();  
+#endif
 if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;}  // в сотых долях !!!!!!
 if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0;} // в сотых долях !!!!!!
          

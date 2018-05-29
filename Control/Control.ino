@@ -826,7 +826,7 @@ void vReadSensor(void *)
 #ifdef EEV_DEF
 		if((HP.get_mode() != pCOOL) || (HP.get_mode() != pNONE_C))    // Если не охлаждение
 			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
-		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
+		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
 #endif
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
