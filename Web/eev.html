@@ -12,7 +12,7 @@
     window.onload = function() {
 	urlupdate = 2000;
     loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(REMARK),get_optionHP(TIME_CHART),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(MAX),get_paramEEV(MIN),get_paramEEV(PINS),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
-    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON");
+    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_Evapor");
     loadParam("get_Chart(posEEV)");
     setParam('get_listChart','chart1');
    // setParam('get_listChart2','chart2')
@@ -45,6 +45,7 @@
 	<th>Шаги для приоткрытия ЭРВ</th>
 	<th>Положение (шаги)</th>
 	<th>Текущий перегрев </th>
+	<th>Температура испарения</th>
 	<th>Разница: Нагнетание-Конденсация</th>
 	<th>Код ошибки</th>
 	<th>Pins</th>
@@ -58,6 +59,7 @@
       <td id="get_parameev-min"></td>
       <td id="get_parameev-pospp"></td>
       <td id="get_parameev-overheat"></td>
+      <td id="get_evapor"></td>
       <td id="get_tcomp_tcon"></td>
       <td id="get_parameev-error"></td>
       <td id="get_parameev-pins"></td>
@@ -101,8 +103,8 @@
     <tr>
 		<th>Задержка после старта, сек</th>
 		<th>Период в циклах ЭРВ</th>
-		<th>Разница Нагнетание-Конденсации (при 20°)</th>
-		<th>Увеличение разницы на каждые 10°</th>
+		<th>Разница Нагнетание-Конденсации (при 30°)</th>
+		<th>Увеличение на каждые 10° конд.</th>
 		<th>Порог разницы, °C</th>
 		<th>Коэффициент</th>
 		<th>Мин. перегрев, °C</th>

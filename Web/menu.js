@@ -1,11 +1,11 @@
 ﻿document.write('<a href="index.html" class="logo"></a>');
 
 document.write('\
-<div class="swich"><span>ТН OFF</span>\
+<div class="swich"><span>HP OFF</span>\
     <div class="onoffswitch">\
         <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="onoffswitch" onchange="swich(\'onoffswitch\')">\
         <label class="onoffswitch-label" for="onoffswitch"><span class="onoffswitch-inner"></span><span class="onoffswitch-switch"></span></label>\
-    </div><span>ТН ON</span></div>\
+    </div><span>HP ON</span></div>\
 <div class="menu-profiles">\
 	<span id="get_mode" style="color: red">-</span><br>\
 ПРОФИЛЬ<br>\

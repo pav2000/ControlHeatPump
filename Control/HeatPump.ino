@@ -3459,19 +3459,30 @@ void HeatPump::UpdateStatistics()
 }
 #endif // I2C_EEPROM_64KB 
 
+// Температура конденсации
 int16_t HeatPump::get_temp_condensing(void)
 {
-	if(HP.sADC[PCON].get_present()) {
-		return PressToTemp(HP.sADC[PCON].get_Press(), HP.dEEV.get_typeFreon());
+	if(sADC[PCON].get_present()) {
+		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
 	} else {
-		return sTemp[TCONOUTG].get_Temp() + 200; // +2C
+		return sTemp[get_mode() == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C
 	}
 }
 
-// пока только для режима отопления!
+// Переохлаждение
 int16_t HeatPump::get_overcool(void)
 {
-	return get_temp_condensing() - HP.sTemp[TCONOUT].get_Temp();
+	return get_temp_condensing() - sTemp[get_mode() == pCOOL ? TEVAOUT : TCONOUT].get_Temp();
+}
+
+// Кипение
+int16_t HeatPump::get_temp_evaporating(void)
+{
+	if(sADC[PEVA].get_present()) {
+		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
+	} else {
+		return 0; // Пока не поддерживается
+	}
 }
 
 // Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок
@@ -3485,7 +3496,7 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 #endif
 		for(uint8_t j = 0; j < TNUMBER; j++) {
 			if(sTemp[j].get_fAddress() && sTemp[j].get_bus() == bus) {
-				if(HP.sTemp[j].inc_error()) {
+				if(sTemp[j].inc_error()) {
 					ret = 2;
 					break;
 				}

@@ -1024,6 +1024,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            ftoa(strReturn + m_strlen(strReturn), HP.get_overcool() / 100.0, 2);
            strcat(strReturn,"&") ;    continue;
        }
+       if(strcmp(str, "get_Evapor") == 0) {
+           ftoa(strReturn + m_strlen(strReturn), HP.get_evaporating() / 100.0, 2);
+           strcat(strReturn,"&") ;    continue;
+       }
        if(strcmp(str, "get_TCOMP_TCON") == 0) { // Нагнетание - Конденсация
            ftoa(strReturn + m_strlen(strReturn), (HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing()) / 100.0, 2);
            strcat(strReturn,"&") ;    continue;

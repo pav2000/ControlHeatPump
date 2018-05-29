@@ -612,9 +612,11 @@ void devEEV::initEEV()
  _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
  _data.OHCor_Delay = 600;			     		  // Задержка после старта компрессора, сек
  _data.OHCor_Period = 10;			     	      // Период в циклах ЭРВ, сколько пропустить
- _data.OHCor_TDIS_TCON = 1500;		              // Температура нагнетания - конденсации при 20С
+ _data.OHCor_TDIS_TCON = 1500;		              // Температура нагнетания - конденсации при 30С и -5 конденсации
  _data.OHCor_TDIS_TCON_Thr = 20;		          // (/0.1) Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
- _data.OHCor_TDIS_ADD = 20;						  // (/0.1) Корректировка в + для TDIS_TCON на каждые 10 градусов выше 20.
+#ifdef OHCor_CONDENSING_30_MUL
+ _data.OHCor_TDIS_ADD = OHCor_CONDENSING_30_MUL;  // (/0.1) Корректировка для TDIS_TCON на каждые 10 градусов от 30 градусов
+#endif
  _data.OHCor_K = 100;						      // Коэффициент (/0.001): перегрев += дельта * K
  _data.OHCor_OverHeatMin = 100;			      // Минимальный перегрев (сотые градуса)
  _data.OHCor_OverHeatMax = 400;			      // Максимальный перегрев (сотые градуса)
@@ -709,6 +711,9 @@ void devEEV::Resume(uint16_t pos)
    EEV=0;
    err=OK;                               // Ошибок нет
    if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
+   if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
+	   _data.tOverheat = _data.OHCor_OverHeatStart;
+   }
    journal.jprintf(" EEV set zero\n"); 
    set_zero();                           // установить 0
  //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
@@ -896,14 +901,20 @@ else if (newEEV!=EEV) { set_EEV(newEEV); return err;}                           
 return err;
 }
 
+#ifndef OHCor_EVAPORATING_0_MUL
+OHCor_EVAPORATING_0_MUL 0
+#endif
+
 void   devEEV::CorrectOverheat(void)
 {
 	static int16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
 	if(!GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_Period) {
 		OverHeatCor_period = 0;
-		int16_t delta = HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing();
-		int16_t x;
+		int16_t x = HP.sTemp[TCOMP].get_Temp();
+		x += (int32_t)(x - 3000) * _data.OHCor_TDIS_ADD*10 / 1000;
+		x -= (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL / 1000;
+		int16_t delta = x - HP.get_temp_condensing();
 		if(delta > (x = _data.OHCor_TDIS_TCON + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
 			delta = x - delta;	// Перегрев большой - уменьшаем
 		} else if(delta < (x = _data.OHCor_TDIS_TCON - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {

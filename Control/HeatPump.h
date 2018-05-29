@@ -441,6 +441,7 @@ class HeatPump
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
+    int16_t get_temp_evaporating(void);		// Получить температуру испарения
     int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций
