@@ -902,7 +902,7 @@ return err;
 }
 
 #ifndef OHCor_EVAPORATING_0_MUL
-OHCor_EVAPORATING_0_MUL 0
+#define OHCor_EVAPORATING_0_MUL 0
 #endif
 
 void   devEEV::CorrectOverheat(void)
@@ -992,28 +992,28 @@ void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
 {
 	if(strcmp(var, "cCOR")==0) {
     	if(getset) _data.flags = (_data.flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
-    	itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret, 10);
+    	_itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret);
 	} else if(strcmp(var, "cDELAY")==0) {
     	if(getset) _data.OHCor_Delay = value;
-    	itoa(_data.OHCor_Delay, ret, 10);
+    	_itoa(_data.OHCor_Delay, ret);
     } else if(strcmp(var, "cPERIOD")==0) {
     	if(getset) _data.OHCor_Period = value;
-    	itoa(_data.OHCor_Period, ret, 10);
+    	_itoa(_data.OHCor_Period, ret);
     } else if(strcmp(var, "cDELTA")==0) {
     	if(getset) _data.OHCor_TDIS_TCON = value * 100.0 +0.005;
-    	ftoa(ret, (float)_data.OHCor_TDIS_TCON / 100.0, 2);
+    	_ftoa(ret, (float)_data.OHCor_TDIS_TCON / 100.0, 2);
     } else if(strcmp(var, "cDELTAT")==0) {
     	if(getset) _data.OHCor_TDIS_TCON_Thr = value * 100.0  +0.005;
-    	ftoa(ret, (float)_data.OHCor_TDIS_TCON_Thr / 100.0, 2);
+    	_ftoa(ret, (float)_data.OHCor_TDIS_TCON_Thr / 100.0, 2);
     } else if(strcmp(var, "cKF")==0) {
     	if(getset) _data.OHCor_K = value * 1000.0 + 0.0005;
-    	ftoa(ret, (float)_data.OHCor_K / 1000.0, 3);
+    	_ftoa(ret, (float)_data.OHCor_K / 1000.0, 3);
     } else if(strcmp(var, "cOH_MIN")==0) {
     	if(getset) _data.OHCor_OverHeatMin = value * 100.0 +0.005;
-    	ftoa(ret, (float)_data.OHCor_OverHeatMin / 100.0, 2);
+    	_ftoa(ret, (float)_data.OHCor_OverHeatMin / 100.0, 2);
     } else if(strcmp(var, "cOH_MAX")==0) {
     	if(getset) _data.OHCor_OverHeatMax = value * 100.0 +0.005;
-    	ftoa(ret, (float)_data.OHCor_OverHeatMax / 100.0, 2);
+    	_ftoa(ret, (float)_data.OHCor_OverHeatMax / 100.0, 2);
     }
 }
 
@@ -1021,40 +1021,39 @@ void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
  // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
 char* devEEV::get_paramEEV(char *var, char *ret)
 {
-char temp[10+1];	
 	if(strcmp(var, eev_POS)==0) {
-	  strcat(ret,itoa(EEV,temp,10)); 
+	  _itoa(EEV,ret); 
 	} else if(strcmp(var, eev_POSp)==0){
-	  strcat(ret,ftoa(temp,EEV * 100.0 / maxEEV, 1));
+	  _ftoa(ret,EEV * 100.0 / maxEEV, 1);
 	} else if(strcmp(var, eev_POSpp)==0){
       if(stepperEEV.isBuzy())  strcat(ret,"<<");  // признак движения			
-	  strcat(ret,itoa(EEV,temp,10));
+	  _itoa(EEV,ret);
 	  strcat(ret," (");
-	  strcat(ret,itoa((int32_t) EEV * 100 / maxEEV,temp,10)); 
+	  _itoa((int32_t) EEV * 100 / maxEEV,ret); 
 	  strcat(ret,"%)");	
 	  if (stepperEEV.isBuzy())  strcat(ret,">>");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-	  strcat(ret,ftoa(temp,(float)(Overheat/100.0),2));
+	  _ftoa(ret,(float)(Overheat/100.0),2);
 	} else if(strcmp(var, eev_ERROR)==0){
-	   strcat(ret,itoa(err,temp,10)); 
+	   _itoa(err,ret); 
 	} else if(strcmp(var, eev_MIN)==0){
-	   strcat(ret,itoa(_data.minSteps,temp,10)); 
+	   _itoa(_data.minSteps,ret); 
 	} else if(strcmp(var, eev_MAX)==0){
-	   strcat(ret,itoa(maxEEV,temp,10)); 
+	   _itoa(maxEEV,ret); 
 	} else if(strcmp(var, eev_TIME)==0){
-	   strcat(ret,itoa(_data.timeIn,temp,10)); 
+	   _itoa(_data.timeIn,ret); 
 	} else if(strcmp(var, eev_TARGET)==0){
-	   strcat(ret,ftoa(temp,(float)(_data.tOverheat/100.0),2));
+	   _ftoa(ret,(float)(_data.tOverheat/100.0),2);
 	} else if(strcmp(var, eev_KP)==0){
-	   strcat(ret,ftoa(temp,(float)(_data.Kp/100.0),3)); 
+	   _ftoa(ret,(float)(_data.Kp/100.0),3); 
 	} else if(strcmp(var, eev_KI)==0){
-	    strcat(ret,ftoa(temp,(float)(_data.Ki/100.0),3)); 
+	   _ftoa(ret,(float)(_data.Ki/100.0),3); 
 	} else if(strcmp(var, eev_KD)==0){
-	   strcat(ret,ftoa(temp,(float)(_data.Kd/100.0),3)); 
+	   _ftoa(ret,(float)(_data.Kd/100.0),3); 
 	} else if(strcmp(var, eev_CONST)==0){
-	    strcat(ret,ftoa(temp,(float)(_data.Correction/100.0),2)); 
+	   _ftoa(ret,(float)(_data.Correction/100.0),2); 
 	} else if(strcmp(var, eev_MANUAL)==0){
-	     strcat(ret,itoa(_data.manualStep,temp,10)); 
+	     _itoa(_data.manualStep,ret); 
 	} else if(strcmp(var, eev_FREON)==0){
          for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
             { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
@@ -1068,54 +1067,55 @@ char temp[10+1];
 	} else if(strcmp(var, eev_REMARK)==0){
 	     strcat(ret,noteRemarkEEV[get_ruleEEV()]); 
 	} else if(strcmp(var, eev_PINS)==0){
-	      strcat(ret,"D");  strcat(ret,itoa(PIN_EEV1_D24,temp,10));
-	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV2_D25,temp,10));
-	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV3_D26,temp,10));
-	      strcat(ret," D"); strcat(ret,itoa(PIN_EEV4_D27,temp,10));
+	      strcat(ret,"D");  _itoa(PIN_EEV1_D24,ret);
+	      strcat(ret," D"); _itoa(PIN_EEV2_D25,ret);
+	      strcat(ret," D"); _itoa(PIN_EEV3_D26,ret);
+	      strcat(ret," D"); _itoa(PIN_EEV4_D27,ret);
 	} else if(strcmp(var, eev_cCORRECT)==0){
-    	strcat(ret,itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, temp, 10));
+    	_itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret);
 	} else if(strcmp(var, eev_cDELAY)==0){
-    	strcat(ret,itoa(_data.OHCor_Delay, temp, 10));
+    	_itoa(_data.OHCor_Delay, ret);
     } else if(strcmp(var, eev_cPERIOD)==0){
-    	strcat(ret, itoa(_data.OHCor_Period, temp, 10));
+    	_itoa(_data.OHCor_Period, ret);
     } else if(strcmp(var, eev_cDELTA)==0){
-    	strcat(ret, ftoa(temp, (float)(_data.OHCor_TDIS_TCON/100.0), 2));
+    	_ftoa(ret, (float)(_data.OHCor_TDIS_TCON/100.0), 2);
     } else if(strcmp(var, eev_cDELTAT)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.OHCor_TDIS_TCON_Thr/10.0), 1));
+    	_ftoa(ret, (float)(_data.OHCor_TDIS_TCON_Thr/10.0), 1);
     } else if(strcmp(var, eev_cDELTAC)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.OHCor_TDIS_ADD/10.0), 1));
+    	_ftoa(ret, (float)(_data.OHCor_TDIS_ADD/10.0), 1);
     } else if(strcmp(var, eev_cKF)==0){
-       	strcat(ret, ftoa(temp, (float)(_data.OHCor_K/1000.0), 3));
+       	_ftoa(ret, (float)(_data.OHCor_K/1000.0), 3);
     } else if(strcmp(var, eev_cOH_MIN)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.OHCor_OverHeatMin/100.0), 2));
+    	_ftoa(ret, (float)(_data.OHCor_OverHeatMin/100.0), 2);
     } else if(strcmp(var, eev_cOH_MAX)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.OHCor_OverHeatMax/100.0), 2));
+    	_ftoa(ret, (float)(_data.OHCor_OverHeatMax/100.0), 2);
     } else if(strcmp(var, eev_cOH_START)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.OHCor_OverHeatStart/100.0), 2));
+    	_ftoa(ret, (float)(_data.OHCor_OverHeatStart/100.0), 2);
     } else if(strcmp(var, eev_ERR_KP)==0){
-    	strcat(ret,ftoa(temp, (float)(_data.errKp/100.0), 2));
+    	_ftoa(ret, (float)(_data.errKp/100.0), 2);
     } else if(strcmp(var, eev_SPEED)==0){
-    	strcat(ret, itoa(_data.speedEEV, temp, 10));  
+    	_itoa(_data.speedEEV, ret);  
     } else if(strcmp(var, eev_PRE_START_POS)==0){
-    	strcat(ret, itoa(_data.preStartPos, temp, 10));    
+    	_itoa(_data.preStartPos, ret);    
     } else if(strcmp(var, eev_START_POS)==0){
-    	strcat(ret, itoa(_data.StartPos, temp, 10)); 
+    	_itoa(_data.StartPos, ret); 
     } else if(strcmp(var, eev_DELAY_ON_PID)==0){
-    	strcat(ret, itoa(_data.delayOnPid, temp, 10)); 
+    	_itoa(_data.delayOnPid, ret); 
     } else if(strcmp(var, eev_DELAY_START_POS)==0){
-    	strcat(ret, itoa(_data.DelayStartPos, temp, 10)); 
+    	_itoa(_data.DelayStartPos, ret); 
     } else if(strcmp(var, eev_DELAY_OFF)==0){
-    	strcat(ret, itoa(_data.delayOff, temp, 10));
+    	_itoa(_data.delayOff, ret);
   	} else if(strcmp(var, eev_DELAY_ON)==0){
-    	strcat(ret, itoa(_data.delayOn, temp, 10));
+    	_itoa(_data.delayOn, ret);
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
-    	strcat(ret,itoa((_data.flags&(1<<fHoldMotor))!=0, temp, 10));
+    	_itoa((_data.flags&(1<<fHoldMotor))!=0, ret);
     } else if(strcmp(var, eev_PRESENT)==0){
-    	strcat(ret,itoa((_data.flags & (1<<fPresent))!=0, temp, 10));
+    	_itoa((_data.flags & (1<<fPresent))!=0, ret);
     } else strcat(ret,"E10");
    
   return ret;              
-}
+} 
+
 // Установить параметр ЭРВ из флоат параметр var
 // в случае успеха возврщает true
 boolean devEEV::set_paramEEV(char *var,float x)
@@ -1613,7 +1613,7 @@ return err;
 // Получить параметр инвертора в виде строки, результат ДОБАВЛЯЕТСЯ в ret
 void devOmronMX2::get_paramFC(char *var,char *ret)
 {
-static char temp[12];
+
     if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_INFO)==0)                  {
     	                                        #ifndef FC_ANALOG_CONTROL  
@@ -1624,13 +1624,13 @@ static char temp[12];
     	                                        } else
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
-    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     } else
+    if(strcmp(var,fc_PIN)==0)                   {  _itoa(pin,ret);     } else
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
-    if(strcmp(var,fc_STATE)==0)                 {  strcat(ret,int2str(state));   } else
-    if(strcmp(var,fc_FC)==0)                    {  strcat(ret,ftoa(temp,(float)FC/100.0,2)); } else
-    if(strcmp(var,fc_cFC)==0)                   {  strcat(ret,ftoa(temp,(float)freqFC/100.0,2)); } else
-    if(strcmp(var,fc_cPOWER)==0)                {  strcat(ret,ftoa(temp,(float)power/10.0,1)); } else
-    if(strcmp(var,fc_cCURRENT)==0)              {  strcat(ret,ftoa(temp,(float)current/100.0,2)); } else
+    if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
+    if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); } else
+    if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)freqFC/100.0,2); } else
+    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); } else
+    if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
@@ -1639,35 +1639,36 @@ static char temp[12];
 		                                         strcat(ret,(char*)cZero);
 		                                        #endif
                                                 } else
-    if(strcmp(var,fc_DAC)==0)                   {  strcat(ret,int2str(dac));          } else
+    if(strcmp(var,fc_DAC)==0)                   {  _itoa(dac,ret);          } else
     #ifdef FC_ANALOG_CONTROL
-    if(strcmp(var,fc_LEVEL0)==0)                {  strcat(ret,int2str(level0));       } else
-    if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
-    if(strcmp(var,fc_LEVELOFF)==0)              {  strcat(ret,int2str(levelOff));     } else
+    if(strcmp(var,fc_LEVEL0)==0)                {  _itoa(level0,ret);       } else
+    if(strcmp(var,fc_LEVEL100)==0)              {  _itoa(level100,ret);     } else
+    if(strcmp(var,fc_LEVELOFF)==0)              {  _itoa(levelOff,ret);     } else
     #endif
     if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
-    if(strcmp(var,fc_ERROR)==0)                 {  strcat(ret,int2str(err));          } else
-    if(strcmp(var,fc_UPTIME)==0)                {  strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  strcat(ret,ftoa(temp,(float)_data.PidFreqStep/100.0,2)); } else // Гц
-    if(strcmp(var,fc_PID_STOP)==0)              {  strcat(ret,int2str(_data.PidStop));          } else
-    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  strcat(ret,ftoa(temp,(float)_data.dtCompTemp/100.0,2)); } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            {  strcat(ret,ftoa(temp,(float)_data.startFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  strcat(ret,ftoa(temp,(float)_data.startFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ)==0)              {  strcat(ret,ftoa(temp,(float)_data.minFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  strcat(ret,ftoa(temp,(float)_data.minFreqCool/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  strcat(ret,ftoa(temp,(float)_data.minFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  strcat(ret,ftoa(temp,(float)_data.minFreqUser/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ)==0)              {  strcat(ret,ftoa(temp,(float)_data.maxFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  strcat(ret,ftoa(temp,(float)_data.maxFreqCool/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  strcat(ret,ftoa(temp,(float)_data.maxFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  strcat(ret,ftoa(temp,(float)_data.maxFreqUser/100.0,2)); } else // Гц
-    if(strcmp(var,fc_STEP_FREQ)==0)             {  strcat(ret,ftoa(temp,(float)_data.stepFreq/100.0,2)); } else // Гц
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  strcat(ret,ftoa(temp,(float)_data.stepFreqBoiler/100.0,2)); } else // Гц
-    if(strcmp(var,fc_DT_TEMP)==0)               {  strcat(ret,ftoa(temp,(float)_data.dtTemp/100.0,2)); } else // градусы
-    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  strcat(ret,ftoa(temp,(float)_data.dtTempBoiler/100.0,2)); } else // градусы
-    if(strcmp(var,fc_MB_ERR)==0)        		{  itoa(numErr, ret, 10); } else
+    if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
+    if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
+    if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // Гц
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
+    if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
+    if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
+    if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
      strcat(ret,(char*)cInvalid);
 }
+   
 
 
 // Установить параметр инвертора из строки
@@ -1709,55 +1710,52 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 
 	
  
- // Получить информацию о частотнике, информация добавляется в buf
+// Получить информацию о частотнике, информация добавляется в buf
 char * devOmronMX2::get_infoFC(char *buf)
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   if(!HP.dFC.get_present()) { strcat(buf,"|Данные не доступны (нет инвертора)|;&"); return buf;}          // Инвертора нет в конфигурации
   if(HP.dFC.get_blockFC())  { strcat(buf,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); return buf;}  // Инвертор заблокирован
   int8_t i;  
-  char temp[10];  
-       strcat(buf,"-|Состояние инвертора [0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током ");strcat(buf,"7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]|");strcat(buf,int2str(read_0x03_16(MX2_STATE)));strcat(buf,";");
-  //     strcat(buf,"-|Направление вращения [1:Обратное вращение, 0:Вращение в прямом направлении]|");strcat(buf,int2str(HP.dFC.read_0x01_bit(MX2_DIRECTION)));strcat(buf,";");
+       strcat(buf,"-|Состояние инвертора [0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током ");strcat(buf,"7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]|");_itoa(read_0x03_16(MX2_STATE),buf);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d001|Контроль выходной частоты (Гц)|");strcat(buf,ftoa(temp,(float)read_0x03_32(MX2_CURRENT_FR)/100.0,2));strcat(buf,";");
+       strcat(buf,"d001|Контроль выходной частоты (Гц)|");_ftoa(buf,(float)read_0x03_32(MX2_CURRENT_FR)/100.0,2);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d003|Контроль выходного тока (А)|");strcat(buf,ftoa(temp,(float)read_0x03_16(MX2_AMPERAGE)/100.0,2));strcat(buf,";");
+       strcat(buf,"d003|Контроль выходного тока (А)|");_ftoa(buf,(float)read_0x03_16(MX2_AMPERAGE)/100.0,2);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d014|Контроль мощности (кВт)|");strcat(buf,ftoa(temp,(float)read_0x03_16(MX2_POWER)/10.0,1));strcat(buf,";");
+       strcat(buf,"d014|Контроль мощности (кВт)|");_ftoa(buf,(float)read_0x03_16(MX2_POWER)/10.0,1);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d013|Контроль выходного напряжения (В)|");strcat(buf,ftoa(temp,(float)read_0x03_16(MX2_VOLTAGE)/10.0,1));strcat(buf,";");
+       strcat(buf,"d013|Контроль выходного напряжения (В)|");_ftoa(buf,(float)read_0x03_16(MX2_VOLTAGE)/10.0,1);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d015|Контроль ватт-часов (кВт/ч)|");strcat(buf,ftoa(temp,(float)read_0x03_32(MX2_POWER_HOUR)/10.0,1));strcat(buf,";");
+       strcat(buf,"d015|Контроль ватт-часов (кВт/ч)|");_ftoa(buf,(float)read_0x03_32(MX2_POWER_HOUR)/10.0,1);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d016|Контроль времени наработки в режиме \"Ход\" (ч)|");strcat(buf,int2str(read_0x03_32(MX2_HOUR)));strcat(buf,";");
+       strcat(buf,"d016|Контроль времени наработки в режиме \"Ход\" (ч)|");_itoa(read_0x03_32(MX2_HOUR),buf);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d017|Контроль времени наработки при включенном питании (ч)|");strcat(buf,int2str(read_0x03_32(MX2_HOUR1)));strcat(buf,";");
+       strcat(buf,"d017|Контроль времени наработки при включенном питании (ч)|");_itoa(read_0x03_32(MX2_HOUR1),buf);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d018|Контроль температуры радиатора (°С)|");strcat(buf,ftoa(temp,(float)read_0x03_16(MX2_TEMP)/10.0,2));strcat(buf,";");
+       strcat(buf,"d018|Контроль температуры радиатора (°С)|");_ftoa(buf,(float)read_0x03_16(MX2_TEMP)/10.0,2);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d102|Контроль напряжения  постоянного тока (В)|");strcat(buf,ftoa(temp,(float)read_0x03_16(MX2_VOLTAGE_DC)/10.0,1));strcat(buf,";");
+       strcat(buf,"d102|Контроль напряжения  постоянного тока (В)|");_ftoa(buf,(float)read_0x03_16(MX2_VOLTAGE_DC)/10.0,1);strcat(buf,";");
        _delay(FC_DELAY_READ);
-       strcat(buf,"d080|Счетчик аварийных отключений (Шт)|");strcat(buf,int2str(read_0x03_16(MX2_NUM_ERR)));strcat(buf,";");
+       strcat(buf,"d080|Счетчик аварийных отключений (Шт)|");_itoa(read_0x03_16(MX2_NUM_ERR),buf);strcat(buf,";");
        for(i=0;i<6;i++)  // Скан по ошибкам
           {
-          strcat(buf,"d0");strcat(buf,int2str(81+i));strcat(buf,"|Состояние в момент ошибки ");
+          strcat(buf,"d0");_itoa(81+i,buf);strcat(buf,"|Состояние в момент ошибки ");
           read_0x03_error(MX2_ERROR1+i*0x0a);
           // Формирование ответа в строке
-   //       strcat(buf,"[S:");  strcat(buf,int2str(HP.dFC.get_errorFC().MX2.status));
-          strcat(buf,"[F:");  strcat(buf,ftoa(temp,(float)error.MX2.fr/100.0,2));
-          strcat(buf," I:");  strcat(buf,ftoa(temp,(float)error.MX2.cur/100.0,2));
-          strcat(buf," V:");  strcat(buf,ftoa(temp,(float)error.MX2.vol/10.0,2));
-          strcat(buf," T1:"); strcat(buf,int2str(error.MX2.time1));
-          strcat(buf," T2:"); strcat(buf,int2str(error.MX2.time2));
+          strcat(buf,"[F:");  _ftoa(buf,(float)error.MX2.fr/100.0,2);
+          strcat(buf," I:");  _ftoa(buf,(float)error.MX2.cur/100.0,2);
+          strcat(buf," V:");  _ftoa(buf,(float)error.MX2.vol/10.0,2);
+          strcat(buf," T1:"); _itoa(error.MX2.time1,buf);
+          strcat(buf," T2:"); _itoa(error.MX2.time2,buf);
           strcat(buf,"] Код ошибки:|");
           if(error.MX2.code<10) strcat(buf,"E0"); else strcat(buf,"E");
-          strcat(buf,int2str(error.MX2.code));strcat(buf,"."); strcat(buf,int2str(error.MX2.status));
+          _itoa(error.MX2.code,buf);strcat(buf,"."); _itoa(error.MX2.status,buf);
           strcat(buf,";");   
           }  
 #endif          
 return buf;                              
-}
+}          
 // Сброс ошибок инвертора по модбасу
 boolean devOmronMX2::reset_errorFC()                   
 {
@@ -2108,27 +2106,26 @@ int8_t devSDM::get_readState(uint8_t group)
 // Получить параметр счетчика в виде строки
 char* devSDM::get_paramSDM(char *var, char *ret)           
  {
-    char temp[12];
-   if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                                   }else      // Имя счетчика
-   if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                                   }else      // Описание счетчика
-   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.maxVoltage));                                 }else      // мах напряжение контроля напряжения
-   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return strcat(ret,int2str(settingSDM.minVoltage));                                 }else      // min напряжение контроля напряжения
-   if(strcmp(var,sdm_MAX_POWER)==0){    return strcat(ret,int2str(settingSDM.maxPower));                                   }else      // максимальаня мощность контроля мощности
-   if(strcmp(var,sdm_VOLTAGE)==0){      return strcat(ret,ftoa(temp,(float)Voltage,2));                                    }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){      return strcat(ret,ftoa(temp,(float)Current,2));                                    }else      // Ток
-   if(strcmp(var,sdm_REPOWER)==0){      return strcat(ret,ftoa(temp,(float)RePower,2));                                    }else      // Реактивная мощность
-   if(strcmp(var,sdm_ACPOWER)==0){      return strcat(ret,ftoa(temp,(float)AcPower,2));                                    }else      // Активная мощность
-   if(strcmp(var,sdm_POWER)==0){        return strcat(ret,ftoa(temp,(float)Power,2));                                      }else      // Полная мощность
-   if(strcmp(var,sdm_POW_FACTOR)==0){   return strcat(ret,ftoa(temp,(float)PowerFactor,2));                                }else      // Коэффициент мощности
-   if(strcmp(var,sdm_PHASE)==0){        return strcat(ret,ftoa(temp,(float)Phase,2));                                      }else      // Угол фазы (градусы)
-   if(strcmp(var,sdm_FREQ)==0){         return strcat(ret,ftoa(temp,(float)Freq,2));                                       }else      // Частота
-   if(strcmp(var,sdm_IACENERGY)==0){    return strcat(ret,ftoa(temp,(float)iAcEnergy,2));                                  }else      // Потребленная активная энергия
-   if(strcmp(var,sdm_EACENERGY)==0){    return strcat(ret,ftoa(temp,(float)eAcEnergy,2));                                  }else      // Переданная активная энергия
-   if(strcmp(var,sdm_IREENERGY)==0){    return strcat(ret,ftoa(temp,(float)iReEnergy,2));                                  }else      // Потребленная реактивная энергия
-   if(strcmp(var,sdm_EREENERGY)==0){    return strcat(ret,ftoa(temp,(float)eReEnergy,2));                                  }else      // Переданная реактивная энергия
-   if(strcmp(var,sdm_ACENERGY)==0){     return strcat(ret,ftoa(temp,(float)AcEnergy,2));                                   }else      // Суммараная активная энергия
-   if(strcmp(var,sdm_REENERGY)==0){     return strcat(ret,ftoa(temp,(float)ReEnergy,2));                                   }else      // Суммараная реактивная энергия
-   if(strcmp(var,sdm_ENERGY)==0){       return strcat(ret,ftoa(temp,(float)Energy,2));                                     }else      // Суммараная  энергия
+   if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                         }else      // Имя счетчика
+   if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                         }else      // Описание счетчика
+   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return _itoa(settingSDM.maxVoltage,ret);                                }else      // мах напряжение контроля напряжения
+   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return _itoa(settingSDM.minVoltage,ret);                                }else      // min напряжение контроля напряжения
+   if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
+   if(strcmp(var,sdm_VOLTAGE)==0){      return _ftoa(ret,(float)Voltage,2);                                     }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      return _ftoa(ret,(float)Current,2);                                     }else      // Ток
+   if(strcmp(var,sdm_REPOWER)==0){      return _ftoa(ret,(float)RePower,2);                                     }else      // Реактивная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){      return _ftoa(ret,(float)AcPower,2);                                     }else      // Активная мощность
+   if(strcmp(var,sdm_POWER)==0){        return _ftoa(ret,(float)Power,2);                                       }else      // Полная мощность
+   if(strcmp(var,sdm_POW_FACTOR)==0){   return _ftoa(ret,(float)PowerFactor,2);                                 }else      // Коэффициент мощности
+   if(strcmp(var,sdm_PHASE)==0){        return _ftoa(ret,(float)Phase,2);                                       }else      // Угол фазы (градусы)
+   if(strcmp(var,sdm_FREQ)==0){         return _ftoa(ret,(float)Freq,2);                                        }else      // Частота
+   if(strcmp(var,sdm_IACENERGY)==0){    return _ftoa(ret,(float)iAcEnergy,2);                                   }else      // Потребленная активная энергия
+   if(strcmp(var,sdm_EACENERGY)==0){    return _ftoa(ret,(float)eAcEnergy,2);                                   }else      // Переданная активная энергия
+   if(strcmp(var,sdm_IREENERGY)==0){    return _ftoa(ret,(float)iReEnergy,2);                                   }else      // Потребленная реактивная энергия
+   if(strcmp(var,sdm_EREENERGY)==0){    return _ftoa(ret,(float)eReEnergy,2);                                   }else      // Переданная реактивная энергия
+   if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммараная активная энергия
+   if(strcmp(var,sdm_REENERGY)==0){     return _ftoa(ret,(float)ReEnergy,2);                                    }else      // Суммараная реактивная энергия
+   if(strcmp(var,sdm_ENERGY)==0){       return _ftoa(ret,(float)Energy,2);                                      }else      // Суммараная  энергия
    if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return strcat(ret,(char*)"Ok");else return strcat(ret,(char*)"none");}else      // Cостояние связи со счетчиком
    return strcat(ret,(char*)cInvalid);
  }
