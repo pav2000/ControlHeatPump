@@ -913,7 +913,7 @@ void   devEEV::CorrectOverheat(void)
 		OverHeatCor_period = 0;
 		int16_t x = HP.sTemp[TCOMP].get_Temp();
 		x += (int32_t)(x - 3000) * _data.OHCor_TDIS_ADD*10 / 1000;
-		x -= (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL / 1000;
+		x -= (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000;
 		int16_t delta = x - HP.get_temp_condensing();
 		if(delta > (x = _data.OHCor_TDIS_TCON + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
 			delta = x - delta;	// Перегрев большой - уменьшаем

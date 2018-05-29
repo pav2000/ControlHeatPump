@@ -882,3 +882,16 @@ __attribute__((always_inline)) inline void setDate_RtcI2C(uint8_t date, uint8_t 
 	rtcI2C.setDate(date, mon, year);
 	SemaphoreGive (xI2CSemaphore);
 }
+
+// Заполняет и выбирает нужный элемент (нумерация c 0) для тега select
+// Формат select: "Первый элемент:0;Второй элемент:0;Третий элемент:0;"
+char *web_fill_tag_select(char *str, const char *select, uint8_t selected)
+{
+	char *outstr = str + m_strlen(str);
+	strcat(outstr, select);
+	do {
+		if((outstr = strchr(++outstr, ';')) == NULL) break;
+	} while(selected--);
+	if(outstr != NULL) *(outstr-1) = '1';
+	return str;
+}

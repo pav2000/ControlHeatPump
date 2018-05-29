@@ -790,6 +790,7 @@ boolean HeatPump::set_network(char *var, char *c)
 			                        case 2: Network.pingTime=5*60;     return true;  break;
 			                        case 3: Network.pingTime=20*60;    return true;  break;
 			                        case 4: Network.pingTime=60*60;    return true;  break;
+			                        case 5: Network.pingTime=120*60;    return true;  break;
 			                        default:                           return false; break;   
 			                       }                                          }else   
  if(strcmp(var,net_NO_PING)==0){     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
@@ -809,38 +810,22 @@ char* HeatPump::get_network(char *var,char *ret)
  if(strcmp(var,net_DHCP)==0){      if (GETBIT(Network.flags,fDHCP)) return  strcat(ret,(char*)cOne);
                                    else      return  strcat(ret,(char*)cZero);          }else
  if(strcmp(var,net_MAC)==0){       return strcat(ret,MAC2String(Network.mac));          }else  
- if(strcmp(var,net_RES_SOCKET)==0){ 
-                     switch (Network.resSocket)
-                       {
-                        case 0:   return strcat(ret,(char*)"never:1;10 sec:0;30 sec:0;90 sec:0;");  break;
-                        case 10:  return strcat(ret,(char*)"never:0;10 sec:1;30 sec:0;90 sec:0;");  break;
-                        case 30:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;");  break;  // 30 секунд
-                        case 90:  return strcat(ret,(char*)"never:0;10 sec:0;30 sec:0;90 sec:1;");  break;
-                        default:  Network.resSocket=30; return strcat(ret,(char*)"never:0;10 sec:0;30 sec:1;90 sec:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      }else   
- if(strcmp(var,net_RES_W5200)==0){ 
-                    switch (Network.resW5200)
-                       {
-                        case 0:       return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;");  break;
-                        case 60*60*6: return strcat(ret,(char*)"never:0;6 hour:1;24 hour:0;");  break;   // 6 часов
-                        case 60*60*24:return strcat(ret,(char*)"never:0;6 hour:0;24 hour:1;");  break;   // 24 часа
-                        default:      Network.resW5200=0;return strcat(ret,(char*)"never:1;6 hour:0;24 hour:0;"); break;   // Этого не должно быть, но если будет то установить по умолчанию
-                       }                                     }else   
-  if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
+ if(strcmp(var,net_RES_SOCKET)==0){
+ 	return web_fill_tag_select(ret, "never:0;10 sec:0;30 sec:0;90 sec:0;",
+				Network.resSocket == 0 ? 0 :
+				Network.resSocket == 10 ? 1 :
+				Network.resSocket == 30 ? 2 :
+				Network.resSocket == 90 ? 3 : 4);
+ }else if(strcmp(var,net_RES_W5200)==0){
+	 	return web_fill_tag_select(ret, "never:0;10 sec:0;30 sec:0;90 sec:0;",
+					Network.resW5200 == 0 ? 0 :
+					Network.resW5200 == 60*60*6 ? 1 :
+					Network.resW5200 == 60*60*24 ? 2 : 3);
+  }else if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
                                     else      return  strcat(ret,(char*)cZero);               }else
   if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
   if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
   if(strcmp(var,net_SIZE_PACKET)==0){return strcat(ret,int2str(Network.sizePacket));          }else   
-    /*
-                     switch (Network.sizePacket)
-                       {
-                        case 256:   return (char*)"256 byte:1;512 byte:0;1024 byte:0;2048 byte:0;";  break;
-                        case 512:   return (char*)"256 byte:0;512 byte:1;1024 byte:0;2048 byte:0;";  break;
-                        case 1024:  return (char*)"256 byte:0;512 byte:0;1024 byte:1;2048 byte:0;";  break;
-                        case 2048:  return (char*)"256 byte:0;512 byte:0;1024 byte:0;2048 byte:1;";  break;
-                        default:    Network.sizePacket=2048; return (char*)"256 byte:0;512 byte:0;1024 byte:0;2048 byte:1;";  break;     // Этого не должно быть, но если будет то установить по умолчанию
-                      }  
-     */                 
     if(strcmp(var,net_INIT_W5200)==0){if (GETBIT(Network.flags,fInitW5200)) return  strcat(ret,(char*)cOne);       // флаг Ежеминутный контроль SPI для сетевого чипа
                                       else      return  strcat(ret,(char*)cZero);               }else      
     if(strcmp(var,net_PORT)==0){return strcat(ret,int2str(Network.port));                       }else    // Порт веб сервера
@@ -848,17 +833,15 @@ char* HeatPump::get_network(char *var,char *ret)
                                       else      return  strcat(ret,(char*)cZero);          }else     
     if(strcmp(var,net_DELAY_ACK)==0){return strcat(ret,int2str(Network.delayAck));         }else    
     if(strcmp(var,net_PING_ADR)==0){  return strcat(ret,Network.pingAdr);                  }else
-    if(strcmp(var,net_PING_TIME)==0){ 
-                     switch (Network.pingTime)
-                       {
-                        case 0:      return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;");  break; // никогда
-                        case 1*60:   return strcat(ret,(char*)"never:0;1 min:1;5 min:0;20 min:0;60 min:0;");  break; // 1 минута
-                        case 5*60:   return strcat(ret,(char*)"never:0;1 min:0;5 min:1;20 min:0;60 min:0;");  break; // 5 минут
-                        case 20*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:1;60 min:0;");  break; // 20 миут
-                        case 60*60:  return strcat(ret,(char*)"never:0;1 min:0;5 min:0;20 min:0;60 min:1;");  break; // 60 минут
-                        default:  Network.resSocket=0; return strcat(ret,(char*)"never:1;1 min:0;5 min:0;20 min:0;60 min:0;"); break; // Этого не должно быть, но если будет то установить по умолчанию
-                      }                                                      }else   
-    if(strcmp(var,net_NO_PING)==0){if (GETBIT(Network.flags,fNoPing)) return  strcat(ret,(char*)cOne);
+    if(strcmp(var,net_PING_TIME)==0){
+    	return web_fill_tag_select(ret, "never:0;1 min:0;5 min:0;20 min:0;60 min:0;120 min:0;",
+					Network.pingTime == 0 ? 0 :
+					Network.pingTime == 1*60 ? 1 :
+					Network.pingTime == 5*60 ? 2 :
+					Network.pingTime == 20*60 ? 3 :
+					Network.pingTime == 60*60 ? 4 :
+					Network.pingTime == 120*60 ? 5 : 6);
+    } else if(strcmp(var,net_NO_PING)==0){if (GETBIT(Network.flags,fNoPing)) return  strcat(ret,(char*)cOne);
                                    else      return  strcat(ret,(char*)cZero);                        }else                                                                                          
 
  return strcat(ret,(char*)cInvalid);
@@ -938,11 +921,12 @@ boolean HeatPump::set_optionHP(char *var, float x)
 						                           {
 						                            case 0:  Option.tChart=10;    return true; break;
 						                            case 1:  Option.tChart=20;    return true; break;
-						                            case 2:  Option.tChart=60;    return true; break;
-						                            case 3:  Option.tChart=3*60;  return true; break;
-						                            case 4:  Option.tChart=10*60; return true; break;
-						                            case 5:  Option.tChart=30*60; return true; break;
-						                            case 6:  Option.tChart=60*60; return true; break;       
+						                            case 2:  Option.tChart=30;    return true; break;
+						                            case 3:  Option.tChart=60;    return true; break;
+						                            case 4:  Option.tChart=3*60;  return true; break;
+						                            case 5:  Option.tChart=10*60; return true; break;
+						                            case 6:  Option.tChart=30*60; return true; break;
+						                            case 7:  Option.tChart=60*60; return true; break;
 						                            default: Option.tChart=60;    return true; break;    // Исправить по умолчанию
 						                           }   } else
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
@@ -983,17 +967,17 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_PUMP_WORK)==0)        {return strcat(ret,int2str(Option.workPump));}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return strcat(ret,int2str(Option.pausePump));}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return strcat(ret,int2str(Option.nStart));}else                                                             // число попыток пуска
-   if(strcmp(var,option_TIME_CHART)==0)       { switch (Option.tChart)  // период обновления ститистики
-     					                           {
-						                            case 10:    return strcat(ret,(char*)"10 sec:1;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 20:    return strcat(ret,(char*)"10 sec:0;20 sec:1;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 60:    return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 3*60:  return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:1;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 10*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:1;30 min:0;60 min:0;"); break;
-						                            case 30*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:1;60 min:0;"); break;
-						                            case 60*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:1;"); break;       
-						                            default:    Option.tChart=60; return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;  // Исправить по умолчанию
-						                           } } else
+   if(strcmp(var,option_TIME_CHART)==0)       {
+	   	   	   	   	   	   	   	   	   	   	   return web_fill_tag_select(ret, "10 sec:0;20 sec:0;30 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;",
+															Option.tChart == 10 ? 0 :
+															Option.tChart == 20 ? 1 :
+															Option.tChart == 30 ? 2 :
+															Option.tChart == 60 ? 3 :
+															Option.tChart == 3*60 ? 4 :
+															Option.tChart == 10*60 ? 5 :
+															Option.tChart == 30*60 ? 6 :
+															Option.tChart == 60*60 ? 7 : 8);
+						                      } else
    if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          {if(GETBIT(Option.flags,fNextion)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else         // использование дисплея nextion
    
@@ -1052,7 +1036,7 @@ void  HeatPump::updateChart()
  if(ChartPowerCO.get_present())   ChartPowerCO.addPoint((int16_t)powerCO);  // Мощность контура отопления в вт!!!!!!!!!
   
  #ifdef FLOWEVA 
- if(ChartPowerGEO.get_present())  ChartPowerGEO.addPoint((int16_t)powerGEO);} // Мощность контура ГЕО в Вт!!!!!!!!!
+ if(ChartPowerGEO.get_present())  ChartPowerGEO.addPoint((int16_t)powerGEO); // Мощность контура ГЕО в Вт!!!!!!!!!
  #endif
  if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
