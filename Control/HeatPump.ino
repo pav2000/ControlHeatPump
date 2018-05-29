@@ -937,11 +937,12 @@ boolean HeatPump::set_optionHP(char *var, float x)
 						                           switch ((int)x)  // период обновления ститистики
 						                           {
 						                            case 0:  Option.tChart=10;    return true; break;
-						                            case 1:  Option.tChart=60;    return true; break;
-						                            case 2:  Option.tChart=3*60;  return true; break;
-						                            case 3:  Option.tChart=10*60; return true; break;
-						                            case 4:  Option.tChart=30*60; return true; break;
-						                            case 5:  Option.tChart=60*60; return true; break;       
+						                            case 1:  Option.tChart=20;    return true; break;
+						                            case 2:  Option.tChart=60;    return true; break;
+						                            case 3:  Option.tChart=3*60;  return true; break;
+						                            case 4:  Option.tChart=10*60; return true; break;
+						                            case 5:  Option.tChart=30*60; return true; break;
+						                            case 6:  Option.tChart=60*60; return true; break;       
 						                            default: Option.tChart=60;    return true; break;    // Исправить по умолчанию
 						                           }   } else
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
@@ -974,7 +975,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
 char* HeatPump::get_optionHP(char *var, char *ret)
 {
 	
- char static temp[16];
+ char static temp[12];
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
                                                else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
                                                else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
@@ -983,14 +984,15 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return strcat(ret,int2str(Option.pausePump));}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return strcat(ret,int2str(Option.nStart));}else                                                             // число попыток пуска
    if(strcmp(var,option_TIME_CHART)==0)       { switch (Option.tChart)  // период обновления ститистики
-						                           {
-						                            case 10:    return strcat(ret,(char*)"10 sec:1;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 60:    return strcat(ret,(char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 3*60:  return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:1;10 min:0;30 min:0;60 min:0;"); break;
-						                            case 10*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:1;30 min:0;60 min:0;"); break;
-						                            case 30*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:1;60 min:0;"); break;
-						                            case 60*60: return strcat(ret,(char*)"10 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:1;"); break;       
-						                            default:    Option.tChart=60; return strcat(ret,(char*)"10 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;  // Исправить по умолчанию
+     					                           {
+						                            case 10:    return strcat(ret,(char*)"10 sec:1;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 20:    return strcat(ret,(char*)"10 sec:0;20 sec:1;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 60:    return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 3*60:  return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:1;10 min:0;30 min:0;60 min:0;"); break;
+						                            case 10*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:1;30 min:0;60 min:0;"); break;
+						                            case 30*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:1;60 min:0;"); break;
+						                            case 60*60: return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:1;"); break;       
+						                            default:    Option.tChart=60; return strcat(ret,(char*)"10 sec:0;20 sec:0;1 min:1;3 min:0;10 min:0;30 min:0;60 min:0;"); break;  // Исправить по умолчанию
 						                           } } else
    if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          {if(GETBIT(Option.flags,fNextion)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else         // использование дисплея nextion

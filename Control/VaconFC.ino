@@ -322,7 +322,7 @@ int32_t devVaconFC::save(int32_t adr)
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devVaconFC::load(int32_t adr)
 {
-	decltype(_data.flags) save_flags = _data.flags;;
+	decltype(_data.flags) save_flags = _data.flags;
 	if(readEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
 		set_Error(ERR_LOAD_EEPROM, (char*) name);
 		return ERR_LOAD_EEPROM;
