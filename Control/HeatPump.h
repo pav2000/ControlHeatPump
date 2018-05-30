@@ -75,7 +75,7 @@ struct type_motoHour
 #define fEEV_light_start    7               // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
 #define fTypeRHEAT          8               // флаг как используется доболнительный ТЭН для нагрева 0-резерв 1-бивалент
 #define f1Wire2TSngl		9				// На 2-ой шине 1-Wire(DS2482) только один датчик
-#define f1Wire3TSngl		9				// На 3-ей шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl		10				// На 3-ей шине 1-Wire(DS2482) только один датчик
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -441,6 +441,7 @@ class HeatPump
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
+    int16_t get_temp_evaporating(void);		// Получить температуру испарения
     int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций

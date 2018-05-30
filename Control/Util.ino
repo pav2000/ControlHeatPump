@@ -209,51 +209,78 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
-/*
-// float в *char  экономим место и скорость и стек -----------------------------------
-char * ftoa(char * outstr, float val, byte precision){
- byte i;
- // compute the rounding factor and fractional multiplier
- float roundingFactor = 0.5;
- unsigned long mult = 1;
- for (i = 0; i < precision; i++)
- {
-   roundingFactor /= 10.0;
-   mult *= 10;
- }
- 
- outstr[0]='\0';
+//float в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек -----------------------------------
+char *_ftoa(char *outstr, float val, unsigned char precision)
+{
+	
+//	unsigned int len = 0;
+//	while (outstr[len] != '\0') len++;
+//	char *ret = outstr;
+//	outstr=outstr+len;
 
- if(val < 0.0){
-   strcpy(outstr,"-\0");
-   val = -val;
- }
-
- val += roundingFactor;
- itoa(int(val), outstr + strlen(outstr), 10);
- if( precision > 0) {
-   strcat(outstr, ".\0"); // print the decimal point
-   unsigned long frac;
-   unsigned long mult = 1;
-   byte padding = precision -1;
-   while(precision--)
-     mult *=10;
-
-   if(val >= 0)
-     frac = (val - int(val)) * mult;
-   else
-     frac = (int(val)- val ) * mult;
-   unsigned long frac1 = frac;
-
-   while(frac1 /= 10)  padding--;
-
-   while(padding--)  strcat(outstr,"0\0");
-
-   itoa(frac, outstr + strlen(outstr), 10);
- }
- return outstr;
+	char *ret = outstr;
+    while(*outstr) outstr++;
+	
+	// compute the rounding factor and fractional multiplier
+	float roundingFactor = 0.5;
+	unsigned long mult = 1;
+	unsigned char padding = precision;
+	while(precision--) {
+		roundingFactor /= 10.0;
+		mult *= 10;
+	}
+	if(val < 0.0){
+		*outstr++ = '-';
+		val = -val;
+	}
+	val += roundingFactor;
+	outstr += m_itoa((long)val, outstr, 10, 0);
+	if(padding > 0) {
+		*(outstr++) = '.';
+		m_itoa((val - (long)val) * mult, outstr, 10, padding);
+	}
+	return ret;
 }
-*/
+//int в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек radix=10
+char* _itoa( int value, char *string)
+{
+    unsigned int i, len = 0;
+	while (string[len] != '\0') len++;
+	char *ret = string;
+	string = string+len;
+	char *pbuffer = string;
+	unsigned char	negative = 0;
+
+	if (value < 0) {
+		negative = 1;
+		value = -value;
+	}
+
+	/* This builds the string back to front ... */
+	do {
+		unsigned char digit = value % 10;
+		*(pbuffer++) = (digit < 10 ? '0' + digit : 'a' + digit - 10);
+		value /= 10;
+	} while (value > 0);
+
+//	for (i = (pbuffer - string); i < zero_pad; i++)	*(pbuffer++) = '0';
+
+	if (negative)
+		*(pbuffer++) = '-';
+
+	*(pbuffer) = '\0';
+
+	/* ... now we reverse it (could do it recursively but will
+	 * conserve the stack space) */
+	len = (pbuffer - string);
+	for (i = 0; i < len / 2; i++) {
+		char j = string[i];
+		string[i] = string[len-i-1];
+		string[len-i-1] = j;
+	}
+
+	return ret; 
+}
 
 // Преобразование во float двух слов из двух байт
 float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)
@@ -881,4 +908,17 @@ __attribute__((always_inline)) inline void setDate_RtcI2C(uint8_t date, uint8_t 
 	}
 	rtcI2C.setDate(date, mon, year);
 	SemaphoreGive (xI2CSemaphore);
+}
+
+// Заполняет и выбирает нужный элемент (нумерация c 0) для тега select
+// Формат select: "Первый элемент:0;Второй элемент:0;Третий элемент:0;"
+char *web_fill_tag_select(char *str, const char *select, uint8_t selected)
+{
+	char *outstr = str + m_strlen(str);
+	strcat(outstr, select);
+	do {
+		if((outstr = strchr(++outstr, ';')) == NULL) break;
+	} while(selected--);
+	if(outstr != NULL) *(outstr-1) = '1';
+	return str;
 }

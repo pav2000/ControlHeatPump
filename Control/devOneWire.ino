@@ -150,7 +150,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte i;
 	byte data[12];
 	byte addr[8];
-	watchdogReset();
+	WDT_Restart(WDT);
 	if(lock_I2C_bus_reset(1)) { // reset 1-wire, check presense
 #ifdef ONEWIRE_DS2482
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
@@ -164,7 +164,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	OneWireDrv.reset_search();
 	while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
 	{ // Цикл чтения одного датчика на DS2482 занимает 335 мс с define ONEWIRE_DONT_CHG_RES и 375 мс без нее.
-		watchdogReset();
+		WDT_Restart(WDT);
 		err = OK;
 		//  Датчик найден!
 		// 1. Номер по порядку

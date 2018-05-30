@@ -348,15 +348,16 @@ private:
 		  int16_t manualStep;                                    // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 		  TYPEFREON typeFreon;                                   // Тип фреона
 		  RULE_EEV ruleEEV;                                      // правило работы ЭРВ
-		  struct {
-			  uint16_t Delay;									 // Задержка после старта компрессора, сек
-			  uint16_t Period;									 // Период в циклах ЭРВ, сколько пропустить
-			  int16_t TDIS_TCON;							     // Температура нагнетания - конденсации
-			  int16_t TDIS_TCON_Thr;							 // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
-			  int16_t K;										 // Коэффициент (/0.001): перегрев += дельта * K
-			  int16_t OverHeatMin;								 // Минимальный перегрев (сотые градуса)
-			  int16_t OverHeatMax;								 // Максимальный перегрев (сотые градуса)
-		  } OverHeatCor;
+
+		  uint16_t OHCor_Delay;									 // Задержка после старта компрессора, сек
+		  uint16_t OHCor_Period;								 // Период в циклах ЭРВ, сколько пропустить
+		  int16_t OHCor_TDIS_TCON;							     // Температура нагнетания - конденсации (/0.01) при конденсации 20 градусов
+		  uint8_t OHCor_TDIS_TCON_Thr;							 // Порог (/0.1), после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
+		  uint8_t OHCor_TDIS_ADD;								// Корректировка (/0.1) в + для TDIS_TCON на каждые 10 градусов выше 20.
+		  int16_t OHCor_K;										 // Коэффициент (/0.001): перегрев += дельта * K
+		  int16_t OHCor_OverHeatMin;							 // Минимальный перегрев (сотые градуса)
+		  int16_t OHCor_OverHeatMax;							 // Максимальный перегрев (сотые градуса)
+
 		  uint16_t errKp;                                        // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
 		  uint8_t  speedEEV;                                     // Скорость шагового двигателя ЭРВ (импульсы в сек.)
 		  uint8_t  minSteps;                                     // Минимальное число шагов открытия ЭРВ
@@ -368,22 +369,19 @@ private:
 		  uint8_t  delayOff;                                     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
 		  uint8_t  delayOn;                                      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 		  byte flags;                                            // флаги ЭРВ,
-		  int16_t P1;                                            // Резерв 1
+		  int16_t OHCor_OverHeatStart;							 // Начальный перегрев (сотые градуса)
 		  int16_t P2;                                            // Резерв 2
   } _data;                                               // Конец структуры для сохранения настроек - последняя переменная => flags  
 };
-
 
 // Частотный преобразователь ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------------------------------------------------------------------
 // Флаги Инвертора
 #define fFC         0               // флаг наличие инвертора
 #define fAuto       1               // флаг режим автоматического регулирования частоты ( 0 - старт-стоп через инвертор 1 - ПИД)
 #define fPower      2               // флаг режим ограничения мощности (резерв - сейчас ограничение всегда)
-//#define fAnalog   3               // флаг использования аналогового выхода для управления
-#define fOnOff      4               // флаг включения-выключения частотника
-#define fErrFC      5               // флаг глобальная ошибка инвертора - работа инвертора запрещена
-
-#define ERR_LINK_FC 0xff            // Состояние инертора - нет связи.
+#define fOnOff      3               // флаг включения-выключения частотника
+#define fErrFC      4               // флаг глобальная ошибка инвертора - работа инвертора запрещена
+#define FC_SAVED_FLAGS (1<<fAuto)
 
 const char *noteFC_OK   = {" связь по Modbus установлена" };                     // Все впорядке
 const char *noteFC_NO   = {" связь по Modbus потеряна, инвертор заблокирован" };
@@ -443,11 +441,16 @@ struct type_errorMX2       // структура ошибки
   uint32_t time2;          // Общее время работы ПЧ при включенном питании в момент отключения
 };
 
+
+#ifndef FC_VACON
+
 union union_errorFC
 {
   type_errorMX2 MX2;
   uint16_t  inputBuf[10]; 
 };
+
+#define ERR_LINK_FC 0xFF  	    // Состояние инертора - нет связи.
 
 class devOmronMX2   // Класс частотный преобразователь Omron MX2
 {
@@ -595,10 +598,14 @@ private:
   #endif
  };
 
+#endif
 
-
-// Класс Электрический счетчик SDM120 -----------------------------------------------------------------------------------------------
+// Класс Электрический счетчик SDM -----------------------------------------------------------------------------------------------
+#ifdef USE_SDM630
+const char *nameSDM = {"SDM630"};                               // Имя счетчика
+#else
 const char *nameSDM = {"SDM120"};                               // Имя счетчика
+#endif
 const char *noteSDM = {"Электрический счетчик с modbus"};       // Описание счетчика
 const char *noteSDM_NONE = {"Отсутствует в конфигурации"};      //
 
@@ -617,7 +624,8 @@ uint32_t P3;                            // Резерв 3
 
 };
 // Input register Function code 04 to read input parameters:
-#ifdef USE_SDM630                          // Регистры 3-х фазного счетчика SDM630
+#ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
+	// Адрес уже уменьшен на 1
     #define SDM_VOLTAGE     42 
     #define SDM_CURRENT     48
     #define SDM_AC_POWER    52
@@ -662,16 +670,16 @@ class devSDM
    public:  
        int8_t initSDM();                               // Инициализация счетчика и проверка и если надо программирование
        __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fSDM);} // Наличие счетчика в текущей конфигурации
-      int8_t  get_readState();                         // Прочитать инфо с счетчика
+      int8_t  get_readState(uint8_t group);            // Прочитать инфо с счетчика
       int8_t  get_lastErr(){return err;}               // Получить последнюю ошибку счетчика
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
-       __attribute__((always_inline)) inline float get_AcPower(){return AcPower;}          // Aктивная мощность
+       __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_RePower(){return RePower;}          // Реактивная мощность
-       __attribute__((always_inline)) inline float get_Power(){return Power;}              // Полная мощность
+       __attribute__((always_inline)) inline float get_FullPower(){return Power;}          // Полная мощность
        __attribute__((always_inline)) inline float get_PowerFactor(){return PowerFactor;}  //   Коэффициент мощности
        __attribute__((always_inline)) inline float get_Energy(){return Energy;}            //   Суммараная энергия
          
@@ -679,7 +687,6 @@ class devSDM
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
       char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки
       boolean set_paramSDM(char *var,char *c);         // Установить параметр SDM из строки
-
       
       int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -701,13 +708,14 @@ class devSDM
       float Power;                                     // Полная мощность
       float PowerFactor;                               // Коэффициент мощности
       float Phase;                                     // угол фазы (градусы)
+      float Freq;									   // Частота
       float iAcEnergy;                                 // Потребленная активная энергия
       float eAcEnergy;                                 // Переданная активная энергия
       float iReEnergy;                                 // Потребленная реактивная энергия
       float eReEnergy;                                 // Переданная реактивная энергия
-      float AcEnergy;                                  // Суммараная активная энергия
-      float ReEnergy;                                  // Суммараная реактивная энергия
-      float Energy;                                    // Суммараная энергия
+      float AcEnergy;                                  // Суммарная активная энергия
+      float ReEnergy;                                  // Суммарная реактивная энергия
+      float Energy;                                    // Суммарная энергия
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание

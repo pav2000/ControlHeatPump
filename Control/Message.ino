@@ -247,7 +247,6 @@ return false;
 char*   Message::get_messageSetting(char *var, char *ret)
 {
 	
-char temp[12];	
 if(strcmp(var,mess_MAIL)==0){        if (GETBIT(messageSetting.flags,fMail))           return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
 if(strcmp(var,mess_MAIL_AUTH)==0){   if (GETBIT(messageSetting.flags,fMailAUTH))       return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
 if(strcmp(var,mess_MAIL_INFO)==0){   if (GETBIT(messageSetting.flags,fMailInfo))       return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
@@ -260,7 +259,7 @@ if(strcmp(var,mess_MESS_SD)==0){     if (GETBIT(messageSetting.flags,fMessageSD)
 if(strcmp(var,mess_MESS_WARNING)==0){if (GETBIT(messageSetting.flags,fMessageWarning)) return  strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
 if(strcmp(var,mess_SMTP_SERVER)==0){ return strcat(ret,messageSetting.smtp_server);                      }else  
 if(strcmp(var,mess_SMTP_IP)==0){     return strcat(ret,IPAddress2String(messageSetting.smtp_serverIP));  }else   
-if(strcmp(var,mess_SMTP_PORT)==0){   return strcat(ret,int2str(messageSetting.smtp_port));               }else 
+if(strcmp(var,mess_SMTP_PORT)==0){   return _itoa(messageSetting.smtp_port,ret);                         }else 
 if(strcmp(var,mess_SMTP_LOGIN)==0){  return strcat(ret,messageSetting.smtp_login);                       }else
 if(strcmp(var,mess_SMTP_PASS)==0){   return strcat(ret,messageSetting.smtp_password);                    }else 
 if(strcmp(var,mess_SMTP_MAILTO)==0){ return strcat(ret,messageSetting.smtp_MailTo);                      }else
@@ -287,9 +286,9 @@ if(strcmp(var,mess_SMS_NAMEP2)==0){  switch (messageSetting.sms_service)   // о
                         case pSMSC_RU: return strcat(ret,(char*)"Password");  break;
                         default:       return strcat(ret,(char*)"none");       break; // Этого не должно быть, но если будет то установить по умолчанию
                        }                                                        }else
-if(strcmp(var,mess_MESS_TIN)==0){    return strcat(ret,ftoa(temp,(float)messageSetting.mTIN/100.0,1));    }else
-if(strcmp(var,mess_MESS_TBOILER)==0){return strcat(ret,ftoa(temp,(float)messageSetting.mTBOILER/100.0,1));}else
-if(strcmp(var,mess_MESS_TCOMP)==0){  return strcat(ret,ftoa(temp,(float)messageSetting.mTCOMP/100.0,1));  }else
+if(strcmp(var,mess_MESS_TIN)==0){    return _ftoa(ret,(float)messageSetting.mTIN/100.0,1);    }else
+if(strcmp(var,mess_MESS_TBOILER)==0){return _ftoa(ret,(float)messageSetting.mTBOILER/100.0,1);}else
+if(strcmp(var,mess_MESS_TCOMP)==0){  return _ftoa(ret,(float)messageSetting.mTCOMP/100.0,1);  }else
 if(strcmp(var,mess_MAIL_RET)==0){    if (waitSend) return strcat(ret,(char*)"wait response...");                 // В зависимости готов ответ или нет
                        else return strcat(ret,retTest);                               
                        }else   
@@ -437,7 +436,7 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1)
     sendTime=rtcSAM3X8.unixtime(); // запомнить время отправки
     strcpy(messageData.data,c);
     // в сообщение pMESSAGE_TEMP добавить значение температуры
-    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  ftoa(messageData.data + m_strlen(messageData.data), (float)p1/100.0,1); }
+    if (ms==pMESSAGE_TEMP) { strcat(messageData.data," t=");  _ftoa(messageData.data, (float)p1/100.0,1); }
     messageData.p1=p1;
     // очистить ответы
     strcpy(retTest,"");             // обнулить ответ от посылки тестового письма
@@ -604,9 +603,6 @@ if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFA
       
         strcat(messageData.data,cStrEnd);  clientMessage.write(messageData.data,strlen(messageData.data));
          
-    //    strcpy(tempBuf,"P1: ");strcat(tempBuf,int2str(messageData.p1)); 
-    //    client.println(tempBuf);
-        
         
         // 7. Дополнительная информация если требуется добавляется в уведомление
         if (GETBIT(messageSetting.flags,fMailInfo))  get_mailState(clientMessage,tempBuf); 

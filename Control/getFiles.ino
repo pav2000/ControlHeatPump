@@ -134,24 +134,24 @@ void get_txtState(uint8_t thread, boolean header)
               }
         else strcat(Socket[thread].outBuf,"FC absent\r\n");    
 
-        strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
+        strcat(Socket[thread].outBuf,"\n  8. Электросчетчик SDM\r\n");
          #ifdef USE_ELECTROMETER_SDM
   //         strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");   HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE,Socket[thread].outBuf); STR_END;
   //         strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");   HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE,Socket[thread].outBuf); STR_END;
   //         strcat(Socket[thread].outBuf,"MIN максимальаня мощность при контроле мощности [Вт]: ");  HP.dSDM.get_paramSDM((char*)sdm_MAX_POWER,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,Socket[thread].outBuf); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_REPOWER,Socket[thread].outBuf); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая реактивная мощность ТН [ВАр]: ");        HP.dSDM.get_paramSDM((char*)sdm_REPOWER,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,Socket[thread].outBuf); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,Socket[thread].outBuf); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая суммарная мощность ТН [ВА]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Суммараная активная энергия [кВт/ч]: ");                     HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,Socket[thread].outBuf); STR_END;
-           strcat(Socket[thread].outBuf,"Суммараная реактивная энергия [кВт/ч]: ");                   HP.dSDM.get_paramSDM((char*)sdm_REENERGY,Socket[thread].outBuf); STR_END;
-           strcat(Socket[thread].outBuf,"Суммараная потребленная энергия [кВт/ч]: ");                 HP.dSDM.get_paramSDM((char*)sdm_ENERGY,Socket[thread].outBuf); STR_END;
+           strcat(Socket[thread].outBuf,"Суммараная реактивная энергия [кВАр/ч]: ");                   HP.dSDM.get_paramSDM((char*)sdm_REENERGY,Socket[thread].outBuf); STR_END;
+           strcat(Socket[thread].outBuf,"Суммараная потребленная энергия [кВА/ч]: ");                 HP.dSDM.get_paramSDM((char*)sdm_ENERGY,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Cостояние связи со счетчиком: ");                            HP.dSDM.get_paramSDM((char*)sdm_LINK,Socket[thread].outBuf); STR_END;
          #else
-           strcat(Socket[thread].outBuf,"SDM120 absent\r\n");    
+           strcat(Socket[thread].outBuf,"SDM absent\r\n");
          #endif  
    
    strcat(Socket[thread].outBuf,"\n  9. Частотные датчики потока\r\n");
@@ -280,7 +280,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.get_optionHP((char*)option_EEV_CLOSE,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.get_optionHP((char*)option_START_POS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.get_optionHP((char*)option_EEV_START_POS,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.get_optionHP((char*)option_EEV_LIGHT_START,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование звука: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;

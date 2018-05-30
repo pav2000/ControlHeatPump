@@ -21,6 +21,9 @@
 #define _VaconFC_h
 
 #define FC_VACON_NAME "Vacon 10"
+#ifdef FC_VACON
+#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
+#endif
 
 // Регистры Vacon 10
 // Чтение
@@ -68,19 +71,19 @@
 // Биты
 // FC_STATE
 #define FC_S_RDY		0x01	// Привод готов
-const char *FC_S_RDY_str			= {"Готов,"};
+const char *FC_S_RDY_str			= {"Ready,"};
 #define FC_S_RUN		0x02	// Привод работает
-const char *FC_S_RUN_str			= {"Работает,"};
+const char *FC_S_RUN_str			= {"Run,"};
 #define FC_S_DIR		0x04	// 0 - По часовой стрелке, 1 - Против часовой стрелки
-const char *FC_S_DIR_str			= {"Против час.ст.,"};
+const char *FC_S_DIR_str			= {"CCW,"};
 #define FC_S_FLT		0x08	// Действующий отказ
-const char *FC_S_FLT_str			= {"Ошибка,"};
+const char *FC_S_FLT_str			= {"Error,"};
 #define FC_S_W			0x10	// Сигнал тревоги
-const char *FC_S_W_str				= {"Тревога,"};
+const char *FC_S_W_str				= {"Alarm,"};
 #define FC_S_AREF		0x20	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
-const char *FC_S_AREF_str0			= {"Изменение скорости,"};
+const char *FC_S_AREF_str0			= {"Ramping,"};
 #define FC_S_Z			0x40	// 1 - Привод работает на нулевой скорости
-const char *FC_S_Z_str				= {"Остановлен,"};
+const char *FC_S_Z_str				= {"Stopped,"};
 // FC_CONTROL
 #define FC_C_RUN		0x01	// 0 - Останов, 1 - Выполнение
 #define FC_C_STOP		0
@@ -139,6 +142,8 @@ const char *FC_Faults_str[] = {	"Ok", // нет ошибки
 
 								"Unknown"}; // sizeof(FC_Faults_code)+1
 
+#define FC_SAVED_FLAGS (1<<fAuto)
+
 class devVaconFC
 {
 public:
@@ -173,7 +178,7 @@ public:
   // Управление по модбас Общее для всех частотников
   int16_t	get_targetFreq() {return FC;}                    // Получить целевую скорость в %
   int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
-  uint16_t	get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  uint16_t	get_power(){return (uint32_t)nominal_power * power / 1000L;}   // Получить текущую мощность в Вт
   uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
   void		get_infoFC(char *buf);                   // Получить информацию о частотнике
   void		get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.
@@ -230,15 +235,18 @@ public:
   uint16_t FC_curr;                                // Чтение: текущая скорость инвертора в 0.01 %
   uint16_t power;                                  // Чтение: Текущая мощность инвертора  в 0.1% от номинала
   uint16_t current;                                // Чтение: Текущий ток инвертора  в 0.01 Ампера единицах
+  uint16_t nominal_power;							// Номинальная мощность Вт
   
   int16_t  state;                                   // Чтение: Состояние ПЧ регистр FC_STATUS
   uint16_t minFC;                                  // Минимальная скорость инвертора в 0.01 %
   uint16_t maxFC;                                  // Максимальная скорость инвертора в 0.01 %
   uint32_t startCompressor;                        // время старта компрессора
-        
+
+#ifdef ANALOG_CONTROL
   // Аналоговое управление
   int16_t dac;                                     // Текущее значение ЦАП
   uint8_t pin;                                     // Ножка куда прицеплено FC
+#endif
   
   TEST_MODE testMode;                              // Значение режима тестирования
   char *note;                                      // Описание
@@ -269,7 +277,7 @@ public:
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t  flags;                   // флаги настройки
+	  uint8_t flags;                   // флаги настройки - см. define FC_SAVED_FLAGS
 	  int16_t P1;                       // Резерв 1
       int16_t P2;                       // Резерв 2	  
    } _data;  // Структура для сохранения настроек

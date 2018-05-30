@@ -10,8 +10,9 @@
   <script type="text/javascript" src="exporting.js"></script>
   <script type="text/javascript">
     window.onload = function() {
-    loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(REMARK),get_optionHP(TIME_CHART),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(MAX),get_paramEEV(MIN),get_paramEEV(PINS),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX)");
-    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET)");
+	urlupdate = 2000;
+    loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(REMARK),get_optionHP(TIME_CHART),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(MAX),get_paramEEV(MIN),get_paramEEV(PINS),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
+    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_Evapor");
     loadParam("get_Chart(posEEV)");
     setParam('get_listChart','chart1');
    // setParam('get_listChart2','chart2')
@@ -38,14 +39,16 @@
    <table>
    <thead>
     <tr>
-      <th>Имя</th>
-      <th>Описание</th>
-      <th>Максимальное число шагов</th>
-      <th>Шаги для приоткрытия ЭРВ</th>
-      <th>Положение (шаги)</th>
-      <th>Текущий перегрев </th>
-      <th>Код ошибки</th>
-      <th>Pins</th>
+	<th>Имя</th>
+	<th>Описание</th>
+	<th>Максимальное число шагов</th>
+	<th>Шаги для приоткрытия ЭРВ</th>
+	<th>Положение (шаги)</th>
+	<th>Текущий перегрев </th>
+	<th>Температура испарения</th>
+	<th>Разница: Нагнетание-Конденсация</th>
+	<th>Код ошибки</th>
+	<th>Pins</th>
     </tr>
    </thead>
    <tbody>
@@ -56,6 +59,8 @@
       <td id="get_parameev-min"></td>
       <td id="get_parameev-pospp"></td>
       <td id="get_parameev-overheat"></td>
+      <td id="get_evapor"></td>
+      <td id="get_tcomp_tcon"></td>
       <td id="get_parameev-error"></td>
       <td id="get_parameev-pins"></td>
     </tr>
@@ -96,13 +101,15 @@
     <table>
     <thead>
     <tr>
-      <th>Задержка после старта, сек</th>
-      <th>Период в циклах ЭРВ</th>
-      <th>Разница Нагнетание-Конденсация, °C</th>
-      <th>Порог разницы, °C</th>
-      <th>Коэффициент</th>
-      <th>Мин. перегрев, °C</th>
-      <th>Макс. перегрев, °C</th>
+		<th>Задержка после старта, сек</th>
+		<th>Период в циклах ЭРВ</th>
+		<th>Разница Нагнетание-Конденсации (при 30°)</th>
+		<th>Увеличение на каждые 10° конд.</th>
+		<th>Порог разницы, °C</th>
+		<th>Коэффициент</th>
+		<th>Мин. перегрев, °C</th>
+		<th>Макс. перегрев, °C</th>
+		<th>Начальный перегрев, °C</th>
     </tr>
     </thead>
     <tbody>
@@ -110,10 +117,12 @@
       <td nowrap><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
       <td nowrap><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
       <td nowrap><input id="get_parameev-cdelta" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTA)')"></td>
-      <td nowrap><input id="get_parameev-cdeltat" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAT)')"></td>
+      <td nowrap><input id="get_parameev-cdeltac" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAC)')"></td>
+      <td nowrap><input id="get_parameev-cdeltat" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAT)')"></td>
       <td nowrap><input id="get_parameev-ckf" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(cKF)')"></td>
       <td nowrap><input id="get_parameev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MIN)')"></td>
       <td nowrap><input id="get_parameev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MAX)')"></td>
+      <td nowrap><input id="get_parameev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_START)')"></td>
     </tr>
   </tbody>
   </table>            

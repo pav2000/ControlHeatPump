@@ -30,45 +30,6 @@ int8_t devVaconFC::initFC()
     startCompressor = 0; // время старта компрессора
     state = ERR_LINK_FC; // Состояние - нет связи с частотником
 
- /*   
-    flags = 0x00; // флаги  0 - наличие FC
-	Uptime				= DEF_Uptime            ;
-    PidFreqStep		= DEF_PidFreqStep     ;
-    PidStop				= DEF_PidStop          ;
-    dtCompTemp			= DEF_dtCompTemp      ;
-    FC_DT_CON_PRESS			= DEF_FC_DT_CON_PRESS      ;
-    startFreq			= DEF_startFreq        ;
-    startFreq_BOILER	= DEF_startFreq_BOILER ;
-    minFreq				= DEF_minFreq          ;
-    minFreqCool		= DEF_minFreqCool     ;
-    minFreqBoiler		= DEF_minFreqBoiler   ;
-    minFreqUser		= DEF_minFreqUser     ;
-    maxFreq				= DEF_maxFreq          ;
-    maxFreqCool		= DEF_maxFreqCool     ;
-    maxFreqBoiler		= DEF_maxFreqBoiler   ;
-    maxFreqUser		= DEF_maxFreqUser     ;
-    stepFreq			= DEF_stepFreq         ;
-    stepFreqBoiler		= DEF_stepFreqBoiler  ;
-    dtTemp				= DEF_dtTemp           ;
-    dtTemp_BOILER		= DEF_dtTemp_BOILER    ;
-    FC_MAX_POWER			= DEF_FC_MAX_POWER         ;
-    FC_MAX_POWER_BOILER		= DEF_FC_MAX_POWER_BOILER  ;
-    FC_MAX_CURRENT			= DEF_FC_MAX_CURRENT       ;
-    FC_MAX_CURRENT_BOILER	= DEF_FC_MAX_CURRENT_BOILER;
-    FC_ACCEL_TIME			= DEF_FC_ACCEL_TIME        ;
-    FC_DEACCEL_TIME			= DEF_FC_DEACCEL_TIME      ;
-
-#ifdef FC_ANALOG_CONTROL // Аналоговое управление
-    pin = PIN_DEVICE_FC; // Ножка куда прицеплено FC
-    dac = 0; // Текущее значение ЦАП
-    analogWriteResolution(12); // разрешение ЦАП 12 бит;
-    analogWrite(pin, dac);
-    level0 = 0; // Отсчеты ЦАП соответсвующие 0   мощности
-    level100 = 4096; // Отсчеты ЦАП соответсвующие 100 мощности
-    levelOff = 10; // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-//  SETBIT0(flags,fAnalog);           // Нет аналогового выхода
-#endif
-*/
     testMode = NORMAL; // Значение режима тестирования
     name = (char*)FC_VACON_NAME; // Имя
     note = (char*)noteFC_NONE; // Описание инвертора   типа нет его
@@ -98,7 +59,6 @@ int8_t devVaconFC::initFC()
 	  #endif
 	  _data.flags=0x00;                                // флаги  0 - наличие FC
 	 
-
     SETBIT0(_data.flags, fAuto); // По умолчанию старт-стоп
     if(!Modbus.get_present()) // modbus отсутствует
     {
@@ -127,12 +87,11 @@ int8_t devVaconFC::initFC()
 
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     CheckLinkStatus(); // проверка связи с инвертором
-    check_blockFC();
     if(err != OK) return err; // связи нет выходим
     journal.jprintf("Test link Modbus %s: OK\r\n", name); // Тест пройден
 
     uint8_t i = 3;
-    while(state >= 0 && (state & FC_S_RUN)) // Если частотник работает то остановить его
+    while((state & FC_S_RUN)) // Если частотник работает то остановить его
     {
     	if(i-- == 0) break;
         stop_FC();
@@ -148,6 +107,8 @@ int8_t devVaconFC::initFC()
         // 10.Установить стартовую частоту
         set_targetFreq(_data.startFreq, true, _data.minFreqUser, _data.maxFreqUser); // режим н знаем по этому границы развигаем
     }
+    // Вычисление номигальной мощности двигателя компрессора = U*I*cos
+   	nominal_power = (uint32_t) (380) * (900) / 100 * (75) / 100; // W
 #endif // #ifndef FC_ANALOG_CONTROL
     return err;
 }
@@ -157,16 +118,17 @@ int16_t devVaconFC::CheckLinkStatus(void)
 {
     //    if((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     if(testMode == NORMAL || testMode == HARD_TEST){
-		for (uint8_t i = 0; i < 3; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
+		for (uint8_t i = 0; i < FC_NUM_READ+1; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		{
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
 			if(err == OK) break; // Прочитали удачно
+			check_blockFC(); // проверить необходимость блокировки
+			if(GETBIT(_data.flags, fErrFC)) break; // превысили кол-во ошибок
 			_delay(FC_DELAY_READ);
 		}
-		check_blockFC(); // проверить необходимость блокировки
 		if(err != OK) state = ERR_LINK_FC;
     } else {
-    	state = 0;
+    	state = FC_S_RDY;
     	err = OK;
     }
     return state;
@@ -193,10 +155,9 @@ int8_t devVaconFC::get_readState()
         err = Modbus.get_err(); // Скопировать ошибку
         if(err == OK) // Прочитано верно
         {
-            if((GETBIT(_data.flags, fOnOff)) && (state != 3))
-                continue;
-            else
-                break; // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
+            if((GETBIT(_data.flags, fOnOff)) && ((state & (FC_S_RDY | FC_S_RUN | FC_S_DIR)) != (FC_S_RDY | FC_S_RUN)))
+                continue; // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в противном случае все ок выходим
+            else break;
         }
         _delay(FC_DELAY_REPEAT);
         journal.jprintf(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
@@ -216,21 +177,21 @@ int8_t devVaconFC::get_readState()
     err = Modbus.get_err(); // Скопировать ошибку
     if(err != OK) {
         state = ERR_LINK_FC;
-    } // Ошибка выходим
-
-    _delay(FC_DELAY_READ);
-    power = read_0x03_16(FC_POWER); // прочитать мощность
-    err = Modbus.get_err(); // Скопировать ошибку
-    if(err != OK) {
-        state = ERR_LINK_FC;
-    } // Ошибка выходим
-
-    _delay(FC_DELAY_READ);
-    current = read_0x03_16(FC_CURRENT); // прочитать ток
-    err = Modbus.get_err(); // Скопировать ошибку
-    if(err != OK) {
-        state = ERR_LINK_FC;
-    } // Ошибка выходим
+    } else {
+		_delay(FC_DELAY_READ);
+		power = read_0x03_16(FC_POWER); // прочитать мощность
+		err = Modbus.get_err(); // Скопировать ошибку
+		if(err != OK) {
+			state = ERR_LINK_FC;
+		} else {
+		    _delay(FC_DELAY_READ);
+		    current = read_0x03_16(FC_CURRENT); // прочитать ток
+		    err = Modbus.get_err(); // Скопировать ошибку
+		    if(err != OK) {
+		        state = ERR_LINK_FC;
+		    }
+		}
+    }
 #else // Аналоговое управление
     FC_curr = FC;
     power = 0;
@@ -350,30 +311,33 @@ int32_t devVaconFC::save(int32_t adr)
     }
     adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
  */
- 	if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);     
+	if(writeEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
+		set_Error(ERR_SAVE_EEPROM, (char*) name);
+		return ERR_SAVE_EEPROM;
+	}
+	adr += sizeof(_data);
     return adr;
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devVaconFC::load(int32_t adr)
 {
-/*	
-    if(readEEPROM_I2C(adr, (byte*)&Uptime, (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
- */
-   if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
-  // SETBIT1(_data.flags, fPresent); 							   
+	decltype(_data.flags) save_flags = _data.flags;
+	if(readEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
+		set_Error(ERR_LOAD_EEPROM, (char*) name);
+		return ERR_LOAD_EEPROM;
+	}
+	adr += sizeof(_data);
+	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
     return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devVaconFC::loadFromBuf(int32_t adr, byte* buf)
 {
- //   memcpy((byte*)&Uptime, buf + adr, (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags));
- //   adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
- memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 	
+	decltype(_data.flags) save_flags = _data.flags;;
+	memcpy((byte*) &_data, buf + adr, sizeof(_data));
+	adr += sizeof(_data);
+	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
     return adr;
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
@@ -382,7 +346,7 @@ uint16_t devVaconFC::get_crc16(uint16_t crc)
 	uint16_t i;
 //	for(i = 0; i < (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags); i++)
 //		crc = _crc16(crc,*((byte*)&Uptime + i));  // CRC16 структуры
-    for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   
+	for(i = 0; i < sizeof(_data); i++) crc = _crc16(crc, *((byte*) &_data + i));
 	return crc;
 }
 
@@ -405,7 +369,7 @@ void devVaconFC::check_blockFC()
         note = (char*)noteFC_OK; // Описание инвертора есть
         return;
     } // Увеличить счетчик ошибок
-    if(number_err > FC_NUM_READ) // если привышено число ошибок то блокировка
+    if(number_err > FC_NUM_READ) // если превышено число ошибок то блокировка
     {
         //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
         SETBIT1(_data.flags, fErrFC); // Установить флаг
@@ -592,13 +556,12 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     	                                        } else
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
-    if(strcmp(var,fc_PIN)==0)                   {  strcat(ret,int2str(pin));     } else
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
-    if(strcmp(var,fc_STATE)==0)                 {  strcat(ret,int2str(state));   } else
-    if(strcmp(var,fc_FC)==0)                    {  ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cFC)==0)                   {  ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cPOWER)==0)                { ftoa(ret,(float)power/10.0,1);  strcat(ret, "%"); } else
-    if(strcmp(var,fc_cCURRENT)==0)              {  ftoa(ret,(float)current/100.0,2); } else
+    if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
+    if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1);  strcat(ret, "%"); } else
+    if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
@@ -608,32 +571,33 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 		                                        #endif
                                                 } else
 	#ifdef FC_ANALOG_CONTROL
-    if(strcmp(var,fc_DAC)==0)                   {  strcat(ret,int2str(dac));          } else
-    if(strcmp(var,fc_LEVEL0)==0)                {  strcat(ret,int2str(level0));       } else
-    if(strcmp(var,fc_LEVEL100)==0)              {  strcat(ret,int2str(level100));     } else
-    if(strcmp(var,fc_LEVELOFF)==0)              {  strcat(ret,int2str(levelOff));     } else
+    if(strcmp(var,fc_PIN)==0)                   {  _itoa(pin,ret);     	    } else
+    if(strcmp(var,fc_DAC)==0)                   {  _itoa(dac,ret);          } else
+    if(strcmp(var,fc_LEVEL0)==0)                {  _itoa(level0,ret);       } else
+    if(strcmp(var,fc_LEVEL100)==0)              {  _itoa(level100,ret);     } else
+    if(strcmp(var,fc_LEVELOFF)==0)              {  _itoa(levelOff,ret);     } else
     #endif
     if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cYes); } else
-    if(strcmp(var,fc_ERROR)==0)                 {  strcat(ret,int2str(err));          } else
-    if(strcmp(var,fc_UPTIME)==0)                {  strcat(ret,int2str(_data.Uptime)); } else   // вывод в секундах
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // %
-    if(strcmp(var,fc_PID_STOP)==0)              {  strcat(ret,int2str(_data.PidStop));          } else
-    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            {  ftoa(ret,(float)_data.startFreq/100.0,2); } else // %
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // %
-    if(strcmp(var,fc_MIN_FREQ)==0)              {  ftoa(ret,(float)_data.minFreq/100.0,2); } else // %
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // %
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // %
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // %
-    if(strcmp(var,fc_MAX_FREQ)==0)              {  ftoa(ret,(float)_data.maxFreq/100.0,2); } else // %
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // %
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // %
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // %
-    if(strcmp(var,fc_STEP_FREQ)==0)             {  ftoa(ret,(float)_data.stepFreq/100.0,2); } else // %
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // %
-    if(strcmp(var,fc_DT_TEMP)==0)               {  ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
-    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
-    if(strcmp(var,fc_MB_ERR)==0)        		{  itoa(numErr, ret, 10); } else
+    if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
+    if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
+    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // %
+    if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // %
+    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // %
+    if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // %
+    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // %
+    if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
+    if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
     	strcat(ret,(char*)cInvalid);
 }
 
@@ -653,8 +617,8 @@ boolean devVaconFC::set_paramFC(char *var, float x)
     if(strcmp(var,fc_cCURRENT)==0)              { return true;                         } else  // только чтение
     if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
     if(strcmp(var,fc_ANALOG)==0)                { return true;                         } else  // только чтение
+	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_DAC)==0)                   { return true;                         } else  // только чтение
-    #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
@@ -715,27 +679,18 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", i);
 			if(err == OK) {
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
 				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "V1.7 (2109)|Выходное напряжение (В)|%.1f;V1.8 (2110)|Напряжения шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V1.9 (8)|Температура радиатора (°С)|%d;", read_tempFC());
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
 				buf += m_snprintf(buf, 256, "V3.3 (828)|Время включения (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				i = read_0x03_32(FC_RUN_DAYS); // +FC_RUN_HOURS (low word)
 				buf += m_snprintf(buf, 256, "V3.5 (840)|Время работы компрессора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);
-				_delay(FC_DELAY_READ);
 				buf += m_snprintf(buf, 256, "V3.6 (842)|Счетчик аварийных отключений|%d;", read_0x03_16(FC_NUM_FAULTS));
-				_delay(FC_DELAY_READ);
 
 				i = read_0x03_16(FC_ERROR);
 				if(err == OK) {
@@ -802,9 +757,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 {
     uint8_t i;
     int16_t result;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
-
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -825,7 +778,6 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 {
     uint8_t i;
     uint32_t result;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
@@ -845,7 +797,6 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
 {
     uint8_t i;
-    err = OK;
     if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток записи
     {

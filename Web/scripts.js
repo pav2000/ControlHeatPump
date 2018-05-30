@@ -1,4 +1,4 @@
-﻿/* ver 0.951 beta */
+/* ver 0.951 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 var urlcontrol = 'http://192.168.0.199';
@@ -665,7 +665,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_errcodeTemp(" + count[j] + "),get_noteTemp(" + count[j] + "),get_testTemp(" + count[j] + "),get_minTemp(" + count[j] + "),get_maxTemp(" + count[j] + "),get_addressTemp(" + count[j] + "),";
+												loadsens = loadsens + "get_errcodeTemp(" + count[j] + "),get_errorsTemp(" + count[j] + "),get_noteTemp(" + count[j] + "),get_testTemp(" + count[j] + "),get_minTemp(" + count[j] + "),get_maxTemp(" + count[j] + "),get_addressTemp(" + count[j] + "),";
 												upsens = upsens + "get_fullTemp(" + count[j] + "),get_errTemp(" + count[j] + "),";
 												content = content + '<tr id="get_presenttemp-' + input + '">';
 												content = content + ' <td>' + count[j] + '</td>';
@@ -676,6 +676,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + ' <td nowrap><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
 												content = content + ' <td nowrap><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												content = content + ' <td id="get_addresstemp-' + input + '">-</td>';
+												content = content + ' <td id="get_errorstemp-' + input + '">-</td>';
 												content = content + ' <td id="get_errcodetemp-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
@@ -756,9 +757,11 @@ function loadParam(paramid, noretry, resultdiv) {
 										element = document.getElementById(valueid);
 										if(element) {
 											if(element != document.activeElement) {
-												element.value = values[1];
-												element.innerHTML = values[1];
+												element.value = element.innerHTML = values[1];
 											}
+										}
+										if((element = document.getElementById(valueid + "-div1000"))) {
+											element.innerHTML = element.value = (Number(values[1])/1000).toFixed(3);
 										}
 										if(reerr.test(values[1])) {
 											element = document.getElementById(valueid);
@@ -845,7 +848,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_relay-rcomp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpi'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rpumpo'))) element.disabled = onoff;
-									if((element=document.getElementById('get_relay-rboiler'))) element.disabled = onoff;
+									if((element=document.getElementById('get_relay-rpumpbh'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rheat'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rtrv'))) element.disabled = onoff;
 									if((element=document.getElementById('get_relay-rfan1'))) element.disabled = onoff;
