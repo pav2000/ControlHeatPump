@@ -212,10 +212,14 @@ float my_atof(const char* s){
 //float в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек -----------------------------------
 char *_ftoa(char *outstr, float val, unsigned char precision)
 {
-	unsigned int len = 0;
-	while (outstr[len] != '\0') len++;
+	
+//	unsigned int len = 0;
+//	while (outstr[len] != '\0') len++;
+//	char *ret = outstr;
+//	outstr=outstr+len;
+
 	char *ret = outstr;
-	outstr=outstr+len;
+    while(*outstr) outstr++;
 	
 	// compute the rounding factor and fractional multiplier
 	float roundingFactor = 0.5;

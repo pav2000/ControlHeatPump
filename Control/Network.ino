@@ -124,8 +124,8 @@ boolean resetWiznet(boolean show)
 // Инициализация сети
 // flag true - полный вывод на консоль false - скоращенный вывод на консоль
 // Проверят сетевой кабель, возврат true - OK false - проблемы, сеть не работает
-const char* NetworkChipOK={" Network library setting: %s, ID chip: %s\n"};
-const char* NetworkChipBad={" WRONG setting library, library: %s, ID: chip %s\n"};
+const char* NetworkChipOK={" Network library setting: %s, ID chip: 0x%x\n"};
+const char* NetworkChipBad={" WRONG setting library, library: %s, ID: chip 0x%x\n"};
 const char* NetworkError={" $ERROR: Problem reset and setting %s\n"};
 boolean initW5200(boolean flag)
 {
@@ -148,18 +148,18 @@ boolean initW5200(boolean flag)
 		journal.jprintf(" DEMO mode!");
 #endif
 #if defined(W5500_ETHERNET_SHIELD) // Определение соответстивия библиотеки и чипа
-		if(W5200VERSIONR() == 0x04) journal.jprintf((char*) NetworkChipOK, nameWiznet, int2str(W5200VERSIONR()));
+		if(W5200VERSIONR() == 0x04) journal.jprintf((char*) NetworkChipOK, nameWiznet, W5200VERSIONR());
 		else {
-			journal.jprintf((char*) NetworkChipBad, nameWiznet, int2str(W5200VERSIONR()));
+			journal.jprintf((char*) NetworkChipBad, nameWiznet, W5200VERSIONR());
 			journal.jprintf((char*) NetworkError, nameWiznet);
 			return false;
 		} // дальше ехать бесполезно
 #elif defined(W5200_ETHERNET_SHIELD)
-		if (W5200VERSIONR()==0x03) journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
-		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
+		if (W5200VERSIONR()==0x03) journal.jprintf((char*)NetworkChipOK,nameWiznet,W5200VERSIONR());
+		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,W5200VERSIONR());journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
 #else
-		if (W5200VERSIONR()==0x51) journal.jprintf((char*)NetworkChipOK,nameWiznet,int2str(W5200VERSIONR()));
-		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,int2str(W5200VERSIONR()));journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
+		if (W5200VERSIONR()==0x51) journal.jprintf((char*)NetworkChipOK,nameWiznet,W5200VERSIONR());
+		else {journal.jprintf((char*)NetworkChipBad,nameWiznet,W5200VERSIONR());journal.jprintf((char*)NetworkError,nameWiznet); return false;} // дальше ехать бесполезно
 #endif
 	}
 
@@ -326,7 +326,7 @@ char* socketInfo(char *buf)
 {
   for (int i = 0; i < MAX_SOCK_NUM; i++)                      // По всем сокетам!!
   {
-   strcat(buf,int2str(i));                                    // Номер по списку
+   _itoa(i,buf);                                    // Номер по списку
    strcat(buf,"|");
    uint8_t s = W5100.readSnSR(i);                             // статус сокета
    switch (s)
@@ -356,9 +356,9 @@ char* socketInfo(char *buf)
   strcat(buf,"|");
   uint8_t dip[4];
   W5100.readSnDIPR(i, dip);                                  // IP адрес
-    for (int j=0; j<4; j++) { strcat(buf,int2str(dip[j]));if (j<3) strcat(buf,"."); }
+    for (int j=0; j<4; j++) { _itoa(dip[j],buf);if (j<3) strcat(buf,"."); }
   strcat(buf,"|");
-  strcat(buf,int2str(W5100.readSnDPORT(i)));                 // Порт
+  _itoa(W5100.readSnDPORT(i),buf);                 // Порт
   strcat(buf,";"); 
   }
  return buf; 
@@ -622,7 +622,7 @@ boolean sendNarodMon(boolean debug)
          
          strcpy(topic,root);
          strcat(topic,"ERROR");
-         strcpy(temp,int2str(HP.get_errcode()));
+         itoa(HP.get_errcode(),temp,10);
          if (HP.clMQTT.sendTopic(topic,temp,true,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          
         if (debug) journal.jprintf(cStrEnd);   
@@ -660,7 +660,7 @@ boolean sendNarodMon(boolean debug)
              strcpy(topic,root);
            #ifdef EEV_DEF   
              strcat(topic,HP.dEEV.get_name());
-             strcpy(temp,int2str(HP.dEEV.get_EEV()));
+             itoa(HP.dEEV.get_EEV(),temp,10);
            #else
              strcat(topic,HP.sTemp[TEVAING].get_name());
              if(HP.sTemp[TEVAING].get_present()) ftoa(temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1);
@@ -719,7 +719,7 @@ boolean sendMQTT(boolean debug)
          
        strcpy(topic,root);
        strcat(topic,"ERROR");
-       strcpy(temp,int2str(HP.get_errcode()));
+       itoa(HP.get_errcode(),temp,10);
        if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
        if (debug) journal.jprintf(cStrEnd);
          
@@ -785,7 +785,7 @@ boolean sendMQTT(boolean debug)
              #ifdef EEV_DEF 
              strcpy(topic,root);
              strcat(topic,HP.dEEV.get_name());
-             strcpy(temp,int2str(HP.dEEV.get_EEV()));
+             itoa(HP.dEEV.get_EEV(),temp,10);
              if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;   
              #endif
              
@@ -913,14 +913,14 @@ boolean  sendThingSpeak(boolean debug)
       
      strcat(topic,"&field7=");
      #ifdef EEV_DEF
-     strcat(topic,int2str(HP.dEEV.get_EEV()));
+     _itoa(HP.dEEV.get_EEV(),topic);
      #else  // Вместо положения ЭРВ посылаем тепературу гликоля
      if(HP.sTemp[TEVAING].get_present()) strcat(topic,ftoa(temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1));
      else   strcat(topic,cZero);
      #endif
      
      strcat(topic,"&field8=");
-     strcat(topic,int2str(HP.get_errcode()));
+     _itoa(HP.get_errcode(),topic);
      strcat(topic,(char*)"&status=MQTTPUBLISH");
      // Проверка на длины
      if((strlen(root)>=sizeof(root)-2)||(strlen(topic)>sizeof(topic)-2)) { journal.jprintf("$WARNING: Long topic or data string, is problem.\n"); return false;}

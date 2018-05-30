@@ -418,11 +418,11 @@ else if (PageID==3)  // Обновление данных 3 страницы "С
        setComponentText((char*)"syst1",(char*)VERSION);
        setComponentText((char*)"syst2",TimeIntervalToStr(HP.get_uptime()));
        setComponentText((char*)"syst3",ResetCause());
-       if(HP.get_State()==pWORK_HP) setComponentText((char*)"syst4",int2str(HP.num_repeat)); else setComponentText((char*)"syst4",(char*)_HP_OFF_8859);
+       if(HP.get_State()==pWORK_HP) setComponentText((char*)"syst4",itoa(HP.num_repeat,temp,10)); else setComponentText((char*)"syst4",(char*)_HP_OFF_8859);
        setComponentText((char*)"syst5",ftoa(temp,(float)HP.get_motoHourH2()/60.0,1));
        setComponentText((char*)"syst6",ftoa(temp,(float)HP.get_motoHourC2()/60.0,1));
-       setComponentText((char*)"syst7",int2str(100-HP.CPU_IDLE));
-       setComponentText((char*)"syst8",int2str(HP.get_errcode()));
+       setComponentText((char*)"syst7",itoa(100-HP.CPU_IDLE,temp,10));
+       setComponentText((char*)"syst8",itoa(HP.get_errcode(),temp,10));
            
       }
 else if (PageID==4)  // Обновление данных 4 страницы "СХЕМА ТН"
@@ -608,7 +608,6 @@ StatusLine();
 void Nextion::StatusLine()      
 {
  char temp[16];  
-
    sendCommand((char*)"ref_stop");      // Остановить обновление
 //   setComponentText("time", NowTimeToStr1());
     // Ошибки
@@ -665,7 +664,7 @@ void Nextion::StatusLine()
      if(HP.get_sleep()>0)   // установлено засыпание дисплея
               {
               strcpy(temp,(char*)"thsp=");
-              strcat(temp,int2str(HP.get_sleep()*60)); // секунды
+              _itoa(HP.get_sleep()*60,temp); // секунды
               sendCommand(temp);
               sendCommand((char*)"thup=1");     // sleep режим активировать
               }  
