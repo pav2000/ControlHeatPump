@@ -437,7 +437,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }
     if (strcmp(str,"get_startDT")==0) // Команда get_startDT
        {
-       strcat(strReturn,DecodeTimeDate(HP.get_startDT()));
+       DecodeTimeDate(HP.get_startDT(),strReturn);
        strcat(strReturn,"&") ;
        continue;
        }
@@ -954,8 +954,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        
         strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
-        strcat(strReturn,"Время последнего включения ТН|");strcat(strReturn,DecodeTimeDate(HP.get_startTime()));strcat(strReturn,";");
-        strcat(strReturn,"Время сохранения текущих настроек ТН|");strcat(strReturn,DecodeTimeDate(HP.get_saveTime()));strcat(strReturn,";");
+        strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
         
         // Вывод строки статуса
         strcat(strReturn,"Строка статуса ТН| modWork:");_itoa((int)HP.get_modWork(),strReturn);strcat(strReturn,"[");strcat(strReturn,codeRet[HP.get_ret()]);strcat(strReturn,"]");
@@ -984,7 +984,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         strcat(strReturn,";");  
    
            
-        strcat(strReturn,"Время сброса счетчиков с момента запуска ТН|");strcat(strReturn,DecodeTimeDate(HP.get_motoHourD1()));strcat(strReturn,";");
+        strcat(strReturn,"Время сброса счетчиков с момента запуска ТН|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН с момента запуска (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН с момента запуска (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
@@ -992,7 +992,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         #endif
         if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";"); // Если есть оборудование
   
-        strcat(strReturn,"Время сброса сезонных счетчиков ТН|");strcat(strReturn,DecodeTimeDate(HP.get_motoHourD2()));strcat(strReturn,";");
+        strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  

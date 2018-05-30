@@ -232,12 +232,12 @@ return _tmp;
 }
 
 // вывод Времи и даты  в формате 12:34 11/11/2016
+// Результат ДОБАВЛЯЕТСЯ в ret
 //http://stackoverflow.com/questions/21593692/convert-unix-timestamp-to-date-without-system-libs
-char*  DecodeTimeDate(uint32_t idt)
+char*  DecodeTimeDate(uint32_t idt,char *ret)
 {
   uint32_t seconds, minutes, hours, days, year, month;
   uint32_t dayOfWeek;
-  static char _tmp[32];
   int x;
 
   seconds=idt;
@@ -289,26 +289,25 @@ char*  DecodeTimeDate(uint32_t idt)
   }
 // формирование строки
   x=hours;
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
+  if (x<10) strcat(ret,cZero); else strcat(ret,"");  _itoa(x,ret); strcat(ret,":");
   x=minutes;
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); strcat(_tmp,":");
+  if (x<10) strcat(ret,cZero);   _itoa(x,ret); strcat(ret,":");
    x=seconds;
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
-  strcat(_tmp," "); 
-  _itoa(days + 1,_tmp); strcat(_tmp,"/");_itoa(month+1,_tmp);strcat(_tmp,"/");_itoa(year,_tmp); 
-  return _tmp;   
+  if (x<10) strcat(ret,cZero);   _itoa(x,ret); 
+  strcat(ret," "); 
+  _itoa(days + 1,ret); strcat(ret,"/");_itoa(month+1,ret);strcat(ret,"/");_itoa(year,ret); 
+  return ret;   
 }
 
 // вывод даты  в формате 010218 для графиков статистики (всегда 6 байт+1)
 // forma тип вывода true - краткий (ДДММГГ) false - полный (Д/М/ГГГГ)
+// результат ДОБАВЛЯЕТСЯ в ret
 //http://stackoverflow.com/questions/21593692/convert-unix-timestamp-to-date-without-system-libs
-char*  StatDate(uint32_t idt,boolean forma)
+char*  StatDate(uint32_t idt,boolean forma,char *ret)
 {
   uint32_t seconds, minutes, hours, days, year, month;
   uint32_t dayOfWeek;
-  static char _tmp[16];
-  static char _int3str[12];
-  static int x;
+  int x;
   seconds=idt;
 
   /* calculate minutes */
@@ -357,16 +356,15 @@ char*  StatDate(uint32_t idt,boolean forma)
     }
   }
 
-  strcpy(_tmp,""); // Очистить строку
   if(forma)  // Тип вывода 
    { 
-    x=days+1;  if (x<10) strcat(_tmp,cZero);itoa(x,_int3str,10);strcat(_tmp,_int3str);   
-    x=month+1; if (x<10) strcat(_tmp,cZero);itoa(x,_int3str,10);strcat(_tmp,_int3str);
-    x=year;    if (x>2000) itoa(x-2000,_int3str,10); else itoa(x-1900,_int3str,10); strcat(_tmp,_int3str); // формирование строки формата ДДММГГ (год последние две цифры)
+    x=days+1;  if (x<10) strcat(ret,cZero);itoa(x,ret,10);   
+    x=month+1; if (x<10) strcat(ret,cZero);itoa(x,ret,10);
+    x=year;    if (x>2000) itoa(x-2000,ret,10); else itoa(x-1900,ret,10); // формирование строки формата ДДММГГ (год последние две цифры)
     }
  else
-    {itoa(days + 1,_int3str,10);strcpy(_tmp,_int3str); strcat(_tmp,"/");itoa(month+1,_int3str,10); strcat(_tmp,_int3str);strcat(_tmp,"/");itoa(year,_int3str,10); strcat(_tmp,_int3str);}
- return _tmp;   
+    {itoa(days + 1,ret,10);strcat(ret,"/");itoa(month+1,ret,10);;strcat(ret,"/");itoa(year,ret,10); }
+ return ret;   
 }
 
 // Перевод формата времени Time в формат Unix (секунды с 1970 года)

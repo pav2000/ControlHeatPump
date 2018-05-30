@@ -37,10 +37,12 @@ void get_txtState(uint8_t thread, boolean header)
      sendPrintfRTOS(thread, "\n  1. Тепловой насос\r\nСостояниеТН: %s\r\nПоследняя ошибка: %d - %s\r\n", HP.StateToStr(),HP.get_errcode(),HP.get_lastErr());
      
      // Состояние ТН
-      sendPrintfRTOS(thread, "Режим работы: %s\r\nПоследняя перезагрузка: %s\r\nВремя с последней перезагрузки: %s\r\nПричина последней перезагрузки: %s%s\r\n",\
-      HP.TestToStr(),DecodeTimeDate(HP.get_startDT()),TimeIntervalToStr(HP.get_uptime()),ResetCause());
+     strcpy(Socket[thread].outBuf,"Режим работы:");strcat(Socket[thread].outBuf,HP.TestToStr()); 
+     strcat(Socket[thread].outBuf,"\r\nПоследняя перезагрузка: ");DecodeTimeDate(HP.get_startDT(),Socket[thread].outBuf); 
+     strcat(Socket[thread].outBuf,"\r\nВремя с последней перезагрузки: "); strcat(Socket[thread].outBuf,TimeIntervalToStr(HP.get_uptime()));  
+     strcat(Socket[thread].outBuf,"\r\nПричина последней перезагрузки: ");strcat(Socket[thread].outBuf,ResetCause()); 
        
-     strcpy(Socket[thread].outBuf,"\n  2. Датчики температуры\r\n");
+     strcat(Socket[thread].outBuf,"\r\n\r\n  2. Датчики температуры\r\n");
      for(i=0;i<TNUMBER;i++)   // Информация по  датчикам температуры
          {
               strcat(Socket[thread].outBuf,HP.sTemp[i].get_name()); if((x=8-strlen(HP.sTemp[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(Socket[thread].outBuf," "); }
@@ -54,7 +56,7 @@ void get_txtState(uint8_t thread, boolean header)
                 }
                 else strcat(Socket[thread].outBuf," absent\r\n"); 
          }
-      if (HP.get_mode()==pCOOL) strcat(Socket[thread].outBuf,"Внимание! ТН в режиме охлаждения, изменены назначения датчиков TEVAIN->TCONOUT TEVAOUT->TCONIN TCONIN->TEVAOUT TCONOUT->TEVAIN");
+      if (HP.get_mode()==pCOOL) strcat(Socket[thread].outBuf,"Внимание! ТН в режиме охлаждения роли испарителя и конденсатора меняются местами");
       sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));
       
       strcpy(Socket[thread].outBuf,"\n  3. Аналоговые датчики\r\n"); // Новый пакет
@@ -812,7 +814,7 @@ int16_t x;
        strcpy(tempBuf,"Режим работы: ");strcat(tempBuf,HP.TestToStr());
        strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf)); 
            
-      strcpy(tempBuf,"Последняя перезагрузка: "); strcat(tempBuf,DecodeTimeDate(HP.get_startDT()));
+      strcpy(tempBuf,"Последняя перезагрузка: "); DecodeTimeDate(HP.get_startDT(),tempBuf);
       strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
      
       strcpy(tempBuf,"Время с последней перезагрузки: "); strcat(tempBuf,TimeIntervalToStr(HP.get_uptime()));

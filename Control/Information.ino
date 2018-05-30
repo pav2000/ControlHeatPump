@@ -952,7 +952,7 @@ if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled))
                                          else                                    return  strcat(ret,(char*)cZero);}else
 if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id,ret);                                }else 
 if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
-if(strcmp(var,prof_DATE_PROFILE)==0)   { return strcat(ret,DecodeTimeDate(dataProfile.saveTime));         }else// параметры только чтение
+if(strcmp(var,prof_DATE_PROFILE)==0)   { return DecodeTimeDate(dataProfile.saveTime,ret);                 }else// параметры только чтение
 if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
 if(strcmp(var,prof_NUM_PROFILE)==0)    { return _itoa(I2C_PROFIL_NUM,ret);                                }else
 return  strcat(ret,(char*)cInvalid);              
@@ -983,7 +983,7 @@ char *Profile::get_info(char *c,int8_t num)
     strcat(c,":  ");
     strcat(c,temp_prof.note);
     strcat(c," [");
-    strcat(c,DecodeTimeDate(temp_prof.saveTime));
+    DecodeTimeDate(temp_prof.saveTime,c);
     strcat(c," ");
     strcat(c,uint16ToHex(crc16temp));  
     strcat(c,"]");
@@ -1315,7 +1315,7 @@ for(int i=0;i<num;i++) // цикл по всем точкам
     } 
   if (error==OK) // Если удачно
     { 
-    strcat(str,StatDate(ReadDay.date,true)); strcat(str,(char*)":");    // готовим дату кратко
+    StatDate(ReadDay.date,true,str); strcat(str,(char*)":");    // готовим дату кратко
       // в зависимости от того чо нужно
          if(strcmp(var,stat_NONE)==0)     { strcat(str,""); return str;  }else
          if(strcmp(var,stat_TIN)==0)      { _ftoa(str,(float)(ReadDay.tin/100.0),2); }else          // средняя темпеартура дома
@@ -1351,7 +1351,7 @@ char *Statistics::get_OneDay(char* str,uint16_t ii,boolean cat)
   if (error==OK) // Если удачно
     {   
     _itoa(ii,str);                             strcat(str,(char*)";");      // номер
-    strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");      // готовим дату
+    StatDate(ReadDay.date,false,str);          strcat(str,(char*)";");      // готовим дату
     _ftoa(str,(float)(ReadDay.tin/100.0),2);   strcat(str,(char*)";");      // средняя темпеартура дома
     _ftoa(str,(float)(ReadDay.tout/100.0),2);  strcat(str,(char*)";");      // средняя темпеартура улицы
     _ftoa(str,(float)(ReadDay.tbol/100.0),2);  strcat(str,(char*)";");      // средняя температура бойлера
@@ -1387,13 +1387,13 @@ if (!full) index=0;        // начальная дата
 else { if ((pos+0)<STAT_POINT) index=pos+0; else    index=pos+0-STAT_POINT;  }  
 if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
 { error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) { strcat(str,(char*)"Начальная дата статистики|"); strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");} // Если удачно
+if (error==OK) { strcat(str,(char*)"Начальная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
  
 if (!full) index=num-1;        // конечная дата
 else { if ((pos+num-1)<STAT_POINT) index=pos+num-1; else    index=pos+num-1-STAT_POINT;  }  
 if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
 { error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) {strcat(str,(char*)"Конечная дата статистики|"); strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");} // Если удачно
+if (error==OK) {strcat(str,(char*)"Конечная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
     
 strcat(str,(char*)"Позиция для записи|"); _itoa(pos,str);  strcat(str,(char*)";");
 
