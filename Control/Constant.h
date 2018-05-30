@@ -735,6 +735,19 @@ const char *hp_WEATHER   = {"WEATHER"};          // Использование �
 const char *hp_K_WEATHER = {"K_WEATHER"};        // Коэффициент погодозависимости
 
 
+#ifdef SENSOR_IP // параметры удаленного датчика get_sensorIP
+const char *ip_SENSOR_TEMP     = {"SENSOR_TEMP"};   // Темпеартура
+const char *ip_SENSOR_NUMBER   = {"SENSOR_NUMBER"}; // Номер
+const char *ip_RSSI            = {"RSSI"};          // Уровень сигнала
+const char *ip_VCC             = {"VCC"};           // Напряжение питания
+const char *ip_SENSOR_USE      = {"SENSOR_USE"};    // Использование
+const char *ip_SENSOR_RULE     = {"SENSOR_RULE"};   // Правило использования
+const char *ip_SENSOR_IP       = {"SENSOR_IP"};     // Адрес
+const char *ip_SENSOR_COUNT    = {"SENSOR_COUNT"};  // Счетчик
+const char *ip_STIME           = {"STIME"};         // время с последнего считывания датчика
+const char *ip_SENSOR          = {"SENSOR"};        // -------
+
+#endif
 
 
 
@@ -856,6 +869,7 @@ const char *noteError[] = {"Ok",                                                
                            };
 // --------------------------------- ПЕРЕЧИСЛЯЕМЫЕ ТИПЫ ---------------------------------------------
 
+/*
 #ifdef SENSOR_IP
 //  Перечисляемый тип - параметр удаленного датчика
 enum TYPE_SENSOR_IP         
@@ -872,7 +886,7 @@ enum TYPE_SENSOR_IP
   pEND16                       // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 #endif
-
+*/
 //  Перечисляемый тип - Состояния теплового насоса
 enum TYPE_STATE_HP         
 {
@@ -1127,4 +1141,5 @@ enum RULE_HP
 };
 
  #endif
+
 

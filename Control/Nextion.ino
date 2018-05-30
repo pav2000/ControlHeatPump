@@ -416,7 +416,7 @@ else if (PageID==2)  // Обновление данных первой стра�
 else if (PageID==3)  // Обновление данных 3 страницы "Система"
       {  
        setComponentText((char*)"syst1",(char*)VERSION);
-       setComponentText((char*)"syst2",TimeIntervalToStr(HP.get_uptime()));
+       setComponentText((char*)"syst2",TimeIntervalToStr(HP.get_uptime(),temp));
        setComponentText((char*)"syst3",ResetCause());
        if(HP.get_State()==pWORK_HP) setComponentText((char*)"syst4",itoa(HP.num_repeat,temp,10)); else setComponentText((char*)"syst4",(char*)_HP_OFF_8859);
        setComponentText((char*)"syst5",ftoa(temp,(float)HP.get_motoHourH2()/60.0,1));

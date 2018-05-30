@@ -282,23 +282,16 @@ char* _itoa( int value, char *string)
 // Преобразование во float двух слов из двух байт
 float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)
 {
-	union  float_int {
-		float f;
-		uint16_t i[2];
-	} float_map;
+union  float_int {
+	             float f;
+	             uint16_t i[2];
+                 } float_map;
 
-	float_map.i[0]=highInt;
-	float_map.i[1]=lowInt;
-	return float_map.f;
+float_map.i[0]=highInt;
+float_map.i[1]=lowInt;
+return float_map.f;
 }
 
-// int to str - для уменьшения кода и увеличения быстродействия ---------------------------------------------------
-char _int2str[12];
-char *int2str(register int i) 
-{
- itoa(i,_int2str,10);
- return _int2str;
-}
 
 #include <malloc.h>
 extern char _end;
