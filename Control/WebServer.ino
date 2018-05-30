@@ -410,7 +410,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
         _itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
         _itoa(100-HP.CPU_IDLE,strReturn);                                strcat(strReturn,"%|");
-        strcat(strReturn,TimeIntervalToStr(HP.get_uptime()));            strcat(strReturn,"|");
+        TimeIntervalToStr(HP.get_uptime(),strReturn);                    strcat(strReturn,"|");
         #ifdef EEV_DEF
         _ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);strcat(strReturn,"°C|");
         #else
@@ -431,7 +431,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }
    if (strcmp(str,"get_uptime")==0) // Команда get_uptime
        {
-       strcat(strReturn,TimeIntervalToStr(HP.get_uptime()));
+       TimeIntervalToStr(HP.get_uptime(),strReturn);
        strcat(strReturn,"&") ;
        continue;
        }
@@ -683,10 +683,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         _ftoa(strReturn,(float)HP.sTemp[TIN].get_Temp()/100.0,1);     strcat(strReturn,";");
         _ftoa(strReturn,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);    strcat(strReturn,";");
         _ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,";");
-        strcat(strReturn,VERSION);                                                strcat(strReturn,";");        
-        _itoa(freeRam()+HP.startRAM,strReturn);                                   strcat(strReturn,";");
-        _itoa(100-HP.CPU_IDLE,strReturn);                                         strcat(strReturn,";");
-        strcat(strReturn,TimeIntervalToStr(HP.get_uptime()));                     strcat(strReturn,";");
+        strcat(strReturn,VERSION);                                    strcat(strReturn,";");        
+        _itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,";");
+        _itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,";");
+        TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,";");
         #ifdef EEV_DEF 
         _ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,";");
         #else

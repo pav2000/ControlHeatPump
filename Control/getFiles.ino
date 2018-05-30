@@ -39,7 +39,7 @@ void get_txtState(uint8_t thread, boolean header)
      // Состояние ТН
      strcpy(Socket[thread].outBuf,"Режим работы:");strcat(Socket[thread].outBuf,HP.TestToStr()); 
      strcat(Socket[thread].outBuf,"\r\nПоследняя перезагрузка: ");DecodeTimeDate(HP.get_startDT(),Socket[thread].outBuf); 
-     strcat(Socket[thread].outBuf,"\r\nВремя с последней перезагрузки: "); strcat(Socket[thread].outBuf,TimeIntervalToStr(HP.get_uptime()));  
+     strcat(Socket[thread].outBuf,"\r\nВремя с последней перезагрузки: "); TimeIntervalToStr(HP.get_uptime(),Socket[thread].outBuf);  
      strcat(Socket[thread].outBuf,"\r\nПричина последней перезагрузки: ");strcat(Socket[thread].outBuf,ResetCause()); 
        
      strcat(Socket[thread].outBuf,"\r\n\r\n  2. Датчики температуры\r\n");
@@ -817,7 +817,7 @@ int16_t x;
       strcpy(tempBuf,"Последняя перезагрузка: "); DecodeTimeDate(HP.get_startDT(),tempBuf);
       strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
      
-      strcpy(tempBuf,"Время с последней перезагрузки: "); strcat(tempBuf,TimeIntervalToStr(HP.get_uptime()));
+      strcpy(tempBuf,"Время с последней перезагрузки: "); TimeIntervalToStr(HP.get_uptime(),tempBuf);
       strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
      
       strcpy(tempBuf,"Причина последней перезагрузки: "); strcat(tempBuf,ResetCause());

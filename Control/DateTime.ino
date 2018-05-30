@@ -189,26 +189,23 @@ char* NowDateToStr()
 }
 
 // (Длительность инервала в строку) Время в формате день day 12:34 используется для рассчета uptime
-char* TimeIntervalToStr(uint32_t idt)
+// Результат ДОБАВЛЯЕТСЯ в ret
+char* TimeIntervalToStr(uint32_t idt,char *ret)
 {
     uint32_t Day;
     uint8_t  Hour;
     uint8_t  Min;
-    static  char _tmp[16]; // Длина xxxxd xxh xxm - 13+1 символов
-  //  uint8_t  Sec;
   /* decode the interval into days, hours, minutes, seconds */
- // Sec = idt % 60;
   idt /= 60;
   Min = idt % 60;
   idt /= 60;
   Hour = idt % 24;
   idt /= 24;
   Day = idt;
-  strcpy(_tmp,"");  // очистить строку
-  if  (Day>0)  { _itoa(Day,_tmp); strcat(_tmp,"d ");}  // если есть уже дни
-  if  (Hour>0) { if (Hour<10) strcat(_tmp,cZero); _itoa(Hour,_tmp);strcat(_tmp,"h ");}
-                 if (Min<10) strcat(_tmp,cZero);  _itoa(Min,_tmp); strcat(_tmp,"m ");
-  return _tmp;       
+  if  (Day>0)  { _itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
+  if  (Hour>0) { if (Hour<10) strcat(ret,cZero); _itoa(Hour,ret);strcat(ret,"h ");}
+                 if (Min<10) strcat(ret,cZero);  _itoa(Min,ret); strcat(ret,"m ");
+  return ret;       
 }
 
 // вывод Времени в формате 12:34:34 
