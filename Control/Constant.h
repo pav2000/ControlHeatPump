@@ -497,14 +497,9 @@ const char *sdm_POWER       = {"POWER_SDM"};              // Полная мощ
 const char *sdm_POW_FACTOR  = {"POW_FACTOR_SDM"};         // Коэффициент мощности
 const char *sdm_PHASE       = {"PHASE_SDM"};              // Угол фазы (градусы)
 const char *sdm_FREQ        = {"FREQ_SDM"};               // Частота
-const char *sdm_IACENERGY   = {"IACENERGY_SDM"};          // Потребленная активная энергия
-const char *sdm_EACENERGY   = {"EACENERGY_SDM"};          // Переданная активная энергия
-const char *sdm_IREENERGY   = {"IREENERGY_SDM"};          // Потребленная реактивная энергия
-const char *sdm_EREENERGY   = {"EREENERGY_SDM"};          // Переданная реактивная энергия
-const char *sdm_ACENERGY    = {"ACENERGY_SDM"};           // Суммараная активная энергия
-const char *sdm_REENERGY    = {"REENERGY_SDM"};           // Суммараная реактивная энергия
-const char *sdm_ENERGY      = {"ENERGY_SDM"};             // Суммараная энергия
+const char *sdm_ACENERGY    = {"ACENERGY_SDM"};           // Суммарная активная энергия
 const char *sdm_LINK        = {"LINK_SDM"};               // Cостояние связи со счетчиком
+const char *sdm_ERRORS  	= {"ERR"};                    // Ошибок чтения Modbus
 
 // Описание имен параметров профиля для функций get_paramProfile set_paramProfile	
 const char *prof_NAME_PROFILE   = {"NAME_PROFILE"};       // Имя профиля до 10 русских букв
@@ -707,6 +702,7 @@ const char *option_EEV_CLOSE          = {"EEV_CLOSE"};          // закрыт�
 const char *option_EEV_LIGHT_START    = {"EEV_LIGHT_START"};    // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
 const char *option_EEV_START_POS      = {"EEV_START"};          // флаг Всегда начинать работу ЭРВ со стратовой позици
 const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
+const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг писать в лог нерегулярные ошибки счетчика SDM
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
 const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION

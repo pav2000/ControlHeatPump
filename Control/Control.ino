@@ -806,10 +806,6 @@ void vReadSensor(void *)
 		ttime = xTaskGetTickCount();
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 		HP.dSDM.get_readState(0); // Основная группа регистров
-		vReadSensor_delay10ms(10);
-		if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ)) {
-			HP.dSDM.get_readState(1); // Вторая группа регистров
-		}
 #endif
 		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 

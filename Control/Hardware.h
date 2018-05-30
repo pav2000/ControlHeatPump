@@ -611,7 +611,8 @@ const char *noteSDM_NONE = {"Отсутствует в конфигурации"
 
 // Флаги Электросчетчика
 #define fSDM           0              // флаг наличие счетчика
-#define fLink          1              //  флаг связь установлена
+#define fSDMLink       1              //  флаг связь установлена
+
 // Структура для хранения настроек счетчика
 struct type_settingSDM
 {
@@ -676,12 +677,9 @@ class devSDM
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
-       __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
-       __attribute__((always_inline)) inline float get_RePower(){return RePower;}          // Реактивная мощность
-       __attribute__((always_inline)) inline float get_FullPower(){return Power;}          // Полная мощность
-       __attribute__((always_inline)) inline float get_PowerFactor(){return PowerFactor;}  //   Коэффициент мощности
-       __attribute__((always_inline)) inline float get_Energy(){return Energy;}            //   Суммараная энергия
+       __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
+       __attribute__((always_inline)) inline float get_Energy(){return AcEnergy;}          // Активная энергия
          
       boolean uplinkSDM();                             // Проверить связь со счетчиком
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
@@ -702,20 +700,9 @@ class devSDM
       byte flags;                                      // флаги  0 - наличие счетчика,
        // Управление по 485
       float Voltage;                                   // Напряжение
-      float Current;                                   // Ток
+      float Current;								   // Ток
       float AcPower;                                   // активная мощность
-      float RePower;                                   // Реактивная мощность
-      float Power;                                     // Полная мощность
-      float PowerFactor;                               // Коэффициент мощности
-      float Phase;                                     // угол фазы (градусы)
-      float Freq;									   // Частота
-      float iAcEnergy;                                 // Потребленная активная энергия
-      float eAcEnergy;                                 // Переданная активная энергия
-      float iReEnergy;                                 // Потребленная реактивная энергия
-      float eReEnergy;                                 // Переданная реактивная энергия
       float AcEnergy;                                  // Суммарная активная энергия
-      float ReEnergy;                                  // Суммарная реактивная энергия
-      float Energy;                                    // Суммарная энергия
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание
