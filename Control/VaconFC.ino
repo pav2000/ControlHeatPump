@@ -172,12 +172,13 @@ int8_t devVaconFC::get_readState()
         return err; // Возврат
     }
     // Состояние прочитали и оно правильное все остальное читаем
-    _delay(FC_DELAY_READ);
-    FC_curr = read_0x03_16(FC_SPEED); // прочитать текущую частоту
+    uint32_t reg32 = read_0x03_32(FC_SPEED); // +FC_FREQ(low word). прочитать текущую скорость и частоту
     err = Modbus.get_err(); // Скопировать ошибку
     if(err != OK) {
         state = ERR_LINK_FC;
     } else {
+        FC_curr = reg32 >> 16;
+        FC_curr_freq = reg32 & 0xFFFF;
 		_delay(FC_DELAY_READ);
 		power = read_0x03_16(FC_POWER); // прочитать мощность
 		err = Modbus.get_err(); // Скопировать ошибку
@@ -560,7 +561,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1);  strcat(ret, "%"); } else
+    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)FC_curr_freq/100.0,2);  strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
@@ -605,20 +606,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 boolean devVaconFC::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_INFO)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_NAME)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_NOTE)==0)                  { return true;                         } else  // только чтение
-    if(strcmp(var,fc_PIN)==0)                   { return true;                         } else  // только чтение
-    if(strcmp(var,fc_PRESENT)==0)               { return true;                         } else  // только чтение
-    if(strcmp(var,fc_STATE)==0)                 { return true;                         } else  // только чтение
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; } else return false; } else
-    if(strcmp(var,fc_cFC)==0)                   { return true;                         } else  // только чтение
-    if(strcmp(var,fc_cPOWER)==0)                { return true;                         } else  // только чтение
-    if(strcmp(var,fc_cCURRENT)==0)              { return true;                         } else  // только чтение
     if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
-    if(strcmp(var,fc_ANALOG)==0)                { return true;                         } else  // только чтение
 	#ifdef FC_ANALOG_CONTROL
-    if(strcmp(var,fc_DAC)==0)                   { return true;                         } else  // только чтение
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
@@ -628,7 +618,6 @@ boolean devVaconFC::set_paramFC(char *var, float x)
                                                 else      { SETBIT1(_data.flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  // только чтение
-    if(strcmp(var,fc_ERROR)==0)                 { return true;                         } else  // только чтение                                      
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
     if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // %
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
@@ -679,8 +668,7 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), i = read_0x03_16(FC_STATUS));
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", i);
 			if(err == OK) {
-				i = read_0x03_32(FC_SPEED); // +FC_FREQ (low word)
-				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2104)|Выходная частота (Гц)|%.2f;", (float)(i >> 16) / 100.0, (float)(i & 0xFFFF) / 100.0);
+				buf += m_snprintf(buf, 256, "2103|Выходная скорость|%.2f%%;V1.1 (2108)|Выходная мощность|%.2f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float) power / 100.0);
 				buf += m_snprintf(buf, 256, "V1.3 (2105)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
 				buf += m_snprintf(buf, 256, "V1.5 (2107)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)

@@ -6,10 +6,17 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
-		window.onload = function() {
-		loadParam("get_paramFC(NAME),get_paramFC(NOTE)");
-		updateParam("get_paramFC(BLOCK),get_paramFC(ON_OFF),get_paramFC(FC),get_paramFC(cFC),get_paramFC(cPOWER),get_paramFC(cCURRENT),get_paramFC(MB_ERR),get_paramFC(INFO)");
-		};
+	window.onload = function() {
+	loadParam("get_paramFC(NAME),get_paramFC(NOTE)");
+	updateParam("get_paramFC(BLOCK),get_paramFC(ON_OFF),get_paramFC(FC),get_paramFC(cFC),get_paramFC(cPOWER),get_paramFC(cCURRENT),get_paramFC(MB_ERR),get_paramFC(INFO)");
+	};
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("FC(NAME)") != -1 && document.getElementById("get_paramfc-name").innerHTML.substr(0,5) == "Omron") {
+			document.getElementById("str1").innerHTML = "Целевая частота, Гц";
+			document.getElementById("str2").innerHTML = "Текущая частота, Гц";
+			document.getElementById("str3").innerHTML = "Мощность текущая";
+		}
+	}
 	</script>
 </head>
 <body class="actuators">
@@ -22,10 +29,10 @@
 	<thead>
 	<tr>
 		<th>Состояние</th>
-		<th>Цель</th>
-		<th>Текущая</th>
-		<th>Мощность текущая</th>
-		<th>Ток текущий</th>
+		<th id="str1">Целевая скорость</th>
+		<th id="str2">Текущая скорость</th>
+		<th id="str3">Частота</th>
+		<th>Ток (A)</th>
 		<th>Ошибок Modbus</th>
 		<th>Блокировка инвертора</th>
 	</tr>
