@@ -11,7 +11,7 @@
     loadParam("get_listPress");
     loadParam("get_listFlow");
 	loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM)");
-	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(FREQ_SDM),get_SDM(ACENERGY_SDM),get_SDM(REENERGY_SDM),get_SDM(LINK_SDM),get_SDM(ENERGY_SDM)");                      
+	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(FREQ_SDM),get_SDM(ACENERGY_SDM),get_SDM(LINK_SDM)");
     };
   </script>
 </head>
@@ -105,8 +105,6 @@
       <th>Коэффициент мощности (cos φ)</th>
       <th>Частота (Hz)</th>
       <th>Активная энергия (kWh)</th>
-      <th>Реактивная энергия (kVArh)</th>
-      <th>Полная энергия (kVAh)</th>
       <th>Связь</th>
     </tr>
     <tr>
@@ -118,8 +116,6 @@
         <td id="get_sdm-pow_factor_sdm"></td>
         <td id="get_sdm-freq_sdm"></td>
         <td id="get_sdm-acenergy_sdm"></td>
-        <td id="get_sdm-reenergy_sdm"></td>
-        <td id="get_sdm-energy_sdm"></td>
         <td id="get_sdm-link_sdm"></td>
       </tr>
     </thead>

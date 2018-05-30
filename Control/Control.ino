@@ -1221,14 +1221,14 @@ void vUpdatePump(void *)
 			#ifdef RPUMPFL
 			HP.dRelay[RPUMPFL].set_OFF();						// выключить насос ТП
 			#endif
-			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}         // все время выключено  но раз в 2 секунды проверяем
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
 			#ifdef RPUMPFL
 			HP.dRelay[RPUMPFL].set_ON();						// включить насос ТП
 			#endif
-			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
 		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
 		{
@@ -1241,7 +1241,7 @@ void vUpdatePump(void *)
 			for(i = 0; i < HP.get_pausePump() * 60 / 2; i++)                       // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
+				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
@@ -1252,7 +1252,7 @@ void vUpdatePump(void *)
 			for(i = 0; i < HP.get_workPump() * 60 / 2; i++)                        // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
+				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
 			}
 		}
 	}  //for
