@@ -113,8 +113,7 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                     #ifdef LOG
                         journal.jprintf("\r\n$QUERY: %s\r\n",Socket[thread].inPtr);
                      #endif
-                //       Serial.print(">>Thread=");Serial.print(thread); Serial.print(" Sock=");Serial.print(sock);Serial.print(" IP=");Serial.print(IPAddress2String(temp));Serial.print(" MAC=");Serial.println(MAC2String(mac));
-                      switch (Socket[thread].http_req_type)  // По типу запроса
+                       switch (Socket[thread].http_req_type)  // По типу запроса
                           {
                           case HTTP_invalid:
                                {
@@ -888,7 +887,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
            #else
              strcat(strReturn,"Ошибочная;");
            #endif
-    //   strcat(strReturn,"EVI_TEMP_CON|Температура кондесатора для включения соленойда EVI|");strcat(strReturn,ftoa(temp,(float)EVI_TEMP_CON/100.0,2));strcat(strReturn,";");
         #endif   // EEV
        #ifdef MQTT
 //       strcat(strReturn,"MQTT_REPEAT|Число попыток соединениея с MQTT сервером за одну итерацию|");strcat(strReturn,int2str(MQTT_REPEAT));strcat(strReturn,";");
@@ -982,7 +980,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         if (HP.dRelay[REVI].get_present()) { strcat(strReturn," REVI:");      if (HP.dRelay[REVI].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
         #endif
         if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
-        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(temp,(float)HP.dFC.get_power()/10.0,2);  } 
+        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/10.0,2);  } 
         strcat(strReturn,";");  
    
            
@@ -1185,6 +1183,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
        // Получили номер запрашиваемого датчика, теперь определяем параметр
          ptr=strtok(NULL,":");
+       /*  
             if (strstr(ptr,"SENSOR_TEMP"))     strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_TEMP));
        else if (strstr(ptr,"SENSOR_NUMBER"))   strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_NUMBER));
        else if (strstr(ptr,"RSSI"))            strcat(strReturn,HP.sIP[a-1].get_sensorIP(pRSSI));
@@ -1196,6 +1195,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        else if (strstr(ptr,"STIME"))           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSTIME));
        else if (strstr(ptr,"SENSOR"))          strcat(strReturn,"----");
        else strcat(strReturn,"E26");
+      */
+       HP.sIP[a-1].get_sensorIP(ptr,strReturn);
        strcat(strReturn,"&") ; continue;
       }
       
@@ -1205,18 +1206,18 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
        if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
        // Формируем строку
-       strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_NUMBER)); strcat(strReturn,":");
+       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,":");
        
        if (HP.sIP[a-1].get_update()>UPDATE_IP)  strcat(strReturn,"-:") ;                       // Время просрочено, удаленный датчик не используем
-       else { strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_TEMP));strcat(strReturn,":"); }
+       else { HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_TEMP,strReturn);strcat(strReturn,":"); }
 
        if (HP.sIP[a-1].get_count()>0)     // Если были пакеты то выводим данные по ним
        {
-           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSTIME));strcat(strReturn,":");
-           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_IP));strcat(strReturn,":");
-           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pRSSI));strcat(strReturn,":");
-           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pVCC)); strcat(strReturn,":");
-           strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_COUNT)); strcat(strReturn,":");  
+          HP.sIP[a-1].get_sensorIP((char*)ip_STIME,strReturn);strcat(strReturn,":");
+          HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_IP,strReturn);strcat(strReturn,":");
+          HP.sIP[a-1].get_sensorIP((char*)ip_RSSI,strReturn);strcat(strReturn,":");
+          HP.sIP[a-1].get_sensorIP((char*)ip_VCC,strReturn); strcat(strReturn,":");
+          HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_COUNT,strReturn); strcat(strReturn,":");  
        }
        else strcat(strReturn,"-:-:-:-:-:");  // После включения еще ни разу данные не поступали поэтому прочерки
         
@@ -1246,7 +1247,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       {
        if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
        if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
-       strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_USE));strcat(strReturn,"&") ;continue;  
+       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_USE,strReturn);strcat(strReturn,"&") ;continue;  
       }
 
  
@@ -1254,7 +1255,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       {
        if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
        if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
-       strcat(strReturn,HP.sIP[a-1].get_sensorIP(pSENSOR_RULE));strcat(strReturn,"&") ;continue;  
+       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_RULE,strReturn);strcat(strReturn,"&") ;continue;  
       }
    
       #else
@@ -1317,8 +1318,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-              //  if(HP.dFC.set_targetFreq(pm*100)==0) strcat(strReturn,ftoa(temp,(float)HP.dFC.get_targetFreq()/100.0,2)); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue; 
-                 if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
+                  if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
@@ -1779,6 +1779,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 	   else if (strcmp(x+1,"PCON")==0)         	 { param=31;}  //  Датчик давления кондесатора
 	   else {for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {param=20+i; break;}} // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
        if (param==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} } // Частотные датчики смещение 26 (максимум 4)
+       if (param==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;}  } // Реле  36-49 смещение 36  количество до 14 штук
 
        if (pm==ATOF_ERROR)  { strcat(strReturn,"E04");strcat(strReturn,"&");continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
          
@@ -1881,16 +1882,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             	  strcat(strReturn,"&");  continue;
               }
 
-              /*
-             if (strcmp(str,"get_targetTemp")==0)           // Функция get_targetTemp резрешены не все датчики при этом.
-                 {
-                  if (p==1) {strcat(strReturn,ftoa(temp,HP.get_TempTargetIn()/100.0,1));  }
-                   else if (p==5)  {strcat(strReturn,ftoa(temp,HP.get_TempTargetCO()/100.0,1)); }
-                     else if (p==6)  {strcat(strReturn,ftoa(temp,HP.get_TempTargetBoil()/100.0,1)); }
-                       else  strcat(strReturn,"E06");                 // использование имя устанавливаемого параметра «здесь» запрещено
-                         strcat(strReturn,"&");  continue;
-                 }
-               */    
               // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
               if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
                  { if (HP.sTemp[p].set_testTemp(pm*100)==OK)    // Установить значение в сотых градуса
@@ -2312,4 +2303,5 @@ byte *ptr;
   HP.Prof.update_list(HP.Prof.get_idProfile());                                                                        // обновить список
   return true;
 }
+
 

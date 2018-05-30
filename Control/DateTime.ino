@@ -155,13 +155,13 @@ char* NowTimeToStr()
   uint32_t x;
   static char _tmp[12];  // Длина xx:xx:xx - 10+1 символов
   x=rtcSAM3X8.get_hours();
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  strcat(_tmp,int2str(x)); strcat(_tmp,":");
+  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
 
   x=rtcSAM3X8.get_minutes();
-  if (x<10) strcat(_tmp,cZero);   strcat(_tmp,int2str(x)); strcat(_tmp,":");
+  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); strcat(_tmp,":");
 
    x=rtcSAM3X8.get_seconds();
-  if (x<10) strcat(_tmp,cZero);   strcat(_tmp,int2str(x)); 
+  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
   
    return _tmp;
 }
@@ -171,10 +171,10 @@ char* NowTimeToStr1()
   uint32_t x;
   static char _tmp[8];   // Длина xx:xx - 5+1 символов
   x=rtcSAM3X8.get_hours();
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  strcat(_tmp,int2str(x)); strcat(_tmp,":");
+  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
 
   x=rtcSAM3X8.get_minutes();
-  if (x<10) strcat(_tmp,cZero);   strcat(_tmp,int2str(x)); 
+  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
  
   return _tmp;
 }
@@ -183,7 +183,8 @@ char* NowTimeToStr1()
 char* NowDateToStr()
 {
   static char _tmp[16];  // Длина xx/xx/xxxx - 10+1 символов
-  strcpy(_tmp,int2str(rtcSAM3X8.get_days())); strcat(_tmp,"/");strcat(_tmp,int2str(rtcSAM3X8.get_months()));strcat(_tmp,"/");strcat(_tmp,int2str(rtcSAM3X8.get_years())); 
+  strcpy(_tmp,"");  // очистить строку
+  _itoa(rtcSAM3X8.get_days(),_tmp); strcat(_tmp,"/");_itoa(rtcSAM3X8.get_months(),_tmp);strcat(_tmp,"/");_itoa(rtcSAM3X8.get_years(),_tmp); 
   return _tmp;
 }
 
@@ -204,11 +205,9 @@ char* TimeIntervalToStr(uint32_t idt)
   idt /= 24;
   Day = idt;
   strcpy(_tmp,"");  // очистить строку
-  if  (Day>0)  { strcat(_tmp,int2str(Day)); strcat(_tmp,"d ");}  // если есть уже дни
-//  if  (Hour>0) { if (Hour<10) strcat(_tmp,cZero); strcat(_tmp,int2str(Hour));strcat(_tmp," hour ");}
-//                 if (Min<10) strcat(_tmp,cZero);  strcat(_tmp,int2str(Min)); strcat(_tmp," min");
-  if  (Hour>0) { if (Hour<10) strcat(_tmp,cZero); strcat(_tmp,int2str(Hour));strcat(_tmp,"h ");}
-                 if (Min<10) strcat(_tmp,cZero);  strcat(_tmp,int2str(Min)); strcat(_tmp,"m ");
+  if  (Day>0)  { _itoa(Day,_tmp); strcat(_tmp,"d ");}  // если есть уже дни
+  if  (Hour>0) { if (Hour<10) strcat(_tmp,cZero); _itoa(Hour,_tmp);strcat(_tmp,"h ");}
+                 if (Min<10) strcat(_tmp,cZero);  _itoa(Min,_tmp); strcat(_tmp,"m ");
   return _tmp;       
 }
 
@@ -219,13 +218,13 @@ static char _tmp[12];  // Длина xx:xx:xx - 10+1 символов
 strcpy(_tmp,"");  // очистить строку
 
 // Время
-strcat(_tmp,int2str((idt % 86400L)/3600));       // показываем час (86400  - это количество секунд в сутках)
+_itoa((idt % 86400L)/3600,_tmp);       // показываем час (86400  - это количество секунд в сутках)
 strcat(_tmp,":");
 if (((idt % 3600) / 60) < 10) strcat(_tmp,cZero);  // у первых 10 минут каждого часа впереди должна стоять цифра «0»:
-strcat(_tmp,int2str((idt % 3600)/60));           // показываем минуту (3600 – это количество секунд в минуту)  
+_itoa((idt % 3600)/60,_tmp);           // показываем минуту (3600 – это количество секунд в минуту)  
 strcat(_tmp,":");
 if ((idt % 60) < 10)  strcat(_tmp,cZero);          // у первых 10 секунд каждой минуты впереди должна стоять цифра «0»:
-strcat(_tmp,int2str(idt % 60));                  // показываем секунду
+_itoa(idt % 60,_tmp);                  // показываем секунду
 
 strcat(_tmp," ");
 
@@ -242,7 +241,6 @@ char*  DecodeTimeDate(uint32_t idt)
   int x;
 
   seconds=idt;
-
   /* calculate minutes */
   minutes  = seconds / 60;
   seconds -= minutes * 60;
@@ -291,13 +289,13 @@ char*  DecodeTimeDate(uint32_t idt)
   }
 // формирование строки
   x=hours;
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  strcat(_tmp,int2str(x)); strcat(_tmp,":");
+  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
   x=minutes;
-  if (x<10) strcat(_tmp,cZero);   strcat(_tmp,int2str(x)); strcat(_tmp,":");
+  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); strcat(_tmp,":");
    x=seconds;
-  if (x<10) strcat(_tmp,cZero);   strcat(_tmp,int2str(x)); 
+  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
   strcat(_tmp," "); 
-  strcat(_tmp,int2str(days + 1)); strcat(_tmp,"/");strcat(_tmp,int2str(month+1));strcat(_tmp,"/");strcat(_tmp,int2str(year)); 
+  _itoa(days + 1,_tmp); strcat(_tmp,"/");_itoa(month+1,_tmp);strcat(_tmp,"/");_itoa(year,_tmp); 
   return _tmp;   
 }
 
@@ -359,9 +357,9 @@ char*  StatDate(uint32_t idt,boolean forma)
     }
   }
 
+  strcpy(_tmp,""); // Очистить строку
   if(forma)  // Тип вывода 
    { 
-    strcpy(_tmp,"");
     x=days+1;  if (x<10) strcat(_tmp,cZero);itoa(x,_int3str,10);strcat(_tmp,_int3str);   
     x=month+1; if (x<10) strcat(_tmp,cZero);itoa(x,_int3str,10);strcat(_tmp,_int3str);
     x=year;    if (x>2000) itoa(x-2000,_int3str,10); else itoa(x-1900,_int3str,10); strcat(_tmp,_int3str); // формирование строки формата ДДММГГ (год последние две цифры)
