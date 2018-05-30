@@ -2089,25 +2089,27 @@ char* devSDM::get_paramSDM(char *var, char *ret)
    if(strcmp(var,sdm_ACPOWER)==0){      return _ftoa(ret,(float)AcPower,2);                                     }else      // Активная мощность
    if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммарная активная энергия
    if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
-   else if(GETBIT(flags,fSDMLink)) {
-	   if(strcmp(var,sdm_CURRENT)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
-		   return _ftoa(ret, tmp, 2);																			   }else       // Ток
-	   if(strcmp(var,sdm_REPOWER)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
-		   return _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
-	   if(strcmp(var,sdm_POWER)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
-		   return _ftoa(ret, tmp, 2);																				}else      // Полная мощность
-	   if(strcmp(var,sdm_POW_FACTOR)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
-		   return _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
-	   if(strcmp(var,sdm_PHASE)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
-		   return _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
-	   if(strcmp(var,sdm_FREQ)==0){
-		   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
-		   return _ftoa(ret, tmp, 2);																				}         // Частота
+   else {
+	   if(GETBIT(flags,fSDMLink)) {
+		   if(strcmp(var,sdm_CURRENT)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
+			   return _ftoa(ret, tmp, 2);																			   }else       // Ток
+		   if(strcmp(var,sdm_REPOWER)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
+			   return _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
+		   if(strcmp(var,sdm_POWER)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}else      // Полная мощность
+		   if(strcmp(var,sdm_POW_FACTOR)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
+		   if(strcmp(var,sdm_PHASE)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
+			   return _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
+		   if(strcmp(var,sdm_FREQ)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}         // Частота
+	   }
    }
    return strcat(ret,(char*)cInvalid);
 }

@@ -169,7 +169,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		//  Датчик найден!
 		// 1. Номер по порядку
 		OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
-		strcat(result_str, int2str(OW_scanTableIdx + 1)); strcat(result_str,":");
+		_itoa(OW_scanTableIdx + 1, result_str); strcat(result_str,":");
 		if(OneWireDrv.crc8(addr, 7) != addr[7]) {
 			strcat(result_str,"Error CRC:::;");
 			continue;
