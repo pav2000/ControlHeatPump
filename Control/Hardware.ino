@@ -919,8 +919,11 @@ void   devEEV::CorrectOverheat(void)
 			delta = x - delta;	// Перегрев большой - уменьшаем
 		} else if(delta < (x = _data.OHCor_TDIS_TCON - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
 			delta = x - delta;	// Перегрев маленький - увеличиваем
-		}
+		} else return;
 		_data.tOverheat += (int32_t) delta * _data.OHCor_K / 1000;
+#ifdef DEBUG
+		journal.jprintf(pP_TIME, "OverHeat set: %.2f (%d)\n", (float)_data.tOverheat/100.0, delta);
+#endif
 		if(_data.tOverheat > _data.OHCor_OverHeatMax) _data.tOverheat = _data.OHCor_OverHeatMax;
 		else if(_data.tOverheat < _data.OHCor_OverHeatMin) _data.tOverheat = _data.OHCor_OverHeatMin;
 	}
@@ -929,13 +932,6 @@ void   devEEV::CorrectOverheat(void)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::save(int32_t adr)
 {
-/*	
-    if (writeEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
-    	set_Error(ERR_SAVE_EEPROM,name);
-    	return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
- */
  	if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);   
     return adr;   
 }
@@ -943,12 +939,6 @@ int32_t devEEV::save(int32_t adr)
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t devEEV::load(int32_t adr)
 {
-/*	if (readEEPROM_I2C(adr, (byte*)&timeIn, (byte*)&flags - (byte*)&timeIn + sizeof(flags))) {
-		set_Error(ERR_LOAD_EEPROM,name);
-		return ERR_LOAD_EEPROM;
-	}
-	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
-*/
     if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
 	SETBIT1(_data.flags, fPresent); 									// ЭРВ всегда есть!!!
 	return adr;
@@ -957,10 +947,6 @@ int32_t devEEV::load(int32_t adr)
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t devEEV::loadFromBuf(int32_t adr,byte *buf) 
 {
-/*	
-	memcpy((byte*)&timeIn, buf+adr, (byte*)&flags - (byte*)&timeIn + sizeof(flags));
-	adr += (byte*)&flags - (byte*)&timeIn + sizeof(flags);
-*/
 memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 	
 SETBIT1(_data.flags, fPresent); // ЭРВ всегда есть!!!
 return adr;
@@ -968,11 +954,6 @@ return adr;
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t devEEV::get_crc16(uint16_t crc) 
 {
-/*
-	uint16_t i;
-	for(i = 0; i < (byte*)&flags - (byte*)&timeIn + sizeof(flags); i++)
-		crc = _crc16(crc,*((byte*)&timeIn + i));  // CRC16 структуры
-*/
  uint16_t i;
  for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   	
  return crc;

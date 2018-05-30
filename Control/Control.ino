@@ -1210,32 +1210,53 @@ void vUpdateStepperEEV( void * )
 }
 #endif
 
-// Задача "Работа насоса конденсатора при выключенном компрессоре"
-void vUpdatePump( void * )
+// Задача: Работа насосов отопления, когда ТН в паузе
+void vUpdatePump(void *)
 { //const char *pcTaskName = "Pump is running\r\n";
- uint16_t i;
-   for( ;; )
-    {
-   //   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
-      if ((HP.get_workPump()==0)&&(HP.startPump)) {HP.dRelay[PUMP_OUT].set_OFF();  vTaskDelay(2000/portTICK_PERIOD_MS); }         // все время выключено  но раз в 2 секунды проверяем
-         else if ((HP.get_pausePump()==0)&&(HP.startPump)) {HP.dRelay[PUMP_OUT].set_ON();  vTaskDelay(2000/portTICK_PERIOD_MS);}  // все время включено  но раз в 2 секунды проверяем
-          else if(HP.startPump)                                                                                                   // нормальный цикл вкл выкл
-              {
-                  if (HP.startPump) HP.dRelay[PUMP_OUT].set_OFF();                 // выключить насос отопления
-                  for(i=0;i<HP.get_pausePump()*60/2;i++)                           // Режем задержку для быстрого выхода
-                    {            
-                     if (!HP.startPump)  break;                                    // Остановить задачу насос
-                     vTaskDelay(2*1000/portTICK_PERIOD_MS);                        // пауза выключено2 секунда
-                    } 
-                  if (HP.startPump) HP.dRelay[PUMP_OUT].set_ON();                  // включить насос отопления
-                  for(i=0;i<HP.get_workPump()*60/2;i++)                            // Режем задержку для быстрого выхода
-                    {            
-                     if (!HP.startPump)  break;                                    // Остановить задачу насос
-                     vTaskDelay(2*1000/portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
-                    }                  
-              }        
-      }  //for       
-  vTaskDelete( NULL );  
+	uint16_t i;
+	for(;;) {
+		//   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
+		if((HP.get_workPump() == 0) && (HP.startPump)) {
+			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
+			#ifdef RPUMPFL
+			HP.dRelay[RPUMPFL].set_OFF();						// выключить насос ТП
+			#endif
+			vTaskDelay(2000 / portTICK_PERIOD_MS);
+		}         // все время выключено  но раз в 2 секунды проверяем
+		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
+			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
+			#ifdef RPUMPFL
+			HP.dRelay[RPUMPFL].set_ON();						// включить насос ТП
+			#endif
+			vTaskDelay(2000 / portTICK_PERIOD_MS);
+		}  // все время включено  но раз в 2 секунды проверяем
+		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
+		{
+			if(HP.startPump) {
+				HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
+				#ifdef RPUMPFL
+				HP.dRelay[RPUMPFL].set_OFF();					// выключить насос ТП
+				#endif
+			}
+			for(i = 0; i < HP.get_pausePump() * 60 / 2; i++)                       // Режем задержку для быстрого выхода
+			{
+				if(!HP.startPump) break;                                    // Остановить задачу насос
+				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
+			}
+			if(HP.startPump) {
+				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
+				#ifdef RPUMPFL
+				HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
+				#endif
+			}
+			for(i = 0; i < HP.get_workPump() * 60 / 2; i++)                        // Режем задержку для быстрого выхода
+			{
+				if(!HP.startPump) break;                                    // Остановить задачу насос
+				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
+			}
+		}
+	}  //for
+	vTaskDelete( NULL);
 }
 
 // Задача отложеного старта ТН
