@@ -8,7 +8,7 @@ var urlupdate = 4010; // время обновления параметров в
 
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
-	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "").toLowerCase();
+	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "");
 	var rec = new RegExp('et_listChart');
 	var rel = new RegExp('et_sensorListIP');
 	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
@@ -46,7 +46,7 @@ function setParam(paramid, resultid) {
 		elval = len + ";" + elval;
 		clear = false;
 	} else if((clear = elid.indexOf("=")==-1)) { // Не (x=n)
-		if((element = document.getElementById(elid))) {
+		if((element = document.getElementById(elid.toLowerCase()))) {
 			if(element.getAttribute('type') == 'checkbox') {
 				if(element.checked) elval = 1; else elval = 0;
 			} else elval = element.value;
@@ -66,7 +66,7 @@ function setParam(paramid, resultid) {
 		if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;  
 	}
 	if(rel.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
-	if(!resultid) resultid = elid.replace(/set_/g, "get_");
+	if(!resultid) resultid = elid.replace(/set_/g, "get_").toLowerCase();
 	if(clear) {
 		element = document.getElementById(resultid);
 		if(element) {
@@ -132,7 +132,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var remaxtemp = new RegExp('^get_maxtemp');
 								var retblval = new RegExp('et_modbus_');
 								values = arr[i].split('=');
-								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").toLowerCase().replace(/set_/g, "get_");
+								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(rec.test(values[0])) type = "const"; 
 								else if(rei.test(values[0])) type = "table"; 
@@ -387,7 +387,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'select') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
-										var idsel = values[0].toLowerCase().replace(/set_/g, "get_").replace(/\([0-9]\)/g, "").replace(/\(/g, "-").replace(/\)/g, "").replace(/_skip[1-9]$/,"");
+										var idsel = values[0].replace(/set_/g, "get_").toLowerCase().replace(/\([0-9]\)/g, "").replace(/\(/g, "-").replace(/\)/g, "").replace(/_skip[1-9]$/,"");
 										if(idsel == 'get_sensorlistip') idsel = valueid;
 										if(idsel == "get_testmode") {
 											var element2 = document.getElementById("get_testmode2");

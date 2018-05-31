@@ -497,14 +497,9 @@ const char *sdm_POWER       = {"POWER_SDM"};              // Полная мощ
 const char *sdm_POW_FACTOR  = {"POW_FACTOR_SDM"};         // Коэффициент мощности
 const char *sdm_PHASE       = {"PHASE_SDM"};              // Угол фазы (градусы)
 const char *sdm_FREQ        = {"FREQ_SDM"};               // Частота
-const char *sdm_IACENERGY   = {"IACENERGY_SDM"};          // Потребленная активная энергия
-const char *sdm_EACENERGY   = {"EACENERGY_SDM"};          // Переданная активная энергия
-const char *sdm_IREENERGY   = {"IREENERGY_SDM"};          // Потребленная реактивная энергия
-const char *sdm_EREENERGY   = {"EREENERGY_SDM"};          // Переданная реактивная энергия
-const char *sdm_ACENERGY    = {"ACENERGY_SDM"};           // Суммараная активная энергия
-const char *sdm_REENERGY    = {"REENERGY_SDM"};           // Суммараная реактивная энергия
-const char *sdm_ENERGY      = {"ENERGY_SDM"};             // Суммараная энергия
+const char *sdm_ACENERGY    = {"ACENERGY_SDM"};           // Суммарная активная энергия
 const char *sdm_LINK        = {"LINK_SDM"};               // Cостояние связи со счетчиком
+const char *sdm_ERRORS  	= {"ERR"};                    // Ошибок чтения Modbus
 
 // Описание имен параметров профиля для функций get_paramProfile set_paramProfile	
 const char *prof_NAME_PROFILE   = {"NAME_PROFILE"};       // Имя профиля до 10 русских букв
@@ -707,6 +702,7 @@ const char *option_EEV_CLOSE          = {"EEV_CLOSE"};          // закрыт�
 const char *option_EEV_LIGHT_START    = {"EEV_LIGHT_START"};    // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
 const char *option_EEV_START_POS      = {"EEV_START"};          // флаг Всегда начинать работу ЭРВ со стратовой позици
 const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
+const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг писать в лог нерегулярные ошибки счетчика SDM
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
 const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION
@@ -739,6 +735,19 @@ const char *hp_WEATHER   = {"WEATHER"};          // Использование �
 const char *hp_K_WEATHER = {"K_WEATHER"};        // Коэффициент погодозависимости
 
 
+#ifdef SENSOR_IP // параметры удаленного датчика get_sensorIP
+const char *ip_SENSOR_TEMP     = {"SENSOR_TEMP"};   // Темпеартура
+const char *ip_SENSOR_NUMBER   = {"SENSOR_NUMBER"}; // Номер
+const char *ip_RSSI            = {"RSSI"};          // Уровень сигнала
+const char *ip_VCC             = {"VCC"};           // Напряжение питания
+const char *ip_SENSOR_USE      = {"SENSOR_USE"};    // Использование
+const char *ip_SENSOR_RULE     = {"SENSOR_RULE"};   // Правило использования
+const char *ip_SENSOR_IP       = {"SENSOR_IP"};     // Адрес
+const char *ip_SENSOR_COUNT    = {"SENSOR_COUNT"};  // Счетчик
+const char *ip_STIME           = {"STIME"};         // время с последнего считывания датчика
+const char *ip_SENSOR          = {"SENSOR"};        // -------
+
+#endif
 
 
 
@@ -860,6 +869,7 @@ const char *noteError[] = {"Ok",                                                
                            };
 // --------------------------------- ПЕРЕЧИСЛЯЕМЫЕ ТИПЫ ---------------------------------------------
 
+/*
 #ifdef SENSOR_IP
 //  Перечисляемый тип - параметр удаленного датчика
 enum TYPE_SENSOR_IP         
@@ -876,7 +886,7 @@ enum TYPE_SENSOR_IP
   pEND16                       // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 #endif
-
+*/
 //  Перечисляемый тип - Состояния теплового насоса
 enum TYPE_STATE_HP         
 {
@@ -1010,7 +1020,7 @@ enum TYPE_RET_HP
   pEND18                            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 //  Для вывода кодов
-const char *codeRet[]={ "none","MinPauseOn","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","pBp22", \
+const char *codeRet[]={ "none","MinPauseOn","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", \
                        "Hh3","Hh1","Hh2","Hh13","Hh4","Hp3","Hp1","Hp2","Hp6","Hp7","Hp8","Hp9","Hp5","Hp10","Hp11","Hp12","Hp15","Hp16","Hp17","Hp18","Hp19","Hp20","Hp21",\
                        "Ch3","Ch1","Ch2","Ch13","Ch4","Cp3","Cp1","Cp2","Cp6","Cp7","Cp8","Cp9","Cp5","Cp10","Cp11","Cp12","Cp15","Cp16","Cp17","Cp18","Cp19","Cp20","Cp21","null"};           
 
@@ -1131,4 +1141,5 @@ enum RULE_HP
 };
 
  #endif
+
 

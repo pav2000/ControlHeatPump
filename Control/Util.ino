@@ -244,10 +244,9 @@ char *_ftoa(char *outstr, float val, unsigned char precision)
 //int в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек radix=10
 char* _itoa( int value, char *string)
 {
-    unsigned int i, len = 0;
-	while (string[len] != '\0') len++;
 	char *ret = string;
-	string = string+len;
+    while(*string) string++;
+
 	char *pbuffer = string;
 	unsigned char	negative = 0;
 
@@ -263,8 +262,6 @@ char* _itoa( int value, char *string)
 		value /= 10;
 	} while (value > 0);
 
-//	for (i = (pbuffer - string); i < zero_pad; i++)	*(pbuffer++) = '0';
-
 	if (negative)
 		*(pbuffer++) = '-';
 
@@ -272,8 +269,8 @@ char* _itoa( int value, char *string)
 
 	/* ... now we reverse it (could do it recursively but will
 	 * conserve the stack space) */
-	len = (pbuffer - string);
-	for (i = 0; i < len / 2; i++) {
+	uint8_t len = (pbuffer - string);
+	for (uint8_t i = 0; i < len / 2; i++) {
 		char j = string[i];
 		string[i] = string[len-i-1];
 		string[len-i-1] = j;
@@ -285,23 +282,16 @@ char* _itoa( int value, char *string)
 // Преобразование во float двух слов из двух байт
 float fromInt16ToFloat(uint16_t lowInt, uint16_t highInt)
 {
-	union  float_int {
-		float f;
-		uint16_t i[2];
-	} float_map;
+union  float_int {
+	             float f;
+	             uint16_t i[2];
+                 } float_map;
 
-	float_map.i[0]=highInt;
-	float_map.i[1]=lowInt;
-	return float_map.f;
+float_map.i[0]=highInt;
+float_map.i[1]=lowInt;
+return float_map.f;
 }
 
-// int to str - для уменьшения кода и увеличения быстродействия ---------------------------------------------------
-char _int2str[12];
-char *int2str(register int i) 
-{
- itoa(i,_int2str,10);
- return _int2str;
-}
 
 #include <malloc.h>
 extern char _end;

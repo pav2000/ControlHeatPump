@@ -939,6 +939,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_EEV_START_POS)==0)    {if (x==0) {SETBIT0(Option.flags,fEEV_start); return true;} else if (x==1) {SETBIT1(Option.flags,fEEV_start); return true;} else return false;              }else  // Всегда начинать работу ЭРВ со стратовой позици
      
    if(strcmp(var,option_SD_CARD)==0)          {if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;       }else       // Сбрасывать статистику на карту
+   if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                      }else       // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                       }else       // Якрость % NEXTION
@@ -984,6 +985,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_EEV_START_POS)==0)    {if(GETBIT(Option.flags,fEEV_start)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else           // Всегда начинать работу ЭРВ со стратовой позици
      
    if(strcmp(var,option_SD_CARD)==0)          {if(GETBIT(Option.flags,fSD_card)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else            // Сбрасывать статистику на карту
+   if(strcmp(var,option_SDM_LOG_ERR)==0)      {if(GETBIT(Option.flags,fSDMLogErrors)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
@@ -1040,8 +1042,6 @@ void  HeatPump::updateChart()
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
     if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
-  //  if(dSDM.sAcPower.get_present())   dSDM.sAcPower.addPoint(dSDM.get_AcPower());
-  //  if(dSDM.sRePower.get_present())   dSDM.sRePower.addPoint(dSDM.get_RePower());  
     if(dSDM.ChartPower.get_present())   power220=dSDM.get_Power();  dSDM.ChartPower.addPoint(power220); 
   //  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);    
     if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
@@ -1132,9 +1132,9 @@ void HeatPump::startChart()
 // dSDM.ChartPowerFactor.clear();                          // Статистика по Коэффициент мощности
  ChartFullCOP.clear();                                     // Коэффициент преобразования
  #endif
- powerCO=0;
- powerGEO=0;
- power220=0;                                   
+// powerCO=0;
+// powerGEO=0;
+// power220=0;
  vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
 
  if(GETBIT(Option.flags,fSD_card))  // ЗАГОЛОВОК Запись статистики в файл
@@ -1660,11 +1660,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.delayOffPump);
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
-		// Насосы будут остановлены, обнуляем энергию
-		powerCO = 0;
-		powerGEO = 0;
-		COP = 0;
-		fullCOP = 0;
 	}
 
 	// переключение насосов если есть что переключать (проверка была выше)
@@ -1752,7 +1747,7 @@ int8_t HeatPump::StartResume(boolean start)
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
 			vTaskResume(xHandleUpdate);
-			journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+			journal.jprintf(" Start task vUpdate\n");
 			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			return error;
 		}
@@ -1904,17 +1899,20 @@ int8_t HeatPump::StartResume(boolean start)
 	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
 	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
 
-	// 10. Запуск задачи обновления ТН ---------------------------------------------------------------------------
+	// 10. Сохранение состояния  -------------------------------------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
+	setState(pWORK_HP);
+
+	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
 	if(start)
 	{
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
-		journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+		journal.jprintf(" Start task vUpdate\n");
 	}
 
-	// 11. Сохранение состояния  -------------------------------------------------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
-	setState(pWORK_HP);
+	// 12. насос запущен -----------------------------------------------------------------------------------------
 	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
+	
 	return error;
 }
 
@@ -1946,7 +1944,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
     {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-    journal.jprintf(" Stop task update %s\n",(char*)__FUNCTION__); 
+    journal.jprintf(" Stop task vUpdate\n"); 
     } 
     
   if(startPump)
@@ -2845,26 +2843,8 @@ void HeatPump::vUpdate()
               default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__); break;
            }
       } 
-// Обновление расчетных величин (djpvjжность расчета определяем пографикам)
-#ifdef  FLOWCON 
-if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
- {
-  powerCO=(float)(abs(FEED-RET))*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
-  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
-    #ifdef RHEAT
-      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
-    #endif    
-  #endif
-  } 
-#endif  
-#ifdef  FLOWEVA 
-if(ChartPowerGEO.get_present()) powerGEO=(float)(abs(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()))*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity();  
-#endif
-if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;}  // в сотых долях !!!!!!
-if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0;} // в сотых долях !!!!!!
-         
+        
 }
-
 
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена
 // Вход режим работы ТН
@@ -3485,4 +3465,32 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 		}
 	}
 	return ret ? (1<<bus) : 0;
+}
+
+// Обновление расчетных величин мощностей и СОР
+void HeatPump::calculatePower()
+{
+#ifdef  FLOWCON 
+	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (abs(FEED-RET))
+				* (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
+#ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
+#ifdef RHEAT
+	if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+#endif
+#endif
+#else
+	powerCO=0.0;
+#endif
+
+#ifdef  FLOWEVA 
+	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (abs(
+			sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())) * (float) sFrequency[FLOWEVA].get_Value()
+			/ sFrequency[FLOWEVA].get_kfCapacity();
+#else
+	powerGEO=0.0;
+#endif
+
+	COP = dFC.get_power();
+	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
+	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 }

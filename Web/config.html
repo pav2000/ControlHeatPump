@@ -8,7 +8,7 @@
 	<script type="text/javascript">
 		window.onload = function() {
 		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(OW2TS)");
-		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF)");
+		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER)");
 	}; 
 	</script>
 </head>
@@ -175,6 +175,12 @@
 			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.)</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Логировать не критичные ошибки электро-счетчика SDM</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-sdm_loger" onchange="setParam('get_optionHP(SDM_LOGER)');" >
 			</td>
 		</tr>	
 

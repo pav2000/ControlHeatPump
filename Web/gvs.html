@@ -58,8 +58,8 @@
 			<td><input type="checkbox" name="get_boiler-boiler_on" id="get_boiler-boiler_on" onChange="setParam('get_Boiler(BOILER_ON)');" ></td>
 		</tr>		
 		<tr>
-			<td>Целевая температура бойлера [5...60]</td>
-			<td><input id="get_boiler-temp_target" type="number" min="5" max="60" step="0.1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
+			<td>Целевая температура бойлера [5...90]</td>
+			<td><input id="get_boiler-temp_target" type="number" min="5" max="90" step="0.1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
 		</tr>						
 		<tr>
 			<td>Гистерезис целевой температуры<sup>1</sup> [1...20]</td>
@@ -91,8 +91,8 @@
 			<td></td>
 		</tr>
 		<tr>
-			<td>Целевая температура подачи [30-60]</td>
-			<td><input id="get_boiler-boil_temp" type="number" min="30" max="60" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
+			<td>Целевая температура подачи [30-70]</td>
+			<td><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
 		</tr>	
 		<tr>
 			<td>Постоянная интегрирования времени (секунды) [5...300]</td>
@@ -139,8 +139,8 @@
 			<td><input type="checkbox" name="get_boiler-reset_heat" id="get_boiler-reset_heat" onChange="setParam('get_Boiler(RESET_HEAT)');" ></td>
 		</tr>
 		<tr>
-			<td>Время сброса тепла (минуты) [2...15]</td>
-			<td><input id="get_boiler-reset_time" type="number" min="2" max="15" step="1" value=""><input id="get_boiler-reset_time2" type="submit" value=">"  onclick="setParam('get_Boiler(RESET_TIME)');"></td>
+			<td>Время сброса тепла (минуты) [1...20]</td>
+			<td><input id="get_boiler-reset_time" type="number" min="1" max="20" step="1" value=""><input id="get_boiler-reset_time2" type="submit" value=">"  onclick="setParam('get_Boiler(RESET_TIME)');"></td>
 		</tr>
 		<tr>
 			<td><b>Защиты при работе теплового насоса</b></td>

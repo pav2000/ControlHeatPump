@@ -484,10 +484,10 @@ void Profile::initProfile()
   SETBIT0(Cool.flags,fWeather);        // флаг Погодозависмости
   Cool.dTemp=100;                      // Гистерезис целевой температуры
   Cool.dTempDay=100;                   // Гистерезис целевой температуры дневной тариф
-  Cool.time=60;                        // Постоянная интегрирования времени в секундах ПИД ТН
-  Cool.Kp=10;                          // Пропорциональная составляющая ПИД ТН
-  Cool.Ki=1;                           // Интегральная составляющая ПИД ТН
-  Cool.Kd=5;                           // Дифференциальная составляющая ПИД ТН
+  Cool.time=10;                        // Постоянная интегрирования времени в секундах ПИД ТН
+  Cool.Kp=20;                          // Пропорциональная составляющая ПИД ТН
+  Cool.Ki=0;                           // Интегральная составляющая ПИД ТН
+  Cool.Kd=1;                           // Дифференциальная составляющая ПИД ТН
  // Защиты
   Cool.tempIn=1200;                    // Tемпература подачи (минимальная или минимальная)
   Cool.tempOut=3500;                   // Tемпература обратки (минимальная или минимальная)
@@ -506,10 +506,10 @@ void Profile::initProfile()
   SETBIT0(Heat.flags,fWeather);        // флаг Погодозависмости
   Heat.dTemp=100;                      // Гистерезис целевой температуры
   Heat.dTempDay=100;                   // Гистерезис целевой температуры дневной тариф
-  Heat.time=60;                        // Постоянная интегрирования времени в секундах ПИД ТН
-  Heat.Kp=10;                          // Пропорциональная составляющая ПИД ТН
+  Heat.time=10;                        // Постоянная интегрирования времени в секундах ПИД ТН
+  Heat.Kp=23;                          // Пропорциональная составляющая ПИД ТН
   Heat.Ki=0;                           // Интегральная составляющая ПИД ТН
-  Heat.Kd=5;                           // Дифференциальная составляющая ПИД ТН
+  Heat.Kd=1;                           // Дифференциальная составляющая ПИД ТН
  // Защиты
   Heat.tempIn=3800;                    // Tемпература подачи (минимальная или минимальная)
   Heat.tempOut=2000;                   // Tемпература обратки (минимальная или минимальная)
@@ -689,13 +689,13 @@ if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.fla
 			                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fCirculation);  return true;}
 			                       else return false;  
 			                       }else 
-if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=60))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевай температура бойлера
+if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=90))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевай температура бойлера
                        }else             
 if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=x*100.0; return true;} else return false;            // гистерезис целевой температуры
                        }else      
 if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=x*100.0; return true;} else return false;           // Tемпература подачи максимальная
                        }else 
-if(strcmp(var,boil_PAUSE1)==0){      if ((x>=3)&&(x<=20))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
+if(strcmp(var,boil_PAUSE1)==0){      if ((x>=0)&&(x<=60))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
                        }else  
                                                                               
 if(strcmp(var,boil_SCHEDULER)==0){  return set_Schedule(c,Boiler.Schedule); }else                                                  // разбор строки расписания
@@ -708,13 +708,13 @@ if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.fl
                        else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fResetHeat);  return true;}
                        else return false;  
                        }else 
-if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=3)&&(x<=20))   {Boiler.Reset_Time=60*x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
+if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=1)&&(x<=20))   {Boiler.Reset_Time=60*x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
                        }else      
 if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.time=x; return true;} else return false;  }else             // Постоянная интегрирования времени в секундах ПИД ГВС
 if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.Kp=x; return true;} else return false;  }else               // Пропорциональная составляющая ПИД ГВС
 if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.Ki=x; return true;} else return false;  }else               // Интегральная составляющая ПИД ГВС
 if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.Kd=x; return true;} else return false;   }else              // Дифференциальная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=60))   {Boiler.tempPID=x*100.0; return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
+if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=70))   {Boiler.tempPID=x*100.0; return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
 if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.flags,fAddHeating); return true;}                   // флаг использования тена для догрева ГВС
                                      else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
                                      else return false;  
@@ -952,7 +952,7 @@ if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled))
                                          else                                    return  strcat(ret,(char*)cZero);}else
 if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id,ret);                                }else 
 if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
-if(strcmp(var,prof_DATE_PROFILE)==0)   { return strcat(ret,DecodeTimeDate(dataProfile.saveTime));         }else// параметры только чтение
+if(strcmp(var,prof_DATE_PROFILE)==0)   { return DecodeTimeDate(dataProfile.saveTime,ret);                 }else// параметры только чтение
 if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
 if(strcmp(var,prof_NUM_PROFILE)==0)    { return _itoa(I2C_PROFIL_NUM,ret);                                }else
 return  strcat(ret,(char*)cInvalid);              
@@ -983,7 +983,7 @@ char *Profile::get_info(char *c,int8_t num)
     strcat(c,":  ");
     strcat(c,temp_prof.note);
     strcat(c," [");
-    strcat(c,DecodeTimeDate(temp_prof.saveTime));
+    DecodeTimeDate(temp_prof.saveTime,c);
     strcat(c," ");
     strcat(c,uint16ToHex(crc16temp));  
     strcat(c,"]");
@@ -1315,7 +1315,7 @@ for(int i=0;i<num;i++) // цикл по всем точкам
     } 
   if (error==OK) // Если удачно
     { 
-    strcat(str,StatDate(ReadDay.date,true)); strcat(str,(char*)":");    // готовим дату кратко
+    StatDate(ReadDay.date,true,str); strcat(str,(char*)":");    // готовим дату кратко
       // в зависимости от того чо нужно
          if(strcmp(var,stat_NONE)==0)     { strcat(str,""); return str;  }else
          if(strcmp(var,stat_TIN)==0)      { _ftoa(str,(float)(ReadDay.tin/100.0),2); }else          // средняя темпеартура дома
@@ -1351,7 +1351,7 @@ char *Statistics::get_OneDay(char* str,uint16_t ii,boolean cat)
   if (error==OK) // Если удачно
     {   
     _itoa(ii,str);                             strcat(str,(char*)";");      // номер
-    strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");      // готовим дату
+    StatDate(ReadDay.date,false,str);          strcat(str,(char*)";");      // готовим дату
     _ftoa(str,(float)(ReadDay.tin/100.0),2);   strcat(str,(char*)";");      // средняя темпеартура дома
     _ftoa(str,(float)(ReadDay.tout/100.0),2);  strcat(str,(char*)";");      // средняя темпеартура улицы
     _ftoa(str,(float)(ReadDay.tbol/100.0),2);  strcat(str,(char*)";");      // средняя температура бойлера
@@ -1387,13 +1387,13 @@ if (!full) index=0;        // начальная дата
 else { if ((pos+0)<STAT_POINT) index=pos+0; else    index=pos+0-STAT_POINT;  }  
 if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
 { error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) { strcat(str,(char*)"Начальная дата статистики|"); strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");} // Если удачно
+if (error==OK) { strcat(str,(char*)"Начальная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
  
 if (!full) index=num-1;        // конечная дата
 else { if ((pos+num-1)<STAT_POINT) index=pos+num-1; else    index=pos+num-1-STAT_POINT;  }  
 if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
 { error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) {strcat(str,(char*)"Конечная дата статистики|"); strcat(str,StatDate(ReadDay.date,false));  strcat(str,(char*)";");} // Если удачно
+if (error==OK) {strcat(str,(char*)"Конечная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
     
 strcat(str,(char*)"Позиция для записи|"); _itoa(pos,str);  strcat(str,(char*)";");
 

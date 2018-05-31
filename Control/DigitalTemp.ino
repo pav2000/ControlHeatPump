@@ -335,23 +335,19 @@ return true;
 }
 
 // Получить параметр в виде строки
-char* sensorIP::get_sensorIP(TYPE_SENSOR_IP  p)
+char* sensorIP::get_sensorIP(char *var, char *ret)
 {
-  char static temp[12];
-  switch (p)
-   {
-    case pSENSOR_TEMP:          return ftoa(temp,(float)Temp/100.0,2);       break;  
-    case pSENSOR_NUMBER:        return int2str(num);                         break;  
-    case pRSSI:                 return ftoa(temp,(float)RSSI/10.0,1);        break;                
-    case pVCC:                  return ftoa(temp,(float)VCC/1000.0,2);       break;
-    case pSENSOR_USE:           if (GETBIT(flags,fUse)) return (char*)cOne; else    return  (char*)cZero;  break;  
-    case pSENSOR_RULE:          if (GETBIT(flags,fRule)) return (char*)cOne; else   return  (char*)cZero;  break;     
-    case pSENSOR_IP:            return IPAddress2String(ip);                 break;  
-    case pSENSOR_COUNT:         return int2str(count);                       break;     
-    case pSTIME:                if(stime==0) return (char*)"none"; else return  int2str(rtcSAM3X8.unixtime()-stime);  break;  
-    default:                    return (char*)cInvalid;                     break;   
-   }
- return (char*)cInvalid;    
+if(strcmp(var,ip_SENSOR_TEMP)==0)     {return _ftoa(ret,(float)Temp/100.0,2);      } else  
+if(strcmp(var,ip_SENSOR_NUMBER)==0)   {return _itoa(num,ret);                      } else  
+if(strcmp(var,ip_RSSI)==0)            {return _ftoa(ret,(float)RSSI/10.0,1);       } else                
+if(strcmp(var,ip_VCC)==0)             {return _ftoa(ret,(float)VCC/1000.0,2);      } else
+if(strcmp(var,ip_SENSOR_USE)==0)      {if (GETBIT(flags,fUse)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else  
+if(strcmp(var,ip_SENSOR_RULE)==0)     {if (GETBIT(flags,fRule)) return strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero);} else     
+if(strcmp(var,ip_SENSOR_IP)==0)       {return strcat(ret,IPAddress2String(ip));    } else  
+if(strcmp(var,ip_SENSOR_COUNT)==0)    {return _itoa(count,ret);                    } else     
+if(strcmp(var,ip_STIME)==0)           {if(stime==0) return strcat(ret,(char*)"none"); else return _itoa(rtcSAM3X8.unixtime()-stime,ret);} else  
+if(strcmp(var,ip_SENSOR)==0)          {return strcat(ret,(char*)"----");           } else   
+return strcat(ret,(char*)"E26");    
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
@@ -387,3 +383,4 @@ uint16_t sensorIP::get_crc16(uint16_t crc)
 }
 
 #endif  
+

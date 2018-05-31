@@ -57,7 +57,7 @@ class sensorIP
   public:
     void initIP();                             // Инициализация датчика
     boolean set_DataIP(int16_t a,int16_t b,int16_t c,int16_t d,uint32_t e,IPAddress f);  // Запомнить данные (обновление данных)
-    char* get_sensorIP(TYPE_SENSOR_IP  p);                     // Получить параметр в виде строки
+    char* get_sensorIP(char *var, char *ret);                    // Получить параметр в виде строки
     __attribute__((always_inline)) inline int16_t get_Temp(){return Temp;}                           // Получение последний температуры датчика  если данные не достоверны или датчик не рабоает возврат -10000 (-100 градусов)
     __attribute__((always_inline)) inline uint32_t get_update(){return rtcSAM3X8.unixtime()-stime;}  // Получение времени прошедшего с последнего пакета
     __attribute__((always_inline)) inline boolean get_fUse(){return GETBIT(flags,fUse);}             // Получить  флаг разрешить использование датчика
@@ -163,3 +163,4 @@ class sensorTemp
    };
 
 #endif
+

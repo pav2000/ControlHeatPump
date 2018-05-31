@@ -243,7 +243,8 @@ int8_t sensorADC::set_transADC(float p)
 // Установить значение давления датчика в режиме теста
 int8_t sensorADC::set_testPress(int16_t p)            
 {
- if((p>=minPress)&&(p<=maxPress)) { testPress=p; return OK;} else return WARNING_VALUE;
+	testPress=p;
+	return OK;
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
@@ -475,7 +476,8 @@ int8_t sensorFrequency::Read()
 // Установить Состояние датчика в режиме теста
 int8_t  sensorFrequency::set_testValue(int16_t i) 
 {
-   if(i>minValue)  { testValue=i; return OK;} else return WARNING_VALUE;                
+   testValue=i;
+   return OK;
 }
 // Установить коэффициент пересчета
 int8_t  sensorFrequency::set_kfValue(float f)
@@ -878,11 +880,11 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
          
          // Пропорциональная составляющая
          u_pro=(float)_data.Kp*errPID/100.0;
+         if (abs(errPID)<(_data.errKp/100.0)) u_pro=(abs((errPID*100.0)/_data.errKp))*u_pro;            // В близи уменьшить воздействие
          
          // Общее воздействие
          u=u_pro+u_int+u_dif;
 
-         if (abs(errPID)<(_data.errKp/100.0)) u_pro=(abs((errPID*100.0)/_data.errKp))*u_pro;            // В близи уменьшить воздействие
          newEEV=round(u)+EEV;                                        // Округление и добавление предудущего значения
          pre_errPID=errPID;                                          // запомнить предыдущую ошибку
     #endif   // EEV_INT_PID
@@ -1005,14 +1007,13 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	if(strcmp(var, eev_POS)==0) {
 	  _itoa(EEV,ret); 
 	} else if(strcmp(var, eev_POSp)==0){
-	  _ftoa(ret,EEV * 100.0 / maxEEV, 1);
+	  _ftoa(ret,(float)(EEV < 0 ? 0 : EEV) * 100.0 / maxEEV, 1);
 	} else if(strcmp(var, eev_POSpp)==0){
-      if(stepperEEV.isBuzy())  strcat(ret,"<<");  // признак движения			
 	  _itoa(EEV,ret);
 	  strcat(ret," (");
 	  _itoa((int32_t) EEV * 100 / maxEEV,ret); 
 	  strcat(ret,"%)");	
-	  if (stepperEEV.isBuzy())  strcat(ret,">>");  // признак движения
+	  if (stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
 	  _ftoa(ret,(float)(Overheat/100.0),2);
 	} else if(strcmp(var, eev_ERROR)==0){
@@ -1026,11 +1027,11 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_TARGET)==0){
 	   _ftoa(ret,(float)(_data.tOverheat/100.0),2);
 	} else if(strcmp(var, eev_KP)==0){
-	   _ftoa(ret,(float)(_data.Kp/100.0),3); 
+	   _ftoa(ret,(float)(_data.Kp/100.0),2);
 	} else if(strcmp(var, eev_KI)==0){
-	   _ftoa(ret,(float)(_data.Ki/100.0),3); 
+	   _ftoa(ret,(float)(_data.Ki/100.0),2);
 	} else if(strcmp(var, eev_KD)==0){
-	   _ftoa(ret,(float)(_data.Kd/100.0),3); 
+	   _ftoa(ret,(float)(_data.Kd/100.0),2);
 	} else if(strcmp(var, eev_CONST)==0){
 	   _ftoa(ret,(float)(_data.Correction/100.0),2); 
 	} else if(strcmp(var, eev_MANUAL)==0){
@@ -1113,17 +1114,17 @@ float temp;
       if ((x>=0)&&(x<=maxEEV)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
 	  return true;  
 	} else if(strcmp(var, eev_TIME)==0){
-	  if ((x>=5)&&(x<=600)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
+	  if ((x>=1)&&(x<=1000)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
-	  if ((x>0.0)&&(x<=15.0)) { x=x*100;if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x); ;return true;}  else return false;	// сотые градуса
+	  if ((x>0.0)&&(x<=20.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x*100+0.005); ;return true;}  else return false;	// сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
-	   if ((x>=0)&&(x<=50.0)) {x=x*100.0; if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x*100+0.005);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_KI)==0){
-	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x); return true;} else return false; // сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x*100+0.005); return true;} else return false; // сотые
 	} else if(strcmp(var, eev_KD)==0){
-	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x*100+0.005);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_CONST)==0){
-	   if ((x>=-5.0)&&(x<=5.0)) {x=x*100.0; if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x); return true;}else return false;	// сотые градуса
+	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x*100+0.005); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
 	   if ((x>=_data.minSteps)&&(x<=maxEEV)==0){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
@@ -1610,7 +1611,7 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)freqFC/100.0,2); } else
-    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); } else
+    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); /*strcat(ret, " кВт");*/ } else
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
@@ -1942,17 +1943,7 @@ int8_t devSDM::initSDM()
   Voltage=0.0;                                   // Напряжение
   Current=0.0;                                   // Ток
   AcPower=0.0;                                   // активная мощность
-  RePower=0.0;                                   // Реактивная мощность
-  Power=0.0;                                     // Полная мощность
-  PowerFactor=0.0;                               // Коэффициент мощности
-  Phase=0.0;                                     // угол фазы (градусы)
-  iAcEnergy=0.0;                                 // Потребленная активная энергия
-  eAcEnergy=0.0;                                 // Переданная активная энергия
-  iReEnergy=0.0;                                 // Потребленная реактивная энергия
-  eReEnergy=0.0;                                 // Переданная реактивная энергия
   AcEnergy=0.0;                                  // Суммараная активная энергия
-  ReEnergy=0.0;                                  // Суммараная реактивная энергия
-  Energy=0.0;                                    // Суммараная энергия
   flags=0x00;
   // Настройки
   settingSDM.maxVoltage=SDM_MAX_VOLTAGE;         // максимальное напряжение (вольты) иначе ошибка если 0 то не работает
@@ -1966,7 +1957,7 @@ int8_t devSDM::initSDM()
       {
       journal.jprintf("%s: modbus not found, block.\n",name); 
       SETBIT0(flags,fSDM);                           // счетчик не представлен
-      SETBIT0(flags,fLink);
+      SETBIT0(flags,fSDMLink);
       err=ERR_NO_MODBUS;
       }
       else
@@ -1977,7 +1968,7 @@ int8_t devSDM::initSDM()
       }
   #else
       SETBIT0(flags,fSDM);                           // счетчик не представлен
-      SETBIT0(flags,fLink);
+      SETBIT0(flags,fSDMLink);
       note=(char*)noteSDM_NONE;
   #endif
    // инициализация статистики
@@ -1998,12 +1989,12 @@ boolean  devSDM::uplinkSDM()
   int8_t i;
   for(i=0;i<SDM_NUM_READ;i++)   // делаем SDM_NUM_READ попыток чтения
     {
-     if ((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR,SDM_BAUD_RATE,&band)==OK)&&(band==SDM_SPEED)) {SETBIT1(flags,fLink); journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n",name,band,SDM_MODBUS_ADR);  return true;}
-     else { SETBIT0(flags,fLink); journal.jprintf("%s, no connect.\n",name);}
+     if ((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR,SDM_BAUD_RATE,&band)==OK)&&(band==SDM_SPEED)) {SETBIT1(flags,fSDMLink); journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n",name,band,SDM_MODBUS_ADR);  return true;}
+     else { SETBIT0(flags,fSDMLink); journal.jprintf("%s, no connect.\n",name);}
      _delay(SDM_DELAY_REPEAD);
       WDT_Restart(WDT);                                                            // Сбросить вачдог
     }
- SETBIT0(flags,fLink);                                                             // связи нет
+ SETBIT0(flags,fSDMLink);                                                             // связи нет
  return false;   
 }
 
@@ -2014,7 +2005,7 @@ boolean  devSDM::progConnect()
   float band; 
   journal.jprintf("%s: Setting band rate and modbus address.\n",name); 
   // 1. Проверка
-  if ((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR,SDM_BAUD_RATE,&band)==OK)&&(band==SDM_SPEED)) {SETBIT1(flags,fLink); journal.jprintf(" Setting %s are correct, programming is not required\n",name);  return true;} 
+  if ((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR,SDM_BAUD_RATE,&band)==OK)&&(band==SDM_SPEED)) {SETBIT1(flags,fSDMLink); journal.jprintf(" Setting %s are correct, programming is not required\n",name);  return true;} 
   
   // 2. Установка скорости по умолчанию
   
@@ -2037,37 +2028,38 @@ boolean  devSDM::progConnect()
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
 }                           
 
-// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 1,2 - через SDM_TIME_READ
+// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_TIME_READ
 int8_t devSDM::get_readState(uint8_t group)
 {
 	static float tmp;
 	int8_t i;
-	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fLink))) return err;  // Если нет счетчика или нет связи выходим
+	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
 	err=OK;
 	// Чтение состояния счетчика,
-	for(i=0;i<SDM_NUM_READ;i++)   // делаем SDM_NUM_READ попыток чтения
+	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 		// Читаем значения счетчика
-		_delay(SDM_DELAY_READ);
+//		_delay(SDM_DELAY_READ);
 		if(group == 0) {
-			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_VOLTAGE,&tmp);                    if(err==OK) { Voltage=tmp;_delay(SDM_DELAY_READ);     }            // Напряжение
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_POWER,&tmp);      if(err==OK) AcPower=tmp;_delay(SDM_DELAY_READ);       }            // Активная мощность
-		} else if(group == 1) {
-			{err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_CURRENT,&tmp);       			if(err==OK) Current=tmp;_delay(SDM_DELAY_READ);       }            // Ток
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POW_FACTOR,&tmp);    if(err==OK) PowerFactor=tmp;_delay(SDM_DELAY_READ);   }            // Коэффициент мощности
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_FREQUENCY,&tmp);     if(err==OK) Freq=tmp;_delay(SDM_DELAY_READ);   		  }            // Частота
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_PHASE,&tmp);         if(err==OK) Phase=tmp;_delay(SDM_DELAY_READ);         }            // Угол фазы (градусы)
-		} else {
-			{err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_POWER,&tmp);      			if(err==OK) RePower=tmp;_delay(SDM_DELAY_READ);       }            // Реактивная мощность
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_POWER,&tmp);         if(err==OK) Power=tmp;_delay(SDM_DELAY_READ);         }            // Полная мощность
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_AC_ENERGY,&tmp);     if(err==OK) AcEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная активная энергия
-			if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_RE_ENERGY,&tmp);     if(err==OK) ReEnergy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная реактивная энергия
-			//if(err==OK) {err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR,SDM_ENERGY,&tmp);        if(err==OK) Energy=tmp;_delay(SDM_DELAY_READ);      }            // Суммараная энергия
-			Energy=AcEnergy+ReEnergy;
+			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE,&tmp);   // Напряжение
+			if(err==OK) { Voltage=tmp; group = 1; }
+		}
+		if(group == 1) {
+			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER,&tmp);  // Активная мощность
+			if(err==OK) AcPower=tmp;
+		} else if(group == 2) {
+			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT,&tmp);   // Ток
+			if(err == OK) { Current=tmp; group = 3; }
+		}
+		if(group == 3) {
+			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY,&tmp); // Суммарная активная энергия
+			if(err==OK) AcEnergy=tmp;
 		}
 		if (err==OK) break;
 		numErr++;                  // число ошибок чтение по модбасу
-		journal.jprintf(pP_TIME, cErrorRS485,name,__FUNCTION__,err);      // Выводим сообщение о повторном чтении
+		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
+			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, err);      // Выводим сообщение о повторном чтении
+		}
 		WDT_Restart(WDT);          // Сбросить вачдог
 		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
 	}
@@ -2079,37 +2071,51 @@ int8_t devSDM::get_readState(uint8_t group)
 		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
 		return err;                       // все прочиталось, выходим
 	}
-	SETBIT0(flags,fLink);             // связь со счетчиком потеряна
+	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
 	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
 	return err;
 }
 
 // Получить параметр счетчика в виде строки
 char* devSDM::get_paramSDM(char *var, char *ret)           
- {
+{
+   static float tmp;
+
    if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                         }else      // Имя счетчика
    if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                         }else      // Описание счетчика
+   if(strcmp(var,sdm_ERRORS)==0){    	return _itoa(numErr,ret);				                                }else      // Ошибок modbus
    if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return _itoa(settingSDM.maxVoltage,ret);                                }else      // мах напряжение контроля напряжения
    if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return _itoa(settingSDM.minVoltage,ret);                                }else      // min напряжение контроля напряжения
    if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
    if(strcmp(var,sdm_VOLTAGE)==0){      return _ftoa(ret,(float)Voltage,2);                                     }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){      return _ftoa(ret,(float)Current,2);                                     }else      // Ток
-   if(strcmp(var,sdm_REPOWER)==0){      return _ftoa(ret,(float)RePower,2);                                     }else      // Реактивная мощность
    if(strcmp(var,sdm_ACPOWER)==0){      return _ftoa(ret,(float)AcPower,2);                                     }else      // Активная мощность
-   if(strcmp(var,sdm_POWER)==0){        return _ftoa(ret,(float)Power,2);                                       }else      // Полная мощность
-   if(strcmp(var,sdm_POW_FACTOR)==0){   return _ftoa(ret,(float)PowerFactor,2);                                 }else      // Коэффициент мощности
-   if(strcmp(var,sdm_PHASE)==0){        return _ftoa(ret,(float)Phase,2);                                       }else      // Угол фазы (градусы)
-   if(strcmp(var,sdm_FREQ)==0){         return _ftoa(ret,(float)Freq,2);                                        }else      // Частота
-   if(strcmp(var,sdm_IACENERGY)==0){    return _ftoa(ret,(float)iAcEnergy,2);                                   }else      // Потребленная активная энергия
-   if(strcmp(var,sdm_EACENERGY)==0){    return _ftoa(ret,(float)eAcEnergy,2);                                   }else      // Переданная активная энергия
-   if(strcmp(var,sdm_IREENERGY)==0){    return _ftoa(ret,(float)iReEnergy,2);                                   }else      // Потребленная реактивная энергия
-   if(strcmp(var,sdm_EREENERGY)==0){    return _ftoa(ret,(float)eReEnergy,2);                                   }else      // Переданная реактивная энергия
-   if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммараная активная энергия
-   if(strcmp(var,sdm_REENERGY)==0){     return _ftoa(ret,(float)ReEnergy,2);                                    }else      // Суммараная реактивная энергия
-   if(strcmp(var,sdm_ENERGY)==0){       return _ftoa(ret,(float)Energy,2);                                      }else      // Суммараная  энергия
-   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fLink)) return strcat(ret,(char*)"Ok");else return strcat(ret,(char*)"none");}else      // Cостояние связи со счетчиком
+   if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммарная активная энергия
+   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
+   else {
+	   if(GETBIT(flags,fSDMLink)) {
+		   if(strcmp(var,sdm_CURRENT)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
+			   return _ftoa(ret, tmp, 2);																			   }else       // Ток
+		   if(strcmp(var,sdm_REPOWER)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
+			   return _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
+		   if(strcmp(var,sdm_POWER)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}else      // Полная мощность
+		   if(strcmp(var,sdm_POW_FACTOR)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
+		   if(strcmp(var,sdm_PHASE)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
+			   return _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
+		   if(strcmp(var,sdm_FREQ)==0){
+			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
+			   return _ftoa(ret, tmp, 2);																				}         // Частота
+	   }
+	   return ret;
+   }
    return strcat(ret,(char*)cInvalid);
- }
+}
 
 // Установить параметр счетчика в виде строки
 boolean devSDM::set_paramSDM(char *var,char *c)        
@@ -2224,7 +2230,6 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 	} else {
 		*ret = 0;
 		SemaphoreGive (xModbusSemaphore);
-		journal.jprintf("Modbus reg #%d - ", cmd);
 		return err = translateErr(result);
 	}
 }

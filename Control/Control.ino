@@ -789,10 +789,12 @@ void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
 	static unsigned long readSDM = 0;
+//    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР
 	static uint32_t ttime;                                                 // новое время
 	static uint32_t oldTime;                                               // старое вермя
 	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
 	static uint8_t prtemp = 0;
+	
 	for(;;) {
 		int8_t i;
 		WDT_Restart(WDT);
@@ -806,10 +808,6 @@ void vReadSensor(void *)
 		ttime = xTaskGetTickCount();
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 		HP.dSDM.get_readState(0); // Основная группа регистров
-		vReadSensor_delay10ms(10);
-		if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ)) {
-			HP.dSDM.get_readState(1); // Вторая группа регистров
-		}
 #endif
 		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 
@@ -855,6 +853,10 @@ void vReadSensor(void *)
 		}
 #endif
 
+//        if (xTaskGetTickCount()-calcPower>10*1000) {  // раз в десять секунд
+//			calcPower=xTaskGetTickCount();
+			HP.calculatePower();  // Расчет мощностей и СОР	}
+       
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
@@ -1007,7 +1009,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif
 
 		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
-		 switch (HP.get_State())
+		 switch (HP.get_State())  // Состояние ТН 
 		 {
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
@@ -1015,12 +1017,13 @@ void vReadSensor_delay10ms(int16_t msec)
 			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
 			 break;
 		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
-		 case  pWORK_HP:                          // 3 Работает   - анализ режима работы
-			 switch(HP.get_mode()) // Текущий режим работы
+		 case  pWORK_HP:                           // 3 Работает   - анализ режима работы get_modWork()
+			 switch(HP.get_modWork())              // Что делает ТН если включен (7 вариантов) 0 Пауза 1 Включить отопление 2 Включить охлаждение 3 Включить бойлер 4 Продолжаем греть отопление 5 Продолжаем охлаждение 6 Продолжаем греть бойлер
 			 {
-			 case  pOFF:                          // 0 Выключить
-				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-				 vTaskSuspend(HP.xHandleUpdate);
+			 case  pOFF:                          // 0 Пауза
+				// journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
+				// vTaskSuspend(HP.xHandleUpdate);
+				 vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
 				 break;
 			 case  pHEAT:                         // 1 Включить отопление
 			 case  pNONE_H:                       // 4 Продолжаем греть отопление
@@ -1221,14 +1224,14 @@ void vUpdatePump(void *)
 			#ifdef RPUMPFL
 			HP.dRelay[RPUMPFL].set_OFF();						// выключить насос ТП
 			#endif
-			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}         // все время выключено  но раз в 2 секунды проверяем
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
 			#ifdef RPUMPFL
 			HP.dRelay[RPUMPFL].set_ON();						// включить насос ТП
 			#endif
-			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
 		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
 		{
@@ -1241,7 +1244,7 @@ void vUpdatePump(void *)
 			for(i = 0; i < HP.get_pausePump() * 60 / 2; i++)                       // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
+				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
@@ -1252,7 +1255,7 @@ void vUpdatePump(void *)
 			for(i = 0; i < HP.get_workPump() * 60 / 2; i++)                        // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(2 * 1000 / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
+				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
 			}
 		}
 	}  //for
