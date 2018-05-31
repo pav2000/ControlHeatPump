@@ -1318,7 +1318,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if(HP.dFC.set_targetFreq(pm*100,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
+                  if(HP.dFC.set_targetFreq(pm*100+0.005,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
@@ -1884,12 +1884,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
               // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
               if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
-                 { if (HP.sTemp[p].set_testTemp(pm*100)==OK)    // Установить значение в сотых градуса
+                 { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
                    { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&");  continue;  } 
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                  }
                if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
-                  { if (HP.sTemp[p].set_errTemp(pm*100)==OK)    // Установить значение в сотых градуса
+                  { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
                     { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }   
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
@@ -1904,9 +1904,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                /*
               if (strcmp(str,"set_targetTemp")==0)           // Функция set_targetTemp резрешены не все датчики при этом.
                  {
-                  if (p==1) {HP.set_TempTargetIn(pm*100);  }
-                   else if (p==5)  {HP.set_TempTargetCO(pm*100); }
-                     else if (p==6)  {HP.set_TempTargetBoil(pm*100); }
+                  if (p==1) {HP.set_TempTargetIn(pm*100+0.005);  }
+                   else if (p==5)  {HP.set_TempTargetCO(pm*100+0.005); }
+                     else if (p==6)  {HP.set_TempTargetBoil(pm*100+0.005); }
                        else  strcat(strReturn,"E06");                 // использование имя устанавливаемого параметра «здесь» запрещено
                          strcat(strReturn,"&");  continue;
                  }
@@ -1988,7 +1988,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
              // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
               if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
-                 { if (HP.sADC[p].set_testPress(pm*100)==OK)    // Установить значение
+                 { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; } 
                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
@@ -2136,7 +2136,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
             // ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
               if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
-                 { if (HP.sFrequency[p].set_testValue(pm*1000)==OK)    // Установить значение
+                 { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; } 
                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }

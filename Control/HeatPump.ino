@@ -3471,22 +3471,26 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 void HeatPump::calculatePower()
 {
 #ifdef  FLOWCON 
-if (sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present())  powerCO=(float)(abs(FEED-RET))*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
- #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
-    #ifdef RHEAT
-      if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
-    #endif    
-  #endif
+	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (abs(FEED-RET))
+				* (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
+#ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
+#ifdef RHEAT
+	if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+#endif
+#endif
 #else
-powerCO=0.0; 
+	powerCO=0.0;
 #endif
 
 #ifdef  FLOWEVA 
-if (sTemp[TEVAING].get_present()&sTemp[TEVAOUTG].get_present())  powerGEO=(float)(abs(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()))*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity();
+	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (abs(
+			sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())) * (float) sFrequency[FLOWEVA].get_Value()
+			/ sFrequency[FLOWEVA].get_kfCapacity();
 #else
-powerGEO=0.0;
+	powerGEO=0.0;
 #endif
 
-if (dFC.get_power()!=0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;  // в сотых долях !!!!!!
-if (dSDM.get_Power()!=0) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0; // в сотых долях !!!!!!
+	COP = dFC.get_power();
+	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
+	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 }

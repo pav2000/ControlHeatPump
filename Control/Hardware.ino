@@ -880,11 +880,11 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
          
          // Пропорциональная составляющая
          u_pro=(float)_data.Kp*errPID/100.0;
+         if (abs(errPID)<(_data.errKp/100.0)) u_pro=(abs((errPID*100.0)/_data.errKp))*u_pro;            // В близи уменьшить воздействие
          
          // Общее воздействие
          u=u_pro+u_int+u_dif;
 
-         if (abs(errPID)<(_data.errKp/100.0)) u_pro=(abs((errPID*100.0)/_data.errKp))*u_pro;            // В близи уменьшить воздействие
          newEEV=round(u)+EEV;                                        // Округление и добавление предудущего значения
          pre_errPID=errPID;                                          // запомнить предыдущую ошибку
     #endif   // EEV_INT_PID
@@ -1027,11 +1027,11 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_TARGET)==0){
 	   _ftoa(ret,(float)(_data.tOverheat/100.0),2);
 	} else if(strcmp(var, eev_KP)==0){
-	   _ftoa(ret,(float)(_data.Kp/100.0),3); 
+	   _ftoa(ret,(float)(_data.Kp/100.0),2);
 	} else if(strcmp(var, eev_KI)==0){
-	   _ftoa(ret,(float)(_data.Ki/100.0),3); 
+	   _ftoa(ret,(float)(_data.Ki/100.0),2);
 	} else if(strcmp(var, eev_KD)==0){
-	   _ftoa(ret,(float)(_data.Kd/100.0),3); 
+	   _ftoa(ret,(float)(_data.Kd/100.0),2);
 	} else if(strcmp(var, eev_CONST)==0){
 	   _ftoa(ret,(float)(_data.Correction/100.0),2); 
 	} else if(strcmp(var, eev_MANUAL)==0){
@@ -1114,17 +1114,17 @@ float temp;
       if ((x>=0)&&(x<=maxEEV)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
 	  return true;  
 	} else if(strcmp(var, eev_TIME)==0){
-	  if ((x>=5)&&(x<=600)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
+	  if ((x>=1)&&(x<=1000)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
-	  if ((x>0.0)&&(x<=15.0)) { x=x*100;if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x); ;return true;}  else return false;	// сотые градуса
+	  if ((x>0.0)&&(x<=20.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x*100+0.005); ;return true;}  else return false;	// сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
-	   if ((x>=0)&&(x<=50.0)) {x=x*100.0; if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x*100+0.005);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_KI)==0){
-	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x); return true;} else return false; // сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x*100+0.005); return true;} else return false; // сотые
 	} else if(strcmp(var, eev_KD)==0){
-	   if ((x>=0)&&(x<=30.0)) {x=x*100.0; if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x*100+0.005);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_CONST)==0){
-	   if ((x>=-5.0)&&(x<=5.0)) {x=x*100.0; if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x); return true;}else return false;	// сотые градуса
+	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x*100+0.005); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
 	   if ((x>=_data.minSteps)&&(x<=maxEEV)==0){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
