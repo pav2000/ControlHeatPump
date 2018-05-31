@@ -1007,7 +1007,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	if(strcmp(var, eev_POS)==0) {
 	  _itoa(EEV,ret); 
 	} else if(strcmp(var, eev_POSp)==0){
-	  _ftoa(ret,EEV * 100.0 / maxEEV, 1);
+	  _ftoa(ret,(float)(EEV < 0 ? 0 : EEV) * 100.0 / maxEEV, 1);
 	} else if(strcmp(var, eev_POSpp)==0){
 	  _itoa(EEV,ret);
 	  strcat(ret," (");
