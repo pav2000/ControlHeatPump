@@ -2848,26 +2848,8 @@ void HeatPump::vUpdate()
               default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__); break;
            }
       } 
-// Обновление расчетных величин (djpvjжность расчета определяем пографикам)
-#ifdef  FLOWCON 
-if(ChartPowerCO.get_present())   // Мощность контура в вт!!!!!!!!!
- {
-  powerCO=(float)(abs(FEED-RET))*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
-  #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
-    #ifdef RHEAT
-      if (dRelay[RHEAT].get_Relay()]) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
-    #endif    
-  #endif
-  } 
-#endif  
-#ifdef  FLOWEVA 
-if(ChartPowerGEO.get_present()) powerGEO=(float)(abs(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()))*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity();  
-#endif
-if(ChartCOP.get_present())     { if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;}  // в сотых долях !!!!!!
-if(ChartFullCOP.get_present()) { if ((dSDM.get_Power()>0)&&(COMPRESSOR_IS_ON)) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0;} // в сотых долях !!!!!!
-         
+        
 }
-
 
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена
 // Вход режим работы ТН
@@ -3488,4 +3470,28 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 		}
 	}
 	return ret ? (1<<bus) : 0;
+}
+
+// Обновление расчетных величин мощностей и СОР
+void HeatPump::calculatePower()
+{
+#ifdef  FLOWCON 
+if (sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present())  powerCO=(float)(abs(FEED-RET))*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity();
+ #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
+    #ifdef RHEAT
+      if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+    #endif    
+  #endif
+#else
+powerCO=0.0; 
+#endif
+
+#ifdef  FLOWEVA 
+if (sTemp[TEVAING].get_present()&sTemp[TEVAOUTG].get_present())  powerGEO=(float)(abs(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()))*(float)sFrequency[FLOWEVA].get_Value()/sFrequency[FLOWEVA].get_kfCapacity();
+#else
+powerGEO=0.0;
+#endif
+
+if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;  // в сотых долях !!!!!!
+if (dSDM.get_Power()>0) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0; // в сотых долях !!!!!!
 }

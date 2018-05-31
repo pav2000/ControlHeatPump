@@ -177,6 +177,7 @@ class HeatPump
      __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}  // Получить состяние теплового насоса
      __attribute__((always_inline)) inline int8_t get_ret() {return Status.ret;}             // Точка выхода из алгоритма регулирования
     void vUpdate();                                          // Итерация по управлению всем ТН - старт-стоп
+    void calculatePower();                                   // Вычисление мощностей контуров и КОП
     void eraseError();                                       // стереть последнюю ошибку
 
     __attribute__((always_inline)) inline int8_t get_errcode(){return error;} // Получить код последней ошибки

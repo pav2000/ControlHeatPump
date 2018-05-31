@@ -789,10 +789,12 @@ void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
 	static unsigned long readSDM = 0;
+    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР  
 	static uint32_t ttime;                                                 // новое время
 	static uint32_t oldTime;                                               // старое вермя
 	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
 	static uint8_t prtemp = 0;
+	
 	for(;;) {
 		int8_t i;
 		WDT_Restart(WDT);
@@ -851,6 +853,12 @@ void vReadSensor(void *)
 		}
 #endif
 
+        if (xTaskGetTickCount()-calcPower>10*1000)   // раз в десять секунд
+		{
+			calcPower=xTaskGetTickCount();
+			HP.calculatePower();  // Расчет мощностей и СОР
+		}
+       
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
