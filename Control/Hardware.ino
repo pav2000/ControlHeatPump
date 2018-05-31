@@ -243,7 +243,8 @@ int8_t sensorADC::set_transADC(float p)
 // Установить значение давления датчика в режиме теста
 int8_t sensorADC::set_testPress(int16_t p)            
 {
- if((p>=minPress)&&(p<=maxPress)) { testPress=p; return OK;} else return WARNING_VALUE;
+	testPress=p;
+	return OK;
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
@@ -475,7 +476,8 @@ int8_t sensorFrequency::Read()
 // Установить Состояние датчика в режиме теста
 int8_t  sensorFrequency::set_testValue(int16_t i) 
 {
-   if(i>minValue)  { testValue=i; return OK;} else return WARNING_VALUE;                
+   testValue=i;
+   return OK;
 }
 // Установить коэффициент пересчета
 int8_t  sensorFrequency::set_kfValue(float f)
