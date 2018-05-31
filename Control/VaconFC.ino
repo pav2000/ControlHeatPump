@@ -70,9 +70,9 @@ int8_t devVaconFC::initFC()
         SETBIT1(_data.flags, fFC); // наличие частотника в текушей конфигурации
 
     if(get_present())
-        journal.jprintf("Invertor %s: present config\r\n", name);
+        journal.jprintf("Invertor %s: present config\n", name);
     else {
-        journal.jprintf("Invertor %s: none config\r\n", name);
+        journal.jprintf("Invertor %s: none config\n", name);
         return err;
     } // выходим если нет инвертора
 
@@ -88,14 +88,14 @@ int8_t devVaconFC::initFC()
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     CheckLinkStatus(); // проверка связи с инвертором
     if(err != OK) return err; // связи нет выходим
-    journal.jprintf("Test link Modbus %s: OK\r\n", name); // Тест пройден
+    journal.jprintf("Test link Modbus %s: OK\n", name); // Тест пройден
 
     uint8_t i = 3;
     while((state & FC_S_RUN)) // Если частотник работает то остановить его
     {
     	if(i-- == 0) break;
         stop_FC();
-        journal.jprintf("Wait stop %s...\r\n", name);
+        journal.jprintf("Wait stop %s...\n", name);
         _delay(3000);
         CheckLinkStatus(); //  Получить состояние частотника
     }
@@ -107,8 +107,10 @@ int8_t devVaconFC::initFC()
         // 10.Установить стартовую частоту
         set_targetFreq(_data.startFreq, true, _data.minFreqUser, _data.maxFreqUser); // режим н знаем по этому границы развигаем
     }
-    // Вычисление номигальной мощности двигателя компрессора = U*I*cos
-   	nominal_power = (uint32_t) (380) * (900) / 100 * (75) / 100; // W
+    // Вычисление номигальной мощности двигателя компрессора = U*I*cos, W
+   	//nominal_power = (uint32_t) (400) * (700) / 100 * (75) / 100; // W
+    nominal_power = (uint32_t)read_0x03_16(FC_MOTOR_NVOLT) * read_0x03_16(FC_MOTOR_NA) / 100 * read_0x03_16(FC_MOTOR_NCOS) / 100;
+    journal.jprintf(" Nominal: %dW\n", nominal_power);
 #endif // #ifndef FC_ANALOG_CONTROL
     return err;
 }

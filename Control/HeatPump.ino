@@ -1132,9 +1132,9 @@ void HeatPump::startChart()
 // dSDM.ChartPowerFactor.clear();                          // Статистика по Коэффициент мощности
  ChartFullCOP.clear();                                     // Коэффициент преобразования
  #endif
- powerCO=0;
- powerGEO=0;
- power220=0;                                   
+// powerCO=0;
+// powerGEO=0;
+// power220=0;
  vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
 
  if(GETBIT(Option.flags,fSD_card))  // ЗАГОЛОВОК Запись статистики в файл
@@ -1660,11 +1660,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.delayOffPump);
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
-		// Насосы будут остановлены, обнуляем энергию
-		powerCO = 0;
-		powerGEO = 0;
-		COP = 0;
-		fullCOP = 0;
 	}
 
 	// переключение насосов если есть что переключать (проверка была выше)
@@ -3492,6 +3487,6 @@ if (sTemp[TEVAING].get_present()&sTemp[TEVAOUTG].get_present())  powerGEO=(float
 powerGEO=0.0;
 #endif
 
-if (dFC.get_power()>0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;  // в сотых долях !!!!!!
-if (dSDM.get_Power()>0) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0; // в сотых долях !!!!!!
+if (dFC.get_power()!=0) COP=(int16_t)(powerCO/dFC.get_power()*100); else COP=0;  // в сотых долях !!!!!!
+if (dSDM.get_Power()!=0) fullCOP=(int16_t)((powerCO/dSDM.get_Power()*100)); else  fullCOP=0; // в сотых долях !!!!!!
 }

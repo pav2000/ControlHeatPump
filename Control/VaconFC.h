@@ -48,6 +48,10 @@
 #define FC_TORQUE_BOOST	109			// Форсировка момента: 0 = Запрещено, 1 = Разрешено
 #define FC_SW_FREQ		601			// Частота коммутации (ШИМ), 0.1 кГц
 #define FC_COMM_ST_RESET 815		// 1 = Сброс состояния связи FC_COMM_STATUS
+#define FC_MOTOR_NVOLT	110			// Номинальное напряжение двигателя
+#define FC_MOTOR_NA		113			// Номинальный ток двигателя
+#define FC_MOTOR_NCOS	120			// коэфф. мощности
+#define FC_MOTOR_MA		107			// Максимальный ток двигателя
 
 // Системные:
 // Чтение
