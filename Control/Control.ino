@@ -1003,7 +1003,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif
 
 		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
-		 switch (HP.get_State())
+		 switch (HP.get_State())  // Состояние ТН 
 		 {
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
@@ -1011,12 +1011,13 @@ void vReadSensor_delay10ms(int16_t msec)
 			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
 			 break;
 		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
-		 case  pWORK_HP:                          // 3 Работает   - анализ режима работы
-			 switch(HP.get_mode()) // Текущий режим работы
+		 case  pWORK_HP:                           // 3 Работает   - анализ режима работы get_modWork()
+			 switch(HP.get_modWork())              // Что делает ТН если включен (7 вариантов) 0 Пауза 1 Включить отопление 2 Включить охлаждение 3 Включить бойлер 4 Продолжаем греть отопление 5 Продолжаем охлаждение 6 Продолжаем греть бойлер
 			 {
-			 case  pOFF:                          // 0 Выключить
-				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-				 vTaskSuspend(HP.xHandleUpdate);
+			 case  pOFF:                          // 0 Пауза
+				// journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
+				// vTaskSuspend(HP.xHandleUpdate);
+				 vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
 				 break;
 			 case  pHEAT:                         // 1 Включить отопление
 			 case  pNONE_H:                       // 4 Продолжаем греть отопление

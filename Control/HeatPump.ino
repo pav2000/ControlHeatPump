@@ -1752,7 +1752,7 @@ int8_t HeatPump::StartResume(boolean start)
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
 			vTaskResume(xHandleUpdate);
-			journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+			journal.jprintf(" Start task vUpdate\n");
 			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			return error;
 		}
@@ -1904,17 +1904,20 @@ int8_t HeatPump::StartResume(boolean start)
 	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
 	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
 
-	// 10. Запуск задачи обновления ТН ---------------------------------------------------------------------------
+	// 10. Сохранение состояния  -------------------------------------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
+	setState(pWORK_HP);
+
+	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
 	if(start)
 	{
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
-		journal.jprintf(" Start task update %s\n",(char*)__FUNCTION__);
+		journal.jprintf(" Start task vUpdate\n");
 	}
 
-	// 11. Сохранение состояния  -------------------------------------------------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
-	setState(pWORK_HP);
+	// 12. насос запущен -----------------------------------------------------------------------------------------
 	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
+	
 	return error;
 }
 
@@ -1946,7 +1949,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
     {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-    journal.jprintf(" Stop task update %s\n",(char*)__FUNCTION__); 
+    journal.jprintf(" Stop task vUpdate\n"); 
     } 
     
   if(startPump)
