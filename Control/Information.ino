@@ -719,7 +719,7 @@ if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.f
                                      else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
                                      else return false;  
                                     }else
-if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
+if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
 return false;
 
 }

@@ -849,7 +849,7 @@ boolean sendMQTT(boolean debug)
           #ifdef USE_ELECTROMETER_SDM
            strcpy(topic,root);
            strcat(topic,"fullCOP");
-           ftoa(temp,(float)(HP.dFC.get_power()/HP.dFC.get_power())/100.0,2);
+           ftoa(temp,(float)(HP.powerCO/HP.dSDM.get_Power())/100.0,2);
            if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
           #endif 
            if (HP.dFC.get_present())   

@@ -1072,7 +1072,7 @@ void  HeatPump::updateChart()
            #endif
          
            if(dFC.ChartFC.get_present())      { statFile.print((float)dFC.get_freqFC()/100.0);   statFile.print(";");} 
-           if(dFC.ChartPower.get_present())   { statFile.print((float)dFC.get_power()/10.0);    statFile.print(";");}
+           if(dFC.ChartPower.get_present())   { statFile.print((float)dFC.get_power()/1000.0);    statFile.print(";");}
            if(dFC.ChartCurrent.get_present()) { statFile.print((float)dFC.get_current()/100.0); statFile.print(";");}
            
            if(ChartRCOMP.get_present())       { statFile.print((int16_t)dRelay[RCOMP].get_Relay()); statFile.print(";");}
@@ -2179,7 +2179,7 @@ if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит тре�
   else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER_BOILER))                    // Мощность для ГВС меньшая мощность
    { 
     Status.ret=pBp7;
-    journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+    journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,dFC.get_power()/1000.0); // КИЛОВАТЫ
     if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  return pCOMP_OFF;        // Уменьшать дальше некуда, выключаем компрессор
     dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); return pCOMP_NONE;               // Уменьшить частоту
    } 
@@ -2293,9 +2293,9 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
          {
           case pHYSTERESIS:  // Гистерезис нагрев.
                if (GETBIT(Prof.Heat.flags,fTarget)){ target=Prof.Heat.Temp2; t1=RET;}  else { target=Prof.Heat.Temp1; t1=sTemp[TIN].get_Temp();}  // вычислить темературы для сравнения Prof.Heat.Target 0-дом   1-обратка
-                    if(t1>target)                  {Status.ret=pHh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
+               if(t1>target)                  {Status.ret=pHh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
                else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ
-                 else if(t1<target-Prof.Heat.dTemp) {Status.ret=pHh2;   return pCOMP_ON; }                           // Достигнут гистерезис ВКЛ
+               else if(t1<target-Prof.Heat.dTemp) {Status.ret=pHh2;   return pCOMP_ON; }                           // Достигнут гистерезис ВКЛ
                else if(RET<Prof.Heat.tempOut)      {Status.ret=pHh13;  return pCOMP_ON; }                            // Достигнут минимальная темература обратки ВКЛ
                else                                {Status.ret=pHh4;   return pCOMP_NONE;}                           // Ничего не делаем  (сохраняем состояние)
               break;
@@ -2323,7 +2323,7 @@ switch (Prof.Heat.Rule)   // в зависмости от алгоритма
             else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER))                    // Мощность в 100 ватт
              { 
               Status.ret=pHp7;
-              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/1000.0); // КИЛОВАТЫ
               if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreq())  return pCOMP_OFF;                // Уменьшать дальше некуда, выключаем компрессор
               dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  return pCOMP_NONE;                     // Уменьшить частоту
              } 
@@ -2496,7 +2496,7 @@ switch (Prof.Cool.Rule)   // в зависмости от алгоритма
             else if ((dFC.isfOnOff())&&(dFC.get_power()>FC_MAX_POWER))                    // Мощность
              { 
               Status.ret=pCp7;
-              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/10.0); // КИЛОВАТЫ
+              journal.jprintf("%s %.2f (POWER: %.2f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,dFC.get_power()/1000.0); // КИЛОВАТЫ
               if (dFC.get_targetFreq()-dFC.get_stepFreq()<dFC.get_minFreqCool())  return pCOMP_OFF;           // Уменьшать дальше некуда, выключаем компрессор
               dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  return pCOMP_NONE;               // Уменьшить частоту
              } 
@@ -2815,7 +2815,7 @@ void HeatPump::vUpdate()
          //  реализуем требуемый режим
           switch ((int)Status.modWork)
           {
-              case  pOFF: if (COMPRESSOR_IS_ON){  // ЕСЛИ компрессор рабоатет то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
+              case  pOFF: if (COMPRESSOR_IS_ON){  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
                              compressorOFF();
                              configHP(Status.modWork); 
                              if(!startPump)                                   // запустить задачу насос
@@ -3329,7 +3329,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
         #endif
          
         if(dFC.get_present())               journal.jprintf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
-        if(dFC.get_present())               journal.jprintf(" Power:%.2f",dFC.get_power()/10.0);  
+        if(dFC.get_present())               journal.jprintf(" Power:%.2f",dFC.get_power()/1000.0);
         #ifdef EEV_DEF
         if (dEEV.get_present())             journal.jprintf(" EEV:%d",dEEV.get_EEV());
         #endif
@@ -3376,7 +3376,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
  //      Serial.print(" dEEV.stepperEEV.isBuzy():");  Serial.print(dEEV.stepperEEV.isBuzy());
  //      Serial.print(" dEEV.setZero: ");  Serial.print(dEEV.setZero);  
         if(dFC.get_present()) journal.printf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
-        if(dFC.get_present()) journal.printf(" Power:%.2f",dFC.get_power()/10.0);
+        if(dFC.get_present()) journal.printf(" Power:%.2f",dFC.get_power()/1000.0);
         #ifdef EEV_DEF
         journal.printf(" EEV:%d",dEEV.get_EEV()); 
         #endif
@@ -3435,7 +3435,7 @@ int16_t HeatPump::get_overcool(void)
 int16_t HeatPump::get_temp_evaporating(void)
 {
 	if(sADC[PEVA].get_present()) {
-		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
+		return PressToTemp(sADC[PEVA].get_Press(), dEEV.get_typeFreon());
 	} else {
 		return 0; // Пока не поддерживается
 	}
