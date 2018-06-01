@@ -675,6 +675,7 @@ class devSDM
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
+      float   get_power(){return AcPower;}
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток

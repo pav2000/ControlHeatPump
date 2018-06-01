@@ -2088,14 +2088,15 @@ char* devSDM::get_paramSDM(char *var, char *ret)
    if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return _itoa(settingSDM.minVoltage,ret);                                }else      // min напряжение контроля напряжения
    if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
    if(strcmp(var,sdm_VOLTAGE)==0){      return _ftoa(ret,(float)Voltage,2);                                     }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      return _ftoa(ret,(float)Current,2);                                     }else      // Ток
    if(strcmp(var,sdm_ACPOWER)==0){      return _ftoa(ret,(float)AcPower,2);                                     }else      // Активная мощность
    if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммарная активная энергия
    if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
    else {
 	   if(GETBIT(flags,fSDMLink)) {
-		   if(strcmp(var,sdm_CURRENT)==0){
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
-			   return _ftoa(ret, tmp, 2);																			   }else       // Ток
+//		   if(strcmp(var,sdm_CURRENT)==0){
+//			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
+//			   return _ftoa(ret, tmp, 2);																			   }else       // Ток
 		   if(strcmp(var,sdm_REPOWER)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
 			   return _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
