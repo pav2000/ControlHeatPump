@@ -482,9 +482,10 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Оставн�
 #endif  
 
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
+// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 #if    W5200_THREARD < 2 
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*(W5200_STACK_SIZE+20);
 #elif  W5200_THREARD < 3
   if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;

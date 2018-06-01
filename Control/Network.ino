@@ -571,7 +571,7 @@ W5100.writeMR(x);
 
 // =============================== M Q T T ==================================================
 #ifdef MQTT    // признак использования MQTT
-static char root[60],topic[140], temp[10];
+static char root[60],topic[140], temp[12];
 const char* MQTTpublish={">> %s "};
 const char* MQTTPublishOK={"OK\n"};
 const char* MQTTDebugStr={" %s %s,"};  // вывод информации при отладке
@@ -581,10 +581,11 @@ const char* MQTTDebugStr={" %s %s,"};  // вывод информации при
 boolean sendNarodMon(boolean debug)
 {
  uint8_t i;
-  
+     
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon ignore: Wrong MAC address, change MAC from default.\n"); return false;}
      journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
-     
+
+     strcpy(root,"");  // Формирование строки корня, куда потом пишутся топики
      HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON,root);
      strcat(root,"/");
      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,root);  
@@ -684,7 +685,8 @@ boolean sendNarodMon(boolean debug)
 boolean sendMQTT(boolean debug)
 {
  uint8_t i; 
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server()); if (!debug) journal.jprintf(" OK\n"); 
+     strcpy(root,"");  // Формирование строки корня, куда потом пишутся топики
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server()); //if (!debug) journal.jprintf(" OK\n"); 
      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT,root);
      strcat(root,"/");
      
@@ -723,16 +725,19 @@ boolean sendMQTT(boolean debug)
        if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
        if (debug) journal.jprintf(cStrEnd);
          
-      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,
-      if (HP.clMQTT.get_NarodMonBig())                
+     
+      if (HP.clMQTT.get_MqttBig())   // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,              
          {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("Additional data:");  
 
-         strcpy(topic,root);
-         strcat(topic,HP.sTemp[TCOMP].get_name());
-         ftoa(temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;      
+        if(HP.sTemp[TCOMP].get_present())
+          {
+	         strcpy(topic,root);
+	         strcat(topic,HP.sTemp[TCOMP].get_name());
+	         ftoa(temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
+	         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+          }        
 
          if(HP.sTemp[TCONING].get_present())
           {
@@ -794,7 +799,7 @@ boolean sendMQTT(boolean debug)
              ftoa(temp,HP.powerCO,1);
              if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;   
              if (debug) journal.jprintf(cStrEnd);        
-         }//  if (HP.clMQTT.get_NarodMonBig())
+         }//  if (HP.clMQTT.get_MqttBig())
       
         #ifdef USE_ELECTROMETER_SDM    // Послать данные электросчетчика на сервер MQTT
         if (HP.clMQTT.get_MqttSDM120())                
@@ -802,17 +807,20 @@ boolean sendMQTT(boolean debug)
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("SDM120 data:");   
          strcpy(topic,root);
-         strcat(topic,"fullPOWER");
-         HP.dSDM.get_paramSDM((char*)sdm_POWER,temp);
+         strcat(topic,"ACPOWER");
+         strcpy(temp,"");
+         HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"CURRENT");
+         strcpy(temp,"");
          HP.dSDM.get_paramSDM((char*)sdm_CURRENT,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
 
          strcpy(topic,root);
          strcat(topic,"VOLTAGE");
+         strcpy(temp,"");
          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,temp);
          if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          if (debug) journal.jprintf(cStrEnd);  
@@ -849,14 +857,14 @@ boolean sendMQTT(boolean debug)
           #ifdef USE_ELECTROMETER_SDM
            strcpy(topic,root);
            strcat(topic,"fullCOP");
-           ftoa(temp,(float)(HP.powerCO/HP.dSDM.get_Power())/100.0,2);
+           ftoa(temp,(float)HP.fullCOP/100.0,2);
            if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
           #endif 
            if (HP.dFC.get_present())   
            {
            strcpy(topic,root);
            strcat(topic,"COP");
-           ftoa(temp,(float)(HP.powerCO/HP.dFC.get_power())/100.0,2);
+           ftoa(temp,(float)HP.COP/100.0,2);
            if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
            }        
            if (debug) journal.jprintf(cStrEnd);   

@@ -1685,7 +1685,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
  if (NM) state=stateNARMON; else state=stateMQTT;
  
  if (!linkStatusWiznet(false)) {journal.jprintf((char*)"sendTopic:no link.\n");  SemaphoreGive(xWebThreadSemaphore); return false;}// Нет связи выходим
-
+ 
  //debug=true;    // выводить отладку
  if (!w5200_MQTT.connected())   // если нет соединения то возможно требуется реанимация
   {
@@ -1718,7 +1718,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
      }
  } // if (!connect(NM)) 
 // Попытка соедиения - и определение что делаем дальше
-if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
+//if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
          if (connect(NM))                                        // Попытка соедиениея
           {
            w5200_MQTT.publish(t,p);                              // Посылка данных топика
@@ -1735,7 +1735,7 @@ if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// в
            updateState(NM,pMQTT_OK);   
            return true;      
           }
-          else                                             // соединениe не установлено
+          else                                  // соединениe не установлено
           { 
           ShowSockRegisters(W5200_SOCK_SYS);    // выводим состояние регистров ВСЕГДА
           closeSockSys(true);
@@ -1762,7 +1762,7 @@ w5200_MQTT.setSock(W5200_SOCK_SYS);       // Установить сокет с 
 if (NM) // В зависимости от того с кем надо соединяться
          {
          w5200_MQTT.setServer(mqttSettintg.narodMon_serverIP,mqttSettintg.narodMon_port);                       // установить параметры Народного мониторинга
-         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
+         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);       // Соедиенение с народным мониторингом
          #ifdef MQTT_REPEAT            // разрешен повтор соединения
          if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
          #endif
