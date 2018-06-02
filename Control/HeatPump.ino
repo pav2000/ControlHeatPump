@@ -25,8 +25,8 @@ const boolean _wait =  false;  // Команда перевода в режим 
 const boolean _start = true;   // Команда запуска ТН
 const boolean _resume = false;  // Команда возобновления работы ТН
 
-#define PUMPS_ON          Pumps(true,2000)                                                   // Включить насосы
-#define PUMPS_OFF         Pumps(false,2000)                                                  // Выключить насосы
+#define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_PUMP)               // Включить насосы
+#define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_PUMP)              // Выключить насосы
 // Макросы по работе с компрессором в зависимости от наличия инвертора
 #define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC();else dRelay[RCOMP].set_ON();   // Включить компрессор в зависимости от наличия инвертора
 #define COMPRESSOR_OFF    if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF();  // Выключить компрессор в зависимости от наличия инвертора
@@ -594,6 +594,7 @@ void HeatPump::resetSettingHP()
   onBoiler=false;                               // Если true то идет нагрев бойлера
   onSallmonela=false;                           // Если true то идет Обеззараживание
   command=pEMPTY;                               // Команд на выполнение нет
+  next_command=pEMPTY;
   PauseStart=true;                              // начать отсчет задержки пред стартом с начала
   startRAM=0;                                   // Свободная память при старте FREE Rtos - пытаемся определить свободную память при работе
   lastEEV=-1;                                   // значение шагов ЭРВ перед выключением  -1 - первое включение
@@ -688,7 +689,7 @@ void HeatPump::resetSettingHP()
 //  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
   #ifdef EEV_DEF
   ChartOVERHEAT.init(true);                                                    // перегрев
-  ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  испарения
+  ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  кипения
   ChartTPCON.init( sADC[PCON].get_present());                                  // температура расчитанная из давления  конденсации
   #endif
 
@@ -1028,7 +1029,7 @@ void  HeatPump::updateChart()
  #endif
  
  if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
- if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power());
+ if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
  if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
@@ -1655,16 +1656,31 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
 	if(b == old) return;                                                        // менять нечего выходим
 
+#ifdef DELAY_BEFORE_STOP_IN_PUMP
+	if((!b) && (old)) {
+		journal.jprintf(" Delay: stop IN pump.\n");
+		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
+	}
+	// переключение насосов если есть что переключать (проверка была выше)
+	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
+	_delay(d);                                      // Задержка на d мсек
 	// пауза перед выключением насосов контуров, если нужно
 	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n", Option.delayOffPump);
+		journal.jprintf(" Delay: stop OUT pump.\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
-
+#else
+	// пауза перед выключением насосов контуров, если нужно
+	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
+	{
+		journal.jprintf(" Pause before stop pumps %d sec . . .\n", DELAY_OFF_PUMP);
+		_delay(DELAY_OFF_PUMP * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+	}
 	// переключение насосов если есть что переключать (проверка была выше)
 	dRelay[PUMP_IN].set_Relay(b);                                 // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
+#endif
 #ifdef  TWO_PUMP_IN                                                // второй насос для воздушника если есть
 	if (!b) dRelay[PUMP_IN1].set_OFF();    // если насососы выключаем то второй вентилятор ВСЕГДА выключается!!
 	else// а если насос включается то смотрим на условия
@@ -1689,9 +1705,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	if((b) && (!old))                                                // Насосы включены (старт компрессора), нужна пауза
 	{
 		journal.jprintf(" Pause %d seconds before starting compressor . . .\n", Option.delayOnPump);
-		_delay(Option.delayOnPump * 1000);                 // задержка перед включением компрессора
+		for(d = Option.delayOnPump * 10; d > 0; d--) { // задержка перед включением компрессора
+			if(error || is_next_command_stop()) break; // прерваться по ошибке, еще бы проверить команду на останов...
+			_delay(100);
+		}
 	}
-
 }
 // Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
 // Проводится различный сброс в зависимсти от конфигурации
@@ -1707,13 +1725,13 @@ int8_t HeatPump::ResetFC()
             _delay(100);
             sInput[SERRFC].Read();
             if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сброшен
-            else return ERR_reset_FC;                                                 // Сброс не прошел
+            else return ERR_RESET_FC;                                                 // Сброс не прошел
             #else                                                                      // нет провода сброса - сбрасываем по модбас
               if (dFC.get_err()!=OK)                                                       // инвертор есть ошибки
                 {
                 dFC.reset_FC();                                                       // подать команду на сброс по модбас
                 if (!dFC.get_blockFC())  return OK;                                   // Инвертор НЕ блокирован
-                else return ERR_reset_FC;                                             // Сброс не удачный
+                else return ERR_RESET_FC;                                             // Сброс не удачный
                 }    
               else  return OK;                                                         // Ошибок нет сбрасывать нечего
             #endif // SERRFC
@@ -1722,7 +1740,7 @@ int8_t HeatPump::ResetFC()
       {
         dFC.reset_FC();                                                               // подать команду на сброс по модбас
       if (!dFC.get_blockFC())  return OK;                                             // Инвертор НЕ блокирован
-      else return ERR_reset_FC;                                                       // Сброс не удачный
+      else return ERR_RESET_FC;                                                       // Сброс не удачный
       }
      else  return OK;                                                                  // Ошибок нет сбрасывать нечего
   #endif  
@@ -1777,7 +1795,7 @@ int8_t HeatPump::StartResume(boolean start)
 		eraseError();                                      // Обнулить ошибку
 		if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
 		{
-			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
+			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
 			set_Error(error,(char*)__FUNCTION__);
 			return error;
 		}
@@ -1862,7 +1880,7 @@ int8_t HeatPump::StartResume(boolean start)
 	} //  if (start)  // Команда старт
 
 	// 3.  ПОДГОТОВКА ------------------------------------------------------------------------
-	relayAllOFF();                                          // Выключить все реле, в принципе это лишнее
+	//relayAllOFF();                                          // Выключить все реле, в принципе это лишнее
 
 	if (start)  // Команда старт - Инициализация ЭРВ и очистка графиков при восстановлени не нужны
 	{
@@ -1897,7 +1915,8 @@ int8_t HeatPump::StartResume(boolean start)
 
 	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
-	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER))   compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
+	if(is_next_command_stop()) return error;							// следующая команда останов, выходим
+	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
 
 	// 10. Сохранение состояния  -------------------------------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска
@@ -1923,17 +1942,15 @@ int8_t HeatPump::StartResume(boolean start)
 int8_t HeatPump::StopWait(boolean stop)
 {  
   if (stop)
-    {
+  {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
     setState(pSTOPING_HP);  // Состояние выключения
     journal.jprintf(pP_DATE,"   Stop . . .\n"); 
-    }
-  else
-    {
+  } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
     setState(pSTOPING_HP);  // Состояние выключения
     journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");    
-    }
+  }
     
   if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
       {
@@ -2670,7 +2687,7 @@ void HeatPump::configHP(MODE_HP conf)
                 break;    
       case  pHEAT:    // Отопление
                  PUMPS_ON;                                                     // включить насосы
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
                   #ifdef RPUMPFL
                   dRelay[RPUMPFL].set_ON();     // ТП
@@ -2679,7 +2696,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                   if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
                  #endif
 
                  switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
@@ -2697,7 +2714,7 @@ void HeatPump::configHP(MODE_HP conf)
                 break;    
       case  pCOOL:    // Охлаждение
                  PUMPS_ON;                                                     // включить насосы
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
                  #ifdef RPUMPFL
                  dRelay[RPUMPFL].set_OFF();     // ТП
@@ -2706,7 +2723,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
                  dRelay[RTRV].set_ON();                                       // охлаждение
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
                  #endif 
 
                   switchBoiler(false);                                           // выключить бойлер
@@ -2734,12 +2751,12 @@ void HeatPump::configHP(MODE_HP conf)
                     // включить насосы
                     if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
                  #ifdef RTRV
                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(2*1000);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
                  #endif
                  switchBoiler(true);                                             // включить бойлер
                  #ifdef RHEAT
@@ -2901,7 +2918,7 @@ void HeatPump::compressorON(MODE_HP mod)
           
       // 3. Управление компрессором
       if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок
-           { 
+      {
            // Дополнительные защиты перед пуском компрессора
            if (startPump)                                      // Проверка задачи насос - должен быть выключен
               {
@@ -2921,25 +2938,24 @@ void HeatPump::compressorON(MODE_HP mod)
            #endif
            
            COMPRESSOR_ON;                                        // Включить компрессор
-           startCompressor=rtcSAM3X8.unixtime();                 // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
-           }
-       else // if (get_errcode()==OK)
-           {
-            journal.jprintf(" There is an error, the compressor is not on\n"); 
-            set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);return; 
-           }
+           if(error || dFC.get_err()) return; // Ошибка - выходим
+           startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
+      } else { // if (get_errcode()==OK)
+           journal.jprintf(" There is an error, the compressor is not on\n");
+           set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);return;
+      }
 
     // 4. Если нужно облегченный пуск  в зависимости от флага fEEV_light_start
     #ifdef EEV_DEF
     if(GETBIT(Option.flags,fEEV_light_start))                  //  ЭРВ ОБЛЕГЧЕННЫЙ ПУСК
-         {
+    {
          journal.jprintf(" Pause %d second before go starting position EEV . . .\n",dEEV.get_DelayStartPos());
          _delay(dEEV.get_DelayStartPos()*1000);  // Задержка после включения компрессора до ухода на рабочую позицию
          journal.jprintf(EEV_go);  
          if ((GETBIT(Option.flags,fEEV_start))||((lastEEV==-1)  ))  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
          else                                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ в противном случае
-         }
-     #endif      
+    }
+    #endif
      // 5. Обеспечение задержки отслеживания ЭРВ
      #ifdef EEV_DEF
      if (lastEEV>0)                                            // НЕ первое включение компрессора после старта ТН
@@ -3058,167 +3074,113 @@ void HeatPump::defrost()
 // Послать команду на управление ТН
 void HeatPump::sendCommand(TYPE_COMMAND c)
 {
-  if (c==command) return;      // Игнорируем повторы
-  if (command!=pEMPTY)         // Если команда выполняется (не pEMPTY), то следюющую, что послана игнорируем
-     {
-
-       journal.jprintf("Performance command: ");  
-           switch(command)
-            {
-             case pEMPTY:     journal.jprintf("EMPTY");    break;    // Не должно быть!
-             case pSTART:     journal.jprintf("START");    break;
-             case pAUTOSTART: journal.jprintf("AUTOSTART");break;             
-             case pSTOP:      journal.jprintf("STOP");     break;
-             case pRESET:     journal.jprintf("RESET");    break;
-             case pRESTART:   journal.jprintf("RESTART");  break;
-             case pREPEAT:    journal.jprintf("REPEAT");   break;
-             case pNETWORK:   journal.jprintf("NETWORK");  break;
-             //case pJFORMAT:   journal.jprintf("JFORMAT");  break;
-             case pSFORMAT:   journal.jprintf("SFORMAT");  break;                    
-             case pSAVE:      journal.jprintf("SAVE");     break;                    
-             case pWAIT:      journal.jprintf("WAIT");     break;                    
-             case pRESUME:    journal.jprintf("RESUME");   break;                    
-             
-             default:         journal.jprintf("UNKNOW");   break;    // Не должно быть!
-            }
-       journal.jprintf(", ignore command: "); 
-           switch(c)
-            {
-             case pEMPTY:     journal.jprintf("EMPTY\n");    break;    // Не должно быть!
-             case pSTART:     journal.jprintf("START\n");    break;
-             case pAUTOSTART: journal.jprintf("AUTOSTART\n");break;         
-             case pSTOP:      journal.jprintf("STOP\n");     break;
-             case pRESET:     journal.jprintf("RESET\n");    break;
-             case pRESTART:   journal.jprintf("RESTART\n");  break;
-             case pREPEAT:    journal.jprintf("REPEAT\n");   break;
-             case pNETWORK:   journal.jprintf("NETWORK\n");  break; 
-             //case pJFORMAT:   journal.jprintf("JFORMAT\n");  break;
-             case pSFORMAT:   journal.jprintf("SFORMAT\n");  break;                    
-             case pSAVE:      journal.jprintf("SAVE\n");     break;      
-             case pWAIT:      journal.jprintf("WAIT\n");     break;                    
-             case pRESUME:    journal.jprintf("RESUME\n");   break;                    
-    
-             default:         journal.jprintf("UNKNOW\n");   break;    // Не должно быть!
-            }            
-      
-       return;  
-      }
-  if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;     // Пришла команда на старт а насос останавливается ничего не делаем игнорируем
-  command=c;
-  vTaskResume(xHandleUpdateCommand);                    // Запустить выполнение команды
+	if (c==command) return;      // Игнорируем повторы
+	if (command!=pEMPTY) // Если команда выполняется (не pEMPTY), то следующую в очередь, если есть место
+	{
+		if(next_command == pEMPTY) next_command = c;
+		journal.jprintf("Active command: %s, next: %s", get_command_name(command), get_command_name(next_command));
+		if(next_command != c) journal.jprintf(", ignore: %s", get_command_name(c));
+		journal.jprintf("\n");
+		return;
+	}
+	if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;     // Пришла команда на старт а насос останавливается ничего не делаем игнорируем
+	command=c;
+	vTaskResume(xHandleUpdateCommand);                    // Запустить выполнение команды
 }  
 // Выполнить команду по управлению ТН true-команда выполнена
 int8_t HeatPump::runCommand()
 {
-  uint16_t i;
+	uint16_t i;
+	while(1) {
+		journal.jprintf("Run command: %s\n", get_command_name(command));
 
-       journal.jprintf("Run command: ");  
-       switch(command)
-        {
-         case pEMPTY:     journal.jprintf("EMPTY\n");    break;    // Не должно быть!
-         case pSTART:     journal.jprintf("START\n");    break;
-         case pAUTOSTART: journal.jprintf("AUTOSTART\n");break;         
-         case pSTOP:      journal.jprintf("STOP\n");     break;
-         case pRESET:     journal.jprintf("RESET\n");    break;
-         case pRESTART:   journal.jprintf("RESTART\n");  break;
-         case pREPEAT:    journal.jprintf("REPEAT\n");   break;
-         case pNETWORK:   journal.jprintf("NETWORK\n");  break;
-         //case pJFORMAT:   journal.jprintf("JFORMAT\n");  break;
-         case pSFORMAT:   journal.jprintf("SFORMAT\n");  break;                    
-         case pSAVE:      journal.jprintf("SAVE\n");     break;                    
-         case pWAIT:      journal.jprintf("WAIT\n");     break;                    
-         case pRESUME:    journal.jprintf("RESUME\n");   break;        
-                         
-         default:         journal.jprintf("UNKNOW\n");   break;    // Не должно быть!
-        }
+		HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+		switch(command)
+		{
+		case pEMPTY:  return true; break;     // 0 Команд нет
+		case pSTART:                          // 1 Пуск теплового насоса
+			num_repeat=0;           // обнулить счетчик повторных пусков
+			StartResume(_start);    // включить ТН
+			break;
+		case pAUTOSTART:                      // 2 Пуск теплового насоса автоматический
+			StartResume(_start);    // включить ТН
+			break;
+		case pSTOP:                           // 3 Стоп теплового насоса
+			StopWait(_stop);        // Выключить ТН
+			break;
+		case pRESET:                          // 4 Сброс контроллера
+			StopWait(_stop);        // Выключить ТН
+			journal.jprintf("$SOFTWARE RESET control . . .\r\n");
+			journal.jprintf("");
+			_delay(500);            // задержка что бы вывести сообщение в консоль
+			Software_Reset() ;      // Сброс
+			break;
+		case pREPEAT:
+			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
+			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
+			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat);
+			//        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			break;
+		case pRESTART:
+			// Stop();                                          // пуск Тн после сброса - есть задержка
+			journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
+			//              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			break;
+		case pNETWORK:
+			journal.jprintf("Update network setting . . .\r\n");
+			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
+			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
+			for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
+			SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
+			break;
+		case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
+			#ifdef I2C_EEPROM_64KB
+				_delay(2000);              				           // задержка что бы вывести сообщение в консоль и на веб морду
+				Stat.Format();                                    // Послать команду форматирование статистики
+			#endif
+			break;
+		case pSAVE:                                                      // Сохранить настройки
+			_delay(2000);              				      		 // задержка что бы вывести сообщение в консоль и на веб морду
+			save();                                            // сохранить настройки
+			break;
+		case pWAIT:   // Перевод в состяние ожидания  - особенность возможна блокировка задач - используем семафор
+			if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
+			{
+				vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
+				StopWait(_wait);                                  // Ожидание
+				SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+				vTaskResume(xHandleUpdate);
+			}
+			else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
+			break;
+		case pRESUME:   // Восстановление работы после ожиданияя -особенность возможна блокировка задач - используем семафор
+			if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
+			{
+				vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
+				StartResume(_resume);                             // восстановление ТН
+				SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+				vTaskResume(xHandleUpdate);
+			}
+			else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
+			break;
 
-       HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-       switch(command)
-        {
-        case pEMPTY:  return true; break;     // 0 Команд нет
-        case pSTART:                          // 1 Пуск теплового насоса
-                      num_repeat=0;           // обнулить счетчик повторных пусков
-                      StartResume(_start);    // включить ТН
-                      break;
-        case pAUTOSTART:                      // 2 Пуск теплового насоса автоматический
-                      StartResume(_start);    // включить ТН
-                      break;                
-        case pSTOP:                           // 3 Стоп теплового насоса
-                      StopWait(_stop);        // Выключить ТН
-                      break;
-        case pRESET:                          // 4 Сброс контроллера
-                      StopWait(_stop);        // Выключить ТН
-                      journal.jprintf("$SOFTWARE RESET control . . .\r\n"); 
-                      journal.jprintf("");
-                      _delay(500);            // задержка что бы вывести сообщение в консоль
-                      Software_Reset() ;      // Сброс
-                      break;
-        case pREPEAT:
-                      StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
-                      num_repeat++;                                  // увеличить счетчик повторов пуска ТН
-                      journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat); 
-              //        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-                      vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                      break;  
-        case pRESTART:
-                     // Stop();                                          // пуск Тн после сброса - есть задержка
-                      journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
-      //              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
-                      vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
-                      break;                 
-        case pNETWORK:
-                      journal.jprintf("Update network setting . . .\r\n");
-                      _delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
-                      if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
-                      initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
-                      for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
-                      SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
-                      break;                 
-//        case pJFORMAT:                                                   // Форматировать журнал в I2C памяти
-//                      #ifdef I2C_EEPROM_64KB
-//                       _delay(2000);           						   // задержка что бы вывести сообщение в консоль и на веб морду
-//                       journal.Format();                                 // Послать команду форматирование журнала
-//                      #else                                              // Этого не может быть, но на всякий случай
-//                       journal.Init();                                   // Очистить журнал в оперативке
-//                      #endif
-//                      break;
-        case pSFORMAT:                                                   // Форматировать журнал в I2C памяти
-                      #ifdef I2C_EEPROM_64KB 
-                       _delay(2000);              						           // задержка что бы вывести сообщение в консоль и на веб морду
-                       Stat.Format();                                    // Послать команду форматирование статистики
-                      #endif 
-                      break;                    
-        case pSAVE:                                                      // Сохранить настройки
-                      _delay(2000);              				             		 // задержка что бы вывести сообщение в консоль и на веб морду
-                      save();                                            // сохранить настройки
-                      break;  
-        case pWAIT:   // Перевод в состяние ожидания  - особенность возможна блокировка задач - используем семафор
-                      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек 
-                      {
-                      vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
-                      StopWait(_wait);                                  // Ожидание
-                      SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
-                      vTaskResume(xHandleUpdate);
-                      }
-                      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
-                      break;   
-        case pRESUME:   // Восстановление работы после ожиданияя -особенность возможна блокировка задач - используем семафор
-                      if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
-                      {
-                      vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН                                               
-                      StartResume(_resume);                             // восстановление ТН
-                      SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
-                      vTaskResume(xHandleUpdate);
-                      }
-                      else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
-                      break;                         
-                                           
-        default:                                                         // Не известная команда
-                      journal.jprintf("Unknow command????"); 
-                      break;
-        }
-      command=pEMPTY;   // Сбросить команду      
-      return error;  
+		default:                                                         // Не известная команда
+			journal.jprintf("Unknown command: %d !!!", command);
+			break;
+		}
+		if(next_command != pEMPTY) { // следующая команда
+			command = next_command;
+			next_command = pEMPTY;
+			_delay(1);
+		} else {
+			command=pEMPTY;   // Сбросить команду
+			break;
+		}
+	}
+	return error;
 }
 
 // --------------------------Строковые функции ----------------------------

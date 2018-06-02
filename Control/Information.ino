@@ -564,7 +564,7 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
@@ -575,14 +575,8 @@ boolean Profile::set_paramCoolHP(char *var, float x)
 //Охлаждение Получить параметр в виде строки  второй параметр - наличие частотника
 char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
 {
-  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
-				                   switch (Cool.Rule)       // алгоритм работы
-				                   {
-				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
-				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
-				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
-				                    default:Cool.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
-				                   }                                                         
+   if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+	 								return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Cool.Rule);
 				                  else {Cool.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
    if(strcmp(var,hp_TEMP1)==0)    {return _ftoa(ret,(float)Cool.Temp1/100.0,1);                } else             // целевая температура в доме
    if(strcmp(var,hp_TEMP2)==0)    {return _ftoa(ret,(float)Cool.Temp2/100.0,1);                } else             // целевая температура обратки
@@ -621,9 +615,9 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
  if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
  if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
- if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
- if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=70.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
@@ -635,13 +629,7 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
 char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 {
   if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
-				                   switch (Heat.Rule)       // алгоритм работы
-				                   {
-				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
-				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
-				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
-				                    default:Heat.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
-				                   }                                                         
+	  	  	  	  	  	  	  	  	  return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Heat.Rule);
 				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
    if(strcmp(var,hp_TEMP1)==0)    {return _ftoa(ret,(float)Heat.Temp1/100.0,1);                } else             // целевая температура в доме
    if(strcmp(var,hp_TEMP2)==0)    {return _ftoa(ret,(float)Heat.Temp2/100.0,1);                } else            // целевая температура обратки

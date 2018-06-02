@@ -379,7 +379,7 @@ const uint16_t  defaultPort=80;
 #define ERR_MAX_VOLTAGE     -75        // Слишком большое напряжение сети
 #define ERR_MAX_POWER       -76        // Слишком большая портебляемая мощность
 #define ERR_NO_MODBUS       -77        // Modbus требуется но отсутвует в конфигурации
-#define ERR_reset_FC       -78         // Не удалось сбросить инвертор Omron mx2 после ошибки
+#define ERR_RESET_FC        -78         // Не удалось сбросить инвертор после ошибки
 #define ERR_SEVA_FLOW       -79        // Отсутствует проток в испарителе (срабатывание SEVA)
 #define ERR_OPEN_I2C_STAT   -80        // Ошибка открытия статистики в  I2C памяти (инициализация чипа)
 #define ERR_READ_I2C_STAT   -81        // Ошибка чтения статистики из I2C памяти
@@ -389,6 +389,8 @@ const uint16_t  defaultPort=80;
 #define ERR_CONFIG_TEMP     -85        // Ошибка конфигурации температурного датчика (привязка к отсутвующей шине OneWire)
 #define ERR_ONEWIRE_CRC     -86		   // ошибка CRC во время чтения OneWire
 #define ERR_ONEWIRE_RW      -87		   // ошибка во время чтения/записи OneWire
+#define ERR_FC_FAULT		-88			// сбой инвертора
+#define ERR_FC_ERROR		-89			// ошибка программы управления инвертором
 
 // Предупреждения
 #define WARNING_VALUE        1         // Попытка установить значение за границами диапазона запрос типа SET
@@ -448,6 +450,7 @@ const char *eev_cKF           =  {"cKF"};           // Коэффициент (/
 const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
 const char *eev_cOH_MIN       =  {"cOH_MIN"};       // Минимальный перегрев (сотые градуса)
 const char *eev_cOH_START     =  {"cOH_START"};     // Стартовый перегрев (сотые градуса)
+const char *eev_cOH_TDELTA    =  {"cTDELTA"};     	// Расчитанная целевая дельта Нагнетание-Конденсации
 const char *eev_ERR_KP        =  {"ERR_KP"};        // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
 const char *eev_SPEED         =  {"SPEED"};         // Скорость шагового двигателя ЭРВ (импульсы в сек.)
 const char *eev_PRE_START_POS =  {"PRE_START_POS"}; // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
@@ -660,8 +663,10 @@ const char *fc_STATE             = {"STATE"};             // Состояние 
 const char *fc_FC                = {"FC"};                // Целевая частота инвертора в 0.01 герцах
 const char *fc_cFC               = {"cFC"};               // Текущая частота ПЧ (чтение)
 const char *fc_cPOWER            = {"cPOWER"};            // Текущая мощность (чтение)
+const char *fc_INFO1             = {"INFO1"};             // Первая строка под картинкой инвертора на схеме
 const char *fc_cCURRENT          = {"cCURRENT"};          // Текущий ток (чтение)
 const char *fc_AUTO              = {"AUTO"};              // Флаг автоматического подбора частоты
+const char *fc_AUTO_RESET_FAULT  = {"ARSTFLT"};           // Флаг автоматического сброса не критичной ошибки инвертора
 const char *fc_ANALOG            = {"ANALOG"};            // Флаг аналогового управления
 const char *fc_DAC               = {"DAC"};               // Получение текущего значения ЦАП
 const char *fc_LEVEL0            = {"LEVEL0"};            // Уровень частоты 0 в отсчетах ЦАП
@@ -864,6 +869,8 @@ const char *noteError[] = {"Ok",                                                
                            "Ошибка конфигурации температурного датчика (привязка к отсутвующей шине OneWire)",  //-85
 						   "Ошибка CRC чтения OneWire",															//-86
 						   "Ошибка чтения/записи OneWire",														//-87
+						   "Сбой инвертора",																	//-88
+						   "Ошибка программы управления инвертором",											//-89
 
                            "NULL"
                            };
@@ -1064,6 +1071,9 @@ enum TYPE_COMMAND
   pRESUME,                       // 12 Восстановление работы из режима ожидания
   pEND14                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
+
+const char *hp_commands_names[] = { "EMPTY", "START", "AUTOSTART", "STOP", "RESET", "RESTART", "REPEAT", "NETWORK",
+		"JFORMAT", "SFORMAT", "SAVE", "WAIT", "RESUME",  "UNKNOWN"};
 
 //  Перечисляемый тип -ТИПЫ уведомлений
 enum MESSAGE          

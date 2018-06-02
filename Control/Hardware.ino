@@ -612,17 +612,17 @@ void devEEV::initEEV()
  _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
  _data.typeFreon = DEFAULT_FREON_TYPE;                // Тип фреона
  _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
- _data.OHCor_Delay = 600;			     		  // Задержка после старта компрессора, сек
+ _data.OHCor_Delay = 300;			     		  // Задержка после старта компрессора, сек
  _data.OHCor_Period = 10;			     	      // Период в циклах ЭРВ, сколько пропустить
- _data.OHCor_TDIS_TCON = 1500;		              // Температура нагнетания - конденсации при 30С и -5 конденсации
+ _data.OHCor_TDIS_TCON = 1250;		              // Температура нагнетания - конденсации при 30С и 0 конденсации
  _data.OHCor_TDIS_TCON_Thr = 20;		          // (/0.1) Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
 #ifdef OHCor_CONDENSING_30_MUL
- _data.OHCor_TDIS_ADD = OHCor_CONDENSING_30_MUL;  // (/0.1) Корректировка для TDIS_TCON на каждые 10 градусов от 30 градусов
+ _data.OHCor_TDIS_ADD = OHCor_CONDENSING_30_MUL;  	// (/0.1) Корректировка для TDIS_TCON на каждые 10 градусов от 30 градусов
 #endif
- _data.OHCor_K = 100;						      // Коэффициент (/0.001): перегрев += дельта * K
- _data.OHCor_OverHeatMin = 100;			      // Минимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatMax = 400;			      // Максимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatStart = 300;				  // Начальный перегрев (сотые градуса)
+ _data.OHCor_K = 100;						      	// Коэффициент (/0.001): перегрев += дельта * K
+ _data.OHCor_OverHeatMin = 120;			      		// Минимальный перегрев (сотые градуса)
+ _data.OHCor_OverHeatMax = 400;			      		// Максимальный перегрев (сотые градуса)
+ _data.OHCor_OverHeatStart = 300;				  	// Начальный перегрев (сотые градуса)
  _data.errKp=DEFAULT_ERR_KP;                          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
  _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
@@ -716,6 +716,7 @@ void devEEV::Resume(uint16_t pos)
    if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
 	   _data.tOverheat = _data.OHCor_OverHeatStart;
    }
+   OHCor_tdelta = 0;
    journal.jprintf(" EEV set zero\n"); 
    set_zero();                           // установить 0
  //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
@@ -914,18 +915,17 @@ void   devEEV::CorrectOverheat(void)
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_Period) {
 		OverHeatCor_period = 0;
 		int16_t x = HP.sTemp[TCOMP].get_Temp();
-		x += (int32_t)(x - 3000) * _data.OHCor_TDIS_ADD*10 / 1000;
+		int16_t delta = HP.get_temp_condensing();
+		x += (int32_t)(delta - 3000) * _data.OHCor_TDIS_ADD*10 / 1000;
 		x -= (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000;
-		int16_t delta = x - HP.get_temp_condensing();
+		OHCor_tdelta = delta = x - delta;
 		if(delta > (x = _data.OHCor_TDIS_TCON + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
 			delta = x - delta;	// Перегрев большой - уменьшаем
 		} else if(delta < (x = _data.OHCor_TDIS_TCON - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
 			delta = x - delta;	// Перегрев маленький - увеличиваем
 		} else return;
 		_data.tOverheat += (int32_t) delta * _data.OHCor_K / 1000;
-#ifdef DEBUG
-		journal.jprintf(pP_TIME, "OverHeat set: %.2f (%d)\n", (float)_data.tOverheat/100.0, delta);
-#endif
+//		journal.printf(pP_TIME, "OverHeat set: %.2f (%d,%d)\n", (float)_data.tOverheat/100.0, delta, x);
 		if(_data.tOverheat > _data.OHCor_OverHeatMax) _data.tOverheat = _data.OHCor_OverHeatMax;
 		else if(_data.tOverheat < _data.OHCor_OverHeatMin) _data.tOverheat = _data.OHCor_OverHeatMin;
 	}
@@ -969,35 +969,6 @@ void devEEV::resetPID()
   pre_errPID=0;                          // Предыдущая ошибка ПИД регулятора
   tmpTime=_data.timeIn;                  // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                           // Признак работы пид с начала (пропуск первой итерации)
-}
-
-void devEEV::variable(uint8_t getset, char *ret, char *var, float value)
-{
-	if(strcmp(var, "cCOR")==0) {
-    	if(getset) _data.flags = (_data.flags & ~(1<<fCorrectOverHeat)) | (value == 0 ? 0 : (1<<fCorrectOverHeat));
-    	_itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret);
-	} else if(strcmp(var, "cDELAY")==0) {
-    	if(getset) _data.OHCor_Delay = value;
-    	_itoa(_data.OHCor_Delay, ret);
-    } else if(strcmp(var, "cPERIOD")==0) {
-    	if(getset) _data.OHCor_Period = value;
-    	_itoa(_data.OHCor_Period, ret);
-    } else if(strcmp(var, "cDELTA")==0) {
-    	if(getset) _data.OHCor_TDIS_TCON = value * 100.0 +0.005;
-    	_ftoa(ret, (float)_data.OHCor_TDIS_TCON / 100.0, 2);
-    } else if(strcmp(var, "cDELTAT")==0) {
-    	if(getset) _data.OHCor_TDIS_TCON_Thr = value * 100.0  +0.005;
-    	_ftoa(ret, (float)_data.OHCor_TDIS_TCON_Thr / 100.0, 2);
-    } else if(strcmp(var, "cKF")==0) {
-    	if(getset) _data.OHCor_K = value * 1000.0 + 0.0005;
-    	_ftoa(ret, (float)_data.OHCor_K / 1000.0, 3);
-    } else if(strcmp(var, "cOH_MIN")==0) {
-    	if(getset) _data.OHCor_OverHeatMin = value * 100.0 +0.005;
-    	_ftoa(ret, (float)_data.OHCor_OverHeatMin / 100.0, 2);
-    } else if(strcmp(var, "cOH_MAX")==0) {
-    	if(getset) _data.OHCor_OverHeatMax = value * 100.0 +0.005;
-    	_ftoa(ret, (float)_data.OHCor_OverHeatMax / 100.0, 2);
-    }
 }
 
  // Получить параметр ЭРВ в виде строки
@@ -1073,6 +1044,8 @@ char* devEEV::get_paramEEV(char *var, char *ret)
     	_ftoa(ret, (float)(_data.OHCor_OverHeatMax/100.0), 2);
     } else if(strcmp(var, eev_cOH_START)==0){
     	_ftoa(ret, (float)(_data.OHCor_OverHeatStart/100.0), 2);
+    } else if(strcmp(var, eev_cOH_TDELTA)==0){
+    	if(OHCor_tdelta) _ftoa(ret, (float)(OHCor_tdelta/100.0), 2); else strcat(ret, "-");
     } else if(strcmp(var, eev_ERR_KP)==0){
     	_ftoa(ret, (float)(_data.errKp/100.0), 2);
     } else if(strcmp(var, eev_SPEED)==0){
@@ -1611,7 +1584,8 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)freqFC/100.0,2); } else
-    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); /*strcat(ret, " кВт");*/ } else
+    if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); } else
+    if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)power/10.0,1); strcat(ret, " кВт"); } else
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления

@@ -20,6 +20,8 @@
 #ifndef _VaconFC_h
 #define _VaconFC_h
 
+#include "config.h"
+
 #define FC_VACON_NAME "Vacon 10"
 #ifdef FC_VACON
 #define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
@@ -81,7 +83,7 @@ const char *FC_S_RUN_str			= {"Run,"};
 #define FC_S_DIR		0x04	// 0 - По часовой стрелке, 1 - Против часовой стрелки
 const char *FC_S_DIR_str			= {"CCW,"};
 #define FC_S_FLT		0x08	// Действующий отказ
-const char *FC_S_FLT_str			= {"Error,"};
+const char *FC_S_FLT_str			= {"Fault,"};
 #define FC_S_W			0x10	// Сигнал тревоги
 const char *FC_S_W_str				= {"Alarm,"};
 #define FC_S_AREF		0x20	// 0 - Линейное изменение скорости, 1 - Задание скорости достигнуто
@@ -93,6 +95,8 @@ const char *FC_S_Z_str				= {"Stopped,"};
 #define FC_C_STOP		0
 #define FC_C_DIR		0x02	// 0 - По часовой стрелке, 1 - Против часовой стрелки
 #define FC_C_RST		0x04	// Сброс отказа
+
+const uint8_t FC_NonCriticalFaults[] = { 1, 2, 8, 9, 13, 14,/**/15, 17, 25, 34, 41 }; // Не критичные ошибки, которые можно сбросить
 
 const uint8_t FC_Faults_code[] = {
 	0,
@@ -145,8 +149,6 @@ const char *FC_Faults_str[] = {	"Ok", // нет ошибки
 								"Idenfication fault",
 
 								"Unknown"}; // sizeof(FC_Faults_code)+1
-
-#define FC_SAVED_FLAGS (1<<fAuto)
 
 class devVaconFC
 {
@@ -201,7 +203,7 @@ public:
   boolean	isfOnOff(){return GETBIT(_data.flags,fOnOff);} // получить состояние инвертора вкл или выкл
  
   void		check_blockFC();                          // Установить запрет на использование инвертора
-  boolean	get_blockFC(); 						    // Получить флаг блокировки инвертора
+  boolean	get_blockFC() { return GETBIT(_data.flags, fErrFC); }    // Получить флаг блокировки инвертора
 
   const char *get_fault_str(uint8_t fault); // Возвращает название ошибки
 

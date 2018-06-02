@@ -149,44 +149,45 @@ uint8_t TaskSuspendAll(void) {
 // Установка критической ошибки для класса ТН вызывает останов ТН
 // Возвращает ошибку останова ТН
 int8_t set_Error(int8_t _err, char *nam)
-{  
-    if (HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())         // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
-    {
-     journal.jprintf("$Compressor protection: "); 
-     if(HP.dFC.get_present()) HP.dFC.stop_FC(); else  HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор
-    }
- //   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
+{
+	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
+	{
+		journal.jprintf("$Compressor protection: ");
+		if(HP.dFC.get_present()) HP.dFC.stop_FC();
+		else HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор
+	}
+	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
-    if (HP.error!=OK) return HP.error;                              // Ошибка уже есть выходим
- //   if((_err!=HP.error)||(strcmp(nam,HP.source_error)!=0))     // Если приходит ошибка отличная от предыдущей то запоминаем
-    {    
-    HP.error=_err;
-    strcpy(HP.source_error,nam);
-    strcpy(HP.note_error,NowTimeToStr());       // Cтереть всю строку и поставить время
-    strcat(HP.note_error," ");
-    strcat(HP.note_error,nam);                  // Имя кто сгенерировал ошибку
-    strcat(HP.note_error,": ");
-    strcat(HP.note_error,noteError[abs(_err)]); // Описание ошибки
-    journal.jprintf(pP_TIME,"$ERROR source: %s, code: %d\n",nam,_err);//journal.jprintf(", code: %d\n",_err);  
-    if(xTaskGetSchedulerState()==taskSCHEDULER_RUNNING) HP.save_DumpJournal(true);  // вывод отладочной информации для начала  если запущена freeRTOS
-    HP.message.setMessage(pMESSAGE_ERROR,HP.note_error,0);    // сформировать уведомление об ошибке
-   }
-    // Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
-   if (HP.get_State()!=pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
-   { 
-   if (HP.get_nStart()==0)  HP.sendCommand(pSTOP);        // Послать команду на останов ТН  если нет попыток повторного пуск
-   else
-   { // сюда ставить повторные пуски ТН при ошибке.
-    if (HP.num_repeat<HP.get_nStart())                    // есть еще попытки
-         {
-            HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
-         }  
-    else  HP.sendCommand(pSTOP);                         // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
-   }
-   }
-  return HP.error;  
+	if(HP.error != OK) return HP.error;                              // Ошибка уже есть выходим
+	//   if((_err!=HP.error)||(strcmp(nam,HP.source_error)!=0))     // Если приходит ошибка отличная от предыдущей то запоминаем
+	{
+		HP.error = _err;
+		strcpy(HP.source_error, nam);
+		strcpy(HP.note_error, NowTimeToStr());       // Cтереть всю строку и поставить время
+		strcat(HP.note_error, " ");
+		strcat(HP.note_error, nam);                  // Имя кто сгенерировал ошибку
+		strcat(HP.note_error, ": ");
+		strcat(HP.note_error, noteError[abs(_err)]); // Описание ошибки
+		journal.jprintf(pP_TIME, "$ERROR source: %s, code: %d\n", nam, _err); //journal.jprintf(", code: %d\n",_err);
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) HP.save_DumpJournal(true); // вывод отладочной информации для начала  если запущена freeRTOS
+		HP.message.setMessage(pMESSAGE_ERROR, HP.note_error, 0);    // сформировать уведомление об ошибке
+	}
+	// Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
+	if(HP.get_State() != pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
+	{
+		if(HP.get_nStart() == 0) HP.sendCommand(pSTOP); // Послать команду на останов ТН  если нет попыток повторного пуск
+		else { // сюда ставить повторные пуски ТН при ошибке.
+			if(HP.num_repeat < HP.get_nStart())                    // есть еще попытки
+			{
+				HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
+			} else HP.sendCommand(pSTOP);                         // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
+		}
+		if(HP.get_State() == pSTARTING_HP) { // Ошибка во время старта
+			HP.set_HP_error_state();
+		}
+	}
+	return HP.error;
 }
-
 
 void setup() {
 // 1. Инициализация SPI
