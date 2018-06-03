@@ -1267,45 +1267,43 @@ void vUpdatePump(void *)
 // Задача отложеного старта ТН
 // используется при старте контроллера если есть запись состояния
 // также используется для повторных попыток пуска контроллера
-void vPauseStart( void * )
-{ 
- volatile int16_t i, tt;
-   for( ;; )
-    {
-     HP.PauseStart=false;               // мы в начале задачи ставим флаг
-     journal.jprintf(pP_TIME,(const char*)"Start vPauseStart\n"); 
-     #ifdef DEMO
-      tt=30;
-     #else 
-        if (HP.isCommand()== pRESTART)   tt=HP.Option.delayStartRes; else tt=HP.Option.delayRepeadStart;  // Определение времени задержки
-     #endif
-      // задержка перед пуском ТН
-      for(i=tt;i>0;i=i-10) // задержка перед стартом обратный отсчет
-       { 
-          if (HP.PauseStart) break;               // если задача пущена не сначала
-          if(i % 60 == 0) journal.jprintf((const char*)"Start over %d sec . . .\n",i);
-//          if (HP.PauseStart) break;               // если задача пущена не сначала
-          vTaskDelay(10*1000/portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
-          if (HP.PauseStart) break;               // если задача пущена не сначала
-   //       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT)) 
-          if ((i==HP.get_delayRepeadStart()/2)&&(HP.isCommand()== pREPEAT))
-                {
-                  HP.eraseError();  
-                  if (HP.PauseStart) break;               // если задача пущена не сначала
-                  journal.jprintf((const char*)"Erase error %s\n",(char*)nameHeatPump);
-                }
-       }
+void vPauseStart(void *)
+{
+	int16_t i, tt;
+	for(;;) {
+		HP.PauseStart = 1;               // мы в начале задачи ставим флаг - ТН в режиме перезапуска
+		journal.jprintf(pP_TIME, (const char*) "Start vPauseStart\n");
+#ifdef DEMO
+		tt=30;
+#else
+		if(HP.isCommand() == pRESTART) tt = HP.Option.delayStartRes;
+		else tt = HP.Option.delayRepeadStart;  // Определение времени задержки
+#endif
+		// задержка перед пуском ТН
+		for(i = tt; i > 0; i = i - 10) // задержка перед стартом обратный отсчет
+		{
+			if(!HP.PauseStart) break;               // если задача пущена не сначала
+			if(i % 60 == 0) journal.jprintf((const char*) "Start over %d sec . . .\n", i);
+			vTaskDelay(10 * 1000 / portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
+			if(!HP.PauseStart) break;               // если задача пущена не сначала
+			//       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT))
+			if((i == HP.get_delayRepeadStart() / 2) && (HP.isCommand() == pREPEAT)) {
+				HP.eraseError();
+				if(!HP.PauseStart) break;               // если задача пущена не сначала
+				journal.jprintf((const char*) "Erase error %s\n", (char*) nameHeatPump);
+			}
+		}
 
-       if (!HP.PauseStart)                    // если задача пущена сначала то запускаемся
-       {
-        HP.sendCommand(pAUTOSTART);
- //       vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
-       } 
-     vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
-          
-    }
-   journal.jprintf((const char*)"Delete task vPauseStart?\n");     
-   vTaskDelete( NULL );  
+		if(HP.PauseStart)                    // если задача пущена сначала то запускаемся
+		{
+			HP.sendCommand(pAUTOSTART);
+		}
+		HP.PauseStart = 0;
+		vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
+
+	}
+	journal.jprintf((const char*) "Delete task vPauseStart?\n");
+	vTaskDelete( NULL);
 }
 
 

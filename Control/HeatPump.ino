@@ -595,7 +595,7 @@ void HeatPump::resetSettingHP()
   onSallmonela=false;                           // Если true то идет Обеззараживание
   command=pEMPTY;                               // Команд на выполнение нет
   next_command=pEMPTY;
-  PauseStart=true;                              // начать отсчет задержки пред стартом с начала
+  PauseStart=0;                                 // начать отсчет задержки пред стартом с начала
   startRAM=0;                                   // Свободная память при старте FREE Rtos - пытаемся определить свободную память при работе
   lastEEV=-1;                                   // значение шагов ЭРВ перед выключением  -1 - первое включение
   num_repeat=0;                                 // текушее число попыток 0 - т.е еще не было работы
@@ -1013,7 +1013,8 @@ void HeatPump::set_profile()
 // --------------------------------------------------------------------
 // ФУНКЦИИ РАБОТЫ С ГРАФИКАМИ ТН -----------------------------------
 // --------------------------------------------------------------------
-// обновить статистику, добавить одну точку и если надо записать ее на карту
+// обновить статистику, добавить одну точку и если надо записать ее на карту.
+// Все значения в графиках целочислены (сотые), выводятся в формате 0.01
 void  HeatPump::updateChart()
 {
  uint8_t i; 
@@ -1029,7 +1030,7 @@ void  HeatPump::updateChart()
  #endif
  
  if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
- if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
+ if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/100);
  if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
@@ -3094,7 +3095,7 @@ int8_t HeatPump::runCommand()
 	while(1) {
 		journal.jprintf("Run command: %s\n", get_command_name(command));
 
-		HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
+		HP.PauseStart = 0;                    // Необходимость начать задачу xHandlePauseStart с начала
 		switch(command)
 		{
 		case pEMPTY:  return true; break;     // 0 Команд нет
@@ -3119,13 +3120,11 @@ int8_t HeatPump::runCommand()
 			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
 			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
 			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat);
-			//        HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
 			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pRESTART:
 			// Stop();                                          // пуск Тн после сброса - есть задержка
 			journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
-			//              HP.PauseStart=true;                                // Необходимость начать задачу xHandlePauseStart с начала
 			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pNETWORK:

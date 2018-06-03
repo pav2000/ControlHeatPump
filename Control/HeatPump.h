@@ -384,7 +384,7 @@ class HeatPump
     uint16_t AdcVcc;                                       // напряжение питания
   //  uint16_t AdcTempSAM3x;                                 // температура чипа
     
-    boolean PauseStart;                                    // True начать отсчет времени с начала при отложенном старте
+    uint8_t PauseStart;                                    // 1 - ТН в отложенном запуске, 0 - нет, начать отсчет времени с начала при отложенном старте
        
     boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
     type_headerEEPROM headerEEPROM;                        // Заголовок записи настроек

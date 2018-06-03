@@ -523,7 +523,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
        {
-       if (HP.get_State()==pOFF_HP && HP.isCommand() != pRESTART && HP.isCommand() != pREPEAT) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); strcat(strReturn,"&"); continue;
+       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); strcat(strReturn,"&"); continue;
        }   
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {

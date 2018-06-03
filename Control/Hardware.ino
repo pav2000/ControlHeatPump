@@ -612,17 +612,17 @@ void devEEV::initEEV()
  _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
  _data.typeFreon = DEFAULT_FREON_TYPE;                // Тип фреона
  _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
- _data.OHCor_Delay = 300;			     		  // Задержка после старта компрессора, сек
- _data.OHCor_Period = 10;			     	      // Период в циклах ЭРВ, сколько пропустить
- _data.OHCor_TDIS_TCON = 1250;		              // Температура нагнетания - конденсации при 30С и 0 конденсации
- _data.OHCor_TDIS_TCON_Thr = 20;		          // (/0.1) Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
-#ifdef OHCor_CONDENSING_30_MUL
- _data.OHCor_TDIS_ADD = OHCor_CONDENSING_30_MUL;  	// (/0.1) Корректировка для TDIS_TCON на каждые 10 градусов от 30 градусов
+#ifdef DEF_OHCor_OverHeatStart							// Корректировка перегрева
+ _data.OHCor_Delay = DEF_OHCor_Delay;			     	// Задержка после старта компрессора, сек
+ _data.OHCor_Period = DEF_OHCor_Period;			        // Период в циклах ЭРВ, сколько пропустить
+ _data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		    // Температура нагнетания - конденсации при 30С и 0 конденсации
+ _data.OHCor_TDIS_TCON_Thr = DEF_OHCor_TDIS_TCON_Thr;   // (/0.1) Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
+ _data.OHCor_TDIS_ADD = DEF_OHCor_CONDENSING_30_MUL;  	// (/0.1) Корректировка для TDIS_TCON на каждые 10 градусов от 30 градусов
+ _data.OHCor_K = DEF_OHCor_K;						   	// Коэффициент (/0.001): перегрев += дельта * K
+ _data.OHCor_OverHeatMin = DEF_OHCor_OverHeatMin;		// Минимальный перегрев (сотые градуса)
+ _data.OHCor_OverHeatMax = DEF_OHCor_OverHeatMax;		// Максимальный перегрев (сотые градуса)
+ _data.OHCor_OverHeatStart = DEF_OHCor_OverHeatStart; 	// Начальный перегрев (сотые градуса)
 #endif
- _data.OHCor_K = 100;						      	// Коэффициент (/0.001): перегрев += дельта * K
- _data.OHCor_OverHeatMin = 120;			      		// Минимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatMax = 400;			      		// Максимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatStart = 300;				  	// Начальный перегрев (сотые градуса)
  _data.errKp=DEFAULT_ERR_KP;                          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
  _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
@@ -914,20 +914,16 @@ void   devEEV::CorrectOverheat(void)
 	if(!GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_Period) {
 		OverHeatCor_period = 0;
-		int16_t x = HP.sTemp[TCOMP].get_Temp();
-		int16_t delta = HP.get_temp_condensing();
-		x += (int32_t)(delta - 3000) * _data.OHCor_TDIS_ADD*10 / 1000;
-		x -= (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000;
-		OHCor_tdelta = delta = x - delta;
-		if(delta > (x = _data.OHCor_TDIS_TCON + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
-			delta = x - delta;	// Перегрев большой - уменьшаем
-		} else if(delta < (x = _data.OHCor_TDIS_TCON - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)) {
-			delta = x - delta;	// Перегрев маленький - увеличиваем
-		} else return;
-		_data.tOverheat += (int32_t) delta * _data.OHCor_K / 1000;
-//		journal.printf(pP_TIME, "OverHeat set: %.2f (%d,%d)\n", (float)_data.tOverheat/100.0, delta, x);
-		if(_data.tOverheat > _data.OHCor_OverHeatMax) _data.tOverheat = _data.OHCor_OverHeatMax;
-		else if(_data.tOverheat < _data.OHCor_OverHeatMin) _data.tOverheat = _data.OHCor_OverHeatMin;
+		int16_t x, delta = HP.get_temp_condensing();
+		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (delta - 3000) * _data.OHCor_TDIS_ADD*10 / 1000 - (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000;
+		delta = HP.sTemp[TCOMP].get_Temp() - delta;
+		if(delta > (x = OHCor_tdelta + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев большой - уменьшаем
+		else if(delta < (x = OHCor_tdelta - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
+		else return;
+		delta = _data.tOverheat + (int32_t)(x - delta) * _data.OHCor_K / 1000;
+		if(delta > _data.OHCor_OverHeatMax) delta = _data.OHCor_OverHeatMax;
+		else if(delta < _data.OHCor_OverHeatMin) delta = _data.OHCor_OverHeatMin;
+		_data.tOverheat = delta;
 	}
 }
 
