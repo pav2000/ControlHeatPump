@@ -564,7 +564,7 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Cool.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
@@ -575,14 +575,8 @@ boolean Profile::set_paramCoolHP(char *var, float x)
 //Охлаждение Получить параметр в виде строки  второй параметр - наличие частотника
 char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
 {
-  if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
-				                   switch (Cool.Rule)       // алгоритм работы
-				                   {
-				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
-				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
-				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
-				                    default:Cool.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
-				                   }                                                         
+   if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
+	 								return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Cool.Rule);
 				                  else {Cool.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
    if(strcmp(var,hp_TEMP1)==0)    {return _ftoa(ret,(float)Cool.Temp1/100.0,1);                } else             // целевая температура в доме
    if(strcmp(var,hp_TEMP2)==0)    {return _ftoa(ret,(float)Cool.Temp2/100.0,1);                } else             // целевая температура обратки
@@ -621,9 +615,9 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
  if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
  if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
- if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
- if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=5)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=x*100.0; return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=70.0))  {Heat.tempOut=x*100.0; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=x*100.0; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Heat.tempPID=x*100.0; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { if (x==0.0) {SETBIT0(Heat.flags,fWeather); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fWeather); return true;} else return false; }else     // Использование погодозависимости
@@ -635,13 +629,7 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
 char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 {
   if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
-				                   switch (Heat.Rule)       // алгоритм работы
-				                   {
-				                    case 0: return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;
-				                    case 1: return strcat(ret,(char*)"HYSTERESIS:0;PID:1;HYBRID:0;"); break;
-				                    case 2: return strcat(ret,(char*)"HYSTERESIS:0;PID:0;HYBRID:1;"); break; 
-				                    default:Heat.Rule=pHYSTERESIS; return strcat(ret,(char*)"HYSTERESIS:1;PID:0;HYBRID:0;"); break;// исправить
-				                   }                                                         
+	  	  	  	  	  	  	  	  	  return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Heat.Rule);
 				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
    if(strcmp(var,hp_TEMP1)==0)    {return _ftoa(ret,(float)Heat.Temp1/100.0,1);                } else             // целевая температура в доме
    if(strcmp(var,hp_TEMP2)==0)    {return _ftoa(ret,(float)Heat.Temp2/100.0,1);                } else            // целевая температура обратки
@@ -719,7 +707,7 @@ if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.f
                                      else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
                                      else return false;  
                                     }else
-if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=20.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
+if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
 return false;
 
 }
@@ -1685,7 +1673,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
  if (NM) state=stateNARMON; else state=stateMQTT;
  
  if (!linkStatusWiznet(false)) {journal.jprintf((char*)"sendTopic:no link.\n");  SemaphoreGive(xWebThreadSemaphore); return false;}// Нет связи выходим
-
+ 
  //debug=true;    // выводить отладку
  if (!w5200_MQTT.connected())   // если нет соединения то возможно требуется реанимация
   {
@@ -1718,7 +1706,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
      }
  } // if (!connect(NM)) 
 // Попытка соедиения - и определение что делаем дальше
-if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
+//if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
          if (connect(NM))                                        // Попытка соедиениея
           {
            w5200_MQTT.publish(t,p);                              // Посылка данных топика
@@ -1735,7 +1723,7 @@ if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// в
            updateState(NM,pMQTT_OK);   
            return true;      
           }
-          else                                             // соединениe не установлено
+          else                                  // соединениe не установлено
           { 
           ShowSockRegisters(W5200_SOCK_SYS);    // выводим состояние регистров ВСЕГДА
           closeSockSys(true);
@@ -1762,7 +1750,7 @@ w5200_MQTT.setSock(W5200_SOCK_SYS);       // Установить сокет с 
 if (NM) // В зависимости от того с кем надо соединяться
          {
          w5200_MQTT.setServer(mqttSettintg.narodMon_serverIP,mqttSettintg.narodMon_port);                       // установить параметры Народного мониторинга
-         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);  // Соедиенение с народным мониторингом
+         w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password);       // Соедиенение с народным мониторингом
          #ifdef MQTT_REPEAT            // разрешен повтор соединения
          if (!w5200_MQTT.connected()) { _delay(20); ShowSockRegisters(W5200_SOCK_SYS); w5200_MQTT.connect(HP.get_netMAC(), mqttSettintg.narodMon_login,mqttSettintg.narodMon_password); } // вторая попытка
          #endif

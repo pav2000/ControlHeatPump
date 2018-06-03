@@ -523,7 +523,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
        {
-       if (HP.get_State()==pOFF_HP) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); strcat(strReturn,"&"); continue;
+       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); strcat(strReturn,"&"); continue;
        }   
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {
@@ -980,7 +980,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         if (HP.dRelay[REVI].get_present()) { strcat(strReturn," REVI:");      if (HP.dRelay[REVI].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
         #endif
         if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
-        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/10.0,2);  } 
+        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,2);  }
         strcat(strReturn,";");  
    
            
@@ -1019,11 +1019,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }   // test_Mail    
        if(strcmp(str, "get_OverCool") == 0) {
            _ftoa(strReturn, HP.get_overcool() / 100.0, 2);
-           strcat(strReturn,"&") ;    continue;
+           strcat(strReturn,"&");
+           continue;
        }
        if(strcmp(str, "get_Evapor") == 0) {
-           _ftoa(strReturn, HP.get_temp_evaporating() / 100.0, 2);
-           strcat(strReturn,"&") ;    continue;
+    	   if(HP.sADC[PEVA].get_present()) _ftoa(strReturn, HP.get_temp_evaporating() / 100.0, 2);
+    	   else strcat(strReturn,"-");
+           strcat(strReturn,"&");
+    	   continue;
        }
        if(strcmp(str, "get_TCOMP_TCON") == 0) { // Нагнетание - Конденсация
            _ftoa(strReturn, (HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing()) / 100.0, 2);

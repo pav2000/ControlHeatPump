@@ -260,7 +260,6 @@ public:
   int16_t get_Overheat(){return Overheat;}               // Получить текущий перегрев
   int16_t set_Overheat(int16_t rto,int16_t out, int16_t in, int16_t p); // Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
   void   CorrectOverheat(void);							 // Корректировка перегрева
-  void   variable(uint8_t getset, char *ret, char *var, float value);  // Прочитать(getset=0)/Записать(getset=1) значение переменной для веб
 
   // Движение ЭРВ
   __attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
@@ -331,6 +330,7 @@ private:
 
   uint16_t Pid_start;                                    // откуда стартует ПИД регулятор обновление в функции Resume
   int16_t Overheat;                                      // Перегрев текущий (сотые градуса)
+  int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации
   int16_t tmpTime;                                       // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ (она по алгоритму может быть меньше timeIn)
   TEST_MODE testMode;                                    // Значение режима тестирования
   int16_t maxEEV;                                        // Максимальное число шагов ЭРВ (диапазон)
@@ -376,12 +376,13 @@ private:
 
 // Частотный преобразователь ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------------------------------------------------------------------
 // Флаги Инвертора
-#define fFC         0               // флаг наличие инвертора
-#define fAuto       1               // флаг режим автоматического регулирования частоты ( 0 - старт-стоп через инвертор 1 - ПИД)
-#define fPower      2               // флаг режим ограничения мощности (резерв - сейчас ограничение всегда)
-#define fOnOff      3               // флаг включения-выключения частотника
-#define fErrFC      4               // флаг глобальная ошибка инвертора - работа инвертора запрещена
-#define FC_SAVED_FLAGS (1<<fAuto)
+#define fFC         	0        // флаг наличие инвертора
+#define fAuto       	1        // флаг режим автоматического регулирования частоты ( 0 - старт-стоп через инвертор 1 - ПИД)
+#define fPower      	2        // флаг режим ограничения мощности (резерв - сейчас ограничение всегда)
+#define fOnOff      	3        // флаг включения-выключения частотника
+#define fErrFC      	4        // флаг глобальная ошибка инвертора - работа инвертора запрещена
+#define fAutoResetFault	5        // флаг глобальная ошибка инвертора - работа инвертора запрещена
+#define FC_SAVED_FLAGS 	((1<<fAuto) | (1<<fAutoResetFault))
 
 const char *noteFC_OK   = {" связь по Modbus установлена" };                     // Все впорядке
 const char *noteFC_NO   = {" связь по Modbus потеряна, инвертор заблокирован" };
@@ -484,7 +485,7 @@ public:
   // Управление по модбас Общее для всех частотников
   int16_t get_targetFreq() {return FC;}            // Получить целевую частоту в 0.01 герцах
   int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую частоту в 0.01 герцах show - выводить сообщение или нет + границы
-  __attribute__((always_inline)) inline uint16_t get_power(){return power;}              // Получить текущую мощность в 0.1 кВт. В 100 ваттах еденица измерения
+  __attribute__((always_inline)) inline uint16_t get_power(){return power * 100;}              // Получить текущую мощность. В ваттах еденица измерения
   __attribute__((always_inline)) inline uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
   char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
   boolean reset_errorFC();                         // Сброс ошибок инвертора
@@ -675,6 +676,7 @@ class devSDM
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
+      float   get_power(){return AcPower;}
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток

@@ -122,7 +122,7 @@ body.test #get_listrelay span{display:none}
 .visualization #get_temp-tconing	{margin-top: 335px;margin-left: 700px;}
 .visualization #get_temp-tconoutg	{margin-top: 185px;margin-left: 700px;}
 .visualization #get_temp-tcomp		{margin-top: 151px;margin-left: 487px;}
-.visualization #get_paramfc-cpower	{margin-top: 260px;margin-left: 487px;}.visualization #get_paramfc-cpower:after{content:"";}
+.visualization #get_paramfc-info1	{margin-top: 260px;margin-left: 487px;}.visualization #get_paramfc-info1:after{content:"";}
 .visualization #get_paramfc-cfc		{margin-top: 283px;margin-left: 487px;}.visualization #get_paramfc-cfc:after{content:""}
 .visualization #get_temp-tboiler	{margin-top:  30px;margin-left: 759px;}
 .visualization #get_press-peva		{margin-top: 169px;margin-left: 259px; width: 55px;text-align: center}

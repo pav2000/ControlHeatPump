@@ -1,7 +1,7 @@
 /* ver 0.951 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+//var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -14,7 +14,7 @@ function setParam(paramid, resultid) {
 	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
 	var recldr = new RegExp('Calendar');
-	var elval, clear = true;
+	var elval, clear = true, equate = true;
 	var element;
 	if(ret.test(paramid)) {
 		var colls = document.getElementById("calendar").getElementsByClassName("clc");
@@ -45,7 +45,7 @@ function setParam(paramid, resultid) {
 		}
 		elval = len + ";" + elval;
 		clear = false;
-	} else if((clear = elid.indexOf("=")==-1)) { // Не (x=n)
+	} else if((clear = equate = elid.indexOf("=")==-1)) { // Не (x=n)
 		if((element = document.getElementById(elid.toLowerCase()))) {
 			if(element.getAttribute('type') == 'checkbox') {
 				if(element.checked) elval = 1; else elval = 0;
@@ -63,7 +63,9 @@ function setParam(paramid, resultid) {
 		clear = false;
 	} else {
 		var elsend = paramid.replace(/get_/g, "set_");
-		if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;  
+		if(equate) {
+			if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;
+		}
 	}
 	if(rel.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
 	if(!resultid) resultid = elid.replace(/set_/g, "get_").toLowerCase();
@@ -876,12 +878,12 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].match(/^set_SAVE/)) { 
 									if(values[1] >= 0) {
 										if(values[0].match(/SCHDLR$/)) { 
-											alert("Настройки расписаний сохранены в EEPROM!");
+											alert("Настройки расписаний сохранены!");
 										} else {
-											alert("Настройки сохранены в EEPROM, записано " + values[1] + " байт");
+											alert("Настройки сохранены, записано " + values[1] + " байт");
 										}
-									} else alert("Ошибка записи в EEPROM, код ошибки:" + values[1]);
-								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet") {
+									} else alert("Ошибка записи, код ошибки:" + values[1]);
+								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "reset_errorFC") {
 									alert(values[1]);
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
 									break;

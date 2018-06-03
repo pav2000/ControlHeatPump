@@ -129,7 +129,7 @@ void get_txtState(uint8_t thread, boolean header)
          {
               strcat(Socket[thread].outBuf,"Целевая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_targetFreq()/100.0,2); STR_END;
               strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_freqFC()/100.0,2); STR_END;
-              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_power()/10.0,1); STR_END;
+              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_power()/1000.0,1); STR_END;
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),Socket[thread].outBuf); STR_END;
 #endif
@@ -913,7 +913,7 @@ int16_t x;
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
               strcpy(tempBuf,"Текущая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_freqFC()/100.0,2);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
-              strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/10.0,1);
+              strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,1);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
               strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _ftoa(tempBuf,(float)HP.dFC.read_tempFC()/10.0,2);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));

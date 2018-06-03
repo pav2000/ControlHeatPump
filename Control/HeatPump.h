@@ -193,6 +193,8 @@ class HeatPump
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
     int8_t   runCommand();               // Выполнить команду по управлению ТН
+    char *get_command_name(TYPE_COMMAND c) { return (char*)hp_commands_names[c < pEND14 ? c : pEND14]; }
+    boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -313,6 +315,7 @@ class HeatPump
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }						// Все флаги
   
+   void set_HP_error_state() { Status.State = pERROR_HP; }
    // Структура состояния ТН Prof.SaveON.
    inline void  set_HP_OFF()                                                // Сброс флага включения ТН
     { SETBIT0(Prof.SaveON.flags,fHP_ON); Status.State=pOFF_HP;}
@@ -381,7 +384,7 @@ class HeatPump
     uint16_t AdcVcc;                                       // напряжение питания
   //  uint16_t AdcTempSAM3x;                                 // температура чипа
     
-    boolean PauseStart;                                    // True начать отсчет времени с начала при отложенном старте
+    uint8_t PauseStart;                                    // 1 - ТН в отложенном запуске, 0 - нет, начать отсчет времени с начала при отложенном старте
        
     boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
     type_headerEEPROM headerEEPROM;                        // Заголовок записи настроек
@@ -443,7 +446,7 @@ class HeatPump
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
     
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
-    int16_t get_temp_evaporating(void);		// Получить температуру испарения
+    int16_t get_temp_evaporating(void);		// Получить температуру кипения
     int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций
@@ -482,6 +485,7 @@ class HeatPump
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
+    TYPE_COMMAND next_command;            // Следующая команда управления ТН
     type_status Status;                   // Описание состояния ТН
 
     // Ошибки и описания
