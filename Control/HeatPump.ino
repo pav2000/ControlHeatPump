@@ -98,11 +98,11 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
   if (st==Status.State) return false;     // Состояние не меняется
   switch (st)
   {
-  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(Prof.SaveON.flags,fHP_ON)) {SETBIT0(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
+  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(motoHour.flags,fHP_ON))   {SETBIT0(motoHour.flags,fHP_ON);save_motoHour();}  break;  // 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
   case pSTARTING_HP:  Status.State=pSTARTING_HP; break;                                                                                    // 1 Стартует
   case pSTOPING_HP:   Status.State=pSTOPING_HP;  break;                                                                                    // 2 Останавливается
-  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 3 Работает, при необходимости записываем в ЕЕПРОМ
-  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 4 Ожидание, при необходимости записываем в ЕЕПРОМ
+  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 3 Работает, при необходимости записываем в ЕЕПРОМ
+  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 4 Ожидание, при необходимости записываем в ЕЕПРОМ
   case pERROR_HP:     Status.State=pERROR_HP;    break;                                                                                    // 5 Ошибка ТН
   case pERROR_CODE:                                                                                                                        // 6 - Эта ошибка возникать не должна!
   default:            Status.State=pERROR_HP;    break;                                                                                    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
@@ -459,11 +459,11 @@ motoHour.magic=0xaa;   // заголовок
 for (i=0;i<5;i++)   // Делаем 5 попыток записи
  {
   if (!(flag=writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*)&motoHour, sizeof(motoHour)))) break;   // Запись прошла
-  journal.jprintf(" ERROR save countes to eeprom #%d\n",i);    
+  journal.jprintf(" ERROR save countes and OnOff to eeprom #%d\n",i);    
   _delay(i*50);
  }
 if (flag) {set_Error(ERR_SAVE2_EEPROM,(char*)nameHeatPump); return ERR_SAVE2_EEPROM;}  // записать счетчики
-  journal.jprintf(" Save counters to eeprom, write: %d bytes\n",sizeof(motoHour)); 
+  journal.jprintf(" Save counters and OnOff to eeprom, write: %d bytes\n",sizeof(motoHour)); 
 return OK;        
 }
 
@@ -578,6 +578,8 @@ void HeatPump::resetSettingHP()
   Status.State=pOFF_HP;                         // Сотояние ТН - выключен
   Status.ret=pNone;                             // точка выхода алгоритма
   motoHour.magic=0xaa;                          // волшебное число
+  motoHour.flags=0x00;
+  SETBIT0(motoHour.flags,fHP_ON);               // насос выключен
   motoHour.H1=0;                                // моточасы ТН ВСЕГО
   motoHour.H2=0;                                // моточасы ТН сбрасываемый счетчик (сезон)
   motoHour.C1=0;                                // моточасы компрессора ВСЕГО
