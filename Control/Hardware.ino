@@ -908,18 +908,23 @@ return err;
 #define OHCor_EVAPORATING_0_MUL 0
 #endif
 
-void   devEEV::CorrectOverheat(void)
+void devEEV::CorrectOverheat(void)
 {
 	static int16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
 	if(!GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_Period) {
 		OverHeatCor_period = 0;
 		int16_t x, delta = HP.get_temp_condensing();
-		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (delta - 3000) * _data.OHCor_TDIS_ADD*10 / 1000 - (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000;
+		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (delta - 3000) * _data.OHCor_TDIS_ADD*10 / 1000 - (int32_t)HP.get_temp_evaporating() * OHCor_EVAPORATING_0_MUL*10 / 1000 + (Overheat - _data.OHCor_OverHeatStart);
 		delta = HP.sTemp[TCOMP].get_Temp() - delta;
 		if(delta > (x = OHCor_tdelta + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев большой - уменьшаем
-		else if(delta < (x = OHCor_tdelta - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
-		else return;
+		else if(delta < (x = OHCor_tdelta)) { // - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
+			if(delta < x * 3 / 4) { // Слижком мало (меньше 3/4 от дельты) - устанавливаем перегрев принудительно
+				_data.tOverheat = _data.tOverheat < _data.OHCor_OverHeatStart - 50 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
+				journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)delta / 100.0, (float)_data.tOverheat / 100.0);
+				return;
+			}
+		} else return;
 		delta = _data.tOverheat + (int32_t)(x - delta) * _data.OHCor_K / 1000;
 		if(delta > _data.OHCor_OverHeatMax) delta = _data.OHCor_OverHeatMax;
 		else if(delta < _data.OHCor_OverHeatMin) delta = _data.OHCor_OverHeatMin;

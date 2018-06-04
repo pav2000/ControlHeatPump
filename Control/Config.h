@@ -2186,15 +2186,15 @@ enum TYPE_SENSOR
 	 #define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 	#endif
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
-		#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
+		#define I2C_ADR_EEPROM    0x50         // Адрес чипа на шине I2C
 		#define I2C_SIZE_EEPROM   512    	   // Объем чипа в килобитах
   		#define I2C_MEMORY_TOTAL  1024   	   // Итоговый размер I2C памяти в килобитах
-		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения eeprom байты
+		#define I2C_PAGE_EEPROM   64           // Размер страницы для чтения, байты
 	#else // все остальное
-		#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
-		#define I2C_SIZE_EEPROM   32	       // Объем чипа eeprom в килобитах
+		#define I2C_ADR_EEPROM    0x57         // Адрес чипа на шине I2C
+		#define I2C_SIZE_EEPROM   32	       // Объем чипа в килобитах
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти в килобитах
-		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения eeprom байты
+		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения, байты
 	#endif
 
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
@@ -2590,8 +2590,8 @@ enum TYPE_SENSOR
     #define DEFAULT_MIN_STEP       10             // Минимальное число шагов открытия ЭРВ
     #define DEFAULT_HOLD_MOTOR     false          // Режим "удержания" шагового двигателя ЭРВ
   	// Корректировки для фреона R134a
-	#define DEF_OHCor_TDIS_TCON			1250		// Разница температура нагнетания - конденсации при 30С и 0 конденсации (в сотых)
-	#define DEF_OHCor_TDIS_TCON_Thr 	20		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев (в десятых)
+	#define DEF_OHCor_TDIS_TCON			1350		// Разница температура нагнетания - конденсации при 30С и 0 конденсации и перегреве OHCor_OverHeatStart (в сотых)
+	#define DEF_OHCor_TDIS_TCON_Thr 	20		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в десятых)
   	#define DEF_OHCor_CONDENSING_30_MUL 22			// Корректировка разницы Нагнетание-Конденсация на кажлые 10 градусов конденсации от 30 (в десятых), зависит от фреона
 	#define DEF_OHCor_EVAPORATING_0_MUL 46			// Корректировка разницы Нагнетание-Конденсация на кажлые -10 градусов кипения от 0 (в десятых), зависит от фреона
 	#define DEF_OHCor_Delay 			300         // Задержка после старта компрессора, сек

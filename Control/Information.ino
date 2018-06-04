@@ -818,7 +818,7 @@ int16_t  Profile::save(int8_t num)
   if (writeEEPROM_I2C(adrCRC16, (byte*)&crc16, sizeof(crc16))) {set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return err=ERR_SAVE_PROFILE;} 
 
   if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf(" Verification error, profile not write eeprom\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-  journal.jprintf(" Save profile #%d to eeprom OK, write: %d bytes crc16: 0x%x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
+  journal.jprintf(" Save profile #%d OK, write: %d bytes crc16: 0x%x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
   update_list(num);                                                                                                                                                  // обновить список
   return dataProfile.len;
 }
@@ -835,7 +835,7 @@ int32_t Profile::load(int8_t num)
   if (x==!0xaa)  {journal.jprintf(" Profile #%d is bad format\n",num); return OK; }                                                                                   // профиль битый, читать нечего выходим
 
   #ifdef LOAD_VERIFICATION
-    if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf(" Error load profile #%d from eeprom, CRC16 is wrong!\n",num); return err;}                           // проверка контрольной суммы перед чтением
+    if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf(" Error load profile #%d, CRC16 is wrong!\n",num); return err;}                           // проверка контрольной суммы перед чтением
   #endif
   
   if (readEEPROM_I2C(adr, (byte*)&crc16, sizeof(crc16))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_LOAD_PROFILE;}  adr=adr+sizeof(crc16);                   // прочитать crc16
@@ -856,9 +856,9 @@ int32_t Profile::load(int8_t num)
   // проверка контрольной суммы
   if(crc16!=get_crc16_mem()) { set_Error(ERR_CRC16_PROFILE,(char*)nameHeatPump); return err=ERR_CRC16_PROFILE;}                                                           // прочитать crc16
   if (dataProfile.len!=adr-(I2C_PROFILE_EEPROM+dataProfile.len*num))  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;} // Проверка длины
-    journal.jprintf(" Load profile #%d from I2C OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
+    journal.jprintf(" Load profile #%d OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
   #else
-    journal.jprintf(" Load profile #%d from I2C OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
+    journal.jprintf(" Load profile #%d OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
   #endif
   update_list(num);     
   return adr;
@@ -1399,7 +1399,7 @@ void clientMQTT::initMQTT()
  IPAddress zeroIP(0,0,0,0);   
  mqttSettintg.flags=0x00;                                 // Бинарные флага настроек
  SETBIT0(mqttSettintg.flags,fMqttUse);                    // флаг использования MQTT
- SETBIT1(mqttSettintg.flags,fTSUse);                      // флаг использования ThingSpeak
+ SETBIT0(mqttSettintg.flags,fTSUse);                      // флаг использования ThingSpeak
  SETBIT0(mqttSettintg.flags,fMqttBig);                    // флаг отправки ДОПОЛНИТЕЛЬНЫХ данных на MQTT
  SETBIT0(mqttSettintg.flags,fMqttSDM120);                 // флаг отправки данных электросчетчика на MQTT
  SETBIT0(mqttSettintg.flags,fMqttFC);                     // флаг отправки данных инвертора на MQTT
