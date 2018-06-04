@@ -249,8 +249,8 @@ int32_t HeatPump::save()
 		crc_mem=get_crc16_mem();
 		if(writeEEPROM_I2C(adr, (byte*)&crc_mem, sizeof(crc_mem))) { break; }                       // записать crc16, без изменения числа записанных байт
 
-		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not write eeprom/file\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-		journal.jprintf(" Save setting to eeprom OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
+		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not saved\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
+		journal.jprintf(" Save setting OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
 
 		// Сохранение текущего профиля
 		i=Prof.save(Prof.get_idProfile());
@@ -275,7 +275,7 @@ int8_t HeatPump::load()
 	uint16_t i;
 	int32_t adr=I2C_SETTING_EEPROM;
 	#ifdef LOAD_VERIFICATION
-	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting from eeprom, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
+	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
 	#endif
 
 	// Прочитать заголовок
@@ -319,9 +319,9 @@ int8_t HeatPump::load()
 	#ifdef LOAD_VERIFICATION
 	if (readEEPROM_I2C(adr, (byte*)&i, sizeof(i))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(i);                    // прочитать crc16
 	if (headerEEPROM.len!=adr-I2C_SETTING_EEPROM)  {error=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return error;}   // Проверка длины
-	journal.jprintf(" Load setting from eeprom OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
+	journal.jprintf(" Load setting OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
 	#else
-	journal.jprintf(" Load setting from eeprom OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
+	journal.jprintf(" Load setting OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
 	#endif
 
 	// Загрузка текущего профиля
@@ -449,22 +449,25 @@ int8_t HeatPump::check_crc16_buf(int32_t adr, byte* buf)
 }
 
 // СЧЕТЧИКИ -----------------------------------
- // запись счетчиков теплового насоса в ЕЕПРОМ
+ // запись счетчиков теплового насоса в I2C память
 int8_t HeatPump::save_motoHour()
 {
-uint8_t i;
-boolean flag;
-motoHour.magic=0xaa;   // заголовок
+	uint8_t i;
+	boolean flag;
+	motoHour.magic = 0xaa;   // заголовок
 
-for (i=0;i<5;i++)   // Делаем 5 попыток записи
- {
-  if (!(flag=writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*)&motoHour, sizeof(motoHour)))) break;   // Запись прошла
-  journal.jprintf(" ERROR save countes and OnOff to eeprom #%d\n",i);    
-  _delay(i*50);
- }
-if (flag) {set_Error(ERR_SAVE2_EEPROM,(char*)nameHeatPump); return ERR_SAVE2_EEPROM;}  // записать счетчики
-  journal.jprintf(" Save counters and OnOff to eeprom, write: %d bytes\n",sizeof(motoHour)); 
-return OK;        
+	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
+	{
+		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
+		journal.jprintf(" ERROR save countes and OnOff #%d\n", i);
+		_delay(i * 50);
+	}
+	if(flag) {
+		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
+		return ERR_SAVE2_EEPROM;
+	}  // записать счетчики
+	journal.jprintf(" Save counters and OnOff, write: %d bytes\n", sizeof(motoHour));
+	return OK;
 }
 
 // чтение счетчиков теплового насоса в ЕЕПРОМ
@@ -472,9 +475,9 @@ int8_t HeatPump::load_motoHour()
 {
  byte x=0xff;
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
- if (x!=0xaa)  {journal.jprintf("Bad header counters in eeprom, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
+ if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
- journal.jprintf(" Load counters from eeprom, read: %d bytes\n",sizeof(motoHour)); 
+ journal.jprintf(" Load counters OK, read: %d bytes\n",sizeof(motoHour));
  return OK; 
 
 }
