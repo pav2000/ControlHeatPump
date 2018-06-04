@@ -471,7 +471,6 @@ void Profile::initProfile()
   
   // Состояние ТН структура SaveON
   SaveON.magic=0x55;                   // признак данных, должно быть  0x55
-  SETBIT0(SaveON.flags,fHP_ON);        // насос выключен
   SETBIT0(SaveON.flags,fBoilerON);     // Бойлер выключен
   SaveON.startTime=0;                  // нет времени включения
   SaveON.mode=pOFF;                    // выключено

@@ -98,11 +98,11 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
   if (st==Status.State) return false;     // Состояние не меняется
   switch (st)
   {
-  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(Prof.SaveON.flags,fHP_ON)) {SETBIT0(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
+  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(motoHour.flags,fHP_ON))   {SETBIT0(motoHour.flags,fHP_ON);save_motoHour();}  break;  // 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
   case pSTARTING_HP:  Status.State=pSTARTING_HP; break;                                                                                    // 1 Стартует
   case pSTOPING_HP:   Status.State=pSTOPING_HP;  break;                                                                                    // 2 Останавливается
-  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 3 Работает, при необходимости записываем в ЕЕПРОМ
-  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 4 Ожидание, при необходимости записываем в ЕЕПРОМ
+  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 3 Работает, при необходимости записываем в ЕЕПРОМ
+  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 4 Ожидание, при необходимости записываем в ЕЕПРОМ
   case pERROR_HP:     Status.State=pERROR_HP;    break;                                                                                    // 5 Ошибка ТН
   case pERROR_CODE:                                                                                                                        // 6 - Эта ошибка возникать не должна!
   default:            Status.State=pERROR_HP;    break;                                                                                    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
@@ -249,8 +249,8 @@ int32_t HeatPump::save()
 		crc_mem=get_crc16_mem();
 		if(writeEEPROM_I2C(adr, (byte*)&crc_mem, sizeof(crc_mem))) { break; }                       // записать crc16, без изменения числа записанных байт
 
-		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not saved\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-		journal.jprintf(" Saved setting OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
+		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not write eeprom/file\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
+		journal.jprintf(" Save setting to eeprom OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
 
 		// Сохранение текущего профиля
 		i=Prof.save(Prof.get_idProfile());
@@ -275,7 +275,7 @@ int8_t HeatPump::load()
 	uint16_t i;
 	int32_t adr=I2C_SETTING_EEPROM;
 	#ifdef LOAD_VERIFICATION
-	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
+	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting from eeprom, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
 	#endif
 
 	// Прочитать заголовок
@@ -319,9 +319,9 @@ int8_t HeatPump::load()
 	#ifdef LOAD_VERIFICATION
 	if (readEEPROM_I2C(adr, (byte*)&i, sizeof(i))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(i);                    // прочитать crc16
 	if (headerEEPROM.len!=adr-I2C_SETTING_EEPROM)  {error=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return error;}   // Проверка длины
-	journal.jprintf(" Load setting OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
+	journal.jprintf(" Load setting from eeprom OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
 	#else
-	journal.jprintf(" Load setting OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
+	journal.jprintf(" Load setting from eeprom OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
 	#endif
 
 	// Загрузка текущего профиля
@@ -449,25 +449,22 @@ int8_t HeatPump::check_crc16_buf(int32_t adr, byte* buf)
 }
 
 // СЧЕТЧИКИ -----------------------------------
- // запись счетчиков теплового насоса в I2C память
+ // запись счетчиков теплового насоса в ЕЕПРОМ
 int8_t HeatPump::save_motoHour()
 {
-	uint8_t i;
-	boolean flag;
-	motoHour.magic = 0xaa;   // заголовок
+uint8_t i;
+boolean flag;
+motoHour.magic=0xaa;   // заголовок
 
-	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
-	{
-		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR save countes #%d\n", i);
-		_delay(i * 50);
-	}
-	if(flag) {
-		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
-		return ERR_SAVE2_EEPROM;
-	}  // записать счетчики
-	journal.jprintf(" Saved counters OK, wrote: %d bytes\n", sizeof(motoHour));
-	return OK;
+for (i=0;i<5;i++)   // Делаем 5 попыток записи
+ {
+  if (!(flag=writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*)&motoHour, sizeof(motoHour)))) break;   // Запись прошла
+  journal.jprintf(" ERROR save countes and OnOff to eeprom #%d\n",i);    
+  _delay(i*50);
+ }
+if (flag) {set_Error(ERR_SAVE2_EEPROM,(char*)nameHeatPump); return ERR_SAVE2_EEPROM;}  // записать счетчики
+  journal.jprintf(" Save counters and OnOff to eeprom, write: %d bytes\n",sizeof(motoHour)); 
+return OK;        
 }
 
 // чтение счетчиков теплового насоса в ЕЕПРОМ
@@ -475,9 +472,9 @@ int8_t HeatPump::load_motoHour()
 {
  byte x=0xff;
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
- if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
+ if (x!=0xaa)  {journal.jprintf("Bad header counters in eeprom, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
- journal.jprintf(" Load counters, read: %d bytes\n",sizeof(motoHour));
+ journal.jprintf(" Load counters from eeprom, read: %d bytes\n",sizeof(motoHour)); 
  return OK; 
 
 }
@@ -581,6 +578,8 @@ void HeatPump::resetSettingHP()
   Status.State=pOFF_HP;                         // Сотояние ТН - выключен
   Status.ret=pNone;                             // точка выхода алгоритма
   motoHour.magic=0xaa;                          // волшебное число
+  motoHour.flags=0x00;
+  SETBIT0(motoHour.flags,fHP_ON);               // насос выключен
   motoHour.H1=0;                                // моточасы ТН ВСЕГО
   motoHour.H2=0;                                // моточасы ТН сбрасываемый счетчик (сезон)
   motoHour.C1=0;                                // моточасы компрессора ВСЕГО
@@ -1660,7 +1659,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
 	if(b == old) return;                                                        // менять нечего выходим
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP
+#ifdef DELAY_BEFORE_STOP_IN_PUMP                                // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if((!b) && (old)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
@@ -1678,11 +1677,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	// пауза перед выключением насосов контуров, если нужно
 	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n", DELAY_OFF_PUMP);
-		_delay(DELAY_OFF_PUMP * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
+		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
 	// переключение насосов если есть что переключать (проверка была выше)
-	dRelay[PUMP_IN].set_Relay(b);                                 // Реле включения насоса входного контура  (геоконтур)
+	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
 #endif
 #ifdef  TWO_PUMP_IN                                                // второй насос для воздушника если есть
