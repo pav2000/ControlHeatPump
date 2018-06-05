@@ -485,7 +485,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }  
      if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
        {
-       HP.get_listChart(strReturn, true);  // строка добавляется
+       HP.get_listChart(strReturn);  // строка добавляется
        strcat(strReturn,"&") ;
        continue;
        }
@@ -1042,30 +1042,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             #endif   
            strcat(strReturn,"&") ; continue;
          }          
-        if (strncmp(str,"get_EEV", 7)==0)  // Функция get_EEV
-         {
-           #ifdef EEV_DEF 
-           if(HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
-           i = 0;
-           if(str[7] == 'p') { // get_EEVp - только проценты
-        	   i = 2;
-        	   if(str[8] == 'p') i = 1; // get_EEVpp - добавить проценты
-           }
-           if(i < 2) {
-        	   itoa(HP.dEEV.get_EEV(), strReturn + m_strlen(strReturn), 10);
-           }
-           if(i > 0) {
-        	   if(i == 1) strcat(strReturn, " (");
-        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + m_strlen(strReturn), 10); else strcat(strReturn, "?");
-               strcat(strReturn, "%");
-               if(i == 1) strcat(strReturn, ")");
-           }
-           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
-           #else
-           strcat(strReturn,"-");  
-           #endif   
-           strcat(strReturn,"&") ;    continue;
-         }
   
         // FC запросы, те которые без параметра ------------------------------
         if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
@@ -1577,7 +1553,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		             {
 		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
 		                  {
-		                  HP.get_Chart(x+1,strReturn, true);
+		                  HP.get_Chart(x+1,strReturn);
 		                  strcat(strReturn,"&") ; continue;
 		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
 		            } //if ((strstr(str,"Chart")>0)  

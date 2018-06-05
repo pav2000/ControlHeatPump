@@ -968,7 +968,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
                                                else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
                                                else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
-   if(strcmp(var,option_TEMP_RHEAT)==0)       {return _ftoa(ret,(float)Option.tempRHEAT/100.0,1);}else                                         // температура управления RHEAT (градусы)
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {_ftoa(ret,(float)Option.tempRHEAT/100.0,1); return ret; }else                                         // температура управления RHEAT (градусы)
    if(strcmp(var,option_PUMP_WORK)==0)        {return _itoa(Option.workPump,ret);}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
@@ -1028,7 +1028,11 @@ void  HeatPump::updateChart()
  for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
  for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value()); // Частотные датчики
  #ifdef EEV_DEF
- if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());  
+	#ifdef EEV_PREFER_PERCENT
+ if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
+	#else
+ if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
+	#endif
  if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
  if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
  if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
@@ -1204,10 +1208,9 @@ void HeatPump::startChart()
 
 // получить список доступных графиков в виде строки
 // cat true - список добавляется в конец, false - строка обнуляется и список добавляется
-char * HeatPump::get_listChart(char* str, boolean cat)
+char * HeatPump::get_listChart(char* str)
 {
 uint8_t i;  
-if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг
  strcat(str,"none:1;");
  for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present()) {strcat(str,sTemp[i].get_name()); strcat(str,":0;");}
  for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) { strcat(str,sADC[i].get_name()); strcat(str,":0;");} 
@@ -1242,118 +1245,108 @@ return str;
 
 // получить данные графика  в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char * HeatPump::get_Chart(char *var, char* str, boolean cat)
+char * HeatPump::get_Chart(char *var, char* str)
 {
-	if(!cat) strcpy(str, "");  //Обнулить строку если есть соответсвующий флаг false
 	if(strcmp(var, chart_NONE) == 0) {
 		strcat(str, "");
-		return str;
 	} else if(strcmp(var, chart_TOUT) == 0) {
-		return sTemp[TOUT].Chart.get_PointsStr(100, str);
+		sTemp[TOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TIN) == 0) {
-		return sTemp[TIN].Chart.get_PointsStr(100, str);
+		sTemp[TIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAIN) == 0) {
-		return sTemp[TEVAIN].Chart.get_PointsStr(100, str);
+		sTemp[TEVAIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAOUT) == 0) {
-		return sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
+		sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONIN) == 0) {
-		return sTemp[TCONIN].Chart.get_PointsStr(100, str);
+		sTemp[TCONIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONOUT) == 0) {
-		return sTemp[TCONOUT].Chart.get_PointsStr(100, str);
+		sTemp[TCONOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TBOILER) == 0) {
-		return sTemp[TBOILER].Chart.get_PointsStr(100, str);
+		sTemp[TBOILER].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TACCUM) == 0) {
-		return sTemp[TACCUM].Chart.get_PointsStr(100, str);
+		sTemp[TACCUM].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TRTOOUT) == 0) {
-		return sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
+		sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCOMP) == 0) {
-		return sTemp[TCOMP].Chart.get_PointsStr(100, str);
+		sTemp[TCOMP].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAING) == 0) {
-		return sTemp[TEVAING].Chart.get_PointsStr(100, str);
+		sTemp[TEVAING].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAOUTG) == 0) {
-		return sTemp[TEVAOUTG].Chart.get_PointsStr(100, str);
+		sTemp[TEVAOUTG].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONING) == 0) {
-		return sTemp[TCONING].Chart.get_PointsStr(100, str);
+		sTemp[TCONING].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONOUTG) == 0) {
-		return sTemp[TCONOUTG].Chart.get_PointsStr(100, str);
+		sTemp[TCONOUTG].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_PEVA) == 0) {
-		return sADC[PEVA].Chart.get_PointsStr(100, str);
+		sADC[PEVA].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_PCON) == 0) {
-		return sADC[PCON].Chart.get_PointsStr(100, str);
+		sADC[PCON].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_FLOWCON) == 0) {
 #ifdef FLOWCON
-		return sFrequency[FLOWCON].Chart.get_PointsStr(1000, str);
+		sFrequency[FLOWCON].Chart.get_PointsStr(1000, str);
 #endif
 	} else if(strcmp(var, chart_FLOWEVA) == 0) {
 #ifdef FLOWEVA
-		return sFrequency[FLOWEVA].Chart.get_PointsStr(1000, str);
+		sFrequency[FLOWEVA].Chart.get_PointsStr(1000, str);
 #endif
 	} else if(strcmp(var, chart_FLOWPCON) == 0) {
 #ifdef FLOWPCON
-		return sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
+		sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
 #endif
 	} else
 #ifdef EEV_DEF
 	if(strcmp(var, chart_posEEV) == 0) {
-		return dEEV.Chart.get_PointsStr(1, str);
+	  #ifdef EEV_PREFER_PERCENT
+		dEEV.Chart.get_PointsStr(100, str);
+	  #else
+		dEEV.Chart.get_PointsStr(1, str);
+	  #endif
 	} else if(strcmp(var, chart_OVERHEAT) == 0) {
-		return ChartOVERHEAT.get_PointsStr(100, str);
+		ChartOVERHEAT.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPEVA) == 0) {
-		return ChartTPEVA.get_PointsStr(100, str);
+		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
-		return ChartTPCON.get_PointsStr(100, str);
+		ChartTPCON.get_PointsStr(100, str);
 	} else
 #endif
 	if(strcmp(var, chart_freqFC) == 0) {
-		return dFC.ChartFC.get_PointsStr(100, str);
+		dFC.ChartFC.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_powerFC) == 0) {
-		return dFC.ChartPower.get_PointsStr(10, str);
+		dFC.ChartPower.get_PointsStr(10, str);
 	} else if(strcmp(var, chart_currentFC) == 0) {
-		return dFC.ChartCurrent.get_PointsStr(100, str);
+		dFC.ChartCurrent.get_PointsStr(100, str);
 	} else
 
 	if(strcmp(var, chart_RCOMP) == 0) {
-		return ChartRCOMP.get_PointsStr(1, str);
+		ChartRCOMP.get_PointsStr(1, str);
 	} else if(strcmp(var, chart_dCO) == 0) {
-		if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
-				{
-			for(int i = 0; i < sTemp[TCONOUTG].Chart.get_num(); i++) {
-				_ftoa(str,((float) sTemp[TCONOUTG].Chart.get_Point(i) - (float) sTemp[TCONING].Chart.get_Point(i)) / 100, 2);
-				strcat(str, (char*) ";");
-			}
-		} else return (char*) ";"; // График не определен - нет данных
+		sTemp[TCONOUTG].Chart.get_PointsStrSub(100, str, &sTemp[TCONING].Chart); // считаем график на лету экономим оперативку
 	} else if(strcmp(var, chart_dGEO) == 0) {
-		if((sTemp[TEVAING].Chart.get_present()) && (sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
-				{
-			for(int i = 0; i < sTemp[TEVAING].Chart.get_num(); i++) {
-				_ftoa(str, ((float) sTemp[TEVAING].Chart.get_Point(i) - (float) sTemp[TEVAOUTG].Chart.get_Point(i)) / 100, 2);
-				strcat(str, (char*) ";");
-			}
-		} else return (char*) ";"; // График не определен - нет данных
+		sTemp[TEVAING].Chart.get_PointsStrSub(100, str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
 	} else
 
 	if(strcmp(var, chart_PowerCO) == 0) {
-		return ChartPowerCO.get_PointsStr(1000, str);
+		ChartPowerCO.get_PointsStr(1000, str);
 	} else if(strcmp(var, chart_PowerGEO) == 0) {
-		return ChartPowerGEO.get_PointsStr(1000, str);
+		ChartPowerGEO.get_PointsStr(1000, str);
 	} else if(strcmp(var, chart_COP) == 0) {
-		return ChartCOP.get_PointsStr(100, str);
+		ChartCOP.get_PointsStr(100, str);
 	} else
 
 #ifdef USE_ELECTROMETER_SDM
 	if(strcmp(var, chart_VOLTAGE) == 0) {
-		return dSDM.ChartVoltage.get_PointsStr(100, str);
+		dSDM.ChartVoltage.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_CURRENT) == 0) {
-		return dSDM.ChartCurrent.get_PointsStr(100, str);
+		dSDM.ChartCurrent.get_PointsStr(100, str);
 	} else
-	//   if(strcmp(var,chart_acPOWER)==0){   return dSDM.sAcPower.get_PointsStr(1,str);           }else
-	//   if(strcmp(var,chart_rePOWER)==0){   return dSDM.sRePower.get_PointsStr(1,str);           }else
+	//   if(strcmp(var,chart_acPOWER)==0){   dSDM.sAcPower.get_PointsStr(1,str);           }else
+	//   if(strcmp(var,chart_rePOWER)==0){   dSDM.sRePower.get_PointsStr(1,str);           }else
 	if(strcmp(var, chart_fullPOWER) == 0) {
-		return dSDM.ChartPower.get_PointsStr(1, str);
+		dSDM.ChartPower.get_PointsStr(1, str);
 	} else
-	//   if(strcmp(var,chart_kPOWER)==0){    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
+	//   if(strcmp(var,chart_kPOWER)==0){    dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
 	if(strcmp(var, chart_fullCOP) == 0) {
-		return ChartFullCOP.get_PointsStr(100, str);
+		ChartFullCOP.get_PointsStr(100, str);
 	} else
 #endif
 	{}

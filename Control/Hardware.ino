@@ -979,7 +979,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	if(strcmp(var, eev_POS)==0) {
 	  _itoa(EEV,ret); 
 	} else if(strcmp(var, eev_POSp)==0){
-	  _ftoa(ret,(float)(EEV < 0 ? 0 : EEV) * 100.0 / maxEEV, 1);
+	  _ftoa(ret,(float)get_EEV_percent() / 100.0, 1);
 	} else if(strcmp(var, eev_POSpp)==0){
 	  _itoa(EEV,ret);
 	  strcat(ret," (");
@@ -2062,31 +2062,31 @@ char* devSDM::get_paramSDM(char *var, char *ret)
    if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return _itoa(settingSDM.maxVoltage,ret);                                }else      // мах напряжение контроля напряжения
    if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return _itoa(settingSDM.minVoltage,ret);                                }else      // min напряжение контроля напряжения
    if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
-   if(strcmp(var,sdm_VOLTAGE)==0){      return _ftoa(ret,(float)Voltage,2);                                     }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){      return _ftoa(ret,(float)Current,2);                                     }else      // Ток
-   if(strcmp(var,sdm_ACPOWER)==0){      return _ftoa(ret,(float)AcPower,2);                                     }else      // Активная мощность
-   if(strcmp(var,sdm_ACENERGY)==0){     return _ftoa(ret,(float)AcEnergy,2);                                    }else      // Суммарная активная энергия
+   if(strcmp(var,sdm_VOLTAGE)==0){      _ftoa(ret,(float)Voltage,2); return ret;                         }else      // Напряжение
+   if(strcmp(var,sdm_CURRENT)==0){      _ftoa(ret,(float)Current,2); return ret;                         }else      // Ток
+   if(strcmp(var,sdm_ACPOWER)==0){      _ftoa(ret,(float)AcPower,2);  return ret;                        }else      // Активная мощность
+   if(strcmp(var,sdm_ACENERGY)==0){     _ftoa(ret,(float)AcEnergy,2); return ret;                        }else      // Суммарная активная энергия
    if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
    else {
 	   if(GETBIT(flags,fSDMLink)) {
 //		   if(strcmp(var,sdm_CURRENT)==0){
 //			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
-//			   return _ftoa(ret, tmp, 2);																			   }else       // Ток
+//			   _ftoa(ret, tmp, 2);																			   }else       // Ток
 		   if(strcmp(var,sdm_REPOWER)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
-			   return _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
+			   _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
 		   if(strcmp(var,sdm_POWER)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
-			   return _ftoa(ret, tmp, 2);																				}else      // Полная мощность
+			   _ftoa(ret, tmp, 2);																				}else      // Полная мощность
 		   if(strcmp(var,sdm_POW_FACTOR)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
-			   return _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
+			   _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
 		   if(strcmp(var,sdm_PHASE)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
-			   return _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
+			   _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
 		   if(strcmp(var,sdm_FREQ)==0){
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
-			   return _ftoa(ret, tmp, 2);																				}         // Частота
+			   _ftoa(ret, tmp, 2);																				}         // Частота
 	   }
 	   return ret;
    }

@@ -210,16 +210,10 @@ float my_atof(const char* s){
 };
 
 //float в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек -----------------------------------
-char *_ftoa(char *outstr, float val, unsigned char precision)
+uint8_t _ftoa(char *outstr, float val, unsigned char precision)
 {
-	
-//	unsigned int len = 0;
-//	while (outstr[len] != '\0') len++;
-//	char *ret = outstr;
-//	outstr=outstr+len;
-
-	char *ret = outstr;
     while(*outstr) outstr++;
+	char *instr = outstr;
 	
 	// compute the rounding factor and fractional multiplier
 	float roundingFactor = 0.5;
@@ -237,9 +231,9 @@ char *_ftoa(char *outstr, float val, unsigned char precision)
 	outstr += m_itoa((long)val, outstr, 10, 0);
 	if(padding > 0) {
 		*(outstr++) = '.';
-		m_itoa((val - (long)val) * mult, outstr, 10, padding);
+		outstr += m_itoa((val - (long)val) * mult, outstr, 10, padding);
 	}
-	return ret;
+	return outstr - instr;
 }
 //int в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек radix=10
 char* _itoa( int value, char *string)

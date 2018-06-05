@@ -392,8 +392,8 @@ class HeatPump
     uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
-    char * get_listChart(char* str, boolean cat);          // получить список доступных графиков
-    char * get_Chart(char *var,char* str, boolean cat);    // получить данные графика
+    char * get_listChart(char* str);				          // получить список доступных графиков
+    char * get_Chart(char *var,char* str);   				 // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора

@@ -337,10 +337,10 @@ return true;
 // Получить параметр в виде строки
 char* sensorIP::get_sensorIP(char *var, char *ret)
 {
-if(strcmp(var,ip_SENSOR_TEMP)==0)     {return _ftoa(ret,(float)Temp/100.0,2);      } else  
+if(strcmp(var,ip_SENSOR_TEMP)==0)     {_ftoa(ret,(float)Temp/100.0,2); return ret;     } else
 if(strcmp(var,ip_SENSOR_NUMBER)==0)   {return _itoa(num,ret);                      } else  
-if(strcmp(var,ip_RSSI)==0)            {return _ftoa(ret,(float)RSSI/10.0,1);       } else                
-if(strcmp(var,ip_VCC)==0)             {return _ftoa(ret,(float)VCC/1000.0,2);      } else
+if(strcmp(var,ip_RSSI)==0)            {_ftoa(ret,(float)RSSI/10.0,1); return ret;      } else
+if(strcmp(var,ip_VCC)==0)             {_ftoa(ret,(float)VCC/1000.0,2); return ret;     } else
 if(strcmp(var,ip_SENSOR_USE)==0)      {if (GETBIT(flags,fUse)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);} else  
 if(strcmp(var,ip_SENSOR_RULE)==0)     {if (GETBIT(flags,fRule)) return strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero);} else     
 if(strcmp(var,ip_SENSOR_IP)==0)       {return strcat(ret,IPAddress2String(ip));    } else  
