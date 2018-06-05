@@ -44,6 +44,7 @@ struct type_status
    int8_t ret;              // Точка выхода из алгоритма регулирования
 }; 
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
+#define fHP_ON    0         // флаг Включения ТН (пишется внутрь счетчиков flags)
 struct type_motoHour
 {
   byte magic;       // признак данных, должно быть  0xaa  пока не используется!!!!!!!!!!
@@ -313,16 +314,12 @@ class HeatPump
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    void     updateNextion();                                           // Обновить настройки дисплея
    uint8_t  get_sleep() {return Option.sleep;}                         //
-   uint16_t get_flags() { return Option.flags; }						// Все флаги
+   uint16_t get_flags() { return Option.flags; }					  // Все флаги
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
-   // Структура состояния ТН Prof.SaveON.
-   inline void  set_HP_OFF()                                                // Сброс флага включения ТН
-    { SETBIT0(Prof.SaveON.flags,fHP_ON); Status.State=pOFF_HP;}
-   inline void  set_HP_ON()                                                 // Установка флага включения ТН
-    { SETBIT1(Prof.SaveON.flags,fHP_ON); Status.State=pWORK_HP;}
-    
-   boolean  get_HP_ON() {return GETBIT(Prof.SaveON.flags,fHP_ON);}          // Получить значение флага включения ТН
+   inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
+   inline void  set_HP_ON(){SETBIT1(motoHour.flags,fHP_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
+   inline boolean  get_HP_ON() {return GETBIT(motoHour.flags,fHP_ON);}           // Получить значение флага включения ТН
 
    void     set_BoilerOFF(){SETBIT0(Prof.SaveON.flags,fBoilerON);}          // Выключить бойлер
    void     set_BoilerON() {SETBIT1(Prof.SaveON.flags,fBoilerON);}          // Включить бойлер
@@ -395,8 +392,8 @@ class HeatPump
     uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
-    char * get_listChart(char* str, boolean cat);          // получить список доступных графиков
-    char * get_Chart(char *var,char* str, boolean cat);    // получить данные графика
+    char * get_listChart(char* str);				          // получить список доступных графиков
+    char * get_Chart(char *var,char* str);   				 // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора
@@ -450,7 +447,7 @@ class HeatPump
     int16_t get_overcool(void);			    // Расчитать переохлаждение
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций
-   type_optionHP Option;                  // Опции теплового насоса
+    type_optionHP Option;                  // Опции теплового насоса
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
@@ -481,6 +478,7 @@ class HeatPump
     int8_t check_crc16_eeprom(int32_t adr);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     int8_t check_crc16_buf(int32_t adr, byte* buf);// Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
+    
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования

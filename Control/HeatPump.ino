@@ -98,11 +98,11 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
   if (st==Status.State) return false;     // Состояние не меняется
   switch (st)
   {
-  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(Prof.SaveON.flags,fHP_ON)) {SETBIT0(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
+  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(motoHour.flags,fHP_ON))   {SETBIT0(motoHour.flags,fHP_ON);save_motoHour();}  break;  // 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
   case pSTARTING_HP:  Status.State=pSTARTING_HP; break;                                                                                    // 1 Стартует
   case pSTOPING_HP:   Status.State=pSTOPING_HP;  break;                                                                                    // 2 Останавливается
-  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 3 Работает, при необходимости записываем в ЕЕПРОМ
-  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(Prof.SaveON.flags,fHP_ON))) {SETBIT1(Prof.SaveON.flags,fHP_ON);Prof.save(Prof.get_idProfile());}  break;// 4 Ожидание, при необходимости записываем в ЕЕПРОМ
+  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 3 Работает, при необходимости записываем в ЕЕПРОМ
+  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 4 Ожидание, при необходимости записываем в ЕЕПРОМ
   case pERROR_HP:     Status.State=pERROR_HP;    break;                                                                                    // 5 Ошибка ТН
   case pERROR_CODE:                                                                                                                        // 6 - Эта ошибка возникать не должна!
   default:            Status.State=pERROR_HP;    break;                                                                                    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
@@ -249,8 +249,8 @@ int32_t HeatPump::save()
 		crc_mem=get_crc16_mem();
 		if(writeEEPROM_I2C(adr, (byte*)&crc_mem, sizeof(crc_mem))) { break; }                       // записать crc16, без изменения числа записанных байт
 
-		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not write eeprom/file\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-		journal.jprintf(" Save setting to eeprom OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
+		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not saved\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
+		journal.jprintf(" Save setting OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
 
 		// Сохранение текущего профиля
 		i=Prof.save(Prof.get_idProfile());
@@ -275,7 +275,7 @@ int8_t HeatPump::load()
 	uint16_t i;
 	int32_t adr=I2C_SETTING_EEPROM;
 	#ifdef LOAD_VERIFICATION
-	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting from eeprom, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
+	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
 	#endif
 
 	// Прочитать заголовок
@@ -319,9 +319,9 @@ int8_t HeatPump::load()
 	#ifdef LOAD_VERIFICATION
 	if (readEEPROM_I2C(adr, (byte*)&i, sizeof(i))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(i);                    // прочитать crc16
 	if (headerEEPROM.len!=adr-I2C_SETTING_EEPROM)  {error=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return error;}   // Проверка длины
-	journal.jprintf(" Load setting from eeprom OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
+	journal.jprintf(" Load setting OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
 	#else
-	journal.jprintf(" Load setting from eeprom OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
+	journal.jprintf(" Load setting OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
 	#endif
 
 	// Загрузка текущего профиля
@@ -449,22 +449,25 @@ int8_t HeatPump::check_crc16_buf(int32_t adr, byte* buf)
 }
 
 // СЧЕТЧИКИ -----------------------------------
- // запись счетчиков теплового насоса в ЕЕПРОМ
+ // запись счетчиков теплового насоса в I2C память
 int8_t HeatPump::save_motoHour()
 {
-uint8_t i;
-boolean flag;
-motoHour.magic=0xaa;   // заголовок
+	uint8_t i;
+	boolean flag;
+	motoHour.magic = 0xaa;   // заголовок
 
-for (i=0;i<5;i++)   // Делаем 5 попыток записи
- {
-  if (!(flag=writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*)&motoHour, sizeof(motoHour)))) break;   // Запись прошла
-  journal.jprintf(" ERROR save countes to eeprom #%d\n",i);    
-  _delay(i*50);
- }
-if (flag) {set_Error(ERR_SAVE2_EEPROM,(char*)nameHeatPump); return ERR_SAVE2_EEPROM;}  // записать счетчики
-  journal.jprintf(" Save counters to eeprom, write: %d bytes\n",sizeof(motoHour)); 
-return OK;        
+	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
+	{
+		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
+		journal.jprintf(" ERROR save countes and OnOff #%d\n", i);
+		_delay(i * 50);
+	}
+	if(flag) {
+		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
+		return ERR_SAVE2_EEPROM;
+	}  // записать счетчики
+	journal.jprintf(" Save counters and OnOff, write: %d bytes\n", sizeof(motoHour));
+	return OK;
 }
 
 // чтение счетчиков теплового насоса в ЕЕПРОМ
@@ -472,9 +475,9 @@ int8_t HeatPump::load_motoHour()
 {
  byte x=0xff;
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
- if (x!=0xaa)  {journal.jprintf("Bad header counters in eeprom, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
+ if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
  if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
- journal.jprintf(" Load counters from eeprom, read: %d bytes\n",sizeof(motoHour)); 
+ journal.jprintf(" Load counters OK, read: %d bytes\n",sizeof(motoHour));
  return OK; 
 
 }
@@ -578,6 +581,8 @@ void HeatPump::resetSettingHP()
   Status.State=pOFF_HP;                         // Сотояние ТН - выключен
   Status.ret=pNone;                             // точка выхода алгоритма
   motoHour.magic=0xaa;                          // волшебное число
+  motoHour.flags=0x00;
+  SETBIT0(motoHour.flags,fHP_ON);               // насос выключен
   motoHour.H1=0;                                // моточасы ТН ВСЕГО
   motoHour.H2=0;                                // моточасы ТН сбрасываемый счетчик (сезон)
   motoHour.C1=0;                                // моточасы компрессора ВСЕГО
@@ -963,7 +968,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
                                                else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
                                                else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
-   if(strcmp(var,option_TEMP_RHEAT)==0)       {return _ftoa(ret,(float)Option.tempRHEAT/100.0,1);}else                                         // температура управления RHEAT (градусы)
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {_ftoa(ret,(float)Option.tempRHEAT/100.0,1); return ret; }else                                         // температура управления RHEAT (градусы)
    if(strcmp(var,option_PUMP_WORK)==0)        {return _itoa(Option.workPump,ret);}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
@@ -1023,7 +1028,11 @@ void  HeatPump::updateChart()
  for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
  for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value()); // Частотные датчики
  #ifdef EEV_DEF
- if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());  
+	#ifdef EEV_PREFER_PERCENT
+ if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
+	#else
+ if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
+	#endif
  if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
  if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
  if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
@@ -1199,10 +1208,9 @@ void HeatPump::startChart()
 
 // получить список доступных графиков в виде строки
 // cat true - список добавляется в конец, false - строка обнуляется и список добавляется
-char * HeatPump::get_listChart(char* str, boolean cat)
+char * HeatPump::get_listChart(char* str)
 {
 uint8_t i;  
-if (!cat) strcpy(str,"");  //Обнулить строку если есть соответсвующий флаг
  strcat(str,"none:1;");
  for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present()) {strcat(str,sTemp[i].get_name()); strcat(str,":0;");}
  for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) { strcat(str,sADC[i].get_name()); strcat(str,":0;");} 
@@ -1237,118 +1245,108 @@ return str;
 
 // получить данные графика  в виде строки
 // cat=true - не обнулять входную строку а добавить в конец
-char * HeatPump::get_Chart(char *var, char* str, boolean cat)
+char * HeatPump::get_Chart(char *var, char* str)
 {
-	if(!cat) strcpy(str, "");  //Обнулить строку если есть соответсвующий флаг false
 	if(strcmp(var, chart_NONE) == 0) {
 		strcat(str, "");
-		return str;
 	} else if(strcmp(var, chart_TOUT) == 0) {
-		return sTemp[TOUT].Chart.get_PointsStr(100, str);
+		sTemp[TOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TIN) == 0) {
-		return sTemp[TIN].Chart.get_PointsStr(100, str);
+		sTemp[TIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAIN) == 0) {
-		return sTemp[TEVAIN].Chart.get_PointsStr(100, str);
+		sTemp[TEVAIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAOUT) == 0) {
-		return sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
+		sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONIN) == 0) {
-		return sTemp[TCONIN].Chart.get_PointsStr(100, str);
+		sTemp[TCONIN].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONOUT) == 0) {
-		return sTemp[TCONOUT].Chart.get_PointsStr(100, str);
+		sTemp[TCONOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TBOILER) == 0) {
-		return sTemp[TBOILER].Chart.get_PointsStr(100, str);
+		sTemp[TBOILER].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TACCUM) == 0) {
-		return sTemp[TACCUM].Chart.get_PointsStr(100, str);
+		sTemp[TACCUM].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TRTOOUT) == 0) {
-		return sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
+		sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCOMP) == 0) {
-		return sTemp[TCOMP].Chart.get_PointsStr(100, str);
+		sTemp[TCOMP].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAING) == 0) {
-		return sTemp[TEVAING].Chart.get_PointsStr(100, str);
+		sTemp[TEVAING].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAOUTG) == 0) {
-		return sTemp[TEVAOUTG].Chart.get_PointsStr(100, str);
+		sTemp[TEVAOUTG].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONING) == 0) {
-		return sTemp[TCONING].Chart.get_PointsStr(100, str);
+		sTemp[TCONING].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TCONOUTG) == 0) {
-		return sTemp[TCONOUTG].Chart.get_PointsStr(100, str);
+		sTemp[TCONOUTG].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_PEVA) == 0) {
-		return sADC[PEVA].Chart.get_PointsStr(100, str);
+		sADC[PEVA].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_PCON) == 0) {
-		return sADC[PCON].Chart.get_PointsStr(100, str);
+		sADC[PCON].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_FLOWCON) == 0) {
 #ifdef FLOWCON
-		return sFrequency[FLOWCON].Chart.get_PointsStr(1000, str);
+		sFrequency[FLOWCON].Chart.get_PointsStr(1000, str);
 #endif
 	} else if(strcmp(var, chart_FLOWEVA) == 0) {
 #ifdef FLOWEVA
-		return sFrequency[FLOWEVA].Chart.get_PointsStr(1000, str);
+		sFrequency[FLOWEVA].Chart.get_PointsStr(1000, str);
 #endif
 	} else if(strcmp(var, chart_FLOWPCON) == 0) {
 #ifdef FLOWPCON
-		return sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
+		sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
 #endif
 	} else
 #ifdef EEV_DEF
 	if(strcmp(var, chart_posEEV) == 0) {
-		return dEEV.Chart.get_PointsStr(1, str);
+	  #ifdef EEV_PREFER_PERCENT
+		dEEV.Chart.get_PointsStr(100, str);
+	  #else
+		dEEV.Chart.get_PointsStr(1, str);
+	  #endif
 	} else if(strcmp(var, chart_OVERHEAT) == 0) {
-		return ChartOVERHEAT.get_PointsStr(100, str);
+		ChartOVERHEAT.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPEVA) == 0) {
-		return ChartTPEVA.get_PointsStr(100, str);
+		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
-		return ChartTPCON.get_PointsStr(100, str);
+		ChartTPCON.get_PointsStr(100, str);
 	} else
 #endif
 	if(strcmp(var, chart_freqFC) == 0) {
-		return dFC.ChartFC.get_PointsStr(100, str);
+		dFC.ChartFC.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_powerFC) == 0) {
-		return dFC.ChartPower.get_PointsStr(10, str);
+		dFC.ChartPower.get_PointsStr(10, str);
 	} else if(strcmp(var, chart_currentFC) == 0) {
-		return dFC.ChartCurrent.get_PointsStr(100, str);
+		dFC.ChartCurrent.get_PointsStr(100, str);
 	} else
 
 	if(strcmp(var, chart_RCOMP) == 0) {
-		return ChartRCOMP.get_PointsStr(1, str);
+		ChartRCOMP.get_PointsStr(1, str);
 	} else if(strcmp(var, chart_dCO) == 0) {
-		if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) // считаем график на лету экономим оперативку
-				{
-			for(int i = 0; i < sTemp[TCONOUTG].Chart.get_num(); i++) {
-				_ftoa(str,((float) sTemp[TCONOUTG].Chart.get_Point(i) - (float) sTemp[TCONING].Chart.get_Point(i)) / 100, 2);
-				strcat(str, (char*) ";");
-			}
-		} else return (char*) ";"; // График не определен - нет данных
+		sTemp[TCONOUTG].Chart.get_PointsStrSub(100, str, &sTemp[TCONING].Chart); // считаем график на лету экономим оперативку
 	} else if(strcmp(var, chart_dGEO) == 0) {
-		if((sTemp[TEVAING].Chart.get_present()) && (sTemp[TEVAOUTG].Chart.get_present())) // считаем график на лету экономим оперативку
-				{
-			for(int i = 0; i < sTemp[TEVAING].Chart.get_num(); i++) {
-				_ftoa(str, ((float) sTemp[TEVAING].Chart.get_Point(i) - (float) sTemp[TEVAOUTG].Chart.get_Point(i)) / 100, 2);
-				strcat(str, (char*) ";");
-			}
-		} else return (char*) ";"; // График не определен - нет данных
+		sTemp[TEVAING].Chart.get_PointsStrSub(100, str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
 	} else
 
 	if(strcmp(var, chart_PowerCO) == 0) {
-		return ChartPowerCO.get_PointsStr(1000, str);
+		ChartPowerCO.get_PointsStr(1000, str);
 	} else if(strcmp(var, chart_PowerGEO) == 0) {
-		return ChartPowerGEO.get_PointsStr(1000, str);
+		ChartPowerGEO.get_PointsStr(1000, str);
 	} else if(strcmp(var, chart_COP) == 0) {
-		return ChartCOP.get_PointsStr(100, str);
+		ChartCOP.get_PointsStr(100, str);
 	} else
 
 #ifdef USE_ELECTROMETER_SDM
 	if(strcmp(var, chart_VOLTAGE) == 0) {
-		return dSDM.ChartVoltage.get_PointsStr(100, str);
+		dSDM.ChartVoltage.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_CURRENT) == 0) {
-		return dSDM.ChartCurrent.get_PointsStr(100, str);
+		dSDM.ChartCurrent.get_PointsStr(100, str);
 	} else
-	//   if(strcmp(var,chart_acPOWER)==0){   return dSDM.sAcPower.get_PointsStr(1,str);           }else
-	//   if(strcmp(var,chart_rePOWER)==0){   return dSDM.sRePower.get_PointsStr(1,str);           }else
+	//   if(strcmp(var,chart_acPOWER)==0){   dSDM.sAcPower.get_PointsStr(1,str);           }else
+	//   if(strcmp(var,chart_rePOWER)==0){   dSDM.sRePower.get_PointsStr(1,str);           }else
 	if(strcmp(var, chart_fullPOWER) == 0) {
-		return dSDM.ChartPower.get_PointsStr(1, str);
+		dSDM.ChartPower.get_PointsStr(1, str);
 	} else
-	//   if(strcmp(var,chart_kPOWER)==0){    return dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
+	//   if(strcmp(var,chart_kPOWER)==0){    dSDM.ChartPowerFactor.get_PointsStr(100,str);     }else
 	if(strcmp(var, chart_fullCOP) == 0) {
-		return ChartFullCOP.get_PointsStr(100, str);
+		ChartFullCOP.get_PointsStr(100, str);
 	} else
 #endif
 	{}
@@ -1657,7 +1655,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
 	if(b == old) return;                                                        // менять нечего выходим
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP
+#ifdef DELAY_BEFORE_STOP_IN_PUMP                                // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if((!b) && (old)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
@@ -1675,11 +1673,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	// пауза перед выключением насосов контуров, если нужно
 	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n", DELAY_OFF_PUMP);
-		_delay(DELAY_OFF_PUMP * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
+		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
 	// переключение насосов если есть что переключать (проверка была выше)
-	dRelay[PUMP_IN].set_Relay(b);                                 // Реле включения насоса входного контура  (геоконтур)
+	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
 #endif
 #ifdef  TWO_PUMP_IN                                                // второй насос для воздушника если есть

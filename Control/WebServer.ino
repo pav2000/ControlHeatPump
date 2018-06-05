@@ -485,7 +485,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        }  
      if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
        {
-       HP.get_listChart(strReturn, true);  // строка добавляется
+       HP.get_listChart(strReturn);  // строка добавляется
        strcat(strReturn,"&") ;
        continue;
        }
@@ -727,7 +727,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         {
        strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
        strcat(strReturn,"__DATE__ __TIME__|Дата и время сборки прошивки|");strcat(strReturn,__DATE__);strcat(strReturn," ");strcat(strReturn,__TIME__) ;strcat(strReturn,";");
-       strcat(strReturn,"VER_SAVE|Версия формата данных, при чтении eeprom, если версии не совпадают, отказ от чтения|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"VER_SAVE|Версия формата данных, при чтении I2C памяти, если версии не совпадают, отказ от чтения|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"CONFIG_NAME|Имя конфигурации|");strcat(strReturn,CONFIG_NAME);strcat(strReturn,";");
        strcat(strReturn,"CONFIG_NOTE|");strcat(strReturn,CONFIG_NOTE);strcat(strReturn,"|-");strcat(strReturn,";");  
        strcat(strReturn,"UART_SPEED|Скорость отладочного порта (бод)|");_itoa(UART_SPEED,strReturn);strcat(strReturn,";");
@@ -851,9 +851,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        
        // i2c
        strcat(strReturn,"I2C_SPEED|Частота работы шины I2C (кГц)|"); _itoa(I2C_SPEED/1000,strReturn); strcat(strReturn,";");
-       strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа eeprom с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
-       strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа eeprom с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
-       strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа eeprom с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
+       strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
+       strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа I2C с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
+       strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа I2C с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
        strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков + DELAY_DS1820 (мсек)|");_itoa(TIME_READ_SENSOR+cDELAY_DS1820,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_CONTROL|Период управления тепловым насосом (мсек)|");_itoa(TIME_CONTROL,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_EEV|Период управления ЭРВ (мсек)|");_itoa(TIME_EEV,strReturn);strcat(strReturn,";");
@@ -1042,30 +1042,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             #endif   
            strcat(strReturn,"&") ; continue;
          }          
-        if (strncmp(str,"get_EEV", 7)==0)  // Функция get_EEV
-         {
-           #ifdef EEV_DEF 
-           if(HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,"<<");  // признак движения
-           i = 0;
-           if(str[7] == 'p') { // get_EEVp - только проценты
-        	   i = 2;
-        	   if(str[8] == 'p') i = 1; // get_EEVpp - добавить проценты
-           }
-           if(i < 2) {
-        	   itoa(HP.dEEV.get_EEV(), strReturn + m_strlen(strReturn), 10);
-           }
-           if(i > 0) {
-        	   if(i == 1) strcat(strReturn, " (");
-        	   if(HP.dEEV.get_EEV() >= 0) itoa(HP.dEEV.get_EEV_percent(), strReturn + m_strlen(strReturn), 10); else strcat(strReturn, "?");
-               strcat(strReturn, "%");
-               if(i == 1) strcat(strReturn, ")");
-           }
-           if (HP.dEEV.stepperEEV.isBuzy())  strcat(strReturn,">>");  // признак движения
-           #else
-           strcat(strReturn,"-");  
-           #endif   
-           strcat(strReturn,"&") ;    continue;
-         }
   
         // FC запросы, те которые без параметра ------------------------------
         if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
@@ -1577,7 +1553,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 		             {
 		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
 		                  {
-		                  HP.get_Chart(x+1,strReturn, true);
+		                  HP.get_Chart(x+1,strReturn);
 		                  strcat(strReturn,"&") ; continue;
 		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
 		            } //if ((strstr(str,"Chart")>0)  

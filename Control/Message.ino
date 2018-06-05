@@ -286,9 +286,9 @@ if(strcmp(var,mess_SMS_NAMEP2)==0){  switch (messageSetting.sms_service)   // о
                         case pSMSC_RU: return strcat(ret,(char*)"Password");  break;
                         default:       return strcat(ret,(char*)"none");       break; // Этого не должно быть, но если будет то установить по умолчанию
                        }                                                        }else
-if(strcmp(var,mess_MESS_TIN)==0){    return _ftoa(ret,(float)messageSetting.mTIN/100.0,1);    }else
-if(strcmp(var,mess_MESS_TBOILER)==0){return _ftoa(ret,(float)messageSetting.mTBOILER/100.0,1);}else
-if(strcmp(var,mess_MESS_TCOMP)==0){  return _ftoa(ret,(float)messageSetting.mTCOMP/100.0,1);  }else
+if(strcmp(var,mess_MESS_TIN)==0){    _ftoa(ret,(float)messageSetting.mTIN/100.0,1); return ret;    }else
+if(strcmp(var,mess_MESS_TBOILER)==0){_ftoa(ret,(float)messageSetting.mTBOILER/100.0,1); return ret;}else
+if(strcmp(var,mess_MESS_TCOMP)==0){  _ftoa(ret,(float)messageSetting.mTCOMP/100.0,1); return ret;  }else
 if(strcmp(var,mess_MAIL_RET)==0){    if (waitSend) return strcat(ret,(char*)"wait response...");                 // В зависимости готов ответ или нет
                        else return strcat(ret,retTest);                               
                        }else   

@@ -351,6 +351,7 @@ int8_t devVaconFC::start_FC()
 		err = write_0x06_16(FC_CONTROL, FC_C_RUN); // Команда Ход
 #endif
 	}
+#endif // DEMO	
     if(err == OK) {
 xStarted:
     	SETBIT1(_data.flags, fOnOff);
@@ -360,7 +361,6 @@ xStarted:
         SETBIT1(_data.flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
-#endif
 #else //  FC_ANALOG_CONTROL
 #ifdef DEMO
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп

@@ -1,7 +1,7 @@
 /* ver 0.951 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -227,7 +227,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										if(regexpt.test(title)) { yizm = "Температура, °C"; ytooltip = " °C"; }
 										if(regexpp.test(title)) { yizm = "Давление, BAR"; ytooltip = " BAR"; }
 										if(regexpr.test(title)) { yizm = "Состояние реле"; ytooltip = ""; }
-										if(regexpe.test(title)) { yizm = "Позиция, шаги"; ytooltip = " шаг"; }
+										if(regexpe.test(title)) { yizm = "Позиция"; ytooltip = ""; }
 										if(regexpw.test(title)) { yizm = "Мощность, кВт"; ytooltip = " kW"; }
 										data = values[1].split(';');
 
@@ -295,7 +295,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											},
 											xAxis: {
 												title: {
-													text: "Время, шаг: x" + window.time_chart}},
+													text: "Время, позиция: x" + window.time_chart}},
 											/*yAxis: [{ title: { text: yizm },labels: {align: 'left', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							{ title: { text: 'Положение ЭРВ(шаги)' },labels: {align: 'right', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
 							opposite: true],*/
@@ -318,7 +318,7 @@ function loadParam(paramid, noretry, resultdiv) {
 													style: {
 														color: Highcharts.getOptions().colors[1]}},
 												labels: {
-													format: '{value} шагов',
+													format: '{value}',
 													style: {
 														color: Highcharts.getOptions().colors[1]}},
 												opposite: true
