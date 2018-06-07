@@ -412,6 +412,9 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
 // true - сообщение принято (или запрещено), false - сообщение отвергнуто т.к оно уже посылалось (дубль) или внутренняя ошибка
 boolean Message::setMessage(MESSAGE ms, char *c, int p1)
 {
+// Проверка на необходимость посылки сообщения 
+if (!(((GETBIT(messageSetting.flags,fMail))||(GETBIT(messageSetting.flags,fSMS)))&&((messageData.ms!=pMESSAGE_TESTMAIL)||(messageData.ms!=pMESSAGE_TESTSMS)))) return true;	// посылать ненадо
+ 	
 //  Serial.print(c);Serial.print(" : ");Serial.print(ms);Serial.println("-5");
    // Проверка необходимости отправки уведомления
        if (((GETBIT(messageSetting.flags,fMessageReset))==0)&&(ms==pMESSAGE_RESET))       return true;   // Попытка отправить не разрешенное сообщение, выходим без ошибок
