@@ -11,6 +11,8 @@ extern "C" {
 #include "EthernetServer.h"
 #include "Dns.h"
 
+#define ETHERNET_CONNECT_TIMEOUT 2000  // ms
+
 #include "FreeRTOS_ARM.h"
 #define RTOS_delay(ms) { if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(ms/portTICK_PERIOD_MS); else delay(ms); }
 
@@ -78,7 +80,10 @@ int EthernetClient::connect(IPAddress ip, uint16_t port) {
 //      Serial.println("EXCEPTION: Socket was closed after being established");
       return 0;
     }
-    if(millis() - start > 2000) return 0; // timeout
+    if(millis() - start > ETHERNET_CONNECT_TIMEOUT) {
+        _sock = MAX_SOCK_NUM;
+    	return 0; // timeout
+    }
   }
 
   return 1;
@@ -124,7 +129,10 @@ int EthernetClient::connect(IPAddress ip, uint16_t port,uint8_t sock)// pav2000
       _sock = MAX_SOCK_NUM;
       return 0;
     }
-    if(millis() - start > 2000) return 0; // timeout
+    if(millis() - start > ETHERNET_CONNECT_TIMEOUT) {  // timeout
+        _sock = MAX_SOCK_NUM;
+    	return 0;
+    }
   }
   return 1;
 }
