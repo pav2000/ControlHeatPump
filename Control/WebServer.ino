@@ -513,6 +513,22 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"&");
        continue;
        }
+       if(strcmp(str, "get_NTP") == 0)  // тип NTP
+       {
+			#ifdef HTTP_TIME_REQUEST
+    	   	   strcat(strReturn, "TCP&");
+			#else
+    	   	   strcat(strReturn, "NTP&");
+			#endif
+    	   continue;
+       }
+       	   if(strcmp(str, "get_NTPr") == 0)  // Запрос
+       	   {
+			#ifdef HTTP_TIME_REQUEST
+       		   strcat(strReturn, (char *)&HTTP_TIME_REQ);
+			#endif
+       		 strcat(strReturn, "&");
+       	   }
        if ((strcmp(str,"set_updateNet")==0)||(strcmp(str,"RESET_NET")==0))  // Функция Сброс w5200 и применение сетевых настроек, подождите 5 сек . . .
        {
        journal.jprintf("Update network setting . . .\r\n");

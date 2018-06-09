@@ -2932,7 +2932,7 @@ void HeatPump::compressorON(MODE_HP mod)
            #endif
            
            #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-           for(i=0;i<FNUMBER;i++)   // Проверка потока по каждому датчику
+           for(uint8_t i=0;i<FNUMBER;i++)   // Проверка потока по каждому датчику
            if (sFrequency[i].get_Value()<HP.sFrequency[i].get_minValue())   { set_Error(ERR_MIN_FLOW,(char*)sFrequency[i].get_name());  return; }    // Поток меньше минимального ошибка осанавливаем ТН
            #endif
            
@@ -3451,5 +3451,7 @@ void HeatPump::calculatePower()
 
 	COP = dFC.get_power();
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
+#ifdef USE_ELECTROMETER_SDM
 	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
+#endif
 }

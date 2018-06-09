@@ -110,6 +110,7 @@ struct type_optionHP
 //  Работа с отдельными флагами type_DateTimeHP
 #define fUpdateNTP     0                // флаг Обновление часов по NTP при старте
 #define fUpdateI2C     1                // флаг Обновление часов раз в час с I2C  часами
+#define fUpdateByHTTP  2                // флаг Обновление по HTTP - спец страница: define HTTP_TIME_REQUEST
 // Структура для хранения настроек времени, для удобного сохранения.
 struct type_DateTimeHP
 {

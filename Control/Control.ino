@@ -75,7 +75,7 @@ extern boolean set_time_NTP(void);
 EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
-PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
+PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
@@ -790,7 +790,9 @@ void vUpdateStat( void * )
 void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
+#ifdef USE_ELECTROMETER_SDM
 	static unsigned long readSDM = 0;
+#endif
 //    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР
 	static uint32_t ttime;                                                 // новое время
 	static uint32_t oldTime;                                               // старое вермя
@@ -801,6 +803,7 @@ void vReadSensor(void *)
 		int8_t i;
 		WDT_Restart(WDT);
 
+		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 #ifndef DEMO  // Если не демо
 		prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
@@ -815,7 +818,6 @@ void vReadSensor(void *)
 
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
-		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
 			if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
 			_delay(2);     												// пауза

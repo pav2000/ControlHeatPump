@@ -407,6 +407,11 @@ const char *cStrEnd={"\n"};
 const char *cErrorRS485={"%s: Read error %s, code=%d repeat . . .\n"};  // имя, функция, код
 const char *cErrorMutex={"Function %s: %s, mutex is buzy\n"};           // функция, мютекс
 const char *cAddHeat = {"+"};                                           // Значек нагрева ГВС ТЭНом
+const char http_get_str1[] = "GET ";
+const char http_get_str2[] = " HTTP/1.0\r\nHost: ";
+const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
+const char http_key_ok1[] = "HTTP/"; // "1.1"
+const char http_key_ok2[] = " 200 OK\r\n";
 
 // Многозадачность, деление аппартных ресурсов
 const char *nameFREERTOS =     {"Free RTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
