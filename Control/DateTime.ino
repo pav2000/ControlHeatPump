@@ -279,8 +279,7 @@ char* NowTimeToStr1()
 char* NowDateToStr()
 {
   static char _tmp[16];  // Длина xx/xx/xxxx - 10+1 символов
-  strcpy(_tmp,"");  // очистить строку
-  _itoa(rtcSAM3X8.get_days(),_tmp); strcat(_tmp,"/");_itoa(rtcSAM3X8.get_months(),_tmp);strcat(_tmp,"/");_itoa(rtcSAM3X8.get_years(),_tmp); 
+  m_snprintf((char *)&_tmp, sizeof(_tmp), FORMAT_DATE_STR, rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
   return _tmp;
 }
 

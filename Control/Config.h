@@ -2165,7 +2165,7 @@ enum TYPE_SENSOR
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
     //#define DEMO                  // Включение демо режима
-	#define TEST_BOARD 				// Тестовая плата!
+//	#define TEST_BOARD 				// Тестовая плата!
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхонник 3 фазы, ЭРВ, РТО, 2 датчика давления"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -2177,8 +2177,8 @@ enum TYPE_SENSOR
     #define ONEWIRE_DS2482_SECOND_2WAY  // 2-х проводный OneWire второго мастера (паразитное питание)
     #define ONEWIRE_DONT_CHG_RES    // Не менять разрешение датчиков
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
-    //#define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
-    //#define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
+    #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
+    #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
     //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
     //  #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
     //  #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
@@ -2190,6 +2190,8 @@ enum TYPE_SENSOR
     #endif
     #define USE_SCHEDULER			// Использовать расписание для управления ТН
 
+	#define FORMAT_DATE_STR_CUSTOM
+    const char *FORMAT_DATE_STR	 = { "%02d.%02d.%04d" };
 	#define HTTP_TIME_REQUEST
 	#ifdef HTTP_TIME_REQUEST
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
