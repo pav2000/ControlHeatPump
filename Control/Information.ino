@@ -459,6 +459,19 @@ void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
     *b++ = ';'; *b = '\0';
   }
 }
+// Расчитать мощность на лету используется для графика потока, передаются указатели на графики температуры + теплоемкость
+void statChart::get_PointsStrPower(uint16_t m, char *b, statChart *inChart,statChart *outChart, float kfCapacity)
+{
+  if (!present || num == 0 || !inChart->get_present() || inChart->get_num()==0 || !outChart->get_present() || outChart->get_num()== 0) {
+	  strcat(b, ";");
+	  return;
+  }
+  b += m_strlen(b);
+  for(uint16_t i = 0; i < num; i++) {
+    b += _ftoa(b, float(abs(outChart->get_Point(i)-inChart->get_Point(i))*get_Point(i))/kfCapacity/m, 2);
+    *b++ = ';'; *b = '\0';
+  }
+}
 
 // ---------------------------------------------------------------------------------
 //  Класс Профиль ТН    ------------------------------------------------------------
