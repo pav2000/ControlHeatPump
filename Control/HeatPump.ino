@@ -524,15 +524,16 @@ if (t2==0) t2=t; // первоначальная инициализация
    if ((COMPRESSOR_IS_ON)&&((t-t2)>=60)) // прошла 1 минута  и компрессор работает
     {
       t2=t;
-      motoHour.C1++;    // моточасы компрессора ВСЕГО
-      motoHour.C2++;    // моточасы компрессора сбрасываемый счетчик (сезон)
-      
-     if(ChartPowerCO.get_present()) // Расчет выработанной энергии Если есть соответсвующее оборудование
-     {
-        power=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity(); // Мгновенная мощность в ВАТТАХ
+      motoHour.C1++;      // моточасы компрессора ВСЕГО
+      motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
+	   #ifdef FLOWCON     // Расчет выработанной энергии Если есть соответсвующее оборудование
+	   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) 
+	   {
+	    power=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity(); // Мгновенная мощность в ВАТТАХ
         motoHour.P1=motoHour.P1+(int)(power/60.0);   // потребленная энергия за минуту
-        motoHour.P2=motoHour.P2+(int)(power/60.0);   // потребленная энергия за минуту
-     }  
+        motoHour.P2=motoHour.P2+(int)(power/60.0);   // потребленная энергия за минуту	
+	   }
+	   #endif
       
     }
    if (!(COMPRESSOR_IS_ON)) t2=t;  // Компрессор не работает то сбросить время
@@ -702,18 +703,15 @@ void HeatPump::resetSettingHP()
     {
      if (strcmp(sFrequency[i].get_name(),"FLOWCON")==0)                          // если есть датчик потока по конденсатору
        {
-       ChartPowerCO.init(sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present());               // выходная мощность насоса
        ChartCOP.init(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()); // Коэффициент преобразования
     //   Serial.print("StatCOP="); Serial.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
        }
-    else  if (strcmp(sFrequency[i].get_name(),"FLOWEVA") ==0)                         // если есть датчик потока по испарителю
-       {
-       ChartPowerGEO.init(sFrequency[i].get_present()&sTemp[TEVAOUTG].get_present()&sTemp[TEVAING].get_present());     // выходная мощность насоса
-       }     
        
     }
    #ifdef USE_ELECTROMETER_SDM  
-   ChartFullCOP.init(ChartPowerCO.get_present());                              // ПОЛНЫЙ Коэффициент преобразования
+     #ifdef FLOWCON 
+     if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) ChartFullCOP.init(true);  // ПОЛНЫЙ Коэффициент преобразования
+     #endif   
    #endif
  };
 
@@ -1044,11 +1042,6 @@ void  HeatPump::updateChart()
   
  if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
    
- if(ChartPowerCO.get_present())   ChartPowerCO.addPoint((int16_t)powerCO);  // Мощность контура отопления в вт!!!!!!!!!
-  
- #ifdef FLOWEVA 
- if(ChartPowerGEO.get_present())  ChartPowerGEO.addPoint((int16_t)powerGEO); // Мощность контура ГЕО в Вт!!!!!!!!!
- #endif
  if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
@@ -1090,9 +1083,13 @@ void  HeatPump::updateChart()
            if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  { statFile.print((float)(FEED-RET)/100.0); statFile.print(";");}
            if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  { statFile.print((float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())/100.0); statFile.print(";");}
 
-                
-           if(ChartPowerCO.get_present())  { statFile.print((int16_t)powerCO); statFile.print(";"); } // Мощность контура в ваттах!!!!!!!!!
-           if(ChartPowerGEO.get_present()) { statFile.print((int16_t)powerGEO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
+    	   #ifdef FLOWCON 
+		   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  {statFile.print((int16_t)powerCO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
+		   #endif
+		   #ifdef FLOWEVA
+		   if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  {statFile.print((int16_t)powerGEO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
+		   #endif
+         
            if(ChartCOP.get_present())      { statFile.print((float)COP); statFile.print(";"); }    // в еденицах
            #ifdef USE_ELECTROMETER_SDM 
            if(dSDM.ChartVoltage.get_present())     { statFile.print((float)dSDM.get_Voltage());    statFile.print(";");} 
@@ -1131,8 +1128,6 @@ void HeatPump::startChart()
  dFC.ChartCurrent.clear();
  ChartRCOMP.clear();
 // ChartRELAY.clear();
- ChartPowerCO.clear();                                 // выходная мощность насоса
- ChartPowerGEO.clear();                                // Мощность геоконтура
  ChartCOP.clear();                                     // Коэффициент преобразования
  #ifdef USE_ELECTROMETER_SDM 
  dSDM.ChartVoltage.clear();                              // Статистика по напряжению
@@ -1178,9 +1173,15 @@ void HeatPump::startChart()
            
            if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) statFile.print("dCO;");
            if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) statFile.print("dGEO;");
+
+
+		   #ifdef FLOWCON 
+		   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))   statFile.print("PowerCO;");
+		   #endif
+		   #ifdef FLOWEVA
+		   if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))    statFile.print("PowerGEO;");
+		   #endif
            
-           if(ChartPowerCO.get_present())      statFile.print("PowerCO;");
-           if(ChartPowerGEO.get_present())     statFile.print("PowerGEO;");
            if(ChartCOP.get_present())          statFile.print("COP;");
 
            #ifdef USE_ELECTROMETER_SDM 
@@ -1225,10 +1226,14 @@ uint8_t i;
  if(dFC.ChartPower.get_present())   strcat(str,"powerFC:0;");
  if(dFC.ChartCurrent.get_present()) strcat(str,"currentFC:0;");
  if(ChartRCOMP.get_present())       strcat(str,"RCOMP:0;");
- if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  strcat(str,"dCO:0;");
- if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  strcat(str,"dGEO:0;");
- if(ChartPowerCO.get_present())     strcat(str,"PowerCO:0;");
- if(ChartPowerGEO.get_present())    strcat(str,"PowerGEO:0;");
+ if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  strcat(str,"dCO:0;");
+ if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  strcat(str,"dGEO:0;");
+ #ifdef FLOWCON 
+ if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  strcat(str,"PowerCO:0;");
+ #endif
+ #ifdef FLOWEVA
+ if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))   strcat(str,"PowerGEO:0;");
+ #endif
  if(ChartCOP.get_present())         strcat(str,"COP:0;"); 
   #ifdef USE_ELECTROMETER_SDM 
  if(dSDM.ChartVoltage.get_present())     strcat(str,"VOLTAGE:0;");
@@ -1243,8 +1248,7 @@ uint8_t i;
 return str;               
 }
 
-// получить данные графика  в виде строки
-// cat=true - не обнулять входную строку а добавить в конец
+// получить данные графика  в виде строки, данные ДОБАВЛЯЮТСЯ к str
 char * HeatPump::get_Chart(char *var, char* str)
 {
 	if(strcmp(var, chart_NONE) == 0) {
@@ -1326,9 +1330,17 @@ char * HeatPump::get_Chart(char *var, char* str)
 	} else
 
 	if(strcmp(var, chart_PowerCO) == 0) {
-		ChartPowerCO.get_PointsStr(1000, str);
+    #ifdef FLOWCON
+	 sFrequency[FLOWCON].Chart.get_PointsStrPower(1000, str,&sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_kfCapacity()); // считаем график на лету экономим оперативку  
+    #else
+    strcat(str,";");
+    #endif    	 
 	} else if(strcmp(var, chart_PowerGEO) == 0) {
-		ChartPowerGEO.get_PointsStr(1000, str);
+    #ifdef FLOWEVA
+     sFrequency[FLOWEVA].Chart.get_PointsStrPower(1000, str,&sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_kfCapacity()); // считаем график на лету экономим оперативку  
+    #else
+    strcat(str,";");
+    #endif      
 	} else if(strcmp(var, chart_COP) == 0) {
 		ChartCOP.get_PointsStr(100, str);
 	} else

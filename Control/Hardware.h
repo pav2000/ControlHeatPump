@@ -174,6 +174,7 @@ public:
   __attribute__((always_inline)) inline uint16_t get_Value(){return Value;}           // Получить Значение датчика при последнем чтении
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
   __attribute__((always_inline)) inline uint16_t get_minValue(){return minValue;}     // Получить минимальное значение датчика
+  __attribute__((always_inline)) inline float get_kfCapacity(){return 3600*100/Capacity;}   // Получить Коэффициент пересчета для определениея мощности  (3600 секунды в часе) в СОТЫХ!!!
   int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
   char*   get_note(){return note;}                       // Получить описание датчика
   char*   get_name(){return name;}                       // Получить имя датчика
@@ -182,7 +183,6 @@ public:
   float get_kfValue(){return kfValue;}                   // Получить коэффициент пересчета
   int8_t  set_kfValue(float f);                          // Установить коэффициент пересчета
   uint16_t get_Capacity(){return Capacity;}              // Получить теплоемкость
-  float    get_kfCapacity(){return 3600*100/Capacity;}   // Получить Коэффициент пересчета для определениея мощности  (3600 секунды в часе) в СОТЫХ!!!
   int8_t set_Capacity(uint16_t c);                       // Установить теплоемкость больше 5000 не устанавливается
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void  set_testMode(TEST_MODE t){testMode=t;}           // Установить значение текущий режим работы

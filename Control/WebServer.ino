@@ -1006,16 +1006,24 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2);strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";"); // Если есть оборудование
-  
+        
+        #ifdef  FLOWCON 
+        if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+        #endif
+        
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
+        
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
+        
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";"); // Если есть оборудование
-  
+       
+        #ifdef  FLOWCON 
+	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+        #endif
+         
         strcat(strReturn,"&") ;    continue;
        } // sisInfo
        
