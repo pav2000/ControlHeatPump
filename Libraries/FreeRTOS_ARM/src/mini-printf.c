@@ -141,7 +141,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 		if (ch!='%')
 			_putc(ch, &b);
 		else {
-			char zero_pad = 0;
+			unsigned char zero_pad = 0;
 			char *ptr;
 //			unsigned int len;
 
@@ -163,7 +163,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 
 				case 'u':
 				case 'd':
-					if(b.buffer_len - (b.pbuffer - b.buffer) < 12) break;
+					if(b.buffer_len - (b.pbuffer - b.buffer) < (unsigned int)(zero_pad ? zero_pad+1 : 12)) break;
 					b.pbuffer += m_itoa(va_arg(va, unsigned int), b.pbuffer, 10, (ch=='u' ? f_unsigned : 0) + zero_pad);
 //					len = mini_itoa(va_arg(va, unsigned int), 10, 0, (ch=='u'), bf, zero_pad);
 //					_puts(bf, len, &b);
@@ -171,7 +171,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 
 				case 'x':
 				case 'X':
-					if(b.buffer_len - (b.pbuffer - b.buffer) < 9) break;
+					if(b.buffer_len - (b.pbuffer - b.buffer) < (unsigned int)(zero_pad ? zero_pad+1 : 9)) break;
 					b.pbuffer += m_itoa(va_arg(va, unsigned int), b.pbuffer, 16, ((ch=='X') ? f_uppercase : 0) + f_unsigned + zero_pad);
 //					len = mini_itoa(va_arg(va, unsigned int), 16, (ch=='X'), 1, bf, zero_pad);
 //					_puts(bf, len, &b);

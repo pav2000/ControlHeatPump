@@ -161,6 +161,28 @@ size_t EthernetClient::write_buffer(const uint8_t *buffer, size_t size)
   return bytes_written;
 }
 
+// Data stored in the flash memory
+size_t EthernetClient::write_buffer_flash(const uint8_t *buffer, size_t size)
+{
+	uint8_t b;
+	uint16_t i = 0;
+	for(; i < size; i++) {
+		b = buffer[i];
+		if(bufferData(_sock, _offset, &b, 1) != 1) break;
+		_offset++;
+	}
+	return i;
+}
+
+size_t EthernetClient::write_buffer(uint8_t b)
+{
+  uint8_t wb = b;
+  if(bufferData(_sock, _offset, &wb, 1) == 1) {
+	  _offset++;
+	  return 1;
+  } else return 0;
+}
+
 int EthernetClient::available() {
   if (_sock != MAX_SOCK_NUM)
     return W5100.getRXReceivedSize(_sock);

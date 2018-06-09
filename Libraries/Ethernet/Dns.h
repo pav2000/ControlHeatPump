@@ -36,7 +36,7 @@ public:
     void 		   set_protocol(uint8_t tcp); // udp=0, tcp=1
     void 		   write(const uint8_t *buf, size_t size);
     int 		   read(uint8_t *buf, size_t size);
-    uint8_t 	   get_protocol(void) { return protocol; }
+    inline uint8_t get_protocol(void) { return protocol; }
 
 protected:
     void   BuildRequest(const char* aName);

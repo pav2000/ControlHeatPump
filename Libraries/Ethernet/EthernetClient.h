@@ -31,6 +31,8 @@ public:
   virtual bool operator==(const EthernetClient&);
   virtual bool operator!=(const EthernetClient& rhs) { return !this->operator==(rhs); };
   size_t  write_buffer(const uint8_t *buffer, size_t size);
+  size_t  write_buffer_flash(const uint8_t *buffer, size_t size);
+  size_t  write_buffer(uint8_t b);
 
   friend class EthernetServer;
   

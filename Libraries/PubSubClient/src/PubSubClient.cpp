@@ -15,7 +15,7 @@ PubSubClient::PubSubClient() {
     setCallback(NULL);
 }
 
-PubSubClient::PubSubClient(EthernetClient& client,uint8_t s) {
+PubSubClient::PubSubClient(EthernetClient& client) {
     this->_state = MQTT_DISCONNECTED;
     setClient(client);
     this->stream = NULL;
@@ -23,7 +23,7 @@ PubSubClient::PubSubClient(EthernetClient& client,uint8_t s) {
 
 }
 
-PubSubClient::PubSubClient(IPAddress addr, uint16_t port, EthernetClient& client, uint8_t s){  // pav2000 конструктор с заданием сокета через который мы работаем
+PubSubClient::PubSubClient(IPAddress addr, uint16_t port, EthernetClient& client){  // pav2000 конструктор с заданием сокета через который мы работаем
     this->_state = MQTT_DISCONNECTED;
     setServer(addr, port);
     setClient(client);
@@ -488,7 +488,7 @@ boolean PubSubClient::subscribe(const char* topic) {
 }
 
 boolean PubSubClient::subscribe(const char* topic, uint8_t qos) {
-    if (qos < 0 || qos > 1) {
+    if (/*qos < 0 ||*/ qos > 1) {
         return false;
     }
     if (MQTT_MAX_PACKET_SIZE < 9 + strlen(topic)) {
