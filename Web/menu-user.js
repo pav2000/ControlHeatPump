@@ -14,9 +14,13 @@ document.write('<ul>\
 </ul>');
 
 document.write('<div class="dateinfo">\
-    <h1 id="get_datetime-time3">-</h1>\
-    <h2 id="get_datetime-date3">-</h2>\
-    <div class="ver"><span>Версия ПО:</span><span id="get_version">-</span><span>FREE RAM:</span><span id="get_freeram">-</span><span>CPU LOAD:</span><span id="get_loadingcpu">-</span><span>Uptime:</span><span id="get_uptime2">-</span><span>Режим:</span><span id="get_testmode2">-</span><span>Перегрев:</span><span id="get_overheateev2">-</span></div>\
+<h1 id="get_datetime-time3">-</h1>\
+<h2 id="get_datetime-date3">-</h2>\
+<span>FREE RAM:</span><span id="get_freeram">-</span>\
+<span>CPU LOAD:</span><span id="get_loadingcpu">-</span>\
+<span>Uptime:</span><span id="get_uptime2">-</span>\
+<span>Режим:</span><span id="get_testmode2">-</span>\
+<span>Перегрев:</span><span id="get_overheateev2">-</span>\
 </div>');
 
 //var activeli = document.getElementsByTagName("body")[0].className;

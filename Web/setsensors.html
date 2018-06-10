@@ -12,6 +12,7 @@
 		loadParam("get_addressTemp(TEVAING),get_addressTemp(TEVAOUTG),get_addressTemp(TCONING),get_addressTemp(TCONOUTG),get_addressTemp(TOUT),get_addressTemp(TIN),get_addressTemp(TEVAIN),get_addressTemp(TEVAOUT),get_addressTemp(TCONIN),get_addressTemp(TCONOUT),get_addressTemp(TBOILER),get_addressTemp(TACCUM),get_addressTemp(TRTOOUT),get_addressTemp(TCOMP),get_errcodeTemp(TEVAING),get_errcodeTemp(TEVAOUTG),get_errcodeTemp(TCONING),get_errcodeTemp(TCONOUTG),get_errcodeTemp(TOUT),get_errcodeTemp(TIN),get_errcodeTemp(TEVAIN),get_errcodeTemp(TEVAOUT),get_errcodeTemp(TCONIN),get_errcodeTemp(TCONOUT),get_errcodeTemp(TBOILER),get_errcodeTemp(TACCUM),get_errcodeTemp(TRTOOUT),get_errcodeTemp(TCOMP)");
 		loadParam("get_flagTemp1(TOUT),get_flagTemp1(TEVAOUTG),get_flagTemp1(TCONING),get_flagTemp1(TCONOUTG),get_flagTemp1(TIN),get_flagTemp1(TEVAOUT),get_flagTemp1(TCONOUT),get_flagTemp1(TBOILER),get_flagTemp1(TCOMP),get_flagTemp1(TEVAING),get_flagTemp1(TEVAOUTG),get_flagTemp1(TCONING),get_flagTemp1(TCONOUTG),get_flagTemp1(TEVAIN)");
 		loadParam("get_flagTemp2(TOUT),get_flagTemp2(TEVAOUTG),get_flagTemp2(TCONING),get_flagTemp2(TCONOUTG),get_flagTemp2(TIN),get_flagTemp2(TEVAOUT),get_flagTemp2(TCONOUT),get_flagTemp2(TBOILER),get_flagTemp2(TCOMP),get_flagTemp2(TEVAING),get_flagTemp2(TEVAOUTG),get_flagTemp2(TCONING),get_flagTemp2(TCONOUTG),get_flagTemp2(TEVAIN)");
+		loadParam("get_flagTemp3(TOUT),get_flagTemp3(TIN),get_flagTemp3(TBOILER)");
 		updateParam("get_rawTemp(TEVAING),get_rawTemp(TEVAOUTG),get_rawTemp(TCONING),get_rawTemp(TCONOUTG),get_rawTemp(TIN),get_rawTemp(TOUT),get_rawTemp(TEVAIN),get_rawTemp(TEVAOUT),get_rawTemp(TCONIN),get_rawTemp(TCONOUT),get_rawTemp(TBOILER),get_rawTemp(TACCUM),get_rawTemp(TRTOOUT),get_rawTemp(TCOMP)");
 	};
 	function ScanOneWire() {
@@ -55,7 +56,7 @@
 			<th>Температура</th>
 			<th>Адрес</th>
 			<th>Привязка</th>
-			<th width="10%">Ошибки: игнор./ не лог.</th>
+			<th width="10%">Ошибки: игнор./ не лог./ <s>crc</s></th>
 			<th>Код ошибки</th>
 		</tr>
 		</thead>
@@ -66,7 +67,7 @@
 			<td id="get_rawtemp-tout">-</td>
 			<td id="get_addresstemp-tout">-</td>
 			<td><select id="set_addresstemp-tout" onchange="setParam('set_addressTemp(TOUT)','get_addresstemp-tout');"></select></td>
-			<td><input type="checkbox" id="get_flagtemp1-tout" onchange="setParam('get_flagTemp1(TOUT)');"><input type="checkbox" id="get_flagtemp2-tout" onchange="setParam('get_flagTemp2(TOUT)');"></td>
+			<td><input type="checkbox" id="get_flagtemp1-tout" onchange="setParam('get_flagTemp1(TOUT)');"><input type="checkbox" id="get_flagtemp2-tout" onchange="setParam('get_flagTemp2(TOUT)');"><input type="checkbox" id="get_flagtemp3-tout" onchange="setParam('get_flagTemp3(TOUT)');"></td>
 			<td id="get_errcodetemp-tout">-</td>
 		</tr>
 		<tr id="get_presenttemp-tin">
@@ -75,7 +76,7 @@
 			<td id="get_rawtemp-tin">-</td>
 			<td id="get_addresstemp-tin">-</td>
 			<td><select id="set_addresstemp-tin" onchange="setParam('set_addressTemp(TIN)','get_addresstemp-tin');"></select></td>
-			<td><input type="checkbox" id="get_flagtemp1-tin" onchange="setParam('get_flagTemp1(TIN)');"><input type="checkbox" id="get_flagtemp2-tin" onchange="setParam('get_flagTemp2(TIN)');"></td>
+			<td><input type="checkbox" id="get_flagtemp1-tin" onchange="setParam('get_flagTemp1(TIN)');"><input type="checkbox" id="get_flagtemp2-tin" onchange="setParam('get_flagTemp2(TIN)');"><input type="checkbox" id="get_flagtemp3-tin" onchange="setParam('get_flagTemp3(TIN)');"></td>
 			<td id="get_errcodetemp-tin">-</td>
 		</tr>
 		<tr id="get_presenttemp-tboiler">
@@ -84,7 +85,7 @@
 			<td id="get_rawtemp-tboiler">-</td>
 			<td id="get_addresstemp-tboiler">-</td>
 			<td><select id="set_addresstemp-tboiler" onchange="setParam('set_addressTemp(TBOILER)','get_addresstemp-tboiler');"></select></td>
-			<td><input type="checkbox" id="get_flagtemp1-tboiler" onchange="setParam('get_flagTemp1(TBOILER)');"><input type="checkbox" id="get_flagtemp2-tboiler" onchange="setParam('get_flagTemp2(TBOILER)');"></td>
+			<td><input type="checkbox" id="get_flagtemp1-tboiler" onchange="setParam('get_flagTemp1(TBOILER)');"><input type="checkbox" id="get_flagtemp2-tboiler" onchange="setParam('get_flagTemp2(TBOILER)');"><input type="checkbox" id="get_flagtemp3-tboiler" onchange="setParam('get_flagTemp3(TBOILER)');"></td>
 			<td id="get_errcodetemp-tboiler">-</td>
 		</tr>	
 		<tr id="get_presenttemp-tcomp">

@@ -89,8 +89,8 @@ struct type_optionHP
  uint8_t dim;                          //  Якрость дисплея %
  uint16_t tChart;                      //  период сбора статистики в секундах!!
  int16_t tempRHEAT;                    //  Значение температуры для управления дополнительным ТЭН для нагрева СО
- uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре МИНУТЫ
- uint16_t workPump;                    //  Время работы  насоса при выключенном компрессоре МИНУТЫ
+ uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре СЕКУНДЫ
+ uint16_t workPump;                    //  Время работы  насоса при выключенном компрессоре СЕКУНДЫ
  // Временные задержки
  uint16_t delayOnPump;   		       // Задержка включения компрессора после включения насосов (сек).
  uint16_t delayOffPump;                // Задержка выключения насосов после выключения компрессора (сек).
@@ -308,8 +308,8 @@ class HeatPump
    boolean scheduleBoiler();                               // Проверить расписание бойлера true - нужно греть false - греть не надо
 
    // Опции ТН
-   uint16_t get_pausePump() {return Option.pausePump;};                // !save! Время паузы  насоса при выключенном компрессоре МИНУТЫ
-   uint16_t get_workPump() {return Option.workPump;};                  // !save! Время работы  насоса при выключенном компрессоре МИНУТЫ
+   uint16_t get_pausePump() {return Option.pausePump;};                // !save! Время паузы  насоса при выключенном компрессоре, секунды
+   uint16_t get_workPump() {return Option.workPump;};                  // !save! Время работы  насоса при выключенном компрессоре, секунды
    uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // !save! подача звуковых сигналов
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
@@ -348,8 +348,10 @@ class HeatPump
    
    __attribute__((always_inline)) inline uint32_t get_uptime() {return rtcSAM3X8.unixtime()-timeON;} // Получить время с последенй перезагрузки в секундах
    uint32_t get_startDT(){return timeON;}                  // Получить дату и время последеней перезагрузки
-   uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
+   inline uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
+   inline uint32_t get_stopCompressor(){return stopCompressor;} // Получить дату и время останова компрессора!
    uint32_t get_startTime(){return Prof.SaveON.startTime;} // Получить дату и время пуска ТН (не компрессора!)
+   inline uint32_t get_command_completed(){ return command_completed; } // Время выполнения команды
    uint32_t get_motoHourH1(){return motoHour.H1;}          // Получить моточасы ТН ВСЕГО
    uint32_t get_motoHourH2(){return motoHour.H2;}          // Получить моточасы ТН сбрасываемый счетчик (сезон)
    uint32_t get_motoHourC1(){return motoHour.C1;}          // моточасы компрессора ВСЕГО
@@ -502,6 +504,7 @@ class HeatPump
     uint32_t startDefrost;                // время срабатывания датчика разморозки
     uint32_t timeBoilerOff;               // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
     uint32_t startSallmonela;             // время начала обеззараживания
+    uint32_t command_completed;			  // Время отработки команды
        
     // Сетевые настройки
     type_NetworkHP Network;                 // !save! Структура для хранения сетевых настроек

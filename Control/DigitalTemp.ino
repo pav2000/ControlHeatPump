@@ -106,11 +106,11 @@ int8_t sensorTemp::Read()
 		} else {
 			int16_t ttemp;
 			err = busOneWire->Read(address, ttemp);
-			if(err) {
+			if(err && !(err == ERR_ONEWIRE_CRC && GETBIT(setup_flags, fTEMP_ignory_CRC))) {
 				if(!GETBIT(setup_flags, fTEMP_dont_log_errors)) {
 					journal.jprintf(pP_TIME, "%s: Error ", name);
-					if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
-						journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+					if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+						journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
 					} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
 					//err = ERR_READ_TEMP;
 				}
@@ -122,15 +122,16 @@ int8_t sensorTemp::Read()
 				numErrorRead = 0; // Сброс счетчика ошибок
 				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
 				// Защита от скачков
-				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp)<GAP_TEMP_VAL)) {
+				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (GETBIT(setup_flags, fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
 					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
 				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
 				   nGap++;
-				   if (nGap>GAP_NUMBER) { // Больше максимальной длительности данные используем, счетчик сбрасываем
-					   nGap=0;
-					   lastTemp=ttemp;
+				   if (nGap > (GETBIT(setup_flags, fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+					   nGap = 0;
+					   lastTemp = ttemp;
 				   } else {  // Пропуск данных
-					   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
+					   if(!GETBIT(setup_flags, fTEMP_dont_log_errors))
+						   journal.jprintf(pP_TIME, "WARNING: Gap DS18x20: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
 				   }
 				}
 			}

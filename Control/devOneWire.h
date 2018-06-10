@@ -58,7 +58,7 @@ class deviceOneWire 									       // Класс шина   OneWire
 	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; }
 #endif
 	int8_t	Init(void);
-    int16_t	CalcTemp(uint8_t addr_0, uint8_t *data);	// Вычислить температуру в сотых градуса по считанному scratchpad
+    int16_t	CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp_readed);	// Вычислить температуру в сотых градуса по считанному scratchpad
 	int8_t	Scan(char *result_str);                    // сканирование шины, с записью в буфер результатов возвращает число найденых датчиков
 	int8_t  PrepareTemp();                              // запуск преобразования всех датчиков на шине возвращает код ошибки
 	int8_t  Read(uint8_t *addr, int16_t &val);          // чтение данных DS18B20, возвращает код ошибки, делает все преобразования

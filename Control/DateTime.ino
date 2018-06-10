@@ -285,21 +285,22 @@ char* NowDateToStr()
 
 // (Длительность инервала в строку) Время в формате день day 12:34 используется для рассчета uptime
 // Результат ДОБАВЛЯЕТСЯ в ret
-char* TimeIntervalToStr(uint32_t idt,char *ret)
+char* TimeIntervalToStr(uint32_t idt,char *ret,uint8_t fSec = 0)
 {
     uint32_t Day;
-    uint8_t  Hour;
-    uint8_t  Min;
+    uint8_t  Hour, Min, Sec;
   /* decode the interval into days, hours, minutes, seconds */
+  if(fSec) Sec = idt % 60;
   idt /= 60;
   Min = idt % 60;
   idt /= 60;
   Hour = idt % 24;
   idt /= 24;
   Day = idt;
-  if  (Day>0)  { _itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
-  if  (Hour>0) { if (Hour<10) strcat(ret,cZero); _itoa(Hour,ret);strcat(ret,"h ");}
-                 if (Min<10) strcat(ret,cZero);  _itoa(Min,ret); strcat(ret,"m ");
+  if(Day>0)  { _itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
+  if(Hour>0) { _itoa(Hour,ret);strcat(ret,"h ");}
+  if(!fSec || Min > 0) { _itoa(Min,ret); strcat(ret,"m "); }
+  if(fSec) { _itoa(Sec, ret); strcat(ret,"s"); }
   return ret;       
 }
 
@@ -332,6 +333,7 @@ char*  DecodeTimeDate(uint32_t idt,char *ret)
   uint32_t dayOfWeek;
   int x;
 
+  if(idt == 0) return ret;
   seconds=idt;
   /* calculate minutes */
   minutes  = seconds / 60;
@@ -387,7 +389,7 @@ char*  DecodeTimeDate(uint32_t idt,char *ret)
    x=seconds;
   if (x<10) strcat(ret,cZero);   _itoa(x,ret); 
   strcat(ret," "); 
-  _itoa(days + 1,ret); strcat(ret,"/");_itoa(month+1,ret);strcat(ret,"/");_itoa(year,ret); 
+  m_snprintf(ret + m_strlen(ret), 16, FORMAT_DATE_STR, days + 1, month+1, year);
   return ret;   
 }
 

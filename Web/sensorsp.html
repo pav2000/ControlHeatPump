@@ -7,9 +7,9 @@
   <script type='text/javascript' src='scripts.js'></script>
   <script type="text/javascript">
     window.onload = function() {
-    loadParam("get_listInput");
-    loadParam("get_listPress");
     loadParam("get_listFlow");
+    loadParam("get_listPress");
+    loadParam("get_listInput");
 	loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM)");
 	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(FREQ_SDM),get_SDM(ACENERGY_SDM),get_SDM(ERR),get_SDM(LINK_SDM)");
     };
@@ -149,9 +149,9 @@
   <table>
     <thead>
     <tr>
-      <th>Максимальное напряжения<sup>3</sup> [0...400] (V)</th>
-      <th>Минимальное напряжения<sup>4</sup> [0...400] (V)</th>
-      <th>Контроль мощности<sup>4</sup> [0...30000] (W)</th>      
+      <th>Максимальное напряжения<sup>3</sup> [0..400] (V)</th>
+      <th>Минимальное напряжения<sup>4</sup> [0..400] (V)</th>
+      <th>Контроль мощности<sup>4</sup> [0..30000] (W)</th>      
     </tr>
     <tr>
     <td nowrap><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>

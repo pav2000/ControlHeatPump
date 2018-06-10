@@ -803,7 +803,6 @@ void vReadSensor(void *)
 		int8_t i;
 		WDT_Restart(WDT);
 
-		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 #ifndef DEMO  // Если не демо
 		prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
@@ -811,6 +810,7 @@ void vReadSensor(void *)
 #endif
 #endif     // не DEMO
 		ttime = xTaskGetTickCount();
+		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 		HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
@@ -1233,7 +1233,9 @@ void vUpdatePump(void *)
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
 			#ifdef RPUMPFL
-			HP.dRelay[RPUMPFL].set_ON();						// включить насос ТП
+			if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
+				HP.dRelay[RPUMPFL].set_ON();					     // включить насос ТП
+			}
 			#endif
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
@@ -1245,21 +1247,23 @@ void vUpdatePump(void *)
 				HP.dRelay[RPUMPFL].set_OFF();					// выключить насос ТП
 				#endif
 			}
-			for(i = 0; i < HP.get_pausePump() * 60 / 2; i++)                       // Режем задержку для быстрого выхода
+			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
+				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
 				#ifdef RPUMPFL
-				HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
+				if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
+					HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
+				}
 				#endif
 			}
-			for(i = 0; i < HP.get_workPump() * 60 / 2; i++)                        // Режем задержку для быстрого выхода
+			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
+				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
 			}
 		}
 	}  //for

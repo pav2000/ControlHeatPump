@@ -33,14 +33,16 @@ int8_t OW_prepare_buffers(void)
 }
 
 // Возврат Temp * 100, Если ошибка возвращает ERROR_TEMPERATURE
-int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data)
+int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp_readed)
 {
 	// Разбор данных
 	int16_t raw = (data[1] << 8) | data[0];
 	if(addr_0 == tDS18S20) {
 		raw = raw << 3; // 9 bit resolution default
-		if (data[7] == 0x10) { raw = (raw & 0xFFF0) + 12 - data[6]; }  // "count remain" gives full 12 bit resolution
+		if(only_temp_readed) goto xReturnTemp;
+		if(data[7] == 0x10) { raw = (raw & 0xFFF0) + 12 - data[6]; }  // "count remain" gives full 12 bit resolution
 	} else {
+		if(only_temp_readed) goto xReturnTemp;
 		byte cfg = (data[4] & 0x60);
 		// at lower res, the low bits are undefined, so let's zero them
 		if (cfg == 0x00) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
@@ -49,12 +51,12 @@ int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data)
 		// default is 12 bit resolution, 750 ms conversion time
 	}
 	// Проверка валидности данных анализируем полученное разрешение оно должно быть 0x7f (12 бит) при ошибке обычно ff
-	if (data[4] != 0x7f && addr_0 == tDS18S20)   // Дополнительнеая проверка для DS18B20: Прочитано НЕ правильное разрешение
+	if(data[4] != 0x7f && addr_0 == tDS18S20)   // Дополнительнеая проверка для DS18B20: Прочитано НЕ правильное разрешение
 	{ // Прочитаны "плохие данные"
 		return ERROR_TEMPERATURE;
-	} else {
-		return raw * 100 / 16;
 	}
+xReturnTemp:
+	return raw * 100 / 16;
 }
 
 int8_t	deviceOneWire::Init(void)
@@ -221,7 +223,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			SetResolution(addr, DS18B20_p12BIT, true);
 
 			// конвертируем данные в фактическую температуру
-			int16_t t = CalcTemp(addr[0], data);
+			int16_t t = CalcTemp(addr[0], data, 0);
 			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
 				strcat(result_str, "CRC");
 			else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2));
@@ -267,6 +269,7 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 		int16_t r = OneWireDrv.read();
 		if(r < 0) { // ошибка во время чтения
 			release_I2C_bus();
+			if(i >= 2) goto xReadedOnly2b; // успели прочитать температуру
 			return abs(r) | (i > 1 ? 0x40 : 0);
 		}
 		data[i] = r;
@@ -275,9 +278,12 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 
 	// Данные получены
 	i = OK;
-	if(OneWireDrv.crc8(data,8) != data[8]) i = ERR_ONEWIRE_CRC;  // Проверка контрольной суммы
-	val = CalcTemp(addr[0], data);
-	if(val == ERROR_TEMPERATURE) i = ERR_ONEWIRE_CRC; // Прочитаны "плохие данные"
+	if(OneWireDrv.crc8(data,8) != data[8]) {
+xReadedOnly2b:
+		i = ERR_ONEWIRE_CRC;  // Проверка контрольной суммы
+	}
+	val = CalcTemp(addr[0], data, i != OK);
+	if(val == ERROR_TEMPERATURE) i = 0x40; // Прочитаны "плохие данные"
 	return i;
 }
 
