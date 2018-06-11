@@ -110,8 +110,9 @@ body.test #get_listrelay span{display:none}
 .visualization span.red{border-color:#BF1E2D;color:#000;}
 .visualization span.blue{border-color:#0F75BC;color:#000;}
 .visualization span.orange{border-color:#F36F29;color:#000;}
+.visualization span.charsw{background:transparent;border-color:transparent;color:red;font-size:25px!important}
 .visualization span:after{content:" °C";display: inline-block; float: right;}
-.visualization span#get_press-pcon:after,.visualization span#get_press-peva:after  {content:"";display:none}
+.visualization span#get_press-pcon:after,.visualization span#get_press-peva:after {content:"";display:none}
 .visualization #get_temp-tevain		{margin-top: 335px;margin-left: 260px;}
 .visualization #get_temp-tevaoutg	{margin-top: 335px;margin-left: 140px;}
 .visualization #get_temp-tevaing	{margin-top: 185px;margin-left: 140px;}
@@ -131,6 +132,7 @@ body.test #get_listrelay span{display:none}
 .visualization #get_flow-floweva	{margin-top: 240px;margin-left: 100px;}.visualization #get_flow-floweva:after{margin-left:3px;content:"м³ч";}
 .visualization #get_flow-flowcon	{margin-top: 280px;margin-left: 690px;}.visualization #get_flow-flowcon:after{margin-left:3px;content:"м³ч";}
 .visualization #get_overcool		{margin-top: 358px;margin-left: 575px;}.visualization #get_overcool:before{content:"Δ";}
+.visualization #get_relay-rboiler	{margin-top: 102px;margin-left: 743px;}.visualization #get_relay-rboiler:after{content:""}
 
 .cd-accordion-menu input[type=checkbox] {	position: absolute;	opacity: 0;}
 .cd-accordion-menu label, .cd-accordion-menu a {position: relative;	display: block;}

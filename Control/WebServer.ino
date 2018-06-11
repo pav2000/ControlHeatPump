@@ -425,9 +425,15 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         else                      {strcat(strReturn," - ");strcat(strReturn,"Гц|");}
 		#endif
         if (HP.get_errcode() == OK) {
-        	strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
+        	if(HP.get_State() == pOFF_HP) {
+        		strcat(strReturn, MODE_HP_STR[0]);
+        	} else if(HP.get_State() == pWAIT_HP) {
+        		strcat(strReturn, "...");
+        	} else if(HP.get_State() == pWORK_HP) {
+        		strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
+        	}
         } else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-        strcat(strReturn,"|");   strcat(strReturn,"&") ;    continue;
+        strcat(strReturn,"|&"); continue;
        }
        
    if (strcmp(str,"get_version")==0) // Команда get_version
@@ -556,15 +562,18 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
  
     if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
         {
-            switch ((MODE_HP)HP.get_mode())   // режим работы отопления
-                   {
-                    case pOFF:   strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;
-                    case pHEAT:  strcat(strReturn,(char*)"Выключено:0;Отопление:1;Охлаждение:0;"); break;
-                    case pCOOL:  strcat(strReturn,(char*)"Выключено:0;Отопление:0;Охлаждение:1;"); break;
-                    default: HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;   // Исправить по умолчанию
-                   }  
-          strcat(strReturn,"&") ; continue;
+    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_mode());
+    		strcat(strReturn,"&") ; continue;
         } // strcmp(str,"get_modeHP")==0)   
+    if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
+       {
+		#ifdef RPUMPBH
+    	if(HP.dRelay[RPUMPBH].get_Relay()) strcat(strReturn, "Бойлер");
+    	else
+		#endif
+    		strcat(strReturn, HP.dRelay[PUMP_OUT].get_Relay() ? "Вкл" : "Выкл");
+    	strcat(strReturn,"&") ;    continue;
+       }
     if (strcmp(str,"get_testMode")==0)  // Функция get_testMode
        {
        for(i=0;i<=HARD_TEST;i++) // Формирование списка

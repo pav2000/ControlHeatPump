@@ -168,7 +168,8 @@ private:
 class sensorFrequency
 {
 public:
-  void initFrequency(int sensor);                         // Инициализация частотного датчика
+  void initFrequency(int sensor);                   // Инициализация частотного датчика
+  void reset(void);									// Сброс счетчика
   __attribute__((always_inline)) inline void InterruptHandler(){count++;} // обработчик перываний
   int8_t  Read();                                         // Чтение датчика (точнее расчет значения) возвращает ошибку или ОК
   __attribute__((always_inline)) inline uint32_t get_Frequency(){return Frequency;}   // Получить ЧАСТОТУ датчика при последнем чтении
@@ -214,7 +215,6 @@ private:
    uint8_t  pin;                                         // Ножка куда прицеплен датчик
    char *note;                                           // наименование датчика
    char *name;                                           // Имя датчика
-   uint32_t tickCount;                                   // служебная переменная для увеличения быстродействия
 };
 
 

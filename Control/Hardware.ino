@@ -429,7 +429,7 @@ void sensorFrequency::initFrequency(int sensor)
    note=(char*)noteFrequency[sensor];             // наименование датчика
    name=(char*)nameFrequency[sensor];             // Имя датчика
    Chart.init(true);                              // инициалазация статистики
-   sTime=xTaskGetTickCount();                     // время начала базового периода в тиках
+   reset();
    // Привязывание обработчика преваний к методу конкретного класса
    //   LOW вызывает прерывание, когда на порту LOW
    //   CHANGE прерывание вызывается при смене значения на порту, с LOW на HIGH и наоборот
@@ -443,36 +443,51 @@ void sensorFrequency::initFrequency(int sensor)
    else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
 #endif     
    else err=ERR_NUM_FREQUENCY;
-  
 }
 
 // Получить (точнее обновить) значение датчика
 int8_t sensorFrequency::Read()
 {
-
- if (testMode!=NORMAL) { Value=testValue; Frequency=Value*1000*((float)kfValue/360000.0); return err; }   // В режиме теста
- #ifdef DEMO
-    Frequency=random(2500,6000);
-    count=0;
- //   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
-   //  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
-    return err;      // Если демо вернуть случайное число
- #else
-   tickCount=xTaskGetTickCount();            // получить текущее время
-   if(tickCount<sTime)                       // произошло переполнение счетчиков тиков freeRTOS - измерение с начала
-       { sTime=tickCount;  count=0; }
-   else if(tickCount-sTime>BASE_TIME_READ*1000)   // если только пришло время измерения
-       { 
-        Frequency=(count*500.0*1000.0)/(tickCount-sTime);    // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
-        sTime=tickCount;  
-        count=0;
-  //   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
-       Value=((float)Frequency/1000.0)/((float)kfValue/360000.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
-       }
- #endif   
- return err;    
+	if(testMode != NORMAL) {
+		Value = testValue;
+		Frequency = Value * kfValue / 360;
+		return err;
+	}   // В режиме теста
+#ifdef DEMO
+	Frequency=random(2500,6000);
+	count=0;
+	//   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
+	Value=(float)Frequency/kfValue*360.0);// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	//  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
+	return err;// Если демо вернуть случайное число
+#else
+	if(GetTickCount() - sTime > (uint32_t)BASE_TIME_READ * 1000) {  // если только пришло время измерения
+		uint32_t tickCount, cnt;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+		tickCount = GetTickCount();
+		cnt = count;
+		count = 0;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+		__asm__ volatile ("" ::: "memory");
+		Frequency = (cnt * 500.0 * 1000.0) / (tickCount - sTime); // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
+		sTime = tickCount;
+		//   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
+		//       Value=((float)Frequency/1000.0)/((float)kfValue/360000.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+		Value = (float) Frequency / kfValue * 360.0; // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	}
+#endif
+	return err;
 }
+
+void sensorFrequency::reset(void)
+{
+
+	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+	sTime = GetTickCount();
+	count = 0;
+	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+}
+
 // Установить Состояние датчика в режиме теста
 int8_t  sensorFrequency::set_testValue(int16_t i) 
 {

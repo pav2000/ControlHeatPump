@@ -1581,10 +1581,11 @@ void HeatPump::relayAllOFF()
 // в зависимости от режима, не забываем менять onBoiler по нему определяется включение ГВС
 boolean HeatPump::switchBoiler(boolean b)
 {
-	if (b==onBoiler) return onBoiler;            // Нечего делать выходим
-	onBoiler=b;                                  // запомнить состояние нагрева бойлера ВСЕГДА
+	if(b && b == onBoiler) return onBoiler;            // Нечего делать выходим
+	boolean old = onBoiler;
+	onBoiler = b;                                  // запомнить состояние нагрева бойлера ВСЕГДА
 	if(!onBoiler) offBoiler=rtcSAM3X8.unixtime();// запомнить время выключения ГВС (нужно для переключения)
-	else           offBoiler=0;
+	else          offBoiler=0;
 #ifdef R3WAY
 	dRelay[R3WAY].set_Relay(onBoiler);           // Установить в нужное полежение 3-х ходового
 #else // Нет трехходового - схема с двумя насосами
@@ -1633,9 +1634,9 @@ boolean HeatPump::switchBoiler(boolean b)
 		}
 	}
 #endif
-	if(get_State()==pWORK_HP)   // Если было перекидывание 3-х ходового и ТН работает то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
+	if(old && get_State()==pWORK_HP)   // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
 	{
-		journal.jprintf(" Pause %d sec after switching the 3-way valve . . .\n",HP.Option.delayBoilerSW);
+		journal.jprintf(" Pause %d sec, Boiler->Heater . . .\n",HP.Option.delayBoilerSW);
 		_delay(HP.Option.delayBoilerSW*1000);  // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 	}
 	return onBoiler;
@@ -1724,7 +1725,10 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	// пауза после включения насосов, если нужно
 	if((b) && (!old))                                                // Насосы включены (старт компрессора), нужна пауза
 	{
-		journal.jprintf(" Pause %d seconds before starting compressor . . .\n", Option.delayOnPump);
+		#ifdef FLOW_CONTROL
+  	    for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
+		#endif
+		journal.jprintf(" Pause %d sec before starting compressor . . .\n", Option.delayOnPump);
 		for(d = Option.delayOnPump * 10; d > 0; d--) { // задержка перед включением компрессора
 			if(error || is_next_command_stop()) break; // прерваться по ошибке, еще бы проверить команду на останов...
 			_delay(100);
@@ -1921,6 +1925,7 @@ int8_t HeatPump::StartResume(boolean start)
 	else  mod=get_Work();                                   // определяем что делаем с компрессором
 	if (mod>pBOILER) mod=pOFF;                              // При первом пуске могут быть только состояния pOFF,pHEAT,pCOOL,pBOILER
 	journal.jprintf( " Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
+	Status.modWork = mod;  // Установка режима!
 
 	// 5. Конфигурируем ТН -----------------------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
@@ -1946,11 +1951,12 @@ int8_t HeatPump::StartResume(boolean start)
 	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
 	if(start)
 	{
-		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
 		journal.jprintf(" Start task vUpdate\n");
+		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
 	}
 
 	// 12. насос запущен -----------------------------------------------------------------------------------------
+	_delay(1);
 	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
 	
 	return error;
@@ -2711,10 +2717,6 @@ void HeatPump::configHP(MODE_HP conf)
                  PUMPS_ON;                                                     // включить насосы
                  _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
-                  #ifdef RPUMPFL
-                  dRelay[RPUMPFL].set_ON();     // ТП
-                  #endif 
-                           
                  #ifdef RTRV
                   if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
@@ -2738,10 +2740,6 @@ void HeatPump::configHP(MODE_HP conf)
                  PUMPS_ON;                                                     // включить насосы
                  _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
-                 #ifdef RPUMPFL
-                 dRelay[RPUMPFL].set_OFF();     // ТП
-                 #endif
-                
                  #ifdef RTRV
                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
                  dRelay[RTRV].set_ON();                                       // охлаждение
@@ -2765,20 +2763,15 @@ void HeatPump::configHP(MODE_HP conf)
                     _delay(2*1000);                     // Задержка на 2 сек
                     if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
-                    PUMPS_ON; 
-                    
-                    #ifdef RPUMPFL
-                    dRelay[RPUMPFL].set_OFF();     // ТП
-                    #endif
-                    // включить насосы
+                    PUMPS_ON;           // включить насосы
                     if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
 
                  #ifdef RTRV
                  if ((COMPRESSOR_IS_ON)&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
                  #endif
                  switchBoiler(true);                                             // включить бойлер
                  #ifdef RHEAT
@@ -2791,7 +2784,6 @@ void HeatPump::configHP(MODE_HP conf)
                break;    // конфигурировать ничего не надо, продолжаем движение
          default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__);  break;   // Ошибка!  что то пошло не так
     }
-    if(conf < pNONE_H) command_completed = rtcSAM3X8.unixtime();
  }
 
 // "Интелектуальная пауза" для перекидывания на "ходу" 4-х ходового
@@ -2867,6 +2859,7 @@ void HeatPump::vUpdate()
                                vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
                                journal.jprintf(" %s: Task vUpdatePump RPUMPO on . . .\n",(char*)__FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
                              }
+                             command_completed = rtcSAM3X8.unixtime();
                           } break;
               case  pHEAT:   
               case  pCOOL:  
@@ -2879,6 +2872,7 @@ void HeatPump::vUpdate()
 							 }
                              configHP(Status.modWork);                                 // Конфигурируем насосы
                              compressorON(Status.modWork);                             // Включаем компрессор
+                             command_completed = rtcSAM3X8.unixtime();
                              break;
               case  pNONE_H:
               case  pNONE_C:
@@ -2946,20 +2940,32 @@ void HeatPump::compressorON(MODE_HP mod)
       if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок
       {
            // Дополнительные защиты перед пуском компрессора
-           if (startPump)                                      // Проверка задачи насос - должен быть выключен
-              {
-                startPump=false;                               // Поставить признак останова задачи насос
-                vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
-                journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
-              } 
+    	  if (startPump)                                      // Проверка задачи насос - должен быть выключен
+    	  {
+    		  startPump=false;                               // Поставить признак останова задачи насос
+    		  vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
+    		  journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
+    	  }
            // Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
-           if (!dRelay[PUMP_IN].get_Relay()) {journal.jprintf(" WARNING! PUMP_IN is off Compressor on\n");  dRelay[PUMP_IN].set_ON(); _delay(Option.delayOnPump * 1000); }
+           if(!dRelay[PUMP_IN].get_Relay()) {
+        	   journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
+        	   set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
+        	   return;
+           }
            #ifndef SUPERBOILER  // для супербойлера это лишнее
-           if (!dRelay[PUMP_OUT].get_Relay()){journal.jprintf(" WARNING! PUMP_OUT is off Compressor on\n"); dRelay[PUMP_OUT].set_ON(); _delay(Option.delayOnPump * 1000); }
+           if(!(dRelay[PUMP_OUT].get_Relay()
+    			#ifdef RPUMPBH
+                || dRelay[RPUMPBH].get_Relay()
+    			 #endif
+    		 )) {
+        	   journal.jprintf(" WARNING! %s is off before start compressor!\n", "Out pump");
+        	   set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
+        	   return;
+           }
            #endif
            
            #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-           _delay(BASE_TIME_READ * 1000); // Ждем пока счетчики посчитаются
+           if(Option.delayOnPump <= BASE_TIME_READ) _delay((BASE_TIME_READ - Option.delayOnPump) * 1000 + 2); // Ждем пока счетчики посчитаются
            for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
         	   if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {
         		   set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
@@ -3105,13 +3111,13 @@ void HeatPump::defrost()
 // Послать команду на управление ТН
 void HeatPump::sendCommand(TYPE_COMMAND c)
 {
-	if (c==command) return;      // Игнорируем повторы
-	if (command!=pEMPTY) // Если команда выполняется (не pEMPTY), то следующую в очередь, если есть место
+	if (c == command) return;      // Игнорируем повторы
+	if (command != pEMPTY) // Если команда выполняется (не pEMPTY), то следующую в очередь, если есть место
 	{
-		if(next_command == pEMPTY) next_command = c;
-		journal.jprintf("Active command: %s, next: %s", get_command_name(command), get_command_name(next_command));
-		if(next_command != c) journal.jprintf(", ignore: %s", get_command_name(c));
-		journal.jprintf("\n");
+		if(next_command != c){
+			next_command = c;
+			journal.jprintf("Active command: %s, next: %s\n", get_command_name(command), get_command_name(next_command));
+		}
 		return;
 	}
 	if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;     // Пришла команда на старт а насос останавливается ничего не делаем игнорируем

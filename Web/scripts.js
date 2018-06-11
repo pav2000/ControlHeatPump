@@ -758,7 +758,9 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										element = document.getElementById(valueid);
 										if(element) {
-											if(element != document.activeElement) {
+											if(element.className == "charsw") {
+												element.innerHTML = element.title.substr(valuevar,1);
+											} else if(element != document.activeElement) {
 												element.value = element.innerHTML = values[1];
 											}
 										}
