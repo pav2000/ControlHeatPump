@@ -855,43 +855,49 @@ char* HeatPump::get_network(char *var,char *ret)
 // Установить параметр дата и время из строки
 boolean  HeatPump::set_datetime(char *var, char *c)
 {
-   float tz;
-   int16_t m,h,d,mo,y;
-   int16_t buf[4];
-   uint32_t oldTime=rtcSAM3X8.unixtime(); // запомнить время
-   int32_t  dTime=0;
-if(strcmp(var,time_TIME)==0){ if (!parseInt16_t(c, ':',buf,2,10)) return false; 
-                      h=buf[0]; m=buf[1];
-                      rtcSAM3X8.set_time (h,m,0);  // внутренние
-                      setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds()); // внешние
-                      dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-                      }else  
-if(strcmp(var,time_DATE)==0){       if (!parseInt16_t(c, '/',buf,3,10)) return false;
-                      d=buf[0]; mo=buf[1]; y=buf[2];
-                      rtcSAM3X8.set_date(d,mo,y); // внутренние
-                      setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years()); // внешние
-                      dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-                      }else  
-if(strcmp(var,time_NTP)==0){if(strlen(c)==0) return false;                                                 // пустая строка
-                      if(strlen(c)>NTP_SERVER_LEN) return false;                                     // слишком длиная строка
-                      else { strcpy(DateTime.serverNTP,c); return true;  }                           // ок сохраняем
-                      }else                
-if(strcmp(var,time_UPDATE)==0){     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
-                      else if (strcmp(c,cOne)==0) { SETBIT1( DateTime.flags,fUpdateNTP);countNTP=0; return true;}
-                      else return false;  
-                      }else   
-if(strcmp(var,time_TIMEZONE)==0){  tz=my_atof(c);  
-                      if (tz==-9876543.00) return   false;
-                      else if((tz<-12)||(tz>12)) return   false;   
-                      else DateTime.timeZone=(int)tz; return true;
-                      }else  
-if(strcmp(var,time_UPDATE_I2C)==0){ if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
-                      else if (strcmp(c,cOne)==0) {SETBIT1( DateTime.flags,fUpdateI2C);countNTP=0; return true;}
-                      else return false;  
-                      } else return  false;                      
-                      
-if(dTime!=0)  updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
-return true;
+	float tz;
+	int16_t m,h,d,mo,y;
+	int16_t buf[4];
+	uint32_t oldTime=rtcSAM3X8.unixtime(); // запомнить время
+	int32_t  dTime=0;
+	if(strcmp(var,time_TIME)==0){ if (!parseInt16_t(c, ':',buf,2,10)) return false;
+						  h=buf[0]; m=buf[1];
+						  rtcSAM3X8.set_time (h,m,0);  // внутренние
+						  setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds()); // внешние
+						  dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
+					  }else
+	if(strcmp(var,time_DATE)==0){
+						  char ch, f = 0; m = 0;
+						  do { // ищем разделитель чисел
+							  ch = c[m++];
+							  if(ch >= '0' && ch <= '9') f = 1; else if(f == 1) { f = 2; break; }
+						  } while(ch != '\0');
+						  if(f != 2 || !parseInt16_t(c, ch,buf,3,10)) return false;
+						  d=buf[0]; mo=buf[1]; y=buf[2];
+						  rtcSAM3X8.set_date(d,mo,y); // внутренние
+						  setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years()); // внешние
+						  dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
+					  }else
+	if(strcmp(var,time_NTP)==0){if(strlen(c)==0) return false;                                                 // пустая строка
+						  if(strlen(c)>NTP_SERVER_LEN) return false;                                     // слишком длиная строка
+						  else { strcpy(DateTime.serverNTP,c); return true;  }                           // ок сохраняем
+					  }else
+	if(strcmp(var,time_UPDATE)==0){     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
+						  else if (strcmp(c,cOne)==0) { SETBIT1( DateTime.flags,fUpdateNTP);countNTP=0; return true;}
+						  else return false;
+					  }else
+	if(strcmp(var,time_TIMEZONE)==0){  tz=my_atof(c);
+						  if (tz==-9876543.00) return   false;
+						  else if((tz<-12)||(tz>12)) return   false;
+						  else DateTime.timeZone=(int)tz; return true;
+					  }else
+	if(strcmp(var,time_UPDATE_I2C)==0){ if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
+						  else if (strcmp(c,cOne)==0) {SETBIT1( DateTime.flags,fUpdateI2C);countNTP=0; return true;}
+						  else return false;
+					  } else return  false;
+
+	if(dTime!=0)  updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+	return true;
 }
 // Получить параметр дата и время из строки
 char* HeatPump::get_datetime(char *var,char *ret)

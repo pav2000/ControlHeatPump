@@ -129,10 +129,9 @@ int8_t sensorTemp::Read()
 				   if (nGap > (GETBIT(setup_flags, fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
 					   nGap = 0;
 					   lastTemp = ttemp;
-				   } else {  // Пропуск данных
-					   if(!GETBIT(setup_flags, fTEMP_dont_log_errors))
-						   journal.jprintf(pP_TIME, "WARNING: Gap DS18x20: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
 				   }
+				   if(nGap == 0 || !GETBIT(setup_flags, fTEMP_dont_log_errors))
+					   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
 				}
 			}
 		}

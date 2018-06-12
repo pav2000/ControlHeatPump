@@ -192,7 +192,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		// 4. Старт преобразования температуры и пауза
 		if(OneWireDrv.reset()) {
 #ifdef ONEWIRE_DS2482_SECOND
-			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
 			else
 #endif
 				OneWireDrv.select(addr);
