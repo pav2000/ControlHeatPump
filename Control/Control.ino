@@ -16,7 +16,8 @@
  * GNU General Public License for more details.
  */
 // Последние версии
-// https://github.com/pav2000/ControlHeatPump проект на гитхабе
+// https://github.com/pav2000/ControlHeatPump проект на гитхабе (рабочие сборки)
+// https://github.com/vad7/ControlHeatPump - последняя стабильная версия
 // http://77.50.254.24:25402/ последняя версия демо
 // http://77.50.254.24:25402/mob/index.html мобильная морда демо
 // Архивные ссылки

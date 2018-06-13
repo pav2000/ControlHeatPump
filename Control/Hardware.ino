@@ -454,10 +454,10 @@ int8_t sensorFrequency::Read()
 		return err;
 	}   // В режиме теста
 #ifdef DEMO
-	Frequency=random(2500,6000);
+	Frequency=random(2500,9000);
 	count=0;
 	//   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-	Value=(float)Frequency/kfValue*360.0);// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	Value=(float)Frequency/kfValue*360.0;// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
 	//  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
 	return err;// Если демо вернуть случайное число
 #else
