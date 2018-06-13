@@ -3212,7 +3212,7 @@ int8_t HeatPump::runCommand()
 			journal.jprintf("Unknown command: %d !!!", command);
 			break;
 		}
-		if(command != pSFORMAT && command != pSAVE) command_completed = rtcSAM3X8.unixtime();
+		if(command != pSFORMAT && command != pSAVE && command != pNETWORK) command_completed = rtcSAM3X8.unixtime();
 		if(next_command != pEMPTY) { // следующая команда
 			command = next_command;
 			next_command = pEMPTY;
