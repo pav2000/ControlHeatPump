@@ -42,11 +42,14 @@
 #define STARTTEMP   -27321  // Значение инициализации датчика температуры, по нему определяется первая итерация (сотые градуса)
 
 enum TEMP_SETUP_FLAGS {
-	fDS2482_second = 0,	// датчик на втором DS2482 (адрес I2C_ADR_DS2482two)
+	fDS2482_second = 0,	// датчик на втором DS2482 (адрес I2C_ADR_DS2482_2)
+	fDS2482_third,		// датчик на третьем DS2482 (адрес I2C_ADR_DS2482_3)
+	fDS2482_fourth,		// датчик на четвертом DS2482 (адрес I2C_ADR_DS2482_4)
 	fTEMP_ignory_errors, // игнорировать ошибки датчика - не будет останавливаться ТН
 	fTEMP_dont_log_errors, // не логировать ошибки
 	fTEMP_ignory_CRC // Ошибки CRC игнорируются - неверные показания отбрасываеются через GAP_TEMP_VAL_CRC
 };
+#define fDS2482_bus_mask 3
 
 // Удаленные датчики температуры -------------------------------------------------------------
 #ifdef SENSOR_IP
@@ -113,11 +116,11 @@ class sensorTemp
     TEST_MODE get_testMode(){return  testMode;}         // Получить текущий режим работы
     void     set_testMode(TEST_MODE t){testMode=t;}     // Установить значение текущий режим работы
     
-    void     set_address(byte *addr, byte bus_type);    // Привязать адрес и тип шины
+    void     set_address(byte *addr, byte bus);    		// Привязать адрес и номер шины
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
-    __attribute__((always_inline)) inline boolean get_bus(){ return GETBIT(setup_flags, fDS2482_second); } // Шина
+    __attribute__((always_inline)) inline boolean get_bus(){ return GETBIT(setup_flags, fDS2482_bus_mask); } // Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку

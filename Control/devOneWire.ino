@@ -96,16 +96,16 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 #endif
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
 	{
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-		if(bus && !OneWireDrv.configure(DS2482_CONFIG)) goto x_Reset_bridge;
+#ifdef ONEWIRE_DS2482_2WAY
+		if((ONEWIRE_2WAY & (1<<bus)) && !OneWireDrv.configure(DS2482_CONFIG)) goto x_Reset_bridge;
 #endif
 		if((presence = OneWireDrv.reset())) break;                     // Сброс прошел выходим
 #ifdef ONEWIRE_DS2482
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
+#ifdef ONEWIRE_DS2482_2WAY
 x_Reset_bridge:
 #endif
 		if(!OneWireDrv.reset_bridge()) break;
-		#ifndef ONEWIRE_DS2482_SECOND_2WAY
+		#ifndef ONEWIRE_DS2482_2WAY
 		#if DS2482_CONFIG != 0
 			if(!OneWireDrv.configure(DS2482_CONFIG)) break;
 		#endif
@@ -196,8 +196,8 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			else
 #endif
 				OneWireDrv.select(addr);
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-			if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+#ifdef ONEWIRE_DS2482_2WAY
+			if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
 			OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
 		} else err = ERR_ONEWIRE;
@@ -205,14 +205,14 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			_delay(95);             // Ожитать время разрешение 9 бит это гуд
 
 			// 5. Получение данных
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-			if(bus && !OneWireDrv.configure(DS2482_CONFIG)) break;
+#ifdef ONEWIRE_DS2482_2WAY
+			if((ONEWIRE_2WAY & (1<<bus)) && !OneWireDrv.configure(DS2482_CONFIG)) break;
 #endif
 			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
 		}
 		if(err == OK) {
 #ifdef ONEWIRE_DS2482_SECOND
-			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
 			else
 #endif
 				OneWireDrv.select(addr);
@@ -226,7 +226,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			int16_t t = CalcTemp(addr[0], data, 0);
 			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
 				strcat(result_str, "CRC");
-			else strcat(result_str, ftoa((char *)data, (float)t / 100.0, 2));
+			else _ftoa((char *)data, (float)t / 100.0, 2);
 		}
 		strcat(result_str, ":");
 
@@ -235,10 +235,10 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		strcat(result_str, addressToHex(addr));
 		strcat(result_str, ":");
 #ifdef ONEWIRE_DS2482
-		OW_scanTable[OW_scanTableIdx].bus_type = bus;
-		strcat(result_str, bus ? "2" : "1");
+		OW_scanTable[OW_scanTableIdx].bus = bus;
+		_itoa(bus+1, result_str);
 #else
-		OW_scanTable[OW_scanTableIdx].bus_type = 0;
+		OW_scanTable[OW_scanTableIdx].bus = 0;
 		strcat(result_str, "1");
 #endif
 		strcat(result_str, ";");
@@ -260,7 +260,7 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 
 	if((i = lock_I2C_bus_reset(0))) return i;
 #ifdef ONEWIRE_DS2482_SECOND
-	if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl)) OneWireDrv.skip();
+	if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
 	else
 #endif
 		OneWireDrv.select(addr);
@@ -306,13 +306,13 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
         	return err;
         }
         OneWireDrv.select(addr);
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-		if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+#ifdef ONEWIRE_DS2482_2WAY
+		if((ONEWIRE_2WAY & (1<<bus)) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
     	OneWireDrv.write(0x48);  // Записать в чип разрешение на всякий случай
     	_delay(12);
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-		if(bus) OneWireDrv.configure(DS2482_CONFIG);
+#ifdef ONEWIRE_DS2482_2WAY
+		if((ONEWIRE_2WAY & (1<<bus)) OneWireDrv.configure(DS2482_CONFIG);
 #endif
     }
 #endif
@@ -326,8 +326,8 @@ int8_t  deviceOneWire::PrepareTemp()
 	if(lock_I2C_bus_reset(0)) return ERR_ONEWIRE;
 	// начать преобразование температурных ВСЕХ датчиков две команды
 	OneWireDrv.skip();    		// skip ROM command
-#ifdef ONEWIRE_DS2482_SECOND_2WAY
-	if(bus) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+#ifdef ONEWIRE_DS2482_2WAY
+	if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
 	OneWireDrv.write(0x44);	   	// convert temp
 	release_I2C_bus();

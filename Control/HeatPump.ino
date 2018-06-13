@@ -123,6 +123,12 @@ void HeatPump::scan_OneWire(char *result_str)
 #ifdef ONEWIRE_DS2482_SECOND
 		OneWireBus2.Scan(result_str);
 #endif
+#ifdef ONEWIRE_DS2482_THIRD
+		OneWireBus3.Scan(result_str);
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+		OneWireBus4.Scan(result_str);
+#endif
 		journal.jprintf("OneWire found(%d): ", OW_scanTableIdx);
 		while(m_strlen(_result_str)) {
 			journal.jprintf(_result_str);
@@ -954,7 +960,13 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                      }else       // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                       }else       // Якрость % NEXTION
-   if(strcmp(var,option_OW2TS)==0)            {Option.flags = (Option.flags & ~(1<<f1Wire2TSngl)) | (x == 0 ? 0 : (1<<f1Wire2TSngl)); return true;}else
+   if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
+	   uint8_t bit = var[sizeof(option_SGL1W)] - 2;
+	   if(bit <= 2) {
+		   Option.flags = (Option.flags & ~(1<<(f1Wire2TSngl + bit))) | (x == 0 ? 0 : (1<<(f1Wire2TSngl + bit)));
+		   return true;
+	   }
+   } else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -1000,7 +1012,12 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
-   if(strcmp(var,option_OW2TS)==0)            {return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl) ? cOne : cZero)); }else
+   if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
+	   uint8_t bit = var[sizeof(option_SGL1W)] - 2;
+	   if(bit <= 2) {
+		   return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl + bit) ? cOne : cZero));
+	   }
+   } else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else     // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {return _itoa(Option.delayStartRes,ret);}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -3449,11 +3466,20 @@ int16_t HeatPump::get_temp_evaporating(void)
 int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 {
 	int8_t i, ret = 0;
-#ifdef ONEWIRE_DS2482_SECOND
-	if((i = bus ? OneWireBus2.PrepareTemp() : OneWireBus.PrepareTemp())) {
-#else
-	if((i = OneWireBus.PrepareTemp())) {
-#endif
+  #ifdef ONEWIRE_DS2482_SECOND
+	if(bus == 1) i = OneWireBus2.PrepareTemp();
+	else
+  #endif
+  #ifdef ONEWIRE_DS2482_THIRD
+	if(bus == 2) i = OneWireBus3.PrepareTemp();
+	else
+  #endif
+  #ifdef ONEWIRE_DS2482_FOURTH
+	if(bus == 3) i = OneWireBus4.PrepareTemp();
+	else
+  #endif
+	i = OneWireBus.PrepareTemp();
+	if(i) {
 		for(uint8_t j = 0; j < TNUMBER; j++) {
 			if(sTemp[j].get_fAddress() && sTemp[j].get_bus() == bus) {
 				if(sTemp[j].inc_error()) {

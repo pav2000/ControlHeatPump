@@ -284,8 +284,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); HP.get_optionHP((char*)option_NEXT_SLEEP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); HP.get_optionHP((char*)option_NEXT_DIM,Socket[thread].outBuf);STR_END;
-     
-     strcat(Socket[thread].outBuf,"На второй шине 1-Wire(DS2482) только один датчик: "); HP.get_optionHP((char*)option_OW2TS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"На шинах 1-Wire(DS2482) только один датчик: "); if((HP.get_flags() & (1<<f1Wire2TSngl))) strcat(Socket[thread].outBuf, "2 "); if((HP.get_flags() & (1<<f1Wire3TSngl))) strcat(Socket[thread].outBuf, "3 "); if((HP.get_flags() & (1<<f1Wire4TSngl))) strcat(Socket[thread].outBuf, "4");
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;

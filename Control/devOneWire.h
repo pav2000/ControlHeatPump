@@ -41,7 +41,7 @@ struct type_scanOneWire
 {
   byte num;            // номер по списку
   byte type_sensor;    // тип сенсора
-  byte bus_type;       // тип подключения: 0 - трехпроводное,  1 - двухпроводное
+  byte bus;       	   // номер шины
   byte address[8];     // адрес
 };
 
@@ -70,11 +70,17 @@ class deviceOneWire 									       // Класс шина   OneWire
 	int8_t err;                                         // ошибка шины (работа) при ошибке останов ТН
 #ifdef ONEWIRE_DS2482
 	DS2482	OneWireDrv;                                 // мастер OneWire аппаратная
-	uint8_t	bus;										// 0 - первый DS2482, 1 - второй DS2482
+	uint8_t	bus;										// 0 - первый DS2482, 1 - второй DS2482, 2 - третий, 3 - четвертый
 };
 deviceOneWire OneWireBus(I2C_ADR_DS2482, 0);            // Создание шины нужного типа
 #ifdef ONEWIRE_DS2482_SECOND
-deviceOneWire OneWireBus2(I2C_ADR_DS2482two, 1);        // Создание шины нужного типа
+deviceOneWire OneWireBus2(I2C_ADR_DS2482_2, 1);        // Создание шины нужного типа
+#endif
+#ifdef ONEWIRE_DS2482_THIRD
+deviceOneWire OneWireBus3(I2C_ADR_DS2482_3, 2);        // Создание шины нужного типа
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+deviceOneWire OneWireBus4(I2C_ADR_DS2482_4, 3);        // Создание шины нужного типа
 #endif
 #else // ONEWIRE_DS2482
 	OneWire	OneWireDrv;                                 // OneWire шина програмная

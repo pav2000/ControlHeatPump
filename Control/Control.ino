@@ -309,9 +309,17 @@ x_I2C_init_std_message:
               if(address == I2C_ADR_DS2482) {
             	  error = OneWireBus.lock_I2C_bus_reset(1);
 			    #ifdef ONEWIRE_DS2482_SECOND
-              } else if(address == I2C_ADR_DS2482two) {
+              } else if(address == I2C_ADR_DS2482_2) {
                	  error = OneWireBus2.lock_I2C_bus_reset(1);
 		        #endif
+				#ifdef ONEWIRE_DS2482_THIRD
+              } else if(address == I2C_ADR_DS2482_3) {
+					  error = OneWireBus3.lock_I2C_bus_reset(1);
+				#endif
+				#ifdef ONEWIRE_DS2482_FOURTH
+              } else if(address == I2C_ADR_DS2482_4) {
+					  error = OneWireBus4.lock_I2C_bus_reset(1);
+				#endif
               } else {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
               }
@@ -324,8 +332,10 @@ x_I2C_init_std_message:
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
                     {    
-               	   	case I2C_ADR_DS2482two:
-                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100%s\n", address == I2C_ADR_DS2482two ? " second" : ""); break; // 0x18 есть варианты
+               	   	case I2C_ADR_DS2482_4:
+               	   	case I2C_ADR_DS2482_3:
+               	   	case I2C_ADR_DS2482_2:
+                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100"); if(address != I2C_ADR_DS2482) journal.jprintf(" bus: %d", address - I2C_ADR_DS2482); journal.jprintf("\n"); break;
 					#if I2C_FRAM_MEMORY == 1
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
@@ -346,11 +356,21 @@ x_I2C_init_std_message:
           } // for
     } //  (eepStatus==0) 
 
-    if(OneWireBus.Init()) journal.jprintf("Error OneWire init: %d\n", OneWireBus.GetLastErr());
-    else journal.jprintf("OneWire init Ok.\n");
+    const char *OneWireInitStr = { "Error OneWire%d init: %d\n" };
+    const char *OneWireInitStrOk = { "OneWire%d init Ok\n" };
+    if(OneWireBus.Init()) journal.jprintf(OneWireInitStr, 1, OneWireBus.GetLastErr());
+    else journal.jprintf(OneWireInitStrOk, 1);
 #ifdef ONEWIRE_DS2482_SECOND
-    if(OneWireBus2.Init()) journal.jprintf("Error OneWire2 init: %d\n", OneWireBus2.GetLastErr());
-    else journal.jprintf("OneWire2 init Ok.\n");
+    if(OneWireBus2.Init()) journal.jprintf(OneWireInitStr, 2, OneWireBus2.GetLastErr());
+    else journal.jprintf(OneWireInitStrOk, 2);
+#endif
+#ifdef ONEWIRE_DS2482_THIRD
+    if(OneWireBus3.Init()) journal.jprintf(OneWireInitStr, 3, OneWireBus3.GetLastErr());
+    else journal.jprintf(OneWireInitStrOk, 3);
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+    if(OneWireBus4.Init()) journal.jprintf(OneWireInitStr, 4, OneWireBus4.GetLastErr());
+    else journal.jprintf(OneWireInitStrOk, 4);
 #endif
 
 // 4. Инициализировать основной класс
@@ -808,6 +828,12 @@ void vReadSensor(void *)
 		prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
 		prtemp |= HP.Prepare_Temp(1);
+#endif
+#ifdef ONEWIRE_DS2482_THIRD
+		prtemp |= HP.Prepare_Temp(2);
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+		prtemp |= HP.Prepare_Temp(3);
 #endif
 #endif     // не DEMO
 		ttime = xTaskGetTickCount();

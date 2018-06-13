@@ -663,9 +663,19 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strcmp(str,"get_OneWirePin")==0)  // Функция get_OneWirePin
        {
        #ifdef ONEWIRE_DS2482  
-        strcat(strReturn,"I2C"); 
-		#ifdef ONEWIRE_DS2482_SECOND
-        strcat(strReturn,"(2)"); 
+        strcat(strReturn,"I2C, DS2482 x ");
+		#ifdef ONEWIRE_DS2482_FOURTH
+        strcat(strReturn,"4");
+		#else
+			#ifdef ONEWIRE_DS2482_THIRD
+			strcat(strReturn,"3");
+			#else
+				#ifdef ONEWIRE_DS2482_SECOND
+				strcat(strReturn,"2");
+				#else
+				strcat(strReturn,"1");
+				#endif
+			#endif
 		#endif
        #else
         strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); 
@@ -1939,7 +1949,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             	   if(n <= TNUMBER)                  // Если индекс находится в диапазоне допустимых значений Здесь индекс начинается с 1, ЗНАЧЕНИЕ 0 - обнуление адреса!!
             	   {
             		   if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
-            		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus_type);
+            		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
             	   }
             	   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
             	   strcat(strReturn,addressToHex(HP.sTemp[p].get_address())); strcat(strReturn,"&"); continue;

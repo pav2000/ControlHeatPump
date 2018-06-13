@@ -139,7 +139,9 @@ const uint16_t  defaultPort=80;
 #define I2C_TIME_WAIT        2000        // Время ожидания захвата мютекса шины I2C мсек
 #define I2C_ADR_RTC          0x68        // Адрес чипа rtc на шине I2C
 #define I2C_ADR_DS2482       0x18        // Адрес чипа OneWire на шине I2C 3-х проводная
-#define I2C_ADR_DS2482two    0x19        // Адрес чипа OneWire на шине I2C 2-х проводная
+#define I2C_ADR_DS2482_2     0x19        // Адрес чипа OneWire на 2-ой шине I2C
+#define I2C_ADR_DS2482_3     0x1A        // Адрес чипа OneWire на 3-ей шине I2C
+#define I2C_ADR_DS2482_4     0x1B        // Адрес чипа OneWire на 4-ой шине I2C
 
 // --------------------------------------------------------------------------------------------------------------------------
 // КАРТА ПАМЯТИ в чипе i2c объемом 64 кбайта
@@ -722,7 +724,7 @@ const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг пи
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
 const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION
-const char *option_OW2TS              = {"OW2TS"};			    // На второй шине 1-Wire(DS2482) только один датчик
+const char *option_SGL1W              = {"SGL1W_"};			    // SGLOW_n, На шине n (1-Wire, DS2482) только один датчик
 const char *option_DELAY_ON_PUMP      = {"DELAY_ON_PUMP"};      // Задержка включения компрессора после включения насосов (сек).
 const char *option_DELAY_OFF_PUMP     = {"DELAY_OFF_PUMP"};     // Задержка выключения насосов после выключения компрессора (сек).
 const char *option_DELAY_START_RES    = {"DELAY_START_RES"};    // Задержка включения ТН после внезапного сброса контроллера (сек.)

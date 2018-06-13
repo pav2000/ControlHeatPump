@@ -1762,8 +1762,11 @@ enum TYPE_SENSOR
  //   #define DEFROST                                                           // нужна разморозка
          #define ONEWIRE_DS2482                                                // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
    //    #define ONEWIRE_DS2482_SECOND                                        // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
-   //    #define ONEWIRE_DS2482_SECOND_2WAY                                   // 2-х проводный OneWire второго мастера (паразитное питание)
-   //    #define ONEWIRE_DONT_CHG_RES                                         // Не менять разрешение датчиков
+   //    #define ONEWIRE_DS2482_2WAY 		                                  // 2-х проводный OneWire второго мастера (паразитное питание)
+   //	 #ifdef ONEWIRE_DS2482_2WAY
+   //	   const uint8_t ONEWIRE_2WAY = 0b0010; // На каких шинах (4,3,2,1) двух-проводные датчики, битовая маска
+   //	 #endif
+   //    #define ONEWIRE_DONT_CHG_RES                                         // Не записывать 12-битное разрешение в датчик при привязке, а просто устанавливать
         #define NO_SD_CONTROL                                                 // + Использование выхода для контроля вставленной SD карты
         #define POWER_CONTROL                                                 // + Использование выхода для управления питанием платы (можно сбросить все кроме контроллера)
         #define SPI_FLASH                                                     // + Наличие чипа флеш памяти на шине SPI
@@ -2172,13 +2175,15 @@ enum TYPE_SENSOR
     #define UART_SPEED    250000	// Скорость отладочного порта
 	#define KEY_ON_OFF				// + KEY1 Наличие кнопки включения и переключения в safeNetwork (нажата при сбросе)
     #define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
-    #define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
-    #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
-    #define ONEWIRE_DS2482_SECOND_2WAY  // 2-х проводный OneWire второго мастера (паразитное питание)
-	#ifdef ONEWIRE_DS2482_SECOND_2WAY
-      const uint8_t ONEWIRE_2WAY = 0b0010; //
+    #define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
+    #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
+	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
+	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
+    #define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
+	#ifdef ONEWIRE_DS2482_2WAY
+      const uint8_t ONEWIRE_2WAY = 0b0010; // На каких шинах (4|3|2|1) двух-проводные датчики, битовая маска
 	#endif
-    #define ONEWIRE_DONT_CHG_RES    // Не менять разрешение датчиков
+    #define ONEWIRE_DONT_CHG_RES    // Не записывать 12-битное разрешение в датчик при привязке, а просто устанавливать
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
     #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
