@@ -961,7 +961,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {if ((x>=0.0)&&(x<=60.0)) {Option.sleep=x; updateNextion(); return true;} else return false;                                                      }else       // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=5.0)&&(x<=100.0)) {Option.dim=x; updateNextion(); return true;} else return false;                                                       }else       // Якрость % NEXTION
    if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
-	   uint8_t bit = var[sizeof(option_SGL1W)] - 2;
+	   uint8_t bit = var[sizeof(option_SGL1W)] - '0' - 2;
 	   if(bit <= 2) {
 		   Option.flags = (Option.flags & ~(1<<(f1Wire2TSngl + bit))) | (x == 0 ? 0 : (1<<(f1Wire2TSngl + bit)));
 		   return true;
@@ -1013,7 +1013,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
    if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
-	   uint8_t bit = var[sizeof(option_SGL1W)] - 2;
+	   uint8_t bit = var[sizeof(option_SGL1W)] - '0' - 2;
 	   if(bit <= 2) {
 		   return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl + bit) ? cOne : cZero));
 	   }
