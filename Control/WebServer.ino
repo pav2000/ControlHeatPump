@@ -664,19 +664,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
        #ifdef ONEWIRE_DS2482  
         strcat(strReturn,"I2C, DS2482 x ");
-		#ifdef ONEWIRE_DS2482_FOURTH
-        strcat(strReturn,"4");
-		#else
-			#ifdef ONEWIRE_DS2482_THIRD
-			strcat(strReturn,"3");
-			#else
-				#ifdef ONEWIRE_DS2482_SECOND
-				strcat(strReturn,"2");
-				#else
-				strcat(strReturn,"1");
-				#endif
-			#endif
+        uint8_t i = 1;
+		#ifdef ONEWIRE_DS2482_SECOND
+		i++;
 		#endif
+		#ifdef ONEWIRE_DS2482_THIRD
+		i++;
+		#endif
+		#ifdef ONEWIRE_DS2482_FOURTH
+		i++;
+		#endif
+		_itoa(i, strReturn);
        #else
         strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); 
        #endif

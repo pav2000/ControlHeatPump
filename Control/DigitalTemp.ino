@@ -217,18 +217,18 @@ void sensorTemp::set_onewire_bus_type()
 {
 	// Привязка шины к датчику
 #ifdef ONEWIRE_DS2482_SECOND
-	if(GETBIT(setup_flags, fDS2482_second)) busOneWire = &OneWireBus2; 	// 2
+	if((setup_flags & fDS2482_bus_mask) == 1) busOneWire = &OneWireBus2; 	// 2 шина
 	else
 #endif
 #ifdef ONEWIRE_DS2482_THIRD
-	if(GETBIT(setup_flags, fDS2482_third)) busOneWire = &OneWireBus3; 	// 3
+	if((setup_flags & fDS2482_bus_mask) == 2) busOneWire = &OneWireBus3; 	// 3 шина
 	else
 #endif
 #ifdef ONEWIRE_DS2482_FOURTH
-	if(GETBIT(setup_flags, fDS2482_fourth)) busOneWire = &OneWireBus4; 	// 4
+	if((setup_flags & fDS2482_bus_mask) == 3) busOneWire = &OneWireBus4; 	// 4 шина
 	else
 #endif
-		busOneWire = &OneWireBus;		                   				// 1
+		busOneWire = &OneWireBus;		                   					// 1 шина
 }
 
 // Установить адрес на шине датчика, bus
@@ -245,7 +245,7 @@ void sensorTemp::set_address(byte *addr, byte bus)
 	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
 	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
 	err = 0;
-	setup_flags |= bus;
+	setup_flags |= bus & fDS2482_bus_mask;
 	set_onewire_bus_type();
 	busOneWire->SetResolution(address, DS18B20_p12BIT);
 }

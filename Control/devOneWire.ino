@@ -86,12 +86,12 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 		return err;
 	}
 	if(checkpresence) {
-		if(OneWireDrv.check_presence() == 0){    // Проверяем наличие на i2с шине  ds2482
+		if(!OneWireDrv.check_presence()){    // Проверяем наличие на i2с шине  ds2482
 			err = ERR_DS2482_NOT_FOUND;
 			release_I2C_bus();
 			journal.jprintf("DS2482-%d not found . . .\n", bus + 1);
+			return err;
 		}
-		return err;
 	}
 #endif
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
@@ -115,7 +115,7 @@ x_Reset_bridge:
         _delay(1);
         digitalReadDirect(PIN_ONE_WIRE_BUS);
 #endif
-		_delay(100);                               // Сброс не прошел, сделаем паузу
+		_delay(50);                               // Сброс не прошел, сделаем паузу
 	}
 	if(!presence){
 		err = ERR_ONEWIRE;
@@ -226,7 +226,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			int16_t t = CalcTemp(addr[0], data, 0);
 			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
 				strcat(result_str, "CRC");
-			else _ftoa((char *)data, (float)t / 100.0, 2);
+			else _ftoa(result_str, (float)t / 100.0, 2);
 		}
 		strcat(result_str, ":");
 

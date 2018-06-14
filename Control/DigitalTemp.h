@@ -41,13 +41,11 @@
 
 #define STARTTEMP   -27321  // Значение инициализации датчика температуры, по нему определяется первая итерация (сотые градуса)
 
-enum TEMP_SETUP_FLAGS {
-	fDS2482_second = 0,	// датчик на втором DS2482 (адрес I2C_ADR_DS2482_2)
-	fDS2482_third,		// датчик на третьем DS2482 (адрес I2C_ADR_DS2482_3)
-	fDS2482_fourth,		// датчик на четвертом DS2482 (адрес I2C_ADR_DS2482_4)
-	fTEMP_ignory_errors, // игнорировать ошибки датчика - не будет останавливаться ТН
-	fTEMP_dont_log_errors, // не логировать ошибки
-	fTEMP_ignory_CRC // Ошибки CRC игнорируются - неверные показания отбрасываеются через GAP_TEMP_VAL_CRC
+enum TEMP_SETUP_FLAGS { // bit #
+	fDS2482_bus = 0,			// 0..3 - шина DS2482
+	fTEMP_ignory_errors = 3, 	// игнорировать ошибки датчика - не будет останавливаться ТН
+	fTEMP_dont_log_errors, 		// не логировать ошибки
+	fTEMP_ignory_CRC 			// Ошибки CRC игнорируются - неверные показания отбрасываеются через GAP_TEMP_VAL_CRC
 };
 #define fDS2482_bus_mask 3
 
