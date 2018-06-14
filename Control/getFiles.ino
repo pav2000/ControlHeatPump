@@ -294,6 +294,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Задержка между переключением 4-х ходового клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Логировать не критичные ошибки электро-счетчика SDM: ");  HP.get_optionHP((char*)option_SDM_LOG_ERR,Socket[thread].outBuf);STR_END;
+     
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
 
     
@@ -540,14 +542,18 @@ void get_txtSettings(uint8_t thread)
        strcpy(Socket[thread].outBuf,"\n  3.3 Частотный преобразователь\r\n");
        if (HP.dFC.get_present()) 
          {
-         strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END;  STR_END;
-          #ifdef FC_ANALOG_CONTROL // Аналоговое управление
+         strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END; 
+         #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf," Аналоговое управление: \r\n");
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие частоте 0 гц (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL0,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие максимальной частоте (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL100,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Частота отключения инвертора  (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVELOFF,Socket[thread].outBuf);STR_END; 
-              strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
+          #else
+             strcat(Socket[thread].outBuf,"Управление идет через Modbus\r\n"); 
+             strcat(Socket[thread].outBuf,"Блокировка инвертора: ");  HP.dFC.get_paramFC((char*)fc_BLOCK,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Флаг автоматического сброса не критичной ошибки инвертора: ");  HP.dFC.get_paramFC((char*)fc_AUTO_RESET_FAULT,Socket[thread].outBuf);STR_END; 
           #endif
+           strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
 	       strcat(Socket[thread].outBuf,"Время обновления алгоритма пид регулятора (сек): ");  HP.dFC.get_paramFC((char*)fc_UPTIME,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц): ");  HP.dFC.get_paramFC((char*)fc_PID_FREQ_STEP,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты (%): ");  HP.dFC.get_paramFC((char*)fc_PID_STOP,Socket[thread].outBuf);STR_END; 
@@ -570,7 +576,7 @@ void get_txtSettings(uint8_t thread)
         else strcat(Socket[thread].outBuf,"FC absent \r\n");    
         sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
         
-       strcpy(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
+       strcpy(Socket[thread].outBuf,"\n  3.4. Электросчетчик SDM120\r\n");
          #ifdef USE_ELECTROMETER_SDM
            strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE,Socket[thread].outBuf); STR_END;
@@ -579,14 +585,15 @@ void get_txtSettings(uint8_t thread)
            strcat(Socket[thread].outBuf,"SDM120 absent\r\n");    
          #endif  
 
-        strcat(Socket[thread].outBuf,"\n  9. Частотные датчики потока\r\n");
+        strcat(Socket[thread].outBuf,"\n  3.5. Частотные датчики потока\r\n");
         for(i=0;i<FNUMBER;i++)  
            {
             strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); if((x=8-strlen(HP.sFrequency[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(Socket[thread].outBuf," "); }
             strcat(Socket[thread].outBuf,HP.sFrequency[i].get_note());  strcat(Socket[thread].outBuf,": "); 
             if (HP.sFrequency[i].get_present()) 
             {
-             strcat(Socket[thread].outBuf," Минимальный поток="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_minValue()/1000.0,3);
+             strcat(Socket[thread].outBuf," Контроль мин. потока: ");  if (HP.sFrequency[i].get_checkFlow())  strcat(Socket[thread].outBuf,(char*)cOne);else strcat(Socket[thread].outBuf,(char*)cZero);
+             strcat(Socket[thread].outBuf,", Минимальный поток="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_minValue()/1000.0,3);
              strcat(Socket[thread].outBuf,", Коэффициент=");       _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_kfValue(),3);
              strcat(Socket[thread].outBuf,", Теплоемкость, Дж/(кг*град)="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_Capacity(),3);
              strcat(Socket[thread].outBuf,", Тест="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_testValue()/1000,3);

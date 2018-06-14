@@ -734,7 +734,8 @@ const char *option_DELAY_DEFROST_OFF  = {"DELAY_DEFROST_OFF"};  // ДЛЯ ВОЗ
 const char *option_DELAY_TRV          = {"DELAY_TRV"};          // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
 const char *option_DELAY_BOILER_SW    = {"DELAY_BOILER_SW"};    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 const char *option_DELAY_BOILER_OFF   = {"DELAY_BOILER_OFF"};   // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
-	
+
+// Отпление/охлаждение параметры 	
 const char *hp_RULE      = {"RULE"};             // алгоритм работы
 const char *hp_TEMP1     = {"TEMP1"};            // целевая температура в доме
 const char *hp_TEMP2     = {"TEMP2"};            // целевая температура обратки
@@ -764,10 +765,7 @@ const char *ip_SENSOR_IP       = {"SENSOR_IP"};     // Адрес
 const char *ip_SENSOR_COUNT    = {"SENSOR_COUNT"};  // Счетчик
 const char *ip_STIME           = {"STIME"};         // время с последнего считывания датчика
 const char *ip_SENSOR          = {"SENSOR"};        // -------
-
 #endif
-
-
 
 
 // Названия типы фреонов
