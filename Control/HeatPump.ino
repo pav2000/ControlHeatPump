@@ -3105,7 +3105,7 @@ void HeatPump::defrost()
       
       // организация задержки перед включением
       if (startDefrost==0) startDefrost=xTaskGetTickCount();               // первое срабатывание датчика - запоминаем время (тики)
-      if (xTaskGetTickCount()-startDefrost<delayDefrostOn*1000)  return; //  Еще рано размораживать
+      if (xTaskGetTickCount()-startDefrost<Option.delayDefrostOn*1000)  return; //  Еще рано размораживать
       // придется размораживать
        journal.jprintf("Start defrost\n"); 
        #ifdef RTRV
@@ -3123,7 +3123,7 @@ void HeatPump::defrost()
         if((get_State()==pOFF_HP)||(get_State()==pSTARTING_HP)||(get_State()==pSTOPING_HP)) break;     // ТН выключен или включается или выключается выходим из разморозки
       }
       journal.jprintf(" Finish defrost, wait delayDefrostOff min.\n"); 
-      _delay(delayDefrostOff*1000);               // Задержка перед выключением
+      _delay(Option.delayDefrostOff*1000);               // Задержка перед выключением
       compressorOFF();                                                     // выключить компрессор
       journal.jprintf("Finish defrost\n"); 
       // выходим ТН сам определит что надо делать
