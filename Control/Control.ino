@@ -307,26 +307,24 @@ x_I2C_init_std_message:
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = OneWireBus.lock_I2C_bus_reset(1);
+                  error = OneWireBus.Init();
 			    #ifdef ONEWIRE_DS2482_SECOND
               } else if(address == I2C_ADR_DS2482_2) {
-               	  error = OneWireBus2.lock_I2C_bus_reset(1);
+                  error = OneWireBus2.Init();
 		        #endif
 				#ifdef ONEWIRE_DS2482_THIRD
               } else if(address == I2C_ADR_DS2482_3) {
-					  error = OneWireBus3.lock_I2C_bus_reset(1);
+                  error = OneWireBus3.Init();
 				#endif
 				#ifdef ONEWIRE_DS2482_FOURTH
               } else if(address == I2C_ADR_DS2482_4) {
-					  error = OneWireBus4.lock_I2C_bus_reset(1);
+                  error = OneWireBus4.Init();
 				#endif
-              } else {
+              } else
+			  #endif
+              {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
               }
-              #else                          
-              Wire.beginTransmission(address);
-              error = Wire.endTransmission();
-              #endif
               if(error==0)
               {
                journal.jprintf("I2C device found at address %s",byteToHex(address));
@@ -335,9 +333,9 @@ x_I2C_init_std_message:
                	   	case I2C_ADR_DS2482_4:
                	   	case I2C_ADR_DS2482_3:
                	   	case I2C_ADR_DS2482_2:
-                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100"); if(address != I2C_ADR_DS2482) journal.jprintf(" bus: %d", address - I2C_ADR_DS2482); journal.jprintf("\n"); break;
+                    case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d\n", address - I2C_ADR_DS2482 + 1); break;
 					#if I2C_FRAM_MEMORY == 1
-                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
 						#endif
@@ -347,8 +345,8 @@ x_I2C_init_std_message:
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
 						#endif
 					#endif
-                    case I2C_ADR_RTC   :	journal.jprintf(" - RTC DS3231\n");                             break; // 0x68
-                    default            :	journal.jprintf(" - Unknow\n");                                 break; // не определенный тип
+                    case I2C_ADR_RTC   :		journal.jprintf(" - RTC DS3231\n"); break; // 0x68
+                    default            :		journal.jprintf(" - Unknow\n"); break; // не определенный тип
                     }
               _delay(100);      
               }
@@ -356,22 +354,10 @@ x_I2C_init_std_message:
           } // for
     } //  (eepStatus==0) 
 
-    const char *OneWireInitStr = { "Error OneWire%d init: %d\n" };
-    const char *OneWireInitStrOk = { "OneWire%d init Ok\n" };
-    if(OneWireBus.Init()) journal.jprintf(OneWireInitStr, 1, OneWireBus.GetLastErr());
-    else journal.jprintf(OneWireInitStrOk, 1);
-#ifdef ONEWIRE_DS2482_SECOND
-    if(OneWireBus2.Init()) journal.jprintf(OneWireInitStr, 2, OneWireBus2.GetLastErr());
-    else journal.jprintf(OneWireInitStrOk, 2);
-#endif
-#ifdef ONEWIRE_DS2482_THIRD
-    if(OneWireBus3.Init()) journal.jprintf(OneWireInitStr, 3, OneWireBus3.GetLastErr());
-    else journal.jprintf(OneWireInitStrOk, 3);
-#endif
-#ifdef ONEWIRE_DS2482_FOURTH
-    if(OneWireBus4.Init()) journal.jprintf(OneWireInitStr, 4, OneWireBus4.GetLastErr());
-    else journal.jprintf(OneWireInitStrOk, 4);
-#endif
+  #ifndef ONEWIRE_DS2482         // если нет моста
+  if(OneWireBus.Init()) journal.jprintf("Error init 1-Wire: %d\n", OneWireBus.GetLastErr());
+  else journal.jprintf("1-Wire init Ok\n");
+  #endif
 
 // 4. Инициализировать основной класс
   journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
@@ -457,10 +443,10 @@ x_I2C_init_std_message:
   journal.jprintf("12. Start read ADC sensors\n"); 
 
   #ifdef NEXTION   
-    journal.jprintf("13. Init Nextion dispaly\n");
+    journal.jprintf("13. Init Nextion display\n");
     myNextion.init(cZero);
   #else
-    journal.jprintf("13. Nextion dispaly absent in config\n");
+    journal.jprintf("13. Nextion display absent in config\n");
   #endif
 
   #ifdef TEST_BOARD

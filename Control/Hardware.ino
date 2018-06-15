@@ -61,7 +61,7 @@ void adc_setup ()
   
 // Расчет маски каналов
 for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
-      if (HP.sADC[i].get_present()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
+      if (HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
  
   NVIC_EnableIRQ (ADC_IRQn) ;        // enable ADC interrupt vector
   ADC->ADC_IDR = 0xFFFFFFFF ;        // disable interrupts IDR Interrupt Disable Register
@@ -81,37 +81,41 @@ for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
 extern "C"
 {
 #endif
-void ADC_Handler (void)
+void ADC_Handler(void)
 {
- uint8_t i=0;
+	uint8_t i = 0;
 
-   #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-    if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
-          {
-           HP.AdcVcc =(unsigned int)(*(ADC->ADC_CDR+PIN_ADC_VCC));   // если готов прочитать результат
-          }
-    #endif
-       
- for (i=0;i<ANUMBER;i++)    // по всем датчикам
-       { 
-         if (!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
-         if (ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA()))   // ensure there was an End-of-Conversion and we read the ISR reg
-          {
-           HP.sADC[i].adc.lastVal =(unsigned int)(*(ADC->ADC_CDR+HP.sADC[i].get_pinA())) ;                      // get conversion result
-           HP.sADC[i].adc.error=OK;
-          }
-          else continue; 
-          // Усреднение значений
-          HP.sADC[i].adc.sum=HP.sADC[i].adc.sum+HP.sADC[i].adc.lastVal;                                       // Добавить новое значение
-          HP.sADC[i].adc.sum=HP.sADC[i].adc.sum-HP.sADC[i].adc.p[HP.sADC[i].adc.last];                        // Убрать самое старое значение
-          HP.sADC[i].adc.p[HP.sADC[i].adc.last]=HP.sADC[i].adc.lastVal;                                       // Запомить новое значение
-          if (HP.sADC[i].adc.last<FILTER_SIZE-1) HP.sADC[i].adc.last++; else {HP.sADC[i].adc.last=0; HP.sADC[i].adc.flagFull=true;} // приращение счетчика
-  //        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/FILTER_SIZE; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
-       } // for
-       
- // if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
- //            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
-       
+#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+	if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
+	{
+		HP.AdcVcc =(unsigned int)(*(ADC->ADC_CDR+PIN_ADC_VCC));   // если готов прочитать результат
+	}
+#endif
+
+	for(i = 0; i < ANUMBER; i++)    // по всем датчикам
+	{
+		if(!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
+		#ifdef ANALOG_MODBUS
+			if(HP.sADC[i].get_fmodbus()) continue;
+		#endif
+		if(ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA())) // ensure there was an End-of-Conversion and we read the ISR reg
+		{
+			HP.sADC[i].adc.lastVal = (unsigned int) (*(ADC->ADC_CDR + HP.sADC[i].get_pinA()));  // get conversion result
+			HP.sADC[i].adc.error = OK;
+		} else continue;
+		// Усреднение значений
+		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum + HP.sADC[i].adc.lastVal;                     // Добавить новое значение
+		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum - HP.sADC[i].adc.p[HP.sADC[i].adc.last]; // Убрать самое старое значение
+		HP.sADC[i].adc.p[HP.sADC[i].adc.last] = HP.sADC[i].adc.lastVal;                       // Запомить новое значение
+		if(HP.sADC[i].adc.last < FILTER_SIZE - 1) HP.sADC[i].adc.last++;
+		else {
+			HP.sADC[i].adc.last = 0;
+			HP.sADC[i].adc.flagFull = true;
+		} // приращение счетчика
+		//        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/FILTER_SIZE; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
+	} // for
+	// if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
+	//            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
 }
 
 #ifdef __cplusplus
@@ -151,12 +155,15 @@ void sensorADC::initSensorADC(int sensor,int pinA)
       testMode=NORMAL;                           // Значение режима тестирования
       zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
       transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
-      flags=0x00;                                // Обнулить флаги
-      if (SENSORPRESS[sensor]==true) SETBIT1(flags,fPresent);  // наличие датчика в текушей конфигурации
+      pin=pinA;
+      flags = SENSORPRESS[sensor]<<fPresent;	 // наличие датчика
+	  #ifdef ANALOG_MODBUS
+      flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
+      Sensor = sensor;
+	  #endif
       Chart.init(SENSORPRESS[sensor]);            // инициалазация статистики
       err=OK;                                     // ошибка датчика (работа)
       Press=0;                                    // давление датчика (обработанная)
-      pin=pinA;
       note=(char*)notePress[sensor];              // присвоить наименование датчика
       name=(char*)namePress[sensor];              // присвоить имя датчика
     };
@@ -174,48 +181,67 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
-int8_t  sensorADC::Read() 
-{  
-       
- if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
- 
- if (testMode!=NORMAL) lastPress=testPress;        // В режиме теста
- else                                              // Чтение датчика
-   {
-  #ifdef DEMO
-      lastADC=random(1350,2500);                   // В демо режиме генерим значение
-   #else
-       if (adc.flagFull) lastADC=adc.sum/FILTER_SIZE; else lastADC=adc.sum/adc.last;    
-   #endif   
-    if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
-    lastPress=(int)((float)lastADC*(transADC))-zeroPress;   
-   }
- //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress); 
-    // Усреднение значений
-    sum=sum+lastPress;          // Добавить новое значение
-    sum=sum-p[last];            // Убрать самое старое значение
-    p[last]=lastPress;          // Запомить новое значение
-    if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
-    if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last; 
-    
-  // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-  // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
-  // При ошибке запоминаем мговенное значение как среднее  что бы видно было
-  if(lastPress<minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}  
-  if(lastPress>maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+ int8_t  sensorADC::Read()
+ {
 
-  // Дошли до сюда значит ошибок нет
-  err=OK;                                         // Новый цикл новые ошибки
-  return err; 
-}
-// полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
-int16_t sensorADC::Test()
-{
-   int16_t x;
-   if (adc.flagFull) x=adc.sum/FILTER_SIZE; else x=adc.sum/adc.last;    
-   return (int)((float)x*(transADC))-zeroPress;
-}
+	 if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
 
+	 if (testMode!=NORMAL) lastPress=testPress;        // В режиме теста
+	 else                                              // Чтение датчика
+	 {
+#ifdef DEMO
+		 lastADC=random(1350,2500);                   // В демо режиме генерим значение
+#else
+	#ifdef ANALOG_MODBUS
+		 if(get_fmodbus()) {
+			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
+				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[Sensor], ANALOG_MODBUS_REG[Sensor] - 1, &adc.last);
+				if(err == OK) {
+					lastADC = adc.last;
+					break;
+				}
+				_delay(ANALOG_MODBUS_ERR_DELAY);
+			}
+			if(err) {
+				journal.jprintf(pP_TIME, "Error read %s by Modbus: %d\n", name, err);
+				set_Error(ERR_READ_PRESS, name);
+				return ERR_READ_PRESS;
+			}
+		 } else
+	#endif
+		 {
+			 if(adc.flagFull) lastADC=adc.sum/FILTER_SIZE; else lastADC=adc.sum/adc.last;
+			 if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
+		 }
+#endif
+		 lastPress=(int)((float)lastADC*(transADC))-zeroPress;
+	 }
+	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
+	 // Усреднение значений
+	 sum=sum+lastPress;          // Добавить новое значение
+	 sum=sum-p[last];            // Убрать самое старое значение
+	 p[last]=lastPress;          // Запомить новое значение
+	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
+	 if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last;
+
+	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
+	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
+	 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
+	 if(lastPress<minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}
+	 if(lastPress>maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+
+	 // Дошли до сюда значит ошибок нет
+	 err=OK;                                         // Новый цикл новые ошибки
+	 return err;
+ }
+
+//// полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
+//int16_t sensorADC::Test()
+//{
+//   int16_t x;
+//   if (adc.flagFull) x=adc.sum/FILTER_SIZE; else x=adc.sum/adc.last;
+//   return (int)((float)x*(transADC))-zeroPress;
+//}
 
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)

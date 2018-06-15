@@ -409,7 +409,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
         TimeIntervalToStr(HP.get_uptime(),strReturn);                    strcat(strReturn,"|");
         uint32_t t = HP.get_command_completed();
-        if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1); strcat(strReturn,"|");
+        if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
+        else strcat(strReturn,"-"); 									 strcat(strReturn,"|");
         _itoa(100-HP.CPU_IDLE,strReturn);                                strcat(strReturn,"%|");
         //_itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
         //strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
@@ -2000,7 +2001,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                 { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue; }
                   
               if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
-                { strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn); strcat(strReturn,"&"); continue; }
+                {
+				  #ifdef ANALOG_MODBUS
+            	  if(HP.sADC[p].get_fmodbus()) {
+            		  strcat(strReturn,"MB #"); _itoa(ANALOG_MODBUS_REG[p], strReturn);
+            	  } else
+				  #endif
+            	  {
+            		  strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn);
+            	  }
+           		  strcat(strReturn,"&"); continue;
+                }
                 
               if (strcmp(str,"get_testPress")==0)           // Функция get_testPress
                 { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }

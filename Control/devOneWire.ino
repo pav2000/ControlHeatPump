@@ -74,7 +74,7 @@ int8_t	deviceOneWire::Init(void)
 	return err;
 }
 
-// Возвращает OK или err. Если checkpresence=1, то только проверка на присутствие ds2482
+// Возвращает OK или err. Если checkpresence=1, то только проверка на присутствие ds2482; семафор взведен, если нет ошибки
 int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 {
 	uint8_t presence;
@@ -89,9 +89,8 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 		if(!OneWireDrv.check_presence()){    // Проверяем наличие на i2с шине  ds2482
 			err = ERR_DS2482_NOT_FOUND;
 			release_I2C_bus();
-			journal.jprintf("DS2482-%d not found . . .\n", bus + 1);
-			return err;
 		}
+		return err;
 	}
 #endif
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
@@ -104,7 +103,10 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 #ifdef ONEWIRE_DS2482_2WAY
 x_Reset_bridge:
 #endif
-		if(!OneWireDrv.reset_bridge()) break;
+		if(!OneWireDrv.reset_bridge()) {
+			err = ERR_DS2482_NOT_FOUND;
+			break;
+		}
 		#ifndef ONEWIRE_DS2482_2WAY
 		#if DS2482_CONFIG != 0
 			if(!OneWireDrv.configure(DS2482_CONFIG)) break;
@@ -118,7 +120,7 @@ x_Reset_bridge:
 		_delay(50);                               // Сброс не прошел, сделаем паузу
 	}
 	if(!presence){
-		err = ERR_ONEWIRE;
+		if(err == OK) err = ERR_ONEWIRE;
 		release_I2C_bus();
 	}
 	return err;
@@ -153,12 +155,8 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte data[12];
 	byte addr[8];
 	WDT_Restart(WDT);
-	if(lock_I2C_bus_reset(1)) { // reset 1-wire, check presense
-#ifdef ONEWIRE_DS2482
+	if(lock_I2C_bus_reset(0)) { // reset 1-wire
 		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
-#else
-		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus is empty. . .\n");
-#endif
 		return err;
 	}
 	_delay(cDELAY_DS1820); // wait conversion

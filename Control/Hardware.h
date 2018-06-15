@@ -33,6 +33,7 @@
 #define fFull         2               // флаг полного буфера для усреднения
 #define fAddress      3               // флаг правильного адреса для температурного датчика
 #define fcheckRange	  4				  // флаг Проверка граничного значения
+#define fsensModbus	  5				  // флаг дистанционного датчика по Modbus
 
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
@@ -68,7 +69,7 @@ class sensorADC
   public:
     void initSensorADC(int sensor,int pinA);             // Инициализация датчика  порядковый номер датчика и нога он куда прикреплен
     int8_t  Read();                                      // чтение данных c аналогового датчика давления (АЦП) возвращает код ошибки, делает все преобразования
-    int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
+    //int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
     __attribute__((always_inline)) inline int16_t get_minPress(){return minPress;}     // Минимальная давление датчика - нижняя граница диапазона, при выходе из него ошибка
     __attribute__((always_inline)) inline int16_t get_maxPress(){return maxPress;}     // Максимальная давление датчика - верхняя граница диапазона, при выходе из него ошибка
     int16_t get_zeroPress(){return zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
@@ -79,6 +80,7 @@ class sensorADC
     float get_transADC(){return transADC;}               // Получить значение коэффициента преобразования напряжение-температура
     int8_t set_transADC(float p);                        // Установить значение коэффициента преобразования напряжение-температура
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
+    __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
     int8_t  get_lastErr(){return err;}                   // Получить последнюю ошибку
     inline int8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
     int16_t get_testPress(){return testPress;}           // Получить значение давления датчика в режиме теста
@@ -107,10 +109,9 @@ class sensorADC
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
        
-    uint8_t  pin;                                        // Ножка куда прицеплен датчик
+    uint8_t pin;                                         // Ножка куда прицеплен датчик
     int8_t  err;                                         // ошибка датчика (работа) при ошибке останов ТН
-    byte flags;                                          // флаги  датчика
-
+    byte 	flags;                                       // флаги  датчика
     // Кольцевой буфер для усреднения
     void clearBuffer();                                  // очистить буфер
     int16_t p[P_NUMSAMLES];                              // буфер для усреднения показаний давления
@@ -119,6 +120,9 @@ class sensorADC
    
     char *note;                                          // Описание датчика
     char *name;                                          // Имя датчика
+	#ifdef ANALOG_MODBUS
+    uint8_t Sensor;										 // номер датчика
+	#endif
 };
 
 // ------------------------------------------------------------------------------------------
