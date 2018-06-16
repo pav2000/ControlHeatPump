@@ -306,9 +306,12 @@ void Journal::_write(char *dataPtr)
 	// Запись в eeprom
 	dataPtr[numBytes] = I2C_JOURNAL_TAIL;
 	if(full) dataPtr[numBytes + 1] = I2C_JOURNAL_HEAD;
-	if(bufferTail + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
-		int32_t n = bufferTail;
-		bufferTail = 0;
+	int32_t n = bufferTail;
+	__asm__ volatile ("" ::: "memory");
+	if(n + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
+		full = 1;
+		bufferTail = numBytes - (JOURNAL_LEN - n);
+		bufferHead = bufferTail + 1;
 		__asm__ volatile ("" ::: "memory");
 		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, JOURNAL_LEN - n)) {
 			#ifdef DEBUG
@@ -321,13 +324,7 @@ void Journal::_write(char *dataPtr)
 		n = JOURNAL_LEN - n;
 		dataPtr += n;
 		numBytes -= n;
-		n = bufferTail;
-		if(n + numBytes + 2 > JOURNAL_LEN) return; // Перегруз
-		bufferTail += numBytes;
-		bufferHead = bufferTail + 1;
-		if(bufferTail < 0) bufferTail += JOURNAL_LEN;
-		full = 1;                                       // буфер полный
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 2)) {
+		if(writeEEPROM_I2C(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
 			err = ERR_WRITE_I2C_JOURNAL;
 			#ifdef DEBUG
 				Serial.print(errorWriteI2C);
@@ -335,8 +332,7 @@ void Journal::_write(char *dataPtr)
 			return;
 		}
 	} else {  // Запись в один прием Буфер не полный
-		int32_t n = bufferTail;
-		bufferTail += numBytes;
+		bufferTail = n + numBytes;
 		if(full) bufferHead = bufferTail + 1;
 		__asm__ volatile ("" ::: "memory");
 		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 1 + full)) {

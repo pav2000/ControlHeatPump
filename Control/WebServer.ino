@@ -941,13 +941,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
        {
         strcat(strReturn,"Входное напряжение питания контроллера (В): |");
-        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-          _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
-        #else 
-            strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
-        #endif
-         
-        strcat(strReturn,"Режим safeNetwork (адрес:192.168.0.177 шлюз:192.168.0.1, не спрашиваеть пароль на вход) [активно 1]|");_itoa(HP.safeNetwork,strReturn);strcat(strReturn,";");
+        _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
+        m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
         strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
       
@@ -1888,19 +1883,19 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
                                
-              if (strcmp(str,"get_addressTemp")==0)           // Функция get_addressTemp
+              if (strcmp(str,"get_aTemp")==0)           // Функция get_addressTemp
                 { strcat(strReturn,HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()): "не привязан"); strcat(strReturn,"&"); continue; }
                         
               if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
                 
-              if (strcmp(str,"get_errcodeTemp")==0)           // Функция get_errcodeTemp
+              if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
                  { _itoa(HP.sTemp[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
                  
-              if (strcmp(str, "get_errorsTemp") == 0)           // Функция get_errorsTemp
+              if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
                  { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"get_presentTemp")==0)           // Функция get_presentTemp
+              if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
                   {
                   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
                   strcat(strReturn,"&") ;    continue;
@@ -1908,8 +1903,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
                  { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }    
 
-              if(strncmp(str, "get_flagTemp", 12)==0){  // get_flagTempX(N): X - номер бита, N - имя датчика
-            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 12)),strReturn);
+              if (strcmp(str,"get_bTemp")==0)           // Функция get_noteTemp
+                 { _itoa(HP.sTemp[p].get_bus() + 1, strReturn); strcat(strReturn,"&"); continue; }
+
+              if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер бита, N - имя датчика
+            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 9)),strReturn);
             	  strcat(strReturn,"&");  continue;
               }
 
@@ -1925,8 +1923,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
 
-               if(strncmp(str, "set_flagTemp", 12) == 0) {   // set_flagTempX(N=V): X - номер бита, N - имя датчика
-            	   i = atoi(str + 12);
+               if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер бита, N - имя датчика
+            	   i = atoi(str + 9);
             	   HP.sTemp[p].set_setup_flag(i, int(pm));
             	   _itoa(HP.sTemp[p].get_setup_flag(i),strReturn);
             	   strcat(strReturn, "&"); continue;

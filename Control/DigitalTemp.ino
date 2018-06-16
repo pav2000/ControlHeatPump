@@ -90,7 +90,7 @@ void sensorTemp::initTemp(int sensor)
 // Чтение датчиков температуры, возвращает код ошибки, делает все преобразования
 int8_t sensorTemp::Read() 
 {  
-	if(!(GETBIT(flags, fPresent))) return err;          // датчик запрещен в конфигурации ничего не делаем
+	if(!(GETBIT(flags, fPresent))) return OK;          // датчик запрещен в конфигурации ничего не делаем
 	if(testMode!=NORMAL) lastTemp=testTemp;             // В режиме теста присвоить значение теста
 	else {                                              // Чтение датчиков
 #ifdef DEMO
@@ -244,7 +244,7 @@ void sensorTemp::set_address(byte *addr, byte bus)
 	}
 	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
 	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
-	err = 0;
+	err = OK;
 	setup_flags |= bus & fDS2482_bus_mask;
 	set_onewire_bus_type();
 	busOneWire->SetResolution(address, DS18B20_p12BIT);

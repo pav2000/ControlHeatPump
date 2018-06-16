@@ -1751,7 +1751,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 		#ifdef FLOW_CONTROL
   	    for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
 		#endif
-		journal.jprintf(" Pause %d sec before starting compressor . . .\n", Option.delayOnPump);
+		journal.jprintf(pP_TIME, "Pause %ds before start compressor\n", Option.delayOnPump);
 		for(d = Option.delayOnPump * 10; d > 0; d--) { // задержка перед включением компрессора
 			if(error || is_next_command_stop()) break; // прерваться по ошибке, еще бы проверить команду на останов...
 			_delay(100);
@@ -2920,6 +2920,10 @@ void HeatPump::compressorON(MODE_HP mod)
   else                                                           // надо включать компрессор
   { 
    journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], COMPRESSOR_IS_ON:%d\n",mod,codeRet[Status.ret],COMPRESSOR_IS_ON);
+   if(is_next_command_stop()) {
+ 	  journal.jprintf(" Next command stop(%d), skip start", next_command);
+ 	  return;
+   }
 
     #ifdef EEV_DEF
     if (lastEEV!=-1)              // Не первое включение компрессора после старта ТН
@@ -2988,13 +2992,18 @@ void HeatPump::compressorON(MODE_HP mod)
            #endif
            
            #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-           if(Option.delayOnPump <= BASE_TIME_READ) _delay((BASE_TIME_READ - Option.delayOnPump) * 1000 + 2); // Ждем пока счетчики посчитаются
+           if(Option.delayOnPump <= BASE_TIME_READ) _delay((BASE_TIME_READ - Option.delayOnPump) * 1000 + TIME_READ_SENSOR); // Ждем пока счетчики посчитаются
            for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
-        	   if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {
-        		   set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-        		   journal.jprintf(" Flow: %.3f\n", (float)sFrequency[i].get_Value()/1000.0);
-        		   return;
-        	   } // Поток меньше минимального ошибка осанавливаем ТН
+        	   if(sFrequency[i].get_checkFlow()) {
+        		   if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+        			   _delay(TIME_READ_SENSOR);
+            		   if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+						   journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
+						   set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
+            		   }
+            		   return;
+        		   }
+        	   }
            #endif
            
            COMPRESSOR_ON;                                        // Включить компрессор

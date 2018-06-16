@@ -559,7 +559,7 @@ content = content + '</tr></table><p></p>';
                       loadsens = loadsens + "get_noteTemp("+count[i]+"),";
                       upsens = upsens + "get_fullTemp("+count[i]+"),"; console.log("get_fullTemp:" + upsens);
 					  content_t = "get_fullTemp("+count[i]+")"; //console.log("$$$$$$$$$$$$$$$$$$$$$$$content_t:" + content_t);
-                        content = content + '<tr id="get_presenttemp-'+input+'">';
+                        content = content + '<tr>';
                             content = content + ' <td>'+count[i]+'</td>';
                             content = content + ' <td id="get_notetemp-'+input+'"></td>';
 							content = content + ' <td></td>';
