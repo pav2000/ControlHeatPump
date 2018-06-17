@@ -279,9 +279,10 @@ int32_t HeatPump::save()
 int8_t HeatPump::load()  
 {
 	uint16_t i;
+	journal.jprintf(" Load settings ");
 	int32_t adr=I2C_SETTING_EEPROM;
 	#ifdef LOAD_VERIFICATION
-	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Error load setting, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
+	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf("error, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
 	#endif
 
 	// Прочитать заголовок
@@ -324,10 +325,15 @@ int8_t HeatPump::load()
 	// ВСЕ ОК
 	#ifdef LOAD_VERIFICATION
 	if (readEEPROM_I2C(adr, (byte*)&i, sizeof(i))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(i);                    // прочитать crc16
-	if (headerEEPROM.len!=adr-I2C_SETTING_EEPROM)  {error=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return error;}   // Проверка длины
-	journal.jprintf(" Load setting OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
+	if (headerEEPROM.len!=adr-I2C_SETTING_EEPROM)  {
+		journal.jprintf("size mismatch!\n");
+		error=ERR_BAD_LEN_EEPROM;
+		set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump);
+		return error;
+	}   // Проверка длины
+	journal.jprintf("OK, read: %d bytes crc16: 0x%x\n",adr-I2C_SETTING_EEPROM,i);
 	#else
-	journal.jprintf(" Load setting OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
+	journal.jprintf("OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
 	#endif
 
 	// Загрузка текущего профиля

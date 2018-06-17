@@ -267,7 +267,7 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 		int16_t r = OneWireDrv.read();
 		if(r < 0) { // ошибка во время чтения
 			release_I2C_bus();
-			if(i >= 2) goto xReadedOnly2b; // успели прочитать температуру
+			if(i > 1) goto xReadedOnly2b; // успели прочитать температуру
 			return abs(r) | (i > 1 ? 0x40 : 0);
 		}
 		data[i] = r;

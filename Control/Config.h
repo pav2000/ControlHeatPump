@@ -2175,7 +2175,7 @@ enum TYPE_SENSOR
     #define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
     #define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
     #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
-	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
+	//#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
 	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
     #define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
 	#ifdef ONEWIRE_DS2482_2WAY
@@ -2220,6 +2220,7 @@ enum TYPE_SENSOR
 		#define I2C_MEMORY_TOTAL  I2C_SIZE_EEPROM // Итоговый размер I2C памяти в килобитах
 		#define I2C_PAGE_EEPROM   32           // Размер страницы для чтения, байты
 	#endif
+	#define REBOOT_ON_I2C_ERRORS				// Soft RESET при постоянной ошибке I2C
 
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	#ifndef  TEST_BOARD
@@ -2579,7 +2580,7 @@ enum TYPE_SENSOR
   const uint16_t ZEROPRESS[ANUMBER] = {290, 793};
 
   const boolean SENSORPRESS[ANUMBER]  = {true , true};			// Присутствие датчика в конфигурации
-  const int16_t MINPRESS[ANUMBER]   = {  50 ,  200  };			// минимальные значения давления
+  const int16_t MINPRESS[ANUMBER]   = {  30 ,  200  };			// минимальные значения давления
   const uint16_t MAXPRESS[ANUMBER]  = { 700 , 2200  };			// Максимальные значения давления
   const uint16_t TESTPRESS[ANUMBER] = { 150 ,  800  };			// Значения датчиков при тестировании  опция TEST
   //#define ANALOG_MODBUS 										// Данные аналоговых датчиков читаются по Modbus RTU

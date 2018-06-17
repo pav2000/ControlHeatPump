@@ -205,13 +205,13 @@ public:
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
    uint16_t Value;                                       // значение датчика ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) 
-   // SAVE GROUP, testValue the first
+   struct { // SAVE GROUP, testValue the first
    uint16_t testValue;                                   // !save! Состояние датчика в режиме теста
    uint16_t kfValue; 								 	 // коэффициент пересчета частоты в значение, сотые
    uint8_t  flags;                                       // флаги  датчика
    uint8_t  minValue;							     	 // десятые m3/h (0..25,5)
    uint16_t Capacity;                                    // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
-   // END SAVE GROUP, Capacity the last
+   } __attribute__((packed));// END SAVE GROUP, Capacity the last
    TEST_MODE testMode;                                   // Значение режима тестирования
    volatile uint16_t count;                              // число импульсов за базовый период (то что меняется в прерывании)
    uint32_t sTime;                                       // время начала базового периода в тиках

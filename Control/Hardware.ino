@@ -1144,7 +1144,7 @@ float temp;
 	} else if(strcmp(var, eev_CONST)==0){
 	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x*100+0.005); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
-	   if ((x>=_data.minSteps)&&(x<=maxEEV)==0){ _data.manualStep=x; return true;} else return false;	// шаги
+	   if ((x>=_data.minSteps)&&(x<=maxEEV)){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
         if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
 	}   else if(strcmp(var, eev_RULE)==0){

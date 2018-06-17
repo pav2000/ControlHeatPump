@@ -839,7 +839,7 @@ void vReadSensor(void *)
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-		if((HP.get_mode() != pCOOL) || (HP.get_mode() != pNONE_C))    // Если не охлаждение
+		if((HP.get_mode() != pCOOL) && (HP.get_mode() != pNONE_C))    // Если не охлаждение
 			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
 		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
 #endif

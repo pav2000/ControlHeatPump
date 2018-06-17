@@ -664,22 +664,21 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strcmp(str,"get_OneWirePin")==0)  // Функция get_OneWirePin
        {
        #ifdef ONEWIRE_DS2482  
-        strcat(strReturn,"I2C, DS2482 x ");
-        uint8_t i = 1;
+        strcat(strReturn, "I2C, DS2482(1");
 		#ifdef ONEWIRE_DS2482_SECOND
-		i++;
+        strcat(strReturn, ",2");
 		#endif
 		#ifdef ONEWIRE_DS2482_THIRD
-		i++;
+        strcat(strReturn, ",3");
 		#endif
 		#ifdef ONEWIRE_DS2482_FOURTH
-		i++;
+        strcat(strReturn, ",4");
 		#endif
-		_itoa(i, strReturn);
+        strcat(strReturn, ")&");
        #else
-        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); 
+        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); strcat(strReturn,"&");
        #endif
-       strcat(strReturn,"&") ;    continue;
+        continue;
        }       
     if (strcmp(str,"scan_OneWire")==0)  // Функция scan_OneWire  - сканирование датчикиков
        {
@@ -941,7 +940,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
        {
         strcat(strReturn,"Входное напряжение питания контроллера (В): |");
-        _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
+		#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+		  _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
+		#else
+			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
+		#endif
         m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
         strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
@@ -1906,8 +1909,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_bTemp")==0)           // Функция get_noteTemp
                  { _itoa(HP.sTemp[p].get_bus() + 1, strReturn); strcat(strReturn,"&"); continue; }
 
-              if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер бита, N - имя датчика
-            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 9)),strReturn);
+              if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
+            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 9) + fTEMP_ignory_errors - 1),strReturn);
             	  strcat(strReturn,"&");  continue;
               }
 
@@ -1923,8 +1926,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
 
-               if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер бита, N - имя датчика
-            	   i = atoi(str + 9);
+               if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
+            	   i = atoi(str + 9) + fTEMP_ignory_errors - 1;
             	   HP.sTemp[p].set_setup_flag(i, int(pm));
             	   _itoa(HP.sTemp[p].get_setup_flag(i),strReturn);
             	   strcat(strReturn, "&"); continue;
@@ -1940,7 +1943,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                          strcat(strReturn,"&");  continue;
                  }
                  */
-               if (strcmp(str,"set_addressTemp")==0)        // Функция set_addressTemp
+               if (strcmp(str,"set_aTemp")==0)        // Функция set_addressTemp
                {
             	   uint8_t n = pm;
             	   if(n <= TNUMBER)                  // Если индекс находится в диапазоне допустимых значений Здесь индекс начинается с 1, ЗНАЧЕНИЕ 0 - обнуление адреса!!
