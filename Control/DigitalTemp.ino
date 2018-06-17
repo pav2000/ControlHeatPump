@@ -234,7 +234,7 @@ void sensorTemp::set_onewire_bus_type()
 void sensorTemp::set_address(byte *addr, byte bus)
 {
 	uint8_t i;
-	setup_flags &= ~(1<<fDS2482_bus_mask);
+	setup_flags &= ~fDS2482_bus_mask;
 	if (addr == NULL) //сброс адреса
 	{
 		for(i=0;i<8;i++) address[i]=0;           // обнуление адресс датчика

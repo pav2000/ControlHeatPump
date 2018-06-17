@@ -1910,7 +1910,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                  { _itoa(HP.sTemp[p].get_bus() + 1, strReturn); strcat(strReturn,"&"); continue; }
 
               if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
-            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 9) + fTEMP_ignory_errors - 1),strReturn);
+            	  _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
             	  strcat(strReturn,"&");  continue;
               }
 
@@ -1927,9 +1927,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                   }
 
                if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
-            	   i = atoi(str + 9) + fTEMP_ignory_errors - 1;
+            	   i = str[9] - '0' - 1 + fTEMP_ignory_errors;
             	   HP.sTemp[p].set_setup_flag(i, int(pm));
-            	   _itoa(HP.sTemp[p].get_setup_flag(i),strReturn);
+            	   _itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
             	   strcat(strReturn, "&"); continue;
                }
 
