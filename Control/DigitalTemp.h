@@ -118,7 +118,7 @@ class sensorTemp
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
-    __attribute__((always_inline)) inline boolean get_bus(){ return (setup_flags & fDS2482_bus_mask); } // Шина
+    __attribute__((always_inline)) inline uint8_t get_bus(){ return (setup_flags & fDS2482_bus_mask); } // Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку

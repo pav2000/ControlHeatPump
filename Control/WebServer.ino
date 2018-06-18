@@ -1886,8 +1886,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
                                
-              if (strcmp(str,"get_aTemp")==0)           // Функция get_addressTemp
-                { strcat(strReturn,HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()): "не привязан"); strcat(strReturn,"&"); continue; }
+              if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
+              {
+            	x_get_aTemp:
+            	  strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
+            	  strcat(strReturn, "&"); continue;
+              }
                         
               if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
@@ -1906,8 +1910,11 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
                  { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }    
 
-              if (strcmp(str,"get_bTemp")==0)           // Функция get_noteTemp
-                 { _itoa(HP.sTemp[p].get_bus() + 1, strReturn); strcat(strReturn,"&"); continue; }
+              if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
+              {
+            	  if(HP.sTemp[p].get_fAddress()) _itoa(HP.sTemp[p].get_bus() + 1, strReturn); else strcat(strReturn, "-");
+            	  strcat(strReturn, "&"); continue;
+              }
 
               if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
             	  _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
@@ -1952,7 +1959,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
             	   }
             	   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
-            	   strcat(strReturn,addressToHex(HP.sTemp[p].get_address())); strcat(strReturn,"&"); continue;
+            	   goto x_get_aTemp;
                }  // вернуть адрес
                else { strcat(strReturn,"E08");strcat(strReturn,"&");   continue;}      // выход за диапазон допустимых номеров, значение не установлено
 
