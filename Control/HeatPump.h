@@ -36,7 +36,7 @@ struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
   uint16_t len;             // длина данных, сколько записано байт в еепром
  };
 
-// Структура описывающая текущее состояние ТН
+// Структура описывающая текущее состояние ТН (хранится только в памяти)
 struct type_status
 {
    MODE_HP modWork;         // Что делает ТН если включен (7 стадий)  0 Пауза 1 Включить отопление  2 Включить охлаждение  3 Включить бойлер   4 Продолжаем греть отопление 5 Продолжаем охлаждение 6 Продолжаем греть бойлер
@@ -75,9 +75,10 @@ struct type_motoHour
 #define fEEV_start          6               // флаг Всегда начинать работу ЭРВ со стратовой позиции
 #define fEEV_light_start    7               // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
 #define fTypeRHEAT          8               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
-#define f1Wire2TSngl		9				// На 2-ой шине 1-Wire(DS2482) только один датчик
-#define f1Wire3TSngl		10				// На 3-ей шине 1-Wire(DS2482) только один датчик
-#define fSDMLogErrors  		11              // флаг писать в лог нерегулярные ошибки счетчика SDM
+#define fSDMLogErrors  		9               // флаг писать в лог нерегулярные ошибки счетчика SDM
+#define f1Wire2TSngl		10				// На 2-ой шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl		11				// На 3-ей шине 1-Wire(DS2482) только один датчик
+#define f1Wire4TSngl		12				// На 4-ей шине 1-Wire(DS2482) только один датчик
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -89,8 +90,8 @@ struct type_optionHP
  uint8_t dim;                          //  Якрость дисплея %
  uint16_t tChart;                      //  период сбора статистики в секундах!!
  int16_t tempRHEAT;                    //  Значение температуры для управления дополнительным ТЭН для нагрева СО
- uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре МИНУТЫ
- uint16_t workPump;                    //  Время работы  насоса при выключенном компрессоре МИНУТЫ
+ uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре СЕКУНДЫ
+ uint16_t workPump;                    //  Время работы  насоса при выключенном компрессоре СЕКУНДЫ
  // Временные задержки
  uint16_t delayOnPump;   		       // Задержка включения компрессора после включения насосов (сек).
  uint16_t delayOffPump;                // Задержка выключения насосов после выключения компрессора (сек).
@@ -110,6 +111,7 @@ struct type_optionHP
 //  Работа с отдельными флагами type_DateTimeHP
 #define fUpdateNTP     0                // флаг Обновление часов по NTP при старте
 #define fUpdateI2C     1                // флаг Обновление часов раз в час с I2C  часами
+#define fUpdateByHTTP  2                // флаг Обновление по HTTP - спец страница: define HTTP_TIME_REQUEST
 // Структура для хранения настроек времени, для удобного сохранения.
 struct type_DateTimeHP
 {
@@ -307,8 +309,8 @@ class HeatPump
    boolean scheduleBoiler();                               // Проверить расписание бойлера true - нужно греть false - греть не надо
 
    // Опции ТН
-   uint16_t get_pausePump() {return Option.pausePump;};                // !save! Время паузы  насоса при выключенном компрессоре МИНУТЫ
-   uint16_t get_workPump() {return Option.workPump;};                  // !save! Время работы  насоса при выключенном компрессоре МИНУТЫ
+   uint16_t get_pausePump() {return Option.pausePump;};                // !save! Время паузы  насоса при выключенном компрессоре, секунды
+   uint16_t get_workPump() {return Option.workPump;};                  // !save! Время работы  насоса при выключенном компрессоре, секунды
    uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // !save! подача звуковых сигналов
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
@@ -347,8 +349,10 @@ class HeatPump
    
    __attribute__((always_inline)) inline uint32_t get_uptime() {return rtcSAM3X8.unixtime()-timeON;} // Получить время с последенй перезагрузки в секундах
    uint32_t get_startDT(){return timeON;}                  // Получить дату и время последеней перезагрузки
-   uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
+   inline uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
+   inline uint32_t get_stopCompressor(){return stopCompressor;} // Получить дату и время останова компрессора!
    uint32_t get_startTime(){return Prof.SaveON.startTime;} // Получить дату и время пуска ТН (не компрессора!)
+   inline uint32_t get_command_completed(){ return command_completed; } // Время выполнения команды
    uint32_t get_motoHourH1(){return motoHour.H1;}          // Получить моточасы ТН ВСЕГО
    uint32_t get_motoHourH2(){return motoHour.H2;}          // Получить моточасы ТН сбрасываемый счетчик (сезон)
    uint32_t get_motoHourC1(){return motoHour.C1;}          // моточасы компрессора ВСЕГО
@@ -403,8 +407,6 @@ class HeatPump
     statChart ChartTPEVA;                                   // температура расчитанная из давления испариения
     statChart ChartTPCON;                                   // температура расчитанная из давления Конденсации
     #endif
-    statChart ChartPowerCO;                                 // выходная мощность насоса
-    statChart ChartPowerGEO;                                // Мощность геоконтура
     statChart ChartCOP;                                     // Коэффициент преобразования
     statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
     
@@ -503,6 +505,7 @@ class HeatPump
     uint32_t startDefrost;                // время срабатывания датчика разморозки
     uint32_t timeBoilerOff;               // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
     uint32_t startSallmonela;             // время начала обеззараживания
+    uint32_t command_completed;			  // Время отработки команды
        
     // Сетевые настройки
     type_NetworkHP Network;                 // !save! Структура для хранения сетевых настроек

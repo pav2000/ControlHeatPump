@@ -32,6 +32,8 @@
 #define fTest         1               // флаг режим теста
 #define fFull         2               // флаг полного буфера для усреднения
 #define fAddress      3               // флаг правильного адреса для температурного датчика
+#define fcheckRange	  4				  // флаг Проверка граничного значения
+#define fsensModbus	  5				  // флаг дистанционного датчика по Modbus
 
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
@@ -67,7 +69,7 @@ class sensorADC
   public:
     void initSensorADC(int sensor,int pinA);             // Инициализация датчика  порядковый номер датчика и нога он куда прикреплен
     int8_t  Read();                                      // чтение данных c аналогового датчика давления (АЦП) возвращает код ошибки, делает все преобразования
-    int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
+    //int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
     __attribute__((always_inline)) inline int16_t get_minPress(){return minPress;}     // Минимальная давление датчика - нижняя граница диапазона, при выходе из него ошибка
     __attribute__((always_inline)) inline int16_t get_maxPress(){return maxPress;}     // Максимальная давление датчика - верхняя граница диапазона, при выходе из него ошибка
     int16_t get_zeroPress(){return zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
@@ -78,6 +80,7 @@ class sensorADC
     float get_transADC(){return transADC;}               // Получить значение коэффициента преобразования напряжение-температура
     int8_t set_transADC(float p);                        // Установить значение коэффициента преобразования напряжение-температура
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
+    __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
     int8_t  get_lastErr(){return err;}                   // Получить последнюю ошибку
     inline int8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
     int16_t get_testPress(){return testPress;}           // Получить значение давления датчика в режиме теста
@@ -106,10 +109,9 @@ class sensorADC
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
        
-    uint8_t  pin;                                        // Ножка куда прицеплен датчик
+    uint8_t pin;                                         // Ножка куда прицеплен датчик
     int8_t  err;                                         // ошибка датчика (работа) при ошибке останов ТН
-    byte flags;                                          // флаги  датчика
-
+    byte 	flags;                                       // флаги  датчика
     // Кольцевой буфер для усреднения
     void clearBuffer();                                  // очистить буфер
     int16_t p[P_NUMSAMLES];                              // буфер для усреднения показаний давления
@@ -118,6 +120,9 @@ class sensorADC
    
     char *note;                                          // Описание датчика
     char *name;                                          // Имя датчика
+	#ifdef ANALOG_MODBUS
+    uint8_t Sensor;										 // номер датчика
+	#endif
 };
 
 // ------------------------------------------------------------------------------------------
@@ -167,22 +172,26 @@ private:
 class sensorFrequency
 {
 public:
-  void initFrequency(int sensor);                         // Инициализация частотного датчика
+  void initFrequency(int sensor);                   // Инициализация частотного датчика
+  void reset(void);									// Сброс счетчика
   __attribute__((always_inline)) inline void InterruptHandler(){count++;} // обработчик перываний
   int8_t  Read();                                         // Чтение датчика (точнее расчет значения) возвращает ошибку или ОК
   __attribute__((always_inline)) inline uint32_t get_Frequency(){return Frequency;}   // Получить ЧАСТОТУ датчика при последнем чтении
-  __attribute__((always_inline)) inline uint16_t get_Value(){return Value;}           // Получить Значение датчика при последнем чтении
+  __attribute__((always_inline)) inline uint16_t get_Value(){return Value;}           // Получить Значение датчика при последнем чтении, литры в час
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
-  __attribute__((always_inline)) inline uint16_t get_minValue(){return minValue;}     // Получить минимальное значение датчика
+  __attribute__((always_inline)) inline uint16_t get_minValue(){return minValue * 100;}     // Получить минимальное значение датчика, литры в час
+  void set_minValue(float f){ minValue = f*10+0.05; }     			// Установить минимальное значение датчика
+  __attribute__((always_inline)) inline float get_kfCapacity(){return 3600*100/Capacity;}   // Получить Коэффициент пересчета для определениея мощности  (3600 секунды в часе) в СОТЫХ!!!
+  __attribute__((always_inline)) inline boolean get_checkFlow(){return GETBIT(flags,fcheckRange);}// Проверка граничного значения
+  void set_checkFlow(boolean f) { flags = (flags & ~(1<<fcheckRange)) | (f<<fcheckRange); }
   int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
   char*   get_note(){return note;}                       // Получить описание датчика
   char*   get_name(){return name;}                       // Получить имя датчика
   uint16_t get_testValue(){return testValue;}            // Получить Состояние датчика в режиме теста
   int8_t  set_testValue(int16_t i);                      // Установить Состояние датчика в режиме теста
-  float get_kfValue(){return kfValue;}                   // Получить коэффициент пересчета
-  int8_t  set_kfValue(float f);                          // Установить коэффициент пересчета
+  float   get_kfValue(){return kfValue;}                 // Получить коэффициент пересчета
+  void    set_kfValue(uint16_t f) { kfValue=f; }         // Установить коэффициент пересчета
   uint16_t get_Capacity(){return Capacity;}              // Получить теплоемкость
-  float    get_kfCapacity(){return 3600*100/Capacity;}   // Получить Коэффициент пересчета для определениея мощности  (3600 секунды в часе) в СОТЫХ!!!
   int8_t set_Capacity(uint16_t c);                       // Установить теплоемкость больше 5000 не устанавливается
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void  set_testMode(TEST_MODE t){testMode=t;}           // Установить значение текущий режим работы
@@ -196,19 +205,20 @@ public:
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
    uint16_t Value;                                       // значение датчика ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) 
-   uint16_t Capacity;                                    // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
-   uint16_t minValue;                                    // !save! минимальное значение датчика
+   struct { // SAVE GROUP, testValue the first
    uint16_t testValue;                                   // !save! Состояние датчика в режиме теста
-   float    kfValue;                                     // коэффициент пересчета частоты в значение
+   uint16_t kfValue; 								 	 // коэффициент пересчета частоты в значение, сотые
+   uint8_t  flags;                                       // флаги  датчика
+   uint8_t  minValue;							     	 // десятые m3/h (0..25,5)
+   uint16_t Capacity;                                    // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
+   } __attribute__((packed));// END SAVE GROUP, Capacity the last
    TEST_MODE testMode;                                   // Значение режима тестирования
    volatile uint16_t count;                              // число импульсов за базовый период (то что меняется в прерывании)
    uint32_t sTime;                                       // время начала базового периода в тиках
    int8_t err;                                           // ошибка датчика (работа) при ошибке останов ТН
-   byte flags;                                           // флаги  датчика
    uint8_t  pin;                                         // Ножка куда прицеплен датчик
    char *note;                                           // наименование датчика
    char *name;                                           // Имя датчика
-   uint32_t tickCount;                                   // служебная переменная для увеличения быстродействия
 };
 
 
@@ -260,6 +270,7 @@ public:
   int16_t get_Overheat(){return Overheat;}               // Получить текущий перегрев
   int16_t set_Overheat(int16_t rto,int16_t out, int16_t in, int16_t p); // Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
   void   CorrectOverheat(void);							 // Корректировка перегрева
+  void 	 CorrectOverheatInit(void);						 // Перед стартом компрессора
 
   // Движение ЭРВ
   __attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться

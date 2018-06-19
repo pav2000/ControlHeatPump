@@ -41,7 +41,7 @@ struct type_scanOneWire
 {
   byte num;            // номер по списку
   byte type_sensor;    // тип сенсора
-  byte bus_type;       // тип подключения: 0 - трехпроводное,  1 - двухпроводное
+  byte bus;       	   // номер шины: 0..3
   byte address[8];     // адрес
 };
 
@@ -58,7 +58,7 @@ class deviceOneWire 									       // Класс шина   OneWire
 	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; }
 #endif
 	int8_t	Init(void);
-    int16_t	CalcTemp(uint8_t addr_0, uint8_t *data);	// Вычислить температуру в сотых градуса по считанному scratchpad
+    int16_t	CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp_readed);	// Вычислить температуру в сотых градуса по считанному scratchpad
 	int8_t	Scan(char *result_str);                    // сканирование шины, с записью в буфер результатов возвращает число найденых датчиков
 	int8_t  PrepareTemp();                              // запуск преобразования всех датчиков на шине возвращает код ошибки
 	int8_t  Read(uint8_t *addr, int16_t &val);          // чтение данных DS18B20, возвращает код ошибки, делает все преобразования
@@ -70,11 +70,17 @@ class deviceOneWire 									       // Класс шина   OneWire
 	int8_t err;                                         // ошибка шины (работа) при ошибке останов ТН
 #ifdef ONEWIRE_DS2482
 	DS2482	OneWireDrv;                                 // мастер OneWire аппаратная
-	uint8_t	bus;										// 0 - первый DS2482, 1 - второй DS2482
+	uint8_t	bus;										// 0 - первый DS2482, 1 - второй, 2 - третий, 3 - четвертый
 };
 deviceOneWire OneWireBus(I2C_ADR_DS2482, 0);            // Создание шины нужного типа
 #ifdef ONEWIRE_DS2482_SECOND
-deviceOneWire OneWireBus2(I2C_ADR_DS2482two, 1);        // Создание шины нужного типа
+deviceOneWire OneWireBus2(I2C_ADR_DS2482_2, 1);        // Создание шины нужного типа
+#endif
+#ifdef ONEWIRE_DS2482_THIRD
+deviceOneWire OneWireBus3(I2C_ADR_DS2482_3, 2);        // Создание шины нужного типа
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+deviceOneWire OneWireBus4(I2C_ADR_DS2482_4, 3);        // Создание шины нужного типа
 #endif
 #else // ONEWIRE_DS2482
 	OneWire	OneWireDrv;                                 // OneWire шина програмная

@@ -407,20 +407,34 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
         HP.get_datetime((char*)time_TIME,strReturn);                     strcat(strReturn,"|");
         HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
-        strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
-        _itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
-        _itoa(100-HP.CPU_IDLE,strReturn);                                strcat(strReturn,"%|");
         TimeIntervalToStr(HP.get_uptime(),strReturn);                    strcat(strReturn,"|");
+        uint32_t t = HP.get_command_completed();
+        if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
+        else strcat(strReturn,"-"); 									 strcat(strReturn,"|");
+        _itoa(100-HP.CPU_IDLE,strReturn);                                strcat(strReturn,"%|");
+        //_itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
+        //strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
         #ifdef EEV_DEF
         _ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);strcat(strReturn,"°C|");
         #else
         strcat(strReturn,"-°C|");
         #endif
+		#ifdef FC_VACON
+        HP.dFC.get_paramFC((char*)fc_FC,strReturn); strcat(strReturn,"|");
+		#else
         if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);strcat(strReturn,"Гц|");} // В зависимости от наличия инвертора
         else                      {strcat(strReturn," - ");strcat(strReturn,"Гц|");}
-        if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStr());                   // Ошибок нет
-        else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-        strcat(strReturn,"|");   strcat(strReturn,"&") ;    continue;
+		#endif
+        if (HP.get_errcode() == OK) {
+        	if(HP.get_State() == pOFF_HP) {
+        		strcat(strReturn, MODE_HP_STR[0]);
+        	} else if(HP.get_State() == pWAIT_HP) {
+        		strcat(strReturn, "...");
+        	} else if(HP.get_State() == pWORK_HP) {
+        		strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
+        	}
+        } else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
+        strcat(strReturn,"|&"); continue;
        }
        
    if (strcmp(str,"get_version")==0) // Команда get_version
@@ -513,6 +527,22 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"&");
        continue;
        }
+       if(strcmp(str, "get_NTP") == 0)  // тип NTP
+       {
+			#ifdef HTTP_TIME_REQUEST
+    	   	   strcat(strReturn, "TCP&");
+			#else
+    	   	   strcat(strReturn, "NTP&");
+			#endif
+    	   continue;
+       }
+       	   if(strcmp(str, "get_NTPr") == 0)  // Запрос
+       	   {
+			#ifdef HTTP_TIME_REQUEST
+       		   strcat(strReturn, (char *)&HTTP_TIME_REQ);
+			#endif
+       		 strcat(strReturn, "&");
+       	   }
        if ((strcmp(str,"set_updateNet")==0)||(strcmp(str,"RESET_NET")==0))  // Функция Сброс w5200 и применение сетевых настроек, подождите 5 сек . . .
        {
        journal.jprintf("Update network setting . . .\r\n");
@@ -533,15 +563,18 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
  
     if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
         {
-            switch ((MODE_HP)HP.get_mode())   // режим работы отопления
-                   {
-                    case pOFF:   strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;
-                    case pHEAT:  strcat(strReturn,(char*)"Выключено:0;Отопление:1;Охлаждение:0;"); break;
-                    case pCOOL:  strcat(strReturn,(char*)"Выключено:0;Отопление:0;Охлаждение:1;"); break;
-                    default: HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;   // Исправить по умолчанию
-                   }  
-          strcat(strReturn,"&") ; continue;
+    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_mode());
+    		strcat(strReturn,"&") ; continue;
         } // strcmp(str,"get_modeHP")==0)   
+    if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
+       {
+		#ifdef RPUMPBH
+    	if(HP.dRelay[RPUMPBH].get_Relay()) strcat(strReturn, "Бойлер");
+    	else
+		#endif
+    		strcat(strReturn, HP.dRelay[PUMP_OUT].get_Relay() ? "Вкл" : "Выкл");
+    	strcat(strReturn,"&") ;    continue;
+       }
     if (strcmp(str,"get_testMode")==0)  // Функция get_testMode
        {
        for(i=0;i<=HARD_TEST;i++) // Формирование списка
@@ -631,14 +664,21 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
     if (strcmp(str,"get_OneWirePin")==0)  // Функция get_OneWirePin
        {
        #ifdef ONEWIRE_DS2482  
-        strcat(strReturn,"I2C"); 
+        strcat(strReturn, "I2C, DS2482(1");
 		#ifdef ONEWIRE_DS2482_SECOND
-        strcat(strReturn,"(2)"); 
+        strcat(strReturn, ",2");
 		#endif
+		#ifdef ONEWIRE_DS2482_THIRD
+        strcat(strReturn, ",3");
+		#endif
+		#ifdef ONEWIRE_DS2482_FOURTH
+        strcat(strReturn, ",4");
+		#endif
+        strcat(strReturn, ")&");
        #else
-        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); 
+        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); strcat(strReturn,"&");
        #endif
-       strcat(strReturn,"&") ;    continue;
+        continue;
        }       
     if (strcmp(str,"scan_OneWire")==0)  // Функция scan_OneWire  - сканирование датчикиков
        {
@@ -900,13 +940,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
       if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
        {
         strcat(strReturn,"Входное напряжение питания контроллера (В): |");
-        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-          _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
-        #else 
-            strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
-        #endif
-         
-        strcat(strReturn,"Режим safeNetwork (адрес:192.168.0.177 шлюз:192.168.0.1, не спрашиваеть пароль на вход) [активно 1]|");_itoa(HP.safeNetwork,strReturn);strcat(strReturn,";");
+		#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+		  _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
+		#else
+			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
+		#endif
+        m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
         strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
       
@@ -955,6 +994,9 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
         strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время завершения последней команды ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
         
         // Вывод строки статуса
@@ -990,16 +1032,24 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2);strcat(strReturn,";");
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";"); // Если есть оборудование
-  
+        
+        #ifdef  FLOWCON 
+        if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+        #endif
+        
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
+        
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
+        
         #endif
-        if(HP.ChartPowerCO.get_present())  strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";"); // Если есть оборудование
-  
+       
+        #ifdef  FLOWCON 
+	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+        #endif
+         
         strcat(strReturn,"&") ;    continue;
        } // sisInfo
        
@@ -1836,19 +1886,23 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
                                
-              if (strcmp(str,"get_addressTemp")==0)           // Функция get_addressTemp
-                { strcat(strReturn,HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()): "не привязан"); strcat(strReturn,"&"); continue; }
+              if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
+              {
+            	x_get_aTemp:
+            	  strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
+            	  strcat(strReturn, "&"); continue;
+              }
                         
               if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
                 { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
                 
-              if (strcmp(str,"get_errcodeTemp")==0)           // Функция get_errcodeTemp
+              if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
                  { _itoa(HP.sTemp[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
                  
-              if (strcmp(str, "get_errorsTemp") == 0)           // Функция get_errorsTemp
+              if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
                  { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"get_presentTemp")==0)           // Функция get_presentTemp
+              if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
                   {
                   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
                   strcat(strReturn,"&") ;    continue;
@@ -1856,8 +1910,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
                  { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }    
 
-              if(strncmp(str, "get_flagTemp", 12)==0){  // get_flagTempX(N): X - номер бита, N - имя датчика
-            	  _itoa(HP.sTemp[p].get_setup_flag(atoi(str + 12)),strReturn);
+              if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
+              {
+            	  if(HP.sTemp[p].get_fAddress()) _itoa(HP.sTemp[p].get_bus() + 1, strReturn); else strcat(strReturn, "-");
+            	  strcat(strReturn, "&"); continue;
+              }
+
+              if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
+            	  _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
             	  strcat(strReturn,"&");  continue;
               }
 
@@ -1873,10 +1933,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
 
-               if(strncmp(str, "set_flagTemp", 12) == 0) {   // set_flagTempX(N=V): X - номер бита, N - имя датчика
-            	   i = atoi(str + 12);
+               if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
+            	   i = str[9] - '0' - 1 + fTEMP_ignory_errors;
             	   HP.sTemp[p].set_setup_flag(i, int(pm));
-            	   _itoa(HP.sTemp[p].get_setup_flag(i),strReturn);
+            	   _itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
             	   strcat(strReturn, "&"); continue;
                }
 
@@ -1890,16 +1950,16 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                          strcat(strReturn,"&");  continue;
                  }
                  */
-               if (strcmp(str,"set_addressTemp")==0)        // Функция set_addressTemp
+               if (strcmp(str,"set_aTemp")==0)        // Функция set_addressTemp
                {
             	   uint8_t n = pm;
             	   if(n <= TNUMBER)                  // Если индекс находится в диапазоне допустимых значений Здесь индекс начинается с 1, ЗНАЧЕНИЕ 0 - обнуление адреса!!
             	   {
             		   if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
-            		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus_type);
+            		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
             	   }
             	   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
-            	   strcat(strReturn,addressToHex(HP.sTemp[p].get_address())); strcat(strReturn,"&"); continue;
+            	   goto x_get_aTemp;
                }  // вернуть адрес
                else { strcat(strReturn,"E08");strcat(strReturn,"&");   continue;}      // выход за диапазон допустимых номеров, значение не установлено
 
@@ -1949,7 +2009,17 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                 { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue; }
                   
               if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
-                { strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn); strcat(strReturn,"&"); continue; }
+                {
+				  #ifdef ANALOG_MODBUS
+            	  if(HP.sADC[p].get_fmodbus()) {
+            		  strcat(strReturn,"MB #"); _itoa(ANALOG_MODBUS_REG[p], strReturn);
+            	  } else
+				  #endif
+            	  {
+            		  strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn);
+            	  }
+           		  strcat(strReturn,"&"); continue;
+                }
                 
               if (strcmp(str,"get_testPress")==0)           // Функция get_testPress
                 { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
@@ -1966,6 +2036,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                  { strcat(strReturn,HP.sADC[p].get_note()); strcat(strReturn,"&"); continue; }    
 
              // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
+
               if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
                  { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; } 
@@ -2079,14 +2150,14 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
              if (strcmp(str,"get_minFlow")==0)           // Функция get_minFlow
                   {
                   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,3); 
+                   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1);
                    else strcat(strReturn,"-");               // Датчика нет ставим прочерк
                   strcat(strReturn,"&") ;    continue;
                   }
             if (strcmp(str,"get_kfFlow")==0)           // Функция get_kfFlow
                   {
                   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,HP.sFrequency[p].get_kfValue(),3); 
+                   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2);
                    else strcat(strReturn,"-");               // Датчика нет ставим прочерк
                   strcat(strReturn,"&") ;    continue;
                   }
@@ -2113,17 +2184,28 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             if (strcmp(str,"get_noteFlow")==0)               // Функция get_noteFlow
                  { strcat(strReturn,HP.sFrequency[p].get_note()); strcat(strReturn,"&"); continue; }   
 
+            if (strcmp(str,"get_checkFlow")==0)
+               { _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue; }
+
             // ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
+            if (strcmp(str,"set_minFlow")==0) {           // Функция set_testPress
+          	  HP.sFrequency[p].set_minValue(pm);
+              _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); strcat(strReturn,"&"); continue;
+            }
+
+            if (strcmp(str,"set_checkFlow")==0) {           // Функция set_testPress
+          	  HP.sFrequency[p].set_checkFlow(pm != 0);
+          	  _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue;
+            }
               if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
                  { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; } 
                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
               if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
-                 { if (HP.sFrequency[p].set_kfValue(pm)==OK)    // Установить значение
-                   {_ftoa(strReturn,HP.sFrequency[p].get_kfValue(),3); strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
+                 { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
+                   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); strcat(strReturn,"&"); continue;
+                 }
               if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
                  { 
                    if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение

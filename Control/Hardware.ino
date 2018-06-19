@@ -61,7 +61,7 @@ void adc_setup ()
   
 // Расчет маски каналов
 for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
-      if (HP.sADC[i].get_present()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
+      if (HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
  
   NVIC_EnableIRQ (ADC_IRQn) ;        // enable ADC interrupt vector
   ADC->ADC_IDR = 0xFFFFFFFF ;        // disable interrupts IDR Interrupt Disable Register
@@ -81,37 +81,41 @@ for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
 extern "C"
 {
 #endif
-void ADC_Handler (void)
+void ADC_Handler(void)
 {
- uint8_t i=0;
+	uint8_t i = 0;
 
-   #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-    if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
-          {
-           HP.AdcVcc =(unsigned int)(*(ADC->ADC_CDR+PIN_ADC_VCC));   // если готов прочитать результат
-          }
-    #endif
-       
- for (i=0;i<ANUMBER;i++)    // по всем датчикам
-       { 
-         if (!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
-         if (ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA()))   // ensure there was an End-of-Conversion and we read the ISR reg
-          {
-           HP.sADC[i].adc.lastVal =(unsigned int)(*(ADC->ADC_CDR+HP.sADC[i].get_pinA())) ;                      // get conversion result
-           HP.sADC[i].adc.error=OK;
-          }
-          else continue; 
-          // Усреднение значений
-          HP.sADC[i].adc.sum=HP.sADC[i].adc.sum+HP.sADC[i].adc.lastVal;                                       // Добавить новое значение
-          HP.sADC[i].adc.sum=HP.sADC[i].adc.sum-HP.sADC[i].adc.p[HP.sADC[i].adc.last];                        // Убрать самое старое значение
-          HP.sADC[i].adc.p[HP.sADC[i].adc.last]=HP.sADC[i].adc.lastVal;                                       // Запомить новое значение
-          if (HP.sADC[i].adc.last<FILTER_SIZE-1) HP.sADC[i].adc.last++; else {HP.sADC[i].adc.last=0; HP.sADC[i].adc.flagFull=true;} // приращение счетчика
-  //        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/FILTER_SIZE; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
-       } // for
-       
- // if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
- //            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
-       
+#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+	if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
+	{
+		HP.AdcVcc =(unsigned int)(*(ADC->ADC_CDR+PIN_ADC_VCC));   // если готов прочитать результат
+	}
+#endif
+
+	for(i = 0; i < ANUMBER; i++)    // по всем датчикам
+	{
+		if(!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
+		#ifdef ANALOG_MODBUS
+			if(HP.sADC[i].get_fmodbus()) continue;
+		#endif
+		if(ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA())) // ensure there was an End-of-Conversion and we read the ISR reg
+		{
+			HP.sADC[i].adc.lastVal = (unsigned int) (*(ADC->ADC_CDR + HP.sADC[i].get_pinA()));  // get conversion result
+			HP.sADC[i].adc.error = OK;
+		} else continue;
+		// Усреднение значений
+		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum + HP.sADC[i].adc.lastVal;                     // Добавить новое значение
+		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum - HP.sADC[i].adc.p[HP.sADC[i].adc.last]; // Убрать самое старое значение
+		HP.sADC[i].adc.p[HP.sADC[i].adc.last] = HP.sADC[i].adc.lastVal;                       // Запомить новое значение
+		if(HP.sADC[i].adc.last < FILTER_SIZE - 1) HP.sADC[i].adc.last++;
+		else {
+			HP.sADC[i].adc.last = 0;
+			HP.sADC[i].adc.flagFull = true;
+		} // приращение счетчика
+		//        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/FILTER_SIZE; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
+	} // for
+	// if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
+	//            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
 }
 
 #ifdef __cplusplus
@@ -151,12 +155,15 @@ void sensorADC::initSensorADC(int sensor,int pinA)
       testMode=NORMAL;                           // Значение режима тестирования
       zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
       transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
-      flags=0x00;                                // Обнулить флаги
-      if (SENSORPRESS[sensor]==true) SETBIT1(flags,fPresent);  // наличие датчика в текушей конфигурации
+      pin=pinA;
+      flags = SENSORPRESS[sensor]<<fPresent;	 // наличие датчика
+	  #ifdef ANALOG_MODBUS
+      flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
+      Sensor = sensor;
+	  #endif
       Chart.init(SENSORPRESS[sensor]);            // инициалазация статистики
       err=OK;                                     // ошибка датчика (работа)
       Press=0;                                    // давление датчика (обработанная)
-      pin=pinA;
       note=(char*)notePress[sensor];              // присвоить наименование датчика
       name=(char*)namePress[sensor];              // присвоить имя датчика
     };
@@ -174,48 +181,67 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
-int8_t  sensorADC::Read() 
-{  
-       
- if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
- 
- if (testMode!=NORMAL) lastPress=testPress;        // В режиме теста
- else                                              // Чтение датчика
-   {
-  #ifdef DEMO
-      lastADC=random(1350,2500);                   // В демо режиме генерим значение
-   #else
-       if (adc.flagFull) lastADC=adc.sum/FILTER_SIZE; else lastADC=adc.sum/adc.last;    
-   #endif   
-    if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
-    lastPress=(int)((float)lastADC*(transADC))-zeroPress;   
-   }
- //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress); 
-    // Усреднение значений
-    sum=sum+lastPress;          // Добавить новое значение
-    sum=sum-p[last];            // Убрать самое старое значение
-    p[last]=lastPress;          // Запомить новое значение
-    if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
-    if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last; 
-    
-  // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-  // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
-  // При ошибке запоминаем мговенное значение как среднее  что бы видно было
-  if(lastPress<minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}  
-  if(lastPress>maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+ int8_t  sensorADC::Read()
+ {
 
-  // Дошли до сюда значит ошибок нет
-  err=OK;                                         // Новый цикл новые ошибки
-  return err; 
-}
-// полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
-int16_t sensorADC::Test()
-{
-   int16_t x;
-   if (adc.flagFull) x=adc.sum/FILTER_SIZE; else x=adc.sum/adc.last;    
-   return (int)((float)x*(transADC))-zeroPress;
-}
+	 if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
 
+	 if (testMode!=NORMAL) lastPress=testPress;        // В режиме теста
+	 else                                              // Чтение датчика
+	 {
+#ifdef DEMO
+		 lastADC=random(1350,2500);                   // В демо режиме генерим значение
+#else
+	#ifdef ANALOG_MODBUS
+		 if(get_fmodbus()) {
+			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
+				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[Sensor], ANALOG_MODBUS_REG[Sensor] - 1, &adc.last);
+				if(err == OK) {
+					lastADC = adc.last;
+					break;
+				}
+				_delay(ANALOG_MODBUS_ERR_DELAY);
+			}
+			if(err) {
+				journal.jprintf(pP_TIME, "Error read %s by Modbus: %d\n", name, err);
+				set_Error(ERR_READ_PRESS, name);
+				return ERR_READ_PRESS;
+			}
+		 } else
+	#endif
+		 {
+			 if(adc.flagFull) lastADC=adc.sum/FILTER_SIZE; else lastADC=adc.sum/adc.last;
+			 if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
+		 }
+#endif
+		 lastPress=(int)((float)lastADC*(transADC))-zeroPress;
+	 }
+	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
+	 // Усреднение значений
+	 sum=sum+lastPress;          // Добавить новое значение
+	 sum=sum-p[last];            // Убрать самое старое значение
+	 p[last]=lastPress;          // Запомить новое значение
+	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
+	 if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last;
+
+	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
+	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
+	 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
+	 if(lastPress<minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}
+	 if(lastPress>maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+
+	 // Дошли до сюда значит ошибок нет
+	 err=OK;                                         // Новый цикл новые ошибки
+	 return err;
+ }
+
+//// полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
+//int16_t sensorADC::Test()
+//{
+//   int16_t x;
+//   if (adc.flagFull) x=adc.sum/FILTER_SIZE; else x=adc.sum/adc.last;
+//   return (int)((float)x*(transADC))-zeroPress;
+//}
 
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
@@ -429,7 +455,7 @@ void sensorFrequency::initFrequency(int sensor)
    note=(char*)noteFrequency[sensor];             // наименование датчика
    name=(char*)nameFrequency[sensor];             // Имя датчика
    Chart.init(true);                              // инициалазация статистики
-   sTime=xTaskGetTickCount();                     // время начала базового периода в тиках
+   reset();
    // Привязывание обработчика преваний к методу конкретного класса
    //   LOW вызывает прерывание, когда на порту LOW
    //   CHANGE прерывание вызывается при смене значения на порту, с LOW на HIGH и наоборот
@@ -443,47 +469,56 @@ void sensorFrequency::initFrequency(int sensor)
    else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
 #endif     
    else err=ERR_NUM_FREQUENCY;
-  
 }
 
 // Получить (точнее обновить) значение датчика
 int8_t sensorFrequency::Read()
 {
-
- if (testMode!=NORMAL) { Value=testValue; Frequency=Value*1000*(kfValue/3600.0); return err; }   // В режиме теста
- #ifdef DEMO
-    Frequency=random(2500,6000);
-    count=0;
- //   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-    Value=((float)Frequency/1000.0)/(kfValue/3600.0);       // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
-   //  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
-    return err;      // Если демо вернуть случайное число
- #else
-   tickCount=xTaskGetTickCount();            // получить текущее время
-   if(tickCount<sTime)                       // произошло переполнение счетчиков тиков freeRTOS - измерение с начала
-       { sTime=tickCount;  count=0; }
-   else if(tickCount-sTime>BASE_TIME_READ*1000)   // если только пришло время измерения
-       { 
-        Frequency=(count*500.0*1000.0)/(tickCount-sTime);    // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
-        sTime=tickCount;  
-        count=0;
-  //   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
-       Value=((float)Frequency/1000.0)/(kfValue/3600.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
-       }
- #endif   
- return err;    
+	if(testMode != NORMAL) {
+		Value = testValue;
+		Frequency = Value * kfValue / 360;
+		return err;
+	}   // В режиме теста
+#ifdef DEMO
+	Frequency=random(2500,9000);
+	count=0;
+	//   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
+	Value=(float)Frequency/kfValue*360.0;// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	//  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
+	return err;// Если демо вернуть случайное число
+#else
+	if(GetTickCount() - sTime > (uint32_t)BASE_TIME_READ * 1000) {  // если только пришло время измерения
+		uint32_t tickCount, cnt;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+		tickCount = GetTickCount();
+		cnt = count;
+		count = 0;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+		__asm__ volatile ("" ::: "memory");
+		Frequency = (cnt * 500.0 * 1000.0) / (tickCount - sTime); // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
+		sTime = tickCount;
+		//   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
+		//       Value=((float)Frequency/1000.0)/((float)kfValue/360000.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+		Value = (float) Frequency / kfValue * 360.0; // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	}
+#endif
+	return err;
 }
+
+void sensorFrequency::reset(void)
+{
+
+	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+	sTime = GetTickCount();
+	count = 0;
+	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+}
+
 // Установить Состояние датчика в режиме теста
 int8_t  sensorFrequency::set_testValue(int16_t i) 
 {
    testValue=i;
    return OK;
-}
-// Установить коэффициент пересчета
-int8_t  sensorFrequency::set_kfValue(float f)
-{
-  if((f>=0.0)&&(f<=600.0)) {kfValue=f; return OK;}  
-  else return WARNING_VALUE;                
 }
 // Установить теплоемкость больше 5000 не устанавливается
 int8_t sensorFrequency::set_Capacity(uint16_t c)                      
@@ -493,35 +528,40 @@ int8_t sensorFrequency::set_Capacity(uint16_t c)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t sensorFrequency::save(int32_t adr)
 {
-if (writeEEPROM_I2C(adr, (byte*)&testValue, sizeof(testValue)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testValue);    // Состояние датчика в режиме теста
-if (writeEEPROM_I2C(adr, (byte*)&kfValue, sizeof(kfValue)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(kfValue);      // коэффициент пересчета частоты в значение
-if (writeEEPROM_I2C(adr, (byte*)&Capacity, sizeof(Capacity)))     { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(Capacity);     // теплоемкость теплоносителя в контуре
-return adr;                                 
+//	flags = flags & ~((1<<fPresent) | (1<<fcheckRange));
+    if(writeEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
+        set_Error(ERR_SAVE_EEPROM, name);
+        return ERR_SAVE_EEPROM;
+    }
+    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
+    return adr;
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t sensorFrequency::load(int32_t adr)
 {
-if (readEEPROM_I2C(adr, (byte*)&testValue, sizeof(testValue)))   { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testValue);    // Состояние датчика в режиме теста
-if (readEEPROM_I2C(adr, (byte*)&kfValue, sizeof(kfValue)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(kfValue);      // коэффициент пересчета частоты в значение
-if (readEEPROM_I2C(adr, (byte*)&Capacity, sizeof(Capacity)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(Capacity);     // теплоемкость теплоносителя в контуре
-return adr;                              
+    if(readEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
+        set_Error(ERR_LOAD_EEPROM, name);
+        return ERR_LOAD_EEPROM;
+    }
+    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
+	SETBIT1(flags, fPresent);
+    return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t sensorFrequency::loadFromBuf(int32_t adr,byte *buf)
 {
-  memcpy((byte*)&testValue,buf+adr,sizeof(testValue)); adr=adr+sizeof(testValue);      // Состояние датчика в режиме теста
-  memcpy((byte*)&kfValue,buf+adr,sizeof(kfValue)); adr=adr+sizeof(kfValue);            // коэффициент пересчета частоты в значение
-  memcpy((byte*)&Capacity,buf+adr,sizeof(Capacity)); adr=adr+sizeof(Capacity);         // теплоемкость теплоносителя в контуре
+  memcpy((byte*)&testValue, buf+adr, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity));
+  adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
+  SETBIT1(flags, fPresent);
   return adr;  
 }
 // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t sensorFrequency::get_crc16(uint16_t crc)
 {
   uint8_t i;
-  crc=_crc16(crc,lowByte(testValue)); crc=_crc16(crc,highByte(testValue));    // uint16_t Состояние датчика в режиме теста
-  for(i=0;i<sizeof(kfValue);i++) crc=_crc16(crc,*((byte*)&kfValue+i));        // float    коэффициент пересчета АЦП в давление FLOAT
-  crc=_crc16(crc,lowByte(Capacity)); crc=_crc16(crc,highByte(Capacity));      // uint16_t теплоемкость теплоносителя в контуре
+  for(i = 0; i < (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity); i++)
+	crc = _crc16(crc,*((byte*)&testValue + i));  // CRC16 структуры
   return crc;                      
 }
 
@@ -713,10 +753,6 @@ void devEEV::Resume(uint16_t pos)
    EEV=0;
    err=OK;                               // Ошибок нет
    if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
-   if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
-	   _data.tOverheat = _data.OHCor_OverHeatStart;
-   }
-   OHCor_tdelta = 0;
    journal.jprintf(" EEV set zero\n"); 
    set_zero();                           // установить 0
  //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
@@ -920,7 +956,7 @@ void devEEV::CorrectOverheat(void)
 		if(delta > (x = OHCor_tdelta + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев большой - уменьшаем
 		else if(delta < (x = OHCor_tdelta)) { // - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
 			if(delta < x * 3 / 4) { // Слижком мало (меньше 3/4 от дельты) - устанавливаем перегрев принудительно
-				_data.tOverheat = _data.tOverheat < _data.OHCor_OverHeatStart - 50 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
+				_data.tOverheat = delta > x / 2 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
 				journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)delta / 100.0, (float)_data.tOverheat / 100.0);
 				return;
 			}
@@ -930,6 +966,14 @@ void devEEV::CorrectOverheat(void)
 		else if(delta < _data.OHCor_OverHeatMin) delta = _data.OHCor_OverHeatMin;
 		_data.tOverheat = delta;
 	}
+}
+
+void devEEV::CorrectOverheatInit(void)
+{
+    if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
+	    _data.tOverheat = _data.OHCor_OverHeatStart;
+    }
+	OHCor_tdelta = 0;
 }
 
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
@@ -1100,7 +1144,7 @@ float temp;
 	} else if(strcmp(var, eev_CONST)==0){
 	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x*100+0.005); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
-	   if ((x>=_data.minSteps)&&(x<=maxEEV)==0){ _data.manualStep=x; return true;} else return false;	// шаги
+	   if ((x>=_data.minSteps)&&(x<=maxEEV)){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
         if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
 	}   else if(strcmp(var, eev_RULE)==0){
@@ -1589,6 +1633,7 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)power/10.0,1); strcat(ret, " кВт"); } else
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -1605,25 +1650,29 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
-    if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
+   	if(strncmp(var, fc_FREQ, sizeof(fc_FREQ)-1)==0) {
+   		var += sizeof(fc_FREQ)-1;
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
+		if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
+		if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
+		if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // Гц
+		if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
+		if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
+		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
+			strcat(ret,(char*)cInvalid);
+   	} else
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
-     strcat(ret,(char*)cInvalid);
+    	strcat(ret,(char*)cInvalid);
 }
    
 
@@ -1634,6 +1683,7 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
     if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
+  //  if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.flags,fAutoResetFault);else SETBIT1(_data.flags,fAutoResetFault);return true;  } else // для Омрона код не написан
     #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
@@ -1645,22 +1695,26 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
                                                 return true;            
                                                 } else  
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
-    if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>1)&&(x<25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
-    if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц 
-    if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } else // Гц
-    if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
+	if(strncmp(var, fc_FREQ, sizeof(fc_FREQ)-1)==0) {
+		var += sizeof(fc_FREQ)-1;
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
+		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
+		return false;
+	}
+	if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы
     return false;
 }

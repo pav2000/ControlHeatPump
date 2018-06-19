@@ -11,7 +11,7 @@
   <script type="text/javascript">
     window.onload = function() {
 	urlupdate = 2000;
-    loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(REMARK),get_optionHP(TIME_CHART),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(MAX),get_paramEEV(MIN),get_paramEEV(PINS),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
+    loadParam("get_paramEEV(NAME),get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_optionHP(TIME_CHART),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(MAX),get_paramEEV(MIN),get_paramEEV(PINS),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
     updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_paramEEV(cTDELTA),get_Evapor");
     loadParam("get_Chart(posEEV)");
     setParam('get_listChart','chart1');
@@ -70,34 +70,6 @@
    </table>            
   </div>
   
-  <div class="row1">
-   <h2>Определение перегрева</h2>
-   <table>
-   <thead>
-    <tr>
-      <th>Формула перегрева</th>
-      <th>Описание</th>
-      <th>Поправка °С</th>
-      <th>Тип фреона</th>
-      <th>Открытие ЭРВ шаги</th>
-    </tr>
-   </thead>
-   <tbody>
-    <tr>
-      <td>
-        <select id="get_parameev-rule" onchange="setParam('get_paramEEV(RULE)');loadParam('get_paramEEV(REMARK)')"></select>
-      </td>
-      <td id="get_parameev-remark"></td>
-      <td nowrap><input id="get_parameev-const" type="number"  min="-5" max="5" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">"  onclick="setParam('get_paramEEV(CONST)');"></td>
-      <td>
-        <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
-      </td>
-      <td nowrap><input id="get_parameev-manual" type="number"  min="0" max="480" step="1" value="0"><input id="get_parameev-manual2" type="submit" value=">"  onclick="setParam('get_paramEEV(MANUAL)');"></td>
-    </tr>         
-   </tbody>
-   </table>            
-  </div>
-
   <div class="row1">
     <h2>Корректировка перегрева <input id="get_parameev-ccorrect" type="checkbox" onclick="setParam('get_paramEEV(cCORRECT)')"></h2>
     <table>

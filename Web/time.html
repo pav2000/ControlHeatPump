@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_datetime(UPDATE_I2C),get_datetime(DATE),get_datetime(TIME),get_datetime(NTP),get_datetime(UPDATE)");
+		loadParam("get_NTP,get_NTPr,get_datetime(UPDATE_I2C),get_datetime(DATE),get_datetime(TIME),get_datetime(NTP),get_datetime(UPDATE)");
 	};
 	</script>
 </head>
@@ -39,14 +39,18 @@
 			</td>
 		</tr>
 		<tr>
-			<td>NTP сервер</td>
+			<td><span id="get_ntp"></span> сервер</td>
 			<td>
 				<input id="get_datetime-ntp" type="text">
 				<input id="get_datetime-ntp2" type="submit" value=">"  onclick="setParam('get_datetime(NTP)');">
 			</td>
 		</tr>
 		<tr>
-			<td>Синхронизация времени по NTP раз в  сутки</td>
+			<td></td>
+			<td id="get_ntpr"></td>
+		</tr>
+		<tr>
+			<td>Синхронизация времени с сервером раз в сутки</td>
 			<td>
 				<input type="checkbox" name="get_datetime-update" id="get_datetime-update" onchange="setParam('get_datetime(UPDATE)');" >
 			</td>
@@ -57,7 +61,7 @@
 				<input type="checkbox" name="get_datetime-update_i2c" id="get_datetime-update_i2c" onchange="setParam('get_datetime(UPDATE_I2C)');" >
 			</td>
 		</tr>								
-		<tr><td>Обновить время по NTP</td><td><input type="submit" value="Обновить"  onclick='loadParam("update_NTP")'></td></tr>
+		<tr><td>Обновить время с сервера</td><td><input type="submit" value="Обновить"  onclick='loadParam("update_NTP")'></td></tr>
 	</tbody>
 	</table>
 </div>	

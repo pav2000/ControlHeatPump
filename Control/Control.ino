@@ -16,7 +16,8 @@
  * GNU General Public License for more details.
  */
 // Последние версии
-// https://github.com/pav2000/ControlHeatPump проект на гитхабе
+// https://github.com/pav2000/ControlHeatPump проект на гитхабе (рабочие сборки)
+// https://github.com/vad7/ControlHeatPump - последняя стабильная версия
 // http://77.50.254.24:25402/ последняя версия демо
 // http://77.50.254.24:25402/mob/index.html мобильная морда демо
 // Архивные ссылки
@@ -75,7 +76,7 @@ extern boolean set_time_NTP(void);
 EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
-PubSubClient w5200_MQTT(ethClient,W5200_SOCK_SYS);  // клиент MQTT через служебный сокет
+PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
@@ -306,27 +307,35 @@ x_I2C_init_std_message:
          {
               #ifdef ONEWIRE_DS2482         // если есть мост
               if(address == I2C_ADR_DS2482) {
-            	  error = OneWireBus.lock_I2C_bus_reset(1);
+                  error = OneWireBus.Init();
 			    #ifdef ONEWIRE_DS2482_SECOND
-              } else if(address == I2C_ADR_DS2482two) {
-               	  error = OneWireBus2.lock_I2C_bus_reset(1);
+              } else if(address == I2C_ADR_DS2482_2) {
+                  error = OneWireBus2.Init();
 		        #endif
-              } else {
+				#ifdef ONEWIRE_DS2482_THIRD
+              } else if(address == I2C_ADR_DS2482_3) {
+                  error = OneWireBus3.Init();
+				#endif
+				#ifdef ONEWIRE_DS2482_FOURTH
+              } else if(address == I2C_ADR_DS2482_4) {
+                  error = OneWireBus4.Init();
+				#endif
+              } else
+			  #endif
+              {
             	  Wire.beginTransmission(address); error = Wire.endTransmission();
               }
-              #else                          
-              Wire.beginTransmission(address);
-              error = Wire.endTransmission();
-              #endif
               if(error==0)
               {
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
                     {    
-               	   	case I2C_ADR_DS2482two:
-                    case I2C_ADR_DS2482:  	journal.jprintf(" - OneWire DS2482-100%s\n", address == I2C_ADR_DS2482two ? " second" : ""); break; // 0x18 есть варианты
+               	   	case I2C_ADR_DS2482_4:
+               	   	case I2C_ADR_DS2482_3:
+               	   	case I2C_ADR_DS2482_2:
+                    case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d\n", address - I2C_ADR_DS2482 + 1); break;
 					#if I2C_FRAM_MEMORY == 1
-                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024);break;
+                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
 						#endif
@@ -336,8 +345,8 @@ x_I2C_init_std_message:
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
 						#endif
 					#endif
-                    case I2C_ADR_RTC   :	journal.jprintf(" - RTC DS3231\n");                             break; // 0x68
-                    default            :	journal.jprintf(" - Unknow\n");                                 break; // не определенный тип
+                    case I2C_ADR_RTC   :		journal.jprintf(" - RTC DS3231\n"); break; // 0x68
+                    default            :		journal.jprintf(" - Unknow\n"); break; // не определенный тип
                     }
               _delay(100);      
               }
@@ -345,12 +354,10 @@ x_I2C_init_std_message:
           } // for
     } //  (eepStatus==0) 
 
-    if(OneWireBus.Init()) journal.jprintf("Error OneWire init: %d\n", OneWireBus.GetLastErr());
-    else journal.jprintf("OneWire init Ok.\n");
-#ifdef ONEWIRE_DS2482_SECOND
-    if(OneWireBus2.Init()) journal.jprintf("Error OneWire2 init: %d\n", OneWireBus2.GetLastErr());
-    else journal.jprintf("OneWire2 init Ok.\n");
-#endif
+  #ifndef ONEWIRE_DS2482         // если нет моста
+  if(OneWireBus.Init()) journal.jprintf("Error init 1-Wire: %d\n", OneWireBus.GetLastErr());
+  else journal.jprintf("1-Wire init Ok\n");
+  #endif
 
 // 4. Инициализировать основной класс
   journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
@@ -436,10 +443,10 @@ x_I2C_init_std_message:
   journal.jprintf("12. Start read ADC sensors\n"); 
 
   #ifdef NEXTION   
-    journal.jprintf("13. Init Nextion dispaly\n");
+    journal.jprintf("13. Init Nextion display\n");
     myNextion.init(cZero);
   #else
-    journal.jprintf("13. Nextion dispaly absent in config\n");
+    journal.jprintf("13. Nextion display absent in config\n");
   #endif
 
   #ifdef TEST_BOARD
@@ -790,7 +797,9 @@ void vUpdateStat( void * )
 void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
+#ifdef USE_ELECTROMETER_SDM
 	static unsigned long readSDM = 0;
+#endif
 //    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР
 	static uint32_t ttime;                                                 // новое время
 	static uint32_t oldTime;                                               // старое вермя
@@ -806,8 +815,15 @@ void vReadSensor(void *)
 #ifdef ONEWIRE_DS2482_SECOND
 		prtemp |= HP.Prepare_Temp(1);
 #endif
+#ifdef ONEWIRE_DS2482_THIRD
+		prtemp |= HP.Prepare_Temp(2);
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+		prtemp |= HP.Prepare_Temp(3);
+#endif
 #endif     // не DEMO
 		ttime = xTaskGetTickCount();
+		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 		HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
@@ -815,7 +831,6 @@ void vReadSensor(void *)
 
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
-		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчика давления
 		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
 			if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
 			_delay(2);     												// пауза
@@ -824,7 +839,7 @@ void vReadSensor(void *)
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-		if((HP.get_mode() != pCOOL) || (HP.get_mode() != pNONE_C))    // Если не охлаждение
+		if((HP.get_mode() != pCOOL) && (HP.get_mode() != pNONE_C))    // Если не охлаждение
 			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
 		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
 #endif
@@ -1231,7 +1246,9 @@ void vUpdatePump(void *)
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
 			#ifdef RPUMPFL
-			HP.dRelay[RPUMPFL].set_ON();						// включить насос ТП
+			if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
+				HP.dRelay[RPUMPFL].set_ON();					     // включить насос ТП
+			}
 			#endif
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
@@ -1243,21 +1260,23 @@ void vUpdatePump(void *)
 				HP.dRelay[RPUMPFL].set_OFF();					// выключить насос ТП
 				#endif
 			}
-			for(i = 0; i < HP.get_pausePump() * 60 / 2; i++)                       // Режем задержку для быстрого выхода
+			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено2 секунда
+				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
 				#ifdef RPUMPFL
-				HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
+				if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
+					HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
+				}
 				#endif
 			}
-			for(i = 0; i < HP.get_workPump() * 60 / 2; i++)                        // Режем задержку для быстрого выхода
+			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
 			{
 				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);                        // пауза выключено 2 секунда
+				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
 			}
 		}
 	}  //for

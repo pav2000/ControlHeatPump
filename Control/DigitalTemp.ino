@@ -90,7 +90,7 @@ void sensorTemp::initTemp(int sensor)
 // Чтение датчиков температуры, возвращает код ошибки, делает все преобразования
 int8_t sensorTemp::Read() 
 {  
-	if(!(GETBIT(flags, fPresent))) return err;          // датчик запрещен в конфигурации ничего не делаем
+	if(!(GETBIT(flags, fPresent))) return OK;          // датчик запрещен в конфигурации ничего не делаем
 	if(testMode!=NORMAL) lastTemp=testTemp;             // В режиме теста присвоить значение теста
 	else {                                              // Чтение датчиков
 #ifdef DEMO
@@ -99,40 +99,40 @@ int8_t sensorTemp::Read()
 #else   // чтение датчика
 		if(!(GETBIT(flags,fAddress))) { // Адрес не установлен
 			if(number == TCOMP) { // эти датчики должны быть привязаны
-				err = ERR_ADDRESS;
-				set_Error(err,name);
+				set_Error(err = ERR_ADDRESS, name);
 				return err;
 			} else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
 			int16_t ttemp;
 			err = busOneWire->Read(address, ttemp);
-			if(err) {
-				if(!GETBIT(setup_flags, fTEMP_dont_log_errors)) {
-					journal.jprintf(pP_TIME, "%s: Error ", name);
-					if(err == ERR_ONEWIRE_CRC || err > 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
-						journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err > 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
-					} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
-					//err = ERR_READ_TEMP;
+			if(err != OK) {
+				sumErrorRead++;
+				if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
+					if(!get_setup_flag(fTEMP_dont_log_errors)) {
+						journal.jprintf(pP_TIME, "%s: Error ", name);
+						if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+							journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+						} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
+						//err = ERR_READ_TEMP;
+					}
+					if(++numErrorRead == 0) numErrorRead--;
+					if(numErrorRead > NUM_READ_TEMP_ERR && !get_setup_flag(fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
+					return err;
 				}
-	            sumErrorRead++;
-	            if(++numErrorRead == 0) numErrorRead--;
-	            if(numErrorRead > NUM_READ_TEMP_ERR && !GETBIT(setup_flags, fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
-	            return err;
-			} else {
-				numErrorRead = 0; // Сброс счетчика ошибок
-				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
-				// Защита от скачков
-				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp)<GAP_TEMP_VAL)) {
-					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
-				   nGap++;
-				   if (nGap>GAP_NUMBER) { // Больше максимальной длительности данные используем, счетчик сбрасываем
-					   nGap=0;
-					   lastTemp=ttemp;
-				   } else {  // Пропуск данных
-					   journal.jprintf(pP_TIME, "WARNING: Gap DS1820: %s t=%.2f, skip\n",name,(float)ttemp/100.0);
-				   }
-				}
+			}
+			numErrorRead = 0; // Сброс счетчика ошибок
+			//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
+			// Защита от скачков
+			if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
+				lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
+			} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
+			   nGap++;
+			   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+				   nGap = 0;
+				   lastTemp = ttemp;
+			   }
+			   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
+				   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
 			}
 		}
 #endif
@@ -155,11 +155,10 @@ int8_t sensorTemp::Read()
 	else                      Temp=sum/last+errTemp;
 
 	// Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-	if(Temp<minTemp) { err=ERR_MINTEMP; set_Error(err, name); return err; }
-	if(Temp>maxTemp) { err=ERR_MAXTEMP; set_Error(err, name); return err; }
+	if(Temp<minTemp) { set_Error(err = ERR_MINTEMP, name); return err; }
+	if(Temp>maxTemp) { set_Error(err = ERR_MAXTEMP, name); return err; }
 	// дошли до сюда значит ошибок нет
-	err = OK;                                        // Новый цикл новые ошибки!! СБРОС ОШИБКИ
-	return err;
+	return (err = OK);                                        // Новый цикл новые ошибки!! СБРОС ОШИБКИ
 }
 
 // полный цикл получения данных возвращает значение температуры, только тестирование!! никакие переменные класса не трогает!!
@@ -174,7 +173,7 @@ int16_t sensorTemp::Test()
 #endif
 } 
 
-// установить значение систематической ошибки датчика диапазон +10 -10 не более
+// установить значение систематической ошибки датчика диапазон +-MAX_TEMP_ERR не более
 int8_t sensorTemp::set_errTemp(int16_t t)     
 {
   if (abs(t)<MAX_TEMP_ERR) { errTemp=t; return OK;} else return WARNING_VALUE;
@@ -217,17 +216,25 @@ void sensorTemp::set_onewire_bus_type()
 {
 	// Привязка шины к датчику
 #ifdef ONEWIRE_DS2482_SECOND
-	if(GETBIT(setup_flags, fDS2482_second)) busOneWire = &OneWireBus2; 	// второй
+	if(get_bus() == 1) busOneWire = &OneWireBus2; 	// 2 шина
 	else
 #endif
-		busOneWire = &OneWireBus;		                   				// первый
+#ifdef ONEWIRE_DS2482_THIRD
+	if(get_bus() == 2) busOneWire = &OneWireBus3; 	// 3 шина
+	else
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+	if(get_bus() == 3) busOneWire = &OneWireBus4; 	// 4 шина
+	else
+#endif
+		busOneWire = &OneWireBus;					// 1 шина
 }
 
-// Установить адрес на шине датчикаbus_type
-void sensorTemp::set_address(byte *addr, byte bus_type)
+// Установить адрес на шине датчика, bus
+void sensorTemp::set_address(byte *addr, byte bus)
 {
 	uint8_t i;
-	setup_flags &= ~(1<<fDS2482_second);
+	setup_flags &= ~fDS2482_bus_mask;
 	if (addr == NULL) //сброс адреса
 	{
 		for(i=0;i<8;i++) address[i]=0;           // обнуление адресс датчика
@@ -236,8 +243,8 @@ void sensorTemp::set_address(byte *addr, byte bus_type)
 	}
 	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
 	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
-	err = 0;
-	if(bus_type) setup_flags |= (1<<fDS2482_second);
+	err = OK;
+	setup_flags |= bus & fDS2482_bus_mask;
 	set_onewire_bus_type();
 	busOneWire->SetResolution(address, DS18B20_p12BIT);
 }
@@ -245,57 +252,48 @@ void sensorTemp::set_address(byte *addr, byte bus_type)
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t sensorTemp::save(int32_t adr)
 {
-	if(writeEEPROM_I2C(adr, (byte*)&setup_flags, sizeof(setup_flags)))
-		{ set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(setup_flags);     // записать поправку датчитка и флаг шины
-	if(writeEEPROM_I2C(adr, (byte*)&errTemp, sizeof(errTemp)))
-		{ set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(errTemp);     // записать поправку датчитка и флаг шины
-	if(writeEEPROM_I2C(adr, (byte*)&testTemp, sizeof(testTemp)))
-		{ set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testTemp);    // записать температуру датчика в режиме тестирования
-	if(writeEEPROM_I2C(adr, (byte*)address, sizeof(address)))
-		{ set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(address);     // записать адрес датчика
+	if(writeEEPROM_I2C(adr, (byte*)&setup_flags, (byte*)address - (byte*)&setup_flags + sizeof(address))) {
+		set_Error(ERR_SAVE_EEPROM, name);
+		return ERR_SAVE_EEPROM;
+	}
+	adr += (byte*)address - (byte*)&setup_flags + sizeof(address);
 	return adr;
 }
 
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 int32_t sensorTemp::load(int32_t adr)
 {
-	if(readEEPROM_I2C(adr, (byte*)&setup_flags, sizeof(setup_flags)))
-    	{ set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(setup_flags);     // прочитать поправку датчитка и флаг шины
-	if(readEEPROM_I2C(adr, (byte*)&errTemp, sizeof(errTemp)))
-    	{ set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(errTemp);     // прочитать поправку датчитка и флаг шины
-    if(readEEPROM_I2C(adr, (byte*)&testTemp, sizeof(testTemp)))
-    	{ set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testTemp);    // прочитать температуру датчика в режиме тестирования
-    if(readEEPROM_I2C(adr, (byte*)address, sizeof(address)))
-    	{ set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(address);     // прочитать адрес датчика
-    if((address[0]|address[1]|address[3]|address[4]|address[5]|address[6]|address[7])>0)  // Если адрес не 00000000 Установить адрес датчика
-    {
-		SETBIT1(flags, fAddress);                           // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
+	if(readEEPROM_I2C(adr, (byte*) &setup_flags, (byte*) address - (byte*) &setup_flags + sizeof(address))) {
+		set_Error(ERR_LOAD_EEPROM, name);
+		return ERR_LOAD_EEPROM;
+	}
+	adr += (byte*)address - (byte*)&setup_flags + sizeof(address);
+	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
+	{
+		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
 		set_onewire_bus_type();
-    }
-    return adr;
+	}
+	return adr;
 }
 // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
 int32_t sensorTemp::loadFromBuf(int32_t adr,byte *buf)
 {
-	setup_flags = buf[adr++];
-    memcpy((byte*)&errTemp,buf+adr,sizeof(errTemp)); adr=adr+sizeof(errTemp);     // прочитать поправку датчитка и флаг шины
-    memcpy((byte*)&testTemp,buf+adr,sizeof(testTemp)); adr=adr+sizeof(testTemp);  // прочитать температуру датчика в режиме тестирования
-    memcpy((byte*)&address,buf+adr,sizeof(address)); adr=adr+sizeof(address);      // прочитать адрес датчика
-    if((address[0]|address[1]|address[3]|address[4]|address[5]|address[6]|address[7])>0)  // Если адрес не 00000000 Установить адрес датчика
-    {
-		SETBIT1(flags,fAddress);                           // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
+	memcpy((byte*) &setup_flags, buf + adr, (byte*) address - (byte*) &setup_flags + sizeof(address));
+	adr += (byte*) address - (byte*) &setup_flags + sizeof(address);
+	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
+	{
+		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
 		set_onewire_bus_type();
-    }
-    return adr;  
+	}
+	return adr;
 }
 
  // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 uint16_t sensorTemp::get_crc16(uint16_t crc)
 {
-	crc=_crc16(crc, setup_flags);
-	crc=_crc16(crc,lowByte(errTemp));  crc=_crc16(crc,highByte(errTemp));   // поправка датчитка
-	crc=_crc16(crc,lowByte(testTemp)); crc=_crc16(crc,highByte(testTemp));  // температура датчика в режиме тестирования
-	for(uint8_t i=0; i<8; i++) crc=_crc16(crc,address[i]);
+	uint8_t i;
+	for(i = 0; i < (byte*)address - (byte*)&setup_flags + sizeof(address); i++)
+		crc = _crc16(crc,*((byte*)&setup_flags + i));  // CRC16 структуры
 	return crc;
 }
 

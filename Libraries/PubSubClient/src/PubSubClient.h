@@ -105,9 +105,8 @@ private:
    int _state;
 public:
    PubSubClient();
-   PubSubClient(EthernetClient& client, uint8_t s);          // pav2000 конструктор с заданием сокета через который мы работаем
    PubSubClient(EthernetClient& client);
-   PubSubClient(IPAddress, uint16_t, EthernetClient& client, uint8_t s);          // pav2000 конструктор с заданием сокета через который мы работаем
+   PubSubClient(IPAddress, uint16_t, EthernetClient& client);
    PubSubClient(IPAddress, uint16_t, EthernetClient& client, Stream&);
    PubSubClient(IPAddress, uint16_t, MQTT_CALLBACK_SIGNATURE,EthernetClient& client);
    PubSubClient(IPAddress, uint16_t, MQTT_CALLBACK_SIGNATURE,EthernetClient& client, Stream&);

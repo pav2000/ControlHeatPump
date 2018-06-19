@@ -145,7 +145,7 @@ void ICMPPing::operator()(const IPAddress& addr, int nRetries, ICMPEchoReply& re
         result.status = sendEchoRequest(addr, echoReq);
         if (result.status == SUCCESS)
         {
-            byte replyAddr [4];
+            //byte replyAddr [4];
         	ICMPPING_DOYIELD();
             receiveEchoReply(echoReq, addr, result);
         }

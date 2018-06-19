@@ -284,8 +284,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); HP.get_optionHP((char*)option_NEXT_SLEEP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); HP.get_optionHP((char*)option_NEXT_DIM,Socket[thread].outBuf);STR_END;
-     
-     strcat(Socket[thread].outBuf,"На второй шине 1-Wire(DS2482) только один датчик: "); HP.get_optionHP((char*)option_OW2TS,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"На шинах 1-Wire(DS2482) только один датчик: "); if((HP.get_flags() & (1<<f1Wire2TSngl))) strcat(Socket[thread].outBuf, "2 "); if((HP.get_flags() & (1<<f1Wire3TSngl))) strcat(Socket[thread].outBuf, "3 "); if((HP.get_flags() & (1<<f1Wire4TSngl))) strcat(Socket[thread].outBuf, "4");
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;
@@ -295,6 +294,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Задержка между переключением 4-х ходового клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Логировать не критичные ошибки электро-счетчика SDM: ");  HP.get_optionHP((char*)option_SDM_LOG_ERR,Socket[thread].outBuf);STR_END;
+     
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
 
     
@@ -541,14 +542,18 @@ void get_txtSettings(uint8_t thread)
        strcpy(Socket[thread].outBuf,"\n  3.3 Частотный преобразователь\r\n");
        if (HP.dFC.get_present()) 
          {
-         strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END;  STR_END;
-          #ifdef FC_ANALOG_CONTROL // Аналоговое управление
+         strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END; 
+         #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf," Аналоговое управление: \r\n");
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие частоте 0 гц (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL0,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие максимальной частоте (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL100,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Частота отключения инвертора  (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVELOFF,Socket[thread].outBuf);STR_END; 
-              strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
+          #else
+             strcat(Socket[thread].outBuf,"Управление идет через Modbus\r\n"); 
+             strcat(Socket[thread].outBuf,"Блокировка инвертора: ");  HP.dFC.get_paramFC((char*)fc_BLOCK,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Флаг автоматического сброса не критичной ошибки инвертора: ");  HP.dFC.get_paramFC((char*)fc_AUTO_RESET_FAULT,Socket[thread].outBuf);STR_END; 
           #endif
+           strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
 	       strcat(Socket[thread].outBuf,"Время обновления алгоритма пид регулятора (сек): ");  HP.dFC.get_paramFC((char*)fc_UPTIME,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц): ");  HP.dFC.get_paramFC((char*)fc_PID_FREQ_STEP,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты (%): ");  HP.dFC.get_paramFC((char*)fc_PID_STOP,Socket[thread].outBuf);STR_END; 
@@ -571,7 +576,7 @@ void get_txtSettings(uint8_t thread)
         else strcat(Socket[thread].outBuf,"FC absent \r\n");    
         sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
         
-       strcpy(Socket[thread].outBuf,"\n  8. Электросчетчик SDM120\r\n");
+       strcpy(Socket[thread].outBuf,"\n  3.4. Электросчетчик SDM120\r\n");
          #ifdef USE_ELECTROMETER_SDM
            strcat(Socket[thread].outBuf,"MAX напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MAX_VOLTAGE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"MIN напряжение при контроле входного напряжения [В]: ");    HP.dSDM.get_paramSDM((char*)sdm_MIN_VOLTAGE,Socket[thread].outBuf); STR_END;
@@ -580,15 +585,19 @@ void get_txtSettings(uint8_t thread)
            strcat(Socket[thread].outBuf,"SDM120 absent\r\n");    
          #endif  
 
-        strcat(Socket[thread].outBuf,"\n  9. Частотные датчики потока\r\n");
+        strcat(Socket[thread].outBuf,"\n  3.5. Частотные датчики потока\r\n");
         for(i=0;i<FNUMBER;i++)  
            {
             strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); if((x=8-strlen(HP.sFrequency[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(Socket[thread].outBuf," "); }
             strcat(Socket[thread].outBuf,HP.sFrequency[i].get_note());  strcat(Socket[thread].outBuf,": "); 
             if (HP.sFrequency[i].get_present()) 
             {
-             strcat(Socket[thread].outBuf," Минимальный поток"); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_minValue()/1000.0,3);
-             strcat(Socket[thread].outBuf," Коэффициент");       _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_kfValue(),3);
+             strcat(Socket[thread].outBuf," Контроль мин. потока: ");  if (HP.sFrequency[i].get_checkFlow())  strcat(Socket[thread].outBuf,(char*)cOne);else strcat(Socket[thread].outBuf,(char*)cZero);
+             strcat(Socket[thread].outBuf,", Минимальный поток="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_minValue()/1000.0,3);
+             strcat(Socket[thread].outBuf,", Коэффициент=");       _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_kfValue(),3);
+             strcat(Socket[thread].outBuf,", Теплоемкость, Дж/(кг*град)="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_Capacity(),3);
+             strcat(Socket[thread].outBuf,", Тест="); _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[i].get_testValue()/1000,3);
+             
             }
             else strcat(Socket[thread].outBuf," absent"); 
             STR_END;         
@@ -638,8 +647,8 @@ uint16_t get_csvChart(uint8_t thread)
 
    // заголовок
    sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nContent-Type:text/plain\r\nContent-Disposition: attachment; filename=\"chart.csv\"\r\n\r\n");
-   //     strcpy(Socket[thread].outBuf,"time;");
-     _itoa(HP.sTemp[TIN].Chart.get_num(),Socket[thread].outBuf);strcat(Socket[thread].outBuf,";");
+      strcpy(Socket[thread].outBuf,"Point;");
+ //    strcpy(Socket[thread].outBuf,""); _itoa(HP.sTemp[TIN].Chart.get_num(),Socket[thread].outBuf);strcat(Socket[thread].outBuf,";");// вывести число точек
      for(i=0;i<TNUMBER;i++) if(HP.sTemp[i].Chart.get_present())      {strcat(Socket[thread].outBuf,HP.sTemp[i].get_name()); strcat(Socket[thread].outBuf,";");}
      for(i=0;i<ANUMBER;i++)if(HP.sADC[i].Chart.get_present())        { strcat(Socket[thread].outBuf,HP.sADC[i].get_name()); strcat(Socket[thread].outBuf,";");} 
      for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].Chart.get_present()) { strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); strcat(Socket[thread].outBuf,";");}  
@@ -657,9 +666,15 @@ uint16_t get_csvChart(uint8_t thread)
      
      if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"dCO;");
      if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) strcat(Socket[thread].outBuf,"dGEO;");
+
+
+	   #ifdef FLOWCON 
+	   if((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"PowerCO;"); 
+ 	   #endif
+	   #ifdef FLOWEVA
+	     if((HP.sTemp[TEVAOUTG].Chart.get_present())&&(HP.sTemp[TEVAING].Chart.get_present())) strcat(Socket[thread].outBuf,"PowerGEO;");
+	   #endif
      
-     if(HP.ChartPowerCO.get_present())   strcat(Socket[thread].outBuf,"PowerCO;");
-     if(HP.ChartPowerGEO.get_present())  strcat(Socket[thread].outBuf,"PowerGEO;");
      if(HP.ChartCOP.get_present())       strcat(Socket[thread].outBuf,"COP;"); 
 
      #ifdef USE_ELECTROMETER_SDM 
@@ -675,14 +690,14 @@ uint16_t get_csvChart(uint8_t thread)
      STR_END;
      s=strlen(Socket[thread].outBuf);
      sum=s;
+ 
      if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
-
-   for(i=0;i<HP.ChartRCOMP.get_num();i++)  // По всем точкам
+  for(i=0;i<HP.sTemp[TIN].Chart.get_num();i++)  // По всем точкам датичк TIN всегда существует
    { 
       //сформировать одну строку
       strcpy(Socket[thread].outBuf,"#"); _itoa(i+1,Socket[thread].outBuf); strcat(Socket[thread].outBuf,";");
       for(j=0;j<TNUMBER;j++)  if(HP.sTemp[j].Chart.get_present())   { _ftoa(Socket[thread].outBuf,(float)HP.sTemp[j].Chart.get_Point(i)/100,2); strcat(Socket[thread].outBuf,";"); } 
-      for(j=0;j<ANUMBER;j++)  if(HP.sADC[j].Chart.get_present())  { _ftoa(temp,(float)HP.sADC[j].Chart.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
+      for(j=0;j<ANUMBER;j++)  if(HP.sADC[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sADC[j].Chart.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
       for(j=0;j<FNUMBER;j++)  if(HP.sFrequency[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[j].Chart.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
       #ifdef EEV_DEF
       if(HP.dEEV.Chart.get_present())    { _itoa(HP.dEEV.Chart.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
@@ -695,16 +710,22 @@ uint16_t get_csvChart(uint8_t thread)
       if(HP.dFC.ChartCurrent.get_present())  { _itoa(HP.dFC.ChartCurrent.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
       
       if(HP.ChartRCOMP.get_present())    { _itoa(HP.ChartRCOMP.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-  //    if(HP.ChartdCO.get_present())      { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdCO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
       if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) // считаем на лету экономим оперативку
-                    { strcat(Socket[thread].outBuf,ftoa(temp,((float)HP.sTemp[TCONOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2)); strcat(Socket[thread].outBuf,(char*)";"); } 
- //      if(HP.ChartdGEO.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.ChartdGEO.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
+                    {_ftoa(Socket[thread].outBuf,((float)HP.sTemp[TCONOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); } 
        if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) // считаем на лету экономим оперативку
-                    { _ftoa(Socket[thread].outBuf,((float)HP.sTemp[TEVAOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); } 
-      
-      if(HP.ChartPowerCO.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.ChartPowerCO.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); } 
-      if(HP.ChartPowerGEO.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartPowerGEO.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
-      if(HP.ChartCOP.get_present())      { _ftoa(Socket[thread].outBuf,(float)HP.ChartCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }    
+                    {_ftoa(Socket[thread].outBuf,((float)HP.sTemp[TEVAOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); } 
+
+	   #ifdef FLOWCON // Мощности расчет на лету
+	   if((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present()))  
+             {_ftoa(Socket[thread].outBuf,float(abs(HP.sTemp[TCONOUTG].Chart.get_Point(i)-HP.sTemp[TCONING].Chart.get_Point(i))*HP.sFrequency[FLOWCON].Chart.get_Point(i))/HP.sFrequency[FLOWCON].get_kfCapacity()/1000, 2); strcat(Socket[thread].outBuf,(char*)";");} 
+	   #endif
+	   #ifdef FLOWEVA
+	   if((HP.sTemp[TEVAOUTG].Chart.get_present())&&(HP.sTemp[TEVAING].Chart.get_present()))  
+	         {_ftoa(Socket[thread].outBuf,float(abs(HP.sTemp[TEVAOUTG].Chart.get_Point(i)-HP.sTemp[TEVAING].Chart.get_Point(i))*HP.sFrequency[FLOWEVA].Chart.get_Point(i))/HP.sFrequency[FLOWEVA].get_kfCapacity()/1000, 2); strcat(Socket[thread].outBuf,(char*)";");} 
+	   #endif
+  
+     
+      if(HP.ChartCOP.get_present())   { _ftoa(Socket[thread].outBuf,(float)HP.ChartCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }    
 
      #ifdef USE_ELECTROMETER_SDM 
      if(HP.dSDM.ChartVoltage.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartVoltage.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); } 
