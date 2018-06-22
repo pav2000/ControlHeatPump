@@ -40,7 +40,7 @@ void HeatPump::initHeatPump()
   for(i=0;i<TNUMBER;i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
 
   #ifdef SENSOR_IP
-   for(i=0;i<IPNUMBER;i++) sIP[i].initIP();               // Инициализация удаленных датчиков
+   for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
   #endif
   
   sADC[PEVA].initSensorADC(PEVA,ADC_SENSOR_PEVA);          // Инициализация аналогово датчика PEVA
@@ -192,94 +192,197 @@ void HeatPump::set_testMode(TEST_MODE b)
     }
 #endif
 
-// РАБОТА с НАСТРОЙКАМИ ТН -----------------------------------------------------
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе код ошибки (меньше нуля) или количество записанных  байт
-// старотвый адрес I2C_SETTING_EEPROM
-// Возвращает ошибку или число записанных байт
-int32_t HeatPump::save()
+// Сохраняет структуру настроек: <длина><структура>, считает CRC, возвращает ошибку или OK
+int8_t HeatPump::save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_t &crc)
 {
-	int16_t i;
-	int32_t adr, adr_len;
-	uint16_t crc_mem;
-	adr=I2C_SETTING_EEPROM;
-	Option.numProf=Prof.get_idProfile();      // Запомнить текущий профиль, его записываем ЭТО обязательно!!!! нужно для восстановления настроек
-
-	uint8_t tasks_suspended = TaskSuspendAll(); // Запрет других задач
-
-	DateTime.saveTime=rtcSAM3X8.unixtime();   // запомнить время сохранения настроек
-
-	// Заголовок
-	headerEEPROM.magic=0xaa;
-	headerEEPROM.zero=0x00;
-	headerEEPROM.ver=VER_SAVE;
-	headerEEPROM.len=0;
-	int8_t err = ERR_SAVE_EEPROM;
-
-	while(1) {
-		if(writeEEPROM_I2C(adr, (byte*)&headerEEPROM, sizeof(headerEEPROM))) {  break; }  adr=adr+sizeof(headerEEPROM);// записать заголовок
-
-		// Сохранение переменных ТН
-		if(writeEEPROM_I2C(adr, (byte*)&DateTime, sizeof(DateTime))) { break; } adr=adr+sizeof(DateTime);  // записать структуры  DateTime
-		if(writeEEPROM_I2C(adr, (byte*)& Network, sizeof(Network))) {  break; } adr=adr+sizeof(Network);     // записать структуры Network
-
-		// Сохранить параметры и опции отопления и бойлер, уведомления
-		if(writeEEPROM_I2C(adr, (byte*)&Option, sizeof(Option))) { break; }  adr=adr+sizeof(Option);           // записать опции ТН
-
-		if((adr=message.save(adr)) == ERR_SAVE_EEPROM) { break; }
-
-		// Сохранение отдельных объектов ТН
-		for(i=0;i<TNUMBER;i++) if((adr = sTemp[i].save(adr)) == ERR_SAVE_EEPROM) { break; }           // Сохранение датчиков температуры
-		for(i=0;i<ANUMBER;i++) if((adr = sADC[i].save(adr)) == ERR_SAVE_EEPROM) { break; }            // Сохранение датчика давления
-		for(i=0;i<INUMBER;i++) if((adr = sInput[i].save(adr)) == ERR_SAVE_EEPROM) { break; }        // Сохранение контактных датчиков
-		for(i=0;i<FNUMBER;i++) if((adr = sFrequency[i].save(adr)) == ERR_SAVE_EEPROM) { break; }    // Сохранение частотных датчиков
-
-		#ifdef SENSOR_IP
-		for(i=0;i<IPNUMBER;i++) if((adr = sIP[i].save(adr)) == ERR_SAVE_EEPROM) { break; }         // Сохранение удаленных датчиков
-		#endif
-		#ifdef EEV_DEF
-		if((adr = dEEV.save(adr)) == ERR_SAVE_EEPROM) { break; }                                      // Сохранение ЭВР
-		#endif
-		if((adr = dFC.save(adr)) == ERR_SAVE_EEPROM) { break; }                                      // Сохранение FC
-		#ifdef USE_ELECTROMETER_SDM
-		if((adr=dSDM.save(adr)) == ERR_SAVE_EEPROM) { break; }                                    // Сохранение SDM
-		#endif
-		#ifdef MQTT
-		if((adr=clMQTT.save(adr)) == ERR_SAVE_EEPROM) { break; }                                   // Сохранение MQTT
-		#endif
-		// В конце процедуры записи пишем в структуру заголовка записанную длину в байтах
-		adr_len=I2C_SETTING_EEPROM+sizeof(headerEEPROM)-sizeof(headerEEPROM.len);
-		headerEEPROM.len=adr-I2C_SETTING_EEPROM+2;  // добавляем два байта для контрольной суммы
-		if(writeEEPROM_I2C(adr_len, (byte*)&headerEEPROM.len, sizeof(headerEEPROM.len))) { break; }  // записать длину, без изменения числа записанных байт
-
-		// Расчет контрольной суммы и запись ее в конец
-		crc_mem=get_crc16_mem();
-		if(writeEEPROM_I2C(adr, (byte*)&crc_mem, sizeof(crc_mem))) { break; }                       // записать crc16, без изменения числа записанных байт
-
-		if((err=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf(" Verification error, setting not saved\n"); break;} // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-		journal.jprintf(" Save setting OK, write: %d bytes crc16: 0x%x\n",headerEEPROM.len,crc_mem);                                                      // дошли до конца значит ошибок нет
-
-		// Сохранение текущего профиля
-		i=Prof.save(Prof.get_idProfile());
-		err = OK;
-		break;
+	if(size < 128) { // Меньше 128 байт, длина 1 байт, первый бит = 0
+		size <<= 1;
+		if(writeEEPROM_I2C(addr_to++, (uint8_t *)&size, 1)) return error = ERR_SAVE_EEPROM;
+		crc = _crc16(crc, size);
+	} else { // длина 2 байта, первый бит = 1
+		size = (size << 1) | 1;
+		if(writeEEPROM_I2C(addr_to, (uint8_t *)&size, 2)) return error = ERR_SAVE_EEPROM;
+		addr_to += 2;
+		crc = _crc16(crc, size & 0xFF);
+		crc = _crc16(crc, size >> 8);
 	}
-
-	if(tasks_suspended) xTaskResumeAll(); // Разрешение других задач
-
-	if(err) {
-		set_Error(err,(char*)nameHeatPump);
-		return err;
+	size >>= 1;
+	if(writeEEPROM_I2C(addr_to, addr_from, size)) {
+		return error = ERR_SAVE_EEPROM;
 	}
-
-	// По результатам или ошибка или суммарное число байт
-	if(i<OK) return i; else return (int32_t)(headerEEPROM.len+Prof.get_lenProfile());
+	addr_to += size;
+	while(size--) crc = _crc16(crc, *addr_from++);
+	return OK;
 }
 
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе код ошибки (меньше нуля)
-int8_t HeatPump::load()  
+int8_t HeatPump::save_2bytes(uint32_t &addr_to, uint16_t data, uint16_t &crc)
 {
-	uint16_t i;
-	journal.jprintf(" Load settings ");
+	if(writeEEPROM_I2C(addr_to, (uint8_t *)&data, 2)) return error = ERR_SAVE_EEPROM;
+	addr_to += 2;
+	crc = _crc16(crc, data & 0xFF);
+	crc = _crc16(crc, data >> 8);
+	return OK;
+}
+
+// memcpy: <size><struct>
+void HeatPump::load_struct(void *to, uint8_t **from, uint16_t to_size)
+{
+	uint16_t size = *((uint16_t *)*from);
+	memcpy(to, *from, size <= to_size ? size : to_size);
+	*from += size;
+}
+
+// РАБОТА с НАСТРОЙКАМИ ТН -----------------------------------------------------
+// Записать настройки в память i2c: <size all><Option><DateTime><Network><message><dFC> <TYPE_sTemp><sTemp[TNUMBER]><TYPE_sADC><sADC[ANUMBER]><TYPE_sInput><sInput[INUMBER]>...<0x0000><CRC16>
+// старотвый адрес I2C_SETTING_EEPROM
+// Возвращает ошибку или число записанных байт
+int32_t HeatPump::save(void)
+{
+	uint16_t crc = 0xFFFF;
+	uint32_t addr = I2C_SETTING_EEPROM + 2; // +size all
+	Option.numProf = Prof.get_idProfile();      // Запомнить текущий профиль, его записываем ЭТО обязательно!!!! нужно для восстановления настроек
+	uint8_t tasks_suspended = TaskSuspendAll(); // Запрет других задач
+	if(error == ERR_SAVE_EEPROM) error = OK;
+	DateTime.saveTime = rtcSAM3X8.unixtime();   // запомнить время сохранения настроек
+	while(1) {
+		// Сохранить параметры и опции отопления и бойлер, уведомления
+		if(save_struct(addr, (uint8_t *) &Option, sizeof(Option), crc)) break;
+		if(save_struct(addr, (uint8_t *) &DateTime, sizeof(DateTime), crc)) break;
+		if(save_struct(addr, (uint8_t *) &Network, sizeof(Network), crc)) break;
+		if(save_struct(addr, message.get_save_addr(), message.get_save_size(), crc)) break;
+		if(save_struct(addr, dFC.get_save_addr(), dFC.get_save_size(), crc)) break; // Сохранение FC
+		// Сохранение отдельных объектов ТН
+		if(save_2bytes(addr, SAVE_TYPE_sTemp, crc)) break;
+		for(uint8_t i = 0; i < TNUMBER; i++) if(save_struct(addr, sTemp[i].get_save_addr(), sTemp[i].get_save_size(), crc)) break; // Сохранение датчиков температуры
+		if(error == ERR_SAVE_EEPROM) break;
+		if(save_2bytes(addr, SAVE_TYPE_sADC, crc)) break;
+		for(uint8_t i = 0; i < ANUMBER; i++) if(save_struct(addr, sADC[i].get_save_addr(), sADC[i].get_save_size(), crc)) break; // Сохранение датчика давления
+		if(error == ERR_SAVE_EEPROM) break;
+		if(save_2bytes(addr, SAVE_TYPE_sInput, crc)) break;
+		for(uint8_t i = 0; i < INUMBER; i++) if(save_struct(addr, sInput[i].get_save_addr(), sInput[i].get_save_size(), crc)) break; // Сохранение контактных датчиков
+		if(error == ERR_SAVE_EEPROM) break;
+		if(save_2bytes(addr, SAVE_TYPE_sFrequency, crc)) break;
+		for(uint8_t i = 0; i < FNUMBER; i++) if(save_struct(addr, sFrequency[i].get_save_addr(), sFrequency[i].get_save_size(), crc)) break; // Сохранение контактных датчиков
+		if(error == ERR_SAVE_EEPROM) break;
+		#ifdef SENSOR_IP
+		if(save_2bytes(addr, SAVE_TYPE_sIP, crc)) break;
+		for(uint8_t i = 0; i < IPNUMBER; i++) if(save_struct(addr, sIP[i].get_save_addr(), sIP[i].get_save_size(), crc)) break; // Сохранение удаленных датчиков
+		if(error == ERR_SAVE_EEPROM) break;
+		#endif
+		#ifdef EEV_DEF
+		if(save_2bytes(addr, SAVE_TYPE_dEEV, crc)) break;
+		if(save_struct(addr, dEEV.get_save_addr(), dEEV.get_save_size(), crc)) break; // Сохранение ЭВР
+		#endif
+		#ifdef USE_ELECTROMETER_SDM
+		if(save_2bytes(addr, SAVE_TYPE_dSDM, crc)) break;
+		if(save_struct(addr, dSDM.get_save_addr(), dSDM.get_save_size(), crc)) break; // Сохранение SDM
+		#endif
+		#ifdef MQTT
+		if(save_2bytes(addr, SAVE_TYPE_clMQTT, crc)) break;
+		if(save_struct(addr, clMQTT.get_save_addr(), clMQTT.get_save_size(), crc)) break; // Сохранение MQTT
+		#endif
+		if(save_2bytes(addr, SAVE_TYPE_END, crc)) break;
+		if(writeEEPROM_I2C(addr, (uint8_t *) &crc, 2)) { error = ERR_SAVE_EEPROM; break; } // CRC
+		addr = addr - I2C_SETTING_EEPROM;
+		if(writeEEPROM_I2C(I2C_SETTING_EEPROM, (uint8_t *) &addr, 2)) { error = ERR_SAVE_EEPROM; break; } // size all
+		addr += 2;
+		if((error = check_crc16_eeprom(I2C_SETTING_EEPROM + 2, addr)) != OK) {
+			journal.jprintf(" Verification error, setting not saved!\n");
+			break;
+		}
+		journal.jprintf(" Save setting OK, write: %d bytes crc16: 0x%x\n", addr, crc);
+		break;
+	}
+	if(tasks_suspended) xTaskResumeAll(); // Разрешение других задач
+
+	if(error == ERR_SAVE_EEPROM) {
+		set_Error(error,(char*)nameHeatPump);
+		return error;
+	}
+	// суммарное число байт
+	return addr + Prof.get_lenProfile();
+}
+
+// Считать настройки из памяти i2c или из RAM, если не NULL, на выходе длина или код ошибки (меньше нуля)
+int32_t HeatPump::load(uint8_t *buffer, uint8_t from_RAM)
+{
+	uint16_t size;
+	journal.jprintf(" Load settings from ");
+	if(from_RAM == 0) {
+		journal.jprintf(" I2C ");
+		if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*) &size, sizeof(size))) {
+x_ReadError:
+			error = ERR_CRC16_EEPROM;
+x_Error:
+			journal.jprintf(" read error %d!\n", error);
+			return error;
+		}
+		if(size > I2C_PROFILE_EEPROM - I2C_SETTING_EEPROM) { error = ERR_BAD_LEN_EEPROM; goto x_Error; }
+		if(readEEPROM_I2C(I2C_SETTING_EEPROM + sizeof(size), buffer, size)) goto x_ReadError;
+	} else {
+		journal.jprintf(" FILE ");
+		size = *((uint16_t *) buffer);
+		buffer += sizeof(size);
+	}
+	size -= 2; // -CRC
+	journal.jprintf("CRC ");
+	#ifdef LOAD_VERIFICATION
+	uint16_t crc = 0xFFFF;
+	for(uint16_t i = 0; i < size; i++) crc = _crc16(crc, buffer[i]);
+	if(crc != *((uint16_t *)&buffer[size])) {
+		journal.jprintf("error, CRC16 is wrong!\n");
+		return error = ERR_CRC16_EEPROM;
+	}
+	journal.jprintf("%X ", crc);
+	#else
+	journal.jprintf("*NO* ");
+	#endif
+	uint8_t *buffer_max = buffer + size;
+	load_struct(&Option, &buffer, sizeof(Option));
+	load_struct(&DateTime, &buffer, sizeof(DateTime));
+	load_struct(&Network, &buffer, sizeof(Network));
+	load_struct(message.get_save_addr(), &buffer, message.get_save_size());
+	load_struct(dFC.get_save_addr(), &buffer,  dFC.get_save_size());
+	while(buffer_max > buffer) { // динамические структуры
+		uint16_t type;
+		load_struct(&type, &buffer, sizeof(type));
+		switch (type)
+		{
+			// массивы
+			case SAVE_TYPE_sTemp: // первый в структуре идет номер датчика
+				load_struct(sTemp[*buffer].get_save_addr(), &buffer, sTemp[*buffer].get_save_size());
+				break;
+			case SAVE_TYPE_sADC:
+				load_struct(sADC[*buffer].get_save_addr(), &buffer, sADC[*buffer].get_save_size());
+				break;
+			case SAVE_TYPE_sInput:
+				load_struct(sInput[*buffer].get_save_addr(), &buffer, sInput[*buffer].get_save_size());
+				break;
+			case SAVE_TYPE_sFrequency:
+				load_struct(sFrequency[*buffer].get_save_addr(), &buffer, sFrequency[*buffer].get_save_size());
+				break;
+			case SAVE_TYPE_sIP:
+				load_struct(sIP[*buffer].get_save_addr(), &buffer, sIP[*buffer].get_save_size());
+				break;
+			// не массивы
+			case SAVE_TYPE_dEEV:
+				load_struct(dEEV.get_save_addr(), &buffer, dEEV.get_save_size());
+				break;
+			case SAVE_TYPE_dSDM:
+				load_struct(dSDM.get_save_addr(), &buffer, dSDM.get_save_size());
+				break;
+			case SAVE_TYPE_clMQTT:
+				load_struct(clMQTT.get_save_addr(), &buffer, clMQTT.get_save_size());
+				break;
+			case SAVE_TYPE_END:
+				goto x_break_while;
+		}
+	}
+x_break_while:
+
+
+
+/*
 	int32_t adr=I2C_SETTING_EEPROM;
 	#ifdef LOAD_VERIFICATION
 	if((error=check_crc16_eeprom(I2C_SETTING_EEPROM))!=OK) { journal.jprintf("error, CRC16 is wrong!\n"); return error;} // проверка контрольной суммы
@@ -335,129 +438,32 @@ int8_t HeatPump::load()
 	#else
 	journal.jprintf("OK, read: %d bytes VERIFICATION OFF!\n",adr-I2C_SETTING_EEPROM+2);
 	#endif
-
-	// Загрузка текущего профиля
-	Prof.load(Option.numProf);   // Считали настройки и знаем какой профиль загружать
+*/
 	return OK;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе код ошибки (меньше нуля)
-int8_t HeatPump::loadFromBuf(int32_t adr,byte *buf)  
-{
-  uint16_t i;
-  uint32_t aStart=adr;
-
-   // проверка контрольной суммы
-   #ifdef LOAD_VERIFICATION 
-  if ((error=check_crc16_buf(adr,buf)!=OK)) {journal.jprintf(" Error load setting from file, crc16 is wrong!\n"); return error;}
-  #endif
-  // Прочитать заголовок
-  memcpy((byte*)&headerEEPROM,buf+adr,sizeof(headerEEPROM)); adr=adr+sizeof(headerEEPROM);                                                                // заголовок
-  if (headerEEPROM.magic!=0xaa)   { set_Error(ERR_HEADER_EEPROM,(char*)nameHeatPump); return ERR_HEADER_EEPROM;}                                          // Заголовок не верен, данных нет
-  if (headerEEPROM.zero!=0x00)    { set_Error(ERR_HEADER_EEPROM,(char*)nameHeatPump); return ERR_HEADER_EEPROM;}                                          // Заголовок не верен, данных нет
-  #ifdef LOAD_VERIFICATION
-  if (headerEEPROM.ver!=VER_SAVE) { set_Error(ERR_HEADER_EEPROM,(char*)nameHeatPump); return ERR_HEADER_EEPROM;}                                          // Версии сохранения не совпали
-  if (headerEEPROM.len==0)        { set_Error(ERR_HEADER_EEPROM,(char*)nameHeatPump); return ERR_HEADER_EEPROM;}                                          // Длина данных равна 0
-  #endif
-  
-  // Прочитать переменные ТН
-   memcpy((byte*)&DateTime,buf+adr,sizeof(DateTime)); adr=adr+sizeof(DateTime);                                                                           // прочитать структуры  DateTime
-   memcpy((byte*)&Network,buf+adr,sizeof(Network)); adr=adr+sizeof(Network);                                                                              // прочитать структуры  Network
-   memcpy((byte*)&Option,buf+adr,sizeof(Option)); adr=adr+sizeof(Option);                                                                                 // прочитать опции ТН
- 
-   adr=message.loadFromBuf(adr,buf);                                                                                                                      // Прочитать параметры уведомлений
-  
- // Чтение отдельных объектов ТН
-  for(i=0;i<TNUMBER;i++) adr=sTemp[i].loadFromBuf(adr,buf);         // Чтение датчиков температуры
-  for(i=0;i<ANUMBER;i++) adr=sADC[i].loadFromBuf(adr,buf);          // Чтение датчика давления
-  for(i=0;i<INUMBER;i++) adr= sInput[i].loadFromBuf(adr,buf);       // Чтение контактных датчиков
-  for(i=0;i<FNUMBER;i++) adr= sFrequency[i].loadFromBuf(adr,buf);    // Сохранение частотных датчиков
- 
-  #ifdef SENSOR_IP
-    for(i=0;i<IPNUMBER;i++) adr= sIP[i].loadFromBuf(adr,buf);      // Чтение удаленных датчиков
-    updateLinkIP();                                                // Обновить привязку
-  #endif
-  #ifdef EEV_DEF
-  adr=dEEV.loadFromBuf(adr,buf);                                   // Чтение ЭВР
-  #endif
-  adr=dFC.loadFromBuf(adr,buf);                                    // Чтение FC
-  #ifdef USE_ELECTROMETER_SDM  
-  adr=dSDM.loadFromBuf(adr,buf);                                    // Чтение SDM
-  #endif
-  #ifdef MQTT
-  adr=clMQTT.loadFromBuf(adr,buf);                                    // Чтение MQTT
-  #endif  
- #ifdef LOAD_VERIFICATION
-    memcpy((byte*)&i,buf+adr,sizeof(i)); adr=adr+sizeof(i);                                                                                                     // прочитать crc16
-    if (headerEEPROM.len!=adr-aStart)  {error=ERR_BAD_LEN_EEPROM; set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return error;}    // Проверка длины
-    journal.jprintf(" Load setting from file OK, read: %d bytes crc16: 0x%x\n",adr-aStart,i);                                                                    // ВСЕ ОК
-  #else
-    journal.jprintf(" Load setting from file OK, read: %d bytes VERIFICATION OFF!\n",adr-aStart+2);
-  #endif
-  // 
-  return OK;       
-}
-// Функции расчета контрольных сумм ----------------------------------------------
-static uint16_t crc= 0xFFFF;  // рабочее значение
-// Рассчитать контрольную сумму в ПАМЯТИ по структурам дынных (по структуре!) на выходе crc16
-uint16_t HeatPump::get_crc16_mem()
-{
-  uint16_t i;
-  crc= 0xFFFF;
-  for(i=0;i<sizeof(headerEEPROM);i++) crc=_crc16(crc,*((byte *)&headerEEPROM+i));  // CRC16 заголовок должен быть заполнен
-  for(i=0;i<sizeof(DateTime);i++) crc=_crc16(crc,*((byte*)&DateTime+i));           // CRC16 структуры  DateTime
-  for(i=0;i<sizeof(Network);i++) crc=_crc16(crc,*((byte*)&Network+i));             // CRC16 структуры  Network
-  for(i=0;i<sizeof(Option);i++) crc=_crc16(crc,*((byte*)&Option+i));               // CRC16 структуры  Option
-  crc=message.get_crc16(crc);   
- // Чтение отдельных объектов ТН
-  for(i=0;i<TNUMBER;i++) crc=sTemp[i].get_crc16(crc);         // CRC16 датчиков температуры
-  for(i=0;i<ANUMBER;i++) crc=sADC[i].get_crc16(crc);          // CRC16 датчика давления
-  for(i=0;i<INUMBER;i++) crc=sInput[i].get_crc16(crc);        // CRC16 контактных датчиков
-  for(i=0;i<FNUMBER;i++) crc=sFrequency[i].get_crc16(crc);    // Сохранение частотных датчиков
-   
-  
-  #ifdef SENSOR_IP
-    for(i=0;i<IPNUMBER;i++) crc= sIP[i].get_crc16(crc);      // CRC16 удаленных датчиков
-  #endif
-  #ifdef EEV_DEF
-  crc=dEEV.get_crc16(crc);                                    // CRC16 ЭВР
-  #endif
-  crc=dFC.get_crc16(crc);                                     // CRC16 FC 
-  
-  #ifdef USE_ELECTROMETER_SDM   
-    crc=dSDM.get_crc16(crc);                                 // CRC16 SDM  
-  #endif
-  #ifdef MQTT
-    crc=clMQTT.get_crc16(crc);                               // CRC16 MQTT 
-  #endif
-    
-  return crc;          
 }
 
 // Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
-int8_t HeatPump::check_crc16_eeprom(int32_t adr)
+int8_t HeatPump::check_crc16_eeprom(int32_t addr, uint16_t size)
 {
-  type_headerEEPROM hEEPROM;
-  uint16_t i;
-  byte x;
-  crc= 0xFFFF;
-  if (readEEPROM_I2C(adr, (byte*)&hEEPROM, sizeof(type_headerEEPROM))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}                                 // Прочитать заголовок - длину данных
-  for (i=0;i<hEEPROM.len-2;i++) {if (readEEPROM_I2C(adr+i, (byte*)&x, sizeof(x))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}  crc=_crc16(crc,x);} // расчет -2 за вычетом CRC16 из длины
-  if (readEEPROM_I2C(adr+hEEPROM.len-2, (byte*)&i, sizeof(i))) { set_Error(ERR_LOAD_EEPROM,(char*)nameHeatPump); return ERR_LOAD_EEPROM;}                                         // чтение -2 за вычетом CRC16 из длины
-  if (crc==i) return OK; 
-  else        return ERR_CRC16_EEPROM;
-}
-// Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка
-int8_t HeatPump::check_crc16_buf(int32_t adr, byte* buf)   
-{
-  type_headerEEPROM hEEPROM;
-  uint16_t i;
-  byte x;
-  crc= 0xFFFF;
-  memcpy((byte*)&hEEPROM,buf+adr,sizeof(type_headerEEPROM));                                         // Прочитать заголовок - длину данных
-  for (i=0;i<hEEPROM.len-2;i++) {memcpy((byte*)&x,buf+adr+i,sizeof(x)); crc=_crc16(crc,x);}          // расчет -2 за вычетом CRC16 из длины
-  memcpy((byte*)&i,buf+adr+hEEPROM.len-2,sizeof(i));                                                 // чтение -2 за вычетом CRC16 из длины
-  if (crc==i) return OK; 
-  else        return ERR_CRC16_EEPROM;
+	uint8_t x;
+	uint16_t crc = 0xFFFF;
+	while(size--) {
+		if(readEEPROM_I2C(addr++, &x, sizeof(x))) {
+			set_Error(ERR_LOAD_EEPROM, (char*) nameHeatPump);
+			return ERR_LOAD_EEPROM;
+		}
+		crc = _crc16(crc, x);
+	}
+	uint16_t crc2;
+	if(readEEPROM_I2C(addr, (uint8_t *)&crc2, sizeof(crc2))) {
+		set_Error(ERR_LOAD_EEPROM, (char*) nameHeatPump);
+		return ERR_LOAD_EEPROM;
+	}                                         // чтение -2 за вычетом CRC16 из длины
+	if(crc == crc2) return OK;
+	else {
+		set_Error(ERR_CRC16_EEPROM, (char*) nameHeatPump);
+		return ERR_CRC16_EEPROM;
+	}
 }
 
 // СЧЕТЧИКИ -----------------------------------
@@ -626,11 +632,6 @@ void HeatPump::resetSettingHP()
   fullCOP=-1000;                                // Полный СОР  сотые -1000 признак невозможности расчета
   COP=-1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
    
-  // Структура для хранения заголовка при сохранении настроек EEPROM
-  headerEEPROM.magic=0xaa;                      // признак данных, должно быть  0xaa
-  headerEEPROM.ver=VER_SAVE;                    // номер версии для сохранения
-  headerEEPROM.len=0;                           // длина данных, сколько записано байт в еепром
-  
   // Инициализациия различных времен
   DateTime.saveTime=0;                          // дата и время сохранения настроек в eeprom
   timeON=0;                                     // время включения контроллера для вычисления UPTIME
@@ -677,6 +678,7 @@ void HeatPump::resetSettingHP()
 
 // Опции теплового насоса
   // Временные задержки
+  Option.ver = VER_SAVE;
   Option.delayOnPump         = DEF_DELAY_ON_PUMP;
   Option.delayOffPump		 = DEF_DELAY_OFF_PUMP;    
   Option.delayStartRes	     = DEF_DELAY_START_RES;   

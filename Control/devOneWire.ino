@@ -43,17 +43,13 @@ int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp
 		if(data[7] == 0x10) { raw = (raw & 0xFFF0) + 12 - data[6]; }  // "count remain" gives full 12 bit resolution
 	} else {
 		if(only_temp_readed) goto xReturnTemp;
-		byte cfg = (data[4] & 0x60);
+		byte cfg = data[4];
 		// at lower res, the low bits are undefined, so let's zero them
-		if (cfg == 0x00) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
-		else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
-		else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+		if(cfg == 0x00 + 0x1F) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
+		else if(cfg == 0x20 + 0x1F) raw = raw & ~3; // 10 bit res, 187.5 ms
+		else if(cfg == 0x40 + 0x1F) raw = raw & ~1; // 11 bit res, 375 ms
+		else if(cfg != 0x60 + 0x1F) return ERROR_TEMPERATURE; // Прочитаны "плохие данные"
 		// default is 12 bit resolution, 750 ms conversion time
-	}
-	// Проверка валидности данных анализируем полученное разрешение оно должно быть 0x7f (12 бит) при ошибке обычно ff
-	if(data[4] != 0x7f && addr_0 == tDS18S20)   // Дополнительнеая проверка для DS18B20: Прочитано НЕ правильное разрешение
-	{ // Прочитаны "плохие данные"
-		return ERROR_TEMPERATURE;
 	}
 xReturnTemp:
 	return raw * 100 / 16;

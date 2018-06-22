@@ -90,6 +90,8 @@ class sensorADC
      
     char*   get_note(){return note;}                     // Получить наименование датчика
     char*   get_name(){return name;}                     // Получить имя датчика
+    uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
+    uint16_t get_save_size(void) { return (byte*)&testPress - (byte*)&number + sizeof(testPress); } // Размер структуры сохранения
     int32_t save(int32_t adr);                           // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
     int32_t load(int32_t adr);                           // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
     int32_t loadFromBuf(int32_t adr,byte *buf);          // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -103,9 +105,12 @@ class sensorADC
     int16_t maxPress;                                    // максимально разрешенное давление
     int16_t lastPress;                                   // последнее считанное давление с датчика
     int16_t Press;                                       // давление датчика (обработанная)
+    struct {     // Save GROUP, firth number
+   	uint8_t number;										 // Номер
     int16_t zeroPress;                                   // отсчеты АЦП при нуле датчика
-    float  transADC;                                     // коэффициент пересчета АЦП в давление
+    float   transADC;                                    // коэффициент пересчета АЦП в давление
     int16_t testPress;                                   // давление датчика в режиме тестирования
+    } __attribute__((packed));// Save Group end, last testPress
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
        
@@ -120,9 +125,6 @@ class sensorADC
    
     char *note;                                          // Описание датчика
     char *name;                                          // Имя датчика
-	#ifdef ANALOG_MODBUS
-    uint8_t Sensor;										 // номер датчика
-	#endif
 };
 
 // ------------------------------------------------------------------------------------------
@@ -145,6 +147,8 @@ public:
   int8_t  set_alarmInput(int16_t i);                     // Установить Состояние аварии датчика
   inline int8_t  get_pinD(){return pin;}                 // Получить ногу куда прицеплен датчик
   TYPE_SENSOR get_typeInput(){return type;}              // Получить тип датчика
+  uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
+  uint16_t get_save_size(void) { return (byte*)&alarmInput - (byte*)&number + sizeof(alarmInput); } // Размер структуры сохранения
   int32_t save(int32_t adr);                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t load(int32_t adr);                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t loadFromBuf(int32_t adr,byte *buf);            // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -152,8 +156,11 @@ public:
     
 private:
    boolean Input;                                        // Состояние датчика
-   boolean alarmInput;                                   // !save! Состояние датчика в режиме аварии
+   struct { // Save GROUP, firth number
+   uint8_t number;										 // номер
    boolean testInput;                                    // !save! Состояние датчика в режиме теста
+   boolean alarmInput;                                   // !save! Состояние датчика в режиме аварии
+   } __attribute__((packed));// Save Group end, last alarmInput
    TEST_MODE testMode;                                   // Значение режима тестирования
    TYPE_SENSOR type;                                     // Тип датчика
    int8_t err;                                           // ошибка датчика (работа) при ошибке останов ТН
@@ -196,6 +203,8 @@ public:
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void  set_testMode(TEST_MODE t){testMode=t;}           // Установить значение текущий режим работы
   inline int8_t  get_pinF(){return pin;}                 // Получить ногу куда прицеплен датчик
+  uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
+  uint16_t get_save_size(void) { return (byte*)&Capacity - (byte*)&number + sizeof(Capacity); } // Размер структуры сохранения
   int32_t save(int32_t adr);                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t load(int32_t adr);                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t loadFromBuf(int32_t adr,byte *buf);            // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -205,7 +214,8 @@ public:
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
    uint16_t Value;                                       // значение датчика ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) 
-   struct { // SAVE GROUP, testValue the first
+   struct { // SAVE GROUP, number the first
+   uint8_t  number;										 // номер
    uint16_t testValue;                                   // !save! Состояние датчика в режиме теста
    uint16_t kfValue; 								 	 // коэффициент пересчета частоты в значение, сотые
    uint8_t  flags;                                       // флаги  датчика
@@ -311,6 +321,8 @@ public:
   void set_testMode(TEST_MODE t){testMode=t;}            // Установить значение текущий режим работы
   
   // Сохранение
+  uint8_t *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
+  uint16_t get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
   int32_t save(int32_t adr);                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t load(int32_t adr);                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t loadFromBuf(int32_t adr,byte *buf);            // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -364,7 +376,7 @@ private:
 		  uint16_t OHCor_Period;								 // Период в циклах ЭРВ, сколько пропустить
 		  int16_t OHCor_TDIS_TCON;							     // Температура нагнетания - конденсации (/0.01) при конденсации 20 градусов
 		  uint8_t OHCor_TDIS_TCON_Thr;							 // Порог (/0.1), после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
-		  uint8_t OHCor_TDIS_ADD;								// Корректировка (/0.1) в + для TDIS_TCON на каждые 10 градусов выше 20.
+		  uint8_t OHCor_TDIS_ADD;								 // Корректировка (/0.1) в + для TDIS_TCON на каждые 10 градусов выше 20.
 		  int16_t OHCor_K;										 // Коэффициент (/0.001): перегрев += дельта * K
 		  int16_t OHCor_OverHeatMin;							 // Минимальный перегрев (сотые градуса)
 		  int16_t OHCor_OverHeatMax;							 // Максимальный перегрев (сотые градуса)
@@ -381,7 +393,6 @@ private:
 		  uint8_t  delayOn;                                      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 		  byte flags;                                            // флаги ЭРВ,
 		  int16_t OHCor_OverHeatStart;							 // Начальный перегрев (сотые градуса)
-		  int16_t P2;                                            // Резерв 2
   } _data;                                               // Конец структуры для сохранения настроек - последняя переменная => flags  
 };
 
@@ -531,6 +542,8 @@ public:
   void  set_testMode(TEST_MODE t) {testMode=t;};   // Установить значение текущий режим работы
   char*   get_note(){return  note;}                // Получить описание
   char*   get_name(){return  name;}                // Получить имя
+  uint8_t *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
+  uint16_t get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
   int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
   int32_t loadFromBuf(int32_t adr,byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -593,8 +606,6 @@ private:
 	  int16_t  levelOff;              // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
 	  uint8_t  flags;                 // флаги настройки
-	  int16_t P1;                     // Резерв 1
-      int16_t P2;                     // Резерв 2	  
    } _data;  // Структура для сохранения настроек, setup_flags всегда последний!
      
   // Функции работы с OMRON MX2  Чтение регистров
@@ -630,10 +641,6 @@ struct type_settingSDM
 uint16_t maxVoltage;                    // максимальное напряжение (вольты) иначе ошибка если 0 то не работает
 uint16_t minVoltage;                    // минимальное напряжение (вольты) иначе ПРЕДУПРЕЖДЕНИЕ если 0 то не работает
 uint16_t maxPower;                      // максимальная мощность (ватты) напряжение иначе ошибка если 0 то не работает
-uint16_t P1;                            // Резерв 1
-uint16_t P2;                            // Резерв 2
-uint32_t P3;                            // Резерв 3
-
 };
 // Input register Function code 04 to read input parameters:
 #ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
@@ -698,6 +705,8 @@ class devSDM
       char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки
       boolean set_paramSDM(char *var,char *c);         // Установить параметр SDM из строки
       
+      uint8_t  *get_save_addr(void) { return (uint8_t *)&settingSDM; } // Адрес структуры сохранения
+      uint16_t  get_save_size(void) { return sizeof(settingSDM); } // Размер структуры сохранения
       int32_t save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       int32_t loadFromBuf(int32_t adr,byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки

@@ -155,11 +155,11 @@ void sensorADC::initSensorADC(int sensor,int pinA)
       testMode=NORMAL;                           // Значение режима тестирования
       zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
       transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
+      number = sensor;
       pin=pinA;
       flags = SENSORPRESS[sensor]<<fPresent;	 // наличие датчика
 	  #ifdef ANALOG_MODBUS
       flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
-      Sensor = sensor;
 	  #endif
       Chart.init(SENSORPRESS[sensor]);            // инициалазация статистики
       err=OK;                                     // ошибка датчика (работа)
@@ -195,7 +195,7 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 	#ifdef ANALOG_MODBUS
 		 if(get_fmodbus()) {
 			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
-				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[Sensor], ANALOG_MODBUS_REG[Sensor] - 1, &adc.last);
+				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[number], ANALOG_MODBUS_REG[number] - 1, &adc.last);
 				if(err == OK) {
 					lastADC = adc.last;
 					break;
@@ -315,6 +315,7 @@ uint16_t sensorADC::get_crc16(uint16_t crc)
 void  sensorDiditalInput::initInput(int sensor)
 {
    Input=false;                    // Состояние датчика
+   number = sensor;
    testInput=TESTINPUT[sensor];    // Состояние датчика в режиме теста
    testMode=NORMAL;                // Значение режима тестирования
    alarmInput=ALARMINPUT[sensor];  // Состояние датчика в режиме аварии
@@ -440,6 +441,7 @@ void InterruptFLOWPCON()
 // Инициализация частотного датчика, на входе номер сенсора по порядку
 void sensorFrequency::initFrequency(int sensor)                     
 {
+   number = sensor;
    Frequency=0;                                   // значение частоты
    Value=0;                                       // значение датчика в ТЫСЯЧНЫХ (умножать на 1000)
    Capacity=HEAT_CAPACITY;                        // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]

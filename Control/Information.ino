@@ -770,8 +770,8 @@ char* Profile::get_boiler(char *var, char *ret)
 // static uint16_t crc= 0xFFFF;  // рабочее значение
  uint16_t  Profile::get_crc16_mem()  // Расчитать контрольную сумму
  {
- uint16_t i;
-  crc= 0xFFFF;
+  uint16_t i;
+  uint16_t crc= 0xFFFF;
   for(i=0;i<sizeof(dataProfile);i++) crc=_crc16(crc,*((byte*)&dataProfile+i));           // CRC16 структуры  dataProfile
   for(i=0;i<sizeof(SaveON);i++) crc=_crc16(crc,*((byte*)&SaveON+i));                     // CRC16 структуры  SaveON
   for(i=0;i<sizeof(Cool);i++) crc=_crc16(crc,*((byte*)&Cool+i));                         // CRC16 структуры  Cool
@@ -785,7 +785,7 @@ int8_t Profile::check_crc16_eeprom(int8_t num)
 {
   uint16_t i, crc16tmp;
   byte x;
-  crc= 0xFFFF;
+  uint16_t crc= 0xFFFF;
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;     // вычислить адрес начала данных
   
   if (readEEPROM_I2C(adr, (byte*)&x, sizeof(x))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(x);              // прочитать заголовок

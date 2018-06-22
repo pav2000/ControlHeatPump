@@ -181,6 +181,16 @@ const uint16_t  defaultPort=80;
 #else  
   #define JOURNAL_LEN       (2*W5200_MAX_LEN)                                                            // Размер системного журнала ДОЛЖНО БЫТЬ кратно W5200_MAX_LEN, Увеличивать аккуратно, может не хвать памяти - виснет при загрузке
 #endif
+// Тип записи сохранения, 16bit
+#define SAVE_TYPE_sTemp			-1
+#define SAVE_TYPE_sADC			-2
+#define SAVE_TYPE_sInput		-3
+#define SAVE_TYPE_sFrequency	-4
+#define SAVE_TYPE_sIP			-5
+#define SAVE_TYPE_dEEV			-6
+#define SAVE_TYPE_dSDM			-7
+#define SAVE_TYPE_clMQTT		-8
+#define SAVE_TYPE_END			0
 
 // ------------------- EEV ----------------------------------
 // Константы фаз движения ЭРВ, три варианта (константы вариантов не менять!)
@@ -419,6 +429,7 @@ const char http_get_str2[] = " HTTP/1.0\r\nHost: ";
 const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
 const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
+const uint8_t save_end_marker[1] = { 0 };
 
 // Многозадачность, деление аппартных ресурсов
 const char *nameFREERTOS =     {"Free RTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
@@ -428,7 +439,6 @@ const char *MutexModbusBuzy=   {"Modbus"};
 const char *MutexWebThreadBuzy={"WebThread"}; 
 const char *MutexSPIBuzy=      {"SPI"}; 
 const char *MutexCommandBuzy = {"Command"}; 
-
 
 // Описание имен параметров ЭРВ для функций get_paramEEV set_paramEEV
 const char *eev_POS           =  {"POS"};           // Положение ЭРВ шаги

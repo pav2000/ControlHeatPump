@@ -395,8 +395,8 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
    {
 	   if(HP.get_State() == pOFF_HP) {
 	       journal.jprintf("$RESET All HP settings . . .\n");
-	       HP.headerEEPROM.magic = 0;
-	   	   writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&HP.headerEEPROM.magic, sizeof(HP.headerEEPROM.magic));
+	       uint16_t d = 0;
+	   	   writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
 	       HP.sendCommand(pRESET);        // Послать команду на сброс
 	       //HP.resetSettingHP(); // не работает!!
 	       strcat(strReturn, "OK&");
@@ -601,7 +601,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 				_itoa(HP.Schdlr.save(),strReturn); // сохранение расписаний
 				#endif
 			} else {
-				_itoa(HP.save(),strReturn); // сохранение настроек ВСЕХ!
+				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
+				if(len > 0) {
+					uint16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
+					if(len2 > 0) len += len2; else len = len2;
+				}
+				_itoa(len, strReturn); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
 			}
 			strcat(strReturn,"&");
@@ -1397,7 +1402,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) { HP.Prof.set_list((int8_t)pm); HP.save(); HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);} 
+            	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
+            		  HP.Prof.set_list((int8_t) pm);
+            		  HP.save();
+            		  HP.Prof.save(HP.Prof.get_idProfile());
+            		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
+            	  }
                   else strcat(strReturn,"E29");  
                   strcat(strReturn,"&") ;    continue; 
                 }
@@ -2355,11 +2365,11 @@ byte *ptr;
   if ((ptr[2]+256*ptr[3])!=VER_SAVE)  {journal.jprintf("Invalid version file setting.\n");return false;}                // не совпадение версий
 //  len=ptr[4]+256*ptr[5];  // длина данных  по заголовку
    // Чтение настроек
-  if (OK!=HP.loadFromBuf(0,ptr)) return false;    
+  if (OK!=HP.load(ptr, 1)) return false;
   // Чтение профиля
-  if (OK!=HP.Prof.loadFromBuf(HP.headerEEPROM.len,ptr)) return false;
+  if (OK!=HP.Prof.loadFromBuf(0000000000, ptr)) return false;
 #ifdef USE_SCHEDULER
-  if(HP.Schdlr.loadFromBuf(HP.headerEEPROM.len + HP.Prof.get_lenProfile(), ptr) != OK) return false;
+  if(HP.Schdlr.loadFromBuf(00000000000 + HP.Prof.get_lenProfile(), ptr) != OK) return false;
 #endif
   HP.Prof.update_list(HP.Prof.get_idProfile());                                                                        // обновить список
   return true;
