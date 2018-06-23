@@ -196,7 +196,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
 		} else err = ERR_ONEWIRE;
 		if(err == OK) {
-			_delay(95);             // Ожитать время разрешение 9 бит это гуд
+			_delay(addr[0] == tDS18S20 ? 750 : 95);  // Ожитать время в зависимости от датчика
 
 			// 5. Получение данных
 #ifdef ONEWIRE_DS2482_2WAY
@@ -285,6 +285,7 @@ xReadedOnly2b:
 int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock_bus)
 {
 	err = 0;
+	if(addr[0] == tDS18S20) return err; // not supported
 	if(!dont_lock_bus && lock_I2C_bus_reset(0)) return err = ERR_ONEWIRE;
 	else if(!OneWireDrv.reset()) return err = ERR_ONEWIRE;
     OneWireDrv.select(addr);
