@@ -834,8 +834,8 @@ int16_t  Profile::save(int8_t num)
   crc16=get_crc16_mem();
   if (writeEEPROM_I2C(adrCRC16, (byte*)&crc16, sizeof(crc16))) {set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return err=ERR_SAVE_PROFILE;} 
 
-  if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf(" Verification error, profile not write eeprom\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-  journal.jprintf(" Save profile #%d OK, write: %d bytes crc16: 0x%x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
+  if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf("- Verify Error!\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
+  journal.jprintf(" Save profile #%d OK, write: %d bytes, crc: %04x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
   update_list(num);                                                                                                                                                  // обновить список
   return dataProfile.len;
 }
@@ -873,7 +873,7 @@ int32_t Profile::load(int8_t num)
   // проверка контрольной суммы
   if(crc16!=get_crc16_mem()) { set_Error(ERR_CRC16_PROFILE,(char*)nameHeatPump); return err=ERR_CRC16_PROFILE;}                                                           // прочитать crc16
   if (dataProfile.len!=adr-(I2C_PROFILE_EEPROM+dataProfile.len*num))  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;} // Проверка длины
-    journal.jprintf(" Load profile #%d OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
+    journal.jprintf(" Load profile #%d OK, read: %d bytes, crc: %04x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
   #else
     journal.jprintf(" Load profile #%d OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
   #endif
@@ -895,7 +895,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
 
   // проверка контрольной суммы
   #ifdef LOAD_VERIFICATION 
-  if ((err=check_crc16_buf(aStart,buf)!=OK)) {journal.jprintf(" Error load profile from file, crc16 is wrong!\n"); return err;}
+  if ((err=check_crc16_buf(aStart,buf)!=OK)) {journal.jprintf(" Error load profile from file, crc is wrong!\n"); return err;}
   #endif 
   
   memcpy((byte*)&i,buf+adr,sizeof(i)); adr=adr+sizeof(i);                                                             // прочитать crc16
@@ -909,7 +909,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
  
    #ifdef LOAD_VERIFICATION
     if (dataProfile.len!=adr-aStart)  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;}    // Проверка длины
-    journal.jprintf(" Load profile from file OK, read: %d bytes crc16: 0x%x\n",adr-aStart,i);                                                                    // ВСЕ ОК
+    journal.jprintf(" Load profile from file OK, read: %d bytes, crc: %04x\n",adr-aStart,i);                                                                    // ВСЕ ОК
   #else
     journal.jprintf(" Load setting from file OK, read: %d bytes VERIFICATION OFF!\n",adr-aStart);
   #endif

@@ -92,10 +92,6 @@ class sensorADC
     char*   get_name(){return name;}                     // Получить имя датчика
     uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
     uint16_t get_save_size(void) { return (byte*)&testPress - (byte*)&number + sizeof(testPress); } // Размер структуры сохранения
-    int32_t save(int32_t adr);                           // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t load(int32_t adr);                           // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t loadFromBuf(int32_t adr,byte *buf);          // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    uint16_t get_crc16(uint16_t crc);                    // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
    
     statChart Chart;                                      // График по датчику
     type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
@@ -149,10 +145,6 @@ public:
   TYPE_SENSOR get_typeInput(){return type;}              // Получить тип датчика
   uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
   uint16_t get_save_size(void) { return (byte*)&alarmInput - (byte*)&number + sizeof(alarmInput); } // Размер структуры сохранения
-  int32_t save(int32_t adr);                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t load(int32_t adr);                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t loadFromBuf(int32_t adr,byte *buf);            // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  uint16_t get_crc16(uint16_t crc);                      // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
     
 private:
    boolean Input;                                        // Состояние датчика
@@ -205,10 +197,6 @@ public:
   inline int8_t  get_pinF(){return pin;}                 // Получить ногу куда прицеплен датчик
   uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
   uint16_t get_save_size(void) { return (byte*)&Capacity - (byte*)&number + sizeof(Capacity); } // Размер структуры сохранения
-  int32_t save(int32_t adr);                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t load(int32_t adr);                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t loadFromBuf(int32_t adr,byte *buf);            // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  uint16_t get_crc16(uint16_t crc);                      // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
   statChart Chart;                                       // Статистика по датчику
     
 private:

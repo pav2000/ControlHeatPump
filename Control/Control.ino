@@ -388,7 +388,7 @@ x_I2C_init_std_message:
    journal.jprintf("I2C memory is empty, save default setting\n");
    HP.save_motoHour();
   } else {
-	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН и текущий профиль
+	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
   }
 #ifdef USE_SCHEDULER

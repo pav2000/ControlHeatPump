@@ -614,7 +614,7 @@ uint16_t get_binSettings(uint8_t thread)
 	byte b;
 	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 	if(len > 0) {
-		uint16_t len2 = HP.Prof.save(Prof.get_idProfile());
+		uint16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
 		if(len2 > 0) len += len2; else return 0;
 	}
 	// Сохранение текущего профиля

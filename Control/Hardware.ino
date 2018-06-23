@@ -178,7 +178,6 @@ void sensorADC::initSensorADC(int sensor,int pinA)
       SETBIT0(flags,fFull);                      // Буфер не полный
       lastPress=0;                               // последнее считанное давление по умолчанию ноль
  }
-
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
  int8_t  sensorADC::Read()
@@ -250,7 +249,6 @@ int8_t sensorADC::set_zeroPress(int16_t p)
   else return WARNING_VALUE;
 }
 
-
 //Получить значение давления датчика - это то что используется
 int16_t sensorADC::get_Press()
 {
@@ -265,47 +263,11 @@ int8_t sensorADC::set_transADC(float p)
   else return WARNING_VALUE;
 }
 
-
 // Установить значение давления датчика в режиме теста
 int8_t sensorADC::set_testPress(int16_t p)            
 {
 	testPress=p;
 	return OK;
-}
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorADC::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&zeroPress, sizeof(zeroPress)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(zeroPress);   // !save! отсчеты АЦП при нуле датчика
-if (writeEEPROM_I2C(adr, (byte*)&transADC, sizeof(transADC)))      { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(transADC);   // !save! коэффициент пересчета АЦП в давление
-if (writeEEPROM_I2C(adr, (byte*)&testPress, sizeof(testPress)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testPress);  // !save! давление датчика в режиме тестирования
-return adr;
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorADC::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&zeroPress, sizeof(zeroPress)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(zeroPress);   // !save! отсчеты АЦП при нуле датчика
-if (readEEPROM_I2C(adr, (byte*)&transADC, sizeof(transADC)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(transADC);  // !save! коэффициент пересчета АЦП в давление
-if (readEEPROM_I2C(adr, (byte*)&testPress, sizeof(testPress)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testPress);   // !save! давление датчика в режиме тестирования
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorADC::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&zeroPress,buf+adr,sizeof(zeroPress)); adr=adr+sizeof(zeroPress);      // !save! отсчеты АЦП при нуле датчика
-  memcpy((byte*)&transADC,buf+adr,sizeof(transADC)); adr=adr+sizeof(transADC);   // !save! коэффициент пересчета АЦП в давление
-  memcpy((byte*)&testPress,buf+adr,sizeof(testPress)); adr=adr+sizeof(testPress);      // !save! давление датчика в режиме тестирования
-  return adr;
-}
- // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorADC::get_crc16(uint16_t crc)
-{
-  uint8_t i;
-  crc=_crc16(crc,lowByte(zeroPress)); crc=_crc16(crc,highByte(zeroPress));    //  отсчеты АЦП при нуле датчика
-  for(i=0;i<sizeof(transADC);i++) crc=_crc16(crc,*((byte*)&transADC+i));  //  коэффициент пересчета АЦП в давление FLOAT
-  crc=_crc16(crc,lowByte(testPress)); crc=_crc16(crc,highByte(testPress));    //  давление датчика в режиме тестирования
-  return crc;              
 }
 
 // ------------------------------------------------------------------------------------------
@@ -361,7 +323,6 @@ int8_t sensorDiditalInput::Read()
  return err;
 
 }
-
     
 // Установить Состояние датчика в режиме теста
 int8_t sensorDiditalInput::set_testInput( int16_t i)         
@@ -370,7 +331,6 @@ int8_t sensorDiditalInput::set_testInput( int16_t i)
     else  if (i==0)  { testInput=false; return OK;} 
      else return WARNING_VALUE;
 }
-
  
 // Установить Состояние датчика в режиме аварии
 int8_t sensorDiditalInput::set_alarmInput( int16_t i)         
@@ -379,38 +339,6 @@ int8_t sensorDiditalInput::set_alarmInput( int16_t i)
     else  if(i==0)  { alarmInput=false; return OK;} 
      else return WARNING_VALUE;
 }
-
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorDiditalInput::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&testInput, sizeof(testInput)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testInput);    // !save! Состояние датчика в режиме теста
-if (writeEEPROM_I2C(adr, (byte*)&alarmInput, sizeof(alarmInput))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(alarmInput);   // !save! Состояние датчика в режиме аварии
-return adr;   
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorDiditalInput::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&testInput, sizeof(testInput)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testInput);    // !save! Состояние датчика в режиме теста
-if (readEEPROM_I2C(adr, (byte*)&alarmInput, sizeof(alarmInput)))   { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(alarmInput);   // !save! Состояние датчика в режиме аварии
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorDiditalInput::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&testInput,buf+adr,sizeof(testInput)); adr=adr+sizeof(testInput);     // !save! Состояние датчика в режиме теста
-  memcpy((byte*)&alarmInput,buf+adr,sizeof(alarmInput)); adr=adr+sizeof(alarmInput);  // !save! Состояние датчика в режиме аварии
-  return adr;
-}
- // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorDiditalInput::get_crc16(uint16_t crc)
-{
-  crc=_crc16(crc,testInput); // !save! Состояние датчика в режиме теста
-  crc=_crc16(crc,alarmInput);// !save! Состояние датчика в режиме аварии
-  return crc;              
-}
-
 
 // ------------------------------------------------------------------------------------------
 // Цифровые частотные датчики (значение кодируется в выходной частоте) ----------------------
@@ -527,45 +455,6 @@ int8_t sensorFrequency::set_Capacity(uint16_t c)
 {  
   if (c<=5000) {Capacity=c; return OK;} else return WARNING_VALUE;    
 }   
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::save(int32_t adr)
-{
-//	flags = flags & ~((1<<fPresent) | (1<<fcheckRange));
-    if(writeEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-    return adr;
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::load(int32_t adr)
-{
-    if(readEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_LOAD_EEPROM;
-    }
-    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-	SETBIT1(flags, fPresent);
-    return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&testValue, buf+adr, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity));
-  adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-  SETBIT1(flags, fPresent);
-  return adr;  
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorFrequency::get_crc16(uint16_t crc)
-{
-  uint8_t i;
-  for(i = 0; i < (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity); i++)
-	crc = _crc16(crc,*((byte*)&testValue + i));  // CRC16 структуры
-  return crc;                      
-}
 
 // ------------------------------------------------------------------------------------------
 // Исполнительное устройство РЕЛЕ (есть 2 состяния 0 и 1) --------------------------------------
