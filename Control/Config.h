@@ -346,6 +346,7 @@ enum TYPE_SENSOR
         	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
+		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
 		#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
@@ -745,6 +746,7 @@ enum TYPE_SENSOR
         	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
+		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
 		#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
@@ -1202,6 +1204,7 @@ enum TYPE_SENSOR
 		#define DEFAULT_RULE_EEV       TRTOOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
+		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
 		#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
 		#define DEFAULT_EEV_Kd	       1000			  // ПИД Коэф дифф.     В СОТЫХ
@@ -1596,6 +1599,7 @@ enum TYPE_SENSOR
 	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
+		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
 		#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
@@ -2054,6 +2058,7 @@ enum TYPE_SENSOR
 		// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
+		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
 		#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
@@ -2583,6 +2588,7 @@ enum TYPE_SENSOR
 	// Значения по умолчанию (можно менять из морды)
 	#define DEFAULT_RULE_EEV       TEVAOUT_PEVA	  // Формула по умолчанию - TEVAOUT_PEVA
 	#define DEFAULT_FREON_TYPE     R134A 		  // Типа фрона по умолчанию - R134A
+	#define DEFAULT_EEV_TIME	   7			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 	#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 	#define DEFAULT_EEV_Kp	       200			  // ПИД Коэф пропорц.  В СОТЫХ
 	#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
@@ -2590,19 +2596,19 @@ enum TYPE_SENSOR
     #define DEFAULT_ERR_KP         100.0          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
     #define DEFAULT_SPEED_EEV      40             // Скорость шагового двигателя ЭРВ (импульсы в сек.)
     #define DEFAULT_PRE_START_POS  300            // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
-    #define DEFAULT_START_POS      200            // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+    #define DEFAULT_START_POS      120            // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
     #define DEFAULT_MIN_STEP       10             // Минимальное число шагов открытия ЭРВ
     #define DEFAULT_HOLD_MOTOR     false          // Режим "удержания" шагового двигателя ЭРВ
 	#define EEV_PREFER_PERCENT					  // Предпочтительно положение ЭРВ в %. (Для графиков и т.п.)
   	// Корректировки для фреона R134a
 	#define DEF_OHCor_TDIS_TCON			1450 //1350 // Разница температура нагнетания - конденсации при 30С и 0 конденсации и перегреве OHCor_OverHeatStart (в сотых)
-	#define DEF_OHCor_TDIS_TCON_Thr 	20		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в десятых)
+	#define DEF_OHCor_TDIS_TCON_Thr 	30		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в десятых)
   	#define DEF_OHCor_CONDENSING_30_MUL 22			// Корректировка разницы Нагнетание-Конденсация на кажлые 10 градусов конденсации от 30 (в десятых), зависит от фреона
 	#define DEF_OHCor_EVAPORATING_0_MUL 46			// Корректировка разницы Нагнетание-Конденсация на кажлые -10 градусов кипения от 0 (в десятых), зависит от фреона
 	#define DEF_OHCor_Delay 			300         // Задержка после старта компрессора, сек
   	#define DEF_OHCor_Period 			10		    // Период в циклах ЭРВ, сколько пропустить
 	#define DEF_OHCor_K 				100      	// Коэффициент (/0.001): перегрев += дельта * K
-	#define DEF_OHCor_OverHeatMin 		150    		// Минимальный перегрев (сотые градуса)
+	#define DEF_OHCor_OverHeatMin 		160    		// Минимальный перегрев (сотые градуса)
 	#define DEF_OHCor_OverHeatMax 		300    		// Максимальный перегрев (сотые градуса)
 	#define DEF_OHCor_OverHeatStart 	250		  	// Начальный перегрев (сотые градуса)
   	// ЭРВ Времена и задержки
@@ -2627,9 +2633,9 @@ enum TYPE_SENSOR
 	#define DEF_FC_PID_STOP          95            // Проценты от уровня защит (мощность, ток, давление, темпеартура) при которой происходит блокировка роста частоты пидом
 	#define DEF_FC_START_FREQ        (20*100)       // Стартовая скорость инвертора (см компрессор) в 0.01 %
 	#define DEF_FC_START_FREQ_BOILER (15*100)       // Стартовая скорость инвертора (см компрессор) в 0.01 % ГВС
-	#define DEF_FC_MIN_FREQ          (5*100)       // Минимальная  скорость инвертора (см компрессор) в 0.01 %
-	#define DEF_FC_MIN_FREQ_COOL     (5*100)       // Минимальная  скорость инвертора при охлаждении в 0.01 %
-	#define DEF_FC_MIN_FREQ_BOILER   (10*100)       // Минимальная  скорость инвертора при нагреве ГВС в 0.01 %
+	#define DEF_FC_MIN_FREQ          (15*100)       // Минимальная  скорость инвертора (см компрессор) в 0.01 %
+	#define DEF_FC_MIN_FREQ_COOL     (10*100)       // Минимальная  скорость инвертора при охлаждении в 0.01 %
+	#define DEF_FC_MIN_FREQ_BOILER   (15*100)       // Минимальная  скорость инвертора при нагреве ГВС в 0.01 %
 	#define DEF_FC_MIN_FREQ_USER     (1*100)       // Минимальная  скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01 %
 	#define DEF_FC_MAX_FREQ          (100*100)      // Максимальная скорость инвертора (см компрессор) в 0.01 %
 	#define DEF_FC_MAX_FREQ_COOL     (80*100)      // Максимальная скорость инвертора в режиме охлаждения  в 0.01 %

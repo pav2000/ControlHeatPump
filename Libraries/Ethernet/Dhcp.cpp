@@ -58,6 +58,7 @@ int DhcpClass::request_DHCP_lease(){
     
     while(_dhcp_state != STATE_DHCP_LEASED)
     {
+    	WDT_Restart(WDT); // Watchdog reset
         if(_dhcp_state == STATE_DHCP_START)
         {
             _dhcpTransactionId++;
