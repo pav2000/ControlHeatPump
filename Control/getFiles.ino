@@ -272,8 +272,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); HP.get_optionHP((char*)option_SAVE_ON,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_SD_CARD,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время работы конденсатора  насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время паузы конденсатора насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;

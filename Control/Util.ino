@@ -132,21 +132,19 @@ char *MAC2String(byte* mac)
 /// Адрес температурного датчика (шесть байт) в строку в шеснадцатеричном виде
 const char codeHex[]={"0123456789ABCDEF"};
 char* addressToHex(byte *f)
-{ 
-  strcpy(_buf,"");             // очистить строку
-  for(int i=0;i<8;i++)
-  {
-	_buf[i*2]=codeHex[0x0f & (unsigned char)(f[i]>>4)];
-	_buf[i*2+1]=codeHex[0x0f & (unsigned char)(f[i])];
-  }
- _buf[sizeof(_buf)-1]=0; // Конец строки
- return _buf;
+{
+	uint8_t i = 0;
+	for(; i < 8; i++) {
+		_buf[i * 2] = codeHex[0x0f & (unsigned char) (f[i] >> 4)];
+		_buf[i * 2 + 1] = codeHex[0x0f & (unsigned char) (f[i])];
+	}
+	_buf[i * 2] = 0; // Конец строки
+	return _buf;
 }
 
 // Байт в текстовую строку вида 0xf5
 char* byteToHex(byte f)
 { 
- strcpy(_buf,"");             // очистить строку
 _buf[0]='0';
 _buf[1]='x';
 _buf[2]=codeHex[0x0f & (unsigned char)(f>>4)];
@@ -158,7 +156,6 @@ return _buf;
 // uint16_t в текстовую строку вида 0xf50e
 char* uint16ToHex(uint16_t f)
 { 
- strcpy(_buf,"");             // очистить строку
 _buf[0]='0';
 _buf[1]='x';
 _buf[2]=codeHex[0x0f & (unsigned char)(highByte(f)>>4)];
@@ -172,19 +169,16 @@ return _buf;
 // uint32_t в текстовую строку вида 0xabcdf50e
 char* uint32ToHex(uint32_t f)
 { 
- strcpy(_buf,"");             // очистить строку
- unsigned char *ptr;
- ptr=(unsigned char*)&f;
 _buf[0]='0';
 _buf[1]='x';
-_buf[2]=codeHex[0x0f & (unsigned char)(ptr[3]>>4)];
-_buf[3]=codeHex[0x0f & (unsigned char)(ptr[3])];
-_buf[4]=codeHex[0x0f & (unsigned char)(ptr[2]>>4)];
-_buf[5]=codeHex[0x0f & (unsigned char)(ptr[2])];
-_buf[6]=codeHex[0x0f & (unsigned char)(ptr[1]>>4)];
-_buf[7]=codeHex[0x0f & (unsigned char)(ptr[1])];
-_buf[8]=codeHex[0x0f & (unsigned char)(ptr[0]>>4)];
-_buf[9]=codeHex[0x0f & (unsigned char)(ptr[0])];
+_buf[2]=codeHex[0x0f & (f>>28)];
+_buf[3]=codeHex[0x0f & (f>>24)];
+_buf[4]=codeHex[0x0f & (f>>20)];
+_buf[5]=codeHex[0x0f & (f>>16)];
+_buf[6]=codeHex[0x0f & (f>>12)];
+_buf[7]=codeHex[0x0f & (f>>8)];
+_buf[8]=codeHex[0x0f & (f>>4)];
+_buf[9]=codeHex[0x0f & (f)];
 _buf[10]=0; // Конец строки
 return _buf;
 }

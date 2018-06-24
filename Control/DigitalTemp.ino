@@ -246,7 +246,9 @@ void sensorTemp::set_address(byte *addr, byte bus)
 	err = OK;
 	setup_flags |= bus & fDS2482_bus_mask;
 	set_onewire_bus_type();
+#ifndef ONEWIRE_DONT_CHG_RES
 	busOneWire->SetResolution(address, DS18B20_p12BIT);
+#endif
 }
     
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки

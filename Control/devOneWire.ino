@@ -172,13 +172,15 @@ int8_t  deviceOneWire::Scan(char *result_str)
 		}
 		// 2. первый байт определяет чип выводим этот тип
 		OW_scanTable[OW_scanTableIdx].type_sensor = addr[0];
+		strcat(result_str,"DS18");
 		switch (addr[0])
 		{
-			case tDS18S20: strcat(result_str,"DS18S20:"); break;
-			case tDS18B20: strcat(result_str,"DS18B20:"); break;
-			case tDS1822:  strcat(result_str,"DS1822:");  break;
-			default:       strcat(result_str,"Unknown"); strcat(result_str, byteToHex(addr[0])); strcat(result_str, ":"); break;
+			case tDS18S20: strcat(result_str,"S20"); break;
+			case tDS18B20: strcat(result_str,"B20"); break;
+			case tDS1822:  strcat(result_str,"22");  break;
+			default:       strcat(result_str,"?"); _itoa(addr[0], result_str); break;
 		}
+		strcat(result_str, ":");
 		// 3. Уменьшить разрешение до 9 бит, для увеличения скорости сканирования для DS18B20
 		if(SetResolution(addr, DS18B20_p09BIT, true)) {
 			journal.jprintf("SetRes 9b error %d for %s\n", err, addressToHex(addr));
@@ -196,7 +198,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
 		} else err = ERR_ONEWIRE;
 		if(err == OK) {
-			_delay(addr[0] == tDS18S20 ? 750 : 95);  // Ожитать время в зависимости от датчика
+			_delay(addr[0] == tDS18S20 ? 750 : 95);  // Ожидать время в зависимости от датчика
 
 			// 5. Получение данных
 #ifdef ONEWIRE_DS2482_2WAY

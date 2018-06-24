@@ -1,6 +1,6 @@
 /*
  * Частотный преобразователь Vacon 10
- * Адаптировано vad711, vad7@yahoo.com
+ * Автор vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -154,7 +154,7 @@ class devVaconFC
 {
 public:
   int8_t	initFC();                               // Инициализация Частотника
-  __attribute__((always_inline)) inline boolean get_present(){return GETBIT(_data.flags,fFC);} // Наличие датчика в текущей конфигурации
+  __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fFC);} // Наличие датчика в текущей конфигурации
   int8_t	get_err(){return err;}                  // Получить последню ошибку частотника
   uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
   void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки
@@ -199,11 +199,11 @@ public:
   int8_t	get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
   int8_t	start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
   int8_t	stop_FC();                                 // Команда стоп на инвертор
-  boolean	isfAuto(){return GETBIT(_data.flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
-  boolean	isfOnOff(){return GETBIT(_data.flags,fOnOff);} // получить состояние инвертора вкл или выкл
+  boolean	isfAuto(){return GETBIT(_data.setup_flags,fAuto);}   // проверка на режим старт-стопа false стоит флаг стартстопа
+  boolean	isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
  
   void		check_blockFC();                          // Установить запрет на использование инвертора
-  boolean	get_blockFC() { return GETBIT(_data.flags, fErrFC); }    // Получить флаг блокировки инвертора
+  boolean	get_blockFC() { return GETBIT(flags, fErrFC); }    // Получить флаг блокировки инвертора
 
   const char *get_fault_str(uint8_t fault); // Возвращает название ошибки
 
@@ -225,10 +225,6 @@ public:
   char *	get_name(){return  name;}                // Получить имя
   uint8_t  *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
   uint16_t  get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
-  int32_t	save(int32_t adr);                       // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t	load(int32_t adr);                       // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  int32_t	loadFromBuf(int32_t adr, byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-  uint16_t	get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 
   statChart ChartFC;                               // График по скорости
   statChart ChartPower;                            // График по мощности
@@ -286,9 +282,9 @@ public:
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t flags;                   // флаги настройки - см. define FC_SAVED_FLAGS
+	  uint8_t setup_flags;              // флаги настройки - см. define FC_SAVED_FLAGS
    } _data;  // Структура для сохранения настроек
-   
+   uint8_t flags;  						// рабочие флаги
   // Функции работы с Modbus
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
