@@ -297,9 +297,9 @@ char* TimeIntervalToStr(uint32_t idt,char *ret,uint8_t fSec = 0)
   Hour = idt % 24;
   idt /= 24;
   Day = idt;
-  if(Day>0)  { _itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
-  if(Hour>0) { _itoa(Hour,ret);strcat(ret,"h ");}
-  if(!fSec || Min > 0) { _itoa(Min,ret); strcat(ret,"m "); }
+  if(Day>0)  { _itoa(Day,ret); strcat(ret," ");}  // если есть уже дни
+  if(Hour>0) { _itoa(Hour,ret);strcat(ret,":");}
+  if(!fSec || Min > 0) { _itoa(Min,ret); if(!fSec) strcat(ret,"m"); else strcat(ret,":"); }
   if(fSec) { _itoa(Sec, ret); strcat(ret,"s"); }
   return ret;       
 }

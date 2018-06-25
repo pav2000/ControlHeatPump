@@ -333,7 +333,7 @@ x_I2C_init_std_message:
                	   	case I2C_ADR_DS2482_4:
                	   	case I2C_ADR_DS2482_3:
                	   	case I2C_ADR_DS2482_2:
-                    case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d\n", address - I2C_ADR_DS2482 + 1); break;
+                    case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d%s\n", address - I2C_ADR_DS2482 + 1, (ONEWIRE_2WAY & (1<<(address - I2C_ADR_DS2482))) ? " (2W)" : ""); break;
 					#if I2C_FRAM_MEMORY == 1
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
@@ -608,7 +608,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 			countLED = xTaskGetTickCount();
 			ledState = !ledState;         // Ошибка
 			digitalWriteDirect(PIN_LED_OK, ledState);
-			if(HP.get_Beep()) digitalWriteDirect(PIN_BEEP, ledState); // звукового сигнала
+			digitalWriteDirect(PIN_BEEP, HP.get_Beep() ? ledState : LOW); // звукового сигнала
 		} else if(((long) xTaskGetTickCount() - countLED) > (unsigned long) TIME_LED_OK)   // Ошибок нет и время пришло
 		{
 			countLED = xTaskGetTickCount();
@@ -811,18 +811,20 @@ void vReadSensor(void *)
 		int8_t i;
 		WDT_Restart(WDT);
 
+		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
-		prtemp = HP.Prepare_Temp(0);
+			prtemp = HP.Prepare_Temp(0);
 #ifdef ONEWIRE_DS2482_SECOND
-		prtemp |= HP.Prepare_Temp(1);
+			prtemp |= HP.Prepare_Temp(1);
 #endif
 #ifdef ONEWIRE_DS2482_THIRD
-		prtemp |= HP.Prepare_Temp(2);
+			prtemp |= HP.Prepare_Temp(2);
 #endif
 #ifdef ONEWIRE_DS2482_FOURTH
-		prtemp |= HP.Prepare_Temp(3);
+			prtemp |= HP.Prepare_Temp(3);
 #endif
 #endif     // не DEMO
+		}
 		ttime = xTaskGetTickCount();
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
@@ -832,11 +834,12 @@ void vReadSensor(void *)
 
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
-		for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-			if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
-			_delay(2);     												// пауза
+		if(OW_scan_flags == 0) {
+			for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
+				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
+				_delay(2);     												// пауза
+			}
 		}
-
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF

@@ -1816,7 +1816,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
        else if (strcmp(x+1,"PEVA")==0)     		 { param=30;}  //  Датчик давления испарителя
 	   else if (strcmp(x+1,"PCON")==0)         	 { param=31;}  //  Датчик давления кондесатора
-	   else {for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {param=20+i; break;}} // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
+       if (param==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {param=20+i; break;}} // Поиск среди имен контактных датчиков смещение 20 (максимум 6)
        if (param==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {param=26+i; break;} } // Частотные датчики смещение 26 (максимум 4)
        if (param==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x+1,HP.dRelay[i].get_name())==0) {param=36+i; break;}  } // Реле  36-49 смещение 36  количество до 14 штук
 

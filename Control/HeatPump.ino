@@ -3208,7 +3208,7 @@ char *HeatPump::StateToStr()
 {
 switch ((int)get_State())  //TYPE_STATE_HP  
   {
-  case pOFF_HP:     return (char*)"Выключен";  break;                     // 0 ТН выключен
+  case pOFF_HP:     return (char*)(HP.PauseStart == 0 ? "Выключен" : "Перезапуск...");  break;   // 0 ТН выключен или Перезапуск
   case pSTARTING_HP:return (char*)"Пуск...";   break;                     // 1 Стартует
   case pSTOPING_HP: return (char*)"Останов...";break;                     // 2 Останавливается
   case pWORK_HP:                                                          // 3 Работает
