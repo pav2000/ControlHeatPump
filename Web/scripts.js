@@ -634,27 +634,48 @@ function loadParam(paramid, noretry, resultdiv) {
 
 										} else if(values[0] == 'get_listTemp') {
 											content = ""; upsens = ""; loadsens = ""; loadsens2 = "";
+											var tnum = 1;
+											element = document.getElementById(valueid);
+											if(!element) {
+												element = document.getElementById(valueid + '2');
+												if(element) tnum = 2; 
+											}
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
-												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_eTemp(" + count[j] + "),get_esTemp(" + count[j] + "),get_noteTemp(" + count[j] + "),get_testTemp(" + count[j] + "),get_errTemp(" + count[j] + "),";
-												loadsens2 = loadsens2 + "get_minTemp(" + count[j] + "),get_maxTemp(" + count[j] + "),get_aTemp(" + count[j] + "),get_bTemp(" + count[j] + "),";
-												upsens = upsens + "get_fullTemp(" + count[j] + "),get_esTemp(" + count[j] + "),get_eTemp(" + count[j] + "),";
-												content = content + '<tr>';
-												content = content + ' <td>' + count[j] + '</td>';
-												content = content + ' <td id="get_notetemp-' + input + '"></td>';
-												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
-												content = content + ' <td id="get_mintemp-' + input + '">-</td>';
-												content = content + ' <td id="get_maxtemp-' + input + '">-</td>';
-												content = content + ' <td nowrap><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td nowrap><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td id="get_atemp-' + input + '">-</td>';
-												content = content + ' <td id="get_btemp-' + input + '">-</td>';
-												content = content + ' <td id="get_estemp-' + input + '">-</td>';
-												content = content + ' <td id="get_etemp-' + input + '">-</td>';
-												content = content + '</tr>';
+												var T = count[j];
+												loadsens += "get_aTemp(" +T+ "),get_eTemp(" +T+ "),get_noteTemp(" +T+ "),";
+												upsens += "get_eTemp(" +T+ "),";
+												if(tnum == 1) {
+													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
+													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
+													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ ")";
+												} else if(tnum == 2) {
+													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
+													upsens += "get_rawTemp(" +T+ "),";
+												}
+												T = T.toLowerCase();
+												content += '<tr>';
+												content += ' <td>' +count[j]+ '</td>';
+												content += ' <td id="get_notetemp-' +T+ '"></td>';
+												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
+												if(tnum == 1) {
+													content += ' <td id="get_mintemp-' +T+ '">-</td>';
+													content += ' <td id="get_maxtemp-' +T+ '">-</td>';
+													content += ' <td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+													content += ' <td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+												}	
+												content += ' <td id="get_atemp-' +T+ '">-</td>';
+												if(tnum == 1) {
+													content += ' <td id="get_btemp-' +T+ '">-</td>';
+													content += ' <td id="get_estemp-' +T+ '">-</td>';
+												} else if(tnum == 2) {
+													content += ' <td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
+													content += ' <td><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
+												}
+												content += ' <td id="get_etemp-' +T+ '">-</td>';
+												content += '</tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											element.innerHTML = content;
 											updateParam(upsens);
 											loadParam(loadsens);
 											loadParam(loadsens2);
