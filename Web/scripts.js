@@ -216,7 +216,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										var height = 300;
 										var visible = false;
 										var timeval = window.time_chart;
-										if(!timeval) continue;
+										if(!timeval) { console.log("time_chart was not intialized!"); continue; }
 										timeval = Number(timeval.replace(/\D+/g, ""));
 										var today = new Date();
 										var regexpt = /^(T|O|d)/g;
@@ -454,7 +454,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var cont1 = values[1].split(';');
 											for(var k = 0, len = cont1.length - 1; k < len; k++) {
 												cont2 = cont1[k].split(':');
-												if(cont2[1] == 1) {
+												if(cont2[1] == 1 || k == len - 1) {
 													selected = true;
 													if(idsel == "get_optionhp-time_chart") {
 														var time_chart = cont2[0];

@@ -2177,7 +2177,7 @@ enum TYPE_SENSOR
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
     //#define DEMO                  // Включение демо режима
-	#define TEST_BOARD 				// Тестовая плата!
+//	#define TEST_BOARD 				// Тестовая плата!
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхронник 3 фазы, ЭРВ, РТО, 2 датчика давления"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -2209,7 +2209,7 @@ enum TYPE_SENSOR
     #define USE_SCHEDULER			// Использовать расписание для управления ТН
 
 	#define RADIO_SENSORS			// Радиодатчики через ZONT МЛ‑489
-	#define RADIO_SENSORS_PORT		Serial2			// Аппаратный порт
+	#define RADIO_SENSORS_PORT		2				// Номер Serial
 	#define RADIO_SENSORS_PSPEED	115200			// Скорость порта
 	#define RADIO_SENSORS_PCONFIG	SERIAL_8N1		// Конфигурация порта
 
@@ -2495,10 +2495,6 @@ enum TYPE_SENSOR
   #define TNUMBER     14      // Максимальное число температурных датчиков (то что поддерживается)
   #define SENSOR_IP           // Использование удаленных устройств( датчиков температуры смотрим IPNUMBER )
   #define IPNUMBER    5       // Максимальное число удаленных датчиков, запрет использования  SENSOR_IP
-
-
-  #define MODBUS_TIME_TRANSMISION 0           // Пауза (msec) между запросом и ответом по модбас было 4
-
 
   #define OVERRIDE_TNUMBERS
   #ifdef OVERRIDE_TNUMBERS

@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
+ * Copyright (c) 2016-2018 by vad711 (vad7@yahoo.com); Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -319,4 +319,75 @@ void sensorIP::after_load()
 }
 
 #endif  
+
+uint8_t rs_serial_buf[128];
+uint8_t rs_serial_idx = 0;
+uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
+const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 };
+#define rs_serial_full_header_size 7
+#define rs_serial_addr_idx	5
+#define rs_addr	1
+
+unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
+{
+	unsigned char N;
+	unsigned short WCRC = 0;
+	for(N = 1; N <= Lenght; N++, Address++) {
+		WCRC += (*Address) ^ 255;
+		WCRC += ((*Address) * 256);
+	}
+	return WCRC;
+}
+
+void RS_send_response(void)
+{
+	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
+	if(p) {
+		*p = '\0';
+		rs_serial_buf[rs_serial_addr_idx] = rs_addr;
+		p++;
+		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size));
+		RADIO_SENSORS_SERIAL.write(rs_serial_buf, p + 2 - (uint8_t *)rs_serial_buf);
+	}
+}
+
+// Новые данные в порту от радиодатчиков
+#if RADIO_SENSORS_PORT == 2
+void serialEvent2()
+#elif RADIO_SENSORS_PORT == 3
+void serialEvent3()
+#endif
+{
+	if(rs_serial_idx < sizeof(rs_serial_buf)) {
+		rs_serial_buf[rs_serial_idx++] = RADIO_SENSORS_SERIAL.read();
+		if(rs_serial_flag == 0) { // ждем заголовок
+			if(memcmp(rs_serial_buf, rs_serial_header, rs_serial_idx < sizeof(rs_serial_header) ? rs_serial_idx : sizeof(rs_serial_header)) == 0) {
+				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = 1;
+			} else {
+				rs_serial_idx = 0;
+			}
+		} else if(rs_serial_flag == 1) { // ждем данные
+			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
+			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
+				if(RS_SUM_CRC(rs_serial_buf + rs_serial_full_header_size, len) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
+					journal.jprintf("RS CRC error!\n");
+				} else {
+					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
+					journal.jprintf("RS:%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
+						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
+						if(c == 'I') { // Присутствие
+
+						} else if(c == 'D') { // Данные
+
+						}
+						RS_send_response();
+					}
+				}
+				rs_serial_idx = 0;
+			}
+			if(rs_serial_idx >= sizeof(rs_serial_buf)) rs_serial_idx = 0;  // кривые данные
+		}
+	}
+}
 

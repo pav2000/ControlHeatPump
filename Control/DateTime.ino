@@ -137,7 +137,7 @@ boolean set_time_NTP(void)
 		journal.jprintf(" ERROR update time from server! %s ", NowDateToStr());
 		journal.jprintf("%s\n", NowTimeToStr()); // Через один глобальный буфер
 	}
-	SemaphoreGive (xWebThreadSemaphore);
+	SemaphoreGive(xWebThreadSemaphore);
 	return flag;
 }
 
@@ -162,14 +162,14 @@ boolean set_time_NTP(void)
 	// DNS запрос для определения адреса
 
 	if(check_address(HP.get_serverNTP(), ip) == 0) {
-		SemaphoreGive (xWebThreadSemaphore);
+		SemaphoreGive(xWebThreadSemaphore);
 		return false;
 	}  // DNS - ошибка выходим
 
 	// 2. Посылка пакета
 	if(!Udp.begin(NTP_LOCAL_PORT, W5200_SOCK_SYS)) {
 		journal.jprintf(" UDP fail\n");
-		SemaphoreGive (xWebThreadSemaphore);
+		SemaphoreGive(xWebThreadSemaphore);
 		return false;
 	}
 	for(uint8_t i = 0; i < NTP_REPEAT; i++)                                       // Делам 5 попыток получить время
@@ -208,7 +208,7 @@ boolean set_time_NTP(void)
 		journal.jprintf(" ERROR update time from NTP server! %s ", NowDateToStr());
 		journal.jprintf("%s\n", NowTimeToStr());  // Одним оператором есть косяк
 	}
-	SemaphoreGive (xWebThreadSemaphore);
+	SemaphoreGive(xWebThreadSemaphore);
 
 	return flag;
 }

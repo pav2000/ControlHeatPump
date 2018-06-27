@@ -2116,11 +2116,11 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }
@@ -2139,11 +2139,11 @@ int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret
 	result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = RS485.getResponseBuffer(0);
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }
@@ -2162,11 +2162,11 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
 	result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = (RS485.getResponseBuffer(0) << 16) | RS485.getResponseBuffer(1);
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }

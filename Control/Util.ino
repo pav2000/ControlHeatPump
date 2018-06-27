@@ -826,7 +826,7 @@ __attribute__((always_inline))  inline byte writeEEPROM_I2C(unsigned long addr, 
 		return 0;
 	}
 	_retEEPROM_I2C = eepromI2C.write(addr, values, nBytes);
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 	return _retEEPROM_I2C;
 }
 // Чтение в eeprom, 0 - успешно
@@ -837,7 +837,7 @@ __attribute__((always_inline))   inline byte readEEPROM_I2C(unsigned long addr, 
 		return 0;
 	}
 	_retEEPROM_I2C = eepromI2C.read(addr, values, nBytes);
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 	return _retEEPROM_I2C;
 }
 // ЧАСЫ  есть проблема - работают на прямую с i2c не через wire ----------------------------------
@@ -849,7 +849,7 @@ __attribute__((always_inline)) inline float getTemp_RtcI2C()
 		return 0;
 	}
 	static volatile float ret = rtcI2C.temperature() / 100.0;
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 	return ret;
 }
 
@@ -862,7 +862,7 @@ __attribute__((always_inline))   inline tmElements_t getTime_RtcI2C()
 		return ret_getTime_RtcI2C;
 	}
 	rtcI2C.read(ret_getTime_RtcI2C);
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 	return ret_getTime_RtcI2C;
 }
 
@@ -874,7 +874,7 @@ __attribute__((always_inline)) inline void setTime_RtcI2C(uint8_t hour, uint8_t 
 		return;
 	}
 	rtcI2C.setTime(hour, min, sec);
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 }
 
 // Часы на I2C   Установка даты
@@ -885,7 +885,7 @@ __attribute__((always_inline)) inline void setDate_RtcI2C(uint8_t date, uint8_t 
 		return;
 	}
 	rtcI2C.setDate(date, mon, year);
-	SemaphoreGive (xI2CSemaphore);
+	SemaphoreGive(xI2CSemaphore);
 }
 
 // Заполняет и выбирает нужный элемент (нумерация c 0) для тега select

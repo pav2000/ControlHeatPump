@@ -400,8 +400,7 @@ x_I2C_init_std_message:
   HP.set_hashAdmin();
 
 #ifdef RADIO_SENSORS
-  RADIO_SENSORS_PORT.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
-
+  RADIO_SENSORS_SERIAL.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
 #endif
 
 // 9. Сетевые настройки

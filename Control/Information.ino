@@ -303,46 +303,47 @@ void Journal::_write(char *dataPtr)
 	if(dataPtr == NULL || numBytes == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
 	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
-	// Запись в eeprom
+	// Запись в I2C память
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return;
+	}
 	dataPtr[numBytes] = I2C_JOURNAL_TAIL;
 	if(full) dataPtr[numBytes + 1] = I2C_JOURNAL_HEAD;
-	int32_t n = bufferTail;
-	__asm__ volatile ("" ::: "memory");
-	if(n + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
-		full = 1;
-		bufferTail = numBytes - (JOURNAL_LEN - n);
-		bufferHead = bufferTail + 1;
-		__asm__ volatile ("" ::: "memory");
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, JOURNAL_LEN - n)) {
+	if(bufferTail + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
+		int32_t n;
+		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, n = JOURNAL_LEN - bufferTail)) {
 			#ifdef DEBUG
 				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return;
-		}
-		err = OK;
-		n = JOURNAL_LEN - n;
-		dataPtr += n;
-		numBytes -= n;
-		if(writeEEPROM_I2C(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
-			err = ERR_WRITE_I2C_JOURNAL;
-			#ifdef DEBUG
-				Serial.print(errorWriteI2C);
-			#endif
-			return;
+		} else {
+			dataPtr += n;
+			numBytes -= n;
+			full = 1;
+			if(eepromI2C.write(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
+				err = ERR_WRITE_I2C_JOURNAL;
+				#ifdef DEBUG
+					Serial.print(errorWriteI2C);
+				#endif
+			} else {
+				bufferTail = numBytes;
+				bufferHead = bufferTail + 1;
+				err = OK;
+			}
 		}
 	} else {  // Запись в один прием Буфер не полный
-		bufferTail = n + numBytes;
-		if(full) bufferHead = bufferTail + 1;
-		__asm__ volatile ("" ::: "memory");
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 1 + full)) {
+		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes + 1 + full)) {
 			#ifdef DEBUG
 				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return;
+		} else {
+			bufferTail += numBytes;
+			if(full) bufferHead = bufferTail + 1;
 		}
 	}
+	SemaphoreGive(xI2CSemaphore);
 #else   // Запись в память
 	// Serial.print(">"); Serial.print(numBytes); Serial.println("<");
 
