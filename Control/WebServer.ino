@@ -1900,12 +1900,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
                  { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
                    { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&");  continue;  } 
-                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                    else { strcat(strReturn,"E05&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                  }
                if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
                   { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
                     { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }   
-                    else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                    else { strcat(strReturn,"E05&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
 
                if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
@@ -1968,13 +1968,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                 
               if (strcmp(str,"get_minPress")==0)           // Функция get_minPress
                 { if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2); 
+                     x_get_minPress: _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2);
                   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
                 strcat(strReturn,"&"); continue; }
                 
                if (strcmp(str,"get_maxPress")==0)           // Функция get_maxPress
                 { if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2); 
+                	 x_get_maxPress: _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2);
                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
                 strcat(strReturn,"&"); continue; }
                 
@@ -2016,19 +2016,27 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
                  { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
+              if(strcmp(str, "set_minPress") == 0) {
+            	  if(HP.sADC[p].set_minPress(pm * 100 + 0.005) == OK) goto x_get_minPress;
+            	  else { strcat(strReturn, "E05&");  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+              }
+              if(strcmp(str, "set_maxPress") == 0) {
+            	  if(HP.sADC[p].set_maxPress(pm * 100 + 0.005) == OK) goto x_get_maxPress;
+             	  else {  strcat(strReturn, "E05&"); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+              }
 
               if (strcmp(str,"set_transPress")==0)           // Функция set_transPress float
                  { if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
               
               if (strcmp(str,"set_zeroPress")==0)           // Функция set_zeroTPress
                  { if (HP.sADC[p].set_zeroPress((int16_t)pm)==OK)    // Установить значение
                    {_itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }    
        
               }  // end else
@@ -2093,13 +2101,13 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"set_testInput")==0)           // Функция set_testInput
                  { if (HP.sInput[p].set_testInput((int16_t)pm)==OK)    // Установить значение
                    { if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
                   
               if (strcmp(str,"set_alarmInput")==0)           // Функция set_alarmInput
                  { if (HP.sInput[p].set_alarmInput((int16_t)pm)==OK)    // Установить значение
                    { if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
              }  // else end 
            } //if ((strstr(str,"Input")>0)  
@@ -2178,7 +2186,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
                  { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
                    {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E35&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
               if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
                  { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
@@ -2188,7 +2196,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                  { 
                    if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение
                    {  _itoa(HP.sFrequency[p].get_Capacity(),strReturn);  strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E35");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E35&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }   
              }  // else end 
            } //if ((strstr(str,"Flow")>0)          
@@ -2220,7 +2228,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
               if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
                  { if (HP.dRelay[p].set_Relay((int16_t)pm)==OK)    // Установить значение
                    { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05");strcat(strReturn,"&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
               }  // else end 
           } //if ((strstr(str,"Relay")>0)  5

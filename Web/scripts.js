@@ -1,8 +1,8 @@
 /* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
-//var urlcontrol = 'http://192.168.1.10';
+//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -420,22 +420,23 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
-												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_zeroPress(" + count[j] + "),get_transPress(" + count[j] + "),get_maxPress(" + count[j] + "),get_minPress(" + count[j] + "),get_pinPress(" + count[j] + "),get_notePress(" + count[j] + "),get_testPress(" + count[j] + "),";
-												upsens = upsens + "get_Press(" + count[j] + "),get_adcPress(" + count[j] + "),get_errcodePress(" + count[j] + "),";
-												content = content + '<tr id="get_presentpress-' + input + '">';
-												content = content + '<td>' + count[j] + '</td>';
-												content = content + '<td id="get_notepress-' + input + '"></td>';
-												content = content + '<td id="get_press-' + input + '" nowrap>-</td>';
-												content = content + '<td id="get_minpress-' + input + '">-</td>';
-												content = content + '<td id="get_maxpress-' + input + '">-</td>';
-												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
-												content = content + '<td nowrap><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
-												content = content + '<td nowrap><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
-												content = content + '<td id="get_pinpress-' + input + '">-</td>';
-												content = content + '<td id="get_adcpress-' + input + '">-</td>';
-												content = content + '<td id="get_errcodepress-' + input + '">-</td>';
-												content = content + '</tr>';
+												var P = count[j];
+												loadsens += "get_zeroPress(" +P+ "),get_transPress(" +P+ "),get_maxPress(" +P+ "),get_minPress(" +P+ "),get_pinPress(" +P+ "),get_notePress(" +P+ "),get_testPress(" +P+ "),";
+												upsens += "get_Press(" +P+ "),get_adcPress(" +P+ "),get_errcodePress(" +P+ "),";
+												P = P.toLowerCase();
+												content += '<tr id="get_presentpress-' +P+ '">';
+												content += '<td>' +count[j]+ '</td>';
+												content += '<td id="get_notepress-' +P+ '"></td>';
+												content += '<td id="get_press-' +P+ '" nowrap>-</td>';
+												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" min="0" max="2048" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" min="0" max="4" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
+												content += '<td id="get_pinpress-' +P+ '">-</td>';
+												content += '<td id="get_adcpress-' +P+ '">-</td>';
+												content += '<td id="get_errcodepress-' +P+ '">-</td>';
+												content += '</tr>';
 											}
 											document.getElementById(idsel + "2").innerHTML = content;
 											updateParam(upsens);

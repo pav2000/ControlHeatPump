@@ -70,35 +70,35 @@ class sensorADC
     void initSensorADC(int sensor,int pinA);             // Инициализация датчика  порядковый номер датчика и нога он куда прикреплен
     int8_t  Read();                                      // чтение данных c аналогового датчика давления (АЦП) возвращает код ошибки, делает все преобразования
     //int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
-    __attribute__((always_inline)) inline int16_t get_minPress(){return minPress;}     // Минимальная давление датчика - нижняя граница диапазона, при выходе из него ошибка
-    __attribute__((always_inline)) inline int16_t get_maxPress(){return maxPress;}     // Максимальная давление датчика - верхняя граница диапазона, при выходе из него ошибка
-    int16_t get_zeroPress(){return zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
+    __attribute__((always_inline)) inline int16_t get_minPress(){return cfg.minPress;}     // Минимальная давление датчика - нижняя граница диапазона, при выходе из него ошибка
+    __attribute__((always_inline)) inline int16_t get_maxPress(){return cfg.maxPress;}     // Максимальная давление датчика - верхняя граница диапазона, при выходе из него ошибка
+    int16_t get_zeroPress(){return cfg.zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
     int8_t  set_zeroPress(int16_t p);                    // Установка Выход датчика (отсчеты ацп)  соответсвующий 0
     int16_t get_lastPress(){return lastPress;}           // Последнее считанное значение датчика - НЕ обработанное (без усреднения)
     int16_t get_lastADC(){ return lastADC; }             // Последнее считанное значение датчика в отсчетах с фильтром
     int16_t get_Press();                                 // Получить значение давления датчика - это то что используется
-    float get_transADC(){return transADC;}               // Получить значение коэффициента преобразования напряжение-температура
+    float get_transADC(){return cfg.transADC;}               // Получить значение коэффициента преобразования напряжение-температура
     int8_t set_transADC(float p);                        // Установить значение коэффициента преобразования напряжение-температура
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
     int8_t  get_lastErr(){return err;}                   // Получить последнюю ошибку
     inline int8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
-    int16_t get_testPress(){return testPress;}           // Получить значение давления датчика в режиме теста
+    int16_t get_testPress(){return cfg.testPress;}           // Получить значение давления датчика в режиме теста
     int8_t  set_testPress(int16_t p);                    // Установить значение давления датчика в режиме теста
+    int8_t  set_minPress(int16_t p) { cfg.minPress = p; return OK; }
+    int8_t  set_maxPress(int16_t p)  { cfg.maxPress = p; return OK; }
     TEST_MODE get_testMode(){return testMode;}           // Получить текущий режим работы
     void    set_testMode(TEST_MODE t){testMode=t;}       // Установить значение текущий режим работы
      
     char*   get_note(){return note;}                     // Получить наименование датчика
     char*   get_name(){return name;}                     // Получить имя датчика
-    uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
-    uint16_t get_save_size(void) { return (byte*)&testPress - (byte*)&number + sizeof(testPress); } // Размер структуры сохранения
+    uint8_t *get_save_addr(void) { return (uint8_t *)&cfg; } // Адрес структуры сохранения
+    uint16_t get_save_size(void) { return sizeof(cfg); } // Размер структуры сохранения
    
     statChart Chart;                                      // График по датчику
     type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
     
   private:
-    int16_t minPress;                                    // минимально разрешенное давление
-    int16_t maxPress;                                    // максимально разрешенное давление
     int16_t lastPress;                                   // последнее считанное давление с датчика
     int16_t Press;                                       // давление датчика (обработанная)
     struct {     // Save GROUP, firth number
@@ -106,7 +106,9 @@ class sensorADC
     int16_t zeroPress;                                   // отсчеты АЦП при нуле датчика
     float   transADC;                                    // коэффициент пересчета АЦП в давление
     int16_t testPress;                                   // давление датчика в режиме тестирования
-    } __attribute__((packed));// Save Group end, last testPress
+    int16_t minPress;                                    // минимально разрешенное давление
+    int16_t maxPress;                                    // максимально разрешенное давление
+    } __attribute__((packed)) cfg;// Save Group end
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
        
