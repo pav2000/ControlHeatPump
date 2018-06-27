@@ -445,17 +445,15 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										element = document.getElementById(idsel);
 										if(element) {
-											if(values[0].substr(-6, 5) == "_skip") {
-												var j2 = Number(values[0].substr(-1)) - 1;
-												for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
-											} else document.getElementById(idsel).innerHTML = "";
-										}
-										var element3 = document.getElementById(idsel);
-										if(element3 && element3.tagName != "SPAN") {
+										  if(values[0].substr(-6, 5) == "_skip") {
+											var j2 = Number(values[0].substr(-1)) - 1;
+											for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
+										  } else document.getElementById(idsel).innerHTML = "";
+										  if(element.tagName != "SPAN") {
 											var cont1 = values[1].split(';');
 											for(var k = 0, len = cont1.length - 1; k < len; k++) {
 												cont2 = cont1[k].split(':');
-												if(cont2[1] == 1 || k == len - 1) {
+												if(cont2[1] == 1) {
 													selected = true;
 													if(idsel == "get_optionhp-time_chart") {
 														var time_chart = cont2[0];
@@ -548,10 +546,7 @@ function loadParam(paramid, noretry, resultdiv) {
 															document.getElementById("get_paramheathp-temp1").disabled = true;
 														}
 													}
-
-												} else {
-													selected = false;
-												}
+												} else selected = false;
 												if(idsel == "get_listchart") {
 													var elems = document.getElementsByName("chrt_sel");
 													for(var j = 0; j < elems.length; j++) {
@@ -560,10 +555,10 @@ function loadParam(paramid, noretry, resultdiv) {
 												} else {
 													var opt = new Option(cont2[0], k, false, selected);
 													if(cont2[2] == 0) opt.disabled = true;
-													var element = document.getElementById(idsel);
-													if(element) element.add(opt, null);
+													element.add(opt, null);
 												}
 											}
+										  }
 										}
 									}
 								} else if(type == 'const') {

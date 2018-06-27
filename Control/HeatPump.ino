@@ -947,7 +947,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 															Option.tChart == 3*60 ? 4 :
 															Option.tChart == 10*60 ? 5 :
 															Option.tChart == 30*60 ? 6 :
-															Option.tChart == 60*60 ? 7 : 8);
+															Option.tChart == 60*60 ? 7 : 0);
 						                      } else
    if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          {if(GETBIT(Option.flags,fNextion)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); } else         // использование дисплея nextion
