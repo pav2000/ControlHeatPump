@@ -1594,7 +1594,7 @@ boolean HeatPump::switchBoiler(boolean b)
 			#endif
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 		}
-		else   // Все осталное
+		else   // Все осталное: Переход с нагрева бойлера на отопление тут
 		{
 			#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
@@ -1602,7 +1602,7 @@ boolean HeatPump::switchBoiler(boolean b)
 			#ifdef RPUMPFL
 			dRelay[RPUMPFL].set_OFF();    // ТП
 			#endif
-			dRelay[RPUMPO].set_OFF();    // файнкойлы
+			dRelay[RPUMPO].set_ON();      // файнкойлы, нужно что-нибудь включить .
 		}
 	}
 #endif
