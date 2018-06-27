@@ -399,6 +399,11 @@ x_I2C_init_std_message:
   HP.set_hashUser();
   HP.set_hashAdmin();
 
+#ifdef RADIO_SENSORS
+  RADIO_SENSORS_PORT.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
+
+#endif
+
 // 9. Сетевые настройки
    journal.jprintf("6. Setting Network . . .\n");
    initW5200(true);   // Инициализация сети с выводом инфы в консоль

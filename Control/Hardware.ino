@@ -507,7 +507,7 @@ int8_t devRelay::set_Relay(boolean r)
   
   #endif        
   Relay=r;      
-  journal.jprintf(" Relay %s: ",name);if (Relay) journal.jprintf("ON\n"); else journal.jprintf("OFF\n"); 
+  journal.jprintf(" Relay %s: %s\n", name, Relay ? "ON" : "OFF");
   return err;
 }
 
@@ -947,7 +947,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
          for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
             { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	}   else if(strcmp(var, eev_RULE)==0){
-         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка фреонов
+         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка
             { strcat(ret,noteRuleEEV[i]); strcat(ret,":"); if(i==get_ruleEEV()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	} else if(strcmp(var, eev_NAME)==0){
 	     strcat(ret,name); 

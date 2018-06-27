@@ -1,4 +1,4 @@
-/* ver 0.951 beta */
+/* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 var urlcontrol = 'http://192.168.0.199';
@@ -213,10 +213,10 @@ function loadParam(paramid, noretry, resultdiv) {
 										title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
 										var yizm = '';
 										var ytooltip = '';
-										var timeval = '';
 										var height = 300;
 										var visible = false;
-										timeval = window.time_chart;
+										var timeval = window.time_chart;
+										if(!timeval) continue;
 										timeval = Number(timeval.replace(/\D+/g, ""));
 										var today = new Date();
 										var regexpt = /^(T|O|d)/g;

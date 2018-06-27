@@ -1802,15 +1802,15 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        if(pm==ATOF_ERROR) { strcat(strReturn,"E04");strcat(strReturn,"&");continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
 
        p = -1;
-       for(i=0; i<TNUMBER; i++) if(strcmp(x+1,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
-       if(p==-1)  {for(i=0;i<ANUMBER;i++) if(strcmp(x+1,HP.sADC[i].get_name())==0) {p=100+i; break;}} // Поиск среди имен смещение 100
-       if(p==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x+1,HP.sInput[i].get_name())==0) {p=200+i; break;}} // Поиск среди имен смещение 200
-       if(p==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x+1,HP.sFrequency[i].get_name())==0) {p=300+i; break;}} // Частотные датчики смещение 300
-       if(p==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x+1,HP.dRelay[i].get_name())==0) {p=400+i; break;}} // Реле
+       x++;
+       for(i=0; i<TNUMBER; i++) if(strcmp(x,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
+       if(p==-1)  {for(i=0;i<ANUMBER;i++) if(strcmp(x,HP.sADC[i].get_name())==0) {p=100+i; break;}} // Поиск среди имен смещение 100
+       if(p==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=200+i; break;}} // Поиск среди имен смещение 200
+       if(p==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=300+i; break;}} // Частотные датчики смещение 300
+       if(p==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x,HP.dRelay[i].get_name())==0) {p=400+i; break;}} // Реле
        if(p==-1)  { strcat(strReturn,"E02");strcat(strReturn,"&");  continue; }  // Не верный параметр
 
-
-  //     x[0]=0;                                                                        // Обрезаем строку до скобки (
+       //     x[0]=0;                                                                        // Обрезаем строку до скобки (
        // Все готово к разбору имен функций c параметром
        // 1. Датчики температуры смещение param 0
        if (strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
