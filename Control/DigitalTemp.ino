@@ -339,6 +339,7 @@ unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 	return WCRC;
 }
 
+#ifdef RADIO_SENSORS
 void RS_send_response(void)
 {
 	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
@@ -390,4 +391,4 @@ void serialEvent3()
 		}
 	}
 }
-
+#endif
