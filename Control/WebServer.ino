@@ -2333,23 +2333,24 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // Возврат - true ok  false - error
 boolean parserPOST(uint8_t thread)
 {
-byte *ptr; 
-  // Определение начала данных
-  if ((ptr=(byte*)strstr((char*)Socket[thread].inPtr,HEADER_BIN))==NULL) {journal.jprintf("Not found header in file.\n");return false;} // Заголовок не найден
-  ptr=ptr+strlen(HEADER_BIN);
-   // Проверка загловка
-  if ((ptr[0]!=0xaa)||(ptr[1]!=0x00)) {journal.jprintf("Invalid header file setting.\n");return false;}                 // не верный заголовок
-  if ((ptr[2]+256*ptr[3])!=VER_SAVE)  {journal.jprintf("Invalid version file setting.\n");return false;}                // не совпадение версий
-//  len=ptr[4]+256*ptr[5];  // длина данных  по заголовку
-   // Чтение настроек
-  if (OK!=HP.load(ptr, 1)) return false;
-  // Чтение профиля
-  if (OK!=HP.Prof.loadFromBuf(0000000000, ptr)) return false;
+	byte *ptr;
+	// Определение начала данных
+	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr, HEADER_BIN)) == NULL) {
+		journal.jprintf("Not found header in file.\n");
+		return false;
+	} // Заголовок не найден
+	ptr += m_strlen(HEADER_BIN);
+	// Чтение настроек
+	int32_t len = HP.load(ptr, 1);
+	if(len <= 0) return false;
+	// Чтение профиля
+	ptr += len;
+	if(OK != HP.Prof.loadFromBuf(0, ptr)) return false;
 #ifdef USE_SCHEDULER
-  if(HP.Schdlr.loadFromBuf(00000000000 + HP.Prof.get_lenProfile(), ptr) != OK) return false;
+	if(HP.Schdlr.loadFromBuf(HP.Prof.get_lenProfile(), ptr) != OK) return false;
 #endif
-  HP.Prof.update_list(HP.Prof.get_idProfile());                                                                        // обновить список
-  return true;
+	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
+	return true;
 }
 
 

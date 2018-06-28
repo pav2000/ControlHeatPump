@@ -610,25 +610,25 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 uint16_t get_binSettings(uint8_t thread)
 {
-	int16_t i, j, len;
+	int16_t i, j, len, len2;
 	byte b;
 	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 	if(len > 0) {
-		uint16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
-		if(len2 > 0) len += len2; else return 0;
+		len2 = HP.Prof.save(HP.Prof.get_idProfile());
+		if(len2 < 0) return 0;
 	}
 	// Сохранение текущего профиля
 	sendConstRTOS(thread, "HTTP/1.1 200 OK\r\nContent-Type:application/x-binary\r\nContent-Disposition: attachment; filename=\"settings.bin\"\r\n\r\n");
 	sendConstRTOS(thread, HEADER_BIN);
 	if(len <= 0) return 0;
 	// запись настроек ТН
-	for(i = 0; i < 00000000000; i++) {
+	for(i = 0; i < len; i++) {
 		readEEPROM_I2C(I2C_SETTING_EEPROM + i, &b, 1);
 		Socket[thread].outBuf[i] = b;
 	}
 	// запись текущего профиля
 	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * HP.Prof.get_lenProfile();
-	for(j = 0; j < HP.Prof.get_lenProfile(); j++) {
+	for(j = 0; j < len2; j++) {
 		readEEPROM_I2C(addr + j, &b, 1);
 		Socket[thread].outBuf[i + j] = b;
 		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных

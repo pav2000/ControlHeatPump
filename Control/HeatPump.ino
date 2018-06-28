@@ -337,9 +337,9 @@ x_Error:
 		journal.jprintf("Error: %04x != %04x!\n", crc, *((uint16_t *)(buffer + size)));
 		return error = ERR_CRC16_EEPROM;
 	}
-	journal.jprintf("%04x", crc);
+	journal.jprintf("%04x ", crc);
 	#else
-	journal.jprintf("*NO*");
+	journal.jprintf("*NO* ");
 	#endif
 	uint8_t *buffer_max = buffer + size;
 	load_struct(&Option, &buffer, sizeof(Option));
@@ -389,8 +389,8 @@ x_Error:
 #ifdef SENSOR_IP
 	updateLinkIP();
 #endif
-	journal.jprintf(" OK\n");
-	return OK;
+	journal.jprintf("OK\n");
+	return size + sizeof(crc);
 }
 
 // Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
@@ -2097,7 +2097,7 @@ MODE_HP HeatPump::get_Work()
 }
 // Управление температурой в зависимости от режима
 #define STR_REDUCED "Reduced FC"   // Экономим место
-#define STR_FREQUENCY " FC> %.2f Hz\n"            // Экономим место
+#define STR_FREQUENCY " FC> %.2f\n"            // Экономим место
 // Итерация по управлению Бойлером
 // возврат что надо делать компрессору, функция НЕ управляет компрессором а только выдает необходимость включения компрессора
 MODE_COMP  HeatPump::UpdateBoiler()

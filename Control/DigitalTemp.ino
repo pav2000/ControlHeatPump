@@ -320,10 +320,11 @@ void sensorIP::after_load()
 
 #endif  
 
+#ifdef RADIO_SENSORS
 uint8_t rs_serial_buf[128];
 uint8_t rs_serial_idx = 0;
 uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
-const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 };
+const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
 #define rs_serial_full_header_size 7
 #define rs_serial_addr_idx	5
 #define rs_addr	1
@@ -339,15 +340,18 @@ unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 	return WCRC;
 }
 
-#ifdef RADIO_SENSORS
 void RS_send_response(void)
 {
 	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
 	if(p) {
 		*p = '\0';
 		rs_serial_buf[rs_serial_addr_idx] = rs_addr;
+		rs_serial_buf[rs_serial_full_header_size + 2] &= ~0x20; // В нижний регистр cmd
 		p++;
-		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size));
+		uint8_t len = p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size);
+		rs_serial_buf[rs_serial_full_header_size - 1] = len;
+		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, len);
+		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
 		RADIO_SENSORS_SERIAL.write(rs_serial_buf, p + 2 - (uint8_t *)rs_serial_buf);
 	}
 }
@@ -374,7 +378,7 @@ void serialEvent3()
 					journal.jprintf("RS CRC error!\n");
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS:%s\n", rs_serial_buf + rs_serial_full_header_size);
+					journal.jprintf("RS<=%s\n", rs_serial_buf + rs_serial_full_header_size);
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
 						if(c == 'I') { // Присутствие
@@ -391,4 +395,5 @@ void serialEvent3()
 		}
 	}
 }
+
 #endif
