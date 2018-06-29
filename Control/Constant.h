@@ -49,11 +49,11 @@ const uint16_t  defaultPort=80;
 #define NTP_LOCAL_PORT    8888              // локальный порт, который будет прослушиваться на предмет UDP-пакетов NTP сервера
 #define NTP_REPEAT        3                 // Число попыток запросов NTP сервера
 #define NTP_REPEAT_TIME   1000              // (мсек) Время между повторами ntp пакетов
-#define PING_SERVER      "8.8.8.8"          // ping сервер по ДЕФОЛТУ
+#define PING_SERVER       "8.8.8.8"          // ping сервер по ДЕФОЛТУ
 #define WDT_TIME          10                // период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ установить 0 то Watchdog будет отключен!!!
-#define INDEX_FILE       "index.html"       // стартовый файл по умолчанию для большой морды
-#define INDEX_MOB_FILE   INDEX_FILE         // стартовый файл по умолчанию для мобильной морды
-#define MOB_PATH         "/mob/"            // Путь к мобильной морде
+#define INDEX_FILE        "index.html"       // стартовый файл по умолчанию для большой морды
+#define INDEX_MOB_FILE    INDEX_FILE         // стартовый файл по умолчанию для мобильной морды
+#define MOB_PATH          "/mob/"            // Путь к мобильной морде
 #define VER_SAVE          126               // Версия формата сохраняемых данных
 #define HEADER_BIN        "Starting_DATA"   // Заголовок (начало) файла при сохранении настроек. Необходим для поиска данных в буфере данных при восстановлении из файла
 #define MAX_LEN_PM        250               // максимальная длина строкового параметра в запросе (расписание бойлера 175 байт) кодирование описания профиля 40 букв одна буква 6 байт (двойное кодирование)
@@ -82,9 +82,9 @@ const uint16_t  defaultPort=80;
 // ------------------- SERIAL --------------------------------
 //Nextion дисплей
 //#define NEXTION_DEBUG                     // Выводить информацию в отладочный порт с дисплея
-#define NEXTION_PORT     Serial1            // Аппаратный порт куда прицеплен дисплей
-#define NEXTION_UPDATE   5000               // Время обновления информации на дисплее Nextion (мсек)
-#define NEXTION_READ     20                 // Время опроса дисплея Nextion (мсек) разбор входной очереди
+#define NEXTION_PORT      Serial1            // Аппаратный порт куда прицеплен дисплей
+#define NEXTION_UPDATE    5000               // Время обновления информации на дисплее Nextion (мсек)
+#define NEXTION_READ      20                 // Время опроса дисплея Nextion (мсек) разбор входной очереди
 
 // Конфигурирование Modbus для инвертора и счетчика SDM
 #ifndef MODBUS_PORT_NUM
@@ -693,6 +693,7 @@ const char *fc_INFO1             = {"INFO1"};             // Первая стр
 const char *fc_cCURRENT          = {"cCURRENT"};          // Текущий ток (чтение)
 const char *fc_AUTO              = {"AUTO"};              // Флаг автоматического подбора частоты
 const char *fc_AUTO_RESET_FAULT  = {"ARSTFLT"};           // Флаг автоматического сброса не критичной ошибки инвертора
+const char *fc_LogWork		     = {"LOGW"};              // Флаг логировать во время работы
 const char *fc_ANALOG            = {"ANALOG"};            // Флаг аналогового управления
 const char *fc_DAC               = {"DAC"};               // Получение текущего значения ЦАП
 const char *fc_LEVEL0            = {"LEVEL0"};            // Уровень частоты 0 в отсчетах ЦАП

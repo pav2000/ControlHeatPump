@@ -184,7 +184,7 @@ public:
   // Управление по модбас Общее для всех частотников
   int16_t	get_targetFreq() {return FC;}                    // Получить целевую скорость в %
   int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
-  uint16_t	get_power(){return (uint32_t)nominal_power * power / 1000L;}   // Получить текущую мощность в Вт
+  uint16_t	get_power(){return (uint32_t)nominal_power * power / 1000;}   // Получить текущую мощность в Вт
   uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
   void		get_infoFC(char *buf);                   // Получить информацию о частотнике
   void		get_infoFC_status(char *buffer, uint16_t st); // Вывести в buffer строковый статус.

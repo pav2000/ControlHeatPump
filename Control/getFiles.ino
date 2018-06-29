@@ -129,7 +129,7 @@ void get_txtState(uint8_t thread, boolean header)
          {
               strcat(Socket[thread].outBuf,"Целевая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_targetFreq()/100.0,2); STR_END;
               strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_freqFC()/100.0,2); STR_END;
-              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_power()/1000.0,1); STR_END;
+              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_power()/1000.0,3); STR_END;
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),Socket[thread].outBuf); STR_END;
 #endif
@@ -610,32 +610,31 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 uint16_t get_binSettings(uint8_t thread)
 {
-	int16_t i, j, len, len2;
+	int16_t i, j, len;
 	byte b;
 	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-	if(len > 0) {
-		len2 = HP.Prof.save(HP.Prof.get_idProfile());
-		if(len2 < 0) return 0;
-	}
+	if(len <= 0) return 0;
 	// Сохранение текущего профиля
 	sendConstRTOS(thread, "HTTP/1.1 200 OK\r\nContent-Type:application/x-binary\r\nContent-Disposition: attachment; filename=\"settings.bin\"\r\n\r\n");
 	sendConstRTOS(thread, HEADER_BIN);
-	if(len <= 0) return 0;
 	// запись настроек ТН
 	for(i = 0; i < len; i++) {
 		readEEPROM_I2C(I2C_SETTING_EEPROM + i, &b, 1);
 		Socket[thread].outBuf[i] = b;
 	}
 	// запись текущего профиля
+	len = HP.Prof.save(HP.Prof.get_idProfile());
+	if(len <= 0) return 0;
 	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * HP.Prof.get_lenProfile();
-	for(j = 0; j < len2; j++) {
+	for(j = 0; j < len; j++) {
 		readEEPROM_I2C(addr + j, &b, 1);
 		Socket[thread].outBuf[i + j] = b;
 		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных
 	}
+	len = i + j;
 #ifdef USE_SCHEDULER
-	if((uint16_t)(i + j) + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
-		i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + i + j);
+	if((uint16_t)len + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
+		i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + len);
 		if(i <= 0) return 0; // ошибка
 		len += i;
 	}
@@ -939,7 +938,7 @@ int16_t x;
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
               strcpy(tempBuf,"Текущая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_freqFC()/100.0,2);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
-              strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,1);
+              strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,3);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
               strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _ftoa(tempBuf,(float)HP.dFC.read_tempFC()/10.0,2);
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
