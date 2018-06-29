@@ -202,6 +202,7 @@ boolean initW5200(boolean flag)
 			}
 		} else {
 x_TryStaticIP:
+			WDT_Restart(WDT);
 			Ethernet.begin((uint8_t*) HP.get_mac(), (IPAddress) HP.get_ip(), (IPAddress) HP.get_sdns(),
 					(IPAddress) HP.get_gateway(), (IPAddress) HP.get_subnet()); // Статика
 			if(HP.get_ip() != Ethernet.localIP()) EthernetOK = false;

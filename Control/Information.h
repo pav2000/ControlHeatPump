@@ -385,14 +385,14 @@ struct type_mqtt                             // настройки MQTT клие
  char narodMon_login[16];                     // логин сервера народного мониторинга
  char narodMon_password[16];                  // пароль сервера народного мониторинга
  char narodMon_id[16];                        // Идентификатор клиента на народного мониторинга
- int16_t P1;                                  // Резервный параметр 1
- int16_t P2;                                  // Резервный параметр 2
 };
 
 class clientMQTT                              // Класс клиент MQTT
  {
  public: 
     void initMQTT();                            // инициализация MQTT
+    uint8_t *get_save_addr(void) { return (uint8_t *)&mqttSettintg; } // Адрес структуры сохранения
+    uint16_t get_save_size(void) { return sizeof(mqttSettintg); } // Размер структуры сохранения
     int32_t save(int32_t adr);                  // Записать MQTT в еепром под номерм num
     int32_t load(int32_t adr);                  // загрузить MQTT num из еепром память
     int32_t loadFromBuf(int32_t adr,byte *buf); // Считать настройки из буфера на входе адрес с какого, на выходе код ошибки (меньше нуля)

@@ -149,17 +149,17 @@ void sensorADC::initSensorADC(int sensor,int pinA)
         clearBuffer();
       }  
  
-      minPress=MINPRESS[sensor];                 // минимально разрешенное давление
-      maxPress=MAXPRESS[sensor];                 // максимально разрешенное давление
-      testPress=TESTPRESS[sensor];               // Значение при тестировании
       testMode=NORMAL;                           // Значение режима тестирования
-      zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
-      transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
+      cfg.minPress=MINPRESS[sensor];                 // минимально разрешенное давление
+      cfg.maxPress=MAXPRESS[sensor];                 // максимально разрешенное давление
+      cfg.testPress=TESTPRESS[sensor];               // Значение при тестировании
+      cfg.zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
+      cfg.transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
+      cfg.number = sensor;
       pin=pinA;
       flags = SENSORPRESS[sensor]<<fPresent;	 // наличие датчика
 	  #ifdef ANALOG_MODBUS
       flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
-      Sensor = sensor;
 	  #endif
       Chart.init(SENSORPRESS[sensor]);            // инициалазация статистики
       err=OK;                                     // ошибка датчика (работа)
@@ -178,7 +178,6 @@ void sensorADC::initSensorADC(int sensor,int pinA)
       SETBIT0(flags,fFull);                      // Буфер не полный
       lastPress=0;                               // последнее считанное давление по умолчанию ноль
  }
-
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
  int8_t  sensorADC::Read()
@@ -186,7 +185,7 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 
 	 if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
 
-	 if (testMode!=NORMAL) lastPress=testPress;        // В режиме теста
+	 if (testMode!=NORMAL) lastPress=cfg.testPress;        // В режиме теста
 	 else                                              // Чтение датчика
 	 {
 #ifdef DEMO
@@ -195,7 +194,7 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 	#ifdef ANALOG_MODBUS
 		 if(get_fmodbus()) {
 			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
-				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[Sensor], ANALOG_MODBUS_REG[Sensor] - 1, &adc.last);
+				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[number], ANALOG_MODBUS_REG[number] - 1, &adc.last);
 				if(err == OK) {
 					lastADC = adc.last;
 					break;
@@ -214,7 +213,7 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 			 if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
 		 }
 #endif
-		 lastPress=(int)((float)lastADC*(transADC))-zeroPress;
+		 lastPress=(int)((float)lastADC*(cfg.transADC))-cfg.zeroPress;
 	 }
 	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
 	 // Усреднение значений
@@ -227,8 +226,8 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
 	 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
-	 if(lastPress<minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}
-	 if(lastPress>maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+	 if(lastPress<cfg.minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}
+	 if(lastPress>cfg.maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
 
 	 // Дошли до сюда значит ошибок нет
 	 err=OK;                                         // Новый цикл новые ошибки
@@ -246,10 +245,9 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
 {
-  if((p>=0)&&(p<=2048)) { clearBuffer(); zeroPress=p; return OK;} // Суммы обнулить надо
+  if((p>=0)&&(p<=2048)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
   else return WARNING_VALUE;
 }
-
 
 //Получить значение давления датчика - это то что используется
 int16_t sensorADC::get_Press()
@@ -261,51 +259,15 @@ return Press;
 // Установить значение коэффициента преобразования напряжение (отсчеты ацп)-температура
 int8_t sensorADC::set_transADC(float p)
 {
-  if((p>=0.0)&&(p<=4.0)) { clearBuffer(); transADC=p; return OK;}  // Суммы обнулить надо
+  if((p>=0.0)&&(p<=4.0)) { clearBuffer(); cfg.transADC=p; return OK;}  // Суммы обнулить надо
   else return WARNING_VALUE;
 }
-
 
 // Установить значение давления датчика в режиме теста
 int8_t sensorADC::set_testPress(int16_t p)            
 {
-	testPress=p;
+	cfg.testPress=p;
 	return OK;
-}
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorADC::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&zeroPress, sizeof(zeroPress)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(zeroPress);   // !save! отсчеты АЦП при нуле датчика
-if (writeEEPROM_I2C(adr, (byte*)&transADC, sizeof(transADC)))      { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(transADC);   // !save! коэффициент пересчета АЦП в давление
-if (writeEEPROM_I2C(adr, (byte*)&testPress, sizeof(testPress)))    { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testPress);  // !save! давление датчика в режиме тестирования
-return adr;
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorADC::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&zeroPress, sizeof(zeroPress)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(zeroPress);   // !save! отсчеты АЦП при нуле датчика
-if (readEEPROM_I2C(adr, (byte*)&transADC, sizeof(transADC)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(transADC);  // !save! коэффициент пересчета АЦП в давление
-if (readEEPROM_I2C(adr, (byte*)&testPress, sizeof(testPress)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testPress);   // !save! давление датчика в режиме тестирования
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorADC::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&zeroPress,buf+adr,sizeof(zeroPress)); adr=adr+sizeof(zeroPress);      // !save! отсчеты АЦП при нуле датчика
-  memcpy((byte*)&transADC,buf+adr,sizeof(transADC)); adr=adr+sizeof(transADC);   // !save! коэффициент пересчета АЦП в давление
-  memcpy((byte*)&testPress,buf+adr,sizeof(testPress)); adr=adr+sizeof(testPress);      // !save! давление датчика в режиме тестирования
-  return adr;
-}
- // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorADC::get_crc16(uint16_t crc)
-{
-  uint8_t i;
-  crc=_crc16(crc,lowByte(zeroPress)); crc=_crc16(crc,highByte(zeroPress));    //  отсчеты АЦП при нуле датчика
-  for(i=0;i<sizeof(transADC);i++) crc=_crc16(crc,*((byte*)&transADC+i));  //  коэффициент пересчета АЦП в давление FLOAT
-  crc=_crc16(crc,lowByte(testPress)); crc=_crc16(crc,highByte(testPress));    //  давление датчика в режиме тестирования
-  return crc;              
 }
 
 // ------------------------------------------------------------------------------------------
@@ -315,6 +277,7 @@ uint16_t sensorADC::get_crc16(uint16_t crc)
 void  sensorDiditalInput::initInput(int sensor)
 {
    Input=false;                    // Состояние датчика
+   number = sensor;
    testInput=TESTINPUT[sensor];    // Состояние датчика в режиме теста
    testMode=NORMAL;                // Значение режима тестирования
    alarmInput=ALARMINPUT[sensor];  // Состояние датчика в режиме аварии
@@ -360,7 +323,6 @@ int8_t sensorDiditalInput::Read()
  return err;
 
 }
-
     
 // Установить Состояние датчика в режиме теста
 int8_t sensorDiditalInput::set_testInput( int16_t i)         
@@ -369,7 +331,6 @@ int8_t sensorDiditalInput::set_testInput( int16_t i)
     else  if (i==0)  { testInput=false; return OK;} 
      else return WARNING_VALUE;
 }
-
  
 // Установить Состояние датчика в режиме аварии
 int8_t sensorDiditalInput::set_alarmInput( int16_t i)         
@@ -378,38 +339,6 @@ int8_t sensorDiditalInput::set_alarmInput( int16_t i)
     else  if(i==0)  { alarmInput=false; return OK;} 
      else return WARNING_VALUE;
 }
-
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorDiditalInput::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&testInput, sizeof(testInput)))   { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(testInput);    // !save! Состояние датчика в режиме теста
-if (writeEEPROM_I2C(adr, (byte*)&alarmInput, sizeof(alarmInput))) { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; } adr=adr+sizeof(alarmInput);   // !save! Состояние датчика в режиме аварии
-return adr;   
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorDiditalInput::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&testInput, sizeof(testInput)))     { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(testInput);    // !save! Состояние датчика в режиме теста
-if (readEEPROM_I2C(adr, (byte*)&alarmInput, sizeof(alarmInput)))   { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; } adr=adr+sizeof(alarmInput);   // !save! Состояние датчика в режиме аварии
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorDiditalInput::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&testInput,buf+adr,sizeof(testInput)); adr=adr+sizeof(testInput);     // !save! Состояние датчика в режиме теста
-  memcpy((byte*)&alarmInput,buf+adr,sizeof(alarmInput)); adr=adr+sizeof(alarmInput);  // !save! Состояние датчика в режиме аварии
-  return adr;
-}
- // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorDiditalInput::get_crc16(uint16_t crc)
-{
-  crc=_crc16(crc,testInput); // !save! Состояние датчика в режиме теста
-  crc=_crc16(crc,alarmInput);// !save! Состояние датчика в режиме аварии
-  return crc;              
-}
-
 
 // ------------------------------------------------------------------------------------------
 // Цифровые частотные датчики (значение кодируется в выходной частоте) ----------------------
@@ -440,6 +369,7 @@ void InterruptFLOWPCON()
 // Инициализация частотного датчика, на входе номер сенсора по порядку
 void sensorFrequency::initFrequency(int sensor)                     
 {
+   number = sensor;
    Frequency=0;                                   // значение частоты
    Value=0;                                       // значение датчика в ТЫСЯЧНЫХ (умножать на 1000)
    Capacity=HEAT_CAPACITY;                        // значение теплоемкости теплоносителя в конутре где установлен датчик [Cp, Дж/(кг·град)]
@@ -525,45 +455,6 @@ int8_t sensorFrequency::set_Capacity(uint16_t c)
 {  
   if (c<=5000) {Capacity=c; return OK;} else return WARNING_VALUE;    
 }   
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::save(int32_t adr)
-{
-//	flags = flags & ~((1<<fPresent) | (1<<fcheckRange));
-    if(writeEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-    return adr;
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::load(int32_t adr)
-{
-    if(readEEPROM_I2C(adr, (byte*)&testValue, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity))) {
-        set_Error(ERR_LOAD_EEPROM, name);
-        return ERR_LOAD_EEPROM;
-    }
-    adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-	SETBIT1(flags, fPresent);
-    return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorFrequency::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&testValue, buf+adr, (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity));
-  adr += (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity);
-  SETBIT1(flags, fPresent);
-  return adr;  
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorFrequency::get_crc16(uint16_t crc)
-{
-  uint8_t i;
-  for(i = 0; i < (byte*)&Capacity - (byte*)&testValue + sizeof(Capacity); i++)
-	crc = _crc16(crc,*((byte*)&testValue + i));  // CRC16 структуры
-  return crc;                      
-}
 
 // ------------------------------------------------------------------------------------------
 // Исполнительное устройство РЕЛЕ (есть 2 состяния 0 и 1) --------------------------------------
@@ -616,7 +507,7 @@ int8_t devRelay::set_Relay(boolean r)
   
   #endif        
   Relay=r;      
-  journal.jprintf(" Relay %s: ",name);if (Relay) journal.jprintf("ON\n"); else journal.jprintf("OFF\n"); 
+  journal.jprintf(" Relay %s: %s\n", name, Relay ? "ON" : "OFF");
   return err;
 }
 
@@ -643,7 +534,7 @@ void devEEV::initEEV()
   testMode=NORMAL;                      // Значение режима тестирования
 	
 // Устновка настроек по умолчанию (структара данных _data)
- _data.timeIn=10;                                     // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+ _data.timeIn = DEFAULT_EEV_TIME;                     // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
  _data.tOverheat = DEFAULT_OVERHEAT;                  // Перегрев ЦЕЛЬ (сотые градуса)
  _data.Kp =  DEFAULT_EEV_Kp;                          // ПИД Коэф пропорц.  В СОТЫХ!!!
  _data.Ki =  DEFAULT_EEV_Ki;                          // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
@@ -1056,7 +947,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
          for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
             { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	}   else if(strcmp(var, eev_RULE)==0){
-         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка фреонов
+         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка
             { strcat(ret,noteRuleEEV[i]); strcat(ret,":"); if(i==get_ruleEEV()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	} else if(strcmp(var, eev_NAME)==0){
 	     strcat(ret,name); 
@@ -1239,16 +1130,17 @@ int8_t devOmronMX2::initFC()
   _data.level100=4096;                             // Отсчеты ЦАП соответсвующие 100 мощности
   _data.levelOff=10;                               // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
   #endif
-  _data.flags=0x00;                                // флаги  0 - наличие FC
-  SETBIT0(_data.flags,fAuto);                      // По умолчанию старт-стоп
+  flags=0x00;                               		 // флаги  0 - наличие FC
+  _data.setup_flags=0x00;                                // флаги
+  SETBIT0(_data.setup_flags,fAuto);                      // По умолчанию старт-стоп
   if(!Modbus.get_present())                        // modbus отсутствует
       {
-       SETBIT0(_data.flags,fFC);          // Инвертор не рабоатет
+       SETBIT0(flags,fFC);          // Инвертор не рабоатет
        journal.jprintf("%s, modbus not found, block.\n",name); 
        err=ERR_NO_MODBUS;
        return err; 
       }
-  else if (DEVICEFC==true) SETBIT1(_data.flags,fFC); // наличие частотника в текушей конфигурации
+  else if (DEVICEFC==true) SETBIT1(flags,fFC); // наличие частотника в текушей конфигурации
                
   if(get_present())  journal.jprintf("Invertor %s: present config\r\n",name); 
   else {journal.jprintf("Invertor %s: none config\r\n",name);return err;  }  // выходим если нет инвертора
@@ -1342,7 +1234,7 @@ int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_
   #else   // Боевой вариант
   uint16_t hWord,lWord;
   uint8_t i;
-  if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+  if ((!get_present())||(GETBIT(flags,fErrFC))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
   if ((x>=_min)&&(x<=_max))                     // Проверка диапазона разрешенных частот
    {
   #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
@@ -1356,7 +1248,7 @@ int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_
             }
             
           if(err==OK)  { FC=x; if(show) journal.jprintf(" Set %s: %.2f [Hz]\r\n",name,FC/100.0);return err;} // установка частоты OK  - вывод сообщения если надо
-          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
+          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
    #else  // Аналоговое управление
          FC=x;
          dac=((level100-level0)*FC-0*level100)/(100-0);
@@ -1394,44 +1286,13 @@ int8_t devOmronMX2::set_levelOff(int16_t x)
   return WARNING_VALUE;
 }
 
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devOmronMX2::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);     
-return adr;   
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devOmronMX2::load(int32_t adr)
-{
-decltype(_data.flags) save_flags = _data.flags;	
-if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
-_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devOmronMX2::loadFromBuf(int32_t adr,byte *buf)
-{
-decltype(_data.flags) save_flags = _data.flags;	
-memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 
-_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
-return adr;      
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t devOmronMX2::get_crc16(uint16_t crc)         
-{
-   uint16_t i;
-   for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   
-   return crc;
-}
-
 // Установить запрет на использование инвертора если лимит ошибок исчерпан
 void  devOmronMX2::check_blockFC() 
 {
    #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
     if((xTaskGetSchedulerState()==taskSCHEDULER_NOT_STARTED)&&(err!=OK))   // если не запущена free rtos то блокируем с первого раза
        {
-        SETBIT1(_data.flags,fErrFC);                                                  // Установить флаг
+        SETBIT1(flags,fErrFC);                                                  // Установить флаг
         note=(char*)noteFC_NO;
         set_Error(err,(char*)name);                                        // Подъем ошибки на верх и останов ТН
         return; 
@@ -1441,7 +1302,7 @@ void  devOmronMX2::check_blockFC()
     if (number_err>FC_NUM_READ)                                // если привышено число ошибок то блокировка
       {
        SemaphoreGive(xModbusSemaphore); // разблокировать семафор
-       SETBIT1(_data.flags,fErrFC);                                         // Установить флаг
+       SETBIT1(flags,fErrFC);                                         // Установить флаг
        note=(char*)noteFC_NO;
        set_Error(err,(char*)name);                        // Подъем ошибки на верх и останов ТН
       }
@@ -1453,7 +1314,7 @@ void  devOmronMX2::check_blockFC()
 int8_t devOmronMX2::get_readState()
 {
 uint8_t i;
-if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;  // выходим если нет инвертора или он заблокирован по ошибке
+if ((!get_present())||(GETBIT(flags,fErrFC))) return err;  // выходим если нет инвертора или он заблокирован по ошибке
 err=OK;
 #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
   // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
@@ -1463,7 +1324,7 @@ err=OK;
         err=Modbus.get_err();                              // Скопировать ошибку
         if (err==OK)                                       // Прочитано верно
          {
-          if ((GETBIT(_data.flags,fOnOff))&&(state!=3)) continue; else break;  // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
+          if ((GETBIT(flags,fOnOff))&&(state!=3)) continue; else break;  // ТН включил компрессор а инвертор не имеет правильного состяния пытаемся прочитать еще один раз в проитвном случае все ок выходим
          } 
         _delay(FC_DELAY_REPEAT); 
         journal.jprintf(cErrorRS485,name,__FUNCTION__,err);// Выводим сообщение о повторном чтении
@@ -1473,12 +1334,12 @@ err=OK;
   if (err!=OK)                                              // Ошибка модбаса
       {
        state=ERR_LINK_FC;                                  // признак потери связи с инвертором
-       SETBIT1(_data.flags,fErrFC);                              // Блок инвертора
+       SETBIT1(flags,fErrFC);                              // Блок инвертора
        set_Error(err,name);                                 // генерация ошибки
        return err;                                          // Возврат
       }
 //  else  if ((testMode==NORMAL)||(testMode==HARD_TEST))     //   Режим работа и хард тест, анализируем состояние,
-//        if ((GETBIT(_data.flags,fOnOff))&&(state!=3))                  // Не верное состояние
+//        if ((GETBIT(flags,fOnOff))&&(state!=3))                  // Не верное состояние
 //         {
 //         err=ERR_MODBUS_STATE;                            // Ошибка не верное состояние инвертора
 //         journal.jprintf(" %s:Compressor ON and wrong read state: %d \n",name,state); 
@@ -1519,11 +1380,11 @@ err=OK;
              #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                  HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
              #endif // FC_USE_RCOMP   
-            if (err==OK) {SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
-            else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+            if (err==OK) {SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
+            else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #else // DEMO
              // Боевая часть
-            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;         // выходим если нет инвертора или он заблокирован по ошибке
+            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;         // выходим если нет инвертора или он заблокирован по ошибке
           
            // set_targetFreq(startFreq,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда частота стартовая - супербойлер
            
@@ -1536,28 +1397,28 @@ err=OK;
                 err= write_0x05_bit(MX2_START, true);   // Команда Ход
             #endif    
             }
-            if (err==OK) {SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
-            else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+            if (err==OK) {SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);}
+            else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #endif
   #else  //  FC_ANALOG_CONTROL
        #ifdef DEMO
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                  HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-            SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
+            SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
         #else // DEMO
              // Боевая часть
-            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;   // выходим если нет инвертора или он заблокирован по ошибке
+            if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;   // выходим если нет инвертора или он заблокирован по ошибке
             err=OK;
             if ((testMode==NORMAL)||(testMode==HARD_TEST))  //   Режим работа и хард тест, все включаем,
             {  
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                 HP.dRelay[RCOMP].set_ON();                // ПЛОХО через глобальную переменную
             #else               
-                state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(_data.flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
+                state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
             #endif    
             }
-            SETBIT1(_data.flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
+            SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
       #endif 
   #endif    
 return err;
@@ -1572,10 +1433,10 @@ err=OK;
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                HP.dRelay[RCOMP].set_OFF();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-          if (err==OK) {SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
-          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}               // генерация ошибки
+          if (err==OK) {SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
+          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
       #else // DEMO
-          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
           err=OK;   
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
@@ -1585,26 +1446,26 @@ err=OK;
               err=write_0x05_bit(MX2_START, false);   // Команда стоп
           #endif   
            }
-          if (err==OK) {SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
-          else {state=ERR_LINK_FC; SETBIT1(_data.flags,fErrFC); set_Error(err,name);}                          // генерация ошибки
+          if (err==OK) {SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
+          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}                          // генерация ошибки
       #endif
  #else  // FC_ANALOG_CONTROL 
       #ifdef DEMO
             #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
                HP.dRelay[RCOMP].set_OFF();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
-            SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
+            SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
       #else // DEMO
-          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(_data.flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
           #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
               HP.dRelay[RCOMP].set_OFF();                    // ПЛОХО через глобальную переменную
           #else                  // подать команду ход/стоп через модбас
-              state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(_data.flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
+              state=ERR_LINK_FC; err=ERR_FC_CONF_ANALOG; SETBIT1(flags,fErrFC); set_Error(err,name);// Ошибка конфигурации
           #endif   
            }
-          SETBIT0(_data.flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
+          SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
       #endif 
  #endif // FC_ANALOG_CONTROL 
 return err;
@@ -1614,7 +1475,7 @@ return err;
 void devOmronMX2::get_paramFC(char *var,char *ret)
 {
 
-    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_INFO)==0)                  {
     	                                        #ifndef FC_ANALOG_CONTROL  
     	                                        get_infoFC(ret);
@@ -1625,15 +1486,15 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
     if(strcmp(var,fc_PIN)==0)                   {  _itoa(pin,ret);     } else
-    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)freqFC/100.0,2); } else
     if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); } else
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)power/10.0,1); strcat(ret, " кВт"); } else
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
-    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
-    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.flags,fAutoResetFault) ? cOne : cZero)); } else
+    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.setup_flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -1647,7 +1508,7 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_LEVEL100)==0)              {  _itoa(level100,ret);     } else
     if(strcmp(var,fc_LEVELOFF)==0)              {  _itoa(levelOff,ret);     } else
     #endif
-    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(flags,fErrFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
@@ -1682,16 +1543,16 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
-    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
-  //  if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.flags,fAutoResetFault);else SETBIT1(_data.flags,fAutoResetFault);return true;  } else // для Омрона код не написан
+    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.setup_flags,fAuto);else SETBIT1(_data.setup_flags,fAuto);return true;  } else
+  //  if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else // для Омрона код не написан
     #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
     #endif
     if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА  
-                                                if (x==0) { SETBIT0(_data.flags,fErrFC); note=(char*)noteFC_OK; }
-                                                else      { SETBIT1(_data.flags,fErrFC); note=(char*)noteFC_NO; }
+                                                if (x==0) { SETBIT0(flags,fErrFC); note=(char*)noteFC_OK; }
+                                                else      { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
@@ -1820,7 +1681,7 @@ int16_t devOmronMX2::read_tempFC()
     { uint8_t i;
       boolean result;
       err=OK;  
-      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return false;             // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(flags,fErrFC))) return false;             // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
          { 
          err=Modbus.readCoil(FC_MODBUS_ADR,cmd-1, &result);              // послать запрос, Нумерация регистров MX2 с НУЛЯ!!!!
@@ -1840,7 +1701,7 @@ int16_t devOmronMX2::read_tempFC()
     {   uint8_t i;
         uint16_t result;  
         err=OK;
-        if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
+        if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;                  // выходим если нет инвертора или он заблокирован по ошибке
     
         for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
             { 
@@ -1863,7 +1724,7 @@ int16_t devOmronMX2::read_tempFC()
         uint8_t i;
         uint32_t result;  
         err=OK;
-        if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return 0;            // выходим если нет инвертора или он заблокирован по ошибке
+        if ((!get_present())||(GETBIT(flags,fErrFC))) return 0;            // выходим если нет инвертора или он заблокирован по ошибке
         for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
           { 
            err=Modbus.readHoldingRegisters32(FC_MODBUS_ADR,cmd-1,&result);  // послать запрос, Нумерация регистров MX2 с НУЛЯ!!!!
@@ -1884,7 +1745,7 @@ int16_t devOmronMX2::read_tempFC()
     { uint8_t i;
       uint16_t tmp;
       err=OK;
-      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<0x0a;i++) error.inputBuf[i]=0;
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
          { 
@@ -1909,7 +1770,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x05_bit(uint16_t cmd, boolean f)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;     // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;     // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)   // делаем FC_NUM_READ попыток записи
          {   
             if (f) err=Modbus.writeSingleCoil(FC_MODBUS_ADR,cmd-1,1);   // послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -1928,7 +1789,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x06_16(uint16_t cmd, uint16_t data)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;              // выходим если нет инвертора или он заблокирован по ошибке
        for(i=0;i<FC_NUM_READ;i++)                                          // делаем FC_NUM_READ попыток записи
          {
            err=Modbus.writeHoldingRegisters16(FC_MODBUS_ADR,cmd-1,data);  // послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -1946,7 +1807,7 @@ int16_t devOmronMX2::read_tempFC()
     int8_t devOmronMX2::write_0x10_32(uint16_t cmd, uint32_t data)
     { uint8_t i;
       err=OK;
-      if ((!get_present())||(GETBIT(_data.flags,fErrFC))) return err;             // выходим если нет инвертора или он заблокирован по ошибке
+      if ((!get_present())||(GETBIT(flags,fErrFC))) return err;             // выходим если нет инвертора или он заблокирован по ошибке
       for(i=0;i<FC_NUM_READ;i++)                                          // делаем FC_NUM_READ попыток записи
          {  
            err=Modbus.writeHoldingRegisters32(FC_MODBUS_ADR, cmd-1, data);// послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -2255,11 +2116,11 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }
@@ -2278,11 +2139,11 @@ int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret
 	result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = RS485.getResponseBuffer(0);
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }
@@ -2301,11 +2162,11 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
 	result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = (RS485.getResponseBuffer(0) << 16) | RS485.getResponseBuffer(1);
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive (xModbusSemaphore);
+		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
 }

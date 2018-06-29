@@ -57,7 +57,7 @@ enum TEMP_SETUP_FLAGS { // bit #
 class sensorIP
   {
   public:
-    void initIP();                             // Инициализация датчика
+    void initIP(uint8_t sensor);                             // Инициализация датчика
     boolean set_DataIP(int16_t a,int16_t b,int16_t c,int16_t d,uint32_t e,IPAddress f);  // Запомнить данные (обновление данных)
     char* get_sensorIP(char *var, char *ret);                    // Получить параметр в виде строки
     __attribute__((always_inline)) inline int16_t get_Temp(){return Temp;}                           // Получение последний температуры датчика  если данные не достоверны или датчик не рабоает возврат -10000 (-100 градусов)
@@ -74,10 +74,9 @@ class sensorIP
     void set_fUse(boolean b)  {if (b) SETBIT1(flags,fUse); else SETBIT0(flags,fUse); };   // Установить флаг использования
     void set_fRule(boolean b) {if (b) SETBIT1(flags,fRule); else SETBIT0(flags,fRule);}   // Установить флаг учреднения
     void set_link(int8_t b) {link=b;}                          // Установить флаг усреднения
-    int32_t save(int32_t adr);                                 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t load(int32_t adr);                                 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t loadFromBuf(int32_t adr,byte *buf);                // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    uint16_t get_crc16(uint16_t crc);                          // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
+    uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
+    uint16_t get_save_size(void) { return (byte*)&link - (byte*)&number + sizeof(link); } // Размер структуры сохранения
+    void  	 after_load();                         				// Инициализация после загрузки
 
   private:
     int16_t Temp;                                              // Последние показания датчика
@@ -86,8 +85,11 @@ class sensorIP
     uint16_t VCC;                                              // Уровень напряжениея питания датчика (мВ)
     uint32_t count;                                            // Кольцевой счетчик пакетов с момента включения контрола
     uint32_t stime;                                            // Время получения последнего пакета
+    struct { // Save GROUP, firth number
+    uint8_t number;												// номер
     uint8_t flags;                                             // флаги
-    int8_t link;                                               // привязка датчика (номер в массиве температурных датчиков, -1 не привязан)
+    int8_t  link;                                               // привязка датчика (номер в массиве температурных датчиков, -1 не привязан)
+    } __attribute__((packed));// Save Group end, last link
     IPAddress ip;                                              // Адрес датчика
   };
 #endif
@@ -125,10 +127,9 @@ class sensorTemp
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
     char*    get_note(){return note;}                   // Получить оисание датчика
     char*    get_name(){return name;}                   // Получить имя датчика
-    int32_t  save(int32_t adr);                         // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t  load(int32_t adr);                         // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    int32_t  loadFromBuf(int32_t adr, byte *buf);       // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-    uint16_t get_crc16(uint16_t crc);                   // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
+    uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
+    uint16_t get_save_size(void) { return (byte*)&setup_flags - (byte*)&number + sizeof(setup_flags); } // Размер структуры сохранения
+    void  	 after_load();                         		// Инициализация после загрузки
     int8_t   inc_error(void);				   		    // Увеличить счетчик ошибок
     statChart Chart;                                    // Статистика по датчику
     
@@ -137,7 +138,6 @@ class sensorTemp
     #endif
     
   private:
-   uint8_t number;  									// Номер датчика
    int16_t minTemp;                                     // минимальная разрешенная температура
    int16_t maxTemp;                                     // максимальная разрешенная температура
    int16_t lastTemp;                                    // последняя считанная температура с датчика
@@ -152,13 +152,13 @@ class sensorTemp
    uint8_t nGap;                                        // Счечик "разорванных" данных  - требуется для фильтрации помехи
    int16_t t[T_NUMSAMLES];                              // буфер для усреднения показаний температуры
    byte    flags;                                       // флаги  датчика
-  // Save GROUP, firth setup_flags
-   struct {
-   uint8_t setup_flags;							    	// флаги настройки (TEMP_SETUP_FLAGS)
+   struct { // Save GROUP, firth number
+   uint8_t number;  									// Номер датчика
    int16_t errTemp;                                     // статическая ошибка датчика
    int16_t testTemp;                                    // температура датчика в режиме тестирования
    byte    address[8];                                  // текущий адресс датчика (при охлаждении не совпадает с основным) датчик всегда читается по этому адресу
-   } __attribute__((packed));// Save Group end, last address
+   uint8_t setup_flags;							    	// флаги настройки (TEMP_SETUP_FLAGS)
+   } __attribute__((packed));// Save Group end, setup_flags
    char    *note;                                       // Описание датчика
    char    *name;                                        // Имя датчика
 

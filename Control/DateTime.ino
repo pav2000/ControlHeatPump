@@ -137,7 +137,7 @@ boolean set_time_NTP(void)
 		journal.jprintf(" ERROR update time from server! %s ", NowDateToStr());
 		journal.jprintf("%s\n", NowTimeToStr()); // Через один глобальный буфер
 	}
-	SemaphoreGive (xWebThreadSemaphore);
+	SemaphoreGive(xWebThreadSemaphore);
 	return flag;
 }
 
@@ -162,14 +162,14 @@ boolean set_time_NTP(void)
 	// DNS запрос для определения адреса
 
 	if(check_address(HP.get_serverNTP(), ip) == 0) {
-		SemaphoreGive (xWebThreadSemaphore);
+		SemaphoreGive(xWebThreadSemaphore);
 		return false;
 	}  // DNS - ошибка выходим
 
 	// 2. Посылка пакета
 	if(!Udp.begin(NTP_LOCAL_PORT, W5200_SOCK_SYS)) {
 		journal.jprintf(" UDP fail\n");
-		SemaphoreGive (xWebThreadSemaphore);
+		SemaphoreGive(xWebThreadSemaphore);
 		return false;
 	}
 	for(uint8_t i = 0; i < NTP_REPEAT; i++)                                       // Делам 5 попыток получить время
@@ -208,7 +208,7 @@ boolean set_time_NTP(void)
 		journal.jprintf(" ERROR update time from NTP server! %s ", NowDateToStr());
 		journal.jprintf("%s\n", NowTimeToStr());  // Одним оператором есть косяк
 	}
-	SemaphoreGive (xWebThreadSemaphore);
+	SemaphoreGive(xWebThreadSemaphore);
 
 	return flag;
 }
@@ -297,9 +297,9 @@ char* TimeIntervalToStr(uint32_t idt,char *ret,uint8_t fSec = 0)
   Hour = idt % 24;
   idt /= 24;
   Day = idt;
-  if(Day>0)  { _itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
-  if(Hour>0) { _itoa(Hour,ret);strcat(ret,"h ");}
-  if(!fSec || Min > 0) { _itoa(Min,ret); strcat(ret,"m "); }
+  if(Day>0)  { _itoa(Day,ret); strcat(ret," ");}  // если есть уже дни
+  if(Hour>0) { _itoa(Hour,ret);strcat(ret,":");}
+  if(!fSec || Min > 0) { _itoa(Min,ret); if(!fSec) strcat(ret,"m"); else strcat(ret,":"); }
   if(fSec) { _itoa(Sec, ret); strcat(ret,"s"); }
   return ret;       
 }

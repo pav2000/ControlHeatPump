@@ -1,6 +1,6 @@
 /*
  * Частотный преобразователь Vacon 10
- * Адаптировано vad711, vad7@yahoo.com
+ * Автор vad711, vad7@yahoo.com
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -57,17 +57,18 @@ int8_t devVaconFC::initFC()
 	  _data.level100=4096;                             // Отсчеты ЦАП соответсвующие 100 мощности
 	  _data.levelOff=10;                               // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	  #endif
-	  _data.flags=0x00;                                // флаги  0 - наличие FC
+	  flags=0x00;                                // флаги  0 - наличие FC
+	  _data.setup_flags = 0;
 	 
-    SETBIT0(_data.flags, fAuto); // По умолчанию старт-стоп
+    SETBIT0(_data.setup_flags, fAuto); // По умолчанию старт-стоп
     if(!Modbus.get_present()) // modbus отсутствует
     {
-        SETBIT0(_data.flags, fFC); // Инвертор не работает
+        SETBIT0(flags, fFC); // Инвертор не работает
         journal.jprintf("%s, modbus not found, block.\n", name);
         err = ERR_NO_MODBUS;
         return err;
     } else if(DEVICEFC == true)
-        SETBIT1(_data.flags, fFC); // наличие частотника в текушей конфигурации
+        SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
 
     if(get_present())
         journal.jprintf("Invertor %s: present config\n", name);
@@ -124,7 +125,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
 			if(err == OK) break; // Прочитали удачно
 			check_blockFC(); // проверить необходимость блокировки
-			if(GETBIT(_data.flags, fErrFC)) break; // превысили кол-во ошибок
+			if(GETBIT(flags, fErrFC)) break; // превысили кол-во ошибок
 			_delay(FC_DELAY_READ);
 		}
 		if(err != OK) state = ERR_LINK_FC;
@@ -152,11 +153,11 @@ int8_t devVaconFC::get_readState()
     if(err) // Ошибка
     {
         state = ERR_LINK_FC; // признак потери связи с инвертором
-        SETBIT1(_data.flags, fErrFC); // Блок инвертора
+        SETBIT1(flags, fErrFC); // Блок инвертора
         set_Error(err, name); // генерация ошибки
         return err; // Возврат
     }
-    if(GETBIT(_data.flags, fOnOff)) { // ТН включил компрессор, проверяем состояние инвертора
+    if(GETBIT(flags, fOnOff)) { // ТН включил компрессор, проверяем состояние инвертора
 		if(state & FC_S_FLT) { // Действующий отказ
 			err = ERR_FC_FAULT;
 		} else if(rtcSAM3X8.unixtime() - get_startTime()>FC_ACCEL_TIME/100 && ((state & (FC_S_RDY | FC_S_RUN | FC_S_DIR)) != (FC_S_RDY | FC_S_RUN))){
@@ -202,7 +203,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
         return WARNING_VALUE;
     }
 #else // Боевой вариант
-    if((!get_present()) || (GETBIT(_data.flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
+    if((!get_present()) || (GETBIT(flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
@@ -217,7 +218,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {
-            SETBIT1(_data.flags, fErrFC);
+            SETBIT1(flags, fErrFC);
             set_Error(err, name);
             return err;
         } // генерация ошибки
@@ -255,7 +256,7 @@ void devVaconFC::check_blockFC()
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
     if((xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) && (err != OK)) // если не запущена free rtos то блокируем с первого раза
     {
-        SETBIT1(_data.flags, fErrFC); // Установить флаг
+        SETBIT1(flags, fErrFC); // Установить флаг
         note = (char*)noteFC_NO;
         set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
         return;
@@ -263,7 +264,7 @@ void devVaconFC::check_blockFC()
     if(err != OK)
         number_err++;
     else {
-    	SETBIT0(_data.flags, fErrFC);
+    	SETBIT0(flags, fErrFC);
         number_err = 0;
         note = (char*)noteFC_OK; // Описание инвертора есть
         return;
@@ -271,7 +272,7 @@ void devVaconFC::check_blockFC()
     if(number_err > FC_NUM_READ) // если превышено число ошибок то блокировка
     {
         //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
-        SETBIT1(_data.flags, fErrFC); // Установить флаг
+        SETBIT1(flags, fErrFC); // Установить флаг
         note = (char*)noteFC_NO;
         set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
     }
@@ -283,7 +284,7 @@ void  devVaconFC::set_testMode(TEST_MODE t)
 {
 	testMode = t;
 	if(t == SAFE_TEST || t == TEST) {
-		SETBIT0(_data.flags, fErrFC);
+		SETBIT0(flags, fErrFC);
 		err = OK;
 	} else {
 	    //CheckLinkStatus(); // проверка связи с инвертором
@@ -298,7 +299,7 @@ int8_t devVaconFC::start_FC()
         err = OK;
     	goto xStarted;
     }
-	if(!get_present() || GETBIT(_data.flags, fErrFC)) return err = ERR_MODBUS_BLOCK; // выходим если нет инвертора или он заблокирован по ошибке
+	if(!get_present() || GETBIT(flags, fErrFC)) return err = ERR_MODBUS_BLOCK; // выходим если нет инвертора или он заблокирован по ошибке
 	if(FC < _data.minFreq || FC > _data.maxFreq) {
 		err = ERR_FC_ERROR;
 		journal.jprintf(" %s: Wrong frequency, ignore start\n", name);
@@ -311,12 +312,12 @@ int8_t devVaconFC::start_FC()
     HP.dRelay[RCOMP].set_ON(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
     if(err == OK) {
-        SETBIT1(_data.flags, fOnOff);
+        SETBIT1(flags, fOnOff);
         startCompressor = rtcSAM3X8.unixtime();
         journal.jprintf(" %s ON\n", name);
     }
     else {
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
 #else // DEMO
@@ -325,7 +326,7 @@ int8_t devVaconFC::start_FC()
 	if((state & FC_S_FLT)) { // Действующий отказ
 		uint16_t reg = read_0x03_16(FC_ERROR);
 		journal.jprintf("%s, Fault: %s(%d) - ", name, err ? cError : get_fault_str(reg), err ? err : reg);
-		if(GETBIT(_data.flags, fAutoResetFault)) { // Автосброс не критичного сбоя инвертора
+		if(GETBIT(_data.setup_flags, fAutoResetFault)) { // Автосброс не критичного сбоя инвертора
 			if(!err) { // код считан успешно
 				uint8_t i = 0;
 				for(; i < sizeof(FC_NonCriticalFaults); i++) if(FC_NonCriticalFaults[i] == reg) break;
@@ -354,11 +355,11 @@ int8_t devVaconFC::start_FC()
 #endif // DEMO	
     if(err == OK) {
 xStarted:
-    	SETBIT1(_data.flags, fOnOff);
+    	SETBIT1(flags, fOnOff);
         startCompressor = rtcSAM3X8.unixtime();
         journal.jprintf(" %s ON\n", name);
     } else {
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
 #else //  FC_ANALOG_CONTROL
@@ -366,7 +367,7 @@ xStarted:
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_ON(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
-    SETBIT1(_data.flags, fOnOff);
+    SETBIT1(flags, fOnOff);
     startCompressor = rtcSAM3X8.unixtime();
     journal.jprintf(" %s ON\n", name);
 #else // DEMO
@@ -377,10 +378,10 @@ xStarted:
         HP.dRelay[RCOMP].set_ON(); // ПЛОХО через глобальную переменную
 #endif
         err = ERR_FC_CONF_ANALOG;
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name); // Ошибка конфигурации
     }
-    SETBIT1(_data.flags, fOnOff);
+    SETBIT1(flags, fOnOff);
     startCompressor = rtcSAM3X8.unixtime();
     journal.jprintf(" %s ON\n", name);
 #endif
@@ -400,12 +401,12 @@ int8_t devVaconFC::stop_FC()
     HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
     if(err == OK) {
-        SETBIT0(_data.flags, fOnOff);
+        SETBIT0(flags, fOnOff);
         startCompressor = 0;
         journal.jprintf(" %s OFF\n", name);
     }
     else {
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
 #else // DEMO
@@ -418,12 +419,12 @@ int8_t devVaconFC::stop_FC()
 #endif
     }
     if(err == OK) {
-        SETBIT0(_data.flags, fOnOff);
+        SETBIT0(flags, fOnOff);
         startCompressor = 0;
         journal.jprintf(" %s OFF\n", name);
     }
     else {
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
 #endif
@@ -432,7 +433,7 @@ int8_t devVaconFC::stop_FC()
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
-    SETBIT0(_data.flags, fOnOff);
+    SETBIT0(flags, fOnOff);
     startCompressor = 0;
     journal.jprintf(" %s OFF\n", name);
 #else // DEMO
@@ -442,11 +443,11 @@ int8_t devVaconFC::stop_FC()
         HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
 #else // подать команду ход/стоп через модбас
         err = ERR_FC_CONF_ANALOG;
-        SETBIT1(_data.flags, fErrFC);
+        SETBIT1(flags, fErrFC);
         set_Error(err, name); // Ошибка конфигурации
 #endif
     }
-    SETBIT0(_data.flags, fOnOff);
+    SETBIT0(flags, fOnOff);
     startCompressor = 0;
     journal.jprintf(" %s OFF\n", name);
 #endif
@@ -459,7 +460,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 {
 
 	ret += m_strlen(ret);
-    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(_data.flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_INFO)==0)                  {
     	                                        #ifndef FC_ANALOG_CONTROL  
     	                                        get_infoFC(ret);
@@ -469,15 +470,15 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     	                                        } else
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
-    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(_data.flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
+    if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
     if(strcmp(var,fc_cPOWER)==0)                {  _itoa(get_power(), ret); } else
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_curr_freq/100.0,2);  strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
-    if(strcmp(var,fc_AUTO)==0)                  {  strcat(ret,(char*)(GETBIT(_data.flags,fAuto) ? cOne : cZero)); } else
-    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.flags,fAutoResetFault) ? cOne : cZero)); } else
+    if(strcmp(var,fc_AUTO)==0)                  {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAuto) ? cOne : cZero)); } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -492,7 +493,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_LEVEL100)==0)              {  _itoa(level100,ret);     } else
     if(strcmp(var,fc_LEVELOFF)==0)              {  _itoa(levelOff,ret);     } else
     #endif
-    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(_data.flags,fErrFC))  strcat(ret,(char*)cYes); } else
+    if(strcmp(var,fc_BLOCK)==0)                 { if (GETBIT(flags,fErrFC))  strcat(ret,(char*)cYes); } else
     if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
@@ -524,16 +525,16 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 boolean devVaconFC::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.flags,fAuto);else SETBIT1(_data.flags,fAuto);return true;  } else
-    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.flags,fAutoResetFault);else SETBIT1(_data.flags,fAutoResetFault);return true;  } else
+    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.setup_flags,fAuto);else SETBIT1(_data.setup_flags,fAuto);return true;  } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else
 	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
     #endif
     if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА  
-                                                if (x==0) { SETBIT0(_data.flags,fErrFC); note=(char*)noteFC_OK; }
-                                                else      { SETBIT1(_data.flags,fErrFC); note=(char*)noteFC_NO; }
+                                                if (x==0) { SETBIT0(flags,fErrFC); note=(char*)noteFC_OK; }
+                                                else      { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  // только чтение
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
@@ -753,55 +754,6 @@ int8_t devVaconFC::set_levelOff(int16_t x)
     return WARNING_VALUE;
 }
 #endif
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devVaconFC::save(int32_t adr)
-{
-/*
-    if(writeEEPROM_I2C(adr, (byte*)&Uptime, (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags))) {
-        set_Error(ERR_SAVE_EEPROM, name);
-        return ERR_SAVE_EEPROM;
-    }
-    adr += (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags);
- */
-	if(writeEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
-		set_Error(ERR_SAVE_EEPROM, (char*) name);
-		return ERR_SAVE_EEPROM;
-	}
-	adr += sizeof(_data);
-    return adr;
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devVaconFC::load(int32_t adr)
-{
-	decltype(_data.flags) save_flags = _data.flags;
-	if(readEEPROM_I2C(adr, (byte*) &_data, sizeof(_data))) {
-		set_Error(ERR_LOAD_EEPROM, (char*) name);
-		return ERR_LOAD_EEPROM;
-	}
-	adr += sizeof(_data);
-	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
-    return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devVaconFC::loadFromBuf(int32_t adr, byte* buf)
-{
-	decltype(_data.flags) save_flags = _data.flags;;
-	memcpy((byte*) &_data, buf + adr, sizeof(_data));
-	adr += sizeof(_data);
-	_data.flags = (save_flags & ~FC_SAVED_FLAGS) | (_data.flags & FC_SAVED_FLAGS);
-    return adr;
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t devVaconFC::get_crc16(uint16_t crc)
-{
-	uint16_t i;
-//	for(i = 0; i < (byte*)&setup_flags - (byte*)&Uptime + sizeof(setup_flags); i++)
-//		crc = _crc16(crc,*((byte*)&Uptime + i));  // CRC16 структуры
-	for(i = 0; i < sizeof(_data); i++) crc = _crc16(crc, *((byte*) &_data + i));
-	return crc;
-}
 
 // Возвращает текст ошибки по FT коду
 const char* devVaconFC::get_fault_str(uint8_t fault)

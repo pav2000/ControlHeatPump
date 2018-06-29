@@ -43,17 +43,13 @@ int16_t deviceOneWire::CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp
 		if(data[7] == 0x10) { raw = (raw & 0xFFF0) + 12 - data[6]; }  // "count remain" gives full 12 bit resolution
 	} else {
 		if(only_temp_readed) goto xReturnTemp;
-		byte cfg = (data[4] & 0x60);
+		byte cfg = data[4];
 		// at lower res, the low bits are undefined, so let's zero them
-		if (cfg == 0x00) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
-		else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
-		else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+		if(cfg == 0x00 + 0x1F) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
+		else if(cfg == 0x20 + 0x1F) raw = raw & ~3; // 10 bit res, 187.5 ms
+		else if(cfg == 0x40 + 0x1F) raw = raw & ~1; // 11 bit res, 375 ms
+		else if(cfg != 0x60 + 0x1F) return ERROR_TEMPERATURE; // Прочитаны "плохие данные"
 		// default is 12 bit resolution, 750 ms conversion time
-	}
-	// Проверка валидности данных анализируем полученное разрешение оно должно быть 0x7f (12 бит) при ошибке обычно ff
-	if(data[4] != 0x7f && addr_0 == tDS18S20)   // Дополнительнеая проверка для DS18B20: Прочитано НЕ правильное разрешение
-	{ // Прочитаны "плохие данные"
-		return ERROR_TEMPERATURE;
 	}
 xReturnTemp:
 	return raw * 100 / 16;
@@ -100,18 +96,16 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 #endif
 		if((presence = OneWireDrv.reset())) break;                     // Сброс прошел выходим
 #ifdef ONEWIRE_DS2482
-#ifdef ONEWIRE_DS2482_2WAY
+	#ifdef ONEWIRE_DS2482_2WAY
 x_Reset_bridge:
-#endif
+	#endif
 		if(!OneWireDrv.reset_bridge()) {
 			err = ERR_DS2482_NOT_FOUND;
 			break;
 		}
-		#ifndef ONEWIRE_DS2482_2WAY
-		#if DS2482_CONFIG != 0
-			if(!OneWireDrv.configure(DS2482_CONFIG)) break;
-		#endif
-		#endif
+	#if DS2482_CONFIG != 0
+		if(!OneWireDrv.configure(DS2482_CONFIG)) break;
+	#endif
 #else
         pinMode(PIN_ONE_WIRE_BUS, INPUT_PULLUP);
         _delay(1);
@@ -155,95 +149,86 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte data[12];
 	byte addr[8];
 	WDT_Restart(WDT);
+
+	OW_scan_flags = 1; // Идет сканирование
 	if(lock_I2C_bus_reset(0)) { // reset 1-wire
-		if(err == ERR_ONEWIRE) journal.jprintf("OneWire bus %d is empty. . .\n", bus + 1);
+		if(err == ERR_ONEWIRE) journal.jprintf("1-Wire bus %d is empty. . .\n", bus + 1);
 		return err;
 	}
-	_delay(cDELAY_DS1820); // wait conversion
-	eepromI2C.use_RTOS_delay = 0;
-	OneWireDrv.reset_search();
-	while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
-	{ // Цикл чтения одного датчика на DS2482 занимает 335 мс с define ONEWIRE_DONT_CHG_RES и 375 мс без нее.
-		WDT_Restart(WDT);
-		err = OK;
-		//  Датчик найден!
-		// 1. Номер по порядку
-		OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
-		_itoa(OW_scanTableIdx + 1, result_str); strcat(result_str,":");
-		if(OneWireDrv.crc8(addr, 7) != addr[7]) {
-			strcat(result_str,"Error CRC:::;");
-			continue;
-		}
-		// 2. первый байт определяет чип выводим этот тип
-		OW_scanTable[OW_scanTableIdx].type_sensor = addr[0];
-		switch (addr[0])
-		{
-			case tDS18S20: strcat(result_str,"DS18S20:"); break;
-			case tDS18B20: strcat(result_str,"DS18B20:"); break;
-			case tDS1822:  strcat(result_str,"DS1822:");  break;
-			default:       strcat(result_str,"Unknown"); strcat(result_str, byteToHex(addr[0])); strcat(result_str, ":"); break;
-		}
-		// 3. Уменьшить разрешение до 9 бит, для увеличения скорости сканирования для DS18B20
-		if(SetResolution(addr, DS18B20_p09BIT, true)) {
-			journal.jprintf("SetRes 9b error %d for %s\n", err, addressToHex(addr));
-		}
-		// 4. Старт преобразования температуры и пауза
-		if(OneWireDrv.reset()) {
-#ifdef ONEWIRE_DS2482_SECOND
-			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
-			else
-#endif
-				OneWireDrv.select(addr);
+	//eepromI2C.use_RTOS_delay = 0;
+	OneWireDrv.skip(); // Все датчики
 #ifdef ONEWIRE_DS2482_2WAY
-			if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+	if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
-			OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
-		} else err = ERR_ONEWIRE;
-		if(err == OK) {
-			_delay(95);             // Ожитать время разрешение 9 бит это гуд
-
+	OneWireDrv.write(0x44); // начинаем преобразование, используя OneWireDrv.write(0x44,1) с "паразитным" питанием
+	_delay(cDELAY_DS1820);  // ждем подготовку температуры
+	if(
+#ifdef ONEWIRE_DS2482_2WAY
+		!((ONEWIRE_2WAY & (1<<bus)) && !OneWireDrv.configure(DS2482_CONFIG)) &&
+#endif
+		OneWireDrv.reset())
+	{
+		OneWireDrv.reset_search();
+		while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
+		{ // Цикл чтения одного датчика на DS2482 занимает 335 мс с define ONEWIRE_DONT_CHG_RES и 375 мс без нее.
+			WDT_Restart(WDT);
+			err = OK;
+			//  Датчик найден!
+			// 1. Номер по порядку
+			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
+			_itoa(OW_scanTableIdx + 1, result_str); strcat(result_str,":");
+			if(OneWireDrv.crc8(addr, 7) != addr[7]) {
+				strcat(result_str,"Error CRC:::;");
+				continue;
+			}
+			// 2. первый байт определяет чип выводим этот тип
+			OW_scanTable[OW_scanTableIdx].type_sensor = addr[0];
+			strcat(result_str,"DS18");
+			switch (addr[0])
+			{
+				case tDS18S20: strcat(result_str,"S20"); break;
+				case tDS18B20: strcat(result_str,"B20"); break;
+				case tDS1822:  strcat(result_str,"22");  break;
+				default:       strcat(result_str,"?"); _itoa(addr[0], result_str); break;
+			}
+			strcat(result_str, ":");
 			// 5. Получение данных
-#ifdef ONEWIRE_DS2482_2WAY
-			if((ONEWIRE_2WAY & (1<<bus)) && !OneWireDrv.configure(DS2482_CONFIG)) break;
-#endif
 			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
-		}
-		if(err == OK) {
+			if(err == OK) {
 #ifdef ONEWIRE_DS2482_SECOND
-			if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
-			else
+				if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
+				else
 #endif
-				OneWireDrv.select(addr);
-			OneWireDrv.write(0xBE);
-			for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
-
-			// 6. Увеличить разрешение до 12 бит, рабочий режим
-			SetResolution(addr, DS18B20_p12BIT, true);
-
-			// конвертируем данные в фактическую температуру
-			int16_t t = CalcTemp(addr[0], data, 0);
-			if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
-				strcat(result_str, "CRC");
-			else _ftoa(result_str, (float)t / 100.0, 2);
-		}
-		strcat(result_str, ":");
-
-		// 8. Адрес добавить
-		memcpy(OW_scanTable[OW_scanTableIdx].address, addr, 8);
-		strcat(result_str, addressToHex(addr));
-		strcat(result_str, ":");
+					OneWireDrv.select(addr);
+				OneWireDrv.write(0xBE);
+				for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
+				// конвертируем данные в фактическую температуру
+				int16_t t = CalcTemp(addr[0], data, 0);
+				if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
+					strcat(result_str, "CRC");
+				else _ftoa(result_str, (float)t / 100.0, 2);
+			}
+			strcat(result_str, ":");
+			// 8. Адрес добавить
+			memcpy(OW_scanTable[OW_scanTableIdx].address, addr, 8);
+			strcat(result_str, addressToHex(addr));
+			strcat(result_str, ":");
 #ifdef ONEWIRE_DS2482
-		OW_scanTable[OW_scanTableIdx].bus = bus;
-		_itoa(bus+1, result_str);
+			OW_scanTable[OW_scanTableIdx].bus = bus;
+			_itoa(bus+1, result_str);
 #else
-		OW_scanTable[OW_scanTableIdx].bus = 0;
-		strcat(result_str, "1");
+			OW_scanTable[OW_scanTableIdx].bus = 0;
+			strcat(result_str, "1");
 #endif
-		strcat(result_str, ";");
-		if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
-	} // while по датчикам
-	eepromI2C.use_RTOS_delay = 1;
+			strcat(result_str, ";");
+			if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
+		} // while по датчикам
+	} else {
+		journal.jprintf("Error reset 1-Wire bus %d\n", bus + 1);
+	}
+	//eepromI2C.use_RTOS_delay = 1;
 	release_I2C_bus();
+	OW_scan_flags = 0;
 #endif  // DEMO
 	return OK;
 }
@@ -289,6 +274,7 @@ xReadedOnly2b:
 int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock_bus)
 {
 	err = 0;
+	if(addr[0] == tDS18S20) return err; // not supported
 	if(!dont_lock_bus && lock_I2C_bus_reset(0)) return err = ERR_ONEWIRE;
 	else if(!OneWireDrv.reset()) return err = ERR_ONEWIRE;
     OneWireDrv.select(addr);

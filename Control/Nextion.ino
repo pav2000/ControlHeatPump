@@ -358,7 +358,6 @@ boolean Nextion::init(const char* pageStart){
 
 void Nextion::flushSerial(){
   NEXTION_PORT.flush();
-  NEXTION_PORT.flush();
 }//end flush
 
 // Добавленные функции ------------------------------------------------------

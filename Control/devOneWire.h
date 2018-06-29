@@ -45,7 +45,8 @@ struct type_scanOneWire
   byte address[8];     // адрес
 };
 
-type_scanOneWire	*OW_scanTable = NULL;//[TNUMBER+1];  					// массив структур для хранения информации о дачиках при сканировании шины onewire
+uint8_t				 OW_scan_flags = 0;							// 1 - идет сканирование
+type_scanOneWire	*OW_scanTable = NULL;//[TNUMBER+1];			// массив структур для хранения информации о дачиках при сканировании шины onewire
 uint8_t				 OW_scanTableIdx;
 int8_t 				 OW_prepare_buffers(void);
 

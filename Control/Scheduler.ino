@@ -172,7 +172,7 @@ int8_t Scheduler::save(void)
     	return ERR_SAVE_PROFILE;
     }
     int8_t err = check_crc16_eeprom();
-    if(err == OK) journal.jprintf("Save scheduler to I2C OK, write: %d bytes, crc16: 0x%x\n", sizeof(sch_data) + sizeof(crc16), crc16);
+    if(err == OK) journal.jprintf("Save scheduler to I2C OK, write: %d bytes, crc: %04x\n", sizeof(sch_data) + sizeof(crc16), crc16);
     return err;
 }
 
@@ -199,7 +199,7 @@ int16_t Scheduler::load(uint8_t *data)
 	    } else if(ret) {
 	    	uint16_t crc = get_crc16((uint8_t *)&sch_data);
 	    	*(uint16_t *)(data + sizeof(sch_data)) = crc;
-	    	journal.jprintf("crc16: 0x%x ", crc);
+	    	journal.jprintf("crc: %04x ", crc);
 	    }
 	    ret += sizeof(sch_data);
 #ifndef LOAD_VERIFICATION
@@ -218,7 +218,7 @@ int8_t Scheduler::loadFromBuf(int32_t addr, byte* buf)
 	journal.jprintf(" Load scheduler ");
 #ifdef LOAD_VERIFICATION
 	uint16_t crc = get_crc16(buf + addr);
-	journal.jprintf("crc16: 0x%x ", crc);
+	journal.jprintf("crc: %04x ", crc);
 	if(crc != *(uint16_t *)(buf + addr + sizeof(sch_data))) {
 		journal.jprintf("- ERROR!\n");
 		return ERR_CRC16_EEPROM;

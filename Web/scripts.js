@@ -1,8 +1,8 @@
-/* ver 0.951 beta */
+/* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
-//var urlcontrol = 'http://192.168.1.10';
+//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -213,10 +213,10 @@ function loadParam(paramid, noretry, resultdiv) {
 										title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
 										var yizm = '';
 										var ytooltip = '';
-										var timeval = '';
 										var height = 300;
 										var visible = false;
-										timeval = window.time_chart;
+										var timeval = window.time_chart;
+										if(!timeval) { console.log("time_chart was not intialized!"); continue; }
 										timeval = Number(timeval.replace(/\D+/g, ""));
 										var today = new Date();
 										var regexpt = /^(T|O|d)/g;
@@ -420,22 +420,23 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
-												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_zeroPress(" + count[j] + "),get_transPress(" + count[j] + "),get_maxPress(" + count[j] + "),get_minPress(" + count[j] + "),get_pinPress(" + count[j] + "),get_notePress(" + count[j] + "),get_testPress(" + count[j] + "),";
-												upsens = upsens + "get_Press(" + count[j] + "),get_adcPress(" + count[j] + "),get_errcodePress(" + count[j] + "),";
-												content = content + '<tr id="get_presentpress-' + input + '">';
-												content = content + '<td>' + count[j] + '</td>';
-												content = content + '<td id="get_notepress-' + input + '"></td>';
-												content = content + '<td id="get_press-' + input + '" nowrap>-</td>';
-												content = content + '<td id="get_minpress-' + input + '">-</td>';
-												content = content + '<td id="get_maxpress-' + input + '">-</td>';
-												content = content + '<td nowrap><input id="get_zeropress-' + input + '" type="number" min="0" max="2048" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_zeroPress(' + count[j] + ')\');"></td>';
-												content = content + '<td nowrap><input id="get_transpress-' + input + '" type="number" min="0" max="4" step="0.001" value=""><input type="submit" value=">"  onclick="setParam(\'get_transPress(' + count[j] + ')\');"></td>';
-												content = content + '<td nowrap><input id="get_testpress-' + input + '" type="number" min="-1" max="50" step="0.01" value=""><input type="submit" value=">"  onclick="setParam(\'get_testPress(' + count[j] + ')\');"></td>';
-												content = content + '<td id="get_pinpress-' + input + '">-</td>';
-												content = content + '<td id="get_adcpress-' + input + '">-</td>';
-												content = content + '<td id="get_errcodepress-' + input + '">-</td>';
-												content = content + '</tr>';
+												var P = count[j];
+												loadsens += "get_zeroPress(" +P+ "),get_transPress(" +P+ "),get_maxPress(" +P+ "),get_minPress(" +P+ "),get_pinPress(" +P+ "),get_notePress(" +P+ "),get_testPress(" +P+ "),";
+												upsens += "get_Press(" +P+ "),get_adcPress(" +P+ "),get_errcodePress(" +P+ "),";
+												P = P.toLowerCase();
+												content += '<tr id="get_presentpress-' +P+ '">';
+												content += '<td>' +count[j]+ '</td>';
+												content += '<td id="get_notepress-' +P+ '"></td>';
+												content += '<td id="get_press-' +P+ '" nowrap>-</td>';
+												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" min="0" max="2048" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" min="0" max="4" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
+												content += '<td id="get_pinpress-' +P+ '">-</td>';
+												content += '<td id="get_adcpress-' +P+ '">-</td>';
+												content += '<td id="get_errcodepress-' +P+ '">-</td>';
+												content += '</tr>';
 											}
 											document.getElementById(idsel + "2").innerHTML = content;
 											updateParam(upsens);
@@ -444,13 +445,11 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										element = document.getElementById(idsel);
 										if(element) {
-											if(values[0].substr(-6, 5) == "_skip") {
-												var j2 = Number(values[0].substr(-1)) - 1;
-												for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
-											} else document.getElementById(idsel).innerHTML = "";
-										}
-										var element3 = document.getElementById(idsel);
-										if(element3 && element3.tagName != "SPAN") {
+										  if(values[0].substr(-6, 5) == "_skip") {
+											var j2 = Number(values[0].substr(-1)) - 1;
+											for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
+										  } else document.getElementById(idsel).innerHTML = "";
+										  if(element.tagName != "SPAN") {
 											var cont1 = values[1].split(';');
 											for(var k = 0, len = cont1.length - 1; k < len; k++) {
 												cont2 = cont1[k].split(':');
@@ -547,10 +546,7 @@ function loadParam(paramid, noretry, resultdiv) {
 															document.getElementById("get_paramheathp-temp1").disabled = true;
 														}
 													}
-
-												} else {
-													selected = false;
-												}
+												} else selected = false;
 												if(idsel == "get_listchart") {
 													var elems = document.getElementsByName("chrt_sel");
 													for(var j = 0; j < elems.length; j++) {
@@ -559,10 +555,10 @@ function loadParam(paramid, noretry, resultdiv) {
 												} else {
 													var opt = new Option(cont2[0], k, false, selected);
 													if(cont2[2] == 0) opt.disabled = true;
-													var element = document.getElementById(idsel);
-													if(element) element.add(opt, null);
+													element.add(opt, null);
 												}
 											}
+										  }
 										}
 									}
 								} else if(type == 'const') {
@@ -634,27 +630,48 @@ function loadParam(paramid, noretry, resultdiv) {
 
 										} else if(values[0] == 'get_listTemp') {
 											content = ""; upsens = ""; loadsens = ""; loadsens2 = "";
+											var tnum = 1;
+											element = document.getElementById(valueid);
+											if(!element) {
+												element = document.getElementById(valueid + '2');
+												if(element) tnum = 2; 
+											}
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
-												input = count[j].toLowerCase();
-												loadsens = loadsens + "get_eTemp(" + count[j] + "),get_esTemp(" + count[j] + "),get_noteTemp(" + count[j] + "),get_testTemp(" + count[j] + "),get_errTemp(" + count[j] + "),";
-												loadsens2 = loadsens2 + "get_minTemp(" + count[j] + "),get_maxTemp(" + count[j] + "),get_aTemp(" + count[j] + "),get_bTemp(" + count[j] + "),";
-												upsens = upsens + "get_fullTemp(" + count[j] + "),get_esTemp(" + count[j] + "),get_eTemp(" + count[j] + "),";
-												content = content + '<tr>';
-												content = content + ' <td>' + count[j] + '</td>';
-												content = content + ' <td id="get_notetemp-' + input + '"></td>';
-												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
-												content = content + ' <td id="get_mintemp-' + input + '">-</td>';
-												content = content + ' <td id="get_maxtemp-' + input + '">-</td>';
-												content = content + ' <td nowrap><input id="get_errtemp-' + input + '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td nowrap><input id="get_testtemp-' + input + '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
-												content = content + ' <td id="get_atemp-' + input + '">-</td>';
-												content = content + ' <td id="get_btemp-' + input + '">-</td>';
-												content = content + ' <td id="get_estemp-' + input + '">-</td>';
-												content = content + ' <td id="get_etemp-' + input + '">-</td>';
-												content = content + '</tr>';
+												var T = count[j];
+												loadsens += "get_aTemp(" +T+ "),get_eTemp(" +T+ "),get_noteTemp(" +T+ "),";
+												upsens += "get_eTemp(" +T+ "),";
+												if(tnum == 1) {
+													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
+													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
+													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ ")";
+												} else if(tnum == 2) {
+													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
+													upsens += "get_rawTemp(" +T+ "),";
+												}
+												T = T.toLowerCase();
+												content += '<tr>';
+												content += ' <td>' +count[j]+ '</td>';
+												content += ' <td id="get_notetemp-' +T+ '"></td>';
+												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
+												if(tnum == 1) {
+													content += ' <td id="get_mintemp-' +T+ '">-</td>';
+													content += ' <td id="get_maxtemp-' +T+ '">-</td>';
+													content += ' <td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+													content += ' <td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+												}	
+												content += ' <td id="get_atemp-' +T+ '">-</td>';
+												if(tnum == 1) {
+													content += ' <td id="get_btemp-' +T+ '">-</td>';
+													content += ' <td id="get_estemp-' +T+ '">-</td>';
+												} else if(tnum == 2) {
+													content += ' <td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
+													content += ' <td><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
+												}
+												content += ' <td id="get_etemp-' +T+ '">-</td>';
+												content += '</tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											element.innerHTML = content;
 											updateParam(upsens);
 											loadParam(loadsens);
 											loadParam(loadsens2);

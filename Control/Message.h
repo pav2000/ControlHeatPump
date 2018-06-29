@@ -99,7 +99,9 @@ class Message
      int16_t get_mTIN(){return messageSetting.mTIN;}                        // чтение Критическая температура в доме
      int16_t get_mTBOILER(){return messageSetting.mTBOILER;}                // чтение Критическая температура бойлера
      int16_t get_mTCOMP(){return messageSetting.mTCOMP;}                    // чтение Критическая температура компрессора
-     
+
+     uint8_t *get_save_addr(void) { return (uint8_t *)&messageSetting; } // Адрес структуры сохранения
+     uint16_t get_save_size(void) { return sizeof(messageSetting); } // Размер структуры сохранения
      int32_t save(int32_t adr);                                             // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
      int32_t load(int32_t adr);                                             // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки 
      int32_t loadFromBuf(int32_t adr, byte *buf);                           // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки 

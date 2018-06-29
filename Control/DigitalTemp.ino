@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
+ * Copyright (c) 2016-2018 by vad711 (vad7@yahoo.com); Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  *
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -246,55 +246,19 @@ void sensorTemp::set_address(byte *addr, byte bus)
 	err = OK;
 	setup_flags |= bus & fDS2482_bus_mask;
 	set_onewire_bus_type();
+#ifndef ONEWIRE_DONT_CHG_RES
 	busOneWire->SetResolution(address, DS18B20_p12BIT);
+#endif
 }
     
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorTemp::save(int32_t adr)
-{
-	if(writeEEPROM_I2C(adr, (byte*)&setup_flags, (byte*)address - (byte*)&setup_flags + sizeof(address))) {
-		set_Error(ERR_SAVE_EEPROM, name);
-		return ERR_SAVE_EEPROM;
-	}
-	adr += (byte*)address - (byte*)&setup_flags + sizeof(address);
-	return adr;
-}
-
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorTemp::load(int32_t adr)
+void sensorTemp::after_load()
 {
-	if(readEEPROM_I2C(adr, (byte*) &setup_flags, (byte*) address - (byte*) &setup_flags + sizeof(address))) {
-		set_Error(ERR_LOAD_EEPROM, name);
-		return ERR_LOAD_EEPROM;
-	}
-	adr += (byte*)address - (byte*)&setup_flags + sizeof(address);
 	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
 	{
 		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
 		set_onewire_bus_type();
 	}
-	return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorTemp::loadFromBuf(int32_t adr,byte *buf)
-{
-	memcpy((byte*) &setup_flags, buf + adr, (byte*) address - (byte*) &setup_flags + sizeof(address));
-	adr += (byte*) address - (byte*) &setup_flags + sizeof(address);
-	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
-	{
-		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
-		set_onewire_bus_type();
-	}
-	return adr;
-}
-
- // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorTemp::get_crc16(uint16_t crc)
-{
-	uint8_t i;
-	for(i = 0; i < (byte*)address - (byte*)&setup_flags + sizeof(address); i++)
-		crc = _crc16(crc,*((byte*)&setup_flags + i));  // CRC16 структуры
-	return crc;
 }
 
 // Возвращает 1, если превышен предел ошибок
@@ -307,9 +271,10 @@ int8_t   sensorTemp::inc_error(void)
 // Удаленные датчики температуры ---------------------------------------------------------------------------------------
 #ifdef SENSOR_IP
 // Инициализация датчика
-void sensorIP::initIP()
+void sensorIP::initIP(uint8_t sensor)
 {
-    Temp=-12345;                 // Последние показания датчика
+    number = sensor;
+	Temp=-12345;                 // Последние показания датчика
     num=-1;                      // Номер датчика, по нему осуществляется идентификация датачика о 0 до MAX_SENSOR_IP-1
     RSSI=-321;                   // Уровень сигнала датчика (-дБ)
     VCC=0;                       // Уровень напряжениея питания датчика (мВ)
@@ -348,37 +313,87 @@ if(strcmp(var,ip_SENSOR)==0)          {return strcat(ret,(char*)"----");        
 return strcat(ret,(char*)"E26");    
 }
 
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorIP::save(int32_t adr)
+void sensorIP::after_load()
 {
-if (writeEEPROM_I2C(adr, (byte*)&flags, sizeof(flags)))    { set_Error(ERR_SAVE_EEPROM,IPAddress2String(ip)); return ERR_SAVE_EEPROM; } adr=adr+sizeof(flags);   // записать флаги удаленного датчика
-if (writeEEPROM_I2C(adr, (byte*)&link, sizeof(link)))      { set_Error(ERR_SAVE_EEPROM,IPAddress2String(ip)); return ERR_SAVE_EEPROM; } adr=adr+sizeof(link);    // записать привязку удаленного датчика
-return adr;   
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t sensorIP::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&flags, sizeof(flags)))     { set_Error(ERR_LOAD_EEPROM,IPAddress2String(ip)); return ERR_LOAD_EEPROM; } adr=adr+sizeof(flags);    // прочитать флаги удаленного датчика
-if (readEEPROM_I2C(adr, (byte*)&link, sizeof(link)))       { set_Error(ERR_LOAD_EEPROM,IPAddress2String(ip)); return ERR_LOAD_EEPROM; } adr=adr+sizeof(link);     // прочитать привязку удаленного датчика
-if ((link<-1)||(link>=TNUMBER)) { link=-1; num=-1;}    // если бредовое значение привязки отвязываем датчик
-return adr;
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t sensorIP::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&flags,buf+adr,sizeof(flags));  adr=adr+sizeof(flags);    // прочитать флаги удаленного датчика
-  memcpy((byte*)&link,buf+adr,sizeof(link));    adr=adr+sizeof(link);     // прочитать привязку удаленного датчика
-  if ((link<-1)||(link>=TNUMBER)) { link=-1; num=-1;}                     // если бредовое значение привязки отвязываем датчик
-  return adr;  
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t sensorIP::get_crc16(uint16_t crc)
-{
-  crc=_crc16(crc,flags);
-  crc=_crc16(crc,link);
-  return crc;              
+	if((link<-1)||(link >= TNUMBER)) { link=-1; num=-1; }    // если бредовое значение привязки отвязываем датчик
 }
 
 #endif  
 
+#ifdef RADIO_SENSORS
+uint8_t rs_serial_buf[128];
+uint8_t rs_serial_idx = 0;
+uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
+const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
+#define rs_serial_full_header_size 7
+#define rs_serial_addr_idx	5
+#define rs_addr	1
+
+unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
+{
+	unsigned char N;
+	unsigned short WCRC = 0;
+	for(N = 1; N <= Lenght; N++, Address++) {
+		WCRC += (*Address) ^ 255;
+		WCRC += ((*Address) * 256);
+	}
+	return WCRC;
+}
+
+void RS_send_response(void)
+{
+	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
+	if(p) {
+		*p = '\0';
+		rs_serial_buf[rs_serial_addr_idx] = rs_addr;
+		rs_serial_buf[rs_serial_full_header_size + 2] &= ~0x20; // В нижний регистр cmd
+		p++;
+		uint8_t len = p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size);
+		rs_serial_buf[rs_serial_full_header_size - 1] = len;
+		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, len);
+		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
+		RADIO_SENSORS_SERIAL.write(rs_serial_buf, p + 2 - (uint8_t *)rs_serial_buf);
+	}
+}
+
+// Новые данные в порту от радиодатчиков
+#if RADIO_SENSORS_PORT == 2
+void serialEvent2()
+#elif RADIO_SENSORS_PORT == 3
+void serialEvent3()
+#endif
+{
+	if(rs_serial_idx < sizeof(rs_serial_buf)) {
+		rs_serial_buf[rs_serial_idx++] = RADIO_SENSORS_SERIAL.read();
+		if(rs_serial_flag == 0) { // ждем заголовок
+			if(memcmp(rs_serial_buf, rs_serial_header, rs_serial_idx < sizeof(rs_serial_header) ? rs_serial_idx : sizeof(rs_serial_header)) == 0) {
+				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = 1;
+			} else {
+				rs_serial_idx = 0;
+			}
+		} else if(rs_serial_flag == 1) { // ждем данные
+			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
+			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
+				if(RS_SUM_CRC(rs_serial_buf + rs_serial_full_header_size, len) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
+					journal.jprintf("RS CRC error!\n");
+				} else {
+					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
+					journal.jprintf("RS<=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
+						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
+						if(c == 'I') { // Присутствие
+
+						} else if(c == 'D') { // Данные
+
+						}
+						RS_send_response();
+					}
+				}
+				rs_serial_idx = 0;
+			}
+			if(rs_serial_idx >= sizeof(rs_serial_buf)) rs_serial_idx = 0;  // кривые данные
+		}
+	}
+}
+
+#endif

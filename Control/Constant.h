@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.954 beta"        // Версия прошивки
+#define VERSION         "0.956 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -47,14 +47,14 @@ const uint16_t  defaultPort=80;
 #define NTP_SERVER_LEN    60                // максимальная длиная адреса NTP сервера
 #define NTP_PORT		  123
 #define NTP_LOCAL_PORT    8888              // локальный порт, который будет прослушиваться на предмет UDP-пакетов NTP сервера
-#define NTP_REPEAT        5                 // Число попыток запросов NTP сервера
+#define NTP_REPEAT        3                 // Число попыток запросов NTP сервера
 #define NTP_REPEAT_TIME   1000              // (мсек) Время между повторами ntp пакетов
 #define PING_SERVER      "8.8.8.8"          // ping сервер по ДЕФОЛТУ
 #define WDT_TIME          10                // период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ установить 0 то Watchdog будет отключен!!!
 #define INDEX_FILE       "index.html"       // стартовый файл по умолчанию для большой морды
 #define INDEX_MOB_FILE   INDEX_FILE         // стартовый файл по умолчанию для мобильной морды
 #define MOB_PATH         "/mob/"            // Путь к мобильной морде
-#define VER_SAVE          125               // Версия формата сохраняемых данных, при чтении если версии не совпадают, отказ от чтения. ВСЕГДА 2 БАЙТА тип uint16_t
+#define VER_SAVE          126               // Версия формата сохраняемых данных
 #define HEADER_BIN        "Starting_DATA"   // Заголовок (начало) файла при сохранении настроек. Необходим для поиска данных в буфере данных при восстановлении из файла
 #define MAX_LEN_PM        250               // максимальная длина строкового параметра в запросе (расписание бойлера 175 байт) кодирование описания профиля 40 букв одна буква 6 байт (двойное кодирование)
 #define CHART_POINT       300               // Максимальное число точек графика //300 - рабоатет
@@ -81,7 +81,6 @@ const uint16_t  defaultPort=80;
 
 // ------------------- SERIAL --------------------------------
 //Nextion дисплей
-#define NEXTION                             // Разрешить использование дисплея ЗАКОМЕНТИРУЙТЕ эту строку что бы не использовать дисплей
 //#define NEXTION_DEBUG                     // Выводить информацию в отладочный порт с дисплея
 #define NEXTION_PORT     Serial1            // Аппаратный порт куда прицеплен дисплей
 #define NEXTION_UPDATE   5000               // Время обновления информации на дисплее Nextion (мсек)
@@ -96,6 +95,11 @@ const uint16_t  defaultPort=80;
 #define MODBUS_TIME_TRANSMISION 3           // Пауза (msec) между запросом и ответом по модбас было 4
 #endif
 //#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
+#if RADIO_SENSORS_PORT == 2
+	#define RADIO_SENSORS_SERIAL	Serial2			// Аппаратный порт
+#elif RADIO_SENSORS_PORT == 3
+	#define RADIO_SENSORS_SERIAL	Serial3			// Аппаратный порт
+#endif
 
 // Глобальные параметры инвертора инвертора на модбасе зависят от компрессора!!!!!!!!!
 #define FC_MODBUS_ADR      1             // Адрес частотного преобразователя на шине
@@ -146,7 +150,7 @@ const uint16_t  defaultPort=80;
 // --------------------------------------------------------------------------------------------------------------------------
 // КАРТА ПАМЯТИ в чипе i2c объемом 64 кбайта
 // 0х0000 - I2C_COUNT_EEPROM хранение счетчиков, максимальный размер 0x79 (127) байт. Сейчас используется 52 байта
-// 0х0080 - I2C_SETTING_EEPROM хранение настроек ТН  максимальный размер 0х580 (1408) байт. Сейчас используется 1040 байта
+// 0х0080 - I2C_SETTING_EEPROM хранение настроек ТН  максимальный размер 0х580 (1408) байт. Сейчас используется 1074 байта
 // 0х0600 - I2C_PROFILE_EEPROM хранение профилей, максимальный размер 0x9ff(2559) байт. Число профилей 8 шт. Размер профиля сейчас  267 байт (8*259=2072)
 // 0x0E60 - I2C_SCHEDULER_EEPROM хранения расписаний, максимум 415 байт (сейчас 403 байта)
 // 0x0fff ----- конец 4 кбайтного чипа, дальше идет распределение если определено I2C_EEPROM_64KB
@@ -181,6 +185,17 @@ const uint16_t  defaultPort=80;
 #else  
   #define JOURNAL_LEN       (2*W5200_MAX_LEN)                                                            // Размер системного журнала ДОЛЖНО БЫТЬ кратно W5200_MAX_LEN, Увеличивать аккуратно, может не хвать памяти - виснет при загрузке
 #endif
+// Тип записи сохранения, 16bit
+#define SAVE_TYPE_END			0
+#define SAVE_TYPE_sTemp			-1
+#define SAVE_TYPE_sADC			-2
+#define SAVE_TYPE_sInput		-3
+#define SAVE_TYPE_sFrequency	-4
+#define SAVE_TYPE_sIP			-5
+#define SAVE_TYPE_dEEV			-6
+#define SAVE_TYPE_dSDM			-7
+#define SAVE_TYPE_clMQTT		-8
+#define SAVE_TYPE_LIMIT			-100
 
 // ------------------- EEV ----------------------------------
 // Константы фаз движения ЭРВ, три варианта (константы вариантов не менять!)
@@ -229,7 +244,6 @@ const uint16_t  defaultPort=80;
 
 #define BASE_TIME_READ    10 //20        // Частотные датчики - время (сек) на котором измеряется число импульсов, в конце идет пересчет в частоту
 
-#define SENSOR_IP                        // Использование удаленных устройств( датчиков температуры смотрим IPNUMBER )
 #define UPDATE_IP         120            // Время с получения последнего пакета от удаленного датчика (в сек) после которого считается что датчик не активен и не используетс в расчетах
 
 // ------------------- MQTT ----------------------------------
@@ -419,6 +433,7 @@ const char http_get_str2[] = " HTTP/1.0\r\nHost: ";
 const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
 const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
+const uint8_t save_end_marker[1] = { 0 };
 
 // Многозадачность, деление аппартных ресурсов
 const char *nameFREERTOS =     {"Free RTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
@@ -428,7 +443,6 @@ const char *MutexModbusBuzy=   {"Modbus"};
 const char *MutexWebThreadBuzy={"WebThread"}; 
 const char *MutexSPIBuzy=      {"SPI"}; 
 const char *MutexCommandBuzy = {"Command"}; 
-
 
 // Описание имен параметров ЭРВ для функций get_paramEEV set_paramEEV
 const char *eev_POS           =  {"POS"};           // Положение ЭРВ шаги
@@ -724,7 +738,7 @@ const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг пи
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
 const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION
-const char *option_SGL1W              = {"SGL1W_"};			    // SGLOW_n, На шине n (1-Wire, DS2482) только один датчик
+const char option_SGL1W[]             = "SGL1W_";			    // SGLOW_n, На шине n (1-Wire, DS2482) только один датчик
 const char *option_DELAY_ON_PUMP      = {"DELAY_ON_PUMP"};      // Задержка включения компрессора после включения насосов (сек).
 const char *option_DELAY_OFF_PUMP     = {"DELAY_OFF_PUMP"};     // Задержка выключения насосов после выключения компрессора (сек).
 const char *option_DELAY_START_RES    = {"DELAY_START_RES"};    // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -946,8 +960,13 @@ enum TYPE_STATE_HP
 // 20 - блокировка роста частоты ПИДом при подходе к уровням защиты ТCOMP
 // 21 - блокировка роста частоты ПИДом при подходе к уровням защиты ДАВЛЕНИЮ
 // 22 - Выключение нагрева бойлера ТН для перхода в режим ДОГРЕВА его ТЭНом
+// 23 - Выключение режима ТН при достижении уровня защиты по подаче (достижение границы)
+// 24 - Выключение режима ТН при достижении уровня защиты по мощности (достижение границы)
+// 25 - Выключение режима ТН при достижении уровня защиты по температуре компрессора (достижение границы)
+// 26 - Выключение режима ТН при достижении уровня защиты по давлению (достижение границы)
+// 27 - Выключение режима ТН при достижении уровня защиты по току (достижение границы)
 
-enum TYPE_RET_HP         
+enum TYPE_RET_HP
 {
   pNone,              // В начале
   pMinPauseOn,        // Обеспечение минимальной паузы между включениями
@@ -979,6 +998,11 @@ enum TYPE_RET_HP
   pBp20,
   pBp21,
   pBp22,
+  pBp23,
+  pBp24,
+  pBp25,
+  pBp26,
+  pBp27,  
  
   // Отопление
   pHh3,
@@ -1006,6 +1030,11 @@ enum TYPE_RET_HP
   pHp19,
   pHp20,
   pHp21,
+  pHp23,
+  pHp24,
+  pHp25,
+  pHp26,
+  pHp27,   
 
   // Охлаждение
   pCh3,
@@ -1033,14 +1062,18 @@ enum TYPE_RET_HP
   pCp19,
   pCp20,
   pCp21,
-
+  pCp23,
+  pCp24,
+  pCp25,
+  pCp26,
+  pCp27,   
   
   pEND18                            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 //  Для вывода кодов
-const char *codeRet[]={ "none","MinPauseOn","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", \
-                       "Hh3","Hh1","Hh2","Hh13","Hh4","Hp3","Hp1","Hp2","Hp6","Hp7","Hp8","Hp9","Hp5","Hp10","Hp11","Hp12","Hp15","Hp16","Hp17","Hp18","Hp19","Hp20","Hp21",\
-                       "Ch3","Ch1","Ch2","Ch13","Ch4","Cp3","Cp1","Cp2","Cp6","Cp7","Cp8","Cp9","Cp5","Cp10","Cp11","Cp12","Cp15","Cp16","Cp17","Cp18","Cp19","Cp20","Cp21","null"};           
+const char *codeRet[]={ "none","MinPauseOn","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", "Bp23","Bp24","Bp25","Bp26","Bp27",\
+                       "Hh3","Hh1","Hh2","Hh13","Hh4","Hp3","Hp1","Hp2","Hp6","Hp7","Hp8","Hp9","Hp5","Hp10","Hp11","Hp12","Hp15","Hp16","Hp17","Hp18","Hp19","Hp20","Hp21","Hp23","Hp24","Hp25","Hp26","Hp27",\
+                       "Ch3","Ch1","Ch2","Ch13","Ch4","Cp3","Cp1","Cp2","Cp6","Cp7","Cp8","Cp9","Cp5","Cp10","Cp11","Cp12","Cp15","Cp16","Cp17","Cp18","Cp19","Cp20","Cp21","Cp23","Cp24","Cp25","Cp26","Cp27","null"};           
 
 //  Перечисляемый тип - действия над компрессором
 enum MODE_COMP          

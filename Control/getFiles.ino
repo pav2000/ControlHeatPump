@@ -272,8 +272,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); HP.get_optionHP((char*)option_SAVE_ON,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_SD_CARD,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время работы конденсатора  насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время паузы конденсатора насоса при выключенном компрессоре МИНУТЫ: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
@@ -610,20 +610,25 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 uint16_t get_binSettings(uint8_t thread)
 {
-	int16_t i, j, len;
+	int16_t i, j, len, len2;
 	byte b;
 	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
+	if(len > 0) {
+		len2 = HP.Prof.save(HP.Prof.get_idProfile());
+		if(len2 < 0) return 0;
+	}
+	// Сохранение текущего профиля
 	sendConstRTOS(thread, "HTTP/1.1 200 OK\r\nContent-Type:application/x-binary\r\nContent-Disposition: attachment; filename=\"settings.bin\"\r\n\r\n");
 	sendConstRTOS(thread, HEADER_BIN);
 	if(len <= 0) return 0;
 	// запись настроек ТН
-	for(i = 0; i < HP.headerEEPROM.len; i++) {
+	for(i = 0; i < len; i++) {
 		readEEPROM_I2C(I2C_SETTING_EEPROM + i, &b, 1);
 		Socket[thread].outBuf[i] = b;
 	}
 	// запись текущего профиля
 	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * HP.Prof.get_lenProfile();
-	for(j = 0; j < HP.Prof.get_lenProfile(); j++) {
+	for(j = 0; j < len2; j++) {
 		readEEPROM_I2C(addr + j, &b, 1);
 		Socket[thread].outBuf[i + j] = b;
 		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных

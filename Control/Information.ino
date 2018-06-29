@@ -303,46 +303,47 @@ void Journal::_write(char *dataPtr)
 	if(dataPtr == NULL || numBytes == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
 	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
-	// Запись в eeprom
+	// Запись в I2C память
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return;
+	}
 	dataPtr[numBytes] = I2C_JOURNAL_TAIL;
 	if(full) dataPtr[numBytes + 1] = I2C_JOURNAL_HEAD;
-	int32_t n = bufferTail;
-	__asm__ volatile ("" ::: "memory");
-	if(n + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
-		full = 1;
-		bufferTail = numBytes - (JOURNAL_LEN - n);
-		bufferHead = bufferTail + 1;
-		__asm__ volatile ("" ::: "memory");
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, JOURNAL_LEN - n)) {
+	if(bufferTail + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
+		int32_t n;
+		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, n = JOURNAL_LEN - bufferTail)) {
 			#ifdef DEBUG
 				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return;
-		}
-		err = OK;
-		n = JOURNAL_LEN - n;
-		dataPtr += n;
-		numBytes -= n;
-		if(writeEEPROM_I2C(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
-			err = ERR_WRITE_I2C_JOURNAL;
-			#ifdef DEBUG
-				Serial.print(errorWriteI2C);
-			#endif
-			return;
+		} else {
+			dataPtr += n;
+			numBytes -= n;
+			full = 1;
+			if(eepromI2C.write(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
+				err = ERR_WRITE_I2C_JOURNAL;
+				#ifdef DEBUG
+					Serial.print(errorWriteI2C);
+				#endif
+			} else {
+				bufferTail = numBytes;
+				bufferHead = bufferTail + 1;
+				err = OK;
+			}
 		}
 	} else {  // Запись в один прием Буфер не полный
-		bufferTail = n + numBytes;
-		if(full) bufferHead = bufferTail + 1;
-		__asm__ volatile ("" ::: "memory");
-		if(writeEEPROM_I2C(I2C_JOURNAL_START + n, (byte*) dataPtr, numBytes + 1 + full)) {
+		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes + 1 + full)) {
 			#ifdef DEBUG
 				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
-			return;
+		} else {
+			bufferTail += numBytes;
+			if(full) bufferHead = bufferTail + 1;
 		}
 	}
+	SemaphoreGive(xI2CSemaphore);
 #else   // Запись в память
 	// Serial.print(">"); Serial.print(numBytes); Serial.println("<");
 
@@ -770,8 +771,8 @@ char* Profile::get_boiler(char *var, char *ret)
 // static uint16_t crc= 0xFFFF;  // рабочее значение
  uint16_t  Profile::get_crc16_mem()  // Расчитать контрольную сумму
  {
- uint16_t i;
-  crc= 0xFFFF;
+  uint16_t i;
+  uint16_t crc= 0xFFFF;
   for(i=0;i<sizeof(dataProfile);i++) crc=_crc16(crc,*((byte*)&dataProfile+i));           // CRC16 структуры  dataProfile
   for(i=0;i<sizeof(SaveON);i++) crc=_crc16(crc,*((byte*)&SaveON+i));                     // CRC16 структуры  SaveON
   for(i=0;i<sizeof(Cool);i++) crc=_crc16(crc,*((byte*)&Cool+i));                         // CRC16 структуры  Cool
@@ -785,7 +786,7 @@ int8_t Profile::check_crc16_eeprom(int8_t num)
 {
   uint16_t i, crc16tmp;
   byte x;
-  crc= 0xFFFF;
+  uint16_t crc= 0xFFFF;
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;     // вычислить адрес начала данных
   
   if (readEEPROM_I2C(adr, (byte*)&x, sizeof(x))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(x);              // прочитать заголовок
@@ -834,8 +835,8 @@ int16_t  Profile::save(int8_t num)
   crc16=get_crc16_mem();
   if (writeEEPROM_I2C(adrCRC16, (byte*)&crc16, sizeof(crc16))) {set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return err=ERR_SAVE_PROFILE;} 
 
-  if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf(" Verification error, profile not write eeprom\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-  journal.jprintf(" Save profile #%d OK, write: %d bytes crc16: 0x%x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
+  if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf("- Verify Error!\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
+  journal.jprintf(" Save profile #%d OK, write: %d bytes, crc: %04x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
   update_list(num);                                                                                                                                                  // обновить список
   return dataProfile.len;
 }
@@ -873,7 +874,7 @@ int32_t Profile::load(int8_t num)
   // проверка контрольной суммы
   if(crc16!=get_crc16_mem()) { set_Error(ERR_CRC16_PROFILE,(char*)nameHeatPump); return err=ERR_CRC16_PROFILE;}                                                           // прочитать crc16
   if (dataProfile.len!=adr-(I2C_PROFILE_EEPROM+dataProfile.len*num))  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;} // Проверка длины
-    journal.jprintf(" Load profile #%d OK, read: %d bytes crc16: 0x%x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
+    journal.jprintf(" Load profile #%d OK, read: %d bytes, crc: %04x\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num),crc16);
   #else
     journal.jprintf(" Load profile #%d OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
   #endif
@@ -895,7 +896,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
 
   // проверка контрольной суммы
   #ifdef LOAD_VERIFICATION 
-  if ((err=check_crc16_buf(aStart,buf)!=OK)) {journal.jprintf(" Error load profile from file, crc16 is wrong!\n"); return err;}
+  if ((err=check_crc16_buf(aStart,buf)!=OK)) {journal.jprintf(" Error load profile from file, crc is wrong!\n"); return err;}
   #endif 
   
   memcpy((byte*)&i,buf+adr,sizeof(i)); adr=adr+sizeof(i);                                                             // прочитать crc16
@@ -909,7 +910,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
  
    #ifdef LOAD_VERIFICATION
     if (dataProfile.len!=adr-aStart)  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;}    // Проверка длины
-    journal.jprintf(" Load profile from file OK, read: %d bytes crc16: 0x%x\n",adr-aStart,i);                                                                    // ВСЕ ОК
+    journal.jprintf(" Load profile from file OK, read: %d bytes, crc: %04x\n",adr-aStart,i);                                                                    // ВСЕ ОК
   #else
     journal.jprintf(" Load setting from file OK, read: %d bytes VERIFICATION OFF!\n",adr-aStart);
   #endif
