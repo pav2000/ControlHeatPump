@@ -32,7 +32,7 @@
 			</td>
 		</tr>			
 		<tr>
-			<td>Период накопления  графиков <sup>1</sup></td>
+			<td>Период накопления графиков <sup>1</sup></td>
 			<td>
 				<select id="get_optionhp-time_chart" onChange="setParam('get_optionHP(TIME_CHART)','get_optionhp-time_chart');"></select>
 			</td>
@@ -44,37 +44,10 @@
 			</td>
 		</tr>		
 		<tr>
-			<td>Работа насосов отопления, когда ТН в паузе (секунды) [0..65535] <sup>3</sup></td>
-			<td>
-				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
-				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
-			</td>
-		</tr>
-		<tr>
-			<td> Период останова насосов отопления в паузе ТН (секунды) [0..65535] <sup>4</sup></td>
-			<td>
-				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
-				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
-			</td>
-		</tr>
-		<tr>
 			<td>Число повторных попыток пуска при ошибке [0..10]<sup>5</sup></td>
 			<td>
 				<input id="get_optionhp-attempt" type="number" min="0" max="9999" step="1" value="0">
 				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
-			</td>
-		</tr>
-		<tr>
-			<td>Использование дополнительного ТЭНа при нагреве отопления</td>
-			<td>
-				<select id="get_optionhp-add_heat" onchange="setParam('get_optionHP(ADD_HEAT)','get_optionhp-add_heat');"></select>
-			</td>
-		</tr>
-		<tr>
-			<td>Температура для управления дополнительным ТЭНом [-30..30]</td>
-			<td>
-				<input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0">
-				<input id="get_optionhp-temp_rheat2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
@@ -95,58 +68,33 @@
 				<input type="checkbox" name="get_optionhp-eev_light_start" id="get_optionhp-eev_light_start" onchange="setParam('get_optionHP(EEV_LIGHT_START)');" >
 			</td>
 		</tr>		
-				
-		<!--<tr id="get_presentrelay-rheat">
-			<td>Использование дополнительного ТЭНа при нагреве</td>
-			<td>
-				<input type="checkbox" name="get_optionhp-add_heat" id="get_optionhp-add_heat" onchange="setParam('get_optionHP(ADD_HEAT)');" >
-			</td>
-		</tr>-->
 		<tr>
-			<td>Генерация звукового сигнала</td>
+			<td>Использование дополнительного ТЭНа при нагреве отопления</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-beep" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');" >
-			</td>
-		</tr>					
-		<tr>
-			<td>Использование дисплея Nextion</td>
-			<td>
-				<input type="checkbox" name="get_optionhp-nextion" id="get_optionhp-nextion" onchange="setParam('get_optionHP(NEXTION)');" >
-			</td>
-		</tr>	
-		<tr>
-			<td>Время засыпания дисплея Nextion (минуты) [0..60] <sup>9</sup></td>
-			<td>
-				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
-				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
+				<select id="get_optionhp-add_heat" onchange="setParam('get_optionHP(ADD_HEAT)','get_optionhp-add_heat');"></select>
 			</td>
 		</tr>
 		<tr>
-			<td>Яркость дисплея Nextion в % [5..100]</td>
+			<td>Температура для управления дополнительным ТЭНом [-30..30]</td>
 			<td>
-				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
-				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
+				<input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0">
+				<input id="get_optionhp-temp_rheat2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
-			<td>На второй шине 1-Wire только один датчик температуры</td>
+			<td>Работа насосов отопления, когда ТН в паузе (секунды) [0..65535] <sup>3</sup></td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_2" onchange="setParam('get_optionHP(SGL1W_2)');" >
+				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
+				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
-		</tr>	
+		</tr>
 		<tr>
-			<td>На третей шине 1-Wire только один датчик температуры</td>
+			<td> Период останова насосов отопления в паузе ТН (секунды) [0..65535] <sup>4</sup></td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_3" onchange="setParam('get_optionHP(SGL1W_3)');" >
+				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
+				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
 			</td>
-		</tr>	
-		<tr>
-			<td>На четвертой шине 1-Wire только один датчик температуры</td>
-			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_4" onchange="setParam('get_optionHP(SGL1W_4)');" >
-			</td>
-		</tr>	
-
+		</tr>
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек).</td>
 			<td>
@@ -193,6 +141,50 @@
 			<td>Логировать не критичные ошибки электро-счетчика SDM</td>
 			<td>
 				<input type="checkbox" id="get_optionhp-sdm_loger" onchange="setParam('get_optionHP(SDM_LOGER)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Генерация звукового сигнала</td>
+			<td>
+				<input type="checkbox" name="get_optionhp-beep" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');" >
+			</td>
+		</tr>					
+		<tr>
+			<td>Использование дисплея Nextion</td>
+			<td>
+				<input type="checkbox" name="get_optionhp-nextion" id="get_optionhp-nextion" onchange="setParam('get_optionHP(NEXTION)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Время засыпания дисплея Nextion (минуты) [0..60] <sup>9</sup></td>
+			<td>
+				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
+				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
+			</td>
+		</tr>
+		<tr>
+			<td>Яркость дисплея Nextion в % [5..100]</td>
+			<td>
+				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
+				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
+			</td>
+		</tr>
+		<tr>
+			<td>На второй шине 1-Wire только один датчик температуры</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-sgl1w_2" onchange="setParam('get_optionHP(SGL1W_2)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>На третей шине 1-Wire только один датчик температуры</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-sgl1w_3" onchange="setParam('get_optionHP(SGL1W_3)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>На четвертой шине 1-Wire только один датчик температуры</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-sgl1w_4" onchange="setParam('get_optionHP(SGL1W_4)');" >
 			</td>
 		</tr>	
 

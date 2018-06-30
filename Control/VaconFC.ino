@@ -600,9 +600,9 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), state);
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", state);
 			if(err == OK) {
-				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2f%%;2108 (V1.1)|Выходная мощность: %.1f%% (кВт)|%.3f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float) power / 10.0, (float)get_power()/1000.0);
-				buf += m_snprintf(buf, 256, "2105 (V1.3)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
-				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2f%%;2108 (V1.1)|Выходная мощность: %.1f%% (кВт)|%.3f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float)power / 10.0, (float)get_power()/1000.0);
+				buf += m_snprintf(buf, 256, "2105 (V1.3)|Обороты (об/м)|%d;", (int16_t)read_0x03_16(FC_RPM));
+				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1f%%;", (float)(int16_t)read_0x03_16(FC_TORQUE) / 10.0);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "2109 (V1.7)|Выходное напряжение (В)|%.1f;2110 (V1.8)|Напряжение шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
 				buf += m_snprintf(buf, 256, "0008 (V1.9)|Температура радиатора (°С)|%d;", read_tempFC());

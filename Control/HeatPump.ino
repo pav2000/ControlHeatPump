@@ -1760,9 +1760,11 @@ int8_t HeatPump::StartResume(boolean start)
 		{
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
-			vTaskResume(xHandleUpdate);
-			journal.jprintf(" Start task vUpdate\n");
-			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
+			if(get_mode() != pOFF) {
+				vTaskResume(xHandleUpdate);
+				journal.jprintf(" Start task vUpdate\n");
+				journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
+			}
 			return error;
 		}
 	if (startWait)
@@ -1921,7 +1923,7 @@ int8_t HeatPump::StartResume(boolean start)
 	setState(pWORK_HP);
 
 	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
-	if(start)
+	if(start && get_mode() != pOFF )
 	{
 		journal.jprintf(" Start task vUpdate\n");
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
@@ -1955,7 +1957,7 @@ int8_t HeatPump::StopWait(boolean stop)
       {
         switchBoiler(false);
       }
-  if (COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить веремя
+  if (COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
 
   if (stop) //Обновление ТН отключаем только при останове
     {
@@ -2054,7 +2056,12 @@ MODE_HP HeatPump::get_Work()
     // Обеспечить переключение с бойлера на отопление/охлаждение
     if(((Status.ret==pBh3)||(Status.ret==pBp22)||(Status.ret==pBp23)||(Status.ret==pBp24)||(Status.ret==pBp25)||(Status.ret==pBp26)||(Status.ret==pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
      {
-      switchBoiler(false);                       // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
+		#ifdef RPUMPBH
+    	if(COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
+		journal.jprintf(" Delay: stop boiler pump\n");
+		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		#endif
+		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
      }
  
     // 3. Отопление/охлаждение
