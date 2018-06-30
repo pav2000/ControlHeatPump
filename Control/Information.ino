@@ -299,8 +299,8 @@ size_t Journal::write (uint8_t c)
 // Записать строку в журнал
 void Journal::_write(char *dataPtr)
 {
-	uint16_t numBytes = m_strlen(dataPtr);
-	if(dataPtr == NULL || numBytes == 0) return;  // Записывать нечего
+	uint16_t numBytes;
+	if(dataPtr == NULL || (numBytes = m_strlen(dataPtr)) == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
 	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
 	// Запись в I2C память
@@ -308,6 +308,7 @@ void Journal::_write(char *dataPtr)
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
 		return;
 	}
+	__asm__ volatile ("" ::: "memory");
 	dataPtr[numBytes] = I2C_JOURNAL_TAIL;
 	if(full) dataPtr[numBytes + 1] = I2C_JOURNAL_HEAD;
 	if(bufferTail + numBytes + 2 > JOURNAL_LEN) { //  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера ( помним про символ начала)
@@ -552,7 +553,7 @@ void Profile::initProfile()
   Boiler.Circul_Work=60*3;              // Время  работы насоса ГВС секунды (fCirculation)
   Boiler.Circul_Pause=60*10;            // Пауза в работе насоса ГВС  секунды (fCirculation)
   SETBIT0(Boiler.flags,fResetHeat);     // флаг Сброса лишнего тепла в СО
-  Boiler.Reset_Time=60*6;               // время сброса излишков тепла в секундах (fResetHeat)
+  Boiler.Reset_Time=30;                 // время сброса излишков тепла в секундах (fResetHeat)
   Boiler.time=20;                       // Постоянная интегрирования времени в секундах ПИД ГВС
   Boiler.Kp=3;                          // Пропорциональная составляющая ПИД ГВС
   Boiler.Ki=1;                          // Интегральная составляющая ПИД ГВС
@@ -708,13 +709,13 @@ if(strcmp(var,boil_SCHEDULER)==0){  return set_Schedule(c,Boiler.Schedule); }els
 
 if(strcmp(var,boil_CIRCUL_WORK)==0){if ((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;}else            // Время  работы насоса ГВС секунды (fCirculation)
                         
-if(strcmp(var,boil_CIRCUL_PAUSE)==0){ if ((x>=0)&&(x<=60))   {Boiler.Circul_Pause=60*x; return true;} else return false;            // Пауза в работе насоса ГВС  секунды (fCirculation)
+if(strcmp(var,boil_CIRCUL_PAUSE)==0){ if ((x>=0)&&(x<=10000))   {Boiler.Circul_Pause=x; return true;} else return false;            // Пауза в работе насоса ГВС  секунды (fCirculation)
                        }else  
 if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.flags,fResetHeat); return true;}                      // флаг Сброса лишнего тепла в СО
                        else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fResetHeat);  return true;}
                        else return false;  
                        }else 
-if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=1)&&(x<=20))   {Boiler.Reset_Time=60*x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
+if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=1)&&(x<=10000))   {Boiler.Reset_Time=x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
                        }else      
 if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.time=x; return true;} else return false;  }else             // Постоянная интегрирования времени в секундах ПИД ГВС
 if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.Kp=x; return true;} else return false;  }else               // Пропорциональная составляющая ПИД ГВС
@@ -746,7 +747,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_CIRCUL_WORK)==0){     return _itoa(Boiler.Circul_Work/60,ret);                   }else                            // Время  работы насоса ГВС секунды (fCirculation)
  if(strcmp(var,boil_CIRCUL_PAUSE)==0){    return _itoa(Boiler.Circul_Pause/60,ret);                  }else                            // Пауза в работе насоса ГВС  секунды (fCirculation)
  if(strcmp(var,boil_RESET_HEAT)==0){      if (GETBIT(Boiler.flags,fResetHeat))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else       // флаг Сброса лишнего тепла в СО
- if(strcmp(var,boil_RESET_TIME)==0){      return  _itoa(Boiler.Reset_Time/60,ret);                   }else                            // время сброса излишков тепла в секундах (fResetHeat)
+ if(strcmp(var,boil_RESET_TIME)==0){      return  _itoa(Boiler.Reset_Time,ret);                      }else                            // время сброса излишков тепла в секундах (fResetHeat)
  if(strcmp(var,boil_BOIL_TIME)==0){       return  _itoa(Boiler.time,ret);                            }else                            // Постоянная интегрирования времени в секундах ПИД ГВС
  if(strcmp(var,boil_BOIL_PRO)==0){        return  _itoa(Boiler.Kp,ret);                              }else                            // Пропорциональная составляющая ПИД ГВС
  if(strcmp(var,boil_BOIL_IN)==0){         return  _itoa(Boiler.Ki,ret);                              }else                            // Интегральная составляющая ПИД ГВС

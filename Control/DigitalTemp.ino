@@ -72,11 +72,13 @@ void sensorTemp::initTemp(int sensor)
       SETBIT0(flags,fFull);                    // буфер не полный
       Chart.init(SENSORTEMP[sensor]);          // инициалазация статистики
       memset(address, 0, sizeof(address));	   // обнуление адресс датчика
-      memset(t, 0, sizeof(t));	   			   // обнуление буффера значений
       busOneWire = NULL;
       testMode=NORMAL;                         // Значение режима тестирования
+#if T_NUMSAMLES > 1
+      memset(t, 0, sizeof(t));	   			   // обнуление буффера значений
       sum=0;
       last=0;
+#endif
       nGap=0;                                  // Счечик "разорванных" данных  - требуется для фильтрации помехи
       note=(char*)noteTemp[sensor];            // присвоить наименование датчика
       name=(char*)nameTemp[sensor];            // присвоить имя датчика
@@ -101,7 +103,8 @@ int8_t sensorTemp::Read()
 			if(number == TCOMP) { // эти датчики должны быть привязаны
 				set_Error(err = ERR_ADDRESS, name);
 				return err;
-			} else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
+			} else if(number == TIN) return OK; // Этот может получать значения от других датчиков
+			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
 			int16_t ttemp;
 			err = busOneWire->Read(address, ttemp);
@@ -139,20 +142,17 @@ int8_t sensorTemp::Read()
 	}
 
 	// Усреднение значений
+  #if T_NUMSAMLES == 1         // При 1 - без усреднения
+	Temp = lastTemp;
+  #else                        // буфер может быть не полным
 	sum = sum-t[last];           // Убрать самое старое значение из суммы
 	t[last] = lastTemp;          // Запомить новое значение
 	sum = sum + lastTemp;          // Добавить новое значение
 
-	#if T_NUMSAMLES == 1         // При объеме буфера 1 - буфер всегда полный
-	last = 0; SETBIT1(flags,fFull);
-	#else                        // буфер может быть не полным
 	if (last<(T_NUMSAMLES-1)) last++; else { last=0; SETBIT1(flags,fFull);}  // Установить признак буфер полный при T_NUMSAMLES=1 буфер всегда полный (придупреждение компилятора)
-	#endif
-
-	// Serial.print("sum="); Serial.print(sum);Serial.print(" lastTemp="); Serial.print(lastTemp); Serial.print(" last="); Serial.print(last);  Serial.print(" fFull="); Serial.println(GETBIT(fFull));
-
 	if(GETBIT(flags,fFull))   Temp=sum/T_NUMSAMLES+errTemp;   // буфер полный
 	else                      Temp=sum/last+errTemp;
+  #endif
 
 	// Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	if(Temp<minTemp) { set_Error(err = ERR_MINTEMP, name); return err; }

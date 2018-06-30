@@ -1953,17 +1953,21 @@ int8_t HeatPump::StopWait(boolean stop)
     journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");    
   }
     
-  if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
-      {
-        switchBoiler(false);
-      }
   if (COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
+  if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
+  {
+	#ifdef RPUMPBH
+	journal.jprintf(" Delay before stop boiler pump\n");
+	_delay(Option.delayOffPump * 1000); // задержка перед выключением насосов после выключения компрессора (облегчение останова)
+	#endif
+	switchBoiler(false);
+  }
 
   if (stop) //Обновление ТН отключаем только при останове
-    {
+  {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
     journal.jprintf(" Stop task vUpdate\n"); 
-    } 
+  }
     
   if(startPump)
   {
@@ -2000,13 +2004,13 @@ int8_t HeatPump::StopWait(boolean stop)
   
   #ifdef EEV_DEF
   if(GETBIT(Option.flags,fEEV_close))            //ЭРВ само выключится по State
-     { 
+  {
      journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
      _delay(dEEV.get_delayOff()*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
      dEEV.set_EEV(dEEV.get_minSteps());                          // Если нужно, то закрыть ЭРВ
      journal.jprintf(" EEV go minSteps\n"); 
-     } 
-   #endif
+  }
+  #endif
    
  // ЭРВ само выключится по State
 //  vTaskSuspend(xHandleUpdateEEV);                       // Остановить задачу обновления ЭРВ
@@ -2017,17 +2021,17 @@ int8_t HeatPump::StopWait(boolean stop)
  
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
-    {
+  {
      vTaskSuspend(xHandleUpdateStat);                    // Остановить задачу обновления статистики
      journal.jprintf(" statChart stop\n");      
      setState(pOFF_HP);
      journal.jprintf(pP_TIME,"%s OFF . . .\n",(char*)nameHeatPump);
-    }
-   else 
-     {
+  }
+  else
+  {
      setState(pWAIT_HP);
      journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
-     }
+  }
   return error;
 }
 
@@ -2058,7 +2062,7 @@ MODE_HP HeatPump::get_Work()
      {
 		#ifdef RPUMPBH
     	if(COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
-		journal.jprintf(" Delay: stop boiler pump\n");
+		journal.jprintf(" Delay before stop boiler pump\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 		#endif
 		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
@@ -2142,12 +2146,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
 		if ((FEED>Prof.Boiler.tempIn-100)||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-500))
 		{
-			journal.jprintf(" Discharge of excess heat in the heating system\n");
+			journal.jprintf(" Discharge of excess heat %ds...\n", Prof.Boiler.Reset_Time);
 			switchBoiler(false);               // Переключится на ходу на отопление
-			journal.jprintf(" Pause %d  minutes after switching the 3-way valve . . .\n",Prof.Boiler.Reset_Time/60);
 			_delay(Prof.Boiler.Reset_Time*1000);  // Сброс требуемое число  минут для системы отопления
+			journal.jprintf(" Back to heat boiler\n");
 			switchBoiler(true);              // Переключится на ходу на ГВС
-			journal.jprintf(" Switching on the boiler and the heating on\n");
 		}
 	}
 
@@ -2662,7 +2665,7 @@ void HeatPump::configHP(MODE_HP conf)
       case  pOFF: // ЭТО может быть пауза! Выключить - установить положение как при включении ( перевод 4-х ходового производится после отключения компрессора (см compressorOFF()))
                  switchBoiler(false);                                            // выключить бойлер
                
-                 _delay(10*1000);                        // Задержка на 10 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                               // Задержка на 10 сек
                  #ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
                      dRelay[RSUPERBOILER].set_OFF();                              // Евгений добавил выключить супербойлер
                  #endif

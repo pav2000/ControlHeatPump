@@ -178,7 +178,7 @@ int8_t devVaconFC::get_readState()
 		    err = Modbus.get_err(); // Скопировать ошибку
 		}
 		if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-			journal.jprintf(pP_TIME, "FC: %X,%.1f%%=%.1fHz,%.1fA,%.0f%%=%.1f\n", state, (float)FC_curr/100.0, (float)FC_curr_freq/100.0, (float)current/100.0, (float)power/100.0, (float)get_power()/1000.0);
+			journal.jprintf(pP_TIME, "FC: %Xh,%.2f%%,%.2fHz,%.2fA,%.2f%%=%.3f\n", state, (float)FC_curr/100.0, (float)FC_curr_freq/100.0, (float)current/100.0, (float)power/100.0, (float)get_power()/1000.0);
 		}
     }
 #else // Аналоговое управление

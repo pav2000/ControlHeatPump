@@ -634,18 +634,19 @@ function loadParam(paramid, noretry, resultdiv) {
 											element = document.getElementById(valueid);
 											if(!element) {
 												element = document.getElementById(valueid + '2');
-												if(element) tnum = 2; 
+												if(element) tnum = 2; // set
 											}
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
-												loadsens += "get_aTemp(" +T+ "),get_eTemp(" +T+ "),get_noteTemp(" +T+ "),";
+												loadsens += "get_eTemp(" +T+ "),get_noteTemp(" +T+ "),get_bTemp(" +T+ "),";
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
 													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
-													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
+													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
 													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ ")";
 												} else if(tnum == 2) {
+													loadsens += "get_aTemp(" +T+ "),";
 													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
 													upsens += "get_rawTemp(" +T+ "),";
 												}
@@ -660,13 +661,14 @@ function loadParam(paramid, noretry, resultdiv) {
 													content += ' <td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
 													content += ' <td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												}	
-												content += ' <td id="get_atemp-' +T+ '">-</td>';
 												if(tnum == 1) {
+													content += ' <td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
 													content += ' <td id="get_btemp-' +T+ '">-</td>';
 													content += ' <td id="get_estemp-' +T+ '">-</td>';
 												} else if(tnum == 2) {
+													content += ' <td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
 													content += ' <td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
-													content += ' <td><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
+													content += ' <td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
 												}
 												content += ' <td id="get_etemp-' +T+ '">-</td>';
 												content += '</tr>';

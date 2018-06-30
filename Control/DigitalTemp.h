@@ -42,10 +42,12 @@
 #define STARTTEMP   -27321  // Значение инициализации датчика температуры, по нему определяется первая итерация (сотые градуса)
 
 enum TEMP_SETUP_FLAGS { // bit #
-	fDS2482_bus = 0,			// 0..3 - шина DS2482
-	fTEMP_ignory_errors = 2, 	// игнорировать ошибки датчика - не будет останавливаться ТН
-	fTEMP_dont_log_errors, 		// не логировать ошибки
-	fTEMP_ignory_CRC 			// Ошибки CRC игнорируются - неверные показания отбрасываеются через GAP_TEMP_VAL_CRC
+	fDS2482_bus = 0,		// 0..3 - шина DS2482
+	fTEMP_ignory_errors = 2,// 1: игнорировать ошибки датчика - не будет останавливаться ТН
+	fTEMP_dont_log_errors,	// 2: не логировать ошибки
+	fTEMP_ignory_CRC,		// 3: Ошибки CRC игнорируются - неверные показания отбрасываеются через GAP_TEMP_VAL_CRC
+	fTEMP_as_TIN_average,	// 4: Используется для расчета TIN в качестве средней температуры, между всеми датчиками с таким флагом
+	fTEMP_as_TIN_min		// 5: Используется для расчета TIN в качестве минимальной температуры, между всеми датчиками с таким и "average" флагами
 };
 #define fDS2482_bus_mask 3
 
@@ -111,6 +113,7 @@ class sensorTemp
     int16_t  get_lastTemp(){return lastTemp;}           // Последнее считанное значение датчика - НЕ обработанное (без коррекции ошибки и усреднения)
     int16_t  get_Temp();                                // Получить значение температуры датчика с учетом удаленных датчиков!!! - это то что используется
     int16_t  get_rawTemp();                             // Получить значение температуры ПРОВОДНОГО датчика
+    void	 set_Temp(int16_t t) { Temp = t; } 			// Установить температуру датчика
     int16_t  get_testTemp(){return testTemp;}           // Получить значение температуры датчика - в режиме теста
     int8_t   set_testTemp(int16_t t);                   // Установить значение температуры датчика - в режиме теста
     TEST_MODE get_testMode(){return  testMode;}         // Получить текущий режим работы
@@ -122,6 +125,7 @@ class sensorTemp
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline uint8_t get_bus(){ return (setup_flags & fDS2482_bus_mask); } // Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
+    __attribute__((always_inline)) inline uint8_t get_setup_flags(void){ return setup_flags; }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
@@ -146,11 +150,13 @@ class sensorTemp
    int8_t  err;                                         // ошибка датчика (работа) при ошибке останов ТН
    uint8_t numErrorRead;                                // Счечик ошибок чтения датчика подряд если оно больше NUM_READ_TEMP_ERR генерация ошибки датчика
    uint32_t sumErrorRead;                               // Cуммарный счечик ошибок чтения датчика - число ошибок датчика с момента перегрузки
+   uint8_t nGap;                                        // Счечик "разорванных" данных  - требуется для фильтрации помехи
    // Кольцевой буфер для усреднения
+#if T_NUMSAMLES > 1
    int32_t sum;                                         // Накопленная сумма
    uint8_t last;                                        // указатель на последнее (самое старое) значение в буфере диапазон от 0 до T_NUMSAMLES-1
-   uint8_t nGap;                                        // Счечик "разорванных" данных  - требуется для фильтрации помехи
    int16_t t[T_NUMSAMLES];                              // буфер для усреднения показаний температуры
+#endif
    byte    flags;                                       // флаги  датчика
    struct { // Save GROUP, firth number
    uint8_t number;  									// Номер датчика

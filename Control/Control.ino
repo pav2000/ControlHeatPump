@@ -839,10 +839,32 @@ void vReadSensor(void *)
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		if(OW_scan_flags == 0) {
+			uint8_t flags = 0;
 			for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
+				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) {
+					if(HP.sTemp[i].Read() == OK) flags |= HP.sTemp[i].get_setup_flags();
+				}
 				_delay(2);     												// пауза
 			}
+			int32_t temp;
+			if(GETBIT(flags, fTEMP_as_TIN_average)) { // Расчет средних датчиков для TIN
+				temp = 0;
+				uint8_t cnt = 0;
+				for(i = 0; i < TNUMBER; i++) {
+					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average)) {
+						temp += HP.sTemp[i].get_Temp();
+						cnt++;
+					}
+				}
+				if(cnt) temp /= cnt; else temp = 32767;
+			} else temp = 32767;
+			int16_t temp2 = temp;
+			if(GETBIT(flags, fTEMP_as_TIN_min)) { // Выбор минимальной температуры для TIN
+				for(i = 0; i < TNUMBER; i++) {
+					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_min) && temp2 > HP.sTemp[i].get_Temp()) temp2 = HP.sTemp[i].get_Temp();
+				}
+			}
+			if(temp2 != 32767) HP.sTemp[TIN].set_Temp(temp2);
 		}
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
