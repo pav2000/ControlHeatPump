@@ -1562,6 +1562,7 @@ boolean HeatPump::switchBoiler(boolean b)
 	dRelay[R3WAY].set_Relay(onBoiler);           // Установить в нужное полежение 3-х ходового
 #else // Нет трехходового - схема с двумя насосами
 	// ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
+	journal.printf(" swBoiler(%d): old:%d, new:%d\n", b, Status.modWork, get_mode());
 	if (onBoiler) // ГВС
 	{
 		#ifdef RPUMPBH
@@ -1574,7 +1575,7 @@ boolean HeatPump::switchBoiler(boolean b)
 	}
 	else  // Отопление/охлаждение
 	{
-		if ((Status.modWork==pHEAT)||(Status.modWork==pNONE_H)) // Отопление
+		if ((Status.modWork==pHEAT)||(Status.modWork==pNONE_H)) // Было Отопление
 		{
 			#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
@@ -1584,7 +1585,7 @@ boolean HeatPump::switchBoiler(boolean b)
 			#endif
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 		}
-		else if ((Status.modWork==pCOOL)||(Status.modWork==pNONE_C)) // Охлаждение
+		else if ((Status.modWork==pCOOL)||(Status.modWork==pNONE_C)) // Было Охлаждение
 		{
 			#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
@@ -1594,7 +1595,20 @@ boolean HeatPump::switchBoiler(boolean b)
 			#endif
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 		}
-		else   // Все осталное
+		else if ((Status.modWork==pBOILER)||(Status.modWork==pNONE_B)) // Было Бойлер
+		{
+			#ifdef RPUMPBH
+			dRelay[RPUMPBH].set_OFF();    // ГВС
+			#endif
+			if(get_State() == pWORK_HP && get_mode() != pOFF) { // Станет
+				dRelay[RPUMPO].set_ON();     // файнкойлы
+				#ifdef RPUMPFL
+				// Включаем ТП, если не будем охлаждать
+				if(get_mode() != pCOOL && get_mode() != pNONE_C) dRelay[RPUMPFL].set_OFF();    // ТП
+				#endif
+			}
+		}
+		else   //  Было Все остальное
 		{
 			#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
@@ -1650,7 +1664,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
 	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
+	if((!b) && (old) && (dRelay[RPUMPBH].get_Relay() || dRelay[RPUMPO].get_Relay())) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
 		journal.jprintf(" Delay: stop OUT pump.\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
@@ -1679,7 +1693,8 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_OUT].set_Relay(b);                  // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 #else
-    #ifdef RPUMPBH
+	// здесь выключать насос бойлера бесполезно, уже раньше выключили
+	#ifdef RPUMPBH
     if ((Status.modWork==pBOILER)||(Status.modWork==pNONE_B)) dRelay[RPUMPBH].set_Relay(b); // Если бойлер
     else
     #endif
@@ -1760,11 +1775,9 @@ int8_t HeatPump::StartResume(boolean start)
 		{
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
-			if(get_mode() != pOFF) {
-				vTaskResume(xHandleUpdate);
-				journal.jprintf(" Start task vUpdate\n");
-				journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
-			}
+			vTaskResume(xHandleUpdate);
+			journal.jprintf(" Start task vUpdate\n");
+			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			return error;
 		}
 	if (startWait)
@@ -1923,7 +1936,7 @@ int8_t HeatPump::StartResume(boolean start)
 	setState(pWORK_HP);
 
 	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
-	if(start && get_mode() != pOFF )
+	if(start)
 	{
 		journal.jprintf(" Start task vUpdate\n");
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
@@ -2061,9 +2074,11 @@ MODE_HP HeatPump::get_Work()
     if(((Status.ret==pBh3)||(Status.ret==pBp22)||(Status.ret==pBp23)||(Status.ret==pBp24)||(Status.ret==pBp25)||(Status.ret==pBp26)||(Status.ret==pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
      {
 		#ifdef RPUMPBH
-    	if(COMPRESSOR_IS_ON) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
-		journal.jprintf(" Delay before stop boiler pump\n");
-		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+    	if(get_mode() == pOFF && COMPRESSOR_IS_ON) {
+    		COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();      // Выключить компрессор и запомнить время
+    		journal.jprintf(" Delay before stop boiler pump\n");
+    		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+    	}
 		#endif
 		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
      }
@@ -2759,8 +2774,7 @@ void HeatPump::ChangesPauseTRV()
   dEEV.Pause();                                                    // Поставить на паузу задачу Обновления ЭРВ
   journal.jprintf(" Pause task update EEV\n"); 
   #endif
-  COMPRESSOR_OFF;                                                  //  Компрессор выключить
-  stopCompressor=rtcSAM3X8.unixtime();                             // Запомнить время выключения компрессора
+  if (COMPRESSOR_IS_ON) {  COMPRESSOR_OFF; stopCompressor=rtcSAM3X8.unixtime(); }                             // Запомнить время выключения компрессора
   #ifdef REVI
    checkEVI();                                                     // выключить ЭВИ
   #endif
@@ -2816,8 +2830,8 @@ void HeatPump::vUpdate()
           {
               case  pOFF: if (COMPRESSOR_IS_ON){  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
                              compressorOFF();
-                             configHP(Status.modWork); 
-                             if(!startPump)                                   // запустить задачу насос
+                             configHP(Status.modWork);
+                             if(!startPump && get_mode() != pOFF)// Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
                              {
                                startPump=true;                                 // Поставить признак запуска задачи насос
                                vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
@@ -2854,7 +2868,7 @@ const char *EEV_go={" EEV go "};  // экономим место
 const char *MinPauseOffCompressor={" Wait %d sec min pause off compressor . . .\n"};  // экономим место
 void HeatPump::compressorON(MODE_HP mod)
 {
-  uint32_t nTime=rtcSAM3X8.unixtime();
+  uint32_t nTime=rtcSAM3X8.unixtime() - stopCompressor;
   if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
   
   if (COMPRESSOR_IS_ON) return;                                  // Компрессор уже работает
@@ -2871,13 +2885,13 @@ void HeatPump::compressorON(MODE_HP mod)
      {
      // 1. Обеспечение минимальной паузы компрессора
      #ifdef DEMO
-       if (nTime-stopCompressor<10) {journal.jprintf(MinPauseOffCompressor);return;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
+       if (nTime<10) {journal.jprintf(MinPauseOffCompressor);return;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
      #else
       switch ((int)mod)   // Обеспечение паузы компрессора Хранится в секундах!!!
       {
-          case  pCOOL:   if (nTime-stopCompressor<Prof.Cool.pause)   {journal.jprintf(MinPauseOffCompressor,nTime-stopCompressor-Prof.Cool.pause);return;} break;  
-          case  pHEAT:   if (nTime-stopCompressor<Prof.Heat.pause)   {journal.jprintf(MinPauseOffCompressor,nTime-stopCompressor-Prof.Heat.pause);return;} break; 
-          case  pBOILER: if (nTime-stopCompressor<Prof.Boiler.pause) {journal.jprintf(MinPauseOffCompressor,nTime-stopCompressor-Prof.Boiler.pause);return;} break;  
+          case  pCOOL:   if (nTime < Prof.Cool.pause)   {journal.jprintf(MinPauseOffCompressor,Prof.Cool.pause - nTime);return;} break;
+          case  pHEAT:   if (nTime < Prof.Heat.pause)   {journal.jprintf(MinPauseOffCompressor,Prof.Heat.pause - nTime);return;} break;
+          case  pBOILER: if (nTime < Prof.Boiler.pause) {journal.jprintf(MinPauseOffCompressor,Prof.Boiler.pause - nTime);return;} break;
           case  pOFF:    
           case  pNONE_C:
           case  pNONE_H:

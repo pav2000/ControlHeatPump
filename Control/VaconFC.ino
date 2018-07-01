@@ -529,9 +529,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 boolean devVaconFC::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_AUTO)==0)                  { _data.setup_flags = (_data.setup_flags & ~(1<<fAuto)) | (1<<fAuto); return true;  } else
-    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { _data.setup_flags = (_data.setup_flags & ~(1<<fAutoResetFault)) | (1<<fAutoResetFault); return true;  } else
-    if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | (1<<fLogWork); return true;  } else
+    if(strcmp(var,fc_AUTO)==0)                  { _data.setup_flags = (_data.setup_flags & ~(1<<fAuto)) | ((x!=0)<<fAuto); return true;  } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { _data.setup_flags = (_data.setup_flags & ~(1<<fAutoResetFault)) | ((x!=0)<<fAutoResetFault); return true;  } else
+    if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | ((x!=0)<<fLogWork); return true;  } else
 	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 

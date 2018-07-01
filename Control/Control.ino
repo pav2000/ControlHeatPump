@@ -970,7 +970,7 @@ void vReadSensor_delay10ms(int16_t msec)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-// Задача Управление тепловым насосом
+// Задача Управление тепловым насосом (xHandleUpdate)
  void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
 	#ifdef RPUMPB
@@ -1260,7 +1260,7 @@ void vUpdateStepperEEV( void * )
 }
 #endif
 
-// Задача: Работа насосов отопления, когда ТН в паузе
+// Задача: Работа насосов отопления, когда ТН в паузе (xHandleUpdatePump)
 void vUpdatePump(void *)
 { //const char *pcTaskName = "Pump is running\r\n";
 	uint16_t i;
