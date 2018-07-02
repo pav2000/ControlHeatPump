@@ -171,9 +171,11 @@ class HeatPump
   {
   public:
     void initHeatPump();                                     // Конструктор
-     __attribute__((always_inline)) inline MODE_HP get_modWork()   {return Status.modWork;}  // Получить что делает ТН ?????? надо порядок навести
-     __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}  // Получить состяние теплового насоса
-     __attribute__((always_inline)) inline int8_t get_ret() {return Status.ret;}             // Точка выхода из алгоритма регулирования
+    // Информационные функции определяющие состояние ТН
+     __attribute__((always_inline)) inline MODE_HP get_modWork()     {return Status.modWork;}  // Получить что делает сейчас ТН [0-Пауза 1-Включить отопление 2-Включить охлаждение 3-Включить бойлер 4-Продолжаем греть отопление 5-Продолжаем охлаждение 6-Продолжаем греть бойлер]
+     __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}    // Получить состяние теплового насоса [1 Стартует 2 Останавливается  3 Работает 4 Ожидание ТН (расписание - пустое место) 5 Ошибка ТН  6 - Эта ошибка возникать не должна!]
+     __attribute__((always_inline)) inline int8_t get_ret()          {return Status.ret;}      // Точка выхода из алгоритма регулирования (причина (условие) нахождения в текущем положении modWork)
+     
     void vUpdate();                                          // Итерация по управлению всем ТН - старт-стоп
     void calculatePower();                                   // Вычисление мощностей контуров и КОП
     void eraseError();                                       // стереть последнюю ошибку
@@ -291,9 +293,9 @@ class HeatPump
    void set_nextMode();                                     // Переключение на следующий режим работы отопления (последовательный перебор режимов)
    void set_profile();										// Установить рабочий профиль по текущему Prof
 
-   MODE_HP get_mode() {return Prof.SaveON.mode;}                // Получить режим работы 
-   RULE_HP get_ruleCool(){return Prof.Cool.Rule;}               // Получить алгоритм охлаждения
-   RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}               // Получить алгоритм отопления
+   MODE_HP get_modeHouse() {return Prof.SaveON.mode;}       // Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!
+   RULE_HP get_ruleCool(){return Prof.Cool.Rule;}           // Получить алгоритм охлаждения
+   RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}           // Получить алгоритм отопления
    boolean get_TargetCool(){return GETBIT(Prof.Cool.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
    boolean get_TargetHeat(){return GETBIT(Prof.Heat.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
    uint16_t get_timeCool(){return Prof.Cool.time;}              // Получить время интегрирования охлаждения
@@ -386,7 +388,6 @@ class HeatPump
     uint8_t PauseStart;                                    // 1 - ТН в отложенном запуске, 0 - нет, начать отсчет времени с начала при отложенном старте
        
     boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
-//    type_headerEEPROM headerEEPROM;                        // Заголовок записи настроек
     type_SecurityHP Security;                              // хеш паролей
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
    

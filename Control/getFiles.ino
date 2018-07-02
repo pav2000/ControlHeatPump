@@ -56,7 +56,7 @@ void get_txtState(uint8_t thread, boolean header)
                 }
                 else strcat(Socket[thread].outBuf," absent\r\n"); 
          }
-      if (HP.get_mode()==pCOOL) strcat(Socket[thread].outBuf,"Внимание! ТН в режиме охлаждения роли испарителя и конденсатора меняются местами");
+      if (HP.get_modeHouse() ==pCOOL) strcat(Socket[thread].outBuf,"Внимание! ТН в режиме охлаждения роли испарителя и конденсатора меняются местами");
       sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));
       
       strcpy(Socket[thread].outBuf,"\n  3. Аналоговые датчики\r\n"); // Новый пакет
@@ -177,7 +177,7 @@ void get_txtSettings(uint8_t thread)
      get_Header(thread,(char*)"settings.txt");
      strcpy(Socket[thread].outBuf,"\n  1. Общие настройки\r\n");
      strcat(Socket[thread].outBuf,"Режим работы :");
-     switch ((MODE_HP)HP.get_mode())   // режим работы отопления
+     switch ((MODE_HP)HP.get_modeHouse() )   // режим работы отопления
                    {
                     case pOFF:  strcat(Socket[thread].outBuf,"Выключено\r\n"); break;
                     case pHEAT: strcat(Socket[thread].outBuf,"Отопление\r\n"); break;

@@ -563,7 +563,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
  
     if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
         {
-    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_mode());
+    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_modeHouse() );
     		strcat(strReturn,"&") ; continue;
         } // strcmp(str,"get_modeHP")==0)   
     if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
@@ -1312,7 +1312,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     default: HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;   // Исправить по умолчанию
                    }  
            }
-   //        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_mode());
+   //        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_modeHouse() );
            strcat(strReturn,"&") ; continue;
           } // strcmp(str,"set_modeHP")==0)      
       // ------------------------------------------------------------------------  
