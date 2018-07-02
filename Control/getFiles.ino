@@ -623,21 +623,20 @@ uint16_t get_binSettings(uint8_t thread)
 		Socket[thread].outBuf[i] = b;
 	}
 	// запись текущего профиля
-	len = HP.Prof.save(HP.Prof.get_idProfile());
-	if(len <= 0) return 0;
-	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * HP.Prof.get_lenProfile();
+	if(HP.Prof.save(HP.Prof.get_idProfile()) <= 0) return 0;
+	len = HP.Prof.get_lenProfile();
+	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * len;
 	for(j = 0; j < len; j++) {
 		readEEPROM_I2C(addr + j, &b, 1);
 		Socket[thread].outBuf[i + j] = b;
-		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) break; // Слишком  много данных
+		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) return 0; // Слишком  много данных
 	}
 	len = i + j;
 #ifdef USE_SCHEDULER
-	if((uint16_t)len + HP.Schdlr.get_data_size() <= sizeof(Socket[thread].outBuf)) {
-		i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + len);
-		if(i <= 0) return 0; // ошибка
-		len += i;
-	}
+	if((uint16_t)len + HP.Schdlr.get_data_size() > sizeof(Socket[thread].outBuf)) return 0;
+	i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + len);
+	if(i <= 0) return 0; // ошибка
+	len += i;
 #endif
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
 	return len;

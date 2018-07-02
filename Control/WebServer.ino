@@ -2336,7 +2336,7 @@ boolean parserPOST(uint8_t thread)
 	byte *ptr;
 	// Определение начала данных
 	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr, HEADER_BIN)) == NULL) {
-		journal.jprintf("Not found header in file.\n");
+		journal.jprintf("Wrong save file format!\n");
 		return false;
 	} // Заголовок не найден
 	ptr += m_strlen(HEADER_BIN);
@@ -2345,7 +2345,7 @@ boolean parserPOST(uint8_t thread)
 	if(len <= 0) return false;
 	// Чтение профиля
 	ptr += len;
-	if(OK != HP.Prof.loadFromBuf(0, ptr)) return false;
+	if(HP.Prof.loadFromBuf(0, ptr) != OK) return false;
 #ifdef USE_SCHEDULER
 	if(HP.Schdlr.loadFromBuf(HP.Prof.get_lenProfile(), ptr) != OK) return false;
 #endif
