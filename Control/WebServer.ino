@@ -143,8 +143,8 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                           case HTTP_POST:    // загрузка настроек
                                {
                                strcpy(Socket[thread].outBuf,HEADER_ANSWER);   // Начало ответа
-                               if(parserPOST(thread))    strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
-                               else                      strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
+                               if(parserPOST(thread, len)) strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
+                               else                        strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
                                if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
                                break;
                                }
@@ -2331,7 +2331,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // Разбор и обработка POST запроса buf входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
-boolean parserPOST(uint8_t thread)
+boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr;
 	// Определение начала данных
@@ -2339,18 +2339,18 @@ boolean parserPOST(uint8_t thread)
 		journal.jprintf("Wrong save file format!\n");
 		return false;
 	} // Заголовок не найден
+	journal.jprintf("Loading %d bytes:\n", size - (ptr - (byte *)Socket[thread].inPtr));
 	ptr += m_strlen(HEADER_BIN);
 	// Чтение настроек
 	int32_t len = HP.load(ptr, 1);
 	if(len <= 0) return false;
+	boolean ret = true;
 	// Чтение профиля
 	ptr += len;
-	if(HP.Prof.loadFromBuf(0, ptr) != OK) return false;
+	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
 #ifdef USE_SCHEDULER
-	if(HP.Schdlr.loadFromBuf(HP.Prof.get_lenProfile(), ptr) != OK) return false;
+	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
 #endif
 	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-	return true;
+	return ret;
 }
-
-

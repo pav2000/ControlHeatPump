@@ -199,13 +199,13 @@ int16_t Scheduler::load(uint8_t *data)
 	    } else if(ret) {
 	    	uint16_t crc = get_crc16((uint8_t *)&sch_data);
 	    	*(uint16_t *)(data + sizeof(sch_data)) = crc;
-	    	journal.jprintf("crc: %04x ", crc);
+	    	journal.jprintf("crc: %04x", crc);
 	    }
 	    ret += sizeof(sch_data);
 #ifndef LOAD_VERIFICATION
 	if(ret >= 0)
 #endif
-	    journal.jprintf("Ok.\n");
+	    journal.jprintf(", %d bytes Ok.\n", ret);
 	} else {
 		journal.jprintf("CRC mismatch!\n");
 	}
@@ -213,19 +213,19 @@ int16_t Scheduler::load(uint8_t *data)
 }
 
 // Считать настройки из буфера на входе адрес с какого, на выходе код ошибки
-int8_t Scheduler::loadFromBuf(int32_t addr, byte* buf)
+int8_t Scheduler::loadFromBuf(byte* buf)
 {
 	journal.jprintf(" Load scheduler ");
 #ifdef LOAD_VERIFICATION
-	uint16_t crc = get_crc16(buf + addr);
+	uint16_t crc = get_crc16(buf);
 	journal.jprintf("crc: %04x ", crc);
-	if(crc != *(uint16_t *)(buf + addr + sizeof(sch_data))) {
-		journal.jprintf("- ERROR!\n");
+	if(crc != *(uint16_t *)(buf + sizeof(sch_data))) {
+		journal.jprintf(" != %04x - ERROR!\n", *(uint16_t *)(buf + sizeof(sch_data)));
 		return ERR_CRC16_EEPROM;
 	}
 #endif
-    memcpy((byte*)&sch_data, buf + addr, sizeof(sch_data));
-    journal.jprintf("OK.\n");
+    memcpy((byte*)&sch_data, buf, sizeof(sch_data));
+    journal.jprintf("OK\n");
     return OK;
 }
 
@@ -233,7 +233,7 @@ int8_t Scheduler::loadFromBuf(int32_t addr, byte* buf)
 uint16_t Scheduler::get_crc16(uint8_t *data)
 {
 	uint16_t crc = 0xFFFF;
-	for(uint16_t i = 0; i < sizeof(sch_data); i++) crc = _crc16(crc, *(data + i));
+	for(uint16_t i = 0; i < sizeof(sch_data); i++) crc = _crc16(crc, data[i]);
 	return crc;
 }
 

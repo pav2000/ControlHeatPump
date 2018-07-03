@@ -328,7 +328,7 @@ x_Error:
 		size = *((uint16_t *) buffer);
 		buffer += sizeof(size);
 	}
-	journal.jprintf(", size %d, crc: ", size);
+	journal.jprintf(", size %d, crc: ", size + 2); // sizeof(crc)
 	size -= 2;
 	#ifdef LOAD_VERIFICATION
 	uint16_t crc = 0xFFFF;
@@ -342,6 +342,7 @@ x_Error:
 	journal.jprintf("*NO* ");
 	#endif
 	uint8_t *buffer_max = buffer + size;
+	size += 2;
 	load_struct(&Option, &buffer, sizeof(Option));
 	load_struct(&DateTime, &buffer, sizeof(DateTime));
 	load_struct(&Network, &buffer, sizeof(Network));
