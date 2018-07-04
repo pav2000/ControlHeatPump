@@ -205,7 +205,7 @@ int16_t Scheduler::load(uint8_t *data)
 #ifndef LOAD_VERIFICATION
 	if(ret >= 0)
 #endif
-	    journal.jprintf(", %d bytes Ok.\n", ret);
+	    journal.jprintf(" %d bytes Ok.\n", ret);
 	} else {
 		journal.jprintf("CRC mismatch!\n");
 	}
@@ -215,12 +215,12 @@ int16_t Scheduler::load(uint8_t *data)
 // Считать настройки из буфера на входе адрес с какого, на выходе код ошибки
 int8_t Scheduler::loadFromBuf(byte* buf)
 {
-	journal.jprintf(" Load scheduler ");
+	journal.jprintf(" Load scheduler %d bytes, ", sizeof(sch_data) + 2); // sizeof(crc)
 #ifdef LOAD_VERIFICATION
 	uint16_t crc = get_crc16(buf);
 	journal.jprintf("crc: %04x ", crc);
 	if(crc != *(uint16_t *)(buf + sizeof(sch_data))) {
-		journal.jprintf(" != %04x - ERROR!\n", *(uint16_t *)(buf + sizeof(sch_data)));
+		journal.jprintf("!= %04x - ERROR!\n", *(uint16_t *)(buf + sizeof(sch_data)));
 		return ERR_CRC16_EEPROM;
 	}
 #endif

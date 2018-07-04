@@ -167,6 +167,7 @@ struct type_boilerHP
 // Работа с отдельными флагами type_settingHP
 #define fTarget      0                // Что является целью  - 0 (температура в доме), 1 (температура обратки).
 #define fWeather     1                // флаг Погодозависмости
+#define fHeatFloor   2				  // флаг использования теплого пола
 struct type_settingHP
 {
  uint8_t flags;                       // Флаги опций до 8 флагов

@@ -442,7 +442,10 @@ class HeatPump
     TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
-    
+
+    void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
+    void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
+
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
     int16_t get_temp_evaporating(void);		// Получить температуру кипения
     int16_t get_overcool(void);			    // Расчитать переохлаждение
@@ -469,7 +472,6 @@ class HeatPump
     boolean boilerAddHeat();              // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть)
     boolean switchBoiler(boolean b);      // Переключение на нагрев бойлера ТН true-бойлер false-отопление/охлаждение
     boolean checkEVI();                   // Проверка и если надо включение EVI если надо то выключение возвращает состояние реле
-    void Pumps(boolean b,  uint16_t d);   // Включение/выключение насосов, задержка после включения msec
     MODE_COMP UpdateHeat();               // Итерация нагрев  вход true - делаем, false - ТОЛЬКО проверяем выход что сделано или надо сделать
     MODE_COMP UpdateCool();               // Итерация охлаждение вход true - делаем, false - ТОЛЬКО проверяем выход что сделано или надо сделать
     MODE_COMP UpdateBoiler();             // Итерация управления бойлером возвращает что делать компрессору
@@ -528,5 +530,4 @@ class HeatPump
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };
 
- 
 #endif

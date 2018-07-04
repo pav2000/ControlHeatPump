@@ -1558,107 +1558,44 @@ boolean HeatPump::switchBoiler(boolean b)
 	if(b && b == onBoiler) return onBoiler;        // Нечего делать выходим
 	boolean old = onBoiler;
 	onBoiler = b;                                  // запомнить состояние нагрева бойлера ВСЕГДА
-	if(!onBoiler) offBoiler=rtcSAM3X8.unixtime(); // запомнить время выключения ГВС (нужно для переключения)
-	else          offBoiler=0;
+	if(!onBoiler) offBoiler = rtcSAM3X8.unixtime(); // запомнить время выключения ГВС (нужно для переключения)
+	else offBoiler = 0;
 #ifdef R3WAY
 	dRelay[R3WAY].set_Relay(onBoiler);            // Установить в нужное полежение 3-х ходового
 #else // Нет трехходового - схема с двумя насосами
 	// ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
-	journal.printf(" swBoiler(%d): old:%d, modeHouse:%d\n", b, get_modWork(), get_modeHouse() );
-	if (onBoiler) // переключение на ГВС
+	//journal.printf(" swBoiler(%d): old:%d, modeHouse:%d\n", b, get_modWork(), get_modeHouse());
+	if(onBoiler) // переключение на ГВС
 	{
-		#ifdef RPUMPBH
+#ifdef RPUMPBH
 		dRelay[RPUMPBH].set_ON();    // ГВС
-		#endif
-		#ifdef RPUMPFL
-		dRelay[RPUMPFL].set_OFF();   // ТП
-		#endif
+#endif
+		Pump_HeatFloor(false);						// выключить насос ТП
 		dRelay[RPUMPO].set_OFF();   // файнкойлы
-	}
-	else  // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
+	} else  // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
 	{
-     if(get_modeHouse()  == pHEAT) // если в настройках стоит отопление
-     {
- 	    #ifdef RPUMPBH
-		dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-		#ifdef RPUMPFL
-		dRelay[RPUMPFL].set_ON();     // ТП
-		#endif
-		dRelay[RPUMPO].set_ON();     // файнкойлы
-     }
-     else if(get_modeHouse()  == pCOOL) // если в настройках стоит охлаждение
-     {
-        #ifdef RPUMPBH
-		dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-		#ifdef RPUMPFL
-		dRelay[RPUMPFL].set_OFF();    // ТП
-		#endif
-		dRelay[RPUMPO].set_ON();     // файнкойлы
-     }
-     else if(get_modeHouse()  == pOFF) // если в настройках стоит выключено для отопления/охлаждения
-     {
-	    #ifdef RPUMPBH
-		dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-		#ifdef RPUMPFL
-		dRelay[RPUMPFL].set_OFF();    // ТП
-		#endif
-		dRelay[RPUMPO].set_OFF();     // файнкойлы   		
-     }
-		
-	/*	
-		if ((Status.modWork==pHEAT)||(Status.modWork==pNONE_H)) // Было Отопление
+		if(get_modeHouse() == pHEAT || get_modeHouse() == pCOOL) // если в настройках стоит отопление или охлаждение
 		{
-			#ifdef RPUMPBH
+#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
-			#endif
-			#ifdef RPUMPFL
-			dRelay[RPUMPFL].set_ON();     // ТП
-			#endif
+#endif
+			Pump_HeatFloor(true);
 			dRelay[RPUMPO].set_ON();     // файнкойлы
-		}
-		else if ((Status.modWork==pCOOL)||(Status.modWork==pNONE_C)) // Было Охлаждение
+		} else if(get_modeHouse() == pOFF) // если в настройках стоит выключено для отопления/охлаждения
 		{
-			#ifdef RPUMPBH
+#ifdef RPUMPBH
 			dRelay[RPUMPBH].set_OFF();    // ГВС
-			#endif
-			#ifdef RPUMPFL
-			dRelay[RPUMPFL].set_OFF();    // ТП
-			#endif
-			dRelay[RPUMPO].set_ON();     // файнкойлы
-		}
-		else if ((Status.modWork==pBOILER)||(Status.modWork==pNONE_B)) // Было Бойлер
-		{
-			#ifdef RPUMPBH
-			dRelay[RPUMPBH].set_OFF();    // ГВС
-			#endif
-			if(get_State() == pWORK_HP && get_modeHouse()  != pOFF) { // Станет
-				dRelay[RPUMPO].set_ON();     // файнкойлы
-				#ifdef RPUMPFL
-				// Включаем ТП, если не будем охлаждать
-				if(get_modeHouse()  != pCOOL && get_modeHouse()  != pNONE_C) dRelay[RPUMPFL].set_OFF();    // ТП
-				#endif
-			}
-		}
-		else   //  Было Все остальное
-		{
-			#ifdef RPUMPBH
-			dRelay[RPUMPBH].set_OFF();    // ГВС
-			#endif
-			#ifdef RPUMPFL
-			dRelay[RPUMPFL].set_OFF();    // ТП
-			#endif
+#endif
+			Pump_HeatFloor(false);
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
 		}
-	*/	
+
 	}
 #endif
-	if(old && get_State()==pWORK_HP)   // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
+	if(old && get_State() == pWORK_HP) // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
 	{
-		journal.jprintf(" Pause %d sec, Boiler->House . . .\n",HP.Option.delayBoilerSW);
-		_delay(HP.Option.delayBoilerSW*1000);  // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+		journal.jprintf(" Pause %d sec, Boiler->House . . .\n", HP.Option.delayBoilerSW);
+		_delay(HP.Option.delayBoilerSW * 1000); // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 	}
 	return onBoiler;
 }
@@ -1680,6 +1617,16 @@ boolean HeatPump::checkEVI()
   return dRelay[REVI].get_Relay();
 }
 #endif
+
+void HeatPump::Pump_HeatFloor(boolean On)
+{
+#ifdef RPUMPFL
+	if(On) {
+		if((get_modeHouse() == pHEAT && GETBIT(Prof.Heat.flags, fHeatFloor)) || (get_modeHouse() == pCOOL && GETBIT(Prof.Cool.flags, fHeatFloor)))
+			dRelay[RPUMPFL].set_ON();
+	} else dRelay[RPUMPFL].set_OFF();
+#endif
+}
 
 // Включить или выключить насосы первый параметр их желаемое состояние
 // Второй параметр параметр задержка после включения/выключения мсек. отдельного насоса (борьба с помехами)
@@ -1737,7 +1684,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
     	dRelay[RPUMPO].set_Relay(b);                  // насос отопления
 		#ifdef RPUMPFL
     	if(!b || get_modWork() == pHEAT || get_modWork() == pNONE_H) {// Выкл или Отопление
-    		dRelay[RPUMPFL].set_Relay(b); 				  // насос ТП
+    		Pump_HeatFloor(b); 				  // насос ТП
     	}
 		#endif
     }
@@ -2040,7 +1987,7 @@ int8_t HeatPump::StopWait(boolean stop)
 
 // Выключается в PUMPS_OFF
 //  #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-//     if (dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_OFF();    // выключить насос циркуляции ТП
+//     Pump_HeatFloor(false);    // выключить насос циркуляции ТП
 //  #endif
 
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС

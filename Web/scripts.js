@@ -1,8 +1,8 @@
 /* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
-//var urlcontrol = 'http://192.168.1.10';
+//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -644,7 +644,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if(tnum == 1) {
 													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
 													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
-													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ ")";
+													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ "),";
 												} else if(tnum == 2) {
 													loadsens += "get_aTemp(" +T+ "),";
 													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";

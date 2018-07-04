@@ -1269,27 +1269,19 @@ void vUpdatePump(void *)
 		//   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
 		if((HP.get_workPump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
-			#ifdef RPUMPFL
-			HP.dRelay[RPUMPFL].set_OFF();						// выключить насос ТП
-			#endif
+			HP.Pump_HeatFloor(false);						// выключить насос ТП
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}         // все время выключено  но раз в 2 секунды проверяем
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
-			#ifdef RPUMPFL
-			if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
-				HP.dRelay[RPUMPFL].set_ON();					     // включить насос ТП
-			}
-			#endif
+			HP.Pump_HeatFloor(true);
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
 		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
 		{
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
-				#ifdef RPUMPFL
-				HP.dRelay[RPUMPFL].set_OFF();					// выключить насос ТП
-				#endif
+				HP.Pump_HeatFloor(false);						// выключить насос ТП
 			}
 			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
 			{
@@ -1298,11 +1290,7 @@ void vUpdatePump(void *)
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
-				#ifdef RPUMPFL
-				if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
-					HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
-				}
-				#endif
+				HP.Pump_HeatFloor(true);						// включить насос ТП
 			}
 			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
 			{
