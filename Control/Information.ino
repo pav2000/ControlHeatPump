@@ -688,6 +688,10 @@ if(strcmp(var,boil_SCHEDULER_ON)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flag
                                      else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSchedule);  return true;}
                                      else return false;  
                                     }else 
+if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fScheduleAddHeat); return true;}
+									 else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fScheduleAddHeat);  return true;}
+									 else return false;
+									}else
 if(strcmp(var,boil_TURBO_BOILER)==0){ if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fTurboBoiler); return true;}
 				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fTurboBoiler);  return true;}
 				                       else return false;  
@@ -740,6 +744,7 @@ char* Profile::get_boiler(char *var, char *ret)
 { 
  if(strcmp(var,boil_BOILER_ON)==0){       if (GETBIT(SaveON.flags,fBoilerON))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SCHEDULER_ON)==0){    if (GETBIT(Boiler.flags,fSchedule))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){ if (GETBIT(Boiler.flags,fScheduleAddHeat)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_TURBO_BOILER)==0){    if (GETBIT(Boiler.flags,fTurboBoiler))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SALLMONELA)==0){      if (GETBIT(Boiler.flags,fSalmonella)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_CIRCULATION)==0){     if (GETBIT(Boiler.flags,fCirculation))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else

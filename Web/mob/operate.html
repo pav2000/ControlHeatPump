@@ -15,8 +15,8 @@
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 		window.onload = function() {
-			loadParam("get_Boiler(SALLMONELA),get_Boiler(ADD_HEATING),get_Boiler(SCHEDULER_ON),get_optionHP(TEMP_RHEAT),get_optionHP(ADD_HEAT),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_Boiler(TEMP_TARGET),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_WORK,get_listProfile,get_work,get_MODE,get_modeHP");
-			updateParam("get_Boiler(SALLMONELA),get_Boiler(ADD_HEATING),get_Boiler(SCHEDULER_ON),get_optionHP(ADD_HEAT),get_optionHP(ADD_HEAT),get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_Boiler(BOILER_ON),get_Temp(TBOILER)");
+			loadParam("get_Boiler(SALLMONELA),get_Boiler(ADD_HEATING),get_Boiler(SCH_ON),get_optionHP(TEMP_RHEAT),get_optionHP(ADD_HEAT),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_Boiler(TEMP_TARGET),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_WORK,get_listProfile,get_work,get_MODE,get_modeHP");
+			updateParam("get_Boiler(SALLMONELA),get_Boiler(ADD_HEATING),get_Boiler(SCH_ON),get_optionHP(ADD_HEAT),get_optionHP(ADD_HEAT),get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_Boiler(BOILER_ON),get_Temp(TBOILER)");
 			setParam("get_optionHP(ADD_HEAT),get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_Boiler(BOILER_ON),get_Temp(TBOILER)");
 			};
 	</script>
@@ -158,8 +158,8 @@
                                             </tr> 
                                         <tr>
 			<td>Работа по расписанию</td>
-			<td><input type="checkbox" name="get_boiler-scheduler_on" id="get_boiler-scheduler_on" onChange="setParam('get_Boiler(SCHEDULER_ON)');" >
-            <label for="get_boiler-scheduler_on"><span id="get_boiler-scheduler_on2"></span></label></td>
+			<td><input type="checkbox" name="get_boiler-sch_on" id="get_boiler-sch_on" onChange="setParam('get_Boiler(SCH_ON)');" >
+            <label for="get_boiler-sch_on"><span id="get_boiler-sch_on2"></span></label></td>
 		</tr>						
 		<tr>
             <td>Использование доп. ТЭНа</td>

@@ -573,7 +573,8 @@ const char *mess_SMS_RET      = {"SMS_RET"};             // Ответ на те
 
 // Описание имен параметров бойлера для функций set_Boiler get_Boiler
 const char *boil_BOILER_ON    = {"BOILER_ON"};           // флаг Включения бойлера
-const char *boil_SCHEDULER_ON = {"SCHEDULER_ON"};        // флаг Использование расписани
+const char *boil_SCHEDULER_ON = {"SCH_ON"};        		// флаг Использование расписания
+const char *boil_SCHEDULER_ADDHEAT = {"SCH_AH"};        // флаг Использование расписания только для ТЭНа
 const char *boil_TURBO_BOILER = {"TURBO_BOILER"};        // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
 const char *boil_SALLMONELA   = {"SALLMONELA"};          // флаг Сальмонела раз в неделю греть бойлер
 const char *boil_CIRCULATION  = {"CIRCULATION"};         // флаг Управления циркуляционным насосом ГВС
