@@ -177,6 +177,9 @@ int8_t devVaconFC::get_readState()
 		    current = read_0x03_16(FC_CURRENT); // прочитать ток
 		    err = Modbus.get_err(); // Скопировать ошибку
 		}
+		if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
+			journal.jprintf(pP_TIME, "FC: %Xh,%.2f%%,%.2fHz,%.2fA,%.2f%%=%.3f\n", state, (float)FC_curr/100.0, (float)FC_curr_freq/100.0, (float)current/100.0, (float)power/100.0, (float)get_power()/1000.0);
+		}
     }
 #else // Аналоговое управление
     FC_curr = FC;
@@ -479,6 +482,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO)==0)                  {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAuto) ? cOne : cZero)); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
+    if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -525,8 +529,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 boolean devVaconFC::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.setup_flags,fAuto);else SETBIT1(_data.setup_flags,fAuto);return true;  } else
-    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else
+    if(strcmp(var,fc_AUTO)==0)                  { _data.setup_flags = (_data.setup_flags & ~(1<<fAuto)) | ((x!=0)<<fAuto); return true;  } else
+    if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { _data.setup_flags = (_data.setup_flags & ~(1<<fAutoResetFault)) | ((x!=0)<<fAutoResetFault); return true;  } else
+    if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | ((x!=0)<<fLogWork); return true;  } else
 	#ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
@@ -595,9 +600,9 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), state);
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", state);
 			if(err == OK) {
-				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2f%%;2108 (V1.1)|Выходная мощность: %.1f%% (кВт)|%.3f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float) power / 10.0, (float)get_power()/1000.0);
-				buf += m_snprintf(buf, 256, "2105 (V1.3)|Обороты (об/м)|%d;", read_0x03_16(FC_RPM));
-				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1f%%;", (float)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2f%%;2108 (V1.1)|Выходная мощность: %.1f%% (кВт)|%.3f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float)power / 10.0, (float)get_power()/1000.0);
+				buf += m_snprintf(buf, 256, "2105 (V1.3)|Обороты (об/м)|%d;", (int16_t)read_0x03_16(FC_RPM));
+				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1f%%;", (float)(int16_t)read_0x03_16(FC_TORQUE) / 10.0);
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
 				buf += m_snprintf(buf, 256, "2109 (V1.7)|Выходное напряжение (В)|%.1f;2110 (V1.8)|Напряжение шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
 				buf += m_snprintf(buf, 256, "0008 (V1.9)|Температура радиатора (°С)|%d;", read_tempFC());

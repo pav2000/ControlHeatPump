@@ -56,7 +56,7 @@ class deviceOneWire 									       // Класс шина   OneWire
 #ifdef ONEWIRE_DS2482
 	deviceOneWire(uint8_t addr, uint8_t _bus): OneWireDrv(addr) { err = 0; bus = _bus; }
 #else
-	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; }
+	deviceOneWire(uint8_t pin_num): OneWireDrv(pin_num) { err = 0; bus = 0; }
 #endif
 	int8_t	Init(void);
     int16_t	CalcTemp(uint8_t addr_0, uint8_t *data, uint8_t only_temp_readed);	// Вычислить температуру в сотых градуса по считанному scratchpad
@@ -69,9 +69,9 @@ class deviceOneWire 									       // Класс шина   OneWire
 	void	release_I2C_bus();
   private:
 	int8_t err;                                         // ошибка шины (работа) при ошибке останов ТН
+	uint8_t	bus;										// 0 - первый DS2482, 1 - второй, 2 - третий, 3 - четвертый
 #ifdef ONEWIRE_DS2482
 	DS2482	OneWireDrv;                                 // мастер OneWire аппаратная
-	uint8_t	bus;										// 0 - первый DS2482, 1 - второй, 2 - третий, 3 - четвертый
 };
 deviceOneWire OneWireBus(I2C_ADR_DS2482, 0);            // Создание шины нужного типа
 #ifdef ONEWIRE_DS2482_SECOND

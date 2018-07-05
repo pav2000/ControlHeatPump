@@ -393,8 +393,9 @@ private:
 #define fPower      	2        // флаг режим ограничения мощности (резерв - сейчас ограничение всегда)
 #define fOnOff      	3        // флаг включения-выключения частотника
 #define fErrFC      	4        // флаг глобальная ошибка инвертора - работа инвертора запрещена
-#define fAutoResetFault	5        // флаг глобальная ошибка инвертора - работа инвертора запрещена
-#define FC_SAVED_FLAGS 	((1<<fAuto) | (1<<fAutoResetFault))
+#define fAutoResetFault	5        // флаг Автосброс не критичного сбоя инвертора
+#define fLogWork		6		 // флаг логировать параметры во время работы
+#define FC_SAVED_FLAGS 	((1<<fAuto) | (1<<fAutoResetFault) | (1<<fLogWork))
 
 const char *noteFC_OK   = {" связь по Modbus установлена" };                     // Все впорядке
 const char *noteFC_NO   = {" связь по Modbus потеряна, инвертор заблокирован" };

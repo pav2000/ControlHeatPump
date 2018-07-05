@@ -7,8 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
-		loadParam("get_paramHeatHP(DTEMP_DAY),get_paramCoolHP(DTEMP_DAY),get_Temp(TOUT),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_paramCoolHP(DTEMP),get_paramHeatHP(DTEMP),get_paramCoolHP(HP_TIME),get_paramHeatHP(HP_TIME),get_paramCoolHP(HP_PRO),get_paramHeatHP(HP_PRO),get_paramCoolHP(TEMP_IN),get_paramHeatHP(TEMP_IN),get_paramCoolHP(TEMP_OUT),get_paramHeatHP(TEMP_OUT),get_paramCoolHP(PAUSE),get_paramHeatHP(PAUSE),get_paramCoolHP(D_TEMP),get_paramHeatHP(D_TEMP),get_paramCoolHP(HP_IN),get_paramHeatHP(HP_IN),get_paramCoolHP(HP_DIF),get_paramHeatHP(HP_DIF),get_paramCoolHP(K_WEATHER),get_paramHeatHP(K_WEATHER),get_paramCoolHP(WEATHER),get_paramHeatHP(WEATHER),get_paramCoolHP(TEMP_PID),get_paramHeatHP(TEMP_PID)");
-		
+		loadParam("get_paramHeatHP(DTEMP_DAY),get_paramCoolHP(DTEMP_DAY),get_Temp(TOUT),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_paramCoolHP(DTEMP),get_paramHeatHP(DTEMP),get_paramCoolHP(HP_TIME),get_paramHeatHP(HP_TIME),get_paramCoolHP(HP_PRO),get_paramHeatHP(HP_PRO),get_paramCoolHP(TEMP_IN),get_paramHeatHP(TEMP_IN),get_paramCoolHP(TEMP_OUT),get_paramHeatHP(TEMP_OUT),get_paramCoolHP(PAUSE),get_paramHeatHP(PAUSE),get_paramCoolHP(D_TEMP),get_paramHeatHP(D_TEMP),get_paramCoolHP(HP_IN),get_paramHeatHP(HP_IN),get_paramCoolHP(HP_DIF),get_paramHeatHP(HP_DIF),get_paramCoolHP(K_WEATHER),get_paramHeatHP(K_WEATHER),get_paramCoolHP(WEATHER),get_paramHeatHP(WEATHER),get_paramCoolHP(TEMP_PID),get_paramHeatHP(TEMP_PID),get_paramHeatHP(HFL),get_paramCoolHP(HFL)");
 	};
 
 	</script>
@@ -60,8 +59,8 @@
 		</tr>		
 		<tr>
 			<td>Целевая температура подачи<sup>3</sup> [10..50]</td>
-			<td><input id="get_paramcoolhp-temp_pid" type="number" min="10" max="50" step="0.1" value="20"><input id="get_paramcoolhp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP_PID)');"></td>
-			<td><input id="get_paramheathp-temp_pid" type="number" min="10" max="50" step="0.1" value="20"><input id="get_paramheathp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_PID)');"></td>
+			<td><input id="get_paramcoolhp-temp_pid" type="number" min="5" max="50" step="0.1"><input id="get_paramcoolhp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP_PID)');"></td>
+			<td><input id="get_paramheathp-temp_pid" type="number" min="5" max="50" step="0.1"><input id="get_paramheathp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_PID)');"></td>
 		</tr>								
 		<tr>
 			<td>Постоянная интегрирования времени (секунды) [10..600]</td>
@@ -87,6 +86,11 @@
 			<td><b>Опции</b></td>
 			<td></td><td></td>
 		</tr>	
+		<tr>
+			<td>Теплый пол</td>
+			<td><input type="checkbox" name="get_paramcoolhp-hfl" id="get_paramcoolhp-hfl" onchange="setParam('get_paramCoolHP(HFL)');"></td>
+			<td><input type="checkbox" name="get_paramheathp-hfl" id="get_paramheathp-hfl" onchange="setParam('get_paramHeatHP(HFL)');"></td>
+		</tr>
 		<tr>
 			<td>Использование погодозависимости</td>
 			<td><input type="checkbox" name="get_paramcoolhp-weather" id="get_paramcoolhp-weather" onchange="setParam('get_paramCoolHP(WEATHER)');" ></td>

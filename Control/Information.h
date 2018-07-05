@@ -128,19 +128,20 @@ struct type_SaveON
 {
   byte magic;               // признак данных, должно быть  0x55
   uint8_t  flags;           // флаги состояния ТН
-  MODE_HP mode;             // режим работы отопление охлаждение
+  MODE_HP mode;             // режим работы отопление|охлаждение
   uint32_t startTime;       // дата и время включения ТН
   uint32_t P1;              // Резервный параметр 1
 };
 
 // Структуры для хранения настроек бойлера
 //  Определение флагов в type_boilerHP
-#define fSchedule    1                // флаг Использование расписания
-#define fSalmonella  2                // флаг Сальмонела раз внеделю греть бойлер
-#define fCirculation 3                // флаг Управления циркуляционным насосом ГВС
-#define fResetHeat   4                // флаг Сброса лишнего тепла в СО
-#define fTurboBoiler 5                // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
-#define fAddHeating  6                // флаг ДОГРЕВА ГВС ТЭНом
+#define fScheduleAddHeat 0                // флаг Расписание только для ТЭНа
+#define fSchedule        1                // флаг Использование расписания
+#define fSalmonella      2                // флаг Сальмонела раз внеделю греть бойлер
+#define fCirculation     3                // флаг Управления циркуляционным насосом ГВС
+#define fResetHeat       4                // флаг Сброса лишнего тепла в СО
+#define fTurboBoiler     5                // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+#define fAddHeating      6                // флаг ДОГРЕВА ГВС ТЭНом
 
 struct type_boilerHP
 {
@@ -167,6 +168,7 @@ struct type_boilerHP
 // Работа с отдельными флагами type_settingHP
 #define fTarget      0                // Что является целью  - 0 (температура в доме), 1 (температура обратки).
 #define fWeather     1                // флаг Погодозависмости
+#define fHeatFloor   2				  // флаг использования теплого пола
 struct type_settingHP
 {
  uint8_t flags;                       // Флаги опций до 8 флагов

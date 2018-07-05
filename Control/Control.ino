@@ -329,12 +329,14 @@ x_I2C_init_std_message:
               {
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
-                    {    
+                    {
+					#ifdef ONEWIRE_DS2482
                	   	case I2C_ADR_DS2482_4:
                	   	case I2C_ADR_DS2482_3:
                	   	case I2C_ADR_DS2482_2:
                     case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d%s\n", address - I2C_ADR_DS2482 + 1, (ONEWIRE_2WAY & (1<<(address - I2C_ADR_DS2482))) ? " (2W)" : ""); break;
-					#if I2C_FRAM_MEMORY == 1
+					#endif
+                    #if I2C_FRAM_MEMORY == 1
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
@@ -839,15 +841,38 @@ void vReadSensor(void *)
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		if(OW_scan_flags == 0) {
+			uint8_t flags = 0;
 			for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
-				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) HP.sTemp[i].Read();
+				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) {
+					if(HP.sTemp[i].Read() == OK) flags |= HP.sTemp[i].get_setup_flags();
+				}
 				_delay(2);     												// пауза
 			}
+			int32_t temp;
+			if(GETBIT(flags, fTEMP_as_TIN_average)) { // Расчет средних датчиков для TIN
+				temp = 0;
+				uint8_t cnt = 0;
+				for(i = 0; i < TNUMBER; i++) {
+					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average)) {
+						temp += HP.sTemp[i].get_Temp();
+						cnt++;
+					}
+				}
+				if(cnt) temp /= cnt; else temp = 32767;
+			} else temp = 32767;
+			int16_t temp2 = temp;
+			if(GETBIT(flags, fTEMP_as_TIN_min)) { // Выбор минимальной температуры для TIN
+				for(i = 0; i < TNUMBER; i++) {
+					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_min) && temp2 > HP.sTemp[i].get_Temp()) temp2 = HP.sTemp[i].get_Temp();
+				}
+			}
+			if(temp2 != 32767) HP.sTemp[TIN].set_Temp(temp2);
 		}
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-		if((HP.get_mode() != pCOOL) && (HP.get_mode() != pNONE_C))    // Если не охлаждение
+	//	if((HP.get_modeHouse()  != pCOOL) && (HP.get_modeHouse()  != pNONE_C))    // Если не охлаждение
+	    if((HP.get_modWork()  != pCOOL) && (HP.get_modWork()  != pNONE_C))         // Если ТЕКУЩАЯ работа не охлаждение
 			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
 		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
 #endif
@@ -948,7 +973,7 @@ void vReadSensor_delay10ms(int16_t msec)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-// Задача Управление тепловым насосом
+// Задача Управление тепловым насосом (xHandleUpdate)
  void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
 	#ifdef RPUMPB
@@ -1083,7 +1108,7 @@ void vReadSensor_delay10ms(int16_t msec)
 				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
 				 vTaskSuspend(HP.xHandleUpdate);
 				 break;
-			 }  // switch(HP.get_mode())
+			 }  // switch(HP.get_modeHouse() )
 			 break;
 			 case  pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
 			 case  pERROR_HP:_delay(5000); break;     // 5 Ошибка ТН
@@ -1238,7 +1263,7 @@ void vUpdateStepperEEV( void * )
 }
 #endif
 
-// Задача: Работа насосов отопления, когда ТН в паузе
+// Задача: Работа насосов отопления, когда ТН в паузе (xHandleUpdatePump)
 void vUpdatePump(void *)
 { //const char *pcTaskName = "Pump is running\r\n";
 	uint16_t i;
@@ -1246,27 +1271,19 @@ void vUpdatePump(void *)
 		//   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
 		if((HP.get_workPump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
-			#ifdef RPUMPFL
-			HP.dRelay[RPUMPFL].set_OFF();						// выключить насос ТП
-			#endif
+			HP.Pump_HeatFloor(false);						// выключить насос ТП
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}         // все время выключено  но раз в 2 секунды проверяем
 		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
-			#ifdef RPUMPFL
-			if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
-				HP.dRelay[RPUMPFL].set_ON();					     // включить насос ТП
-			}
-			#endif
+			HP.Pump_HeatFloor(true);
 			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
 		}  // все время включено  но раз в 2 секунды проверяем
 		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
 		{
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
-				#ifdef RPUMPFL
-				HP.dRelay[RPUMPFL].set_OFF();					// выключить насос ТП
-				#endif
+				HP.Pump_HeatFloor(false);						// выключить насос ТП
 			}
 			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
 			{
@@ -1275,11 +1292,7 @@ void vUpdatePump(void *)
 			}
 			if(HP.startPump) {
 				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
-				#ifdef RPUMPFL
-				if(HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) {// Отопление
-					HP.dRelay[RPUMPFL].set_ON();                  	// включить насос ТП
-				}
-				#endif
+				HP.Pump_HeatFloor(true);						// включить насос ТП
 			}
 			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
 			{

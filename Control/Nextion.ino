@@ -471,7 +471,7 @@ else if (PageID==5)  // Обновление данных 5 страницы "О
       */
       setComponentText((char*)"tust", ftoa(temp,(float)getTargetTemp()/100.0,1));
       // Состояние системы отопления
-       switch ((MODE_HP)HP.get_mode())  
+       switch ((MODE_HP)HP.get_modeHouse() )  
               {
               case  pOFF:   sendCommand((char*)"vis hotin,0");sendCommand((char*)"vis hotout,1");
                             sendCommand((char*)"vis coolin,0");sendCommand((char*)"vis coolout,1");
@@ -509,7 +509,7 @@ else if (PageID==5)  // Обновление данных 5 страницы "О
                                 }  // switch((RULE_HP) HP.get_ruleCool())
                             break;
                default:  break;             
-              } // switch ((MODE_HP)HP.get_mode())  
+              } // switch ((MODE_HP)HP.get_modeHouse() )  
               
       
       }  
@@ -530,7 +530,7 @@ else if (PageID==6)  // Обновление данных 6 страницы "Г
    if (HP.get_errcode()==OK) tempS=1; else tempS=0;
    if (HP.get_State()==pWORK_HP) tempS=tempS+2;
    if (HP.get_BoilerON()) tempS=tempS+4;   
-   switch ((int)HP.get_mode())  
+   switch ((int)HP.get_modeHouse() )  
               {
               case  pOFF:  tempS=tempS+8;  break;
               case  pHEAT: tempS=tempS+9;  break;
@@ -566,7 +566,7 @@ void Nextion::Listen()
     // Переключение режимов отопления ТОЛЬКО если насос выключен
    else if ((message == (char*)"65 5 1b 0 ff ff ff")&&(HP.get_State()==pOFF_HP))  
        { HP.set_nextMode();  // выбрать следующий режим
-        switch ((MODE_HP)HP.get_mode())  
+        switch ((MODE_HP)HP.get_modeHouse() )  
               {
               case  pOFF:   sendCommand((char*)"vis hotin,0");sendCommand((char*)"vis hotout,1");
                             sendCommand((char*)"vis coolin,0");sendCommand((char*)"vis coolout,1");
@@ -637,7 +637,7 @@ void Nextion::StatusLine()
     else  // насос включен
        {
           sendCommand((char*)"vis tninc,1");sendCommand((char*)"vis tnoff,0");
-          switch ((MODE_HP)HP.get_mode())  
+          switch ((MODE_HP)HP.get_modeHouse() )  
               {
               case  pOFF:  
                     if(HP.get_BoilerON()) {  sendCommand((char*)"vis gvs,0"); sendCommand((char*)"vis onlygvs,1"); } 
@@ -654,7 +654,7 @@ void Nextion::StatusLine()
                     else  {  sendCommand((char*)"vis gvs,0"); sendCommand((char*)"vis onlygvs,0"); }            
                     break;
                default:  break;       
-            } //switch ((int)HP.get_mode())
+            } //switch ((int)HP.get_modeHouse() )
        } 
     sendCommand((char*)"ref_star");    // Восстановить обновление
 
@@ -672,7 +672,7 @@ void Nextion::StatusLine()
  // Получить целевую температуру отопления
 int16_t  Nextion::getTargetTemp()
 {
-    switch ((int)HP.get_mode())   // проверка отопления
+    switch ((int)HP.get_modeHouse() )   // проверка отопления
     {
       case  pOFF:  return -1;      break;
       case  pHEAT: return HP.get_targetTempHeat();  break; 

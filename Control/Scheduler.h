@@ -27,7 +27,7 @@
 
 #ifdef USE_SCHEDULER
 
-#define TIMETABLES_MAXSIZE	250 // bytes
+#define TIMETABLES_MAXSIZE	255 // bytes
 #define MAX_CALENDARS		5   // максимум 9
 #define bScheduler_active	1
 
@@ -55,7 +55,7 @@ public:
 	const char* get_name(void) { return  "Scheduler"; } // Получить имя
 	int8_t   save(void);  			               		// Записать настройки в eeprom i2c
 	int16_t  load(uint8_t *data = NULL);  		     	// Считать настройки из eeprom i2c, возращает длину или ошибку
-	int8_t   loadFromBuf(int32_t addr, byte *buf);  	// Считать настройки из буфера на входе адрес с какого, код ошибки
+	int8_t   loadFromBuf(byte *buf);  					// Считать настройки из буфера, возврат код ошибки
 	uint16_t get_crc16(uint8_t *data);             		// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 	int8_t   check_crc16_eeprom(void);
 	uint16_t get_data_size(void) { return sizeof(sch_data); }

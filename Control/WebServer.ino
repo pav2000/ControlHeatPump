@@ -143,8 +143,8 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                           case HTTP_POST:    // загрузка настроек
                                {
                                strcpy(Socket[thread].outBuf,HEADER_ANSWER);   // Начало ответа
-                               if(parserPOST(thread))    strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
-                               else                      strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
+                               if(parserPOST(thread, len)) strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
+                               else                        strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
                                if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
                                break;
                                }
@@ -563,7 +563,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
  
     if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
         {
-    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_mode());
+    		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_modeHouse() );
     		strcat(strReturn,"&") ; continue;
         } // strcmp(str,"get_modeHP")==0)   
     if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
@@ -1027,7 +1027,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
         if (HP.dRelay[REVI].get_present()) { strcat(strReturn," REVI:");      if (HP.dRelay[REVI].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
         #endif
         if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
-        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,2);  }
+        if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
         strcat(strReturn,";");  
    
            
@@ -1312,7 +1312,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                     default: HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;   // Исправить по умолчанию
                    }  
            }
-   //        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_mode());
+   //        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_modeHouse() );
            strcat(strReturn,"&") ; continue;
           } // strcmp(str,"set_modeHP")==0)      
       // ------------------------------------------------------------------------  
@@ -2331,26 +2331,26 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // Разбор и обработка POST запроса buf входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
-boolean parserPOST(uint8_t thread)
+boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr;
 	// Определение начала данных
 	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr, HEADER_BIN)) == NULL) {
-		journal.jprintf("Not found header in file.\n");
+		journal.jprintf("Wrong save file format!\n");
 		return false;
 	} // Заголовок не найден
+	journal.jprintf("Loading %d bytes:\n", size - (ptr - (byte *)Socket[thread].inPtr));
 	ptr += m_strlen(HEADER_BIN);
 	// Чтение настроек
 	int32_t len = HP.load(ptr, 1);
 	if(len <= 0) return false;
+	boolean ret = true;
 	// Чтение профиля
 	ptr += len;
-	if(OK != HP.Prof.loadFromBuf(0, ptr)) return false;
+	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
 #ifdef USE_SCHEDULER
-	if(HP.Schdlr.loadFromBuf(HP.Prof.get_lenProfile(), ptr) != OK) return false;
+	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
 #endif
 	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-	return true;
+	return ret;
 }
-
-

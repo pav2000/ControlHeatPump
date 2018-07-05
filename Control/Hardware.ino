@@ -838,7 +838,7 @@ return err;
 void devEEV::CorrectOverheat(void)
 {
 	static int16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
-	if(!GETBIT(_data.flags, fCorrectOverHeat)) return;
+	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_Period) {
 		OverHeatCor_period = 0;
 		int16_t x, delta = HP.get_temp_condensing();
