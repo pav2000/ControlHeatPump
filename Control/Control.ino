@@ -329,12 +329,14 @@ x_I2C_init_std_message:
               {
                journal.jprintf("I2C device found at address %s",byteToHex(address));
                switch (address)
-                    {    
+                    {
+					#ifdef ONEWIRE_DS2482
                	   	case I2C_ADR_DS2482_4:
                	   	case I2C_ADR_DS2482_3:
                	   	case I2C_ADR_DS2482_2:
                     case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d%s\n", address - I2C_ADR_DS2482 + 1, (ONEWIRE_2WAY & (1<<(address - I2C_ADR_DS2482))) ? " (2W)" : ""); break;
-					#if I2C_FRAM_MEMORY == 1
+					#endif
+                    #if I2C_FRAM_MEMORY == 1
                     	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
 						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
                     	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;

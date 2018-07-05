@@ -1074,7 +1074,7 @@ enum TYPE_RET_HP
   pEND18                            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 //  Для вывода кодов
-const char *codeRet[]={ "none","MinPauseOn","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", "Bp23","Bp24","Bp25","Bp26","Bp27",\
+const char *codeRet[]={ "none","MinPause","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", "Bp23","Bp24","Bp25","Bp26","Bp27",\
                        "Hh3","Hh1","Hh2","Hh13","Hh4","Hp3","Hp1","Hp2","Hp6","Hp7","Hp8","Hp9","Hp5","Hp10","Hp11","Hp12","Hp15","Hp16","Hp17","Hp18","Hp19","Hp20","Hp21","Hp23","Hp24","Hp25","Hp26","Hp27",\
                        "Ch3","Ch1","Ch2","Ch13","Ch4","Cp3","Cp1","Cp2","Cp6","Cp7","Cp8","Cp9","Cp5","Cp10","Cp11","Cp12","Cp15","Cp16","Cp17","Cp18","Cp19","Cp20","Cp21","Cp23","Cp24","Cp25","Cp26","Cp27","null"};           
 

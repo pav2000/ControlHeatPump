@@ -88,6 +88,8 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 		}
 		return err;
 	}
+#else
+	if(checkpresence) return OK;
 #endif
 	for(uint8_t i = 0; i < RES_ONEWIRE_ERR; i++)   // Три попытки сбросить датчики, если не проходит то это ошибка
 	{
