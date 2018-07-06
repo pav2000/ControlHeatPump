@@ -2334,15 +2334,28 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr;
+	int32_t len, full_len=0;
 	// Определение начала данных
-	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr, HEADER_BIN)) == NULL) {
+	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {
 		journal.jprintf("Wrong save file format!\n");
 		return false;
 	} // Заголовок не найден
-	journal.jprintf("Loading %d bytes:\n", size - (ptr - (byte *)Socket[thread].inPtr));
-	ptr += m_strlen(HEADER_BIN);
+	full_len=size - (ptr - (byte *)Socket[thread].inBuf);
+	// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
+	memcpy(Socket[thread].outBuf,ptr,full_len);
+	_delay(100);
+     len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+     if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+     Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inPtr,len);            // Добавить окончание пакета
+	ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
+	full_len=full_len+len-m_strlen(HEADER_BIN);
+	
+	journal.jprintf("Loading %d bytes:\n", full_len);
+//	ptr += m_strlen(HEADER_BIN);
+	
 	// Чтение настроек
-	int32_t len = HP.load(ptr, 1);
+	len = HP.load(ptr, 1);
 	if(len <= 0) return false;
 	boolean ret = true;
 	// Чтение профиля
