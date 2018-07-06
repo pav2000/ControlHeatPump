@@ -846,7 +846,7 @@ int16_t  Profile::save(int8_t num)
   if (writeEEPROM_I2C(adrCRC16, (byte*)&crc16, sizeof(crc16))) {set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return err=ERR_SAVE_PROFILE;} 
 
   if ((err=check_crc16_eeprom(num))!=OK) { journal.jprintf("- Verify Error!\n"); return (int16_t) err;}                            // ВЕРИФИКАЦИЯ Контрольные суммы не совпали
-  journal.jprintf(" Save profile #%d OK, write: %d bytes, crc: %04x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
+  journal.jprintf(" Save profile #%d OK, wrote: %d bytes, crc: %04x\n",num,dataProfile.len,crc16);                                                        // дошли до конца значит ошибок нет
   update_list(num);                                                                                                                                                  // обновить список
   return dataProfile.len;
 }
