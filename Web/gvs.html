@@ -70,17 +70,17 @@
 			<td></td>
 		</tr>
 		<tr>
-			<td>Ускоренный нагрев бойлера <sup>2</sup></td>
+			<td>Ускоренный нагрев бойлера<sup>2</sup></td>
 			<td><input type="checkbox" name="get_boiler-turbo_boiler" id="get_boiler-turbo_boiler" onChange="setParam('get_Boiler(TURBO_BOILER)');" ></td>
 		</tr>						
 		<tr>
-			<td>Использование дополнительного ТЭНа для догрева бойлера</td>
+			<td>Использование дополнительного ТЭНа для догрева бойлера<sup>3</sup></td>
 			<td>
 				<input id="get_boiler-add_heating" type="checkbox" onchange="setParam('get_Boiler(ADD_HEATING)','get_boiler-add_heating');">
 			</td>
 		</tr>
 		<tr>
-			<td>Температура при которой выключается нагрев ТН и включается ТЭН бойлера [0...60]</td>
+			<td>Температура догрева бойлера (при которой выключается нагрев ТН и включается ТЭН бойлера) [0...60]</td>
 			<td>
 				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1" value="0">
 				<input id="get_boiler-temp_rboiler2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_RBOILER)');">
@@ -127,19 +127,19 @@
 			<td><input type="checkbox" name="get_boiler-sallmonela" id="get_boiler-sallmonela" onChange="setParam('get_Boiler(SALLMONELA)');" ></td>
 		</tr>						
 		<tr>
-			<td>Управление циркуляционным насосом ГВС</td>
+			<td>Управление циркуляционным насосом ГВС<sup>4</sup></td>
 			<td><input type="checkbox" name="get_boiler-circulation" id="get_boiler-circulation" onChange="setParam('get_Boiler(CIRCULATION)');" ></td>
 		</tr>
 		<tr>
-			<td>Время работы циркуляционного насоса ГВС<sup>3</sup>  (минуты) [0...60]</td>
+			<td>Время работы циркуляционного насоса ГВС<sup>5</sup>  (минуты) [0...60]</td>
 			<td><input id="get_boiler-circul_work" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_work2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_WORK)');"></td>
 		</tr>
 		<tr>
-			<td>Пауза между включениями насоса циркуляции<sup>4</sup>  (минуты) [0...60]</td>
+			<td>Пауза между включениями насоса циркуляции<sup>6</sup>  (минуты) [0...60]</td>
 			<td><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_pause2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
 		</tr>				
 		<tr>
-			<td>При нагреве бойлера сбрасывать "избыточное" тепло систему отопления<sup>5</sup> </td>
+			<td>При нагреве бойлера сбрасывать "избыточное" тепло систему отопления<sup>7</sup> </td>
 			<td><input type="checkbox" name="get_boiler-reset_heat" id="get_boiler-reset_heat" onChange="setParam('get_Boiler(RESET_HEAT)');" ></td>
 		</tr>
 		<tr>
@@ -160,11 +160,13 @@
 		</tr>
 	</tbody>
 	</table>
-1. Диапазон регулирования Целевая температура - Гистерезис целевой температуры.<br/>	
-2. Одновременно с нагревом бойлера включается ТЭН, это уменьшает время нагрева, раздельный нагрев ТН и ТЭНом блокируется.<br/>
-3. 0-насос вообще не работает.<br/>	
-4. 0-насос работает непрерывно.<br/>
-5. Переключение 3-х ходового крана на отопление при достижение максимальной температуры подачи - 1 градус.	
+1. Диапазон регулирования равен: Целевая температура - Гистерезис целевой температуры.<br/>
+2. Одновременно с нагревом бойлера включается ТЭН (параллельная работа), это уменьшает время нагрева, раздельный нагрев ТН и ТЭНом блокируется.<br/>
+3. Двух-ступенчатый нагрев бойлера. ТН греет бойлер до температуры догрева, далее до целевой температуры греет ТЭН.<br/>
+4. Управление циркуляцией в системе ГВС (если есть контур циркуляции).<br/>
+5. Если установить 0-насос циркуляции ГВС вообще не работает.<br/>
+6. Если установить 0-насос циркуляции ГВС работает непрерывно.<br/>
+7. Переключение 3-х ходового крана на отопление при достижение максимальной температуры подачи - 1 градус.
 <br><br>
 <h2>Расписание</h2>
 <table id="calendar">

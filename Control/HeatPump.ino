@@ -1486,10 +1486,11 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 	 {
 		 if(GETBIT(Prof.Boiler.flags,fTurboBoiler))  // Если турбо режим то повторяем за Тепловым насосом (грет или не греть)
 		 {
-			 return onBoiler;                          // работа параллельно с ТН (если он греет ГВС)
+		  if(sTemp[TBOILER].get_Temp()<Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
+//		  else false;                                                              // Турбо отключаем
 		 }
-		 else // Нет турбо
-		 {
+//		 else // Нет турбо
+//		 {
 			 if(GETBIT(Prof.Boiler.flags,fAddHeating))  // Включен догрев
 			 {
 				 if((sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
@@ -1506,7 +1507,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 				 }
 			 }  // догрев
 			 else {flagRBOILER=false; return false;}                    // ТЭН не используется (сняты все флажки)
-		 } // Нет турбо
+//		 } // Нет турбо
 	 }
 	 else {flagRBOILER=false; return false;}                            // Бойлер сейчас запрещен
 
