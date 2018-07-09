@@ -142,9 +142,13 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                                }
                           case HTTP_POST:    // загрузка настроек
                                {
+                               /*
                                strcpy(Socket[thread].outBuf,HEADER_ANSWER);   // Начало ответа
                                if(parserPOST(thread, len)) strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
                                else                        strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
+                               */
+                               if(parserPOST(thread, len)) {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");} // parserPOST использует outBuf для хранения файла настроек!
+                               else                        {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");}
                                if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
                                break;
                                }
@@ -2335,24 +2339,25 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr;
 	int32_t len, full_len=0;
+	
 	// Определение начала данных
-	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {
+	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
 		journal.jprintf("Wrong save file format!\n");
 		return false;
-	} // Заголовок не найден
-	full_len=size - (ptr - (byte *)Socket[thread].inBuf);
+	}
+	full_len=size-(ptr - (byte *)Socket[thread].inBuf);
+
 	// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
 	memcpy(Socket[thread].outBuf,ptr,full_len);
-	_delay(100);
-     len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-     if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-     Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inPtr,len);            // Добавить окончание пакета
+	_delay(50);
+    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);            // Добавить окончание пакета
 	ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
 	full_len=full_len+len-m_strlen(HEADER_BIN);
 	
 	journal.jprintf("Loading %d bytes:\n", full_len);
-//	ptr += m_strlen(HEADER_BIN);
 	
 	// Чтение настроек
 	len = HP.load(ptr, 1);

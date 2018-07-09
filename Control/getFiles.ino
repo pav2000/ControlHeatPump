@@ -610,35 +610,38 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 uint16_t get_binSettings(uint8_t thread)
 {
-	int16_t i, j, len;
+	uint16_t i, len;
 	byte b;
-	len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-	if(len <= 0) return 0;
-	// Сохранение текущего профиля
+	// 1. Заголовок
 	sendConstRTOS(thread, "HTTP/1.1 200 OK\r\nContent-Type:application/x-binary\r\nContent-Disposition: attachment; filename=\"settings.bin\"\r\n\r\n");
 	sendConstRTOS(thread, HEADER_BIN);
-	// запись настроек ТН
-	for(i = 0; i < len; i++) {
+	
+	// 2. Запись настроек ТН
+	if((len = HP.save())<= 0) return 0; // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
+	for(i = 0; i < len; i++) {  // Копирование в буффер
 		readEEPROM_I2C(I2C_SETTING_EEPROM + i, &b, 1);
 		Socket[thread].outBuf[i] = b;
 	}
-	// запись текущего профиля
+	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
+
+	// 3. Запись текущего профиля
 	if(HP.Prof.save(HP.Prof.get_idProfile()) <= 0) return 0;
 	len = HP.Prof.get_lenProfile();
 	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * len;
-	for(j = 0; j < len; j++) {
-		readEEPROM_I2C(addr + j, &b, 1);
-		Socket[thread].outBuf[i + j] = b;
-		if((uint16_t)(i + j) > sizeof(Socket[thread].outBuf) - 1) return 0; // Слишком  много данных
+	for(i = 0; i < len; i++) {
+		readEEPROM_I2C(addr + i, &b, 1);
+		Socket[thread].outBuf[i] = b;
+		if((uint16_t)(i) > sizeof(Socket[thread].outBuf) - 1) return 0; // Слишком  много данных
 	}
-	len = i + j;
-#ifdef USE_SCHEDULER
-	if((uint16_t)len + HP.Schdlr.get_data_size() > sizeof(Socket[thread].outBuf)) return 0;
-	i = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf + len);
-	if(i <= 0) return 0; // ошибка
-	len += i;
-#endif
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
+	
+#ifdef USE_SCHEDULER
+    // 4. Расписание
+	if((uint16_t)len + HP.Schdlr.get_data_size() > sizeof(Socket[thread].outBuf)) return 0;
+	len = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf);
+	if(len <= 0) return 0; // ошибка
+	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
+#endif
 	return len;
 }
 

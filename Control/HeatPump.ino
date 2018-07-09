@@ -331,15 +331,16 @@ x_Error:
 	journal.jprintf(", size %d, crc: ", size + 2); // sizeof(crc)
 	size -= 2;
 	#ifdef LOAD_VERIFICATION
+	
 	uint16_t crc = 0xFFFF;
-	for(uint16_t i = 0; i < size; i++) crc = _crc16(crc, buffer[i]);
+	for(uint16_t i = 0; i < size; i++)  crc = _crc16(crc, buffer[i]);
 	if(crc != *((uint16_t *)(buffer + size))) {
 		journal.jprintf("Error: %04x != %04x!\n", crc, *((uint16_t *)(buffer + size)));
 		return error = ERR_CRC16_EEPROM;
 	}
 	journal.jprintf("%04x ", crc);
 	#else
-	journal.jprintf("*NO* ");
+	journal.jprintf("*No verification ");
 	#endif
 	uint8_t *buffer_max = buffer + size;
 	size += 2;
