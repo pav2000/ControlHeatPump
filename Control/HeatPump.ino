@@ -1471,18 +1471,35 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
  // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
  boolean HeatPump::boilerAddHeat()
  {
+#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
 	 if ((GETBIT(Prof.SaveON.flags,fBoilerON))&&(GETBIT(Prof.Boiler.flags,fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
 	 {
-		 if((rtcSAM3X8.get_day_of_week()==SALLMONELA_DAY)&&(rtcSAM3X8.get_hours()==SALLMONELA_HOUR)&&(rtcSAM3X8.get_minutes()<=1)&&(!onSallmonela)) {startSallmonela=rtcSAM3X8.unixtime(); onSallmonela=true; } // Надо начитать процесс обеззараживания
+		 if((rtcSAM3X8.get_day_of_week()==SALLMONELA_DAY)&&(rtcSAM3X8.get_hours()==SALLMONELA_HOUR)&&(rtcSAM3X8.get_minutes()<=2)&&(!onSallmonela)) {  // Надо начитать процесс обеззараживания
+		 	 startSallmonela=rtcSAM3X8.unixtime(); 
+		 	 onSallmonela=true; 
+		 	 journal.jprintf(" Cycle start salmonella\n"); 
+		 	 }
 		 if (onSallmonela)    // Обеззараживание нужно
-			 if (startSallmonela+SALLMONELA_END<rtcSAM3X8.unixtime()) // Время цикла еще не исчерпано
-			 {
-				 if (sTemp[TBOILER].get_Temp()<SALLMONELA_TEMP) return true; // Включить обеззараживание
-				 else if (sTemp[TBOILER].get_Temp()>SALLMONELA_TEMP+50) return false; // Стабилизация температуры обеззараживания
+			 if (startSallmonela+SALLMONELA_TIME>rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
+				 if (sTemp[TBOILER].get_Temp()<SALLMONELA_TEMP)  return true;// Включить обеззараживание
+				 #ifdef SALLMONELA_HARD 
+			    	 else if (sTemp[TBOILER].get_Temp()>SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay();// Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
+				 #else
+					 else {  // Вариант работы только до достижение темпеартуы и сразу выключение
+					 onSallmonela=false;
+					 startSallmonela=0;
+					 journal.jprintf(" Cycle end salmonella\n");	
+					 return false;
+					 }	
+				 #endif 
+			 } else {  // Время вышло, выключаем, и идем дальше по алгоритму
+			 onSallmonela=false;
+			 startSallmonela=0;
+			 journal.jprintf(" Cycle end salmonella\n");	
 			 }
-	 }
+	 } else  if (onSallmonela)  { onSallmonela=false;  startSallmonela=0;  journal.jprintf(" Off salmonella\n");  } // если сальмонелу отключили на ходу выключаем и идем дальше по алгоритму
+#endif	 
 
-	 onSallmonela=false; // Обеззараживание не включено смотрим дальше
 	 if(((scheduleBoiler())&&(GETBIT(Prof.SaveON.flags,fBoilerON)))) // Если разрешено греть бойлер согласно расписания И Бойлер включен
 	 {
 		 if(GETBIT(Prof.Boiler.flags,fTurboBoiler))  // Если турбо режим то повторяем за Тепловым насосом (грет или не греть)
@@ -1588,33 +1605,6 @@ boolean HeatPump::switchBoiler(boolean b)
       	Pump_HeatFloor(false);
      	dRelay[RPUMPO].set_OFF();     // файнкойлы  	
     }
-    		
-/*      if (Status.modWork!=pOFF)  // если не пауза!
-       {
-		if(get_modeHouse() == pHEAT || get_modeHouse() == pCOOL) // если в настройках стоит отопление или охлаждение
-		{
-		#ifdef RPUMPBH
-			dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-			Pump_HeatFloor(true);
-			dRelay[RPUMPO].set_ON();     // файнкойлы
-		} else if(get_modeHouse() == pOFF) // если в настройках стоит выключено для отопления/охлаждения
-		{
-		#ifdef RPUMPBH
-			dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-			Pump_HeatFloor(false);
-			dRelay[RPUMPO].set_OFF();     // файнкойлы
-		}
-       } else // пауза  - то выключаем все насосы 
-       {
-  		#ifdef RPUMPBH
-			dRelay[RPUMPBH].set_OFF();    // ГВС
-		#endif
-     	Pump_HeatFloor(false);
-     	dRelay[RPUMPO].set_OFF();        // файнкойлы	
-       }
-*/      
 	}
 #endif
 	if(old && get_State() == pWORK_HP) // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
