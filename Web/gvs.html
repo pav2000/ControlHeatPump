@@ -58,11 +58,11 @@
 			<td><input type="checkbox" name="get_boiler-boiler_on" id="get_boiler-boiler_on" onChange="setParam('get_Boiler(BOILER_ON)');" ></td>
 		</tr>		
 		<tr>
-			<td>Целевая температура бойлера [5...90]</td>
+			<td>Целевая температура бойлера °C [5...90]</td>
 			<td><input id="get_boiler-temp_target" type="number" min="5" max="90" step="0.1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
 		</tr>						
 		<tr>
-			<td>Гистерезис целевой температуры<sup>1</sup> [1...20]</td>
+			<td>Гистерезис целевой температуры °C [1...20]<sup>1</sup></td>
 			<td><input id="get_boiler-dtarget" type="number" min="0" max="20" step="0.1" value="10"><input id="get_boiler-dtarget2" type="submit" value=">"  onclick="setParam('get_Boiler(DTARGET)');"></td>
 		</tr>
 		<tr>
@@ -80,7 +80,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Температура догрева бойлера (при которой выключается нагрев ТН и включается ТЭН бойлера) [0...60]</td>
+			<td>Температура догрева бойлера (при которой выключается нагрев ТН и включается ТЭН бойлера) °C [0...60]</td>
 			<td>
 				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1" value="0">
 				<input id="get_boiler-temp_rboiler2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_RBOILER)');">
@@ -91,7 +91,7 @@
 			<td></td>
 		</tr>
 		<tr>
-			<td>Целевая температура подачи [30..70]</td>
+			<td>Целевая температура подачи °C [30..70]</td>
 			<td><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
 		</tr>	
 		<tr>
@@ -131,11 +131,11 @@
 			<td><input type="checkbox" name="get_boiler-circulation" id="get_boiler-circulation" onChange="setParam('get_Boiler(CIRCULATION)');" ></td>
 		</tr>
 		<tr>
-			<td>Время работы циркуляционного насоса ГВС<sup>5</sup>  (минуты) [0...60]</td>
+			<td>Время работы циркуляционного насоса ГВС (минуты) [0...60]<sup>5</sup></td>
 			<td><input id="get_boiler-circul_work" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_work2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_WORK)');"></td>
 		</tr>
 		<tr>
-			<td>Пауза между включениями насоса циркуляции<sup>6</sup>  (минуты) [0...60]</td>
+			<td>Пауза между включениями насоса циркуляции (минуты) [0...60]<sup>6</sup></td>
 			<td><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_pause2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
 		</tr>				
 		<tr>
@@ -151,7 +151,7 @@
 			<td></td>
 		</tr>
 		<tr>
-			<td>Максимальная температура подачи [20..70]</td>
+			<td>Максимальная температура подачи °C [20..70]</td>
 			<td><input id="get_boiler-temp_max" type="number" min="20" max="70" step="0.1" value="20"><input id="get_boiler-temp_max2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_MAX)');"></td>
 		</tr>
 		<tr>

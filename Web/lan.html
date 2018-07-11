@@ -15,10 +15,12 @@
 <body class="test">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Сеть <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+	<h1>Сеть<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 	<div class="row1">
-	<h2>Сетевые настройки</h2>
-	<h4>Внимание! Неправильные сетевые настройки могут привести к потери управления ТН.<br/> Если активирован режим safeNetwork сетевые настройки берутся по умолчанию</h4>
+	<h2>Сетевые настройки <sup>1</sup></h2>
+	<h4>Внимание! Неправильные сетевые настройки могут привести к потери управления ТН.<br/>
+	Перевод контроллера в режим safeNetwork - сброс контроллера при нажатой кнопке "On/Off"<br/>
+	</h4>
 		<table>
 		<tbody>
 		<tr>
@@ -49,9 +51,11 @@
 			<td>Аппаратный mac адрес</td>
 			<td><input id="get_network-mac" type="text" ><input id="get_network-mac2" type="submit" value=">"  onclick="validmac('get_network-mac');setParam('get_Network(MAC)');"></td>
 		</tr>					
-<tr><td></td><td><input type="submit" value="Применить настройки"  onclick='loadParam("set_updateNet")'></td></tr>
+<tr><td></td><td><input type="submit" value="Применить настройки (2)"  onclick='loadParam("set_updateNet")'></td></tr>
 	</tbody>
 	</table>						
+	1. Если активирован режим safeNetwork сетевые настройки берутся по умолчанию, но выводятся значения из настроек eeprom (можно корректировать)<br/>
+	2. Производится инициализация сетевого чипа с текущими сетевыми настройками<br/>
 	</div>
 
 	<div class="row1">
@@ -78,7 +82,7 @@
 	</tbody>
 	</table>
 	1. Рекомендуется если контроллер имеет прямой выход в интернет<br/>
-	2. Если активирован режим safeNetwork запрос паролей не производится<br/>
+	2. Если активирован режим safeNetwork запрос паролей не производится, но их можно изменить на этой странице<br/>
 	</div>
 
 <div class="row1">
@@ -113,13 +117,14 @@
 			<td><input type="checkbox" name="get_network-no_ack" id="get_network-no_ack" onchange="setParam('get_Network(NO_ACK)');" ></td>
 		</tr> 
 		<tr>
-			<td>Пауза перед отправкой следующего пакета, если нет ожидания ACK. (мсек) [1...50]</td>
+			<td>Пауза перед отправкой следующего пакета, если нет ожидания ACK (мсек) [1...50]<sup>3</sup></td>
 			<td><input id="get_network-delay_ack" min="1" max="100" step="1" type="number" ><input id="get_network-delay_ack" type="submit" value=">"  onclick="setParam('get_Network(DELAY_ACK)');"></td>
 		</tr>				
 	</table>
 	1. Желательно указывать IP адрес (8.8.8.8) а не доменное имя сервера (google.com), рекомендуется вводить IP шлюза<br/>
-	2. Следующий пакет отправляется после паузы (следующий параметр), доставка пакетов не гарантируется
-	</div>	
+	2. Рекомендуется использовать в сетях с большим ping, позволяет увеличить скорость обмена. В этом режиме пакет отправляется после паузы (без ожидания ACK), доставка пакетов не гарантируется.<br/>
+	3. Параметр необходимо подобрать опытным путем, ориентируюсь на потерю пакетов.
+	</div>
 
 
 <div class="row1">

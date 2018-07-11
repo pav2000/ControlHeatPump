@@ -34,22 +34,22 @@
 			<td><select id="get_paramcoolhp-rule" onchange="setParam('get_paramCoolHP(RULE)','get_paramcoolhp-rule');"></select></td>
 			<td><select id="get_paramheathp-rule" onchange="setParam('get_paramHeatHP(RULE)','get_paramheathp-rule');"></select></td>
 		<tr>
-			<td>Целевая температура в доме [0..30]</td>
+			<td>Целевая температура в доме °C [0..30]</td>
 			<td><input id="get_paramcoolhp-temp1" type="number" min="0" max="30" step="0.1" value="0"><input id="get_paramcoolhp-temp12" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP1)');"></td>
 			<td><input id="get_paramheathp-temp1" type="number" min="0" max="30" step="0.1" value="0"><input id="get_paramheathp-temp12" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP1)');"></td>
 		</tr>
 		<tr>
-			<td>Целевая температура обратки [10..50]</td>
+			<td>Целевая температура обратки °C [10..50]</td>
 			<td><input id="get_paramcoolhp-temp2" type="number" min="10" max="50" step="0.1" value="0"><input id="get_paramcoolhp-temp22" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP2)');"></td>
 			<td><input id="get_paramheathp-temp2" type="number" min="10" max="50" step="0.1" value="0"><input id="get_paramheathp-temp22" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP2)');"></td>
 		</tr>						
 		<tr>
-			<td>Целевая температура</td>
+			<td>Целевая температура °C</td>
 			<td><select id="get_paramcoolhp-target" onchange="setParam('get_paramCoolHP(TARGET)','get_paramcoolhp-target');"></select></td>
 			<td><select id="get_paramheathp-target" onchange="setParam('get_paramHeatHP(TARGET)','get_paramheathp-target');"></select></td>
 		</tr>						
 		<tr>
-			<td>Гистерезис целевой температуры<sup>2</sup> [0..20]</td>
+			<td>Гистерезис целевой температуры °C [0..20]<sup>2</sup></td>
 			<td><input id="get_paramcoolhp-dtemp" type="number" min="0" max="20 step="0.1" value="0"><input id="get_paramCoolHP-dtemp2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(DTEMP)');"></td>
 			<td><input id="get_paramheathp-dtemp" type="number" min="0" max="20" step="0.1" value="0"><input id="get_paramHeatHP-dtemp2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(DTEMP)');"></td>
 		</tr>	
@@ -58,7 +58,7 @@
 			<td></td><td></td>
 		</tr>		
 		<tr>
-			<td>Целевая температура подачи<sup>3</sup> [10..50]</td>
+			<td>Целевая температура подачи °C [10..50]<sup>3</sup></td>
 			<td><input id="get_paramcoolhp-temp_pid" type="number" min="5" max="50" step="0.1"><input id="get_paramcoolhp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP_PID)');"></td>
 			<td><input id="get_paramheathp-temp_pid" type="number" min="5" max="50" step="0.1"><input id="get_paramheathp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_PID)');"></td>
 		</tr>								
@@ -92,12 +92,12 @@
 			<td><input type="checkbox" name="get_paramheathp-hfl" id="get_paramheathp-hfl" onchange="setParam('get_paramHeatHP(HFL)');"></td>
 		</tr>
 		<tr>
-			<td>Использование погодозависимости</td>
+			<td>Использование погодозависимости<sup>4</sup></td>
 			<td><input type="checkbox" name="get_paramcoolhp-weather" id="get_paramcoolhp-weather" onchange="setParam('get_paramCoolHP(WEATHER)');" ></td>
 			<td><input type="checkbox" name="get_paramheathp-weather" id="get_paramheathp-weather" onchange="setParam('get_paramHeatHP(WEATHER)');" ></td>
 		</tr>
 		<tr>
-			<td>Коэффициент погодозависимости<sup>4</sup> [0,00..1,00]</td>
+			<td>Коэффициент погодозависимости [0,00..1,00]<sup>5</sup></td>
 			<td><input id="get_paramcoolhp-k_weather" type="number" min="0" max="1" step="0.01" value="0"><input id="get_paramcoolhp-k_weather2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(K_WEATHER)');"></td>
 			<td><input id="get_paramheathp-k_weather" type="number" min="0" max="1" step="0.01" value="0"><input id="get_paramheathp-k_weather2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(K_WEATHER)');"></td>
 		</tr>
@@ -111,7 +111,8 @@
 1. Для ПИДа производится стабилизация заданной темпеартуры подачи<br/>
 2. Диапазон регулирования Целевая температура - Гистерезис целевой температуры.<br/>
 3. При использовании погодозависимости Целевая температура подачи указывается для уличной температуре 0 градусов<br/>
-4. Увеличении температуры подачи при уменьшении уличной температуры на 1 градус.
+4. Изменение целевой температуры подачи в зависимости от уличной температуры.<br/>
+5. Увеличении температуры подачи при уменьшении уличной температуры на 1 градус.
 	<div class="row1">
 		<h2>Защиты при работе теплового насоса</h2>
 	</div>	
@@ -125,12 +126,12 @@
 		</thead>			
 		<tbody>
 		<tr>
-			<td>Минимальная/максимальная температура подачи [0..30] [0..70]</td>
+			<td>Минимальная/максимальная температура подачи °C [0..30] [0..70]</td>
 			<td><input id="get_paramcoolhp-temp_in" type="number" min="0" max="30" step="0.1"><input id="get_paramcoolhp-temp_in2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP_IN)');"></td>
 			<td><input id="get_paramheathp-temp_in" type="number" min="0" max="70" step="0.1"><input id="get_paramheathp-temp_in2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_IN)');"></td>
 		</tr>
 		<tr>
-			<td>Максимальная/минимальная температура обратки[0..35] [-10..70]]</td>
+			<td>Максимальная/минимальная температура обратки °C [0..35] [-10..70]]</td>
 			<td><input id="get_paramcoolhp-temp_out" type="number" min="0" max="35" step="0.1"><input id="get_paramcoolhp-temp_out2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(TEMP_OUT)');"></td>
 			<td><input id="get_paramheathp-temp_out" type="number" min="-10" max="70" step="0.1"><input id="get_paramheathp-temp_out2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_OUT)');"></td>
 		</tr>
@@ -140,7 +141,7 @@
 			<td><input id="get_paramheathp-pause" type="number" min="0" max="60" step="1"><input id="get_paramheathp-pause2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(PAUSE)');"></td>
 		</tr>						
 		<tr>
-			<td>Максимальная разность температур на конденсаторе [0..40]</td>
+			<td>Максимальная разность температур на конденсаторе °C [0..40]</td>
 			<td><input id="get_paramcoolhp-d_temp" type="number" min="0" max="40" step="0.1"><input id="get_paramcoolhp-d_temp2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(D_TEMP)');"></td>
 			<td><input id="get_paramheathp-d_temp" type="number" min="0" max="40" step="0.1"><input id="get_paramheathp-d_temp2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(D_TEMP)');"></td>
 		</tr>
