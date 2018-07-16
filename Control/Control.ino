@@ -132,7 +132,7 @@ BaseType_t SemaphoreTake(QueueHandle_t xSemaphore, TickType_t xBlockTime)
 	else {
 		for(;;) {
 			if(xSemaphoreTake(xSemaphore, 0) == pdTRUE) return pdTRUE;
-			if(xBlockTime--) break;
+			if(!xBlockTime--) break;
 			vTaskDelay(1/portTICK_PERIOD_MS);
 		}
 		return pdFALSE;
