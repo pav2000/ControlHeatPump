@@ -648,6 +648,7 @@ void vWeb0( void *)
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
    volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+   static boolean network_last_link = true;
    
    HP.timeNTP=xTaskGetTickCount();        // В первый момент не обновляем
     for( ;; )
@@ -692,16 +693,17 @@ void vWeb0( void *)
                      }
                }
           // 4. Проверка связи с чипом
-          if ((HP.get_fInitW5200())&&(thisTime-iniW5200>60*1000UL)&&(active))    // проверка связи с чипом сети раз в минуту
+          if((HP.get_fInitW5200()) && (thisTime - iniW5200 > 60 * 1000UL) && (active)) // проверка связи с чипом сети раз в минуту
           {
-           iniW5200=thisTime;
-           if (!(linkStatusWiznet(false)))
-             {
-              journal.jprintf(pP_TIME,"Connection with the chip %s is consumed, resetting . . .\n", nameWiznet);
-              HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
-              HP.num_resW5200++;              // Добавить счетчик инициализаций
-              active=false;
-             }
+        	  iniW5200 = thisTime;
+        	  boolean lst = linkStatusWiznet(false);
+        	  if(!lst || !network_last_link) {
+        		  if(!lst) journal.jprintf(pP_TIME, "%s no link, resetting . . .\n", nameWiznet);
+        		  HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
+        		  HP.num_resW5200++;              // Добавить счетчик инициализаций
+        		  active = false;
+        	  }
+        	  network_last_link = lst;
           }
           // 5.Обновление времени 1 раз в сутки или по запросу (HP.timeNTP==0)
           if((HP.timeNTP==0)||((HP.get_updateNTP())&&(thisTime-HP.timeNTP>60*60*24*1000UL)&&(active)))      // Обновление времени раз в день 60*60*24*1000 в тиках HP.timeNTP==0 признак принудительного обновления

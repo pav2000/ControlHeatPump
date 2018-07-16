@@ -1962,6 +1962,7 @@ int8_t devSDM::get_readState(uint8_t group)
 		return err;                       // все прочиталось, выходим
 	}
 	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
+	journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, err);
 	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
 	return err;
 }

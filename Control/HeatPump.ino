@@ -1478,8 +1478,8 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 		 	 startSallmonela=rtcSAM3X8.unixtime(); 
 		 	 onSallmonela=true; 
 		 	 journal.jprintf(" Cycle start salmonella\n"); 
-		 	 }
-		 if (onSallmonela)    // Обеззараживание нужно
+		 }
+		 if (onSallmonela) {   // Обеззараживание нужно
 			 if (startSallmonela+SALLMONELA_TIME>rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
 				 if (sTemp[TBOILER].get_Temp()<SALLMONELA_TEMP)  return true;// Включить обеззараживание
 				 #ifdef SALLMONELA_HARD 
@@ -1493,10 +1493,11 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 					 }	
 				 #endif 
 			 } else {  // Время вышло, выключаем, и идем дальше по алгоритму
-			 onSallmonela=false;
-			 startSallmonela=0;
-			 journal.jprintf(" Cycle end salmonella\n");	
+				 onSallmonela=false;
+				 startSallmonela=0;
+				 journal.jprintf(" Cycle end salmonella\n");
 			 }
+		 }
 	 } else  if (onSallmonela)  { onSallmonela=false;  startSallmonela=0;  journal.jprintf(" Off salmonella\n");  } // если сальмонелу отключили на ходу выключаем и идем дальше по алгоритму
 #endif	 
 
