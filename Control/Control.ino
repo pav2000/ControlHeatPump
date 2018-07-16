@@ -129,7 +129,14 @@ __attribute__((always_inline)) inline void _delay(int t) // Функция за�
 BaseType_t SemaphoreTake(QueueHandle_t xSemaphore, TickType_t xBlockTime)
 {
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) return pdTRUE;
-	else return xSemaphoreTake(xSemaphore, xBlockTime);
+	else {
+		for(;;) {
+			if(xSemaphoreTake(xSemaphore, 0) == pdTRUE) return pdTRUE;
+			if(xBlockTime--) break;
+			vTaskDelay(1/portTICK_PERIOD_MS);
+		}
+		return pdFALSE;
+	}
 }
 
 // Освободить семафор с проверкой, что шедуллер работает
