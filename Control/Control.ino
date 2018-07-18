@@ -161,8 +161,8 @@ int8_t set_Error(int8_t _err, char *nam)
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
 	{
 		journal.jprintf("$Compressor protection: ");
-		if(HP.dFC.get_present()) HP.dFC.stop_FC();
-		else HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор
+		if(HP.dFC.get_present()){ HP.dFC.stop_FC();_delay(500);} // Для инвертора частоту в 0, пауза
+		HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор для обоих вариантов (для инвертора дублирование команды получается)
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 

@@ -696,8 +696,8 @@ if(strcmp(var,boil_TURBO_BOILER)==0){ if (strcmp(c,cZero)==0){SETBIT0(Boiler.fla
 				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fTurboBoiler);  return true;}
 				                       else return false;  
 				                       }else 
-if(strcmp(var,boil_SALLMONELA)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSalmonella); return true;}
-				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSalmonella);  return true;}
+if(strcmp(var,boil_SALLMONELA)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSalmonella);HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]); return true;} // Изменение максимальной температуры при включенном режиме сальмонелла
+				                       else if (strcmp(c,cOne)==0){SETBIT1(Boiler.flags,fSalmonella);HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300); return true;}
 				                       else return false;  
 				                       }else 
 if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.flags,fCirculation); return true;}
@@ -715,10 +715,10 @@ if(strcmp(var,boil_PAUSE1)==0){      if ((x>=0)&&(x<=60))       {Boiler.pause=x*
                                                                               
 if(strcmp(var,boil_SCHEDULER)==0){  return set_Schedule(c,Boiler.Schedule); }else                                                  // разбор строки расписания
 
-if(strcmp(var,boil_CIRCUL_WORK)==0){if ((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;}else            // Время  работы насоса ГВС секунды (fCirculation)
+if(strcmp(var,boil_CIRCUL_WORK)==0) {if((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;}else            // Время  работы насоса ГВС секунды (fCirculation)
                         
-if(strcmp(var,boil_CIRCUL_PAUSE)==0){ if ((x>=0)&&(x<=10000))   {Boiler.Circul_Pause=x; return true;} else return false;            // Пауза в работе насоса ГВС  секунды (fCirculation)
-                       }else  
+if(strcmp(var,boil_CIRCUL_PAUSE)==0){if((x>=0)&&(x<=60)){Boiler.Circul_Pause=60*x; return true;} else return false;}else           // Пауза в работе насоса ГВС  секунды (fCirculation)
+                        
 if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.flags,fResetHeat); return true;}                      // флаг Сброса лишнего тепла в СО
                        else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fResetHeat);  return true;}
                        else return false;  
@@ -888,7 +888,12 @@ int32_t Profile::load(int8_t num)
   #else
     journal.jprintf(" Load profile #%d OK, read: %d bytes VERIFICATION OFF!\n",num,adr-(I2C_PROFILE_EEPROM+dataProfile.len*num));
   #endif
-  update_list(num);     
+  update_list(num); 
+   
+  #ifdef TBOILER // Изменение максимальной температуры при включенном режиме сальмонелла
+  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2f for salmonella\n",(float)(HP.sTemp[TBOILER].get_maxTemp()/100.0));} 
+  else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
+  #endif
   return adr;
  }
 
@@ -924,6 +929,12 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
   #else
     journal.jprintf(" Load setting from file OK, read: %d bytes VERIFICATION OFF!\n",adr-aStart);
   #endif
+  
+  #ifdef TBOILER // Изменение максимальной температуры при включенном режиме сальмонелла
+  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2f for salmonella\n",(float)(HP.sTemp[TBOILER].get_maxTemp()/100.0));} 
+  else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
+  #endif
+
   return OK;       
 }
 

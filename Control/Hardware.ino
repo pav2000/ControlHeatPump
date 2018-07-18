@@ -1435,8 +1435,9 @@ err=OK;
             #endif // FC_USE_RCOMP   
           if (err==OK) {SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);}
           else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);}               // генерация ошибки
-      #else // DEMO
-          if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+      #else // не DEMO
+          if (!get_present()) return err; // если инвертора нет выходим
+          // if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;// выходим если нет инвертора или он заблокирован по ошибке
           err=OK;   
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
@@ -1455,7 +1456,7 @@ err=OK;
                HP.dRelay[RCOMP].set_OFF();                // ПЛОХО через глобальную переменную
             #endif // FC_USE_RCOMP   
             SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
-      #else // DEMO
+      #else // не DEMO
           if  (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
@@ -2265,7 +2266,8 @@ int8_t devModbus::writeHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t dat
       RS485.set_slave(id);
       RS485.setTransmitBuffer(0, data >> 16);
       RS485.setTransmitBuffer(1, data & 0xFFFF);
-      result = RS485.writeMultipleRegisters(cmd,2);                                                 // послать запрос,      SemaphoreGive(xModbusSemaphore);
+      result = RS485.writeMultipleRegisters(cmd,2);                                                 // послать запрос,
+      SemaphoreGive(xModbusSemaphore);
       return err = translateErr(result);
 }
 
