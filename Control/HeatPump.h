@@ -66,6 +66,9 @@ struct type_motoHour
   uint32_t Z2;      // Резервный параметр 2
 };
 
+// Рабочие флаги ТН
+#define fHP_SunActive 		0				// Солнечный контур активен
+
 //  Работа с отдельными флагами type_optionHP
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
 #define fBeep               1               // флаг Использование звука
@@ -445,6 +448,7 @@ class HeatPump
 
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
+    uint8_t flags;						  // Рабочие флаги ТН
 
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
     int16_t get_temp_evaporating(void);		// Получить температуру кипения
@@ -452,6 +456,8 @@ class HeatPump
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций
     type_optionHP Option;                  // Опции теплового насоса
+
+    uint32_t time_Sun_ON;                 // время включение солнечного коллектора
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки

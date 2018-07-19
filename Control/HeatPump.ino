@@ -539,6 +539,7 @@ void HeatPump::resetSettingHP()
   uint8_t i;
   Prof.initProfile();                           // Инициализировать профиль по умолчанию
     
+  flags = 0;
   Status.modWork=pOFF;;                         // Что сейчас делает ТН (7 стадий)
   Status.State=pOFF_HP;                         // Сотояние ТН - выключен
   Status.ret=pNone;                             // точка выхода алгоритма
@@ -586,6 +587,7 @@ void HeatPump::resetSettingHP()
   timeNTP=0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
   startSallmonela=0;                            // время начала обеззараживания
   command_completed = 0;
+  time_Sun_ON = 0;
    
   safeNetwork=false;                            // режим safeNetwork
  
@@ -1232,20 +1234,28 @@ char * HeatPump::get_Chart(char *var, char* str)
 		sTemp[TOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TIN) == 0) {
 		sTemp[TIN].Chart.get_PointsStr(100, str);
+#ifdef TEVAIN
 	} else if(strcmp(var, chart_TEVAIN) == 0) {
 		sTemp[TEVAIN].Chart.get_PointsStr(100, str);
+#endif
 	} else if(strcmp(var, chart_TEVAOUT) == 0) {
 		sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
+#ifdef TEVAIN
 	} else if(strcmp(var, chart_TCONIN) == 0) {
 		sTemp[TCONIN].Chart.get_PointsStr(100, str);
+#endif
 	} else if(strcmp(var, chart_TCONOUT) == 0) {
 		sTemp[TCONOUT].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TBOILER) == 0) {
 		sTemp[TBOILER].Chart.get_PointsStr(100, str);
+#ifdef TACCUM
 	} else if(strcmp(var, chart_TACCUM) == 0) {
 		sTemp[TACCUM].Chart.get_PointsStr(100, str);
+#endif
+#ifdef TRTOOUT
 	} else if(strcmp(var, chart_TRTOOUT) == 0) {
 		sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
+#endif
 	} else if(strcmp(var, chart_TCOMP) == 0) {
 		sTemp[TCOMP].Chart.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TEVAING) == 0) {
@@ -1688,7 +1698,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	_delay(d);                                 // Задержка на d мсек
 #endif
 #ifdef R3WAY
-	dRelay[PUMP_OUT].set_Relay(b);                  // Реле включения насоса выходного контура  (отопление и ГВС)
+	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 #else
 	// здесь выключать насос бойлера бесполезно, уже раньше выключили

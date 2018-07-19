@@ -880,10 +880,7 @@ void vReadSensor(void *)
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-	//	if((HP.get_modeHouse()  != pCOOL) && (HP.get_modeHouse()  != pNONE_C))    // Если не охлаждение
-	    if((HP.get_modWork()  != pCOOL) && (HP.get_modWork()  != pNONE_C))         // Если ТЕКУЩАЯ работа не охлаждение
-			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
-		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
+		HP.dEEV.set_Overheat(HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 #endif
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
@@ -1128,6 +1125,26 @@ void vReadSensor_delay10ms(int16_t msec)
 
 		 } //  switch (HP.get_State())
 
+		 // Солнечный коллектор
+#ifdef USE_SUN_COLLECTOR
+		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))
+				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
+			if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) goto xSun_OFF;
+			if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) goto xSun_OFF;
+			if(!(HP.flags & (1<<fHP_SunActive))) {
+				HP.flags |= (1<<fHP_SunActive);
+				HP.dRelay[RSUN].set_ON();
+				HP.dRelay[PUMP_OUT].set_ON();
+				HP.time_Sun_ON = rtcSAM3X8.unixtime();
+			}
+		} else {
+xSun_OFF:
+			HP.flags &= ~(1<<fHP_SunActive);
+			HP.dRelay[RSUN].set_OFF();
+			HP.dRelay[PUMP_OUT].set_OFF();
+			HP.time_Sun_ON = 0;
+		}
+#endif
 	 }// for
 	 vTaskDelete( NULL );
 }
@@ -1152,8 +1169,7 @@ void vReadSensor_delay10ms(int16_t msec)
 			 HP.dEEV.CorrectOverheat();
 
 			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-			 HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
-					 (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
+			 HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 
 			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
 			 {
@@ -1277,7 +1293,6 @@ void vUpdatePump(void *)
 { //const char *pcTaskName = "Pump is running\r\n";
 	uint16_t i;
 	for(;;) {
-		//   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
 		if((HP.get_workPump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
 			HP.Pump_HeatFloor(false);						// выключить насос ТП

@@ -463,7 +463,7 @@ void devRelay::initRelay(int sensor)
 {
    Relay=false;                    // Состояние реле - выключено
    flags=0x00;
-   err=OK;
+   number = sensor;
    testMode=NORMAL;                // Значение режима тестирования
    // флаги  0 - наличие датчика,  1- режим теста
    flags=0x01;                     // наличие датчика в текушей конфигурации (отстатки прошлого, реле сейчас есть всегда)
@@ -483,17 +483,22 @@ void devRelay::initRelay(int sensor)
 // Если состояния совпадают то ничего не делаем
 int8_t devRelay::set_Relay(boolean r)    
 {
-  err=OK;
-  if((flags&0x01)==0) { err=ERR_DEVICE; return err;   }  // Реле не установлено  и пытаемся его включить
-  if (Relay==r) return err;                              // Ничего менять не надо выходим
-   
+  if((flags&0x01)==0) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
+  if(number == PUMP_OUT) {
+	  flags &= ~(1<<fR_Request_OFF);
+	  if(!r && GETBIT(HP.flags, fHP_SunActive)) {  	// Если выкл и работает солнечный контур, то не выключаем
+		  flags |= (1<<fR_Request_OFF);
+		  return OK;
+	  }
+  }
+  if(Relay==r) return OK;                              // Ничего менять не надо выходим
  // if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
  #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
   switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
          {
           case NORMAL: digitalWriteDirect(pin, r);                              break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
           case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if (strcmp(name,"RCOMP")!=0) digitalWriteDirect(pin, r); break; //  Включаем все кроме компрессора
+          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, r); break; //  Включаем все кроме компрессора
           case HARD_TEST: digitalWriteDirect(pin, r);                           break; //  Все включаем и компрессор тоже
         }
   #else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
@@ -501,14 +506,14 @@ int8_t devRelay::set_Relay(boolean r)
          {
           case NORMAL: digitalWriteDirect(pin, !r);                             break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
           case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if (strcmp(name,"RCOMP")!=0) digitalWriteDirect(pin, !r);break; //  Включаем все кроме компрессора
+          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, !r);break; //  Включаем все кроме компрессора
           case HARD_TEST: digitalWriteDirect(pin, !r);                          break; //  Все включаем и компрессор тоже
         }
   
   #endif        
   Relay=r;      
   journal.jprintf(" Relay %s: %s\n", name, Relay ? "ON" : "OFF");
-  return err;
+  return OK;
 }
 
 // ПЕРЕГРУЗКА Установить реле в состояние r на входе int 0 и 1
@@ -672,64 +677,104 @@ int8_t devEEV::set_EEV(int x)
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
  return err;  
 }
+
 // Вычислить текущий перегрев, вычисляется каждое измерение (опрос датчиков)
 // На входе текущие параметры датчиков, для всех вариантов на входе  TEVAOUT,TEVAIN, Press
 // Если датчик давления отсутствует до давление будет -1000, и по этому опредяляем его наличие в конфигурации и как определять перегрев
 // Если ЭРВ запрещена в конфигурации, то перегрев не вычисляется =0 и сразу выходим
- int16_t devEEV::set_Overheat(int16_t rto,int16_t out, int16_t in, int16_t p) 
- {
- if (!get_present()) {Overheat=0; err=OK; return Overheat;} // ЭРВ в конфиге нет
-// вычисляется в зависимости от алгоритма
-//   Serial.print(rto);Serial.print("-");Serial.print(out);Serial.print("-");Serial.print(in);Serial.print("-"); Serial.println(p);
-if (testMode!=NORMAL)   // если режим тестирования приоритет выше чем у демо !!!
-  {                                                                      
-       switch (_data.ruleEEV)  // определение доступности элемента
-        {
-          case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+_data.Correction; else { err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-          case  TABLE:         // По умолчанию
-          case  MANUAL:         
-          default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; 
-                               else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction;
-                               else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+_data.Correction; 
-                               else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; 
-                               else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-        }
-    
-  }
- else // нормальный режим
- {
-    #ifdef DEMO
-      Overheat=abs(out-in);              // вычислить перегрев для демки всегда больше 0
-    #else 
+int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16_t in, int16_t p)
+{
+	if(!get_present()) {
+		Overheat = 0;
+		err = OK;
+		return Overheat;
+	} // ЭРВ в конфиге нет
+	int16_t out = HP.sTemp[fHeating ? TEVAOUT : TCONOUT].get_Temp();
+#if defined(TEVAIN) && defined(TCONIN)
+	int16_t	in = HP.sTemp[fHeating ? TEVAIN : TCONIN].get_Temp();
+#endif
+	int16_t press = HP.sADC[PEVA].get_Press();
+	// вычисляется в зависимости от алгоритма
+#ifdef DEMO
+	#if defined(TEVAIN) && defined(TCONIN)
+	Overheat=abs(out-in);              // вычислить перегрев для демки всегда больше 0
+	#else
+	Overheat = 400;
+	#endif
+#else
+	switch(_data.ruleEEV)  // определение доступности элемента
+	{
+#ifdef TEVAIN
+	case TEVAOUT_TEVAIN:
+		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
+xTEVAOUT_TEVAIN: Overheat = out - in + _data.Correction;
+		} else {
+			err = ERR_TYPE_OVERHEAT;
+			set_Error(err, name);
+		}
+		break;
+#endif
+#ifdef TRTOOUT
+	case TRTOOUT_TEVAIN:
+		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
+xTRTOOUT_TEVAIN: Overheat = HP.sTemp[TRTOOUT].get_Temp() - in + _data.Correction;
+		} else {
+			err = ERR_TYPE_OVERHEAT;
+			set_Error(err, name);
+		}
+		break;
+#endif
+	case TEVAOUT_PEVA:
+		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) {
+xTEVAOUT_PEVA: Overheat = out - PressToTemp(press, _data.typeFreon) + _data.Correction;
+		} else {
+			err = ERR_TYPE_OVERHEAT;
+			set_Error(err, name);
+		}
+		break;
+#ifdef TRTOOUT
+	case TRTOOUT_PEVA:
+		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present())) {
+xTRTOOUT_PEVA: Overheat = HP.sTemp[TRTOOUT].get_Temp() - PressToTemp(press, _data.typeFreon) + _data.Correction;
+		} else {
+			err = ERR_TYPE_OVERHEAT;
+			set_Error(err, name);
+		}
+		break;
+#endif
+	case TABLE:         // По умолчанию
+	case MANUAL:
+	default:
+#ifdef TRTOOUT
+		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present())) goto xTRTOOUT_PEVA;
+		else
+#endif
+		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) goto xTEVAOUT_PEVA;
+		else
+#ifdef TRTOOUT
+		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTRTOOUT_TEVAIN;
+		else
+#endif
+#ifdef TEVAIN
+		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTEVAOUT_TEVAIN;
+		else
+#endif
+		{
+			err = ERR_TYPE_OVERHEAT;
+			set_Error(err, name);
+		}
+		break;
+	}
+#endif
 
-             switch (_data.ruleEEV)  // определение доступности элемента
-              {
-                case  TEVAOUT_TEVAIN: if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TRTOOUT_TEVAIN: if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=rto-in+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TEVAOUT_PEVA:   if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TRTOOUT_PEVA:   if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))  Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-                case  TABLE:         // По умолчанию
-                case  MANUAL:         
-                default:             if ((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present()))       Overheat=rto-PressToTemp(p,_data.typeFreon)+_data.Correction; 
-                                     else if((HP.sTemp[TEVAOUT].get_present())&&(HP.sADC[PEVA].get_present()))   Overheat=out-PressToTemp(p,_data.typeFreon)+_data.Correction;
-                                     else if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present()))  Overheat=rto-in+_data.Correction; 
-                                     else if ((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) Overheat=out-in+_data.Correction; 
-                                     else {err=ERR_TYPE_OVERHEAT;set_Error(err,name);} break;
-              }
-    #endif 
-    
- }
-  err=OK;
- // if (Overheat<-100) err=set_Error(ERR_OVERHEAT,name);   // Отрицательный перегрев????? даем запас -1 градуса
- return Overheat;  
- }
+	err = OK;
+	// if (Overheat<-100) err=set_Error(ERR_OVERHEAT,name);   // Отрицательный перегрев????? даем запас -1 градуса
+	return Overheat;
+}
 
 // Обновление ЭРВ - одна итерация алгоритма отслеживания
 // на входе две температуры, используется для алгоритма table
-int8_t devEEV::Update(int16_t teva, int16_t tcon)
+int8_t devEEV::Update(void) //boolean fHeating)
 {
   int16_t newEEV;               // Изменение положения ЭРВ
   #ifdef EEV_INT_PID            // использование ПИДА в целочисленной арифметике
@@ -821,7 +866,10 @@ int8_t devEEV::Update(int16_t teva, int16_t tcon)
         if (newEEV<=_data.minSteps)   newEEV=_data.minSteps;
   //      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
     } break;
-  case TABLE:  newEEV = TempToEEV(teva,tcon); break;
+  case TABLE:
+#ifdef TEVAIN
+	  newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2, (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2); break;
+#endif
   case MANUAL: newEEV = _data.manualStep; break;
  }
 
