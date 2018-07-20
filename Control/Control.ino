@@ -129,7 +129,14 @@ __attribute__((always_inline)) inline void _delay(int t) // Функция за�
 BaseType_t SemaphoreTake(QueueHandle_t xSemaphore, TickType_t xBlockTime)
 {
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) return pdTRUE;
-	else return xSemaphoreTake(xSemaphore, xBlockTime);
+	else {
+		for(;;) {
+			if(xSemaphoreTake(xSemaphore, 0) == pdTRUE) return pdTRUE;
+			if(!xBlockTime--) break;
+			vTaskDelay(1/portTICK_PERIOD_MS);
+		}
+		return pdFALSE;
+	}
 }
 
 // Освободить семафор с проверкой, что шедуллер работает
@@ -154,8 +161,8 @@ int8_t set_Error(int8_t _err, char *nam)
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
 	{
 		journal.jprintf("$Compressor protection: ");
-		if(HP.dFC.get_present()) HP.dFC.stop_FC();
-		else HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор
+		if(HP.dFC.get_present()){ HP.dFC.stop_FC();_delay(500);} // Для инвертора частоту в 0, пауза
+		HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор для обоих вариантов (для инвертора дублирование команды получается)
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
@@ -641,6 +648,7 @@ void vWeb0( void *)
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
    volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+   static boolean network_last_link = true;
    
    HP.timeNTP=xTaskGetTickCount();        // В первый момент не обновляем
     for( ;; )
@@ -685,16 +693,17 @@ void vWeb0( void *)
                      }
                }
           // 4. Проверка связи с чипом
-          if ((HP.get_fInitW5200())&&(thisTime-iniW5200>60*1000UL)&&(active))    // проверка связи с чипом сети раз в минуту
+          if((HP.get_fInitW5200()) && (thisTime - iniW5200 > 60 * 1000UL) && (active)) // проверка связи с чипом сети раз в минуту
           {
-           iniW5200=thisTime;
-           if (!(linkStatusWiznet(false)))
-             {
-              journal.jprintf(pP_TIME,"Connection with the chip %s is consumed, resetting . . .\n", nameWiznet);
-              HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
-              HP.num_resW5200++;              // Добавить счетчик инициализаций
-              active=false;
-             }
+        	  iniW5200 = thisTime;
+        	  boolean lst = linkStatusWiznet(false);
+        	  if(!lst || !network_last_link) {
+        		  if(!lst) journal.jprintf(pP_TIME, "%s no link, resetting . . .\n", nameWiznet);
+        		  HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
+        		  HP.num_resW5200++;              // Добавить счетчик инициализаций
+        		  active = false;
+        	  }
+        	  network_last_link = lst;
           }
           // 5.Обновление времени 1 раз в сутки или по запросу (HP.timeNTP==0)
           if((HP.timeNTP==0)||((HP.get_updateNTP())&&(thisTime-HP.timeNTP>60*60*24*1000UL)&&(active)))      // Обновление времени раз в день 60*60*24*1000 в тиках HP.timeNTP==0 признак принудительного обновления
@@ -871,10 +880,7 @@ void vReadSensor(void *)
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-	//	if((HP.get_modeHouse()  != pCOOL) && (HP.get_modeHouse()  != pNONE_C))    // Если не охлаждение
-	    if((HP.get_modWork()  != pCOOL) && (HP.get_modWork()  != pNONE_C))         // Если ТЕКУЩАЯ работа не охлаждение
-			HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TEVAOUT].get_Temp(), HP.sTemp[TEVAIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Нагрев (включен)
-		else HP.dEEV.set_Overheat(HP.sTemp[TRTOOUT].get_Temp(), HP.sTemp[TCONOUT].get_Temp(), HP.sTemp[TCONIN].get_Temp(), HP.sADC[PEVA].get_Press());   // Охлаждение
+		HP.dEEV.set_Overheat(HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 #endif
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
@@ -1119,6 +1125,20 @@ void vReadSensor_delay10ms(int16_t msec)
 
 		 } //  switch (HP.get_State())
 
+		 // Солнечный коллектор
+#ifdef USE_SUN_COLLECTOR
+		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))
+				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
+			if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
+			else if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
+			else if(!(HP.flags & (1<<fHP_SunActive))) { // ON
+				HP.flags |= (1<<fHP_SunActive);
+				HP.dRelay[RSUN].set_Relay(fR_StatusSun);
+				HP.dRelay[PUMP_OUT].set_Relay(fR_StatusSun);
+				HP.time_Sun_ON = rtcSAM3X8.unixtime();
+			}
+		} else HP.Sun_OFF();
+#endif
 	 }// for
 	 vTaskDelete( NULL );
 }
@@ -1143,8 +1163,7 @@ void vReadSensor_delay10ms(int16_t msec)
 			 HP.dEEV.CorrectOverheat();
 
 			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-			 HP.dEEV.Update((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
-					 (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
+			 HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 
 			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
 			 {
@@ -1268,7 +1287,6 @@ void vUpdatePump(void *)
 { //const char *pcTaskName = "Pump is running\r\n";
 	uint16_t i;
 	for(;;) {
-		//   if (!HP.startPump) {journal.jprintf(" Task vUpdatePump RPUMPO off  . . .\n");  vTaskSuspend(HP.xHandleUpdatePump);  }       // Остановить задачу насос
 		if((HP.get_workPump() == 0) && (HP.startPump)) {
 			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
 			HP.Pump_HeatFloor(false);						// выключить насос ТП

@@ -142,9 +142,8 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                                }
                           case HTTP_POST:    // загрузка настроек
                                {
-                               strcpy(Socket[thread].outBuf,HEADER_ANSWER);   // Начало ответа
-                               if(parserPOST(thread, len)) strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");
-                               else                        strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");
+                               if(parserPOST(thread, len)) {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");} // parserPOST использует outBuf для хранения файла настроек!
+                               else                        {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");}
                                if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
                                break;
                                }
@@ -657,6 +656,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
    		_ftoa(strReturn, HP.powerCO/1000.0,3); strcat(strReturn,"&"); continue;
        }
+    if (strcmp(str,"get_PowerGEO") == 0)
+       {
+   		_ftoa(strReturn, HP.powerGEO/1000.0,3); strcat(strReturn,"&"); continue;
+       }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
@@ -760,6 +763,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			#endif
     	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
 			#ifdef TRTOUT
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	} else if(strcmp(str, "sun") == 0) { // hide: SUN
+			#ifdef USE_SUN_COLLECTOR
     			strcat(strReturn,"0&");
 			#else
     			strcat(strReturn,"1&");
@@ -2331,18 +2340,32 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // Разбор и обработка POST запроса buf входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
+// parserPOST использует outBuf для хранения файла настроек!
 boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr;
-	// Определение начала данных
-	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr, HEADER_BIN)) == NULL) {
+	int32_t len, full_len=0;
+	// Определение начала данных (поиск HEADER_BIN)
+	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
 		journal.jprintf("Wrong save file format!\n");
 		return false;
-	} // Заголовок не найден
-	journal.jprintf("Loading %d bytes:\n", size - (ptr - (byte *)Socket[thread].inPtr));
-	ptr += m_strlen(HEADER_BIN);
+	}
+	full_len=size-(ptr - (byte *)Socket[thread].inBuf);
+
+	// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
+	memcpy(Socket[thread].outBuf,ptr,full_len);
+	_delay(50);
+    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить окончание пакета
+	ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
+	full_len=full_len+len-m_strlen(HEADER_BIN);
+	
+	journal.jprintf("Loading %d bytes:\n", full_len);
+	
 	// Чтение настроек
-	int32_t len = HP.load(ptr, 1);
+	len = HP.load(ptr, 1);
 	if(len <= 0) return false;
 	boolean ret = true;
 	// Чтение профиля

@@ -227,15 +227,17 @@ private:
 // ------------------------------------------------------------------------------------------
 // И С П О Л Н И Т Е Л Ь Н Ы Е   У С Т Р О Й С Т В А   --------------------------------------
 // ------------------------------------------------------------------------------------------
+#define fR_StatusMain		1			// b1: Состояние Вкл/Выкл основного алгоритма
+#define fR_StatusSun		2			// b2: Состояние Вкл/Выкл Солнечного Коллектора
+#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun))	// битовая маска
 
 class devRelay
 {
 public:
   void initRelay(int sensor);                            // Инициализация реле
-  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay((boolean)true);}    // Включить реле
-  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay((boolean)false);}   // Выключить реле
-  int8_t  set_Relay(boolean r);                          // Установить реле в состояние r
-  int8_t  set_Relay(int16_t r);                          // Установить реле в состояние r
+  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay(1);}    // Включить реле
+  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay(0);}   // Выключить реле
+  int8_t  set_Relay(int8_t r);                           // Установить реле в состояние (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
   __attribute__((always_inline)) inline boolean get_Relay(){return Relay;}                    // Прочитать состояние реле
   int8_t  get_pinD(){return pin;}                        // Получить ногу куда прицеплено реле
   char*   get_note(){return note;}                       // Получить наименование реле
@@ -243,11 +245,11 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void set_testMode(TEST_MODE t){testMode=t;}            // Установить значение текущий режим работы
+  byte flags;                                           // флаги  0 - наличие реле, 1 -
 private:
-   int8_t  err;                                          // ошибка реле
+   uint8_t number;										// Номер массива реле
    boolean Relay;                                        // Состояние реле
    TEST_MODE testMode;                                   // Значение режима тестирования
-   byte flags;                                           // флаги  0 - наличие реле,
    uint8_t  pin;                                         // Ножка куда прицеплено реле
    char *note;                                           // наименование реле
    char *name;                                           // Имя реле
@@ -265,10 +267,10 @@ public:
   int8_t Start();                                        // Запуск ЭРВ - начало алгоритма отслеживания - параметр текущее время
   void Pause(){fPause=true;}                             // Пауза ЭРВ - останов отслеживания
   void Resume(uint16_t pos);                             // Пауза ЭРВ - возобновление отслеживания
-  int8_t Update(int16_t teva, int16_t tcon);             // Обновление ЭРВ - одна итерация алгоритма отслеживания на входе
+  int8_t Update(void);			             			// Обновление ЭРВ - одна итерация алгоритма отслеживания на входе
   boolean isWork();                                      // Получить состояние ЭРВ
   int16_t get_Overheat(){return Overheat;}               // Получить текущий перегрев
-  int16_t set_Overheat(int16_t rto,int16_t out, int16_t in, int16_t p); // Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
+  int16_t set_Overheat(boolean fHeating); 				// Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
   void   CorrectOverheat(void);							 // Корректировка перегрева
   void 	 CorrectOverheatInit(void);						 // Перед стартом компрессора
 

@@ -66,6 +66,9 @@ struct type_motoHour
   uint32_t Z2;      // Резервный параметр 2
 };
 
+// Рабочие флаги ТН
+#define fHP_SunActive 		0				// Солнечный контур активен
+
 //  Работа с отдельными флагами type_optionHP
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
 #define fBeep               1               // флаг Использование звука
@@ -173,7 +176,7 @@ class HeatPump
     void initHeatPump();                                     // Конструктор
     // Информационные функции определяющие состояние ТН
      __attribute__((always_inline)) inline MODE_HP get_modWork()     {return Status.modWork;}  // (переменная) Получить что делает сейчас ТН [0-Пауза 1-Включить отопление 2-Включить охлаждение 3-Включить бойлер 4-Продолжаем греть отопление 5-Продолжаем охлаждение 6-Продолжаем греть бойлер]
-     __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}    // (переменная) Получить состяние теплового насоса [1 Стартует 2 Останавливается  3 Работает 4 Ожидание ТН (расписание - пустое место) 5 Ошибка ТН  6 - Эта ошибка возникать не должна!]
+     __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}    // (переменная) Получить состяние теплового насоса [1 Стартует 2 Останавливается  3 Работает 4 Ожидание ТН (расписание - пустое место) 5 Ошибка ТН 6 - Эта ошибка возникать не должна!]
      __attribute__((always_inline)) inline int8_t get_ret()          {return Status.ret;}      // (переменная) Точка выхода из алгоритма регулирования (причина (условие) нахождения в текущем положении modWork)
     __attribute__((always_inline)) inline  MODE_HP get_modeHouse()   {return Prof.SaveON.mode;}// (настройка) Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!  
   
@@ -445,6 +448,8 @@ class HeatPump
 
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
+    void Sun_OFF(void);					  // Выключить СК
+    uint8_t flags;						  // Рабочие флаги ТН
 
     int16_t get_temp_condensing(void);	    // Расчитать температуру конденсации
     int16_t get_temp_evaporating(void);		// Получить температуру кипения
@@ -452,6 +457,8 @@ class HeatPump
     int8_t	Prepare_Temp(uint8_t bus);		// Запуск преобразования температуры
     // Настройки опций
     type_optionHP Option;                  // Опции теплового насоса
+
+    uint32_t time_Sun_ON;                 // время включение солнечного коллектора
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
