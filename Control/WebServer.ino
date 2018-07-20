@@ -656,6 +656,10 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        {
    		_ftoa(strReturn, HP.powerCO/1000.0,3); strcat(strReturn,"&"); continue;
        }
+    if (strcmp(str,"get_PowerGEO") == 0)
+       {
+   		_ftoa(strReturn, HP.powerGEO/1000.0,3); strcat(strReturn,"&"); continue;
+       }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
@@ -759,6 +763,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 			#endif
     	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
 			#ifdef TRTOUT
+    			strcat(strReturn,"0&");
+			#else
+    			strcat(strReturn,"1&");
+			#endif
+    	} else if(strcmp(str, "sun") == 0) { // hide: SUN
+			#ifdef USE_SUN_COLLECTOR
     			strcat(strReturn,"0&");
 			#else
     			strcat(strReturn,"1&");

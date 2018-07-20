@@ -480,17 +480,13 @@ void devRelay::initRelay(int sensor)
 
 
 // Установить реле в состояние r, базовая функция все остальные функции используют ее
-// Если состояния совпадают то ничего не делаем
-int8_t devRelay::set_Relay(boolean r)    
+// Если состояния совпадают то ничего не делаем, (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
+int8_t devRelay::set_Relay(int8_t r)
 {
-  if((flags&0x01)==0) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
-  if(number == PUMP_OUT) {
-	  flags &= ~(1<<fR_Request_OFF);
-	  if(!r && GETBIT(HP.flags, fHP_SunActive)) {  	// Если выкл и работает солнечный контур, то не выключаем
-		  flags |= (1<<fR_Request_OFF);
-		  return OK;
-	  }
-  }
+  if(!(flags & (1<<fPresent))) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
+  if(r == 0) r = -1;
+  flags = (flags & ~(1<<abs(r))) | ((r > 0)<<abs(r));
+  r = (flags & fR_StatusMask) != 0;
   if(Relay==r) return OK;                              // Ничего менять не надо выходим
  // if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
  #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
@@ -516,13 +512,6 @@ int8_t devRelay::set_Relay(boolean r)
   return OK;
 }
 
-// ПЕРЕГРУЗКА Установить реле в состояние r на входе int 0 и 1
-int8_t devRelay::set_Relay(int16_t r)    
-{
-  if (r==0) set_OFF();
-  else if (r==1) set_ON();
-  return OK;  // Не верный параметр на входе ничего не делаем
-}
 // ------------------------------------------------------------------------------------------
 // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ---------------------------------------- --------
  #ifdef EEV_DEF     

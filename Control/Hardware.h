@@ -227,16 +227,17 @@ private:
 // ------------------------------------------------------------------------------------------
 // И С П О Л Н И Т Е Л Ь Н Ы Е   У С Т Р О Й С Т В А   --------------------------------------
 // ------------------------------------------------------------------------------------------
-#define fR_Request_OFF		1			// Запрос на выключение от основного алгоритма
+#define fR_StatusMain		1			// b1: Состояние Вкл/Выкл основного алгоритма
+#define fR_StatusSun		2			// b2: Состояние Вкл/Выкл Солнечного Коллектора
+#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun))	// битовая маска
 
 class devRelay
 {
 public:
   void initRelay(int sensor);                            // Инициализация реле
-  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay((boolean)true);}    // Включить реле
-  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay((boolean)false);}   // Выключить реле
-  int8_t  set_Relay(boolean r);                          // Установить реле в состояние r
-  int8_t  set_Relay(int16_t r);                          // Установить реле в состояние r
+  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay(1);}    // Включить реле
+  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay(0);}   // Выключить реле
+  int8_t  set_Relay(int8_t r);                           // Установить реле в состояние (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
   __attribute__((always_inline)) inline boolean get_Relay(){return Relay;}                    // Прочитать состояние реле
   int8_t  get_pinD(){return pin;}                        // Получить ногу куда прицеплено реле
   char*   get_note(){return note;}                       // Получить наименование реле
@@ -244,9 +245,9 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void set_testMode(TEST_MODE t){testMode=t;}            // Установить значение текущий режим работы
+  byte flags;                                           // флаги  0 - наличие реле, 1 -
 private:
    uint8_t number;										// Номер массива реле
-   byte flags;                                           // флаги  0 - наличие реле, 1 -
    boolean Relay;                                        // Состояние реле
    TEST_MODE testMode;                                   // Значение режима тестирования
    uint8_t  pin;                                         // Ножка куда прицеплено реле

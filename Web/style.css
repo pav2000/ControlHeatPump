@@ -133,6 +133,9 @@ body.test #get_listrelay span{display:none}
 .visualization #get_flow-flowcon	{margin-top: 280px;margin-left: 690px;}.visualization #get_flow-flowcon:after{margin-left:3px;content:"м³ч";}
 .visualization #get_overcool		{margin-top: 358px;margin-left: 575px;}.visualization #get_overcool:before{content:"Δ";}
 .visualization #get_relay-rboiler	{margin-top: 102px;margin-left: 743px;}.visualization #get_relay-rboiler:after{content:""}
+.visualization #get_relay-rsun		{margin-top: 73px;margin-left: 15px;}.visualization #get_relay-rsun:after{content:""}
+.visualization #get_temp-tsun		{margin-top: 85px;margin-left: 115px;}
+.visualization #get_temp-tsunoutg	{margin-top: 167px;margin-left: 20px;}
 
 .cd-accordion-menu input[type=checkbox] {	position: absolute;	opacity: 0;}
 .cd-accordion-menu label, .cd-accordion-menu a {position: relative;	display: block;}

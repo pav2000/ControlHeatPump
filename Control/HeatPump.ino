@@ -358,16 +358,16 @@ x_Error:
 		// массивы, длина структуры должна быть меньше 128 байт, <size[1]><<number>struct>
 		uint8_t n = buffer[1]; // номер элемента
 		if(type == SAVE_TYPE_sTemp) { // первый в структуре идет номер датчика
-			if(n < TNUMBER) { load_struct(sTemp[n].get_save_addr(), &buffer, sTemp[n].get_save_size());	sTemp[n].after_load(); }
+			if(n < TNUMBER) { load_struct(sTemp[n].get_save_addr(), &buffer, sTemp[n].get_save_size());	sTemp[n].after_load(); } else goto xSkip;
 		} else if(type == SAVE_TYPE_sADC) {
-			if(n < ANUMBER) load_struct(sADC[n].get_save_addr(), &buffer, sADC[n].get_save_size());
+			if(n < ANUMBER) load_struct(sADC[n].get_save_addr(), &buffer, sADC[n].get_save_size()); else goto xSkip;
 		} else if(type == SAVE_TYPE_sInput) {
-			if(n < INUMBER) load_struct(sInput[n].get_save_addr(), &buffer, sInput[n].get_save_size());
+			if(n < INUMBER) load_struct(sInput[n].get_save_addr(), &buffer, sInput[n].get_save_size()); else goto xSkip;
 		} else if(type == SAVE_TYPE_sFrequency) {
-			if(n < FNUMBER) load_struct(sFrequency[n].get_save_addr(), &buffer, sFrequency[n].get_save_size());
+			if(n < FNUMBER) load_struct(sFrequency[n].get_save_addr(), &buffer, sFrequency[n].get_save_size()); else goto xSkip;
 #ifdef SENSOR_IP
 		} else if(type == SAVE_TYPE_sIP) {
-			if(n < IPNUMBER) { load_struct(sIP[n].get_save_addr(), &buffer, sIP[n].get_save_size()); sIP[n].after_load(); }
+			if(n < IPNUMBER) { load_struct(sIP[n].get_save_addr(), &buffer, sIP[n].get_save_size()); sIP[n].after_load(); } else goto xSkip;
 #endif
 		// не массивы <size[1|2]><struct>
 #ifdef EEV_DEF
@@ -385,7 +385,7 @@ x_Error:
 		} else if(type == SAVE_TYPE_END) {
 			break;
 		} else {
-			load_struct(NULL, &buffer, 0); // skip unknown type
+xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 		}
 	}
 #ifdef SENSOR_IP
@@ -420,7 +420,7 @@ int8_t HeatPump::save_motoHour()
 	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
 	{
 		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR save countes and OnOff #%d\n", i);
+		journal.jprintf(" ERROR %d save counters and OnOff #%d\n", flag, i);
 		_delay(i * 50);
 	}
 	if(flag) {
@@ -1558,9 +1558,9 @@ return true;
 void HeatPump::relayAllOFF()
 {
   uint8_t i;
+  journal.jprintf(" All relay off\n");
   for(i=0;i<RNUMBER;i++)  dRelay[i].set_OFF();         // Выключить все реле;
   onBoiler=false;                                     // выключить признак нагрева бойлера
-  journal.jprintf(" All relay off\n");
 }                               
 // Поставить 4х ходовой в нужное положение для работы в заваисимости от Prof.SaveON.mode
 // функция сама определяет что делать в зависимости от режима
@@ -1986,7 +1986,8 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
   {
     vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
-    journal.jprintf(" Stop task vUpdate\n"); 
+    journal.jprintf(" Stop task vUpdate\n");
+	Sun_OFF();											// Выключить СК
   }
     
   if(startPump)
@@ -3473,8 +3474,7 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 void HeatPump::calculatePower()
 {
 #ifdef  FLOWCON 
-	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (abs(FEED-RET))
-				* (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
+	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (FEED-RET) * (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
 #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
 #ifdef RHEAT
 	if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
@@ -3485,9 +3485,7 @@ void HeatPump::calculatePower()
 #endif
 
 #ifdef  FLOWEVA 
-	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (abs(
-			sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())) * (float) sFrequency[FLOWEVA].get_Value()
-			/ sFrequency[FLOWEVA].get_kfCapacity();
+	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()) * (float) sFrequency[FLOWEVA].get_Value() / sFrequency[FLOWEVA].get_kfCapacity();
 #else
 	powerGEO=0.0;
 #endif
@@ -3496,5 +3494,15 @@ void HeatPump::calculatePower()
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
+#endif
+}
+
+void HeatPump::Sun_OFF(void)
+{
+#ifdef USE_SUN_COLLECTOR
+	dRelay[RSUN].set_Relay(-fR_StatusSun);
+	dRelay[PUMP_OUT].set_Relay(-fR_StatusSun);
+	flags &= ~(1<<fHP_SunActive);
+	time_Sun_ON = 0;
 #endif
 }
