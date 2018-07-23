@@ -1906,14 +1906,14 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(" EEV init\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
+		dEEV.CorrectOverheatInit();
 #endif
 
 		journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else  startChart();                                      // Запустить графики
 	}
-	dEEV.CorrectOverheatInit();
-
+	
 	// 4. Определяем что нужно делать -----------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 	else  mod=get_Work();                                   // определяем что делаем с компрессором
@@ -3412,12 +3412,17 @@ void HeatPump::UpdateStatistics()
 // Температура конденсации
 int16_t HeatPump::get_temp_condensing(void)
 {
+#ifdef EEV_DEF  
 	if(sADC[PCON].get_present()) {
 		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
 	} else {
 		return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C
 	}
-}
+#else
+  return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C 
+#endif
+ 
+}    
 
 // Переохлаждение
 int16_t HeatPump::get_overcool(void)
@@ -3428,12 +3433,16 @@ int16_t HeatPump::get_overcool(void)
 // Кипение
 int16_t HeatPump::get_temp_evaporating(void)
 {
+#ifdef EEV_DEF
 	if(sADC[PEVA].get_present()) {
 		return PressToTemp(sADC[PEVA].get_Press(), dEEV.get_typeFreon());
 	} else {
 		return 0; // Пока не поддерживается
 	}
-}
+#else
+ return 0;  // ЭРВ нет
+#endif 
+}  
 
 // Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок
 int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
