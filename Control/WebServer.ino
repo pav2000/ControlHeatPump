@@ -902,7 +902,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        
     if (strcmp(str,"CONST1")==0)   // Команда CONST1 Информация очень большая по этому разбито на 2 запроса CONST CONST1
        {
-       
        // i2c
        strcat(strReturn,"I2C_SPEED|Частота работы шины I2C (кГц)|"); _itoa(I2C_SPEED/1000,strReturn); strcat(strReturn,";");
        strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
@@ -911,7 +910,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков + DELAY_DS1820 (мсек)|");_itoa(TIME_READ_SENSOR+cDELAY_DS1820,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_CONTROL|Период управления тепловым насосом (мсек)|");_itoa(TIME_CONTROL,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_EEV|Период управления ЭРВ (мсек)|");_itoa(TIME_EEV,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"TIME_WEB_SERVER|Период опроса web сервера "); strcat(strReturn,nameWiznet);strcat(strReturn," (мсек)|");_itoa(TIME_WEB_SERVER,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"TIME_WEB_SERVER|Период опроса web сервера (мсек)"); strcat(strReturn,nameWiznet);strcat(strReturn," (мсек)|");_itoa(TIME_WEB_SERVER,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_COMMAND|Период разбора команд управления ТН (мсек)|");_itoa(TIME_COMMAND,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (сек)|");_itoa(TIME_I2C_UPDATE,strReturn);strcat(strReturn,";");
        // Датчики
@@ -919,8 +918,12 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
        strcat(strReturn,"PRESS_FREQ|Частота опроса датчика давления (Гц)|");_itoa(PRESS_FREQ,strReturn);strcat(strReturn,";");
        strcat(strReturn,"FILTER_SIZE|Длина фильтра датчика давления (отсчеты)|");_itoa(FILTER_SIZE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями|");_ftoa(strReturn,(float)GAP_TEMP_VAL/100.0,2);strcat(strReturn,";");
-       strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры|");_ftoa(strReturn,(float)MAX_TEMP_ERR/100.0,2);strcat(strReturn,";");
+       strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_ftoa(strReturn,(float)GAP_TEMP_VAL/100.0,2);strcat(strReturn,";");
+       strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn,(float)MAX_TEMP_ERR/100.0,2);strcat(strReturn,";");
+       // SALLMONELA
+       strcat(strReturn,"SALLMONELA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALLMONELA_DAY,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"SALLMONELA_HOUR|Час когда начинаятся обеззарживание ГВС|");_itoa(SALLMONELA_HOUR,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"SALLMONELA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_ftoa(strReturn,(float)SALLMONELA_TEMP/100.0,2);strcat(strReturn,";");
        // ЭРВ
        #ifdef EEV_DEF
        strcat(strReturn,"EEV_STEPS|Максимальное число шагов ЭРВ|");_itoa(EEV_STEPS,strReturn);strcat(strReturn,";");
