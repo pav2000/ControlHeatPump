@@ -3421,8 +3421,7 @@ int16_t HeatPump::get_temp_condensing(void)
 #else
   return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C 
 #endif
- 
-}    
+}
 
 // Переохлаждение
 int16_t HeatPump::get_overcool(void)
@@ -3441,8 +3440,8 @@ int16_t HeatPump::get_temp_evaporating(void)
 	}
 #else
  return 0;  // ЭРВ нет
-#endif 
-}  
+#endif
+}
 
 // Возвращает 0 - Нет ошибок или ни одного активного датчика, 1 - ошибка, 2 - превышен предел ошибок
 int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
@@ -3498,12 +3497,13 @@ void HeatPump::calculatePower()
 #else
 	powerGEO=0.0;
 #endif
-
+if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 	COP = dFC.get_power();
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 #endif
+} else { COP=0; fullCOP=0; }
 }
 
 void HeatPump::Sun_OFF(void)
