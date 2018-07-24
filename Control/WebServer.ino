@@ -2238,7 +2238,7 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
  
               // ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
               if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
-                 { if (HP.dRelay[p].set_Relay((int16_t)pm)==OK)    // Установить значение
+                 { if (HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual)==OK)    // Установить значение
                    { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
                    else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
                   }
