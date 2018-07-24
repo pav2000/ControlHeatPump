@@ -275,12 +275,10 @@ void readFileSD(char *filename,uint8_t thread)
 // Разбор и обработка строк запросов buf (начало &) входная строка strReturn выходная
 // ТОЛЬКО запросы!
 // возвращает число обработанных одиночных запросов
-int parserGET(char *buf, char *strReturn, int8_t sock)
+void parserGET(char *buf, char *strReturn, int8_t sock)
 { 
    
   char *str,*x,*y, *z;
-  int count=0;
-  int p=-1;
   float pm=0;
   int8_t i;
   // переменные для удаленных датчиков
@@ -295,7 +293,6 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
   strstr(buf,"&&")[1]=0;   // Обрезать строку после комбинации &&
   while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
    {
-   count++;
    if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
      {
       strcat(strReturn,str); strcat(strReturn,"="); 
@@ -1148,11 +1145,20 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
           for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
           strcat(strReturn,"&") ;    continue;
          } 
-        if (strcmp(str,"get_listTemp")==0)     // Функция get_listTemp
-         {
-          for(i=0;i<TNUMBER;i++) if (HP.sTemp[i].get_present()){strcat(strReturn,HP.sTemp[i].get_name());strcat(strReturn,";");}
-          strcat(strReturn,"&") ;    continue;
-         } 
+        if(strcmp(str, "get_listTemp") == 0) // Возвращает список датчиков через ";"
+        {
+        	for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
+        	strcat(strReturn, "&"); continue;
+        }
+        if(strncmp(str, "get_tblTemp", 11) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
+        {
+        	uint8_t m = atoi(str + 11);
+        	for(i = 0; i < TNUMBER; i++)
+        		if((HP.sTemp[i].get_cfg_flags() & (1<<m))) {
+        			strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
+        		}
+        	strcat(strReturn, "&"); continue;
+        }
         if (strcmp(str,"get_listInput")==0)     // Функция get_listInput
          {
           for(i=0;i<INUMBER;i++) if (HP.sInput[i].get_present()){strcat(strReturn,HP.sInput[i].get_name());strcat(strReturn,";");}
@@ -1813,121 +1819,122 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
 
        if(pm==ATOF_ERROR) { strcat(strReturn,"E04");strcat(strReturn,"&");continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
 
-       p = -1;
-       x++;
-       for(i=0; i<TNUMBER; i++) if(strcmp(x,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
-       if(p==-1)  {for(i=0;i<ANUMBER;i++) if(strcmp(x,HP.sADC[i].get_name())==0) {p=100+i; break;}} // Поиск среди имен смещение 100
-       if(p==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=200+i; break;}} // Поиск среди имен смещение 200
-       if(p==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=300+i; break;}} // Частотные датчики смещение 300
-       if(p==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x,HP.dRelay[i].get_name())==0) {p=400+i; break;}} // Реле
-       if(p==-1)  { strcat(strReturn,"E02");strcat(strReturn,"&");  continue; }  // Не верный параметр
+       { // Массивы датчиков
+    	   int16_t p = -1;
+    	   x++;
+    	   for(i=0; i<TNUMBER; i++) if(strcmp(x,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
+    	   if(p==-1)  {for(i=0;i<ANUMBER;i++) if(strcmp(x,HP.sADC[i].get_name())==0) {p=100+i; break;}} // Поиск среди имен смещение 100
+    	   if(p==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=200+i; break;}} // Поиск среди имен смещение 200
+    	   if(p==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=300+i; break;}} // Частотные датчики смещение 300
+    	   if(p==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x,HP.dRelay[i].get_name())==0) {p=400+i; break;}} // Реле
+    	   if(p==-1)  { strcat(strReturn,"E02");strcat(strReturn,"&");  continue; }  // Не верный параметр
 
-       //     x[0]=0;                                                                        // Обрезаем строку до скобки (
-       // Все готово к разбору имен функций c параметром
-       // 1. Датчики температуры смещение param 0
-       if (strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
-        {
-        if(p >= TNUMBER)  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-         else  // параметр верный
-           {
-              if (strcmp(str,"get_Temp")==0)              // Функция get_Temp
-                { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1); 
-                  else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-                  strcat(strReturn,"&"); continue; }
-               if (strcmp(str,"get_rawTemp")==0)           // Функция get_RawTemp
-                { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1); 
-                  else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-                  strcat(strReturn,"&"); continue; }    
-               if (strcmp(str,"get_fullTemp")==0)         // Функция get_FulTemp
-                { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                  { 
-                    #ifdef SENSOR_IP
-                    _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);   // Значение проводного датчика вывод
-                    if((HP.sTemp[p].devIP!=NULL)&& (HP.sTemp[p].devIP->get_fUse())&&(HP.sTemp[p].devIP->get_link()>-1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
-                       {
-                        strcat(strReturn," [");
-                        _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
-                        strcat(strReturn,"]");
-                       }
-                    #else
-                     _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1); 
-                    #endif    
-                  }  
-                  else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-                  strcat(strReturn,"&"); continue; }    
-                
-              if (strcmp(str,"get_minTemp")==0)           // Функция get_minTemp
-                { if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100.0,1); 
-                  else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-                  strcat(strReturn,"&"); continue; }
-                
-              if (strcmp(str,"get_maxTemp")==0)           // Функция get_maxTemp
-                { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                  _ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100.0,1); 
-                  else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-                  strcat(strReturn,"&"); continue; }
-                
-              if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
-                { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
-                               
-              if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
-              {
-            	x_get_aTemp:
-            	  strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
-            	  strcat(strReturn, "&"); continue;
-              }
-                        
-              if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
-                { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
-                
-              if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
-                 { _itoa(HP.sTemp[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
-                 
-              if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
-                 { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); strcat(strReturn,"&"); continue; }
+    	   //     x[0]=0;                                                                        // Обрезаем строку до скобки (
+    	   // Все готово к разбору имен функций c параметром
+    	   // 1. Датчики температуры смещение param 0
+    	   if (strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
+    	   {
+    		   if(p >= TNUMBER)  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   else  // параметр верный
+    		   {
+    			   if (strcmp(str,"get_Temp")==0)              // Функция get_Temp
+    			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
+    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_rawTemp")==0)           // Функция get_RawTemp
+    			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);
+    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_fullTemp")==0)         // Функция get_FulTemp
+    			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    			   {
+#ifdef SENSOR_IP
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);   // Значение проводного датчика вывод
+    				   if((HP.sTemp[p].devIP!=NULL)&& (HP.sTemp[p].devIP->get_fUse())&&(HP.sTemp[p].devIP->get_link()>-1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
+    				   {
+    					   strcat(strReturn," [");
+    					   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
+    					   strcat(strReturn,"]");
+    				   }
+#else
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
+#endif
+    			   }
+    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
-                  {
-                  if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  }
-              if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
-                 { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }    
+    			   if (strcmp(str,"get_minTemp")==0)           // Функция get_minTemp
+    			   { if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100.0,1);
+    			   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-              if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
-              {
-            	  if(HP.sTemp[p].get_fAddress()) _itoa(HP.sTemp[p].get_bus() + 1, strReturn); else strcat(strReturn, "-");
-            	  strcat(strReturn, "&"); continue;
-              }
+    			   if (strcmp(str,"get_maxTemp")==0)           // Функция get_maxTemp
+    			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100.0,1);
+    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-              if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
-            	  _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
-            	  strcat(strReturn,"&");  continue;
-              }
+    			   if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
 
-              // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
-              if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
-                 { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
-                   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&");  continue;  } 
-                    else { strcat(strReturn,"E05&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                 }
-               if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
-                  { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
-                    { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }   
-                    else { strcat(strReturn,"E05&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
+    			   if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
+    			   {
+    				   x_get_aTemp:
+					   strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
+					   strcat(strReturn, "&"); continue;
+    			   }
 
-               if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
-            	   i = str[9] - '0' - 1 + fTEMP_ignory_errors;
-            	   HP.sTemp[p].set_setup_flag(i, int(pm));
-            	   _itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
-            	   strcat(strReturn, "&"); continue;
-               }
+    			   if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
 
-               /*
+    			   if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
+    			   { _itoa(HP.sTemp[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
+    			   { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
+    			   {
+    				   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
+    			   { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }
+
+    			   if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
+    			   {
+    				   if(HP.sTemp[p].get_fAddress()) _itoa(HP.sTemp[p].get_bus() + 1, strReturn); else strcat(strReturn, "-");
+    				   strcat(strReturn, "&"); continue;
+    			   }
+
+    			   if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
+    				   _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
+    				   strcat(strReturn,"&");  continue;
+    			   }
+
+    			   // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
+    			   if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
+    			   { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&");  continue;  }
+    			   else { strcat(strReturn,"E05&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    			   if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
+    			   { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E05&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+
+    			   if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
+    				   i = str[9] - '0' - 1 + fTEMP_ignory_errors;
+    				   HP.sTemp[p].set_setup_flag(i, int(pm));
+    				   _itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
+    				   strcat(strReturn, "&"); continue;
+    			   }
+
+    			   /*
               if (strcmp(str,"set_targetTemp")==0)           // Функция set_targetTemp резрешены не все датчики при этом.
                  {
                   if (p==1) {HP.set_TempTargetIn(pm*100+0.005);  }
@@ -1936,316 +1943,315 @@ int parserGET(char *buf, char *strReturn, int8_t sock)
                        else  strcat(strReturn,"E06");                 // использование имя устанавливаемого параметра «здесь» запрещено
                          strcat(strReturn,"&");  continue;
                  }
-                 */
-               if (strcmp(str,"set_aTemp")==0)        // Функция set_addressTemp
-               {
-            	   uint8_t n = pm;
-            	   if(n <= TNUMBER)                  // Если индекс находится в диапазоне допустимых значений Здесь индекс начинается с 1, ЗНАЧЕНИЕ 0 - обнуление адреса!!
-            	   {
-            		   if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
-            		   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
-            	   }
-            	   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
-            	   goto x_get_aTemp;
-               }  // вернуть адрес
-               else { strcat(strReturn,"E08");strcat(strReturn,"&");   continue;}      // выход за диапазон допустимых номеров, значение не установлено
+    			    */
+    			   if (strcmp(str,"set_aTemp")==0)        // Функция set_addressTemp
+    			   {
+    				   uint8_t n = pm;
+    				   if(n <= TNUMBER)                  // Если индекс находится в диапазоне допустимых значений Здесь индекс начинается с 1, ЗНАЧЕНИЕ 0 - обнуление адреса!!
+    				   {
+    					   if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
+    					   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
+    				   }
+    				   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
+    				   goto x_get_aTemp;
+    			   }  // вернуть адрес
+    			   else { strcat(strReturn,"E08");strcat(strReturn,"&");   continue;}      // выход за диапазон допустимых номеров, значение не установлено
 
-            }  // end else    
-         } //if ((strstr(str,"Temp")>0)
-           
-        // 2.  Датчики аналоговые, давления смещение param 30, ТОЧНОСТЬ СОТЫЕ дипазон 6
-        if (strstr(str,"Press"))          // Проверка для запросов содержащих Press
-          {
-          p -= 100;                             // Убрать смещение
-          if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-          else  // параметр верный
-            {
-              if (strcmp(str,"get_Press")==0)           // Функция get_Press
-              { if (HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
-                {
-                    int16_t x=HP.sADC[p].get_Press();
-                    _ftoa(strReturn,(float)x/100.0,2);
-                    strcat(strReturn," [t:");
-                    #ifdef EEV_DEF
-                    _ftoa(strReturn,(float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0,2);strcat(strReturn,"]");
-                    #else
-                    strcat(strReturn," -.-]");
-                    #endif
-                }
-                else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-              strcat(strReturn,"&"); continue; }
-                  
-              if (strcmp(str,"get_adcPress")==0)           // Функция get_adcPress
-                { _itoa(HP.sADC[p].get_lastADC(),strReturn); strcat(strReturn,"&"); continue; }
-                
-              if (strcmp(str,"get_minPress")==0)           // Функция get_minPress
-                { if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                     x_get_minPress: _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2);
-                  else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-                strcat(strReturn,"&"); continue; }
-                
-               if (strcmp(str,"get_maxPress")==0)           // Функция get_maxPress
-                { if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
-                	 x_get_maxPress: _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2);
-                  else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                strcat(strReturn,"&"); continue; }
-                
-              if (strcmp(str,"get_zeroPress")==0)           // Функция get_zeroTPress
-                { _itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue; }
+    		   }  // end else
+    	   } //if ((strstr(str,"Temp")>0)
 
-               if (strcmp(str,"get_transPress")==0)           // Функция get_transTPress
-                { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue; }
-                  
-              if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
-                {
-				  #ifdef ANALOG_MODBUS
-            	  if(HP.sADC[p].get_fmodbus()) {
-            		  strcat(strReturn,"MB #"); _itoa(ANALOG_MODBUS_REG[p], strReturn);
-            	  } else
-				  #endif
-            	  {
-            		  strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn);
-            	  }
-           		  strcat(strReturn,"&"); continue;
-                }
-                
-              if (strcmp(str,"get_testPress")==0)           // Функция get_testPress
-                { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
+    	   // 2.  Датчики аналоговые, давления смещение param 30, ТОЧНОСТЬ СОТЫЕ дипазон 6
+    	   if (strstr(str,"Press"))          // Проверка для запросов содержащих Press
+    	   {
+    		   p -= 100;                             // Убрать смещение
+    		   if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   else  // параметр верный
+    		   {
+    			   if (strcmp(str,"get_Press")==0)           // Функция get_Press
+    			   { if (HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
+    			   {
+    				   int16_t x=HP.sADC[p].get_Press();
+    				   _ftoa(strReturn,(float)x/100.0,2);
+    				   strcat(strReturn," [t:");
+#ifdef EEV_DEF
+    				   _ftoa(strReturn,(float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0,2);strcat(strReturn,"]");
+#else
+    				   strcat(strReturn," -.-]");
+#endif
+    			   }
+    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"get_errcodePress")==0)           // Функция get_errcodePress
-                 { _itoa(HP.sADC[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_adcPress")==0)           // Функция get_adcPress
+    			   { _itoa(HP.sADC[p].get_lastADC(),strReturn); strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"get_presentPress")==0)           // Функция get_presentPress
-                  {
-                  if (HP.sADC[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  }   
-              if (strcmp(str,"get_notePress")==0)           // Функция get_notePress
-                 { strcat(strReturn,HP.sADC[p].get_note()); strcat(strReturn,"&"); continue; }    
+    			   if (strcmp(str,"get_minPress")==0)           // Функция get_minPress
+    			   { if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    				   x_get_minPress: _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2);
+    			   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-             // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
+    			   if (strcmp(str,"get_maxPress")==0)           // Функция get_maxPress
+    			   { if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
+    				   x_get_maxPress: _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2);
+    			   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    			   strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
-                 { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
-                   {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-              if(strcmp(str, "set_minPress") == 0) {
-            	  if(HP.sADC[p].set_minPress(pm * 100 + 0.005) == OK) goto x_get_minPress;
-            	  else { strcat(strReturn, "E05&");  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-              }
-              if(strcmp(str, "set_maxPress") == 0) {
-            	  if(HP.sADC[p].set_maxPress(pm * 100 + 0.005) == OK) goto x_get_maxPress;
-             	  else {  strcat(strReturn, "E05&"); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-              }
+    			   if (strcmp(str,"get_zeroPress")==0)           // Функция get_zeroTPress
+    			   { _itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue; }
 
-              if (strcmp(str,"set_transPress")==0)           // Функция set_transPress float
-                 { if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
-                   {_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-              
-              if (strcmp(str,"set_zeroPress")==0)           // Функция set_zeroTPress
-                 { if (HP.sADC[p].set_zeroPress((int16_t)pm)==OK)    // Установить значение
-                   {_itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }    
-       
-              }  // end else
-           } //if ((strstr(str,"Press")>0) 
-         
-           
-         //3.  Датчики сухой контакт смещение param 20
-        if (strstr(str,"Input"))          // Проверка для запросов содержащих Input
-          {
-           p -= 200;
-           if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-           else  // параметр верный
-            {
-              if (strcmp(str,"get_Input")==0)           // Функция get_Input
-                  {
-                  if (HP.sInput[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                     { if (HP.sInput[p].get_Input()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  } 
-               if (strcmp(str,"get_presentInput")==0)           // Функция get_presentInput
-                  {
-                  if (HP.sInput[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  } 
-               if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
-                 { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }  
-                 
-               if (strcmp(str,"get_testInput")==0)           // Функция get_testInput
-                  {
-                  if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  }  
+    			   if (strcmp(str,"get_transPress")==0)           // Функция get_transTPress
+    			   { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue; }
 
-               if (strcmp(str,"get_alarmInput")==0)           // Функция get_alarmInput
-                  {
-                  if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  }  
-                if (strcmp(str,"get_errcodeInput")==0)           // Функция get_errcodeInput
-                 { _itoa(HP.sInput[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
-                   
-              if (strcmp(str,"get_pinInput")==0)           // Функция get_pinInput
-                { strcat(strReturn,"D"); _itoa(HP.sInput[p].get_pinD(),strReturn);
-                  strcat(strReturn,"&"); continue; }    
-              if (strcmp(str,"get_typeInput")==0)           // Функция get_pinInput
-                { if (HP.sInput[p].get_present()==true)  // датчик есть в кнфигурации
-                   switch((int)HP.sInput[p].get_typeInput())
-                   {
-                    case pALARM: strcat(strReturn,"Alarm"); break;                // 0 Аварийный датчик, его срабатываение приводит к аварии и останове Тн
-                    case pSENSOR:strcat(strReturn,"Work");  break;                // 1 Обычный датчик, его значение используется в алгоритмах ТН
-                    case pPULSE: strcat(strReturn,"Pulse"); break;                // 2 Импульсный висит на прерывании и считает частоты - выходная величина ЧАСТОТА
-                    default:strcat(strReturn,"err_type"); break;                  // Ошибка??
-                   }
-                   else strcat(strReturn,"none");                                 // датчик отсутвует
-                   strcat(strReturn,"&"); continue; }    
-               if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
-                 { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }    
-                            
+    			   if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
+    			   {
+#ifdef ANALOG_MODBUS
+    				   if(HP.sADC[p].get_fmodbus()) {
+    					   strcat(strReturn,"MB #"); _itoa(ANALOG_MODBUS_REG[p], strReturn);
+    				   } else
+#endif
+    				   {
+    					   strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn);
+    				   }
+    				   strcat(strReturn,"&"); continue;
+    			   }
 
-             // ---- SET ----------------- Для датчиков сухой контакт - запросы на УСТАНОВКУ парметров
-              if (strcmp(str,"set_testInput")==0)           // Функция set_testInput
-                 { if (HP.sInput[p].set_testInput((int16_t)pm)==OK)    // Установить значение
-                   { if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-                  
-              if (strcmp(str,"set_alarmInput")==0)           // Функция set_alarmInput
-                 { if (HP.sInput[p].set_alarmInput((int16_t)pm)==OK)    // Установить значение
-                   { if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-             }  // else end 
-           } //if ((strstr(str,"Input")>0)  
-           
-          // 4 Частотные датчики ДАТЧИКИ ПОТОКА
-           if (strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
-          {
-       	   p -= 300;
-           if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-           else  // параметр верный
-            {
-               if (strcmp(str,"get_Flow")==0)           // Функция get_Flow
-                  {
-                  if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_Value()/1000.0,3); 
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }
-               if (strcmp(str,"get_frFlow")==0)           // Функция get_frFlow
-                  {
-                  if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_Frequency()/1000.0,3); 
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }
-             if (strcmp(str,"get_minFlow")==0)           // Функция get_minFlow
-                  {
-                  if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1);
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }
-            if (strcmp(str,"get_kfFlow")==0)           // Функция get_kfFlow
-                  {
-                  if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2);
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }
-            if (strcmp(str,"get_capacityFlow")==0)           // Функция get_capacityFlow
-                  {
-                  if (HP.sFrequency[p].get_present())        // Если датчик есть в конфигурации то выводим значение
-                   _itoa(HP.sFrequency[p].get_Capacity(),strReturn); 
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }                  
-            if (strcmp(str,"get_testFlow")==0)           // Функция get_testFlow
-                  {
-                  if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); 
-                   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-                  strcat(strReturn,"&") ;    continue;
-                  }      
-            if (strcmp(str,"get_pinFlow")==0)              // Функция get_pinFlow
-                { strcat(strReturn,"D"); _itoa(HP.sFrequency[p].get_pinF(),strReturn);
-                  strcat(strReturn,"&"); continue; } 
-            if (strcmp(str,"get_errcodeFlow")==0)           // Функция get_errcodeFlow
-                { _itoa(HP.sFrequency[p].get_lastErr(),strReturn);
-                  strcat(strReturn,"&"); continue; } 
-            if (strcmp(str,"get_noteFlow")==0)               // Функция get_noteFlow
-                 { strcat(strReturn,HP.sFrequency[p].get_note()); strcat(strReturn,"&"); continue; }   
+    			   if (strcmp(str,"get_testPress")==0)           // Функция get_testPress
+    			   { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
 
-            if (strcmp(str,"get_checkFlow")==0)
-               { _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_errcodePress")==0)           // Функция get_errcodePress
+    			   { _itoa(HP.sADC[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
 
-            // ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
-            if (strcmp(str,"set_minFlow")==0) {           // Функция set_testPress
-          	  HP.sFrequency[p].set_minValue(pm);
-              _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); strcat(strReturn,"&"); continue;
-            }
+    			   if (strcmp(str,"get_presentPress")==0)           // Функция get_presentPress
+    			   {
+    				   if (HP.sADC[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_notePress")==0)           // Функция get_notePress
+    			   { strcat(strReturn,HP.sADC[p].get_note()); strcat(strReturn,"&"); continue; }
 
-            if (strcmp(str,"set_checkFlow")==0) {           // Функция set_testPress
-          	  HP.sFrequency[p].set_checkFlow(pm != 0);
-          	  _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue;
-            }
-              if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
-                 { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
-                   {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E35&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-              if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
-                 { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
-                   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); strcat(strReturn,"&"); continue;
-                 }
-              if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
-                 { 
-                   if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение
-                   {  _itoa(HP.sFrequency[p].get_Capacity(),strReturn);  strcat(strReturn,"&"); continue;} 
-                   else { strcat(strReturn,"E35&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }   
-             }  // else end 
-           } //if ((strstr(str,"Flow")>0)          
-           
-          //5.  РЕЛЕ смещение param 36 диапазон 14
-          if (strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
-             {
-        	 p -= 400;
-             if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
-             else  // параметр верный
-               {
-               if (strcmp(str,"get_Relay")==0)           // Функция get_relay
-                  {
-                  if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  } 
-               if (strcmp(str,"get_presentRelay")==0)           // Функция get_presentRelay
-                  {
-                  if (HP.dRelay[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-                  strcat(strReturn,"&") ;    continue;
-                  } 
-               if (strcmp(str,"get_noteRelay")==0)           // Функция get_noteRelay
-                 { strcat(strReturn,HP.dRelay[p].get_note()); strcat(strReturn,"&"); continue; }  
-                 
-               if (strcmp(str,"get_pinRelay")==0)           // Функция get_pinRelay
-                { strcat(strReturn,"D"); _itoa(HP.dRelay[p].get_pinD(),strReturn); strcat(strReturn,"&"); continue; }    
- 
-              // ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
-              if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
-                 { if (HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual)==OK)    // Установить значение
-                   { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; } 
-                   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
-                  }
-              }  // else end 
-          } //if ((strstr(str,"Relay")>0)  5
+    			   // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
+
+    			   if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
+    			   { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
+    			   {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    			   if(strcmp(str, "set_minPress") == 0) {
+    				   if(HP.sADC[p].set_minPress(pm * 100 + 0.005) == OK) goto x_get_minPress;
+    				   else { strcat(strReturn, "E05&");  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    			   if(strcmp(str, "set_maxPress") == 0) {
+    				   if(HP.sADC[p].set_maxPress(pm * 100 + 0.005) == OK) goto x_get_maxPress;
+    				   else {  strcat(strReturn, "E05&"); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+
+    			   if (strcmp(str,"set_transPress")==0)           // Функция set_transPress float
+    			   { if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
+    			   {_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue;}
+    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+
+    			   if (strcmp(str,"set_zeroPress")==0)           // Функция set_zeroTPress
+    			   { if (HP.sADC[p].set_zeroPress((int16_t)pm)==OK)    // Установить значение
+    			   {_itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue;}
+    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+
+    		   }  // end else
+    	   } //if ((strstr(str,"Press")>0)
 
 
+    	   //3.  Датчики сухой контакт смещение param 20
+    	   if (strstr(str,"Input"))          // Проверка для запросов содержащих Input
+    	   {
+    		   p -= 200;
+    		   if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   else  // параметр верный
+    		   {
+    			   if (strcmp(str,"get_Input")==0)           // Функция get_Input
+    			   {
+    				   if (HP.sInput[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    				   { if (HP.sInput[p].get_Input()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_presentInput")==0)           // Функция get_presentInput
+    			   {
+    				   if (HP.sInput[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
+    			   { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str,"get_testInput")==0)           // Функция get_testInput
+    			   {
+    				   if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+
+    			   if (strcmp(str,"get_alarmInput")==0)           // Функция get_alarmInput
+    			   {
+    				   if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_errcodeInput")==0)           // Функция get_errcodeInput
+    			   { _itoa(HP.sInput[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str,"get_pinInput")==0)           // Функция get_pinInput
+    			   { strcat(strReturn,"D"); _itoa(HP.sInput[p].get_pinD(),strReturn);
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_typeInput")==0)           // Функция get_pinInput
+    			   { if (HP.sInput[p].get_present()==true)  // датчик есть в кнфигурации
+    				   switch((int)HP.sInput[p].get_typeInput())
+    				   {
+    				   case pALARM: strcat(strReturn,"Alarm"); break;                // 0 Аварийный датчик, его срабатываение приводит к аварии и останове Тн
+    				   case pSENSOR:strcat(strReturn,"Work");  break;                // 1 Обычный датчик, его значение используется в алгоритмах ТН
+    				   case pPULSE: strcat(strReturn,"Pulse"); break;                // 2 Импульсный висит на прерывании и считает частоты - выходная величина ЧАСТОТА
+    				   default:strcat(strReturn,"err_type"); break;                  // Ошибка??
+    				   }
+    			   else strcat(strReturn,"none");                                 // датчик отсутвует
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
+    			   { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }
+
+
+    			   // ---- SET ----------------- Для датчиков сухой контакт - запросы на УСТАНОВКУ парметров
+    			   if (strcmp(str,"set_testInput")==0)           // Функция set_testInput
+    			   { if (HP.sInput[p].set_testInput((int16_t)pm)==OK)    // Установить значение
+    			   { if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+
+    			   if (strcmp(str,"set_alarmInput")==0)           // Функция set_alarmInput
+    			   { if (HP.sInput[p].set_alarmInput((int16_t)pm)==OK)    // Установить значение
+    			   { if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    		   }  // else end
+    	   } //if ((strstr(str,"Input")>0)
+
+    	   // 4 Частотные датчики ДАТЧИКИ ПОТОКА
+    	   if (strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
+    	   {
+    		   p -= 300;
+    		   if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   else  // параметр верный
+    		   {
+    			   if (strcmp(str,"get_Flow")==0)           // Функция get_Flow
+    			   {
+    				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    					   _ftoa(strReturn,(float)HP.sFrequency[p].get_Value()/1000.0,3);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_frFlow")==0)           // Функция get_frFlow
+    			   {
+    				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    					   _ftoa(strReturn,(float)HP.sFrequency[p].get_Frequency()/1000.0,3);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_minFlow")==0)           // Функция get_minFlow
+    			   {
+    				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    					   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_kfFlow")==0)           // Функция get_kfFlow
+    			   {
+    				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    					   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_capacityFlow")==0)           // Функция get_capacityFlow
+    			   {
+    				   if (HP.sFrequency[p].get_present())        // Если датчик есть в конфигурации то выводим значение
+    					   _itoa(HP.sFrequency[p].get_Capacity(),strReturn);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_testFlow")==0)           // Функция get_testFlow
+    			   {
+    				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    					   _ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3);
+    				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_pinFlow")==0)              // Функция get_pinFlow
+    			   { strcat(strReturn,"D"); _itoa(HP.sFrequency[p].get_pinF(),strReturn);
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_errcodeFlow")==0)           // Функция get_errcodeFlow
+    			   { _itoa(HP.sFrequency[p].get_lastErr(),strReturn);
+    			   strcat(strReturn,"&"); continue; }
+    			   if (strcmp(str,"get_noteFlow")==0)               // Функция get_noteFlow
+    			   { strcat(strReturn,HP.sFrequency[p].get_note()); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str,"get_checkFlow")==0)
+    			   { _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue; }
+
+    			   // ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
+    			   if (strcmp(str,"set_minFlow")==0) {           // Функция set_testPress
+    				   HP.sFrequency[p].set_minValue(pm);
+    				   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); strcat(strReturn,"&"); continue;
+    			   }
+
+    			   if (strcmp(str,"set_checkFlow")==0) {           // Функция set_testPress
+    				   HP.sFrequency[p].set_checkFlow(pm != 0);
+    				   _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue;
+    			   }
+    			   if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
+    			   { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
+    			   {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E35&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    			   if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
+    			   { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
+    			   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); strcat(strReturn,"&"); continue;
+    			   }
+    			   if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
+    			   {
+    				   if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение
+    				   {  _itoa(HP.sFrequency[p].get_Capacity(),strReturn);  strcat(strReturn,"&"); continue;}
+    				   else { strcat(strReturn,"E35&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    		   }  // else end
+    	   } //if ((strstr(str,"Flow")>0)
+
+    	   //5.  РЕЛЕ смещение param 36 диапазон 14
+    	   if (strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
+    	   {
+    		   p -= 400;
+    		   if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   else  // параметр верный
+    		   {
+    			   if (strcmp(str,"get_Relay")==0)           // Функция get_relay
+    			   {
+    				   if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_presentRelay")==0)           // Функция get_presentRelay
+    			   {
+    				   if (HP.dRelay[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
+    				   strcat(strReturn,"&") ;    continue;
+    			   }
+    			   if (strcmp(str,"get_noteRelay")==0)           // Функция get_noteRelay
+    			   { strcat(strReturn,HP.dRelay[p].get_note()); strcat(strReturn,"&"); continue; }
+
+    			   if (strcmp(str,"get_pinRelay")==0)           // Функция get_pinRelay
+    			   { strcat(strReturn,"D"); _itoa(HP.dRelay[p].get_pinD(),strReturn); strcat(strReturn,"&"); continue; }
+
+    			   // ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
+    			   if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
+    			   { if (HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual)==OK)    // Установить значение
+    			   { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
+    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   }
+    		   }  // else end
+    	   } //if ((strstr(str,"Relay")>0)  5
+       } // Массивы датчиков
        
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:    
@@ -2258,8 +2264,7 @@ x_FunctionNotFound:
   strcat(strReturn,"E01");   // Ошибка нет такой команды
   strcat(strReturn,"&") ;
   }
-strcat(strReturn,"&") ; // двойной знак закрытие посылки
-return count;           // сколько найдено запросов
+  strcat(strReturn,"&") ; // двойной знак закрытие посылки
 }
 
 // ===============================================================================================================

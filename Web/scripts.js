@@ -1,7 +1,7 @@
 /* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -122,7 +122,7 @@ function loadParam(paramid, noretry, resultdiv) {
 							if(arr[i] != null && arr[i] != 0) {
 								var reerr = new RegExp('^E');
 								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
-								var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
+								var rei = new RegExp('listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
 								var reo = new RegExp('^scan_');
 								var rep = new RegExp('^get_present|^get_pT');
 								var ret = new RegExp('[(]SCHEDULER[)]');
@@ -137,13 +137,13 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(rec.test(values[0])) type = "const"; 
-								else if(rei.test(values[0])) type = "table"; 
 								else if(res.test(values[0])) type = "select"; // значения
 								else if(reg.test(values[0])) type = "chart"; // график
 								else if(ret.test(values[0])) type = "scheduler"; // расписание бойлера
 								else if(reo.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
+								else if(rei.test(values[0])) type = "table"; 
 								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
@@ -628,6 +628,19 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 
+										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
+											var count = values[1].split(';');
+											content = ""; loadsens = ""; upsens = "";
+											for(var j = 0; j < count.length - 1; j++) {
+												var T = count[j];
+												loadsens += "get_noteTemp(" +T+ "),";
+												upsens += "get_fullTemp(" +T+ "),";
+												T = T.toLowerCase();
+												content += '<tr><td id="get_notetemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											loadParam(loadsens);
+											updateParam(upsens);
 										} else if(values[0] == 'get_listTemp') {
 											content = ""; upsens = ""; loadsens = ""; loadsens2 = "";
 											var tnum = 1;
@@ -652,31 +665,31 @@ function loadParam(paramid, noretry, resultdiv) {
 												}
 												T = T.toLowerCase();
 												content += '<tr>';
-												content += ' <td>' +count[j]+ '</td>';
-												content += ' <td id="get_notetemp-' +T+ '"></td>';
-												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
+												content += '<td>' +count[j]+ '</td>';
+												content += '<td id="get_notetemp-' +T+ '"></td>';
+												content += '<td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
-													content += ' <td id="get_mintemp-' +T+ '">-</td>';
-													content += ' <td id="get_maxtemp-' +T+ '">-</td>';
-													content += ' <td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-													content += ' <td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+													content += '<td id="get_mintemp-' +T+ '">-</td>';
+													content += '<td id="get_maxtemp-' +T+ '">-</td>';
+													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												}	
 												if(tnum == 1) {
-													content += ' <td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
-													content += ' <td id="get_btemp-' +T+ '">-</td>';
-													content += ' <td id="get_estemp-' +T+ '">-</td>';
+													content += '<td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
+													content += '<td id="get_btemp-' +T+ '">-</td>';
+													content += '<td id="get_estemp-' +T+ '">-</td>';
 												} else if(tnum == 2) {
-													content += ' <td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
-													content += ' <td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
-													content += ' <td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
+													content += '<td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
+													content += '<td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
+													content += '<td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
 												}
-												content += ' <td id="get_etemp-' +T+ '">-</td>';
+												content += '<td id="get_etemp-' +T+ '">-</td>';
 												content += '</tr>';
 											}
 											element.innerHTML = content;
-											updateParam(upsens);
 											loadParam(loadsens);
 											loadParam(loadsens2);
+											updateParam(upsens);
 									} else if(values[0] == 'get_listFlow') {
 											content = "";
 											content2 = "";

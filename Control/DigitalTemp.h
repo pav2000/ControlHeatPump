@@ -123,6 +123,7 @@ class sensorTemp
     void     set_address(byte *addr, byte bus);    		// Привязать адрес и номер шины
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
+    uint8_t get_cfg_flags() { return SENSORTEMP[number]; } // Вернуть биты конфигурации (наличие, особенности отображения на веб страницах,)
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline uint8_t get_bus(){ return (setup_flags & fDS2482_bus_mask); } // Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
