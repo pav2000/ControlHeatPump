@@ -34,7 +34,7 @@
 	<script type="text/javascript">
 		window.onload = function() {
 			loadParam("get_Boiler(RESET_HEAT),get_Boiler(RESET_TIME),get_Boiler(CIRCUL_PAUSE),get_Boiler(CIRCUL_WORK),get_Boiler(TEMP_MAX),get_Boiler(PAUSE1),get_Boiler(BOILER_ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADD_HEATING),get_Boiler(SALLMONELA),get_Boiler(CIRCULATION),get_Boiler(DTARGET_DAY),get_Boiler(DTARGET),get_Boiler(TEMP_TARGET),get_Boiler(BOIL_TEMP),get_Boiler(BOIL_DIF),get_Boiler(BOIL_IN),get_Boiler(BOIL_PRO),get_Boiler(BOIL_TIME),get_Boiler(TEMP_RBOILER),get_Boiler(ADD_BOILER),get_Boiler(TURBO_BOILER)");
-			loadParam("get_Boiler(SCHEDULER)");
+			loadParam("get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(SCHEDULER)");
 	};
 	</script>
 </head>
@@ -56,14 +56,26 @@
 		<tr>
 			<td>Включение бойлера</td>
 			<td><input type="checkbox" name="get_boiler-boiler_on" id="get_boiler-boiler_on" onChange="setParam('get_Boiler(BOILER_ON)');" ></td>
-		</tr>		
+		</tr>
 		<tr>
 			<td>Целевая температура бойлера °C [5...90]</td>
 			<td><input id="get_boiler-temp_target" type="number" min="5" max="90" step="0.1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Гистерезис целевой температуры °C [1...20]<sup>1</sup></td>
 			<td><input id="get_boiler-dtarget" type="number" min="0" max="20" step="0.1" value="10"><input id="get_boiler-dtarget2" type="submit" value=">"  onclick="setParam('get_Boiler(DTARGET)');"></td>
+		</tr>
+		<tr>
+			<td>Добавка к целевой температуре по часам, C°</td>
+			<td><input id="get_boiler-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADT)');"></td>
+		</tr>
+		<tr>
+			<td>Начальный час добавки к целевой температуре</td>
+			<td><input id="get_boiler-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADH)');"></td>
+		</tr>
+		<tr>
+			<td>Конечный час добавки к целевой температуре</td>
+			<td><input id="get_boiler-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADEH)');"></td>
 		</tr>
 		<tr>
 			<td><b>Встроенный ТЭН</b></td>
@@ -72,7 +84,7 @@
 		<tr>
 			<td>Ускоренный нагрев бойлера<sup>2</sup></td>
 			<td><input type="checkbox" name="get_boiler-turbo_boiler" id="get_boiler-turbo_boiler" onChange="setParam('get_Boiler(TURBO_BOILER)');" ></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Использование дополнительного ТЭНа для догрева бойлера<sup>3</sup></td>
 			<td>
@@ -93,15 +105,15 @@
 		<tr>
 			<td>Целевая температура подачи °C [30..70]</td>
 			<td><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
-		</tr>	
+		</tr>
 		<tr>
 			<td>Постоянная интегрирования времени (секунды) [5..300]</td>
 			<td><input id="get_boiler-boil_time" type="number" min="5" max="300" step="1" value="0"><input id="get_boiler-boil_time2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Пропорциональная составляющая [0..100]</td>
 			<td><input id="get_boiler-boil_pro" type="number" min="0" max="100" step="1" value="0"><input id="get_boiler-boil_pro2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_PRO)');"></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Интегральная составляющая [0..20]</td>
 			<td><input id="get_boiler-boil_in" type="number" min="0" max="20" step="1" value="0"><input id="get_boiler-boil_in2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_IN)');"></td>
@@ -109,7 +121,7 @@
 		<tr>
 			<td>Дифференциальная составляющая [0..10]</td>
 			<td><input id="get_boiler-boil_dif" type="number" min="0" max="10" step="1" value="0"><input id="get_boiler-boil_dif2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_DIF)');"></td>
-		</tr>					
+		</tr>
 		<tr>
 			<td><b>Опции</b></td>
 			<td></td>
@@ -117,15 +129,15 @@
 		<tr>
 			<td>Работа по расписанию</td>
 			<td><input type="checkbox" name="get_boiler-sch_on" id="get_boiler-sch_on" onChange="setParam('get_Boiler(SCH_ON)');" ></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Работа по расписанию только для ТЭНа</td>
 			<td><input type="checkbox" name="get_boiler-sch_ah" id="get_boiler-sch_ah" onChange="setParam('get_Boiler(SCH_AH)');" ></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Профилактика сальмонеллы (1 раз в неделю)</td>
 			<td><input type="checkbox" name="get_boiler-sallmonela" id="get_boiler-sallmonela" onChange="setParam('get_Boiler(SALLMONELA)');" ></td>
-		</tr>						
+		</tr>
 		<tr>
 			<td>Управление циркуляционным насосом ГВС<sup>4</sup></td>
 			<td><input type="checkbox" name="get_boiler-circulation" id="get_boiler-circulation" onChange="setParam('get_Boiler(CIRCULATION)');" ></td>
@@ -137,7 +149,7 @@
 		<tr>
 			<td>Пауза между включениями насоса циркуляции (минуты) [0...60]<sup>6</sup></td>
 			<td><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_pause2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
-		</tr>				
+		</tr>
 		<tr>
 			<td>При нагреве бойлера сбрасывать "избыточное" тепло систему отопления<sup>7</sup> </td>
 			<td><input type="checkbox" name="get_boiler-reset_heat" id="get_boiler-reset_heat" onChange="setParam('get_Boiler(RESET_HEAT)');" ></td>

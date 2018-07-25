@@ -333,7 +333,7 @@ class HeatPump
    void     set_startTime(uint32_t t){Prof.SaveON.startTime = t;}           // Запомить время включения ТН
    
    // Бойлер ТН
-    int16_t get_boilerTempTarget(){return Prof.Boiler.TempTarget;}          // Получить целевую температуру бойлера
+    int16_t get_boilerTempTarget();					          // Получить целевую температуру бойлера с учетом корректировки
     boolean get_Circulation(){return GETBIT(Prof.Boiler.flags,fCirculation);} // Нужно ли управлять циркуляционным насосом болйлера
     uint16_t get_CirculWork(){ return Prof.Boiler.Circul_Work; }            // Время  работы насоса ГВС секунды (fCirculation)
     uint16_t get_CirculPause(){ return Prof.Boiler.Circul_Pause;}           // Пауза в работе насоса ГВС  секунды (fCirculation)

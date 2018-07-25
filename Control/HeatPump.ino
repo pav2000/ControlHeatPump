@@ -1422,16 +1422,22 @@ void HeatPump::updateNextion()
 
 int16_t HeatPump::get_targetTempCool()
 {
-  if (get_ruleCool()==pHYBRID) return Prof.Cool.Temp1;  
-  if(!(GETBIT(Prof.Cool.flags,fTarget))) return Prof.Cool.Temp1; 
-  else  return Prof.Cool.Temp2;
+	if(get_ruleCool() == pHYBRID) return Prof.Cool.Temp1;
+	if(!(GETBIT(Prof.Cool.flags, fTarget))) return Prof.Cool.Temp1;
+	else return Prof.Cool.Temp2;
 }
 
-int16_t  HeatPump::get_targetTempHeat()
+int16_t HeatPump::get_targetTempHeat()
 {
-  if (get_ruleHeat()==pHYBRID) return Prof.Heat.Temp1;  
-  if(!(GETBIT(Prof.Heat.flags,fTarget))) return Prof.Heat.Temp1;
-  else  return Prof.Heat.Temp2;
+	int16_t T;
+	if(get_ruleHeat() == pHYBRID) T = Prof.Heat.Temp1;
+	else if(!(GETBIT(Prof.Heat.flags, fTarget))) T = Prof.Heat.Temp1;
+	else T = Prof.Heat.Temp2;
+	if(Prof.Heat.add_delta_temp != 0) {
+		int8_t h = rtcSAM3X8.get_hours();
+		if(h >= Prof.Heat.add_delta_hour && h <= Prof.Heat.add_delta_end_hour) T += Prof.Heat.add_delta_temp * 100;
+	}
+	return T;
 }
 
 // Изменить целевую температуру с провекой допустимости значений
@@ -1469,18 +1475,29 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
  // ИЗМЕНИТЬ целевую температуру бойлера с провекой допустимости значений
  int16_t HeatPump::setTempTargetBoiler(int16_t dt)  
  {
-  if ((Prof.Boiler.TempTarget+dt>=5.0*100)&&(Prof.Boiler.TempTarget+dt<=60.0*100))   Prof.Boiler.TempTarget=Prof.Boiler.TempTarget+dt; 
+  if ((Prof.Boiler.TempTarget+dt>=5.0*100)&&(Prof.Boiler.TempTarget+dt<=90.0*100))   Prof.Boiler.TempTarget=Prof.Boiler.TempTarget+dt;
   return Prof.Boiler.TempTarget;     
  }
                                  
 // --------------------------------------------------------------------------------------------------------     
 // ---------------------------------- ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ ТН ------------------------------------------
 // --------------------------------------------------------------------------------------------------------    
-  
+
+ // Получить целевую температуру бойлера с учетом корректировки
+ int16_t HeatPump::get_boilerTempTarget()
+ {
+	 if(Prof.Boiler.add_delta_temp != 0) {
+		int8_t h = rtcSAM3X8.get_hours();
+		if(h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour) return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp * 100;
+	 }
+	 return Prof.Boiler.TempTarget;
+ }
+
  #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
  // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
  boolean HeatPump::boilerAddHeat()
  {
+	 int16_t T = sTemp[TBOILER].get_Temp();
 #ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
 	 if ((GETBIT(Prof.SaveON.flags,fBoilerON))&&(GETBIT(Prof.Boiler.flags,fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
 	 {
@@ -1491,9 +1508,9 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 		 }
 		 if (onSallmonela) {   // Обеззараживание нужно
 			 if (startSallmonela+SALLMONELA_TIME>rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
-				 if (sTemp[TBOILER].get_Temp()<SALLMONELA_TEMP)  return true;// Включить обеззараживание
+				 if (T < SALLMONELA_TEMP)  return true;// Включить обеззараживание
 				 #ifdef SALLMONELA_HARD 
-			    	 else if (sTemp[TBOILER].get_Temp()>SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay();// Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
+			    	 else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay();// Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
 				 #else
 					 else {  // Вариант работы только до достижение темпеартуы и сразу выключение
 					 onSallmonela=false;
@@ -1515,21 +1532,21 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 	 {
 		 if(GETBIT(Prof.Boiler.flags,fTurboBoiler))  // Если турбо режим то повторяем за Тепловым насосом (грет или не греть)
 		 {
-		  if(sTemp[TBOILER].get_Temp()<Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
+		  if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
 //		  else false;                                                              // Турбо отключаем
 		 }
 //		 else // Нет турбо
 //		 {
 			 if(GETBIT(Prof.Boiler.flags,fAddHeating))  // Включен догрев
 			 {
-				 if((sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+				 if((T < get_boilerTempTarget()-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
 				 if((!flagRBOILER)||(onBoiler))  return false; // флажка нет или работет бойлер но догрев не включаем
 				 else  //flagRBOILER==true
 				 {
-					 if(sTemp[TBOILER].get_Temp()<Prof.Boiler.TempTarget)                       // Бойлер ниже целевой темпеартуры надо греть
+					 if(T < get_boilerTempTarget())                       // Бойлер ниже целевой темпеартуры надо греть
 					 {
-						 if(sTemp[TBOILER].get_Temp()>Prof.Boiler.tempRBOILER) return true;      // Включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
-						 if(sTemp[TBOILER].get_Temp()<Prof.Boiler.tempRBOILER-HYSTERESIS_RBOILER) {flagRBOILER=false; return false;}   // температура ниже включения догрева выключаем и сбрасывам флаг необходимости
+						 if(T > Prof.Boiler.tempRBOILER) return true;      // Включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
+						 if(T < Prof.Boiler.tempRBOILER-HYSTERESIS_RBOILER) {flagRBOILER=false; return false;}   // температура ниже включения догрева выключаем и сбрасывам флаг необходимости
 						 else {return true;} // продолжаем греть бойлер
 					 }
 					 else {flagRBOILER=false; return false;}                                    // бойлер выше целевой темпеартуы - цель достигнута - догрев выключаем
@@ -2174,13 +2191,14 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		{
 			journal.jprintf(" Discharge of excess heat %ds...\n", Prof.Boiler.Reset_Time);
 			switchBoiler(false);               // Переключится на ходу на отопление
-			_delay(Prof.Boiler.Reset_Time*1000);  // Сброс требуемое число  минут для системы отопления
+			_delay(Prof.Boiler.Reset_Time*1000);  // Сброс требуемое число секунд
 			journal.jprintf(" Back to heat boiler\n");
 			switchBoiler(true);              // Переключится на ходу на ГВС
 		}
 	}
 
 	Status.ret=pNone;                // Сбросить состояние пида
+	int16_t T = sTemp[TBOILER].get_Temp();
 	// Алгоритм гистерезис для старт стоп
 	if(!dFC.get_present()) // Алгоритм гистерезис для старт стоп
 	{
@@ -2189,14 +2207,14 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (sTemp[TBOILER].get_Temp()>Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		}
 		else
 		{
-			if (sTemp[TBOILER].get_Temp()>Prof.Boiler.TempTarget)   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > get_boilerTempTarget())   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
-		if (sTemp[TBOILER].get_Temp()<(Prof.Boiler.TempTarget-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		if (T < (get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler)                                                           {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
@@ -2208,17 +2226,17 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (sTemp[TBOILER].get_Temp()>Prof.Boiler.tempRBOILER)   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		}
 		else
 		{
-			if (sTemp[TBOILER].get_Temp()>Prof.Boiler.TempTarget)   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > get_boilerTempTarget())   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){Status.ret=pBp10; return pCOMP_NONE;  }  // РАЗГОН частоту не трогаем
-		else if ((sTemp[TBOILER].get_Temp()<(Prof.Boiler.TempTarget-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		else if ((T < (get_boilerTempTarget()-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if ((dFC.isfOnOff())&&(!(onBoiler))) return pCOMP_OFF;                               // компрессор рабатает но ГВС греть не надо  - уходим без изменения состояния
-		//    if (sTemp[TBOILER].get_Temp()<(Prof.Boiler.TempTarget-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		//    if (T<(get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 		// ПИД ----------------------------------
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
 		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
@@ -2252,7 +2270,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler()) { Status.ret=pBp26; return pCOMP_OFF; }     // Уменьшать дальше некуда, выключаем компрессор
 			dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); Status.ret=pBp9;  return pCOMP_NONE;            // Уменьшить частоту
 		}
-		//   else if (((Prof.Boiler.TempTarget-Prof.Boiler.dTemp)>sTemp[TBOILER].get_Temp())&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		//   else if (((get_boilerTempTarget()-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                          // Если компрессор не рабоатет то ничего не делаем и выходим
 
 		else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
@@ -3497,13 +3515,14 @@ void HeatPump::calculatePower()
 #else
 	powerGEO=0.0;
 #endif
-if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
+// позже будет опционально
+//if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 	COP = dFC.get_power();
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 #endif
-} else { COP=0; fullCOP=0; }
+//} else { COP=0; fullCOP=0; }
 }
 
 void HeatPump::Sun_OFF(void)

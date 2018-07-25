@@ -8,6 +8,7 @@
 	<script type="text/javascript">
 		window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
 		loadParam("get_paramHeatHP(DTEMP_DAY),get_paramCoolHP(DTEMP_DAY),get_Temp(TOUT),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_paramCoolHP(DTEMP),get_paramHeatHP(DTEMP),get_paramCoolHP(HP_TIME),get_paramHeatHP(HP_TIME),get_paramCoolHP(HP_PRO),get_paramHeatHP(HP_PRO),get_paramCoolHP(TEMP_IN),get_paramHeatHP(TEMP_IN),get_paramCoolHP(TEMP_OUT),get_paramHeatHP(TEMP_OUT),get_paramCoolHP(PAUSE),get_paramHeatHP(PAUSE),get_paramCoolHP(D_TEMP),get_paramHeatHP(D_TEMP),get_paramCoolHP(HP_IN),get_paramHeatHP(HP_IN),get_paramCoolHP(HP_DIF),get_paramHeatHP(HP_DIF),get_paramCoolHP(K_WEATHER),get_paramHeatHP(K_WEATHER),get_paramCoolHP(WEATHER),get_paramHeatHP(WEATHER),get_paramCoolHP(TEMP_PID),get_paramHeatHP(TEMP_PID),get_paramHeatHP(HFL),get_paramCoolHP(HFL),get_paramHeatHP(SUN),get_paramCoolHP(SUN)");
+		loadParam("get_paramHeatHP(ADT),get_paramHeatHP(ADH),get_paramHeatHP(ADEH)");
 	};
 
 	</script>
@@ -53,6 +54,21 @@
 			<td><input id="get_paramcoolhp-dtemp" type="number" min="0" max="20 step="0.1" value="0"><input id="get_paramCoolHP-dtemp2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(DTEMP)');"></td>
 			<td><input id="get_paramheathp-dtemp" type="number" min="0" max="20" step="0.1" value="0"><input id="get_paramHeatHP-dtemp2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(DTEMP)');"></td>
 		</tr>	
+		<tr>
+			<td>Добавка к целевой температуре по часам, C°</td>
+			<td></td>
+			<td><input id="get_paramheathp-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADT)');"></td>
+		</tr>
+		<tr>
+			<td>Начальный час добавки к целевой температуре</td>
+			<td></td>
+			<td><input id="get_paramheathp-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADH)');"></td>
+		</tr>
+		<tr>
+			<td>Конечный час добавки к целевой температуре</td>
+			<td></td>
+			<td><input id="get_paramheathp-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADEH)');"></td>
+		</tr>
 		<tr>
 			<td><b>ПИД</b></td>
 			<td></td><td></td>
