@@ -222,10 +222,10 @@ const uint16_t  defaultPort=80;
 #define SALLMONELA_DAY    3              // День когда включается алгоритм обеззараживания воды (Понедельник 1 воскресенье 7)
 #define SALLMONELA_HOUR   1              // Час когда включается алгоритм обеззараживания воды (должно быть 0 минут)
 #define SALLMONELA_TEMP   (70*100)       // Температура которая поддерживается для обеззараживания (сотые градуса)
-#define SALLMONELA_TIME   (120*60)       // Максимальная продолжительность цикла (сек), что бы цикл не длился бесконечно при не возможности достижения SALLMONELA_TEMP
-//#define SALLMONELA_HARD                  // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
-#define NIGHT_START_HOUR  23
-#define NIGHT_END_HOUR	  7
+#define SALLMONELA_TIME   (150*60)       // Максимальная продолжительность цикла (сек), что бы цикл не длился бесконечно при не возможности достижения SALLMONELA_TEMP
+//#define SALLMONELA_HARD                // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
+#define NIGHT_START_HOUR  23             // Начало ночного тарифа
+#define NIGHT_END_HOUR	  7              // Окончание точного тарифа
 //#define SALLMONELA_HARD                // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
 //#define COP_ALL_CALC                     // Проводить расчет КОП всегда, если дефайна нет то КОП считается ТОЛЬКО при работающем компрессоре, в паузах ставится 0
 
@@ -775,6 +775,7 @@ const char *hp_HEAT_FLOOR = {"HFL"};          	 // Использование т
 const char *hp_SUN 		 = {"SUN"};          	 // Использование солнечного коллектора
 const char *hp_K_WEATHER = {"K_WEATHER"};        // Коэффициент погодозависимости
 
+// Действуют для отопления и ГВС
 const char *ADD_DELTA_TEMP     = {"ADT"};		// Добавка температуры к установке, в градусах
 const char *ADD_DELTA_HOUR     = {"ADH"};		// Начальный Час добавки температуры к установке
 const char *ADD_DELTA_END_HOUR = {"ADEH"};		// Конечный Час добавки температуры к установке

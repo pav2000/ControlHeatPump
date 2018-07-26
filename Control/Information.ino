@@ -635,8 +635,8 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
 				                    case 2: Heat.Rule=pHYBRID;     return true; break;
 				                    default:Heat.Rule=pHYSTERESIS; return true; break;  
 				                    }  }      else                                                                                                                    
- if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Heat.Temp1=x*100.0+0.005; return true;} else return false;                                       }else             // целевая температура в доме
- if(strcmp(var,ADD_DELTA_TEMP)==0){ Heat.add_delta_temp=x; return true; }else
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))   {Heat.Temp1=x*100.0+0.005; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-30)&&(x<=50))  {Heat.add_delta_temp=x; return true;}else return false; }else                                                      // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
  if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Heat.add_delta_hour=x; return true;} else return false; }else
  if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Heat.add_delta_end_hour=x; return true;} else return false; }else
  if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0+0.005; return true;} else return false;                                      }else             // целевая температура обратки
@@ -721,9 +721,9 @@ if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.fla
 			                       }else 
 if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=90))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевая температура бойлера
                        }else             
-if(strcmp(var,ADD_DELTA_TEMP)==0){ Boiler.add_delta_temp=x; return true; }else
-if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Boiler.add_delta_hour=x; return true;} else return false; }else
-if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; }else
+if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-50)&&(x<=50))  {Boiler.add_delta_temp=x; return true;}else return false; }else         // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
+if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Boiler.add_delta_hour=x; return true;} else return false; }else        // Начальный Час добавки температуры к установке бойлера
+if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; }else    // Конечный Час добавки температуры к установке
 if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=x*100.0; return true;} else return false;            // гистерезис целевой температуры
                        }else      
 if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=x*100.0; return true;} else return false;           // Tемпература подачи максимальная
