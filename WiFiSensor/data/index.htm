@@ -1,0 +1,248 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+ <head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="Cache-Control" content="max-age=3600, must-revalidate">
+  <link rel="stylesheet" type="text/css" href="/style.css">
+  <script type="text/javascript" src="/jquery.knob.js"></script>
+  <script type="text/javascript" src="/function.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Удаленный датчик</title>
+      
+<SCRIPT>
+var xmlHttp=createXmlHttpObject();
+function createXmlHttpObject(){
+ if(window.XMLHttpRequest){
+    xmlHttp=new XMLHttpRequest();
+ }else{
+    xmlHttp=new ActiveXObject('Microsoft.XMLHTTP');
+ }
+ return xmlHttp;
+}
+function process(){
+ if(xmlHttp.readyState==0 || xmlHttp.readyState==4){
+   xmlHttp.open('PUT','xml',true);
+   xmlHttp.onreadystatechange=handleServerResponse;
+   xmlHttp.send(null);
+ }
+ setTimeout('process()',5000);
+}
+function handleServerResponse(){
+ if(xmlHttp.readyState==4 && xmlHttp.status==200){
+   xmlResponse=xmlHttp.responseXML;
+   
+   xmldoc = xmlResponse.getElementsByTagName('temp1');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('temp1').value=message;
+   
+   xmldoc = xmlResponse.getElementsByTagName('temp2');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('temp2').value=message;
+        
+   xmldoc = xmlResponse.getElementsByTagName('time');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('time').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('count');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('count').value=message;
+   
+   xmldoc = xmlResponse.getElementsByTagName('voltage');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('voltage').value=message;
+        
+   xmldoc = xmlResponse.getElementsByTagName('rssid');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('rssid').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('up_time');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('up_time').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('mac_adr');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('mac_adr').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param1');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param1').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param2');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param2').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param3');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param3').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param4');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param4').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param5');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param5').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param6');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param6').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param7');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param7').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param8');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param8').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param9');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param9').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('Param10');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('Param10').value=message;
+
+   xmldoc = xmlResponse.getElementsByTagName('FreeHeap');
+   message = xmldoc[0].firstChild.nodeValue;
+   document.getElementById('FreeHeap').value=message;
+   
+  }
+}
+</script> 
+
+
+
+<script type="text/javascript">
+      
+function restart(submit,texts){
+    if (confirm(texts)) {
+   server = "/restart?device=ok";
+     send_request(submit,server);
+     return true;
+    } else {
+     return false;
+    }
+   }
+
+</script>
+
+</head>
+
+ <body onLoad="process();">
+  <div class="container">
+
+
+ <input type="checkbox" id="nav-toggle" hidden>
+ <nav class="nav">
+ <label for="nav-toggle" class="nav-toggle" onclick></label>
+ <h2 class="logo"> </h2>
+        <ul>
+            <li><a href="/index.htm">Данные с устройства</a>
+            <li><a href="/index.htm">Данные с контроллера</a>
+            <li><a href="/ssid.htm">Подключение к роутеру</a>
+            <li><a href="/ssid_ap.htm">Точка доступа</a>
+            <li><a href="/contrl.htm">Подключение к контроллеру</a>
+            <li><a href="/sensor.htm">Интервал отправки данных</a>
+        </ul>
+    </nav>
+   
+
+<div id="d" class="main" style="text-align:center;">
+  <div></div>
+  <div></div>
+</div>
+
+<script>
+Li();
+setInterval(Li,1000);
+
+function Li() {
+  d = new Date();
+  var month=new Array("января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря");
+  var week=new Array("воскресенье","понедельник","вторник","среда","четверг","пятница","суббота");
+  document.getElementById('d').getElementsByTagName('div')[0].innerHTML=' '+d.getDate()+' '+month[d.getMonth()]+' '+d.getFullYear()+' года, '+week[d.getDay()];
+  document.getElementById('d').getElementsByTagName('div')[1].innerHTML=' '+((d.getHours()<10)?"0":"")+d.getHours()+':'+((d.getMinutes()<10)?"0":"")+d.getMinutes()+':'+((d.getSeconds()<10)?"0":"")+d.getSeconds();
+}
+</script>
+  
+<div class="row" style="text-align:center;">
+
+
+      <section class="page1">
+     
+<h6> </h6> 
+      <div id="5" class="row2" style="text-align:center;">      
+
+<div class="row4">
+<h2>Данные с устройства</h2>
+</div>
+          <div class="main">
+                <div class="col-sm-5">
+
+<div class="col-sm-10">Температура датчика №1 (&deg;C):</div>
+<input type="text" class="form-control4" name="h" id="temp1" value="00" readonly ><br>
+<div class="col-sm-10">Температура датчика №2 (&deg;C):</div>
+<input type="text" class="form-control4" name="h" id="temp2" value="00" readonly ><br>
+<div class="col-sm-10">Время непрерывной работы (Д:Ч:М):</div>
+<input type="text" class="form-control4" name="h" id="up_time" value="00" readonly ><br>
+<div class="col-sm-10">Время с последней отправки (сек.):</div>
+<input type="text" class="form-control4" name="h" id="time" value="00" readonly ><br>
+<div class="col-sm-10">Количество отправленных пакетов:</div>
+<input type="text" class="form-control5" name="h" id="count" value="00" readonly ><br>
+<div class="col-sm-10">Напряжение питания (вольт):</div>
+<input type="text" class="form-control5" name="h" id="voltage" value="00" readonly ><br>
+<div class="col-sm-10">Уровень сигнала WIFI:</div>
+<input type="text" class="form-control5" name="h" id="rssid" value="00" readonly ><br>
+<div class="col-sm-10">Размер свободной памяти:</div>
+<input type="text" class="form-control5" name="h" id="FreeHeap" value="00" readonly ><br>
+<div class="col-sm-11">MAC адрес устройства:</div>
+<input type="text" class="form-control6" name="h" id="mac_adr" value="00" readonly ><br>
+<h2> </h2>
+                </div>
+          </div>   
+
+<div class="row5">
+<h2>Данные с контроллера</h2>
+</div>
+          <div class="main">
+                <div class="col-sm-5">
+
+<div class="col-sm-10">Температура в доме (&deg;C):</div>
+<input type="text" class="form-control4" name="h" id="Param1" value="00" readonly ><br>
+<div class="col-sm-10">Температура на улице (&deg;C):</div>
+<input type="text" class="form-control4" name="h" id="Param2" value="00" readonly ><br>
+<div class="col-sm-10">Температура ГВС (&deg;C):</div>
+<input type="text" class="form-control4" name="h" id="Param3" value="00" readonly ><br>
+<div class="col-sm-10">Текущее значение перегрева (&deg;C):</div>
+<input type="text" class="form-control5" name="h" id="Param8" value="00" readonly ><br>
+<div class="col-sm-10">Частота работы компрессора (Hz):</div>
+<input type="text" class="form-control5" name="h" id="Param9" value="00" readonly ><br>
+<div class="col-sm-10">Состояние работы ТН:</div>
+<input type="text" class="form-control51" name="h" id="Param10" value="00" readonly ><br>
+<div class="col-sm-10">Версия прошивки:</div>
+<input type="text" class="form-control5" name="h" id="Param4" value="00" readonly ><br>
+<div class="col-sm-10">Свободно память (byte):</div>
+<input type="text" class="form-control5" name="h" id="Param5" value="00" readonly ><br>
+<div class="col-sm-10">Загрузка контроллера:</div>
+<input type="text" class="form-control5" name="h" id="Param6" value="00" readonly ><br>
+<div class="col-sm-10">Время непрерывной работы (Д:Ч:М):</div>
+<input type="text" class="form-control5" name="h" id="Param7" value="00" readonly ><br>
+                </div>
+          </div>
+      
+
+  <h6></h6>  
+    
+</section>
+  
+      <section class="page8">          
+ <h6></h6>
+ <div style="text-align:center;">    
+      <input class="form-control3" value="Перезагрузить устройство" onClick="restart(this,'Вы действительно хотите перезагрузить устройство?');" type="submit">
+      </div>
+ </div>
+      </section>
+  </div>
+ </body>
+</html>

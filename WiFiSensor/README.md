@@ -1,6 +1,7 @@
-# Nextion
+# WiFi Sensor
 <img src="https://github.com/pav2000/ControlHeatPump/blob/master/WiFiSensor/Screen/01.jpg"/>
 Автор данного устройства Sheeny.
+
 Удаленное устройство с двумя удаленными датчиками температуры, экраном и web интерфейсом для настроек.
 Устройство реализовано на ESP8266. В качестве датчиков используются ds18b20. Экран - OLED 0.96 128x64 по протоколу i2C.
 
