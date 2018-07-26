@@ -1,4 +1,5 @@
 # Nextion
+В этой директории лежит все что касается дисплея Nextion. Это не обязательное оборудование!<br>
 <img src="https://github.com/pav2000/ControlHeatPump/blob/master/Nextion/Screen/00.jpg"/>
 Автор данного устройства Sheeny.
 
