@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+ <head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="/style.css">
+  <script type="text/javascript" src="/jquery.knob.js"></script>
+<script type="text/javascript" src="/function.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Удаленный датчик</title>
+      
+<script type="text/javascript">
+
+function set_contrl(submit){
+    server = "/Contrl?host="+val('host')+"&httpPort="+encodeURIComponent(val('httpPort'));
+    send_request(submit,server);
+    alert("Для сохранения изменений перезагрузите устройство.");
+   }
+function set_login(submit){
+    server = "/Login?login="+val('login')+"&pass="+encodeURIComponent(val('pass'));
+    send_request(submit,server);
+    alert("Для сохранения изменений перезагрузите устройство.");
+   }
+
+function restart(submit,texts){
+    if (confirm(texts)) {
+   server = "/restart?device=ok";
+     send_request(submit,server);
+     return true;
+    } else {
+     return false;
+    }
+   }
+
+
+</script>
+
+</head>
+
+ <body onload="load();">
+  <div class="container">
+
+
+ <input type="checkbox" id="nav-toggle" hidden>
+ <nav class="nav">
+ <label for="nav-toggle" class="nav-toggle" onclick></label>
+ <h2 class="logo"> </h2>
+        <ul>
+            <li><a href="/index.htm">Данные с устройства</a>
+            <li><a href="/index.htm">Данные с контроллера</a>
+            <li><a href="/ssid.htm">Подключение к роутеру</a>
+            <li><a href="/ssid_ap.htm">Точка доступа</a>
+            <li><a href="/contrl.htm">Подключение к контроллеру</a>
+            <li><a href="/sensor.htm">Интервал отправки данных</a>
+        </ul>
+    </nav>
+   
+
+<div id="d" class="main" style="text-align:center;">
+  <div></div>
+  <div></div>
+</div>
+
+<script>
+Li();
+setInterval(Li,1000);
+
+function Li() {
+  d = new Date();
+  var month=new Array("января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря");
+  var week=new Array("воскресенье","понедельник","вторник","среда","четверг","пятница","суббота");
+  document.getElementById('d').getElementsByTagName('div')[0].innerHTML=' '+d.getDate()+' '+month[d.getMonth()]+' '+d.getFullYear()+' года, '+week[d.getDay()];
+  document.getElementById('d').getElementsByTagName('div')[1].innerHTML=' '+((d.getHours()<10)?"0":"")+d.getHours()+':'+((d.getMinutes()<10)?"0":"")+d.getMinutes()+':'+((d.getSeconds()<10)?"0":"")+d.getSeconds();
+}
+</script>
+  
+   <div class="row" style="text-align:center;">
+
+
+      <section class="page5">
+     
+<h6> </h6> 
+<div id="5" class="row2" style="text-align:center;">      
+<h2>Подключение к контроллеру</h2>
+<h6>Параметры подключения к контроллеру</h6>
+     <div class="main">
+      <div class="col-sm-5">
+      <label for="host">IP контроллера</label>
+     <input id="host" value="{{host}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="IP контроллера"><br>
+     <label for="httpPort">Порт контроллера</label>
+     <input id="httpPort" value="{{httpPort}}" pattern="[0-9.]{1,15}" onFocus="this.type='text'" type="password" class="form-control" placeholder="Порт контроллера">
+      </div>
+      <div class="col-sm-6">
+       <input class="form-control2" value="Сохранить" onClick="set_contrl(this);" type="submit">
+      </div>
+     </div>    
+<h6>Логин и пароль доступа к контроллеру</h6>
+    <div class="main">
+      <div class="col-sm-5">
+      <label for="login">Login доступа</label>
+     <input id="login" value="{{login}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="Login доступа"><br>
+     <label for="pass">Пароль доступа</label>  
+     <input id="pass" value="{{pass}}" pattern="[0-9a-zA-Z.]{1,15}" onFocus="this.type='text'" type="password" class="form-control" placeholder="Пароль доступа">
+      </div>
+       <div class="col-sm-6">
+       <input class="form-control2" value="Сохранить" onClick="set_login(this);" type="submit">
+      </div>
+     </div>
+  <h6></h6>  
+    
+</div>
+
+</section>
+
+
+      
+     
+      <section class="page8">          
+ <h6></h6>    
+      <input class="form-control3" value="Перезагрузить устройство" onClick="restart(this,'Вы действительно хотите перезагрузить устройство?');" type="submit">
+      </div>
+      </section>
+  </div>
+ </body>
+</html>

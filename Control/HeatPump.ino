@@ -3515,14 +3515,21 @@ void HeatPump::calculatePower()
 #else
 	powerGEO=0.0;
 #endif
-// позже будет опционально
-//if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
+
+
+#ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
+if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
+#endif	
+
 	COP = dFC.get_power();
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 #endif
-//} else { COP=0; fullCOP=0; }
+
+#ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
+} else { COP=0; fullCOP=0; }
+#endif
 }
 
 void HeatPump::Sun_OFF(void)
