@@ -275,7 +275,11 @@ void readFileSD(char *filename,uint8_t thread)
 // Разбор и обработка строк запросов buf (начало &) входная строка strReturn выходная
 // ТОЛЬКО запросы!
 // возвращает число обработанных одиночных запросов
+#ifdef SENSOR_IP
 void parserGET(char *buf, char *strReturn, int8_t sock)
+#else
+void parserGET(char *buf, char *strReturn, int8_t)
+#endif
 { 
    
   char *str,*x,*y, *z;

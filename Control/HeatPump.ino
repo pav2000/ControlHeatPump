@@ -1488,7 +1488,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
  {
 	 if(Prof.Boiler.add_delta_temp != 0) {
 		int8_t h = rtcSAM3X8.get_hours();
-		if(h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour) return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp * 100;
+		if(h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour) return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp * 100; // hour <= end_hour !!!
 	 }
 	 return Prof.Boiler.TempTarget;
  }
@@ -3528,9 +3528,11 @@ void HeatPump::calculatePower()
 void HeatPump::Sun_OFF(void)
 {
 #ifdef USE_SUN_COLLECTOR
-	dRelay[RSUN].set_Relay(-fR_StatusSun);
-	dRelay[PUMP_OUT].set_Relay(-fR_StatusSun);
-	flags &= ~(1<<fHP_SunActive);
-	time_Sun_ON = 0;
+	if(flags & (1<<fHP_SunActive)) {
+		dRelay[RSUN].set_Relay(-fR_StatusSun);
+		dRelay[PUMP_OUT].set_Relay(-fR_StatusSun);
+		flags &= ~(1<<fHP_SunActive);
+		time_Sun_ON = 0;
+	}
 #endif
 }

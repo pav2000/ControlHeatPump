@@ -1129,9 +1129,9 @@ void vReadSensor_delay10ms(int16_t msec)
 #ifdef USE_SUN_COLLECTOR
 		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))
 				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
-			if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			else if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			else if(!(HP.flags & (1<<fHP_SunActive))) { // ON
+			if((HP.flags & (1<<fHP_SunActive))) {
+				if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
+			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= HP.sTemp[TEVAING].get_Temp()) { // ON
 				HP.flags |= (1<<fHP_SunActive);
 				HP.dRelay[RSUN].set_Relay(fR_StatusSun);
 				HP.dRelay[PUMP_OUT].set_Relay(fR_StatusSun);
