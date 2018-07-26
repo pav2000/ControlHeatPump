@@ -480,11 +480,15 @@ void devRelay::initRelay(int sensor)
 
 
 // Установить реле в состояние r, базовая функция все остальные функции используют ее
-// Если состояния совпадают то ничего не делаем, (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
+// Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
   if(!(flags & (1<<fPresent))) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
-  if(r == 0) r = -1;
+  if(r == 0) r = -fR_StatusMain;
+  else if(r == fR_StatusAllOff) {
+	  flags &= ~fR_StatusMask;
+	  r = -fR_StatusMain;
+  }
   flags = (flags & ~(1<<abs(r))) | ((r > 0)<<abs(r));
   r = (flags & fR_StatusMask) != 0;
   if(Relay==r) return OK;                              // Ничего менять не надо выходим
