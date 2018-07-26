@@ -1,5 +1,5 @@
 # Nextion
-<img src="https://github.com/pav2000/ControlHeatPump/Nextion/Screen/00.jpg"/>
+<img src="https://github.com/pav2000/ControlHeatPump/blob/master/Nextion/Screen/00.jpg"/>
 Дисплей Nixton (если хотите использовать) (https://www.itead.cc/wiki/Product) используется с
 диагональю 4.3 дюйма вот этот : https://www.itead.cc/wiki/NX4827T043
 ОБЯЗАТЕЛЬНО префикс модели NX, с китайским вариантом будут проблемы с редактором.
