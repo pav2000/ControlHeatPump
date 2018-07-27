@@ -1,9 +1,10 @@
 /* ver 0.956 beta */
 var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+//var urlcontrol = 'http://62.140.252.108:2545';
 //var urlcontrol = 'http://192.168.1.10';
-var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
-var urlupdate = 2000; // время обновления параметров в миллисекундах
+var urltimeout = 3500; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
+var urlupdate = 5000; // время обновления параметров в миллисекундах
 
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
@@ -165,17 +166,6 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
 										element.checked = onoff;
-										console.log("valueid= " + valueid + " TYPE= " + type + " values 0= " + values[0] + " values1="  + values[1] );
-																				
-										if(values[1] == 1){
-										document.getElementById(valueid + 2).innerHTML = '<img src="on.png" width="30%" alt="" />';
-										console.log(" values 0= " + values[0] + " values1="  + values[1] );
-										}
-										if(values[1] == 0) {
-										document.getElementById(valueid + 2).innerHTML = '<img src="off.png" width="30%" alt="" />';
-										console.log(" values 0= " + values[0] + " values1="  + values[1] );
-										}
-										
 										if(valueid == "get_mqtt-use_ts") {
 											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
 											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
@@ -636,8 +626,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											var content = "<div>" + cont1 + "</div>";
 										} else {
 											cont1 = values[1].replace(/\|/g, "</td><td>");
-											cont2 = cont1.replace(/(\;)/g, "</td></tr><tr class=\"const\"><td>");
-											var content = "<tr class=\"const\"><td>" + cont2 + "</td></tr>";
+											cont2 = cont1.replace(/(\;)/g, "</td></tr><tr><td>");
+											var content = "<tr><td>" + cont2 + "</td></tr>";
 										}
 										document.getElementById(valueid).innerHTML = content;
 									}
@@ -672,8 +662,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if((relay = count[j].toLowerCase()) == "") continue;
 												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_presentRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
 												upsens = upsens + "get_Relay(" + count[j] + "),";
-											
-												content = content + '<tr id="get_presentrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><input type="checkbox" name="get_relay-' + relay + '" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"><label for="get_relay-' + relay + '"><span id="get_relay-' + relay + '2"></span></label></td>';
+												content = content + '<tr id="get_presentrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="get_relay-' + relay + '" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -720,15 +709,6 @@ function loadParam(paramid, noretry, resultdiv) {
 													upsens += "get_rawTemp(" +T+ "),";
 												}
 												T = T.toLowerCase();
-												
-												content_t = "get_fullTemp(" + count[i] + ")";
-												content = content + '<tr id="get_presenttemp-' + input + '">';
-												content = content + ' <td>' + count[i] + '</td>';
-												content = content + ' <td id="get_notetemp-' + input + '"></td>';
-												content = content + ' <td></td>';
-												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
-												content = content + '</tr>';
-												
 												content += '<tr>';
 												content += ' <td>' +count[j]+ '</td>';
 												content += ' <td id="get_notetemp-' +T+ '"></td>';
@@ -786,8 +766,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
-												content = content + '<tr class="data-eev" id="get_profile-' + j + '"><td>' + j + '</td><td id="infoprofile-' + j + '"></td>';
-												content = content + '<td><input class="button2 small" id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'></td><td> <input class="button2 small" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\'></td></tr>';
+												content = content + '<tr id="get_profile-' + j + '"><td>' + j + '</td><td id="infoprofile-' + j + '"></td>';
+												content = content + '<td><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\'></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											//document.getElementById(valueid + "-inputs").innerHTML = content2;

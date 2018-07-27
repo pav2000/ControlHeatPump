@@ -9,15 +9,15 @@
         <link rel="stylesheet" type="text/css" href="assets/css/main.css">
 		<!-- Scripts -->
 <script type="text/javascript" src="assets/js/jquery.min.js"></script>
-<script type="text/javascript" src="highcharts.js"></script>
-<script type="text/javascript" src="exporting.js"></script>
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_WORK,get_Profile(ID_PROFILE),get_Profile(NAME_PROFILE),get_Profile(DATE_PROFILE),get_Profile(CRC16_PROFILE),get_Profile(NOTE_PROFILE),get_Profile(ENABLE_PROFILE),get_Profile(NUM_PROFILE)");
-			
-		};			
-		</script>
+			loadParam("get_Profile(ID_PROFILE),get_Profile(NAME_PROFILE),get_Profile(DATE_PROFILE),get_Profile(CRC16_PROFILE),get_Profile(NOTE_PROFILE),get_Profile(ENABLE_PROFILE),get_Profile(NUM_PROFILE)");
+		};
+		function loadParam_after(paramid) {
+			if(paramid.match(/^eraseProfile|^loadProfile|^set_SAVE/)) location.reload();
+		}
+	</script>
 
 	</head>
 	<body class="landing">
@@ -47,7 +47,8 @@
 <span id="get_work3"></span></h8>
 <span id="onoffswitch"></span>
 <br>
-</div> 
+<dd><span id="get_errcode" style="display:block">-</span></dd>
+</div>
                                      
                     <div class="table-wrapper">
                     <h4> Текущий профиль </h4><br>
@@ -57,27 +58,31 @@
             <td>Номер используемого профиля</td>
 			<td><input id="get_profile-id_profile" type="number" min="0" max="7"></td>
             <td><input class="button2 small" id="get_profile-id_profile2" type="submit" value="Установить Текущий профиля"  onclick="setParam('get_Profile(ID_PROFILE)');"></td>
+            
 		</tr>
         </tbody>
-	</table>                    
+	</table>   
+ <button class="button small" onclick='loadParam("set_SAVE")'>Записать в EEPROM</button>        
+ <p> 
+                     
 <h4> Настройка текущего профиля </h4> <br>                   
 <table>		
 		<tbody>
-		<tr>
+		<tr class="data-eev">
 			<td>Имя профиля</td>
 			<td><input id="get_profile-name_profile" type="text" maxlength="10"></td>
             <td><input class="button2 small" id="get_profile-name_profile2" type="submit" value="Установить Имя профиля"  onclick="setParam('get_Profile(NAME_PROFILE)');"></td>
 		</tr>
-		<tr>
+		<tr class="data-eev">
 			<td>Описание профиля</td>
 			<td><input id="get_profile-note_profile" type="text" maxlength="40"></td>
             <td><input class="button2 small" id="get_profile-note_profile2" type="submit" value="Установить Описание профиля"  onclick="setParam('get_Profile(NOTE_PROFILE)');"></td>
 		</tr>
-		<tr>
+		<tr class="data-eev">
 			<td colspan="2">Последнее редактирование</td>
 			<td><span id="get_profile-date_profile"></span><br/>CRC16=<span id="get_profile-crc16_profile"></span></td>
 		</tr>
-        <tr>
+        <tr class="data-eev">
 			<td  colspan="2">Использование профиля в списке</td>
 			<td><input type="checkbox" name="get_profile-enable_profile" id="get_profile-enable_profile" onChange="setParam('get_Profile(ENABLE_PROFILE)');" >
                 <label for="get_profile-enable_profile"><span id="get_profile-enable_profile2"></span></label></td>
@@ -92,7 +97,7 @@
 			<th>Номер профиля</th>
 			<th>Описание</th>
 			<th colspan="2">Действие</th>
-		</tr>
+        </tr>
 		</thead>
 		<tbody id="get_profile-num_profile">				
 		</tbody>
@@ -100,7 +105,54 @@
     
  
 </div>
-
+<script>  
+        function show()   
+        {   
+           	
+			$.get(urlcontrol + '/&get_MODE&get_errcode&get_error&get_WORK&get_remarkTest&get_Relay(RCOMP)&get_Relay(RPUMPB)&get_Relay(RTRV)&get_Relay(RPUMPI)&get_Relay(RPUMPO)&get_Relay(RBOILER)&get_Relay(RHEAT)&get_Relay(RFAN1)&get_Relay(RFAN2)&get_Relay(R3WAY)&get_Relay(REVI)&get_paramEEV(POSp)&get_paramEEV(POS)&&', function(data) {
+  				$('.result').html(data);
+  					console.log(data);
+					var oldString = (data); 
+					var newString = oldString.replace("&&","\"}");
+					newString = newString.replace("&get_","{\"");
+					newString = newString.replace(/=/g,"\":\"");
+					newString = newString.replace(/&get_/g,"\",\"");
+					console.log(newString);
+					var obj = JSON.parse(newString);
+					console.log(obj);
+					if(obj["WORK"] == "ON") {
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "ON";
+						} else {
+						document.getElementById("onoffswitch").checked = false;
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						
+										}
+					} else if(obj["WORK"] == "OFF") {
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "OFF";
+						} else {
+						document.getElementById("onoffswitch").checked = true;
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+					}
+					}
+								
+					if(obj["errcode"] == 0) {
+					document.getElementById("get_errcode").innerHTML = obj["error"];
+					document.getElementById("get_errcode").style.display = "none";
+						} else if(obj["errcode"] < 0) {
+						document.getElementById("get_errcode").innerHTML = obj["error"];}
+	});
+		} 
+		$(document).ready(function(){   
+            show();   
+            setInterval('show()',3000);   
+        });   
+    </script> 
  
   <br>
  </div>                   

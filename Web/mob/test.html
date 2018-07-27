@@ -9,16 +9,26 @@
 		<meta http-equiv="Content-Style-Type" content="text/css">
         <link rel="stylesheet" type="text/css" href="assets/css/main.css">
 		<!-- Scripts -->
+        <script type="text/javascript" src="function.js"></script>
+		<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+		<script type="text/javascript" src="jquery.knob.js"></script>
 <script type="text/javascript" src="assets/js/jquery.min.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_error,get_WORK,get_listRelay");
-		loadParam("get_paramFC(ON_OFF),get_paramFC(ANALOG),get_nameFC,get_noteFC,get_testMode,get_presentFC,get_noteFC,get_presentEEV,get_pinEEV,get_presentRelay(RPUMPB),get_noteRelay(RPUMPB),get_pinRelay(RPUMPB),get_presentRelay(RCOMP),get_noteRelay(RCOMP),get_pinRelay(RCOMP),get_presentRelay(RPUMPI),get_noteRelay(RPUMPI),get_pinRelay(RPUMPI),get_presentRelay(RPUMPO),get_noteRelay(RPUMPO),get_pinRelay(RPUMPO),get_presentRelay(RBOILER),get_noteRelay(RBOILER),get_pinRelay(RBOILER),get_presentRelay(RHEAT),get_noteRelay(RHEAT),get_pinRelay(RHEAT),get_EEV,get_FC,get_pinRelay(RTRV),get_presentRelay(RFAN1),get_noteRelay(RFAN1),get_pinRelay(RFAN1),get_presentRelay(RFAN2),get_noteRelay(RFAN2),get_pinRelay(RFAN2),get_presentRelay(R3WAY),get_noteRelay(R3WAY),get_pinRelay(R3WAY),get_presentRelay(REVI),get_noteRelay(REVI),get_pinRelay(REVI),get_nameEEV,get_noteEEV,get_presentRelay(RTRV),get_noteRelay(RTRV)");
-		updateParam("get_error,get_WORK,get_paramFC(FC),get_paramFC(ANALOG),get_paramFC(POWER),get_remarkTest,get_dacFC,get_EEV,get_error,get_Relay(RCOMP),get_Relay(RPUMPB),get_Relay(RTRV),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RBOILER),get_Relay(RHEAT),get_Relay(RFAN1),get_Relay(RFAN2),get_Relay(R3WAY),get_Relay(REVI)"); 
+		loadParam("get_listRelay");
+		loadParam("get_paramFC(ON_OFF),get_paramFC(NAME),get_paramFC(NOTE),get_paramFC(FC),get_testMode,get_paramEEV(PINS),get_presentRelay(RPUMPB),get_noteRelay(RPUMPB),get_pinRelay(RPUMPB),get_presentRelay(RCOMP),get_noteRelay(RCOMP),get_pinRelay(RCOMP),get_presentRelay(RPUMPI),get_noteRelay(RPUMPI),get_pinRelay(RPUMPI),get_presentRelay(RPUMPO),get_noteRelay(RPUMPO),get_pinRelay(RPUMPO),get_presentRelay(RBOILER),get_noteRelay(RBOILER),get_pinRelay(RBOILER),get_presentRelay(RHEAT),get_noteRelay(RHEAT),get_pinRelay(RHEAT),get_paramEEV(POS),get_paramEEV(POSp),get_paramEEV(POSpp),get_pinRelay(RTRV),get_presentRelay(RFAN1),get_noteRelay(RFAN1),get_pinRelay(RFAN1),get_presentRelay(RFAN2),get_noteRelay(RFAN2),get_pinRelay(RFAN2),get_presentRelay(R3WAY),get_noteRelay(R3WAY),get_pinRelay(R3WAY),get_presentRelay(REVI),get_noteRelay(REVI),get_pinRelay(REVI),get_paramEEV(NAME),get_paramEEV(NOTE),get_presentRelay(RTRV),get_noteRelay(RTRV)");
+		updateParam("get_paramFC(cFC),get_paramFC(NAME),get_testMode,get_paramFC(INFO1),get_remarkTest,get_paramEEV(POS),get_paramEEV(POSp),get_paramEEV(POSpp),get_Relay(RCOMP),get_Relay(RPUMPB),get_Relay(RTRV),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RBOILER),get_Relay(RHEAT),get_Relay(RFAN1),get_Relay(RFAN2),get_Relay(R3WAY),get_Relay(REVI)"); 
 	};
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("FC(NAME)") != -1 && document.getElementById("get_paramfc-name").innerHTML.substr(0,5) == "Omron") {
+			document.getElementById("str1").innerHTML = "Целевая частота, Гц";
+			document.getElementById("str2").innerHTML = "Текущая частота, Гц";
+			document.getElementById("str3").innerHTML = "Мощность текущая";
+		}
+	}
 	</script>
 
 	</head>
@@ -48,7 +58,8 @@
 <span id="get_work3"></span></h8>
 <span id="onoffswitch"></span>
 <br>
-</div>                                           
+<dd><span id="get_error" style="display:block">-</span></dd>
+</div>                                          
                     <div class="table-wrapper">
 									
                                     <h4><span id="m-test">-</span></h4><p>
@@ -71,7 +82,7 @@
 											</tr>
                                             <tr>
 												<td>Показатели:</td>
-												<td><h7><span id="get_error"></span></h7></td>
+												<td><h7><span id="get_errcode"></span></h7></td>
 											</tr>
 											</tbody>
                                             </table>
@@ -85,164 +96,155 @@
                                             
                                     
                                     <h4> Управление РЕЛЕ </h4>
+                                    <br>
                                     
                                     <table>
 									<thead>
-                                    <tr>
-                                    <th>Имя</th>
+									<tr>
+									<th>Имя</th>
 									<th>Описание</th>
 									<th>Pin</th>
 									<th>Управление</th>
 									</tr>
-									</thead>	
-										<tbody id="get_listrelay">
-            
-            <tr id="get_presentrelay-rcomp">
-			<td>RCOMP</td>
-			<td id="get_noterelay-rcomp"></td>
-			<td id="get_pinrelay-rcomp">-</td>
-			<td><input type="checkbox" name="get_relay-rcomp" id="get_relay-rcomp" onChange="setParam('get_Relay(RCOMP)');">
-            <label for="get_relay-rcomp"><span></span></label></td>
-		</tr>
-		<tr id="get_presentrelay-rpumpi">
-			<td>RPUMPI</td>
-			<td id="get_noterelay-rpumpi"></td>
-			<td id="get_pinrelay-rpumpi">-</td>
-		  <td><input type="checkbox" name="get_relay-rpumpi" id="get_relay-rpumpi" onChange="setParam('get_Relay(RPUMPI)');">
-            <label for="get_relay-rpumpi"><span></span></label></td>
-		</tr>
-		<tr id="get_presentrelay-rpumpo">
-			<td>RPUMPO</td>
-			<td id="get_noterelay-rpumpo"></td>
-			<td id="get_pinrelay-rpumpo">-</td>
-		  <td><input type="checkbox" name="get_relay-rpumpo" id="get_relay-rpumpo" onChange="setParam('get_Relay(RPUMPO)');">
-            <label for="get_relay-rpumpo"><span></span></label></td></td>
-		</tr>
-		<tr id="get_presentrelay-rboiler">
-			<td>RBOILER</td>
-			<td id="get_noterelay-rboiler"></td>
-			<td id="get_pinrelay-rboiler">-</td>
-			<td><input type="checkbox" name="get_relay-rboiler" id="get_relay-rboiler" onChange="setParam('get_Relay(RBOILER)');"></td>
-		</tr>
-		<tr id="get_presentrelay-rheat">
-			<td>RHEAT</td>
-			<td id="get_noterelay-rheat"></td>
-			<td id="get_pinrelay-rheat">-</td>
-			<td><input type="checkbox" name="get_relay-rheat" id="get_relay-rheat" onChange="setParam('get_Relay(RHEAT)');"></td>
-		</tr>
-		<tr id="get_presentrelay-rtrv">
-			<td>RTRV</td>
-			<td id="get_noterelay-rtrv"></td>
-			<td id="get_pinrelay-rtrv">-</td>
-			<td><input type="checkbox" name="get_relay-rtrv" id="get_relay-rtrv" onChange="setParam('get_Relay(RTRV)');"></td>
-		</tr>
-		<tr id="get_presentrelay-rfan1">
-			<td>RFAN1</td>
-			<td id="get_noterelay-rfan1"></td>
-			<td id="get_pinrelay-rfan1">-</td>
-			<td><input type="checkbox" name="get_relay-rfan1" id="get_relay-rfan1" onChange="setParam('get_Relay(RFAN1)');"></td>
-		</tr>
-		<tr id="get_presentrelay-rfan2">
-			<td>RFAN2</td>
-			<td id="get_noterelay-rfan2"></td>
-			<td id="get_pinrelay-rfan2">-</td>
-			<td><input type="checkbox" name="get_relay-rfan2" id="get_relay-rfan2" onChange="setParam('get_Relay(RFAN2)');"></td>
-		</tr>
-		<tr id="get_presentrelay-r3way">
-			<td>R3WAY</td>
-			<td id="get_noterelay-r3way"></td>
-			<td id="get_pinrelay-r3way">-</td>
-			<td><input type="checkbox" name="get_relay-r3way" id="get_relay-r3way" onChange="setParam('get_Relay(R3WAY)');"></td>
-		</tr>
-		<tr id="get_presentrelay-revi">
-			<td>REVI</td>
-			<td id="get_noterelay-revi"></td>
-			<td id="get_pinrelay-revi">-</td>
-			<td><input type="checkbox" name="get_relay-revi" id="get_relay-revi" onChange="setParam('get_Relay(REVI)');"></td>
-		</tr>
-		<tr id="get_presentrelay-rpumpb">
-			<td>RPUMPB</td>
-			<td id="get_noterelay-rpumpb"></td>
-			<td id="get_pinrelay-rpumpb">-</td>
-			<td><input type="checkbox" name="get_relay-rpumpb" id="get_relay-rpumpb" onChange="setParam('get_Relay(RPUMPB)');"></td>
-		</tr>
-</tbody>
-</table><p>
+									</thead>
+									<tbody id="get_listrelay">
+									</tbody>
+									</table>
+                                    
+                                    <p>
 
 <div id="testmode2" >               
 <h4> Управление ЭРВ </h4>
-                                    
+<br>
+ <button class="button small" onclick='loadParam("set_zeroEEV");'>Установка ЭРВ в положение 0</button>        
+ <p>                                          
         <table>
-		<thead>
-		<tr>
-			<th>Имя</th>
-			<th>Описание</th>
-			<th>Подключено к PIN</th>
-            </tr>
-		</thead>
+		
 		<tbody>
+		       
+        <tr class="data-eev">
+            <td>Текущее положение</td>
+            <td id="get_parameev-pospp"></td>
+        </tr>
+      
+        <tr class="data-eev">
+        <td><input class="button2 small" id="get_parameev-pos2" type="submit" value="Задать положение ЭРВ, шаги"  onclick="setParam('get_paramEEV(POS)');"></td>
+        <td><input class="button2 small" id="get_parameev-pos" type="number" step="1" value="0"></td>
+        </tr>
+        <tr class="data-eev">
+        <td><input class="button2 small" id="get_parameev-posp2" type="submit" value="Задать положение ЭРВ, %"  onclick="setParam('get_paramEEV(POSp)');"></td>
+        <td><input class="button2 small" id="get_parameev-posp" type="number" step="1" value="0"></td>
+        
 		</tr>
-		<tr id="get_presenteev">
-			<td id="get_nameeev">-</td>
-			<td id="get_noteeev">-</td>
-            <td id="get_pineev">-</td>
-            </tr>
-            <tr class="data-eev">
-            <td>Текущее положение ЭРВ</td>
-			<td id="get_eev2" type="number" disabled></td>
-            <td><input class="button2 small" id="get_zeroEEV" type="submit" value="Установить ЭРВ в НОЛЬ"  onclick='loadParam("set_zeroEEV");'></td>
-            </tr>
-            <tr>
-            <td>Новое положение ЭРВ</td>
-			<td><input id="get_eev" type="number" step="1" value="0"></td>
-            <td><input class="button2 small" id="get_eev3" type="submit" value="Установить новое положение ЭРВ"  onclick="setParam('get_EEV');"></td>
-            </tr>
-        </tbody>
+		</tbody>
+		</table>
 	</table>
  </div> 
  <div id="testmode3">
  <h4> Управление ИНВЕРТОРОМ </h4><p>
-		<h5>Инвертор <span id="get_namefc"></span></h5>
-        <h5><span id="get_notefc"></span></h5><p>
+		<h5>Инвертор <span id="get_paramfc-name"></span> <span id="get_paramfc-note"></span>
+        <br>
+ <button class="button small" onclick='loadParam("reset_FC")'>Сброс инвертора</button>        
+ </h5><br>
 		<table>
 		<tbody>
-		<tr class="data-eev">
-			<td>Сброс инвертора</td>
-            <td><input class="button2 small" type="submit" value="Сбросить ИНВЕРТОР"  onclick='loadParam("reset_MX2")';></td>
-        </tr>
-        <tr class="data-eev">
-			<td>Включение</td>
-            <td><input type="checkbox" name="get_paramfc-on_off" id="get_paramfc-on_off" onChange="setParam('get_paramFC(ON_OFF))');"><label for="get_paramfc-on_off"><span id="get_paramfc-on_off2"></span></label></td>
-        </tr>
-        <tr class="data-eev">
-            <td>Аналоговое управление</td>
-            <td><input type="checkbox" name="get_paramfc-analog" id="get_paramfc-analog" onChange="setParam('get_paramFC(ANALOG))');"><label for="get_paramfc-analog"><span id="get_paramfc-analog2"></span></label></td>
-        </tr>
+		<tr>
+			<td>Включение инвертора</td>
+            <td></td>
+            <td></td>
+            <td><input type="checkbox" name="get_paramfc-on_off" id="get_paramfc-on_off" onChange="setParam('get_paramFC(ON_OFF))');" >
+            <label for="get_paramfc-on_off"><span id="get_paramfc-on_off2"></span></label></td>
+		</tr>
         
-        <tr class="data-eev">
-            <td>Текущая частота</td>
-            <td id="get_paramfc-fc" type="number" disabled></td>
-            </tr>
-        
-        <tr class="data-eev">
-            <td>Текущая мощность</td>
-            <td id="get_paramfc-power" type="number" disabled></td>
-            </tr>
-        <tr class="data-eev">
-            <td>Отсчеты АЦП</td>
-            <td id="get_dacfc" type="number" disabled></td>
-            </tr>
         <tr>
-        <td><input class="button2 small" id="get_fc2" type="submit" value="Установить целевую частоту"  onclick="setParam('get_FC)');"></td>
-            <td><input class="button2 small" id="get_fc" type="number" step="1" value="0"></td>
+        <td><input class="button2 small" id="str1" type="submit" value="Задать целевую частоту"  onclick="setParam('get_paramFC(FC)');"></td>
+        <td></td>
+        <td></td>
+        <td><input class="button2 small" id="get_paramfc-fc" type="number" step="1" value="0"></td>
+        
+		</tr>
+        
+        <tr>
+			<td id="str2">Текущая скорость</td>
+            <td></td>
+            <td></td>
+            <td id="get_paramfc-cfc"></td>
         </tr>
-        		
+        <tr>
+			<td id="str3">Частота</td>
+            <td></td>
+            <td></td>
+            <td id="get_paramfc-info1"></td>
+		</tr>
+			
+
 	</tbody>
 	</table>
     </div>  
 </div>        	
   <br>
-                    
+ 
+ 
+<script>  
+        function show()   
+        {   
+           	
+			$.get(urlcontrol + '/&get_MODE&get_errcode&get_error&get_WORK&get_remarkTest&get_Relay(RCOMP)&get_Relay(RPUMPB)&get_Relay(RTRV)&get_Relay(RPUMPI)&get_Relay(RPUMPO)&get_Relay(RBOILER)&get_Relay(RHEAT)&get_Relay(RFAN1)&get_Relay(RFAN2)&get_Relay(R3WAY)&get_Relay(REVI)&get_paramEEV(POSp)&get_paramEEV(POS)&&', function(data) {
+  				$('.result').html(data);
+  					console.log(data);
+					var oldString = (data); 
+					var newString = oldString.replace("&&","\"}");
+					newString = newString.replace("&get_","{\"");
+					newString = newString.replace(/=/g,"\":\"");
+					newString = newString.replace(/&get_/g,"\",\"");
+					console.log(newString);
+					var obj = JSON.parse(newString);
+					console.log(obj);
+					document.getElementById('get_error').innerHTML = obj["error"];
+					document.getElementById('get_errcode').innerHTML = obj["errcode"];
+					document.getElementById('get_remarktest').innerHTML = obj["remarkTest"];
+					document.getElementById('get_parameev-posp').innerHTML = obj["paramEEV(POSp)"];
+					document.getElementById('get_parameev-pos').innerHTML = obj["paramEEV(POS)"];
+									
+							
+					
+					if(obj["WORK"] == "ON") {
+						document.getElementById("m-test").innerHTML = "Режим \"Тест\" неактивен. <br> Для активации ВЫКЛЮЧИТЕ ТН.";
+						document.getElementById("m-control").style.display = "none";
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "ON";
+						} else {
+						document.getElementById("onoffswitch").checked = false;
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						
+										}
+					} else if(obj["WORK"] == "OFF") {
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						document.getElementById("m-test").innerHTML = "Режим \"Тест\" активирован. <br> НАСТРОЙКА РЕЖИМА \"ТЕСТ\"";
+						document.getElementById("m-control").style.display = "block";
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "OFF";
+						} else {
+						document.getElementById("onoffswitch").checked = true;
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+					}
+					}
+								
+					if(obj["errcode"] == 0) {
+					document.getElementById("get_errcode").innerHTML = "OK";
+					if(document.getElementById('get_error')) document.getElementById("get_error").style.display = "none";
+						} else if(obj["errcode"] < 0) {
+						document.getElementById("get_errcode").innerHTML = "Ошибка";}
+	});
+		} 
+		$(document).ready(function(){   
+            show();   
+            setInterval('show()',3000);   
+        });   
+    </script>                   
 
 
 
