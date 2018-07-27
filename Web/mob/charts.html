@@ -9,11 +9,14 @@
 		<meta http-equiv="Content-Style-Type" content="text/css">
         <link rel="stylesheet" type="text/css" href="assets/css/main.css">
 		<!-- Scripts -->
+	<script type="text/javascript" src="function.js"></script>
+	<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="jquery.knob.js"></script>
 <script type="text/javascript" src="assets/js/jquery.min.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
 <script type='text/javascript' src='scripts.js'></script>
-<script type="text/javascript">
+<script type='text/javascript'>
 		window.onload = function() {
 		loadParam("get_listChart,get_optionHP(TIME_CHART)");
 		/*google.charts.load('current', {packages: ['corechart', 'line']});*/
@@ -24,7 +27,7 @@ Highcharts.setOptions({
     });		
 		$("#autoupdate").change(function(){
 		if(this.checked){
-			var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4');setParam('get_listChart5','chart5');setParam('get_listChart6','chart6') }, 10000)
+			var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4') }, 10000)
 			window.timerId = timerId
 		}else{
 			timerId = window.timerId
@@ -54,6 +57,9 @@ Highcharts.setOptions({
 							<p> <br />
 							
 					  </header>
+                      
+                    
+                      
                     <div>Обновлять графики автоматически<input id="autoupdate"  type="checkbox"></div>    
                      <br>                 
                     <div class="table-wrapper">
@@ -64,7 +70,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart" onChange="setParam('get_listChart','chart1')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart" onChange="setParam('get_listChart','chart1')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart" type="submit" value="Обновить"  onclick="setParam('get_listChart','chart1')"></td>
@@ -79,7 +85,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart2" onChange="setParam('get_listChart2','chart2')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart2" onChange="setParam('get_listChart2','chart2')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart2" type="submit" value="Обновить"  onclick="setParam('get_listChart2','chart2')"></td>
@@ -94,7 +100,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart3" onChange="setParam('get_listChart3','chart3')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart3" onChange="setParam('get_listChart3','chart3')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart3" type="submit" value="Обновить"  onclick="setParam('get_listChart3','chart3')"></td>
@@ -109,7 +115,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart4" onChange="setParam('get_listChart4','chart4')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart4" onChange="setParam('get_listChart4','chart4')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart4" type="submit" value="Обновить"  onclick="setParam('get_listChart4','chart4')"></td>
@@ -124,7 +130,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart5" onChange="setParam('get_listChart5','chart5')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart5" onChange="setParam('get_listChart5','chart5')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart5" type="submit" value="Обновить"  onclick="setParam('get_listChart5','chart5')"></td>
@@ -139,7 +145,7 @@ Highcharts.setOptions({
 						<td>График: </td>
                         <td><div class="12u$">
 						<div class="select-wrapper">
-						<h7><select id="get_listchart6" onChange="setParam('get_listChart6','chart6')"></select></h7>
+						<h7><select name="chrt_sel" id="get_listchart6" onChange="setParam('get_listChart6','chart6')"></select></h7>
 						</div>
 						</div></td>
                         <td><input class="button2 small" id="get_listchart6" type="submit" value="Обновить"  onclick="setParam('get_listChart6','chart6')"></td>
