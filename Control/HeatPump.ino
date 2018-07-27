@@ -117,7 +117,7 @@ void HeatPump::scan_OneWire(char *result_str)
 		//strcat(result_str, "-:Не доступно - ТН работает!:::;");
 		return;
 	}
-	if(!OW_prepare_buffers() && SemaphoreTake(xScan1WireSemaphore, 0)) {
+	if(!OW_scan_flags && !OW_prepare_buffers()) {
 		char *_result_str = result_str + m_strlen(result_str);
 		OneWireBus.Scan(result_str);
 #ifdef ONEWIRE_DS2482_SECOND
@@ -135,8 +135,21 @@ void HeatPump::scan_OneWire(char *result_str)
 			uint16_t l = m_strlen(_result_str);
 			_result_str += l > PRINTF_BUF-1 ? PRINTF_BUF-1 : l;
 		}
+#ifdef RADIO_SENSORS
+		journal.jprintf("\nRadio found(%d): ", radio_received_num);
+		for(uint8_t i = 0; i < radio_received_num; i++) {
+			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
+			OW_scanTable[OW_scanTableIdx].bus = 7;
+			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
+			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
+			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
+			char *p = result_str + m_strlen(result_str);
+			m_snprintf(p, 32, "%d:RADIO:%.2f:%X:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].Temp / 100.0, radio_received[i].serial_num);
+			journal.jprintf("%s", p);
+			if(++OW_scanTableIdx >= OW_scanTable_max) break;
+		}
+#endif
 		journal.jprintf("\n");
-		xSemaphoreGive(xScan1WireSemaphore);
 	}
 }
 
@@ -420,14 +433,14 @@ int8_t HeatPump::save_motoHour()
 	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
 	{
 		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR %d save counters and OnOff #%d\n", flag, i);
+		journal.jprintf(" ERROR %d save counters #%d\n", flag, i);
 		_delay(i * 50);
 	}
 	if(flag) {
 		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
 		return ERR_SAVE2_EEPROM;
 	}  // записать счетчики
-	journal.jprintf(" Save counters and OnOff, wrote: %d bytes\n", sizeof(motoHour));
+	journal.jprintf(" Save counters, %db\n", sizeof(motoHour));
 	return OK;
 }
 

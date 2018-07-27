@@ -23,7 +23,7 @@ int8_t OW_prepare_buffers(void)
 {
 	OW_scanTableIdx = 0;
 	if(OW_scanTable == NULL) {
-		OW_scanTable = (type_scanOneWire *)malloc(sizeof(type_scanOneWire) * (TNUMBER+1));
+		OW_scanTable = (type_scanOneWire *)malloc(sizeof(type_scanOneWire) * OW_scanTable_max);
 		if(OW_scanTable == NULL) {
 			journal.jprintf(OW_Error_memory_low);
 			return 1;
@@ -131,13 +131,13 @@ inline void	deviceOneWire::release_I2C_bus()
 
 // сканирование шины, с записью в буфер результатов возвращает код ошибки или число найденых датчиков
 // строка с найдеными датчика кладется в buf возвращает ошибку или OK
+// Формат: <Номер п.п.>:<тип датчика>:<температура>:<серийный номер>:<шина>;
 int8_t  deviceOneWire::Scan(char *result_str)
 {
 #ifdef DEMO // В демо режиме выводим строку констант
 	// Строка которая выдается в демо режиме при сканировании onewire
 	strcat(result_str,"1:DS18B20:20.1:1111111111111111:1;2:DS18S20:-3.56:2222222222222222:1;3:DS1822:34.6:3333333333333333:2;");
-	OW_scanTable[0].num=1;OW_scanTable[0].num=2;OW_scanTable[0].num=3;
-	OW_scanTable[0].type_sensor=tDS18B20;OW_scanTable[0].type_sensor=tDS18S20;OW_scanTable[0].type_sensor=tDS1822;
+	OW_scanTable[0].num=1;OW_scanTable[1].num=2;OW_scanTable[2].num=3;
 	for (int i=0;i<8;i++)
 	{
 		OW_scanTable[0].address[i]=(i+1)+(i+1)*16;
@@ -184,7 +184,6 @@ int8_t  deviceOneWire::Scan(char *result_str)
 				continue;
 			}
 			// 2. первый байт определяет чип выводим этот тип
-			OW_scanTable[OW_scanTableIdx].type_sensor = addr[0];
 			strcat(result_str,"DS18");
 			switch (addr[0])
 			{
@@ -223,7 +222,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			strcat(result_str, "1");
 #endif
 			strcat(result_str, ";");
-			if(++OW_scanTableIdx >= TNUMBER) break;   // Следующий датчик
+			if(++OW_scanTableIdx >= OW_scanTable_max) break;   // Следующий датчик
 		} // while по датчикам
 	} else {
 		journal.jprintf("Error reset 1-Wire bus %d\n", bus + 1);

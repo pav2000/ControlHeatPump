@@ -512,7 +512,7 @@ int8_t devRelay::set_Relay(int8_t r)
   
   #endif        
   Relay=r;      
-  journal.jprintf(" Relay %s: %s\n", name, Relay ? "ON" : "OFF");
+  journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
   return OK;
 }
 

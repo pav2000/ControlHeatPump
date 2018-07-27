@@ -28,6 +28,7 @@
 #define tDS18S20 0x10
 #define tDS18B20 0x28
 #define tDS1822  0x22
+#define tRadio   0x03
 // разрешение датчика температур
 #define DS18B20_p12BIT 0x7F
 #define DS18B20_p11BIT 0x5F
@@ -40,14 +41,14 @@
 struct type_scanOneWire
 {
   byte num;            // номер по списку
-  byte type_sensor;    // тип сенсора
   byte bus;       	   // номер шины: 0..3
   byte address[8];     // адрес
 };
 
-uint8_t				 OW_scan_flags = 0;							// 1 - идет сканирование
+#define OW_scanTable_max (TNUMBER + RADIO_SENSORS_MAX + 1)
 type_scanOneWire	*OW_scanTable = NULL;//[TNUMBER+1];			// массив структур для хранения информации о дачиках при сканировании шины onewire
 uint8_t				 OW_scanTableIdx;
+uint8_t				 OW_scan_flags = 0;							// 1 - идет сканирование
 int8_t 				 OW_prepare_buffers(void);
 
 class deviceOneWire 									       // Класс шина   OneWire

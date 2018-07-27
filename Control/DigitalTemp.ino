@@ -69,11 +69,10 @@ void sensorTemp::initTemp(int sensor)
       flags=0x00;                              // Сбросить все флаги
 
       if(SENSORTEMP[sensor]) SETBIT1(flags, fPresent); // наличие датчика в текушей конфигурации
-      SETBIT0(flags,fFull);                    // буфер не полный
       Chart.init(SENSORTEMP[sensor]);          // инициалазация статистики
       memset(address, 0, sizeof(address));	   // обнуление адресс датчика
       busOneWire = NULL;
-      testMode=NORMAL;                         // Значение режима тестирования
+      testMode = NORMAL;                         // Значение режима тестирования
 #if T_NUMSAMLES > 1
       memset(t, 0, sizeof(t));	   			   // обнуление буффера значений
       sum=0;
@@ -106,6 +105,7 @@ int8_t sensorTemp::Read()
 			} else if(number == TIN) return OK; // Этот может получать значения от других датчиков
 			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
+			if(GETBIT(flags, fRadio)) return OK;
 			int16_t ttemp;
 			err = busOneWire->Read(address, ttemp);
 			if(err != OK) {
@@ -161,18 +161,6 @@ int8_t sensorTemp::Read()
 	return (err = OK);                                        // Новый цикл новые ошибки!! СБРОС ОШИБКИ
 }
 
-// полный цикл получения данных возвращает значение температуры, только тестирование!! никакие переменные класса не трогает!!
-int16_t sensorTemp::Test() 
-{  
-#ifdef DEMO
-	return random(-3000,3000);      // Если демо вернуть случайное число
-#else
-	int16_t ttemp = STARTTEMP;
-	busOneWire->Read(address, ttemp);
-	return ttemp;
-#endif
-} 
-
 // установить значение систематической ошибки датчика диапазон +-MAX_TEMP_ERR не более
 int8_t sensorTemp::set_errTemp(int16_t t)     
 {
@@ -227,42 +215,39 @@ void sensorTemp::set_onewire_bus_type()
 	if(get_bus() == 3) busOneWire = &OneWireBus4; 	// 4 шина
 	else
 #endif
-		busOneWire = &OneWireBus;					// 1 шина
+	if(get_bus() == 0) busOneWire = &OneWireBus;	// 1 шина
 }
 
 // Установить адрес на шине датчика, bus
 void sensorTemp::set_address(byte *addr, byte bus)
 {
 	uint8_t i;
+	err = OK;
 	setup_flags &= ~fDS2482_bus_mask;
-	if (addr == NULL) //сброс адреса
+	if(addr == NULL) // сброс адреса
 	{
-		for(i=0;i<8;i++) address[i]=0;           // обнуление адресс датчика
-		SETBIT0(flags,fAddress);                 // Поставить флаг что адрес не установлен
+		memset(address, 0, sizeof(address));	   // обнуление адресс датчика
+		SETBIT0(flags, fAddress);                  // Поставить флаг, что адрес не установлен
+		SETBIT0(flags, fRadio);
 		return;
 	}
-	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
-	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
-	err = OK;
+	for(i = 0; i < sizeof(address); i++) address[i] = addr[i];   // Скопировать адрес
 	setup_flags |= bus & fDS2482_bus_mask;
-	set_onewire_bus_type();
-#ifndef ONEWIRE_DONT_CHG_RES
-	busOneWire->SetResolution(address, DS18B20_p12BIT);
-#endif
+	after_load();
 }
     
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 void sensorTemp::after_load()
 {
-	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
+	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7])) // Если адрес не 00000000 Установить адрес датчика
 	{
-		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
-		set_onewire_bus_type();
+		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен
+		if(address[0] == tRadio) SETBIT1(flags, fRadio); else set_onewire_bus_type();
 	}
 }
 
 // Возвращает 1, если превышен предел ошибок
-int8_t   sensorTemp::inc_error(void)
+int8_t sensorTemp::inc_error(void)
 {
 	if(++numErrorRead == 0) numErrorRead--;
 	return numErrorRead > NUM_READ_TEMP_ERR;
@@ -321,6 +306,7 @@ void sensorIP::after_load()
 #endif  
 
 #ifdef RADIO_SENSORS
+
 uint8_t rs_serial_buf[128];
 uint8_t rs_serial_idx = 0;
 uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
@@ -356,6 +342,21 @@ void RS_send_response(void)
 	}
 }
 
+uint8_t get_next_byte_from_string(char **ptr)
+{
+	if(*ptr != NULL) {
+		char *p = strchr(*ptr, ' ');
+		if(p) {
+			*p = '\0';
+			uint8_t ret = atoi(*ptr);
+			*ptr = p + 1;
+			return ret;
+		}
+	}
+	*ptr = NULL;
+	return 0;
+}
+
 // Новые данные в порту от радиодатчиков
 #if RADIO_SENSORS_PORT == 2
 void serialEvent2()
@@ -381,10 +382,43 @@ void serialEvent3()
 					journal.jprintf("RS<=%s\n", rs_serial_buf + rs_serial_full_header_size);
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
+						char *p = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
 						if(c == 'I') { // Присутствие
-
+							if(p) {
+								*p = '\0';
+								radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
+							}
 						} else if(c == 'D') { // Данные
+							p = strchr(p, 'R');
+							if(p) {
+								char *p2 = strchr(p, ' ');
+								if(p2) {
+									*p2 = '\0';
+									uint32_t ser = atoi(++p);
+									p = p2 + 1;
+									uint8_t i = 0;
+									for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
+									if(i < RADIO_SENSORS_MAX) {
+										if(i == radio_received_num) radio_received_num++;
+										radio_received[i].serial_num = ser;
+										while(p) {
+											c = get_next_byte_from_string(&p);
+											if(p == NULL) break;
+											if(c == 0xC0) { // Температура 2b
+												radio_received[i].Temp = get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2731;
+											} else if(c == 0xB4) { // Питание 1b
 
+											} else if(c == 0xBF) { // Test 1b
+
+											} else if(c == 0xB0) { // RSSI 1b
+
+											} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
+
+											}
+										}
+									}
+								}
+							}
 						}
 						RS_send_response();
 					}

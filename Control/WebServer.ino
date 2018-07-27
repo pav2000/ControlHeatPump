@@ -277,11 +277,11 @@ void readFileSD(char *filename,uint8_t thread)
 // возвращает число обработанных одиночных запросов
 #ifdef SENSOR_IP
 void parserGET(char *buf, char *strReturn, int8_t sock)
+{
 #else
-void parserGET(char *buf, char *strReturn, int8_t)
+void parserGET(char *buf, char *strReturn, int8_t )
+{
 #endif
-{ 
-   
   char *str,*x,*y, *z;
   float pm=0;
   int8_t i;

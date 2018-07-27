@@ -574,7 +574,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										document.getElementById(valueid).innerHTML = content;
 									}
 								} else if(type == 'table') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									if(values[1] != null && values[1] != 0) {
 										if(values[0] == 'get_numberIP') {
 											content = "";
 											content2 = "";
@@ -593,7 +593,6 @@ function loadParam(paramid, noretry, resultdiv) {
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
 											updateParam(upsens);
 											loadParam(loadsens);
-
 										} else if(values[0] == 'get_listRelay') {
 											content = "";
 											content2 = "";
@@ -690,7 +689,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadParam(loadsens);
 											loadParam(loadsens2);
 											updateParam(upsens);
-									} else if(values[0] == 'get_listFlow') {
+										} else if(values[0] == 'get_listFlow') {
 											content = "";
 											content2 = "";
 											upsens = "";
@@ -734,6 +733,9 @@ function loadParam(paramid, noretry, resultdiv) {
 											var element = document.getElementById(valueid);
 											if(element) element.innerHTML = content;
 										}
+									} else {
+										element = document.getElementById(values[0]);
+										if(element) element.innerHTML = "";
 									}
 								} else if(type == 'values') {
 									var valuevar = values[1].toLowerCase().replace(/[^\w\d]/g, "");
