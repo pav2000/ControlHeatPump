@@ -427,16 +427,16 @@ int8_t HeatPump::check_crc16_eeprom(int32_t addr, uint16_t size)
 int8_t HeatPump::save_motoHour()
 {
 	uint8_t i;
-	boolean flag;
+	uint8_t errcode;
 	motoHour.magic = 0xaa;   // заголовок
 
 	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
 	{
-		if(!(flag = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR %d save counters #%d\n", flag, i);
+		if(!(errcode = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
+		journal.jprintf(" ERROR %d save counters #%d\n", errcode, i);
 		_delay(i * 50);
 	}
-	if(flag) {
+	if(errcode) {
 		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
 		return ERR_SAVE2_EEPROM;
 	}  // записать счетчики
@@ -1825,16 +1825,6 @@ int8_t HeatPump::StartResume(boolean start)
 	}
 #endif
 
-
-#ifndef DEMO   // проверка блокировки инвертора
-	if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
-	{
-		journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
-		setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
-		error=ERR_MODBUS_BLOCK; set_Error(error,(char*)__FUNCTION__);  return error;
-	}
-#endif
-
 	// 1. Переменные  установка, остановка ТН имеет более высокий приоритет чем пуск ! -------------------------
 	if (start)  // Команда старт
 	{
@@ -1842,12 +1832,6 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(pP_DATE,"  Start . . .\n");
 
 		eraseError();                                      // Обнулить ошибку
-		if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
-		{
-			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
-			set_Error(error,(char*)__FUNCTION__);
-			return error;
-		}
 		//lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 	}
 	else
@@ -1966,7 +1950,24 @@ int8_t HeatPump::StartResume(boolean start)
 	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
 	if(is_next_command_stop()) return error;							// следующая команда останов, выходим
-	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
+	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) {
+#ifndef DEMO   // проверка блокировки инвертора
+		if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
+		{
+			journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
+			setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
+			error=ERR_MODBUS_BLOCK; set_Error(error,(char*)__FUNCTION__);
+			return error;
+		}
+#endif
+		if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
+		{
+			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
+			set_Error(error,(char*)__FUNCTION__);
+			return error;
+		}
+		compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
+	}
 
 	// 10. Сохранение состояния  -------------------------------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска

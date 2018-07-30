@@ -1066,7 +1066,7 @@ void vReadSensor_delay10ms(int16_t msec)
 		 {
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
-			 journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump);
+			 journal.jprintf((const char*)" Stop task update %s from vUpdate\n",(char*)nameHeatPump);
 			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
 			 break;
 		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
