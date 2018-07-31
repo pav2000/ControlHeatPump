@@ -1158,7 +1158,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         {
         	uint8_t m = atoi(str + 11);
         	for(i = 0; i < TNUMBER; i++)
-        		if((HP.sTemp[i].get_cfg_flags() & (1<<m))) {
+        		if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
         			strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
         		}
         	strcat(strReturn, "&"); continue;
@@ -1851,23 +1851,26 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   strcat(strReturn,"&"); continue; }
-    			   if (strcmp(str,"get_fullTemp")==0)         // Функция get_FulTemp
-    			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+    			   if(strcmp(str, "get_fullTemp") == 0)         // Функция get_FulTemp
     			   {
-#ifdef SENSOR_IP
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);   // Значение проводного датчика вывод
-    				   if((HP.sTemp[p].devIP!=NULL)&& (HP.sTemp[p].devIP->get_fUse())&&(HP.sTemp[p].devIP->get_link()>-1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
+    				   if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)         // Если датчик есть в конфигурации то выводим значение
     				   {
-    					   strcat(strReturn," [");
-    					   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
-    					   strcat(strReturn,"]");
-    				   }
-#else
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
-#endif
+    					 #ifdef SENSOR_IP
+    					   _ftoa(strReturn, (float) HP.sTemp[p].get_rawTemp() / 100.0, 1); // Значение проводного датчика вывод
+    					   if((HP.sTemp[p].devIP != NULL) && (HP.sTemp[p].devIP->get_fUse())
+    							   && (HP.sTemp[p].devIP->get_link() > -1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
+    					   {
+    						   strcat(strReturn, " [");
+    						   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    						   strcat(strReturn, "]");
+    					   }
+    					 #else
+    					   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    					 #endif
+    				   } else strcat(strReturn, "-");             // Датчика нет ставим прочерк
+    				   strcat(strReturn, "&");
+    				   continue;
     			   }
-    			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
 
     			   if (strcmp(str,"get_minTemp")==0)           // Функция get_minTemp
     			   { if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
