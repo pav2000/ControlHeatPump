@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(EEV_START),get_optionHP(EEV_LIGHT_START),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(EEV_CLOSE)");
+		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -44,30 +44,12 @@
 			</td>
 		</tr>		
 		<tr>
-			<td>Число повторных попыток пуска при ошибке [0..10]<sup>5</sup></td>
+			<td>Число повторных попыток пуска при ошибке [0..10]<sup>3</sup></td>
 			<td>
 				<input id="get_optionhp-attempt" type="number" min="0" max="9999" step="1" value="0">
 				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
 			</td>
 		</tr>
-		<tr>
-			<td>Закрытие ЭРВ при выключении компрессора</td>
-			<td>
-				<input type="checkbox" name="get_optionhp-eev_close" id="get_optionhp-eev_close" onchange="setParam('get_optionHP(EEV_CLOSE)');" >
-			</td>
-		</tr>
-		<tr>
-			<td>Начинать работу ЭРВ со стартовой позиции<sup>6</sup></td>
-			<td>
-				<input type="checkbox" name="get_optionhp-eev_start" id="get_optionhp-eev_start" onchange="setParam('get_optionHP(EEV_START)');" >
-			</td>
-		</tr>
-		<tr>
-			<td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>7</sup></td>
-			<td>
-				<input type="checkbox" name="get_optionhp-eev_light_start" id="get_optionhp-eev_light_start" onchange="setParam('get_optionHP(EEV_LIGHT_START)');" >
-			</td>
-		</tr>		
 		<tr>
 			<td>Использование дополнительного ТЭНа при нагреве отопления</td>
 			<td>
@@ -82,14 +64,14 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>3</sup></td>
+			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>4</sup></td>
 			<td>
 				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
-			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>4</sup></td>
+			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>5</sup></td>
 			<td>
 				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
@@ -156,7 +138,7 @@
 			</td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>9</sup></td>
+			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>6</sup></td>
 			<td>
 				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
 				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
@@ -192,13 +174,10 @@
 	</table>
 	<p>1. При изменении периода графики обнуляются.</p>
 	<p>2. Использование этой опции может привести к повреждению фаловой системы карты</p>
-	<p>3. 0-насос вообще не работает</p>
-	<p>4. 0-насос работает непрерывно</p>
-	<p>5. 0 - Повторный пуск при ошибке не производится</p>
-	<p>6. Eсли флаг не установлен, то при старте компрессора выставлять ЭРВ на позицию которая была при выключении</p>
-	<p>7. Если включена эта опция то перед стартом компрессора ЭРВ открывается на  EEV_PSTART шагов и через DELAY_START_POS секунд уходит на стартовую позицию (в зависимости от настроек). В первую очередь эта опция актуальна для инверторов</p>
-	<p>8. При совпадении часа начала и конца "дневного" тарифа  учет времени блокируется, и при работе берется значение  "ночного" тарифа (см. страницы Отопление и ГВС)</p> 
-	<p>9. 0 - Дисплей Nextion не выключается</p> 
+	<p>3. 0 - Повторный пуск при ошибке не производится</p>
+	<p>4. 0-насос вообще не работает</p>
+	<p>5. 0-насос работает непрерывно</p>
+	<p>6. 0 - Дисплей Nextion не выключается</p>
 	<br>
 	<input type="submit" value="Сброс настроек HP" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_SETTINGS");'> Введите RESET: <input id="reset_code" size="7">
 </div>	

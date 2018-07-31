@@ -259,9 +259,14 @@ private:
 };  
 
 // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ---------------------------------------- --------------------------------------
+//#define fPresent         0    // флаг наличие Объекта един для всего!!!! определение смотри выше
+#define fOneSeekZero     1		// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
 #define fEnterInPercent  2		// Ввод на веб-странице в %, иначе в шагах
 #define fCorrectOverHeat 3		// Включен режим корректировки перегрева
 #define fHoldMotor       4		// Режим "удержания" шагового двигателя ЭРВ
+#define fEevClose        5      // Флаг закрытие ЭРВ при выключении компрессора
+#define fLightStart      6      // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+#define fStartFlagPos    7      // флаг Всегда начинать работу ЭРВ со стратовой позици
 
 class devEEV
 {
@@ -297,7 +302,12 @@ public:
   int16_t get_manualStep(){return _data.manualStep;}     // Получить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
   TYPEFREON get_typeFreon(){return _data.typeFreon;}     // Получить тип фреона
   RULE_EEV get_ruleEEV(){return _data.ruleEEV;}          // Получить тип фреона
-  boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}
+  boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}      // Получить флаг Удержания шагового двигателя
+  boolean get_OneSeekZero(){return GETBIT(_data.flags,fOneSeekZero);}  // Получить флаг однократного поиска "0" ЭРВ 
+  boolean get_EevClose(){return GETBIT(_data.flags,fEevClose);}        // Получить флаг закрытие ЭРВ при выключении компрессора
+  boolean get_LightStart(){return GETBIT(_data.flags,fLightStart);}    // Получить флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора 
+  boolean get_StartFlagPos(){return GETBIT(_data.flags,fStartFlagPos);}// Получить флаг Всегда начинать работу ЭРВ со стратовой позици
+  
   uint8_t get_minSteps(){return _data.minSteps;}
   uint8_t get_delayOnPid(){return _data.delayOnPid;}
   uint8_t get_delayOff(){return _data.delayOff;}
@@ -325,7 +335,7 @@ public:
  
   StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
   statChart Chart;                                       // График по ЭРВ
-  boolean setZero;                                       // признак обнуления EEV;
+  boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
   int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
 
 private:

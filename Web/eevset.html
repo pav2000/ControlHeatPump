@@ -7,7 +7,7 @@
   <script type="text/javascript" src="scripts.js"></script>
   <script type="text/javascript">
     window.onload = function() {
-    loadParam("get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(MIN),get_paramEEV(MAX),get_paramEEV(SPEED),get_optionHP(PRE_START_POS),get_paramEEV(DELAY_START_POS),get_paramEEV(PRE_START_POS),get_paramEEV(START_POS),get_paramEEV(DELAY_ON_PID),get_paramEEV(DELAY_ON),get_paramEEV(DELAY_OFF),get_paramEEV(HOLD_MOTOR),get_paramEEV(ERR_KP)");
+    loadParam("get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(RULE),get_paramEEV(MANUAL),get_paramEEV(CONST),get_paramEEV(MIN),get_paramEEV(MAX),get_paramEEV(SPEED),get_optionHP(PRE_START_POS),get_paramEEV(DELAY_START_POS),get_paramEEV(PRE_START_POS),get_paramEEV(START_POS),get_paramEEV(DELAY_ON_PID),get_paramEEV(DELAY_ON),get_paramEEV(DELAY_OFF),get_paramEEV(HOLD_MOTOR),get_paramEEV(ERR_KP),get_paramEEV(ZERO),get_paramEEV(START),get_paramEEV(LIGHT_START),get_paramEEV(CLOSE)");
   };
   </script>
 </head>
@@ -39,9 +39,9 @@
         <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
       </td>
       <td nowrap><input id="get_parameev-manual" type="number" step="1" value="0"><input id="get_parameev-manual2" type="submit" value=">"  onclick="setParam('get_paramEEV(MANUAL)');"></td>
-    </tr>         
+    </tr>
    </tbody>
-   </table>            
+   </table>
   </div>
   
   <div class="row1">
@@ -56,17 +56,30 @@
     <tr><td>Минимальное количество шагов</td><td><input type="number" id="get_parameev-min"> <input type="submit" value=">" onclick="setParam('get_paramEEV(MIN)');"></td></tr>
     <tr><td>Максимальное количество шагов</td><td><input type="number" id="get_parameev-max"> <input type="submit" value=">" onclick="setParam('get_paramEEV(MAX)');"></td></tr>
     <tr><td>Скорость, импульсы в сек.</td><td><input type="number" id="get_parameev-speed"> <input type="submit" value=">" onclick="setParam('get_paramEEV(SPEED)');"></td></tr>
-    <tr><td>Удержания шагового двигателя</td><td><input type="checkbox" id="get_parameev-hold_motor" onchange="setParam('get_paramEEV(HOLD_MOTOR)');"></td></tr>
-    <tr><td>Позиция до пуска компрессора, если включена специальная позиция в опциях</td><td><input type="number" id="get_parameev-pre_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(PRE_START_POS)');"></td></tr>
-    <tr><td>Стартовая позиция или после пуска (спец. позиция вкл.), если вкл. опция (*6), иначе первый раз после включения ТН</td><td><input type="number" id="get_parameev-start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(START_POS)');"></td></tr>
+    <tr><td>Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, °C</td><td><input type="number" id="get_parameev-err_kp"> <input type="submit" value=">" onclick="setParam('get_paramEEV(ERR_KP)');"></td></tr>
+
+    <tr><td><b>Пуск компрессора</b></td><td></td></tr>
+    <tr><td>Начинать работу ЭРВ со стартовой позиции <sup>1</sup></td><td><input type="checkbox" id="get_parameev-start" onchange="setParam('get_paramEEV(START)');"></td></tr>
+    <tr><td>Стартовая позиция ЭРВ (позиция в которую переходит ЭРВ после разгона компрессора) ТН</td><td><input type="number" id="get_parameev-start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(START_POS)');"></td></tr>
+    <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>2</sup></td><td><input type="checkbox" id="get_parameev-light_start" onchange="setParam('get_paramEEV(LIGHT_START)');"></td></tr>
+    <tr><td>Специальная позиция ЭРВ для облегчения пуска компрессора</td><td><input type="number" id="get_parameev-pre_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(PRE_START_POS)');"></td></tr>
+
+    <tr><td><b>Опции</b></td><td></td></tr>
+    <tr><td>Однократный поиск "0" ЭРВ (только при первом включении ТН)</td><td><input type="checkbox" id="get_parameev-zero" onchange="setParam('get_paramEEV(ZERO)');"></td></tr>
+    <tr><td>Удержания шагового двигателя в простое</td><td><input type="checkbox" id="get_parameev-hold_motor" onchange="setParam('get_paramEEV(HOLD_MOTOR)');"></td></tr>
+    <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_parameev-close" onchange="setParam('get_paramEEV(CLOSE)');"></td></tr>
+
+    <tr><td><b>Времена</b></td><td></td></tr>
     <tr><td>Задержка между открытием ЭРВ для старта (если опция закрывать ЭРВ) и включением компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON)');"></td></tr>
     <tr><td>Время на пуск компрессора, если задана спец. опция, сек.</td><td><input type="number" id="get_parameev-delay_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_START_POS)');"></td></tr>
     <tr><td>Задержка начала регулирования от пуска компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on_pid"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON_PID)');"></td></tr>
     <tr><td>Задержка закрытия EEV после выключения насосов, сек.</td><td><input type="number" id="get_parameev-delay_off"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_OFF)');"></td></tr>
-    <tr><td>Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, °C</td><td><input type="number" id="get_parameev-err_kp"> <input type="submit" value=">" onclick="setParam('get_paramEEV(ERR_KP)');"></td></tr>
+
 
    </tbody>
-   </table>            
+   </table>
+   <p>1. Позиция ЭРВ с которой начинается работа ПИД</p>
+   <p>2. Позиция ЭРВ с которой начинается раскрутка компрессора (актуальна для инверторов)</p>
   </div>
 
 </div>
