@@ -566,7 +566,11 @@ void devEEV::initEEV()
   SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
  #endif 
   if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
-  SETBIT0(_data.flags,fCorrectOverHeat);  
+  SETBIT0(_data.flags,fCorrectOverHeat);              // Включен режим корректировки перегрева
+  SETBIT0(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+  SETBIT1(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
+  SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+  SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 
   Chart.init(get_present());                   // инициалазация статистики
   maxEEV=EEV_STEPS ;                    // Максимальное число шагов ЭРВ (диапазон)
@@ -636,13 +640,14 @@ void devEEV::Resume(uint16_t pos)
 // На стартовую позицию не выводит
  int8_t devEEV::Start()
  {
-  
    Resume(_data.StartPos);
-   EEV=0;
+ //  EEV=0;
    err=OK;                               // Ошибок нет
    if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
+   if ((!GETBIT(_data.flags,fOneSeekZero))||(GETBIT(_data.flags,fOneSeekZero)&&(EEV<0))) { // есть вариант однократного поиска "0" ЭРВ
    journal.jprintf(" EEV set zero\n"); 
-   set_zero();                           // установить 0
+   set_zero(); }                          // установить 0
+    
  //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
  //  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
   return OK;                  
@@ -650,7 +655,7 @@ void devEEV::Resume(uint16_t pos)
  // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
 int8_t devEEV::set_zero()    
 {
-setZero=true;                                             // Признак обнуления счетчика шагов EEV  Ставить в начале!!
+setZero=true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
 EEV=-1;   
 if (testMode!=SAFE_TEST) stepperEEV.step(-EEV_STEPS-40);  // не  SAFE_TEST - работаем
 else EEV=0;                                               // SAFE_TEST только координаты меняем
@@ -1039,11 +1044,19 @@ char* devEEV::get_paramEEV(char *var, char *ret)
   	} else if(strcmp(var, eev_DELAY_ON)==0){
     	_itoa(_data.delayOn, ret);
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
-    	_itoa((_data.flags&(1<<fHoldMotor))!=0, ret);
+    	_itoa((_data.flags & (1<<fHoldMotor))!=0, ret);
     } else if(strcmp(var, eev_PRESENT)==0){
     	_itoa((_data.flags & (1<<fPresent))!=0, ret);
+    } else if(strcmp(var, eev_SEEK_ZERO)==0){
+    	_itoa((_data.flags & (1<<fOneSeekZero))!=0, ret);
+    } else if(strcmp(var, eev_CLOSE)==0){
+    	_itoa((_data.flags & (1<<fEevClose))!=0, ret);
+    } else if(strcmp(var, eev_LIGHT_START)==0){
+    	_itoa((_data.flags & (1<<fLightStart))!=0, ret);
+    } else if(strcmp(var, eev_START )==0){
+    	_itoa((_data.flags & (1<<fStartFlagPos))!=0, ret);
+   	
     } else strcat(ret,"E10");
-   
   return ret;              
 } 
 
@@ -1118,6 +1131,15 @@ float temp;
       if ((x>=0)&&(x<=255)) { if(_data.delayOn!=x) _data.delayOn=(int)x; return true;} else return false;	// секунды размер 1 байт    	
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
       if (x==0) SETBIT0(_data.flags, fHoldMotor); else SETBIT1(_data.flags, fHoldMotor); 
+    } else if(strcmp(var, eev_SEEK_ZERO)==0){
+      if (x==0) SETBIT0(_data.flags, fOneSeekZero); else SETBIT1(_data.flags, fOneSeekZero);    
+    } else if(strcmp(var, eev_CLOSE)==0){
+      if (x==0) SETBIT0(_data.flags, fEevClose); else SETBIT1(_data.flags, fEevClose);    
+    } else if(strcmp(var, eev_LIGHT_START)==0){
+      if (x==0) SETBIT0(_data.flags, fLightStart); else SETBIT1(_data.flags, fLightStart);    
+    } else if(strcmp(var, eev_START)==0){
+      if (x==0) SETBIT0(_data.flags, fStartFlagPos); else SETBIT1(_data.flags, fStartFlagPos);    
+      
     } else return false; // ошибочное имя параметра
     
   return true;  // для флагов

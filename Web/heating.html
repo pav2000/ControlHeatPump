@@ -45,7 +45,7 @@
 			<td><input id="get_paramheathp-temp2" type="number" min="10" max="50" step="0.1" value="0"><input id="get_paramheathp-temp22" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP2)');"></td>
 		</tr>						
 		<tr>
-			<td>Целевая температура °C</td>
+			<td>Целевая температура (что является целью)</td>
 			<td><select id="get_paramcoolhp-target" onchange="setParam('get_paramCoolHP(TARGET)','get_paramcoolhp-target');"></select></td>
 			<td><select id="get_paramheathp-target" onchange="setParam('get_paramHeatHP(TARGET)','get_paramheathp-target');"></select></td>
 		</tr>						
@@ -64,12 +64,12 @@
 			<td><input id="get_paramheathp-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADT)');"></td>
 		</tr>
 		<tr>
-			<td>Начальный час добавки к целевой температуре</td>
+			<td>Начальный час добавки к целевой температуре [0...23]</td>
 			<td></td>
 			<td><input id="get_paramheathp-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADH)');"></td>
 		</tr>
 		<tr>
-			<td>Конечный час добавки к целевой температуре</td>
+			<td>Конечный час добавки к целевой температуре [0...23]</td>
 			<td></td>
 			<td><input id="get_paramheathp-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(ADEH)');"></td>
 		</tr>
@@ -83,7 +83,7 @@
 			<td><input id="get_paramheathp-temp_pid" type="number" min="5" max="50" step="0.1"><input id="get_paramheathp-temp_pid2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_PID)');"></td>
 		</tr>								
 		<tr>
-			<td>Постоянная интегрирования времени (секунды) [10..600]</td>
+			<td>Постоянная интегрирования времени (сек.) [10..600]</td>
 			<td><input id="get_paramcoolhp-hp_time" type="number" min="10" max="600" step="1" value="0"><input id="get_paramCoolHP-hp_time2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(HP_TIME)');"></td>
 			<td><input id="get_paramheathp-hp_time" type="number" min="10" max="600" step="1" value="0"><input id="get_paramHeatHP-hp_time2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(HP_TIME)');"></td>
 		</tr>						
@@ -162,7 +162,7 @@
 			<td><input id="get_paramheathp-temp_out" type="number" min="-10" max="70" step="0.1"><input id="get_paramheathp-temp_out2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(TEMP_OUT)');"></td>
 		</tr>
 		<tr>
-			<td>Минимальное время «простоя» компрессора ТН перед включением (минуты) [0..60]</td>
+			<td>Минимальное время «простоя» компрессора ТН перед включением (мин.) [0..60]</td>
 			<td><input id="get_paramcoolhp-pause" type="number" min="0" max="60" step="1"><input id="get_paramcoolhp-pause2" type="submit" value=">"  onclick="setParam('get_paramCoolHP(PAUSE)');"></td>
 			<td><input id="get_paramheathp-pause" type="number" min="0" max="60" step="1"><input id="get_paramheathp-pause2" type="submit" value=">"  onclick="setParam('get_paramHeatHP(PAUSE)');"></td>
 		</tr>						

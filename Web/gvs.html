@@ -54,7 +54,7 @@
 		</thead>			
 		<tbody>
 		<tr>
-			<td>Включение бойлера</td>
+			<td>Включение нагрева бойлера</td>
 			<td><input type="checkbox" name="get_boiler-boiler_on" id="get_boiler-boiler_on" onChange="setParam('get_Boiler(BOILER_ON)');" ></td>
 		</tr>
 		<tr>
@@ -74,11 +74,11 @@
 			<td><input id="get_boiler-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADT)');"></td>
 		</tr>
 		<tr>
-			<td>Начальный час добавки к целевой температуре</td>
+			<td>Начальный час добавки к целевой температуре [0...23]</td>
 			<td><input id="get_boiler-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADH)');"></td>
 		</tr>
 		<tr>
-			<td>Конечный час добавки к целевой температуре</td>
+			<td>Конечный час добавки к целевой температуре [0...23]</td>
 			<td><input id="get_boiler-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADEH)');"></td>
 		</tr>
 		<tr>
@@ -90,7 +90,7 @@
 			<td><input type="checkbox" name="get_boiler-turbo_boiler" id="get_boiler-turbo_boiler" onChange="setParam('get_Boiler(TURBO_BOILER)');" ></td>
 		</tr>
 		<tr>
-			<td>Использование дополнительного ТЭНа для догрева бойлера<sup>4</sup></td>
+			<td>Использование ТЭНа для догрева бойлера<sup>4</sup></td>
 			<td>
 				<input id="get_boiler-add_heating" type="checkbox" onchange="setParam('get_Boiler(ADD_HEATING)','get_boiler-add_heating');">
 			</td>
@@ -111,7 +111,7 @@
 			<td><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
 		</tr>
 		<tr>
-			<td>Постоянная интегрирования времени (секунды) [5..300]</td>
+			<td>Постоянная интегрирования времени (сек.) [5..300]</td>
 			<td><input id="get_boiler-boil_time" type="number" min="5" max="300" step="1" value="0"><input id="get_boiler-boil_time2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
 		</tr>
 		<tr>
@@ -147,11 +147,11 @@
 			<td><input type="checkbox" name="get_boiler-circulation" id="get_boiler-circulation" onChange="setParam('get_Boiler(CIRCULATION)');" ></td>
 		</tr>
 		<tr>
-			<td>Время работы циркуляционного насоса ГВС (минуты) [0...60]<sup>6</sup></td>
+			<td>Время работы циркуляционного насоса ГВС (мин.) [0...60]<sup>6</sup></td>
 			<td><input id="get_boiler-circul_work" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_work2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_WORK)');"></td>
 		</tr>
 		<tr>
-			<td>Пауза между включениями насоса циркуляции (минуты) [0...60]<sup>7</sup></td>
+			<td>Пауза между включениями насоса циркуляции (мин.) [0...60]<sup>7</sup></td>
 			<td><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_pause2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
 		</tr>
 		<tr>
@@ -159,7 +159,7 @@
 			<td><input type="checkbox" name="get_boiler-reset_heat" id="get_boiler-reset_heat" onChange="setParam('get_Boiler(RESET_HEAT)');" ></td>
 		</tr>
 		<tr>
-			<td>Время сброса тепла (секунды) [1..10000]</td>
+			<td>Время сброса тепла (сек.) [1..10000]</td>
 			<td><input id="get_boiler-reset_time" type="number" min="1" max="10000" step="1" value=""><input id="get_boiler-reset_time2" type="submit" value=">"  onclick="setParam('get_Boiler(RESET_TIME)');"></td>
 		</tr>
 		<tr>
@@ -171,7 +171,7 @@
 			<td><input id="get_boiler-temp_max" type="number" min="20" max="70" step="0.1" value="20"><input id="get_boiler-temp_max2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_MAX)');"></td>
 		</tr>
 		<tr>
-			<td>Минимальное время «простоя» компрессора ТН перед включением (минуты) [0..60]</td>
+			<td>Минимальное время «простоя» компрессора ТН перед включением (мин.) [0..60]</td>
 			<td><input id="get_boiler-pause1" type="number" min="0" max="60" step="1"><input id="get_boiler-pause12" type="submit" value=">"  onclick="setParam('get_Boiler(PAUSE1)');"></td>
 		</tr>
 	</tbody>

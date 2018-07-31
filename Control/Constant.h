@@ -491,6 +491,11 @@ const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закр
 const char *eev_DELAY_ON      =  {"DELAY_ON"};      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 const char *eev_HOLD_MOTOR    =  {"HOLD_MOTOR"};    // Флаг удержания мотора
 const char *eev_PRESENT       =  {"PRESENT"};       // Флаг наличия ЭРВ в ТН
+const char *eev_SEEK_ZERO     =  {"ZERO"};          // Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+const char *eev_CLOSE         =  {"CLOSE"};         // Флаг закрытие ЭРВ при выключении компрессора
+const char *eev_LIGHT_START   =  {"LIGHT_START"};   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+const char *eev_START         =  {"START"};         // флаг Всегда начинать работу ЭРВ со стратовой позици
+
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
@@ -736,9 +741,6 @@ const char *option_ATTEMPT            = {"ATTEMPT"};            // число п
 const char *option_TIME_CHART         = {"TIME_CHART"};         // период сбора статистики
 const char *option_BEEP               = {"BEEP"};               // включение звука
 const char *option_NEXTION            = {"NEXTION"};            // использование дисплея nextion
-const char *option_EEV_CLOSE          = {"EEV_CLOSE"};          // закрытие ЭРВ при выключении компрессора
-const char *option_EEV_LIGHT_START    = {"EEV_LIGHT_START"};    // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-const char *option_EEV_START_POS      = {"EEV_START"};          // флаг Всегда начинать работу ЭРВ со стратовой позици
 const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
 const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг писать в лог нерегулярные ошибки счетчика SDM
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
