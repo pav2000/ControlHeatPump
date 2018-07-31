@@ -285,7 +285,6 @@ void  sensorDiditalInput::initInput(int sensor)
    flags=0x00;                     // сброс флагов
    // флаги  0 - наличие датчика,  1- режим теста
    SETBIT1(flags,fPresent);        // наличие датчика в текушей конфигурации
-   type=pALARM;
    type=SENSORTYPE[sensor];         // тип датчика
    pin=pinsInput[sensor];           // пин датчика
    pinMode(pin, INPUT);             // Настроить ножку на вход

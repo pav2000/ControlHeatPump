@@ -105,37 +105,44 @@ int8_t sensorTemp::Read()
 			} else if(number == TIN) return OK; // Этот может получать значения от других датчиков
 			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
-			if(GETBIT(flags, fRadio)) return OK;
-			int16_t ttemp;
-			err = busOneWire->Read(address, ttemp);
-			if(err != OK) {
-				sumErrorRead++;
-				if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
-					if(!get_setup_flag(fTEMP_dont_log_errors)) {
-						journal.jprintf(pP_TIME, "%s: Error ", name);
-						if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
-							journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
-						} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
-						//err = ERR_READ_TEMP;
-					}
-					if(++numErrorRead == 0) numErrorRead--;
-					if(numErrorRead > NUM_READ_TEMP_ERR && !get_setup_flag(fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
-					return err;
+			if(GETBIT(flags, fRadio)) {
+				for(uint8_t i = 0; i < radio_received_num; i++) if(radio_received[i].RSSI && memcmp(&radio_received[i].serial_num, &address[1], sizeof(radio_received[0].serial_num)) == 0) {
+					lastTemp = radio_received[i].Temp;
+					break;
 				}
-			}
-			numErrorRead = 0; // Сброс счетчика ошибок
-			//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
-			// Защита от скачков
-			if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
-				lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-			} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
-			   nGap++;
-			   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
-				   nGap = 0;
-				   lastTemp = ttemp;
-			   }
-			   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
-				   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
+				err = OK;
+			} else {
+				int16_t ttemp;
+				err = busOneWire->Read(address, ttemp);
+				if(err != OK) {
+					sumErrorRead++;
+					if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
+						if(!get_setup_flag(fTEMP_dont_log_errors)) {
+							journal.jprintf(pP_TIME, "%s: Error ", name);
+							if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+								journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+							} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
+							//err = ERR_READ_TEMP;
+						}
+						if(++numErrorRead == 0) numErrorRead--;
+						if(numErrorRead > NUM_READ_TEMP_ERR && !get_setup_flag(fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
+						return err;
+					}
+				}
+				numErrorRead = 0; // Сброс счетчика ошибок
+				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
+				// Защита от скачков
+				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
+					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
+				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
+				   nGap++;
+				   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+					   nGap = 0;
+					   lastTemp = ttemp;
+				   }
+				   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
+					   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
+				}
 			}
 		}
 #endif
@@ -399,21 +406,23 @@ void serialEvent3()
 									uint8_t i = 0;
 									for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
 									if(i < RADIO_SENSORS_MAX) {
-										if(i == radio_received_num) radio_received_num++;
+										if(i == radio_received_num) { // new
+											radio_received_num++;
+											memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
+										}
 										radio_received[i].serial_num = ser;
 										while(p) {
 											c = get_next_byte_from_string(&p);
-											if(p == NULL) break;
+											if(p == NULL || c == 0) break;
 											if(c == 0xC0) { // Температура 2b
 												radio_received[i].Temp = get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2731;
 											} else if(c == 0xB4) { // Питание 1b
-
+												radio_received[i].battery = ((uint32_t) get_next_byte_from_string(&p) * 125 * 3 / 128 + 5) / 10;
 											} else if(c == 0xBF) { // Test 1b
-
+												get_next_byte_from_string(&p);
 											} else if(c == 0xB0) { // RSSI 1b
-
+												radio_received[i].RSSI = get_next_byte_from_string(&p);
 											} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
-
 											}
 										}
 									}
