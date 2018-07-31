@@ -82,57 +82,57 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Работа насосов отопления, когда ТН в паузе (секунды) [0..65535] <sup>3</sup></td>
+			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>3</sup></td>
 			<td>
 				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
-			<td> Период останова насосов отопления в паузе ТН (секунды) [0..65535] <sup>4</sup></td>
+			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>4</sup></td>
 			<td>
 				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
 		<tr>
-			<td>Задержка включения компрессора после включения насосов (сек).</td>
+			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_on_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Задержка выключения насосов после выключения компрессора (сек).</td>
+			<td>Задержка выключения насосов после выключения компрессора (сек.) [0...900]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Задержка включения ТН после внезапного сброса контроллера (сек.)</td>
+			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.)</td>
+			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.) [0...6000]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.)</td>
+			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Пауза после переключение ГВС (сек.)</td>
+			<td>Пауза после переключение ГВС (сек.) [0...1200]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.)</td>
+			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.) [0...1200]</td>
 			<td>
 				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
 			</td>
@@ -156,7 +156,7 @@
 			</td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (минуты) [0..60] <sup>9</sup></td>
+			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>9</sup></td>
 			<td>
 				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
 				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
