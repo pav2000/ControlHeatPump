@@ -440,7 +440,7 @@ int8_t HeatPump::save_motoHour()
 		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
 		return ERR_SAVE2_EEPROM;
 	}  // записать счетчики
-	journal.jprintf(" Save counters, %db\n", sizeof(motoHour));
+	journal.jprintf(" Save counters OK, write: %d bytes\n", sizeof(motoHour));
 	return OK;
 }
 

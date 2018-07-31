@@ -59,27 +59,32 @@
     <tr><td>Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, °C</td><td><input type="number" id="get_parameev-err_kp"> <input type="submit" value=">" onclick="setParam('get_paramEEV(ERR_KP)');"></td></tr>
 
     <tr><td><b>Пуск компрессора</b></td><td></td></tr>
-    <tr><td>Начинать работу ЭРВ со стартовой позиции <sup>1</sup></td><td><input type="checkbox" id="get_parameev-start" onchange="setParam('get_paramEEV(START)');"></td></tr>
-    <tr><td>Стартовая позиция ЭРВ (позиция в которую переходит ЭРВ после разгона компрессора) ТН</td><td><input type="number" id="get_parameev-start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(START_POS)');"></td></tr>
-    <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>2</sup></td><td><input type="checkbox" id="get_parameev-light_start" onchange="setParam('get_paramEEV(LIGHT_START)');"></td></tr>
-    <tr><td>Специальная позиция ЭРВ для облегчения пуска компрессора</td><td><input type="number" id="get_parameev-pre_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(PRE_START_POS)');"></td></tr>
+    <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>1</sup></td><td><input type="checkbox" id="get_parameev-light_start" onchange="setParam('get_paramEEV(LIGHT_START)');"></td></tr>
+    <tr><td>Специальная позиция ЭРВ для облегчения пуска компрессора (шаги)</td><td><input type="number" id="get_parameev-pre_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(PRE_START_POS)');"></td></tr>
+    <tr><td>Время на раскрутку компрессора (сек.)<sup>2</sup></td><td><input type="number" id="get_parameev-delay_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_START_POS)');"></td></tr>
+    <tr><td>Начинать работу ЭРВ со стартовой позиции<sup>3</sup></td><td><input type="checkbox" id="get_parameev-start" onchange="setParam('get_paramEEV(START)');"></td></tr>
+    <tr><td>Стартовая позиция начала работы ЭРВ (шаги)</td><td><input type="number" id="get_parameev-start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(START_POS)');"></td></tr>
+    <tr><td>Задержка начала регулирования от пуска компрессора (сек.)<sup>4</sup></td><td><input type="number" id="get_parameev-delay_on_pid"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON_PID)');"></td></tr>
+
+    <tr><td><b>Останов компрессора</b></td><td></td></tr>
+    <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_parameev-close" onchange="setParam('get_paramEEV(CLOSE)');"></td></tr>
+    <tr><td>Задержка закрытия EEV после выключения насосов (сек.)</td><td><input type="number" id="get_parameev-delay_off"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_OFF)');"></td></tr>
+    <tr><td>Задержка между открытием ЭРВ для старта (если опция закрывать ЭРВ) и включением компрессора (сек.)</td><td><input type="number" id="get_parameev-delay_on"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON)');"></td></tr>
+
 
     <tr><td><b>Опции</b></td><td></td></tr>
-    <tr><td>Однократный поиск "0" ЭРВ (только при первом включении ТН)</td><td><input type="checkbox" id="get_parameev-zero" onchange="setParam('get_paramEEV(ZERO)');"></td></tr>
+    <tr><td>Однократный поиск "0" ЭРВ<sup>5</sup> </td><td><input type="checkbox" id="get_parameev-zero" onchange="setParam('get_paramEEV(ZERO)');"></td></tr>
     <tr><td>Удержания шагового двигателя в простое</td><td><input type="checkbox" id="get_parameev-hold_motor" onchange="setParam('get_paramEEV(HOLD_MOTOR)');"></td></tr>
-    <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_parameev-close" onchange="setParam('get_paramEEV(CLOSE)');"></td></tr>
-
-    <tr><td><b>Времена</b></td><td></td></tr>
-    <tr><td>Задержка между открытием ЭРВ для старта (если опция закрывать ЭРВ) и включением компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON)');"></td></tr>
-    <tr><td>Время на пуск компрессора, если задана спец. опция, сек.</td><td><input type="number" id="get_parameev-delay_start_pos"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_START_POS)');"></td></tr>
-    <tr><td>Задержка начала регулирования от пуска компрессора, сек.</td><td><input type="number" id="get_parameev-delay_on_pid"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_ON_PID)');"></td></tr>
-    <tr><td>Задержка закрытия EEV после выключения насосов, сек.</td><td><input type="number" id="get_parameev-delay_off"> <input type="submit" value=">" onclick="setParam('get_paramEEV(DELAY_OFF)');"></td></tr>
 
 
    </tbody>
    </table>
-   <p>1. Позиция ЭРВ с которой начинается работа ПИД</p>
-   <p>2. Позиция ЭРВ с которой начинается раскрутка компрессора (актуальна для инверторов)</p>
+   <p>1. Позиция ЭРВ с которой начинается раскрутка компрессора (актуальна для инверторов)</p>
+   <p>2. Время после которого специальная позиция ЭРВ меняется на стратовую</p>
+   <p>3. Если эта опция не выбрана то работа ЭРВ начинается с позции которая была при остановке компрессора</p>
+   <p>4. Время от начала раскрутки компрессора до момента начала работы ПИД ЭРВ, должно быть быть больше 2*</p>
+   <p>5. Если выбрана эта опция то поиск "0" производится только один раз при первом включении ТН</p>
+
   </div>
 
 </div>
