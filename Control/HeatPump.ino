@@ -1232,60 +1232,13 @@ return str;
 // получить данные графика  в виде строки, данные ДОБАВЛЯЮТСЯ к str
 char * HeatPump::get_Chart(char *var, char* str)
 {
+uint8_t i;	
+// В начале имена совпадающие с именами объектов
+ for(i=0;i<TNUMBER;i++) if((strcmp(var, sTemp[i].get_name()) == 0)&&(sTemp[i].Chart.get_present()))            { sTemp[i].Chart.get_PointsStr(100, str); return str;} 
+ for(i=0;i<ANUMBER;i++) if((strcmp(var, sADC[i].get_name()) == 0)&&(sADC[i].Chart.get_present()))              { sADC[i].Chart.get_PointsStr(100, str); return str;}    
+ for(i=0;i<FNUMBER;i++) if((strcmp(var, sFrequency[i].get_name()) == 0)&&(sFrequency[i].Chart.get_present()))  { sFrequency[i].Chart.get_PointsStr(100, str); return str;}  
 	if(strcmp(var, chart_NONE) == 0) {
 		strcat(str, "");
-	} else if(strcmp(var, chart_TOUT) == 0) {
-		sTemp[TOUT].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TIN) == 0) {
-		sTemp[TIN].Chart.get_PointsStr(100, str);
-#ifdef TEVAIN
-	} else if(strcmp(var, chart_TEVAIN) == 0) {
-		sTemp[TEVAIN].Chart.get_PointsStr(100, str);
-#endif
-	} else if(strcmp(var, chart_TEVAOUT) == 0) {
-		sTemp[TEVAOUT].Chart.get_PointsStr(100, str);
-#ifdef TEVAIN
-	} else if(strcmp(var, chart_TCONIN) == 0) {
-		sTemp[TCONIN].Chart.get_PointsStr(100, str);
-#endif
-	} else if(strcmp(var, chart_TCONOUT) == 0) {
-		sTemp[TCONOUT].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TBOILER) == 0) {
-		sTemp[TBOILER].Chart.get_PointsStr(100, str);
-#ifdef TACCUM
-	} else if(strcmp(var, chart_TACCUM) == 0) {
-		sTemp[TACCUM].Chart.get_PointsStr(100, str);
-#endif
-#ifdef TRTOOUT
-	} else if(strcmp(var, chart_TRTOOUT) == 0) {
-		sTemp[TRTOOUT].Chart.get_PointsStr(100, str);
-#endif
-	} else if(strcmp(var, chart_TCOMP) == 0) {
-		sTemp[TCOMP].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TEVAING) == 0) {
-		sTemp[TEVAING].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TEVAOUTG) == 0) {
-		sTemp[TEVAOUTG].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TCONING) == 0) {
-		sTemp[TCONING].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TCONOUTG) == 0) {
-		sTemp[TCONOUTG].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_PEVA) == 0) {
-		sADC[PEVA].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_PCON) == 0) {
-		sADC[PCON].Chart.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_FLOWCON) == 0) {
-#ifdef FLOWCON
-		sFrequency[FLOWCON].Chart.get_PointsStr(1000, str);
-#endif
-	} else if(strcmp(var, chart_FLOWEVA) == 0) {
-#ifdef FLOWEVA
-		sFrequency[FLOWEVA].Chart.get_PointsStr(1000, str);
-#endif
-	} else if(strcmp(var, chart_FLOWPCON) == 0) {
-#ifdef FLOWPCON
-		sFrequency[FLOWPCON].Chart.get_PointsStr(1000,str);
-#endif
 	} else
 #ifdef EEV_DEF
 	if(strcmp(var, chart_posEEV) == 0) {

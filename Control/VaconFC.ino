@@ -519,7 +519,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
-    	strcat(ret,(char*)cInvalid);
+    strcat(ret,(char*)cInvalid);
 }
 
 // Установить параметр инвертора из строки
