@@ -848,9 +848,9 @@ __attribute__((always_inline)) inline float getTemp_RtcI2C()
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
 		return 0;
 	}
-	int16_t ret = rtcI2C.temperature();
+	static int16_t rtc_temp = rtcI2C.temperature();
 	SemaphoreGive(xI2CSemaphore);
-	return (float) ret / 100.0;
+	return (float) rtc_temp / 100.0;
 }
 
 // Часы на I2C   Чтение времени

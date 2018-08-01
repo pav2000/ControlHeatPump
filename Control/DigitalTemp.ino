@@ -106,11 +106,11 @@ int8_t sensorTemp::Read()
 			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
 			if(GETBIT(flags, fRadio)) {
-				for(uint8_t i = 0; i < radio_received_num; i++) if(radio_received[i].RSSI && memcmp(&radio_received[i].serial_num, &address[1], sizeof(radio_received[0].serial_num)) == 0) {
-					lastTemp = radio_received[i].Temp;
-					break;
-				}
+#ifdef RADIO_SENSORS
 				err = OK;
+				int8_t i = get_radio_received_idx(address);
+				if(i >= 0) lastTemp = radio_received[i].Temp; else return err;
+#endif
 			} else {
 				int16_t ttemp;
 				err = busOneWire->Read(address, ttemp);
@@ -259,6 +259,17 @@ int8_t sensorTemp::inc_error(void)
 	if(++numErrorRead == 0) numErrorRead--;
 	return numErrorRead > NUM_READ_TEMP_ERR;
 }
+
+int8_t sensorTemp::get_radio_received_idx(byte * addr)
+{
+#ifdef RADIO_SENSORS
+	for(uint8_t i = 0; i < radio_received_num; i++) if(radio_received[i].RSSI && memcmp(&radio_received[i].serial_num, addr + 1, sizeof(radio_received[0].serial_num)) == 0) {
+		return i;
+	}
+#endif
+	return -1;
+}
+
 
 // Удаленные датчики температуры ---------------------------------------------------------------------------------------
 #ifdef SENSOR_IP

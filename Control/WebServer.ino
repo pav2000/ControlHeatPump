@@ -1908,8 +1908,17 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   strcat(strReturn,"&") ;    continue;
     			   }
-    			   if (strcmp(str,"get_noteTemp")==0)           // Функция get_noteTemp
-    			   { strcat(strReturn,HP.sTemp[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   if(strcmp(str, "get_noteTemp") == 0)           // Функция get_noteTemp
+    			   {
+    				   strcat(strReturn, HP.sTemp[p].get_note());
+					#ifdef RADIO_SENSORS
+    				   if(HP.sTemp[p].get_fRadio()) {
+    					   i = HP.sTemp[p].get_radio_received_idx(HP.sTemp[p].get_address());
+    					   if(i >= 0) m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.1fV %d]", (float)radio_received[i].battery / 10, radio_received[i].RSSI / 24);
+    				   }
+					#endif
+    				   strcat(strReturn, "&"); continue;
+    			   }
 
     			   if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
     			   {

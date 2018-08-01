@@ -133,12 +133,14 @@ class sensorTemp
     void     set_address(byte *addr, byte bus);    		// Привязать адрес и номер шины
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
+    __attribute__((always_inline)) inline boolean get_fRadio(){return GETBIT(flags,fRadio);}
     uint8_t get_cfg_flags() { return SENSORTEMP[number]; } // Вернуть биты конфигурации (наличие, особенности отображения на веб страницах,)
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
     __attribute__((always_inline)) inline uint8_t get_bus(){ return (GETBIT(flags, fRadio) ? 7 : (setup_flags & fDS2482_bus_mask)); } // Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     __attribute__((always_inline)) inline uint8_t get_setup_flags(void){ return setup_flags; }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
+    int8_t   get_radio_received_idx(byte * addr);		// Индекс массива полученных данных
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
     char*    get_note(){return note;}                   // Получить оисание датчика
