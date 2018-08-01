@@ -14,7 +14,7 @@
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-<h1>Настройки инвертора <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+<h1>Настройки инвертора Omron MX2   <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 
   <div class="row1">
    <table>
@@ -25,29 +25,42 @@
     </tr>
    </thead>
    <tbody>
-    <tr><td>Автоматический подбор частоты</td><td><input type="checkbox" id="get_paramfc-auto" onchange="setParam('get_paramFC(AUTO)');"></td></tr>
+    <tr><td>Автоматический подбор частоты (ПИД регулирование)<sup>1</sup></td><td><input type="checkbox" id="get_paramfc-auto" onchange="setParam('get_paramFC(AUTO)');"></td></tr>
+<!--
     <tr><td>Авто-сброс не критичного сбоя инвертора</td><td><input type="checkbox" id="get_paramfc-arstflt" onchange="setParam('get_paramFC(ARSTFLT)');"></td></tr>
-    <tr><td>Время обновления алгоритма пид регулятора, сек.</td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
-    <tr><td>Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (гц)</td><td><input type="number" id="get_paramfc-freq_pid_step"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_PID_STEP)');"></td></tr>
-    <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
-    <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C)</td><td><input type="number" id="get_paramfc-dt_comp_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_COMP_TEMP)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита, уменьшается частота (°C)</td><td><input type="number" id="get_paramfc-dt_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита ГВС (°C)</td><td><input type="number" id="get_paramfc-dt_temp_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP_BOILER)');"></td></tr>
-    <tr><td>Стартовая частота инвертора для отопления и охлаждения (гц)</td><td><input type="number" id="get_paramfc-freq_start"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_START)');"></td></tr>
-    <tr><td>Стартовая частота инвертора при ГВС (гц)</td><td><input type="number" id="get_paramfc-freq_start_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_START_BOILER)');"></td></tr>
-    <tr><td>Минимальная частота инвертора для отопления (гц)</td><td><input type="number" id="get_paramfc-freq_min"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN)');"></td></tr>
-    <tr><td>Минимальная частота инвертора для охлаждения (гц)</td><td><input type="number" id="get_paramfc-freq_min_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_COOL)');"></td></tr>
-    <tr><td>Минимальная частота инвертора для ГВС (гц)</td><td><input type="number" id="get_paramfc-freq_min_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_BOILER)');"></td></tr>
-    <tr><td>Минимальная частота инвертора в ручном режиме (гц)</td><td><input type="number" id="get_paramfc-freq_min_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_USER)');"></td></tr>
-    <tr><td>Максимальная частота инвертора для отопления (гц)</td><td><input type="number" id="get_paramfc-freq_max"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX)');"></td></tr>
-    <tr><td>Максимальная частота инвертора для охлаждения (гц)</td><td><input type="number" id="get_paramfc-freq_max_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_COOL)');"></td></tr>
-    <tr><td>Максимальная частота инвертора для ГВС (гц)</td><td><input type="number" id="get_paramfc-freq_max_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_BOILER)');"></td></tr>
-    <tr><td>Максимальная частота инвертора в ручном режиме (гц)</td><td><input type="number" id="get_paramfc-freq_max_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_USER)');"></td></tr>
-    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока (гц)</td><td><input type="number" id="get_paramfc-freq_step"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_STEP)');"></td></tr>
-    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока для ГВС (гц)</td><td><input type="number" id="get_paramfc-freq_step_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_STEP_BOILER)');"></td></tr>
+-->
+    <tr><td>Время обновления алгоритма ПИД регулятора, (сек.) [3...600]</td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
+    <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты [50...100]</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
+
+    <tr><td><b>Граничные температуры</b></td><td></td></tr>
+    <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_paramfc-dt_comp_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_COMP_TEMP)');"></td></tr>
+    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_paramfc-dt_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP)');"></td></tr>
+    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита ГВС, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_paramfc-dt_temp_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_TEMP_BOILER)');"></td></tr>
+
+    <tr><td><b>Стартовые частоты</b></td><td></td></tr>
+    <tr><td>Стартовая частота инвертора для отопления и охлаждения (Гц) [20...120]</td><td><input type="number" id="get_paramfc-freq_start"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_START)');"></td></tr>
+    <tr><td>Стартовая частота инвертора при ГВС (Гц) [20...150]</td><td><input type="number" id="get_paramfc-freq_start_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_START_BOILER)');"></td></tr>
+
+    <tr><td><b>Минимальные частоты</b></td><td></td></tr>
+    <tr><td>Минимальная частота инвертора для отопления (Гц) [20...80]</td><td><input type="number" id="get_paramfc-freq_min"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN)');"></td></tr>
+    <tr><td>Минимальная частота инвертора для охлаждения (Гц) [20...80]</td><td><input type="number" id="get_paramfc-freq_min_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_COOL)');"></td></tr>
+    <tr><td>Минимальная частота инвертора для ГВС (Гц) [20...80]</td><td><input type="number" id="get_paramfc-freq_min_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_BOILER)');"></td></tr>
+    <tr><td>Минимальная частота инвертора в ручном режиме (Гц) [20...80]</td><td><input type="number" id="get_paramfc-freq_min_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MIN_USER)');"></td></tr>
+
+    <tr><td><b>Максимальные частоты</b></td><td></td></tr>
+    <tr><td>Максимальная частота инвертора для отопления (Гц) [40...200]</td><td><input type="number" id="get_paramfc-freq_max"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX)');"></td></tr>
+    <tr><td>Максимальная частота инвертора для охлаждения (Гц) [40...200]</td><td><input type="number" id="get_paramfc-freq_max_cool"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_COOL)');"></td></tr>
+    <tr><td>Максимальная частота инвертора для ГВС (Гц) [40...200]</td><td><input type="number" id="get_paramfc-freq_max_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_BOILER)');"></td></tr>
+    <tr><td>Максимальная частота инвертора в ручном режиме (Гц) [40...200]</td><td><input type="number" id="get_paramfc-freq_max_user"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_MAX_USER)');"></td></tr>
+
+    <tr><td><b>Ограничение ПИД регулятора</b></td><td></td></tr>
+    <tr><td>Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (гц) [0...5]</td><td><input type="number" id="get_paramfc-freq_pid_step"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_PID_STEP)');"></td></tr>
+    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока (Гц) [0,2...5]</td><td><input type="number" id="get_paramfc-freq_step"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_STEP)');"></td></tr>
+    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока для ГВС (Гц) [0,2...5]</td><td><input type="number" id="get_paramfc-freq_step_boiler"> <input type="submit" value=">" onclick="setParam('get_paramFC(FREQ_STEP_BOILER)');"></td></tr>
 
    </tbody>
-   </table>            
+   </table>
+   <p>1. Если опция выбрана то используется ПИД регулирование, если нет то режим "Старт-Стоп"</p>
   </div>
 
 <div name="hide_fcanalog" class="row1">

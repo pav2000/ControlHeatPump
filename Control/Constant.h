@@ -226,7 +226,6 @@ const uint16_t  defaultPort=80;
 //#define SALLMONELA_HARD                // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
 #define NIGHT_START_HOUR  23             // Начало ночного тарифа
 #define NIGHT_END_HOUR	  7              // Окончание точного тарифа
-//#define SALLMONELA_HARD                // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
 //#define COP_ALL_CALC                     // Проводить расчет КОП всегда, если дефайна нет то КОП считается ТОЛЬКО при работающем компрессоре, в паузах ставится 0
 
 // ------------------- SENSOR PRESS----------------------------------
