@@ -30,28 +30,38 @@
 			<td>
 				<input type="checkbox" name="get_optionhp-save_on" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');" >
 			</td>
-		</tr>			
-		<tr>
-			<td>Период накопления графиков <sup>1</sup></td>
-			<td>
-				<select id="get_optionhp-time_chart" onChange="setParam('get_optionHP(TIME_CHART)','get_optionhp-time_chart');"></select>
-			</td>
 		</tr>
-		<tr>
-			<td>Запись графиков на карту (файл chart_cd.csv)<sup>2</sup></td>
-			<td>
-				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');" >
-			</td>
-		</tr>		
-		<tr>
-			<td>Число повторных попыток пуска при ошибке [0..10]<sup>3</sup></td>
+			<td>Число повторных попыток пуска при ошибке [0..10]<sup>1</sup></td>
 			<td>
 				<input id="get_optionhp-attempt" type="number" min="0" max="9999" step="1" value="0">
 				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
 			</td>
 		</tr>
+
 		<tr>
-			<td>Использование дополнительного ТЭНа при нагреве отопления</td>
+			<td><b>Настройка встроенных графиков</b></td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>Период накопления графиков <sup>2</sup></td>
+			<td>
+				<select id="get_optionhp-time_chart" onChange="setParam('get_optionHP(TIME_CHART)','get_optionhp-time_chart');"></select>
+			</td>
+		</tr>
+		<tr>
+			<td>Запись графиков на карту (файл chart_sd.csv)<sup>3</sup></td>
+			<td>
+				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');" >
+			</td>
+		</tr>
+		<tr>
+
+		<tr>
+			<td><b>Настройки контура отопления</b></td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>Использование дополнительного ТЭНа при нагреве отопления<sup>4</sup></td>
 			<td>
 				<select id="get_optionhp-add_heat" onchange="setParam('get_optionHP(ADD_HEAT)','get_optionhp-add_heat');"></select>
 			</td>
@@ -64,18 +74,22 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>4</sup></td>
+			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>5</sup></td>
 			<td>
 				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
-			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>5</sup></td>
+			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
 			<td>
 				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
 			</td>
+		</tr>
+		<tr>
+			<td><b>Времена и задержки</b></td>
+			<td></td>
 		</tr>
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
@@ -118,7 +132,12 @@
 			<td>
 				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
 			</td>
-		</tr>	
+		</tr>
+
+		<tr>
+			<td><b>Дополнительное оборудование</b></td>
+			<td></td>
+		</tr>
 		<tr>
 			<td>Логировать не критичные ошибки электро-счетчика SDM</td>
 			<td>
@@ -138,7 +157,7 @@
 			</td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>6</sup></td>
+			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>7</sup></td>
 			<td>
 				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
 				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
@@ -172,12 +191,14 @@
 
 	</tbody>
 	</table>
-	<p>1. При изменении периода графики обнуляются.</p>
-	<p>2. Использование этой опции может привести к повреждению фаловой системы карты</p>
-	<p>3. 0 - Повторный пуск при ошибке не производится</p>
-	<p>4. 0-насос вообще не работает</p>
-	<p>5. 0-насос работает непрерывно</p>
-	<p>6. 0 - Дисплей Nextion не выключается</p>
+
+	1. 0 - Повторный пуск при ошибке не производится<br/>
+	2. При изменении периода графики обнуляются.<br/>
+	3. Использование этой опции может привести к повреждению фаловой системы карты<br/>
+	4. Reserve - ТЭН включается если температура в доме ниже заданной, bivalent - ТЭН включится если уличная температуа ниже заданной<br/>
+	5. Установка 0 - насос вообще не работает<br/>
+	6. Установка 0 - насос работает непрерывно<br/>
+	7. 0 - дисплей Nextion не выключается<br/>
 	<br>
 	<input type="submit" value="Сброс настроек HP" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_SETTINGS");'> Введите RESET: <input id="reset_code" size="7">
 </div>	
