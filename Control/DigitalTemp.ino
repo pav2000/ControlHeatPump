@@ -69,11 +69,10 @@ void sensorTemp::initTemp(int sensor)
       flags=0x00;                              // Сбросить все флаги
 
       if(SENSORTEMP[sensor]) SETBIT1(flags, fPresent); // наличие датчика в текушей конфигурации
-      SETBIT0(flags,fFull);                    // буфер не полный
-      Chart.init(SENSORTEMP[sensor]);          // инициалазация статистики
+      Chart.init(SENSORTEMP[sensor] && !(SENSORTEMP[sensor] & 4));     // инициалазация статистики, если датчик есть и бит_2 = 0
       memset(address, 0, sizeof(address));	   // обнуление адресс датчика
       busOneWire = NULL;
-      testMode=NORMAL;                         // Значение режима тестирования
+      testMode = NORMAL;                         // Значение режима тестирования
 #if T_NUMSAMLES > 1
       memset(t, 0, sizeof(t));	   			   // обнуление буффера значений
       sum=0;
@@ -106,36 +105,44 @@ int8_t sensorTemp::Read()
 			} else if(number == TIN) return OK; // Этот может получать значения от других датчиков
 			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
-			int16_t ttemp;
-			err = busOneWire->Read(address, ttemp);
-			if(err != OK) {
-				sumErrorRead++;
-				if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
-					if(!get_setup_flag(fTEMP_dont_log_errors)) {
-						journal.jprintf(pP_TIME, "%s: Error ", name);
-						if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
-							journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
-						} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
-						//err = ERR_READ_TEMP;
+			if(GETBIT(flags, fRadio)) {
+#ifdef RADIO_SENSORS
+				err = OK;
+				int8_t i = get_radio_received_idx(address);
+				if(i >= 0) lastTemp = radio_received[i].Temp; else return err;
+#endif
+			} else {
+				int16_t ttemp;
+				err = busOneWire->Read(address, ttemp);
+				if(err != OK) {
+					sumErrorRead++;
+					if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
+						if(!get_setup_flag(fTEMP_dont_log_errors)) {
+							journal.jprintf(pP_TIME, "%s: Error ", name);
+							if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
+								journal.jprintf("%s (%d). t=%.2f, prev=%.2f\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, (float)ttemp/100.0, (float)lastTemp/100.0);
+							} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
+							//err = ERR_READ_TEMP;
+						}
+						if(++numErrorRead == 0) numErrorRead--;
+						if(numErrorRead > NUM_READ_TEMP_ERR && !get_setup_flag(fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
+						return err;
 					}
-					if(++numErrorRead == 0) numErrorRead--;
-					if(numErrorRead > NUM_READ_TEMP_ERR && !get_setup_flag(fTEMP_ignory_errors)) set_Error(err, name); // Слишком много ошибок чтения подряд - ошибка!
-					return err;
 				}
-			}
-			numErrorRead = 0; // Сброс счетчика ошибок
-			//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
-			// Защита от скачков
-			if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
-				lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-			} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
-			   nGap++;
-			   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
-				   nGap = 0;
-				   lastTemp = ttemp;
-			   }
-			   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
-				   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
+				numErrorRead = 0; // Сброс счетчика ошибок
+				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
+				// Защита от скачков
+				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
+					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
+				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
+				   nGap++;
+				   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+					   nGap = 0;
+					   lastTemp = ttemp;
+				   }
+				   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
+					   journal.jprintf(pP_TIME, "GAP %s t=%.2f, %s\n", name, (float)ttemp/100.0, nGap == 0 ? "accept" : "skip");
+				}
 			}
 		}
 #endif
@@ -160,18 +167,6 @@ int8_t sensorTemp::Read()
 	// дошли до сюда значит ошибок нет
 	return (err = OK);                                        // Новый цикл новые ошибки!! СБРОС ОШИБКИ
 }
-
-// полный цикл получения данных возвращает значение температуры, только тестирование!! никакие переменные класса не трогает!!
-int16_t sensorTemp::Test() 
-{  
-#ifdef DEMO
-	return random(-3000,3000);      // Если демо вернуть случайное число
-#else
-	int16_t ttemp = STARTTEMP;
-	busOneWire->Read(address, ttemp);
-	return ttemp;
-#endif
-} 
 
 // установить значение систематической ошибки датчика диапазон +-MAX_TEMP_ERR не более
 int8_t sensorTemp::set_errTemp(int16_t t)     
@@ -227,46 +222,54 @@ void sensorTemp::set_onewire_bus_type()
 	if(get_bus() == 3) busOneWire = &OneWireBus4; 	// 4 шина
 	else
 #endif
-		busOneWire = &OneWireBus;					// 1 шина
+	if(get_bus() == 0) busOneWire = &OneWireBus;	// 1 шина
 }
 
 // Установить адрес на шине датчика, bus
 void sensorTemp::set_address(byte *addr, byte bus)
 {
 	uint8_t i;
+	err = OK;
 	setup_flags &= ~fDS2482_bus_mask;
-	if (addr == NULL) //сброс адреса
+	if(addr == NULL) // сброс адреса
 	{
-		for(i=0;i<8;i++) address[i]=0;           // обнуление адресс датчика
-		SETBIT0(flags,fAddress);                 // Поставить флаг что адрес не установлен
+		memset(address, 0, sizeof(address));	   // обнуление адресс датчика
+		SETBIT0(flags, fAddress);                  // Поставить флаг, что адрес не установлен
+		SETBIT0(flags, fRadio);
 		return;
 	}
-	for (i=0;i<8;i++) address[i]=addr[i];  		   // Скопировать адрес
-	SETBIT1(flags, fAddress);                      // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку
-	err = OK;
+	for(i = 0; i < sizeof(address); i++) address[i] = addr[i];   // Скопировать адрес
 	setup_flags |= bus & fDS2482_bus_mask;
-	set_onewire_bus_type();
-#ifndef ONEWIRE_DONT_CHG_RES
-	busOneWire->SetResolution(address, DS18B20_p12BIT);
-#endif
+	after_load();
 }
     
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 void sensorTemp::after_load()
 {
-	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7]) > 0) // Если адрес не 00000000 Установить адрес датчика
+	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7])) // Если адрес не 00000000 Установить адрес датчика
 	{
-		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен, в противном случае будет возвращать ошибку -6
-		set_onewire_bus_type();
+		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен
+		if(address[0] == tRadio) SETBIT1(flags, fRadio); else set_onewire_bus_type();
 	}
 }
 
 // Возвращает 1, если превышен предел ошибок
-int8_t   sensorTemp::inc_error(void)
+int8_t sensorTemp::inc_error(void)
 {
 	if(++numErrorRead == 0) numErrorRead--;
 	return numErrorRead > NUM_READ_TEMP_ERR;
 }
+
+int8_t sensorTemp::get_radio_received_idx(byte * addr)
+{
+#ifdef RADIO_SENSORS
+	for(uint8_t i = 0; i < radio_received_num; i++) if(radio_received[i].RSSI && memcmp(&radio_received[i].serial_num, addr + 1, sizeof(radio_received[0].serial_num)) == 0) {
+		return i;
+	}
+#endif
+	return -1;
+}
+
 
 // Удаленные датчики температуры ---------------------------------------------------------------------------------------
 #ifdef SENSOR_IP
@@ -321,13 +324,20 @@ void sensorIP::after_load()
 #endif  
 
 #ifdef RADIO_SENSORS
+
+enum {
+	RS_WAIT_HEADER = 0,
+	RS_WAIT_DATA,
+	RS_SEND_RESPONSE
+};
+
 uint8_t rs_serial_buf[128];
 uint8_t rs_serial_idx = 0;
-uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
+uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
 #define rs_serial_full_header_size 7
 #define rs_serial_addr_idx	5
-#define rs_addr	1
+#define rs_addr	0x05
 
 unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 {
@@ -340,53 +350,109 @@ unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 	return WCRC;
 }
 
-void RS_send_response(void)
+uint8_t get_next_byte_from_string(char **ptr)
 {
-	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
-	if(p) {
-		*p = '\0';
-		rs_serial_buf[rs_serial_addr_idx] = rs_addr;
-		rs_serial_buf[rs_serial_full_header_size + 2] &= ~0x20; // В нижний регистр cmd
-		p++;
-		uint8_t len = p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size);
-		rs_serial_buf[rs_serial_full_header_size - 1] = len;
-		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, len);
-		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
-		RADIO_SENSORS_SERIAL.write(rs_serial_buf, p + 2 - (uint8_t *)rs_serial_buf);
+	if(*ptr != NULL) {
+		char *p = strchr(*ptr, ' ');
+		if(p) {
+			*p = '\0';
+			uint8_t ret = atoi(*ptr);
+			*ptr = p + 1;
+			return ret;
+		}
 	}
+	*ptr = NULL;
+	return 0;
 }
 
-// Новые данные в порту от радиодатчиков
-#if RADIO_SENSORS_PORT == 2
-void serialEvent2()
-#elif RADIO_SENSORS_PORT == 3
-void serialEvent3()
-#endif
+// Новые данные в порту от радиодатчиков, вызывать с паузой
+void check_radio_sensors(void)
 {
-	if(rs_serial_idx < sizeof(rs_serial_buf)) {
+	if(rs_serial_flag == RS_SEND_RESPONSE) {
+		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
+		//RADIO_SENSORS_SERIAL._pUart->UART_CR = US_CR_RXDIS; // Disables USART RX
+		RADIO_SENSORS_SERIAL.write(rs_serial_buf, rs_serial_idx);
+		//RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
+		rs_serial_idx = 0;
+		rs_serial_flag = RS_WAIT_HEADER;
+		return;
+	}
+	while(RADIO_SENSORS_SERIAL.available())
+	{
 		rs_serial_buf[rs_serial_idx++] = RADIO_SENSORS_SERIAL.read();
-		if(rs_serial_flag == 0) { // ждем заголовок
+		if(rs_serial_flag == RS_WAIT_HEADER) {
 			if(memcmp(rs_serial_buf, rs_serial_header, rs_serial_idx < sizeof(rs_serial_header) ? rs_serial_idx : sizeof(rs_serial_header)) == 0) {
 				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = 1;
 			} else {
 				rs_serial_idx = 0;
 			}
-		} else if(rs_serial_flag == 1) { // ждем данные
+		}
+		if(rs_serial_flag == RS_WAIT_DATA) {
 			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
-				if(RS_SUM_CRC(rs_serial_buf + rs_serial_full_header_size, len) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
+				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					journal.jprintf("RS CRC error!\n");
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS<=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					journal.jprintf("RS<=%s ", rs_serial_buf + rs_serial_full_header_size);
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
-						if(c == 'I') { // Присутствие
-
-						} else if(c == 'D') { // Данные
-
+						char *pdata = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
+						if(pdata) {
+							*pdata = '\0';
+							pdata++;
 						}
-						RS_send_response();
+						if(c == 'I') { // Присутствие
+							if(pdata) {
+								radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
+							}
+						} else if(c == 'D') { // Данные
+							char *p = pdata;
+							if(p) p = strchr(p, 'R');
+							if(p) {
+								char *p2 = strchr(p, ' ');
+								if(p2) {
+									*p2 = '\0';
+									uint32_t ser = atoi(++p);
+									p = p2 + 1;
+									uint8_t i = 0;
+									for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
+									if(i < RADIO_SENSORS_MAX) {
+										if(i == radio_received_num) { // new
+											radio_received_num++;
+											memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
+										}
+										radio_received[i].serial_num = ser;
+										while(p) {
+											c = get_next_byte_from_string(&p);
+											if(p == NULL || c == 0) break;
+											if(c == 0xC0) { // Температура 2b
+												radio_received[i].Temp = get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2731;
+											} else if(c == 0xB4) { // Питание 1b
+												radio_received[i].battery = ((uint32_t) get_next_byte_from_string(&p) * 125 * 3 / 128 + 5) / 10;
+											} else if(c == 0xBF) { // Test 1b
+												get_next_byte_from_string(&p);
+											} else if(c == 0xB0) { // RSSI 1b
+												radio_received[i].RSSI = get_next_byte_from_string(&p);
+											} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
+											}
+										}
+									}
+								}
+							}
+						} else if(c >= 'a' && c <= 'z') { // echo - skip
+							rs_serial_idx = 0;
+							return;
+						}
+						// Send response
+						rs_serial_buf[rs_serial_addr_idx] = rs_addr;
+						rs_serial_buf[rs_serial_full_header_size + 2] |= 0x20; // В нижний регистр cmd
+						uint8_t len = pdata - ((char *)rs_serial_buf + rs_serial_full_header_size);
+						rs_serial_buf[rs_serial_full_header_size - 1] = len;
+						*(uint16_t *)pdata = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header));
+						rs_serial_idx = pdata + 2 - (char *)rs_serial_buf;
+						rs_serial_flag = RS_SEND_RESPONSE;
+						return;
 					}
 				}
 				rs_serial_idx = 0;

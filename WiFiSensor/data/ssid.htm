@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+ <head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="/style.css">
+  <script type="text/javascript" src="/function.js"></script>
+  <script type="text/javascript" src="/jquery.knob.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Удаленный датчик</title>
+      
+<script type="text/javascript">
+   function set_ssid(submit){
+    server = "/ssid?ssid="+val('ssid')+"&password="+encodeURIComponent(val('password'))+"&const_ip="+val('const_ip')+"&const_gw="+val('const_gw')+"&const_sn="+val('const_sn')+"&DHCP="+val('param11');
+    send_request(submit,server);
+    alert("Для сохранения изменений перезагрузите устройство.");
+   }
+function set_ssid_ap(submit){
+    server = "/ssidap?ssidAP="+val('ssidap')+"&passwordAP="+encodeURIComponent(val('passwordAp'));
+    send_request(submit,server);
+    alert("Для сохранения изменений перезагрузите устройство.");  
+  }
+
+function wifi_b(submit){
+  var http = new XMLHttpRequest();  
+  http.open('GET', '/esps.html');
+  http.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+      var doc = new DOMParser().parseFromString(this.responseText, "text/html");  // преобразовать текст в HTML
+      document.getElementById('wifi').innerHTML = doc.getElementsByTagName('body')[0].innerHTML;
+    }
+  }
+  http.send(null);
+}
+
+function check10(obj) {
+        if(obj.checked == true){
+            document.getElementById("param11").value = '1';
+            document.getElementById("param11").checked = true;
+        }
+        else if (obj.checked == false){
+          document.getElementById("param11").value = '0';
+          document.getElementById("param11").checked = false;
+        }
+    }
+   
+function restart(submit,texts){
+    if (confirm(texts)) {
+   server = "/restart?device=ok";
+     send_request(submit,server);
+     return true;
+    } else {
+     return false;
+    }
+   }
+
+
+</script>
+
+</head>
+
+ <body onload="load();">
+  <div class="container">
+
+
+ <input type="checkbox" id="nav-toggle" hidden>
+ <nav class="nav">
+ <label for="nav-toggle" class="nav-toggle" onclick></label>
+ <h2 class="logo"> </h2>
+        <ul>
+            <li><a href="/index.htm">Данные с устройства</a>
+            <li><a href="/index.htm">Данные с контроллера</a>
+            <li><a href="/ssid.htm">Подключение к роутеру</a>
+            <li><a href="/ssid_ap.htm">Точка доступа</a>
+            <li><a href="/contrl.htm">Подключение к контроллеру</a>
+            <li><a href="/sensor.htm">Интервал отправки данных</a>
+        </ul>
+    </nav>
+   
+
+<div id="d" class="main" style="text-align:center;">
+  <div></div>
+  <div></div>
+</div>
+
+<script>
+Li();
+setInterval(Li,1000);
+
+function Li() {
+  d = new Date();
+  var month=new Array("января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря");
+  var week=new Array("воскресенье","понедельник","вторник","среда","четверг","пятница","суббота");
+  document.getElementById('d').getElementsByTagName('div')[0].innerHTML=' '+d.getDate()+' '+month[d.getMonth()]+' '+d.getFullYear()+' года, '+week[d.getDay()];
+  document.getElementById('d').getElementsByTagName('div')[1].innerHTML=' '+((d.getHours()<10)?"0":"")+d.getHours()+':'+((d.getMinutes()<10)?"0":"")+d.getMinutes()+':'+((d.getSeconds()<10)?"0":"")+d.getSeconds();
+}
+</script>
+  
+   <div class="row" style="text-align:center;">
+
+<section class="page3">
+     
+<h6> </h6> 
+<div id="3" class="row2" style="text-align:center;">
+<h2>Подключение к WiFi роутеру</h2>
+<h6>Параметры подключения к WiFi роутеру</h6>
+<h6>MAC адрес устройства: <input type="text" class="form-control7" name="h" id="mac_adr" value="00" readonly ><br></h6>
+
+<h6> </h6>
+     <div class="main">
+      <div class="col-sm-5">
+
+<div class="col-sm-7">
+<div class="rounded" id="wifi"></div>
+<input type="submit" id="wifi_b" class="form-control41" onClick="wifi_b(this);" value="Показать доступные WIFI сети" />
+</div>
+
+  </div>
+     <h6> </h6>
+     
+     <div class="col-sm-5">
+     <label for="ssid">Имя WiFi сети</label>
+     <input id="ssid" value="{{ssid}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="Имя WiFi сети"><br>
+     <label for="password">Пароль WiFi сети   </label>
+     <input id="password" value="{{password}}" pattern=".{8,15}" onFocus="this.type='text'" type="password" class="form-control" placeholder="Пароль">
+     </div>
+     <h6> </h6>
+     <div class="col-sm-5">
+
+
+<label for="param11">Использовать DHCP сервер</label>
+<input type="hidden" id="param11" value="DHCP" />
+<input type="checkbox" name="param11" id="param11" onchange="check10(this)"><br>
+
+<script>
+    document.getElementById('param11').value = this.checked ? 1 : '';
+</script> 
+
+<h6> </h6>
+
+     <label for="const_ip">IP адрес устройства   </label>
+     <input id="const_ip" value="{{const_ip}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="IP адрес устройства"><br>
+     <label for="const_gw">IP адрес шлюза   </label>
+     <input id="const_gw" value="{{const_gw}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="IP адрес шлюза"><br>
+     <label for="const_sn">Маска подсети   </label>
+     <input id="const_sn" value="{{const_sn}}" class="form-control" pattern="[0-9a-zA-Z.]{1,15}" placeholder="Маска подсети">
+     </div>
+     <br>
+     <div class="col-sm-6">
+     <input class="form-control2" value="Сохранить" onClick="set_ssid(this);" type="submit">
+      </div>
+     </div>
+<h6> </h6>
+</div>
+
+</section>
+      
+     
+      <section class="page8">          
+ <h6></h6>    
+      <input class="form-control3" value="Перезагрузить устройство" onClick="restart(this,'Вы действительно хотите перезагрузить устройство?');" type="submit">
+      </div>
+      </section>
+  </div>
+ </body>
+</html>

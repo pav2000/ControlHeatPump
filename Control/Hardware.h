@@ -34,6 +34,7 @@
 #define fAddress      3               // флаг правильного адреса для температурного датчика
 #define fcheckRange	  4				  // флаг Проверка граничного значения
 #define fsensModbus	  5				  // флаг дистанционного датчика по Modbus
+#define fRadio	      6				  // флаг радио-датчика
 
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
@@ -229,15 +230,17 @@ private:
 // ------------------------------------------------------------------------------------------
 #define fR_StatusMain		1			// b1: Состояние Вкл/Выкл основного алгоритма
 #define fR_StatusSun		2			// b2: Состояние Вкл/Выкл Солнечного Коллектора
-#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun))	// битовая маска
+#define fR_StatusManual		3			// b3: Состояние Вкл/Выкл Солнечного Коллектора
+#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun)|(1<<fR_StatusManual))	// битовая маска
+#define fR_StatusAllOff		-127		// выключить по всем алгоритмам
 
 class devRelay
 {
 public:
   void initRelay(int sensor);                            // Инициализация реле
-  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay(1);}    // Включить реле
-  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay(0);}   // Выключить реле
-  int8_t  set_Relay(int8_t r);                           // Установить реле в состояние (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
+  __attribute__((always_inline)) inline int8_t  set_ON() {return set_Relay(fR_StatusMain);}    // Включить реле
+  __attribute__((always_inline)) inline int8_t  set_OFF(){return set_Relay(-fR_StatusMain);}   // Выключить реле
+  int8_t  set_Relay(int8_t r);                           // Установить реле в состояние (0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
   __attribute__((always_inline)) inline boolean get_Relay(){return Relay;}                    // Прочитать состояние реле
   int8_t  get_pinD(){return pin;}                        // Получить ногу куда прицеплено реле
   char*   get_note(){return note;}                       // Получить наименование реле
@@ -256,9 +259,14 @@ private:
 };  
 
 // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ---------------------------------------- --------------------------------------
+//#define fPresent         0    // флаг наличие Объекта един для всего!!!! определение смотри выше
+#define fOneSeekZero     1		// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
 #define fEnterInPercent  2		// Ввод на веб-странице в %, иначе в шагах
 #define fCorrectOverHeat 3		// Включен режим корректировки перегрева
 #define fHoldMotor       4		// Режим "удержания" шагового двигателя ЭРВ
+#define fEevClose        5      // Флаг закрытие ЭРВ при выключении компрессора
+#define fLightStart      6      // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+#define fStartFlagPos    7      // флаг Всегда начинать работу ЭРВ со стратовой позици
 
 class devEEV
 {
@@ -294,7 +302,12 @@ public:
   int16_t get_manualStep(){return _data.manualStep;}     // Получить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
   TYPEFREON get_typeFreon(){return _data.typeFreon;}     // Получить тип фреона
   RULE_EEV get_ruleEEV(){return _data.ruleEEV;}          // Получить тип фреона
-  boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}
+  boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}      // Получить флаг Удержания шагового двигателя
+  boolean get_OneSeekZero(){return GETBIT(_data.flags,fOneSeekZero);}  // Получить флаг однократного поиска "0" ЭРВ 
+  boolean get_EevClose(){return GETBIT(_data.flags,fEevClose);}        // Получить флаг закрытие ЭРВ при выключении компрессора
+  boolean get_LightStart(){return GETBIT(_data.flags,fLightStart);}    // Получить флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора 
+  boolean get_StartFlagPos(){return GETBIT(_data.flags,fStartFlagPos);}// Получить флаг Всегда начинать работу ЭРВ со стратовой позици
+  
   uint8_t get_minSteps(){return _data.minSteps;}
   uint8_t get_delayOnPid(){return _data.delayOnPid;}
   uint8_t get_delayOff(){return _data.delayOff;}
@@ -322,7 +335,7 @@ public:
  
   StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
   statChart Chart;                                       // График по ЭРВ
-  boolean setZero;                                       // признак обнуления EEV;
+  boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
   int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
 
 private:

@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+ <head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="/style.css">
+  <script type="text/javascript" src="/function.js"></script>
+  <script type="text/javascript" src="/jquery-3.1.1.min.js"></script>
+  <script type="text/javascript" src="/jquery.knob.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Удаленный датчик</title>
+      
+<script type="text/javascript">
+      
+function restart(submit,texts){
+    if (confirm(texts)) {
+   server = "/restart?device=ok";
+     send_request(submit,server);
+     return true;
+    } else {
+     return false;
+    }
+   }
+
+</script>
+
+</head>
+
+ <body onLoad="process();">
+  <div class="container">
+
+
+ <input type="checkbox" id="nav-toggle" hidden>
+ <nav class="nav">
+ <label for="nav-toggle" class="nav-toggle" onclick></label>
+ <h2 class="logo"> </h2>
+        <ul>
+            <li><a href="/index.htm">Данные с устройства</a>
+            <li><a href="/index.htm">Данные с контроллера</a>
+            <li><a href="/ssid.htm">Подключение к роутеру</a>
+            <li><a href="/ssid_ap.htm">Точка доступа</a>
+            <li><a href="/contrl.htm">Подключение к контроллеру</a>
+            <li><a href="/sensor.htm">Интервал отправки данных</a>
+        </ul>
+    </nav>
+   
+
+<div id="d" class="main" style="text-align:center;">
+  <div></div>
+  <div></div>
+</div>
+
+<script>
+Li();
+setInterval(Li,1000);
+
+function Li() {
+  d = new Date();
+  var month=new Array("января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря");
+  var week=new Array("воскресенье","понедельник","вторник","среда","четверг","пятница","суббота");
+  document.getElementById('d').getElementsByTagName('div')[0].innerHTML=' '+d.getDate()+' '+month[d.getMonth()]+' '+d.getFullYear()+' года, '+week[d.getDay()];
+  document.getElementById('d').getElementsByTagName('div')[1].innerHTML=' '+((d.getHours()<10)?"0":"")+d.getHours()+':'+((d.getMinutes()<10)?"0":"")+d.getMinutes()+':'+((d.getSeconds()<10)?"0":"")+d.getSeconds();
+}
+</script>
+  
+<div class="row" style="text-align:center;">
+
+<div class="row2" style="text-align:center;"> 
+    
+<H2>Данные с устройства</H2>
+
+<div class="row4">
+<table>
+<tbody>
+<tr>
+<td><span class="text5">Температура датчика №1 (&deg;C):</span></td><td align="left">  <span id="content" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Температура датчика №2 (&deg;C):</span> </td><td align="left"> <span id="content1" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Время с последней отправки (сек.):</span> </td><td align="left"><span id="content2" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Количество отправленных пакетов:</span></td><td align="left"> <span id="content4" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Напряжение питания (вольт):</span></td><td align="left"> <span id="content3" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Уровень сигнала WIFI:</span></td><td align="left"> <span id="content5" class="text2">-</span></td></tr><tr><td  width="80%">
+<span class="text5">MAC адрес:</span></td><td align="left"> <span id="content6" class="text2">-</span></td></tr><tr><td>
+<span class="text5">Время непрерывной работы:</span></td><td align="left"> <span id="content7" class="text2">-</span></td></tr><tr>
+</tbody>
+  </table>
+</div>
+
+    <script>  
+        function show()   
+        {   
+            $.ajax({   
+                url: "/temps.json", 
+                cache: false,   
+                success: function(temp){   
+                    $("#content").html(temp.temp1);
+                    $("#content1").html(temp.temp2);
+                    $("#content2").html(temp.time);  
+                    $("#content3").html(temp.voltage);
+        			$("#content4").html(temp.count);
+					$("#content5").html(temp.rssid);
+					$("#content6").html(temp.mac_adr);
+					$("#content7").html(temp.uptime);
+                }   
+            });   
+        }       
+        $(document).ready(function(){   
+            show();   
+            setInterval('show()',5000);   
+        });   
+    </script>  
+
+
+
+<H2>Данные с контроллера</H2>
+
+<div class="row5">
+<table>
+<tbody>
+<tr>
+<td><span class="text5">Температура в доме (&deg;C):</span></td><td align="left">  <span id="param1" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Температура на улице (&deg;C):</span></td><td align="left">  <span id="param2" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Температура ГВС (&deg;C):</span></td><td align="left"> <span id="param3" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Текущее значение перегрева:</span></td><td align="left"> <span id="param8" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Текущая частота работы компрессора:</span></td><td align="left"> <span id="param9" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Состояние работы ТН:</span> </td><td align="left"><span id="param10" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Версия прошивки:</span> </td><td align="left"><span id="param4" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Свободно память (b):</span></td><td align="left"> <span id="param5" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Загрузка контроллера (%):</span></td><td align="left"> <span id="param6" class="text2">-</span> </h51></td></tr><tr><td>
+<span class="text5">Время с последней перезагрузки:</span></td><td align="left"> <span id="param7" class="text2">-</span> </h51></td></tr><tr>
+</tbody>
+  </table>
+
+
+</div>
+
+    <script>  
+        function show2()   
+        {   
+            $.ajax({   
+                url: "/config.json",   
+                cache: false,   
+                success: function(esp){   
+                    $("#param1").html(esp.Param1);
+                    $("#param2").html(esp.Param2);
+                    $("#param3").html(esp.Param3);
+                    $("#param4").html(esp.Param4);
+                    $("#param5").html(esp.Param5);
+                    $("#param6").html(esp.Param6);
+                    $("#param7").html(esp.Param7);
+                    $("#param8").html(esp.Param8);
+                    $("#param9").html(esp.Param9);
+                    $("#param10").html(esp.Param10); 
+                }   
+            });   
+        }       
+        $(document).ready(function(){   
+            show2();   
+            setInterval('show2()',5000);   
+        });   
+    </script> 
+</div>
+
+  
+      <section class="page8">          
+ <h6></h6>
+ <div style="text-align:center;">    
+      <input class="form-control3" value="Перезагрузить устройство" onClick="restart(this,'Вы действительно хотите перезагрузить устройство?');" type="submit">
+      </div>
+ </div>
+      </section>
+  </div>
+ </body>
+</html>

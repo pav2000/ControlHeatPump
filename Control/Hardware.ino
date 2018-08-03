@@ -285,7 +285,6 @@ void  sensorDiditalInput::initInput(int sensor)
    flags=0x00;                     // сброс флагов
    // флаги  0 - наличие датчика,  1- режим теста
    SETBIT1(flags,fPresent);        // наличие датчика в текушей конфигурации
-   type=pALARM;
    type=SENSORTYPE[sensor];         // тип датчика
    pin=pinsInput[sensor];           // пин датчика
    pinMode(pin, INPUT);             // Настроить ножку на вход
@@ -480,11 +479,15 @@ void devRelay::initRelay(int sensor)
 
 
 // Установить реле в состояние r, базовая функция все остальные функции используют ее
-// Если состояния совпадают то ничего не делаем, (0/-1 - выкл основной алгоритм, 1 - вкл основной, 2 - вкл СК, -2 - выкл СК)
+// Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
   if(!(flags & (1<<fPresent))) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
-  if(r == 0) r = -1;
+  if(r == 0) r = -fR_StatusMain;
+  else if(r == fR_StatusAllOff) {
+	  flags &= ~fR_StatusMask;
+	  r = -fR_StatusMain;
+  }
   flags = (flags & ~(1<<abs(r))) | ((r > 0)<<abs(r));
   r = (flags & fR_StatusMask) != 0;
   if(Relay==r) return OK;                              // Ничего менять не надо выходим
@@ -508,7 +511,7 @@ int8_t devRelay::set_Relay(int8_t r)
   
   #endif        
   Relay=r;      
-  journal.jprintf(" Relay %s: %s\n", name, Relay ? "ON" : "OFF");
+  journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
   return OK;
 }
 
@@ -563,7 +566,11 @@ void devEEV::initEEV()
   SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
  #endif 
   if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
-  SETBIT0(_data.flags,fCorrectOverHeat);  
+  SETBIT0(_data.flags,fCorrectOverHeat);              // Включен режим корректировки перегрева
+  SETBIT0(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+  SETBIT1(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
+  SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+  SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 
   Chart.init(get_present());                   // инициалазация статистики
   maxEEV=EEV_STEPS ;                    // Максимальное число шагов ЭРВ (диапазон)
@@ -633,13 +640,14 @@ void devEEV::Resume(uint16_t pos)
 // На стартовую позицию не выводит
  int8_t devEEV::Start()
  {
-  
    Resume(_data.StartPos);
-   EEV=0;
+ //  EEV=0;
    err=OK;                               // Ошибок нет
    if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
+   if ((!GETBIT(_data.flags,fOneSeekZero))||(GETBIT(_data.flags,fOneSeekZero)&&(EEV<0))) { // есть вариант однократного поиска "0" ЭРВ
    journal.jprintf(" EEV set zero\n"); 
-   set_zero();                           // установить 0
+   set_zero(); }                          // установить 0
+    
  //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
  //  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
   return OK;                  
@@ -647,7 +655,7 @@ void devEEV::Resume(uint16_t pos)
  // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
 int8_t devEEV::set_zero()    
 {
-setZero=true;                                             // Признак обнуления счетчика шагов EEV  Ставить в начале!!
+setZero=true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
 EEV=-1;   
 if (testMode!=SAFE_TEST) stepperEEV.step(-EEV_STEPS-40);  // не  SAFE_TEST - работаем
 else EEV=0;                                               // SAFE_TEST только координаты меняем
@@ -1036,11 +1044,19 @@ char* devEEV::get_paramEEV(char *var, char *ret)
   	} else if(strcmp(var, eev_DELAY_ON)==0){
     	_itoa(_data.delayOn, ret);
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
-    	_itoa((_data.flags&(1<<fHoldMotor))!=0, ret);
+    	_itoa((_data.flags & (1<<fHoldMotor))!=0, ret);
     } else if(strcmp(var, eev_PRESENT)==0){
     	_itoa((_data.flags & (1<<fPresent))!=0, ret);
+    } else if(strcmp(var, eev_SEEK_ZERO)==0){
+    	_itoa((_data.flags & (1<<fOneSeekZero))!=0, ret);
+    } else if(strcmp(var, eev_CLOSE)==0){
+    	_itoa((_data.flags & (1<<fEevClose))!=0, ret);
+    } else if(strcmp(var, eev_LIGHT_START)==0){
+    	_itoa((_data.flags & (1<<fLightStart))!=0, ret);
+    } else if(strcmp(var, eev_START )==0){
+    	_itoa((_data.flags & (1<<fStartFlagPos))!=0, ret);
+   	
     } else strcat(ret,"E10");
-   
   return ret;              
 } 
 
@@ -1115,6 +1131,15 @@ float temp;
       if ((x>=0)&&(x<=255)) { if(_data.delayOn!=x) _data.delayOn=(int)x; return true;} else return false;	// секунды размер 1 байт    	
     } else if(strcmp(var, eev_HOLD_MOTOR)==0){
       if (x==0) SETBIT0(_data.flags, fHoldMotor); else SETBIT1(_data.flags, fHoldMotor); 
+    } else if(strcmp(var, eev_SEEK_ZERO)==0){
+      if (x==0) SETBIT0(_data.flags, fOneSeekZero); else SETBIT1(_data.flags, fOneSeekZero);    
+    } else if(strcmp(var, eev_CLOSE)==0){
+      if (x==0) SETBIT0(_data.flags, fEevClose); else SETBIT1(_data.flags, fEevClose);    
+    } else if(strcmp(var, eev_LIGHT_START)==0){
+      if (x==0) SETBIT0(_data.flags, fLightStart); else SETBIT1(_data.flags, fLightStart);    
+    } else if(strcmp(var, eev_START)==0){
+      if (x==0) SETBIT0(_data.flags, fStartFlagPos); else SETBIT1(_data.flags, fStartFlagPos);    
+      
     } else return false; // ошибочное имя параметра
     
   return true;  // для флагов
@@ -1551,23 +1576,21 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
-   	if(strncmp(var, fc_FREQ, sizeof(fc_FREQ)-1)==0) {
-   		var += sizeof(fc_FREQ)-1;
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
-		if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
-		if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
-		if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // Гц
-		if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
-		if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
-		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
-			strcat(ret,(char*)cInvalid);
-   	} else
+
+	if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
+	if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
+	if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
+	if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100.0,2); } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100.0,2); } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100.0,2); } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100.0,2); } else // Гц
+	if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100.0,2); } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
+	if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
+	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
+
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
@@ -1596,23 +1619,21 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>1)&&(x<25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
-	if(strncmp(var, fc_FREQ, sizeof(fc_FREQ)-1)==0) {
-		var += sizeof(fc_FREQ)-1;
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
-		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
-		return false;
-	}
+
+	if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
+
 	if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы
     return false;

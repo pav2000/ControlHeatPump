@@ -1,7 +1,7 @@
 /* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -122,12 +122,12 @@ function loadParam(paramid, noretry, resultdiv) {
 							if(arr[i] != null && arr[i] != 0) {
 								var reerr = new RegExp('^E');
 								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
-								var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
+								var rei = new RegExp('listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
 								var reo = new RegExp('^scan_');
 								var rep = new RegExp('^get_present|^get_pT');
 								var ret = new RegExp('[(]SCHEDULER[)]');
 								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_listFlow|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
+								var res = new RegExp('PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|get_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
 								var rev = new RegExp(/\([a-z0-9_]+\)/i);
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');
@@ -137,13 +137,13 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(rec.test(values[0])) type = "const"; 
-								else if(rei.test(values[0])) type = "table"; 
 								else if(res.test(values[0])) type = "select"; // значения
 								else if(reg.test(values[0])) type = "chart"; // график
 								else if(ret.test(values[0])) type = "scheduler"; // расписание бойлера
 								else if(reo.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(recldr.test(values[0])) type = "calendar"; // расписание
+								else if(rei.test(values[0])) type = "table"; 
 								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
@@ -574,12 +574,9 @@ function loadParam(paramid, noretry, resultdiv) {
 										document.getElementById(valueid).innerHTML = content;
 									}
 								} else if(type == 'table') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									if(values[1] != null && values[1] != 0) {
 										if(values[0] == 'get_numberIP') {
-											content = "";
-											content2 = "";
-											upsens = "";
-											loadsens = "";
+											var content = "", content2 = "", upsens = "", loadsens = "";
 											count = Number(values[1]);
 											for(var j = 1; j < count + 1; j++) {
 												upsens = upsens + "get_sensorIP(" + j + "),";
@@ -593,12 +590,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
 											updateParam(upsens);
 											loadParam(loadsens);
-
 										} else if(values[0] == 'get_listRelay') {
-											content = "";
-											content2 = "";
-											upsens = "";
-											loadsens = "";
+											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												if((relay = count[j].toLowerCase()) == "") continue;
@@ -612,10 +605,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadParam(loadsens);
 
 										} else if(values[0] == 'get_listInput') {
-											content = "";
-											content2 = "";
-											upsens = "";
-											loadsens = "";
+											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												input = count[j].toLowerCase();
@@ -628,8 +618,21 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 
+										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
+											var count = values[1].split(';');
+											var content = "", loadsens = "", upsens = "";
+											for(var j = 0; j < count.length - 1; j++) {
+												var T = count[j];
+												loadsens += "get_noteTemp(" +T+ "),";
+												upsens += "get_fullTemp(" +T+ "),";
+												T = T.toLowerCase();
+												content += '<tr><td id="get_notetemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											loadParam(loadsens);
+											updateParam(upsens);
 										} else if(values[0] == 'get_listTemp') {
-											content = ""; upsens = ""; loadsens = ""; loadsens2 = "";
+											var content = "", upsens = "", loadsens = "", loadsens2 = "", loadsens3 = "";
 											var tnum = 1;
 											element = document.getElementById(valueid);
 											if(!element) {
@@ -639,11 +642,13 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
-												loadsens += "get_eTemp(" +T+ "),get_noteTemp(" +T+ "),get_bTemp(" +T+ "),";
+												loadsens += "get_eTemp(" +T+ "),";
+												loadsens3 += "get_noteTemp(" +T+ "),"; 
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
-													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
-													loadsens2 += "get_minTemp(" +T+ "),get_maxTemp(" +T+ "),get_testTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
+													loadsens += "get_maxTemp(" +T+ "),get_errTemp(" +T+ "),";
+													loadsens2 += "get_esTemp(" +T+ "),get_minTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
+													loadsens3 += "get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
 													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ "),";
 												} else if(tnum == 2) {
 													loadsens += "get_aTemp(" +T+ "),";
@@ -652,36 +657,34 @@ function loadParam(paramid, noretry, resultdiv) {
 												}
 												T = T.toLowerCase();
 												content += '<tr>';
-												content += ' <td>' +count[j]+ '</td>';
-												content += ' <td id="get_notetemp-' +T+ '"></td>';
-												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
+												content += '<td>' +count[j]+ '</td>';
+												content += '<td id="get_notetemp-' +T+ '"></td>';
+												content += '<td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
-													content += ' <td id="get_mintemp-' +T+ '">-</td>';
-													content += ' <td id="get_maxtemp-' +T+ '">-</td>';
-													content += ' <td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-													content += ' <td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+													content += '<td id="get_mintemp-' +T+ '">-</td>';
+													content += '<td id="get_maxtemp-' +T+ '">-</td>';
+													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 												}	
 												if(tnum == 1) {
-													content += ' <td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
-													content += ' <td id="get_btemp-' +T+ '">-</td>';
-													content += ' <td id="get_estemp-' +T+ '">-</td>';
+													content += '<td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
+													content += '<td id="get_btemp-' +T+ '">-</td>';
+													content += '<td id="get_estemp-' +T+ '">-</td>';
 												} else if(tnum == 2) {
-													content += ' <td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
-													content += ' <td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
-													content += ' <td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
+													content += '<td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
+													content += '<td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
+													content += '<td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
 												}
-												content += ' <td id="get_etemp-' +T+ '">-</td>';
+												content += '<td id="get_etemp-' +T+ '">-</td>';
 												content += '</tr>';
 											}
 											element.innerHTML = content;
-											updateParam(upsens);
 											loadParam(loadsens);
 											loadParam(loadsens2);
-									} else if(values[0] == 'get_listFlow') {
-											content = "";
-											content2 = "";
-											upsens = "";
-											loadsens = "";
+											loadParam(loadsens3);
+											updateParam(upsens);
+										} else if(values[0] == 'get_listFlow') {
+											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												input = count[j].toLowerCase();
@@ -704,7 +707,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 										} else if(values[0] == 'get_Profile(NUM_PROFILE)') {
-											content = ""; content2 = ""; upsens = ""; loadsens = "";
+											var content = "", content2 = "", upsens = "", loadsens = "";
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
@@ -715,12 +718,13 @@ function loadParam(paramid, noretry, resultdiv) {
 											//document.getElementById(valueid + "-inputs").innerHTML = content2;
 											loadParam(loadsens);
 										} else {
-											cont1 = values[1].replace(/\:$/g, "").replace(/\:/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");
-											count = valueid.replace(/[^\d;]/g, "");
-											var content = '<td>' + cont1 + '</td>';
+											var content = values[1].replace(/</g, "&lt;").replace(/\:$/g, "").replace(/\:/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");
 											var element = document.getElementById(valueid);
-											if(element) element.innerHTML = content;
+											if(element) element.innerHTML = '<td>' + content + '</td>';
 										}
+									} else {
+										element = document.getElementById(values[0]);
+										if(element) element.innerHTML = "";
 									}
 								} else if(type == 'values') {
 									var valuevar = values[1].toLowerCase().replace(/[^\w\d]/g, "");
@@ -752,7 +756,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											if(element.className == "charsw") {
 												element.innerHTML = element.title.substr(valuevar,1);
 											} else if(element != document.activeElement) {
-												element.value = element.innerHTML = values[1];
+												element.innerHTML = values[1];
+												element.value = values[1].replace(/[^-0-9.,]/g, "");
 											}
 										}
 										if((element = document.getElementById(valueid + "-div1000"))) {

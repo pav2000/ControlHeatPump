@@ -58,7 +58,6 @@ SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, 
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
 SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
 SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
-SemaphoreHandle_t xScan1WireSemaphore;                // Семафор шины Scan1Wire
 static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
 static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
@@ -77,6 +76,9 @@ EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+#ifdef RADIO_SENSORS
+void check_radio_sensors(void);
+#endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
@@ -388,14 +390,14 @@ x_I2C_init_std_message:
    HP.set_fSD(initSD(SD_REPEAT));
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
-   _delay(100);
+   //_delay(100);
 
 // 8. Чтение ЕЕПРОМ
    journal.jprintf("5. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-   journal.jprintf("I2C memory is empty, save default setting\n");
-   HP.save_motoHour();
+	  journal.jprintf("I2C memory is empty, use default settings\n");
+	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
@@ -430,7 +432,7 @@ x_I2C_init_std_message:
       journal.jprintf("9. Client MQTT update IP from DNS . . .\n"); 
       HP.clMQTT.dnsUpdateStart();
     #else
-      journal.jprintf("9. Client MQTT no support firmware\n");
+      journal.jprintf("9. Client MQTT disabled by config\n");
     #endif 
 
   // 13. Инициалазация Statistics
@@ -537,8 +539,6 @@ vSemaphoreCreateBinary(xI2CSemaphore);                     // Создание �
 if (xI2CSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
 //vSemaphoreCreateBinary(xSPISemaphore);                     // Создание мютекса
 //if (xSPISemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-vSemaphoreCreateBinary(xScan1WireSemaphore);
-if(xScan1WireSemaphore == NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 // Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
 if(Modbus.get_present())
 {  
@@ -976,6 +976,9 @@ void vReadSensor_delay10ms(int16_t msec)
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif
+#ifdef RADIO_SENSORS
+		check_radio_sensors();
+#endif
 	}
 }
 //////////////////////////////////////////////////////////////////////////
@@ -1069,7 +1072,7 @@ void vReadSensor_delay10ms(int16_t msec)
 		 {
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
-			 journal.jprintf((const char*)" WARNING: Stop task update %s from vUpdate?\n",(char*)nameHeatPump);
+			 journal.jprintf((const char*)" Stop task update %s from vUpdate\n",(char*)nameHeatPump);
 			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
 			 break;
 		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
@@ -1129,9 +1132,9 @@ void vReadSensor_delay10ms(int16_t msec)
 #ifdef USE_SUN_COLLECTOR
 		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))
 				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
-			if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			else if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			else if(!(HP.flags & (1<<fHP_SunActive))) { // ON
+			if((HP.flags & (1<<fHP_SunActive))) {
+				if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
+			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= HP.sTemp[TEVAING].get_Temp()) { // ON
 				HP.flags |= (1<<fHP_SunActive);
 				HP.dRelay[RSUN].set_Relay(fR_StatusSun);
 				HP.dRelay[PUMP_OUT].set_Relay(fR_StatusSun);

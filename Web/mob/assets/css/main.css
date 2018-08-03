@@ -14,13 +14,13 @@
 .dateinfo #get_status > div:before{width:50%;float:left;text-align:right;clear:both;padding-right:5px;font-size:0.9em}
 .dateinfo #get_status > div:nth-child(1){width:100%;margin:0;padding:0;text-align: center;font-size: 2em;}
 .dateinfo #get_status > div:nth-child(2){width:100%;margin:0;padding: 0 0 5px 0;text-align: center;font-size: 1.5em;}
-.dateinfo #get_status > div:nth-child(3):before{content:"SOFTWARE";font-size: 0.8em;color: #e44c65}
-.dateinfo #get_status > div:nth-child(4):before{content:"FREE RAM";font-size: 0.8em;color: #e44c65}
+.dateinfo #get_status > div:nth-child(3):before{content:"UPTIME";font-size: 0.8em;color: #e44c65}
+.dateinfo #get_status > div:nth-child(4):before{content:"LAST CMD";font-size: 0.8em;color: #e44c65}
 .dateinfo #get_status > div:nth-child(5):before{content:"CPU LOAD";font-size: 0.8em;color: #e44c65}
-.dateinfo #get_status > div:nth-child(6):before{content:"UPTIME";font-size: 0.8em;color: #e44c65}
-.dateinfo #get_status > div:nth-child(7):before{content:"OVERHEAT";font-size: 0.8em;color: #e44c65}
-.dateinfo #get_status > div:nth-child(8):before{content:"FREQUENCY";font-size: 0.8em;color: #e44c65}
-.dateinfo #get_status > div:nth-child(9):before{content:"STATUS";font-size: 0.8em;color: #e44c65}
+.dateinfo #get_status > div:nth-child(6):before{content:"OVERHEAT";font-size: 0.8em;color: #e44c65}
+.dateinfo #get_status > div:nth-child(7):before{content:"FC";font-size: 0.8em;color: #e44c65}
+.dateinfo #get_status > div:nth-child(8):before{content:"STATUS";font-size: 0.8em;color: #e44c65}
+
 
 
 .onoffswitch { position: relative; width: 60px;  float:left;   display: block; -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;}
@@ -47,7 +47,7 @@
 	
 		img  {
 		margin: 0 10px 0 0;
-		padding: 2px;
+		padding: 0;
 		border: 0;
 		font-size: 100%;
 		font: inherit;
@@ -387,7 +387,7 @@
 	@media screen and (max-width: 1680px) {
 
 		.container.\31 25\25 {
-			width: 99%;
+			width: 100%;
 			max-width: 87.5em;
 			min-width: 70em;
 		}
@@ -413,7 +413,7 @@
 	@media screen and (max-width: 1280px) {
 
 		.container.\31 25\25 {
-			width: 99%;
+			width: 100%;
 			max-width: 112.5%;
 			min-width: 90%;
 		}
@@ -439,9 +439,9 @@
 	@media screen and (max-width: 980px) {
 
 		.container.\31 25\25 {
-			width: 99%;
+			width: 100%;
 			max-width: 125%;
-			min-width: 98%;
+			min-width: 100%;
 		}
 
 		.container.\37 5\25 {
@@ -462,12 +462,12 @@
 
 	}
 
-	@media screen and (max-width: 726px) {
+	@media screen and (max-width: 736px) {
 
 		.container.\31 25\25 {
 			width: 100%;
 			max-width: 125%;
-			min-width: 98%;
+			min-width: 100%;
 		}
 
 		.container.\37 5\25 {
@@ -493,19 +493,19 @@
 		.container.\31 25\25 {
 			width: 100%;
 			max-width: 125%;
-			min-width: 98%;
+			min-width: 100%;
 		}
 
 		.container.\37 5\25 {
-			width: 95%;
+			width: 75%;
 		}
 
 		.container.\35 0\25 {
-			width: 70%;
+			width: 50%;
 		}
 
 		.container.\32 5\25 {
-			width: 45%;
+			width: 25%;
 		}
 
 		.container {
@@ -675,7 +675,6 @@ min-width: 70px;
 		width: 100%;
 		clear: none;
 		margin-left: 0;
-
 	}
 
 	.\31 1u, .\31 1u\24 {
@@ -889,7 +888,6 @@ min-width: 70px;
 			width: 100%;
 			clear: none;
 			margin-left: 0;
-
 		}
 
 		.\31 1u\28xlarge\29, .\31 1u\24\28xlarge\29 {
@@ -1105,7 +1103,6 @@ min-width: 70px;
 			width: 100%;
 			clear: none;
 			margin-left: 0;
-
 		}
 
 		.\31 1u\28large\29, .\31 1u\24\28large\29 {
@@ -1321,7 +1318,6 @@ min-width: 70px;
 			width: 100%;
 			clear: none;
 			margin-left: 0;
-
 		}
 
 		.\31 1u\28medium\29, .\31 1u\24\28medium\29 {
@@ -1451,7 +1447,7 @@ min-width: 70px;
 
 	}
 
-	@media screen and (max-width: 726px) {
+	@media screen and (max-width: 736px) {
 
 		.row > * {
 			padding: 0 0 0 2.5em;
@@ -1752,7 +1748,6 @@ min-width: 70px;
 			width: 100%;
 			clear: none;
 			margin-left: 0;
-
 		}
 
 		.\31 1u\28xsmall\29, .\31 1u\24\28xsmall\29 {
@@ -1942,13 +1937,6 @@ min-width: 70px;
 
 	}
 	
-		h55 {
-		color: #0CF;
-		font-weight: 300;
-		line-height: 1em;
-
-	}
-	
 		h8 {
 		color: #1e1f27;
 		font-weight: 300;
@@ -1981,11 +1969,6 @@ min-width: 70px;
 		font-size: 0.9em;
 		line-height: 1.5em;
 	}
-	
-		h55 {
-		font-size: 0.8em;
-		line-height: 1em;
-	}
 
 	h6 {
 		font-size: 0.7em;
@@ -2012,7 +1995,7 @@ min-width: 70px;
 	hr {
 		border: 0;
 		border-bottom: solid 1px rgba(255, 255, 255, 0.3);
-		margin: 2em 0;
+		margin: 3em 0;
 	}
 
 		hr.major {
@@ -2637,18 +2620,18 @@ min-width: 70px;
 			content: '>';
 			display: block;
 			height: 3em;
-			line-height: 3em;
+			line-height: 2em;
 			pointer-events: none;
 			position: absolute;
-			right: 10px;
+			right: 0;
 			text-align: center;
 			top: 0;
-			width: 10px;
+			width: 2em;
 		}
 		
 				.select-wrapper2:before {
 			color: rgba(255, 255, 255, 0.3);
-			content: '>';
+			content: '\f078';
 			display: block;
 			height: 3em;
 			line-height: 3em;
@@ -2656,8 +2639,8 @@ min-width: 70px;
 			position: absolute;
 			right: 0;
 			text-align: center;
-			top: 0;
-			width: 2em 2em;
+			top: 1.7em;
+			width: 2em;
 		}
 
 		.select-wrapper select::-ms-expand {
@@ -3023,61 +3006,20 @@ div.shem img {
 			font-weight: 600;
 			font-size: 0.9em;
     }
-	
-	table tr.data-eev td:nth-child(2) img {
-			width:20% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-	
-	table tr.data-eev td:nth-child(4) img {
-			width:60% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
 	table tr.data-eev td:nth-child(3) {
         	text-align: center;
 			font-weight: 600;
 			font-size: 0.9em;
     }
 	
-	table tr.get_listflow td:nth-child(3) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.relay td:nth-child(1) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.relay td:nth-child(2) {
-        	text-align: center;
-			font-weight: 300;
-			font-size: 0.7em;
-    }
-	table tr.relay td:nth-child(3) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.relay td:nth-child(4) img {
-			width:40% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-		
-		table tr.relay td:nth-child(4) label {
-			vertical-align: middle;
-			margin: 2%;
-		}
 
+	table tr.data-eev td:nth-child(2) img {
+			width:20% !important;
+			vertical-align: middle;
+		}
 		
 	table tr.tempt td:nth-child(4) img {
-			width:30% !important;
+			width:20% !important;
 			vertical-align: middle;
 			margin: 2%;
 		}
@@ -3093,112 +3035,6 @@ div.shem img {
 			padding: 1%;
 		}
 		
-	table tr.sensor_p td:nth-child(2) {
-			text-align: center;
-			padding: 1%;
-			font-size: 1.1em !important;
-		}
-		
-	table tr.sensor_p td:nth-child(3) {
-			text-align: center;
-			padding: 1%;
-			font-size: 1.1em !important;
-		}
-		
-		table tr.sensor_e td:nth-child(1) {
-			line-height: 0em;
-			padding: 0.5em;
-		}
-		
-		table tr.sensor_e td:nth-child(1) input {
-			text-align: center;
-			font-size: 0.8em !important;
-			width: 95%;
-			height: 40px;
-			line-height: 1em;
-			padding: 0.5em;
-			white-space: pre-line;
-		}
-		
-		table tr.sensor_e td:nth-child(2) input {
-			text-align: center;
-			font-size: 0.9em !important;
-			width: 90%;
-			line-height: 1em;
-			padding: 0.5em;
-			white-space: pre-line;
-		}
-		
-		
-		table tr.sensor_e td:nth-child(2) {
-			text-align: center;
-			padding: 1%;
-			font-size: 1em !important;
-			max-height: 200px;
-			max-width: 200px;
-		}
-		
-	table tr.sensor_eev td:nth-child(2) {
-			text-align: center;
-			padding: 1%;
-			font-size: 1em !important;
-			color: #FC6 !important;
-		}
-		
-		
-	table tr.sensor_a td:nth-child(1) {
-			background-color: #99ccff3b;
-			color: #6CF !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 1.2em !important;
-		}
-	
-	table tr.sensor_a td:nth-child(2) {
-			background-color: #99ccff3b;
-			color: #6CF !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 1.2em !important;
-		}
-		
-	table tr.sensor_a2 td:nth-child(2) {
-			color: #6FC !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 1.2em !important;
-			font-weight: 600;
-		}
-		
-	table tr.relay td:nth-child(1) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.relay td:nth-child(2) {
-        	text-align: center;
-			font-weight: 300;
-			font-size: 0.7em;
-    }
-	table tr.relay td:nth-child(3) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.relay td:nth-child(4) img {
-			width:40% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-		
-		table tr.relay td:nth-child(4) label {
-			vertical-align: middle;
-			margin: 2%;
-		}
-	
-			
 	table tr.const td:nth-child(3) {
 			text-align: left;
 			font-weight: 600;
@@ -3206,7 +3042,7 @@ div.shem img {
 			font-size: 0.8em !important;
 		}
 		
-	table tr.const td:nth-child(1) {
+	table tr.const td:nth-child(2) {
 			text-align: left;
 			font-weight: 200;
 			font-size: 0.6em !important;
@@ -3273,7 +3109,7 @@ div.shem img {
 		
 		table td:nth-child(4) {
 			text-align: center;
-			vertical-align: top;
+			vertical-align: center;
 			font-weight: 600;
 		}
 		
@@ -3308,29 +3144,6 @@ table td label {
 		
 		table th.data-eev {
         	text-align: center !important;
-    }
-	
-	table tr.data-eev td:nth-child(2) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.data-eev td:nth-child(2) img {
-			width:20% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-	
-	table tr.data-eev td:nth-child(4) img {
-			width:60% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-	table tr.data-eev td:nth-child(3) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
     }
 
 		table thead {
@@ -3502,7 +3315,7 @@ table td label {
 		-ms-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 		transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 		background-color: transparent;
-		border-radius: 6px;
+		border-radius: 4px;
 		border: 0;
 		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
 		color: #ffffff !important;
@@ -3511,29 +3324,7 @@ table td label {
 		font-weight: 300;
 		height: 3em;
 		line-height: 3em;
-		padding: 0 1.25em;
-		text-align: center;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-	input[type="button"],
-		.buttont {
-		width:100%;
-		-moz-appearance: none;
-		-webkit-appearance: none;
-		-ms-appearance: none;
-		appearance: none;
-		-moz-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-		-webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-		-ms-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-		transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-		background-color: transparent;
-		border-radius: 6px;
-		border: 0;
-		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-		color: #999 !important;
-		cursor: pointer;
-		display: inline-block;
+		padding: 0 2.25em;
 		text-align: center;
 		text-decoration: none;
 		white-space: nowrap;
@@ -3555,30 +3346,23 @@ table td label {
 		cursor: pointer;
 		display: inline-block;
 		font-weight: 300;
-		height: 2em;
-		line-height: 2em;
+		height: 3em;
+		line-height: 3em;
 		padding: 0 2.25em;
 		text-align: center;
 		text-decoration: none;
 		white-space: nowrap;
 	}
 	
-		input[type="submit"]:hover, input[type="submit"]:active,
+		input[type="submit"]:hover,
 		input[type="reset"]:hover,
 		input[type="reset"]:active,
 		input[type="button"]:hover,
 		input[type="button"]:active,
 		.button:hover,
 		.button:active {
-			box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-			background-color: #e44c65;
-			color: #FFF !important;
-			font-weight: 300;
-		}
-		
-		.buttont:hover{
-			box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-			background-color: #e44c65;
+			box-shadow: inset 0 0 0 1px #87c55305;
+			background-color: #87c55300;
 			color: #FFF !important;
 			font-weight: 300;
 		}
@@ -3605,7 +3389,7 @@ table td label {
 		input[type="reset"]:active,
 		input[type="button"]:active,
 		.button:active {
-			background-color: #e44c65;
+			background-color: #87c55310;
 		}
 
 		input[type="submit"].icon:before,
@@ -4258,7 +4042,7 @@ table td label {
 		#banner .content {
 			display: inline-block;
 			margin-right: 1%;
-			max-width: 98%;
+			max-width: 95%;
 			padding: 3em;
 			position: relative;
 			text-align: right;
@@ -4514,12 +4298,12 @@ input[type="number"],
 		}
 		
 		table td:nth-child(2) img {
-			width:30% !important;
+			width:80% !important;
 			vertical-align: middle;
 		}
 		
 		table td:nth-child(3) img {
-			width:30% !important;
+			width:80% !important;
 			vertical-align: middle;
 		}
 		
@@ -4653,7 +4437,7 @@ input[type="number"],
 		display: none;
 	}
 
-	@media screen and (max-width: 726px) {
+	@media screen and (max-width: 736px) {
 
 		
 				/* Shem */
@@ -4688,11 +4472,11 @@ input[type="number"],
 			font-size: 0.8em;
 		}
 		table td:nth-child(2) img {
-			width:30% !important;
+			width:80% !important;
 			vertical-align: middle;
 		}
 		table td:nth-child(3) img {
-			width:30% !important;
+			width:80% !important;
 			vertical-align: middle;
 		}
 		
@@ -4798,11 +4582,11 @@ input[type="number"],
 
 			#banner {
 				box-shadow: 0 0.125em 0.5em 0 rgba(0, 0, 0, 0.25);
-				min-height: calc(100% - 44px);
+				min-height: calc(100vh - 44px);
 			}
 
 				#banner:before {
-					height: calc(100% - 44px);
+					height: calc(100vh - 44px);
 				}
 
 				#banner .content {
@@ -4934,8 +4718,8 @@ input[type="number"],
 					border-top: solid 1px rgba(255, 255, 255, 0.05);
 					color: rgba(255, 255, 255, 0.75);
 					display: block;
-					height: 1%;
-					line-height: 160%;
+					height: 3em;
+					line-height: 3em;
 					text-decoration: none;
 				}
 
@@ -4952,7 +4736,30 @@ input[type="number"],
 						font-weight: 300;
 					}
 
-					
+					#navPanel .link .indent-1 {
+						display: inline-block;
+						width: 1.25em;
+					}
+
+					#navPanel .link .indent-2 {
+						display: inline-block;
+						width: 2.5em;
+					}
+
+					#navPanel .link .indent-3 {
+						display: inline-block;
+						width: 3.75em;
+					}
+
+					#navPanel .link .indent-4 {
+						display: inline-block;
+						width: 5em;
+					}
+
+					#navPanel .link .indent-5 {
+						display: inline-block;
+						width: 6.25em;
+					}
 
 			body.navPanel-visible #page-wrapper {
 				-moz-transform: translateX(350px);
@@ -5045,7 +4852,7 @@ input[type="number"],
 				-ms-transition: -ms-transform 0.5s ease;
 				transition: transform 0.5s ease;
 				display: block;
-				height: 44px;
+				height: 55px;
 				left: 0;
 				position: fixed;
 				top: 0;
@@ -5136,8 +4943,8 @@ input[type="number"],
 					border-top: solid 1px rgba(255, 255, 255, 0.05);
 					color: rgba(255, 255, 255, 0.75);
 					display: block;
-					height: 1%;
-					line-height: 160%;
+					height: 3em;
+					line-height: 3em;
 					text-decoration: none;
 				}
 
@@ -5150,11 +4957,34 @@ input[type="number"],
 					}
 
 					#navPanel .link.depth-0 {
-						color: #e44c65;
+						color: #ffffff;
 						font-weight: 300;
 					}
 
-					
+					#navPanel .link .indent-1 {
+						display: inline-block;
+						width: 1.25em;
+					}
+
+					#navPanel .link .indent-2 {
+						display: inline-block;
+						width: 2.5em;
+					}
+
+					#navPanel .link .indent-3 {
+						display: inline-block;
+						width: 3.75em;
+					}
+
+					#navPanel .link .indent-4 {
+						display: inline-block;
+						width: 5em;
+					}
+
+					#navPanel .link .indent-5 {
+						display: inline-block;
+						width: 6.25em;
+					}
 
 			body.navPanel-visible #page-wrapper {
 				-moz-transform: translateX(350px);
@@ -5212,19 +5042,14 @@ input[type="number"],
 		
 
 		table td img {
-			width:50%;
-			margin:3%;
-		}
-		table td:nth-child(1) img {
-			width:70% !important;
-			vertical-align: middle;
+			width:30%;
 		}
 		table td:nth-child(2) img {
-			width:30% !important;
+			width:55% !important;
 			vertical-align: middle;
 		}
 		table td:nth-child(3) img {
-			width:30% !important;
+			width:55% !important;
 			vertical-align: middle;
 		}
 		
@@ -5253,100 +5078,6 @@ input[type="number"],
 			font-weight: 100 !important;
 			font-size: 0.7em !important;
 		}
-		
-		table tr.sensor_a td:nth-child(1) {
-			background-color: #99ccff3b;
-			color: #6CF !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 0.8em !important;
-		}
-	
-	table tr.sensor_a td:nth-child(2) {
-			background-color: #99ccff3b;
-			color: #6CF !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 0.7em !important;
-		}
-		
-	table tr.sensor_a2 td:nth-child(2) {
-			color: #6FC !important;
-			text-align: center;
-			padding: 1%;
-			font-size: 0.7em !important;
-			font-weight: 600;
-		}	
-		
-	table tr.sensor_p td:nth-child(2) {
-			text-align: center;
-			padding: 1%;
-			font-size: 0.8em !important;
-		}
-
-		
-	table tr.sensor_p td:nth-child(3) {
-			text-align: center;
-			padding: 1%;
-			font-size: 0.7em !important;
-		}
-		
-			
-		table tr.sensor_e td:nth-child(1) input {
-			text-align: center;
-			font-size: 0.7em !important;
-			width: 90%;
-			line-height: 1em;
-			padding: 0.5em;
-			white-space: pre-line;
-		}
-	
-	table tr.sensor_e td:nth-child(2) {
-			text-align: center;
-			padding: 1%;
-			font-size: 0.7em !important;
-		}
-		
-	table tr.sensor_e td:nth-child(2) input {
-			text-align: center;
-			font-size: 0.9em !important;
-			width: 95%;
-			line-height: 1em;
-			padding: 0.5em;
-			white-space: pre-line;
-		}
-		
-table td label {
-	cursor: pointer;
-	margin: 2%;
-}
-
-table th.data-eev {
-        	text-align: center !important;
-    }
-	
-	table tr.data-eev td:nth-child(2) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
-	
-	table tr.data-eev td:nth-child(2) img {
-			width:20% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-	
-	table tr.data-eev td:nth-child(4) img {
-			width:60% !important;
-			vertical-align: middle;
-			margin: 2%;
-		}
-	table tr.data-eev td:nth-child(3) {
-        	text-align: center;
-			font-weight: 600;
-			font-size: 0.9em;
-    }
 		
 
 			body, input, select, textarea {
@@ -5391,8 +5122,7 @@ table th.data-eev {
 			input[type="reset"],
 			input[type="button"],
 			.button {
-				padding: 0 0.4em 0 0.4em;
-				font-size: 0.8em !important;
+				padding: 0 0.5em 0 0.5em;
 			}
 
 		/* Spotlight */

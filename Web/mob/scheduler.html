@@ -1,0 +1,335 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>НАРОДНЫЙ КОНТРОЛЛЕР</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="Content-Style-Type" content="text/css">
+        <link rel="stylesheet" type="text/css" href="assets/css/main.css">
+		
+        <style>
+	#feedback { font-size: 1.4em; }
+	#calendar .ui-selecting { background: #FECA40; }
+	#calendar .ui-selected { background: #F39814; }
+	#calendar { margin: 0; padding: 0; width: 750; }
+	#calendar td.clc { margin: 3px; padding: 1px; text-align: center; color: white; border: 1px dotted white; font-weight: 600; font-size: 0.9em; }
+	#calendar td.clh { background: #069; } 
+	#calendar th.clh { background: #4cb1e450; } 
+	#calendar td.clh1 { background: #e44c6550; }
+	#calendar th.clh1 { background: #e44c6550; }
+	#calendar th.clh2 { background: #4cb1e450; }
+	</style>
+     
+    <script type="text/javascript" src="function.js"></script>
+	<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="jquery.knob.js"></script>
+<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+	<script src="jquery.min.js"></script>
+	<script src="jquery-ui.min.js"></script>
+	<script src="jquery.ui.touch.js"></script> 
+    <script src="jquery.ui.touch.js"></script>
+        
+        <!-- Scripts -->
+
+<script type='text/javascript' src='scripts.js'></script>
+<script>
+		var ResetHeights = navigator.userAgent.indexOf("Chrome") != -1;
+		var shifted = false;
+		console.log("shifted1:"+shifted);
+		$( function() { $("#calendar").selectable({filter: ".clc", stop: function() {
+			$( ".ui-selected", this ).each(function() {
+				var el = document.getElementById('get_listprofile2').options;
+				
+				this.innerHTML = el[el.selectedIndex].value == -1 || shifted ? "" : el[el.selectedIndex].innerHTML.replace(/\. .*$/, "");
+				
+			});
+			if(ResetHeights) {
+				var arrdiv = [".content",".menu"];
+				for(i = 0; i < arrdiv.length; i++) $(arrdiv[i])[0].style.minHeight = "100%";
+			}
+		} }); });
+		$(document).on('mouseup', function(e){ shifted =!shifted;
+	console.log("shifted222222:"+shifted);} );
+	</script>
+    
+    
+    
+    <script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(lstNames),get_SCHDLR(Calendar),get_listProfile2_skip1");
+	};
+	function get_sch_index() {
+		return document.getElementById('get_schdlr-lstnames').options.selectedIndex;
+	}
+	function process_calendar(save) {
+		var str = "get_SCHDLR(Calendar"+get_sch_index()+")";
+		if(save) setParam(str); else loadParam(str);
+	}
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("et_SCHDLR")!=-1) {
+			var i = get_sch_index();
+			if(i != -1) {
+				document.getElementById('get_schdlr-name').value = document.getElementById('get_schdlr-lstnames').options[i].innerHTML;
+				$('#calendar .ui-selected').removeClass('ui-selected');
+			}
+		}
+	}
+	</script>
+
+	</head>
+	<body class="landing">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<header id="header">
+					<h1 id="logo"><a href="index.html">КОНТРОЛЛЕР ТЕПЛОВОГО НАСОСА</a></h1>
+					<nav id="nav">
+				  <script src="menu.js"></script>
+					</nav>
+				</header>
+
+			<!-- Banner -->
+				<section id="banner">
+					<div class="content">
+						<header>
+							<h2>РАСПИСАНИЕ РАБОТЫ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<p> <br />
+							
+					  </header>
+                      
+
+
+<div class="swich">
+<h8><span id="get_work2"></span><br>
+<span id="get_work3"></span></h8>
+<span id="onoffswitch"></span>
+<br>
+<dd><span id="get_errcode" style="display:block">-</span></dd>
+</div>
+                                     
+                    <div class="table-wrapper">
+                    <h4>Управление расписаниями</h4><br>
+                    <input class="button small" type="submit" value="Считать из EEPROM" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input class="button small" type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE_SCHDLR")' >
+		<p>
+        <div class="table-wrapper">
+		<table>		
+		<tbody>
+		<tr>		
+        <td>Работа по расписанию</td>
+        <td></td>
+        <td></td>
+        <td><input style="display:none" type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');" >
+        <label for="get_schdlr-on"><span id="get_schdlr-on2"></span></label></td>
+        </tr>
+        <tr>
+        
+        <td><input class="button2 small" id="et_schdlr-lstnames2" type="submit" value="Установить текущее расписание"  onclick="setParam('get_SCHDLR(Active='+get_sch_index()+')');"></input></td>
+        <td></td>
+        <td></td>
+        <td><select id="get_schdlr-lstnames" onchange='process_calendar(0);'></select></td>
+        </tr>
+        <tr>
+        
+        <td>Установить профиль:</td>
+		<td></td>
+        <td></td>
+        <td>
+		<select class="select-wrapper" id="get_listprofile2" onChange="setParam('get_listProfile2', 'get_listprofile2');"></select>
+		</td>
+        </tr>
+        </tbody>
+        </table>
+
+	</div>
+<table id="calendar">
+	<thead>
+
+		<tr class="cl">
+			<th class="clh"></th>
+			<th class="clh2"></th><th class="clh2"></th><th class="clh2"></th><th class="clh2"></th><th class="clh2"></th><th class="clh2"></th><th class="clh2"></th>
+		</tr>
+        <tr class="cl">
+			<th class="clh">Часы</th>
+			<th class="clh2">Пн</th><th class="clh2">Вт</th><th class="clh2">Ср</th><th class="clh2">Чт</th><th class="clh2">Пт</th><th class="clh2">Сб</th><th class="clh2">Вс</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr class="cl">
+			<td class="clh">00-01</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+			
+		</tr>
+        <tr class="cl">
+			<td class="clh">01-02</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+			
+		</tr>
+        <tr class="cl">
+			<td class="clh">02-03</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+			
+		</tr>
+        <tr class="cl">
+			<td class="clh">03-04</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+			
+		</tr>
+        <tr class="cl">
+			<td class="clh">04-05</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh">05-06</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh">06-07</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">07-08</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">08-09</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">09-10</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr>
+			<td class="clh1">10-11</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">11-12</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">12-13</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">13-14</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">14-15</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">15-16</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">16-17</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">17-18</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">18-19</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">19-20</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">20-21</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">21-22</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh1">22-23</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+        <tr class="cl">
+			<td class="clh">23-24</td>
+			<td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td><td class="clc"></td>
+		</tr>
+		
+	</tbody>
+</table>
+
+<br><input type="submit" value="Сохранить календарь" onClick="process_calendar(1);">   
+    
+ </div>
+</div>
+<script>  
+        function show()   
+        {   
+           	
+			$.get(urlcontrol + '/&get_MODE&get_errcode&get_error&get_WORK&get_remarkTest&get_Relay(RCOMP)&get_Relay(RPUMPB)&get_Relay(RTRV)&get_Relay(RPUMPI)&get_Relay(RPUMPO)&get_Relay(RBOILER)&get_Relay(RHEAT)&get_Relay(RFAN1)&get_Relay(RFAN2)&get_Relay(R3WAY)&get_Relay(REVI)&get_paramEEV(POSp)&get_paramEEV(POS)&&', function(data) {
+  				$('.result').html(data);
+  					console.log(data);
+					var oldString = (data); 
+					var newString = oldString.replace("&&","\"}");
+					newString = newString.replace("&get_","{\"");
+					newString = newString.replace(/=/g,"\":\"");
+					newString = newString.replace(/&get_/g,"\",\"");
+					console.log(newString);
+					var obj = JSON.parse(newString);
+					console.log(obj);
+					if(obj["WORK"] == "ON") {
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "ON";
+						} else {
+						document.getElementById("onoffswitch").checked = false;
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						
+										}
+					} else if(obj["WORK"] == "OFF") {
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "OFF";
+						} else {
+						document.getElementById("onoffswitch").checked = true;
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+					}
+					}
+								
+					if(obj["errcode"] == 0) {
+					document.getElementById("get_errcode").innerHTML = obj["error"];
+					document.getElementById("get_errcode").style.display = "none";
+						} else if(obj["errcode"] < 0) {
+						document.getElementById("get_errcode").innerHTML = obj["error"];}
+	});
+		} 
+		$(document).ready(function(){   
+            show();   
+            setInterval('show()',3000);   
+        });   
+    </script> 
+ 
+  <br>
+ </div>                   
+
+	    </section>
+
+
+			<!-- Footer -->
+				<footer id="footer">
+					<ul class="icons">
+						
+					</ul>
+					<ul class="copyright">
+						
+					</ul>
+				</footer>
+
+		</div>
+
+			
+	</body>
+</html>

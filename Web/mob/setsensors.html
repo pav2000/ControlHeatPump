@@ -11,12 +11,12 @@
 <script type="text/javascript" src="assets/js/jquery.min.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
-<script type='text/javascript' src='scripts.js'></script>
+<script type='text/javascript' src='scripts1.js'></script>
 <script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_OneWirePin,get_noteTemp(TEVAING),get_noteTemp(TEVAOUTG),get_noteTemp(TCONING),get_noteTemp(TCONOUTG),get_noteTemp(TOUT),get_noteTemp(TIN),get_noteTemp(TEVAIN),get_noteTemp(TEVAOUT),get_noteTemp(TCONIN),get_noteTemp(TCONOUT),get_noteTemp(TBOILER),get_noteTemp(TACCUM),get_noteTemp(TRTOOUT),get_noteTemp(TCOMP),get_pTemp(TEVAING),get_pTemp(TEVAOUTG),get_pTemp(TCONING),get_pTemp(TCONOUTG),get_pTemp(TOUT),get_pTemp(TIN),get_pTemp(TEVAIN),get_pTemp(TEVAOUT),get_pTemp(TCONIN),get_pTemp(TCONOUT),get_pTemp(TBOILER),get_pTemp(TACCUM),get_pTemp(TRTOOUT),get_pTemp(TCOMP)");
+		loadParam("get_OneWirePin,get_noteTemp(TEVAING),get_noteTemp(TEVAOUTG),get_noteTemp(TCONING),get_noteTemp(TCONOUTG),get_noteTemp(TOUT),get_noteTemp(TIN),get_noteTemp(TEVAIN),get_noteTemp(TEVAOUT),get_noteTemp(TCONIN),get_noteTemp(TCONOUT),get_noteTemp(TBOILER),get_noteTemp(TACCUM),get_noteTemp(TRTOOUT),get_noteTemp(TCOMP),get_presentTemp(TEVAING),get_presentTemp(TEVAOUTG),get_presentTemp(TCONING),get_presentTemp(TCONOUTG),get_presentTemp(TOUT),get_presentTemp(TIN),get_presentTemp(TEVAIN),get_presentTemp(TEVAOUT),get_presentTemp(TCONIN),get_presentTemp(TCONOUT),get_presentTemp(TBOILER),get_presentTemp(TACCUM),get_presentTemp(TRTOOUT),get_presentTemp(TCOMP)");
 		loadParam("get_WORK");
-		loadParam("get_aTemp(TEVAING),get_aTemp(TEVAOUTG),get_aTemp(TCONING),get_aTemp(TCONOUTG),get_aTemp(TOUT),get_aTemp(TIN),get_aTemp(TEVAIN),get_aTemp(TEVAOUT),get_aTemp(TCONIN),get_aTemp(TCONOUT),get_aTemp(TBOILER),get_aTemp(TACCUM),get_aTemp(TRTOOUT),get_aTemp(TCOMP),get_errcodeTemp(TEVAING),get_errcodeTemp(TEVAOUTG),get_errcodeTemp(TCONING),get_errcodeTemp(TCONOUTG),get_errcodeTemp(TOUT),get_errcodeTemp(TIN),get_errcodeTemp(TEVAIN),get_errcodeTemp(TEVAOUT),get_errcodeTemp(TCONIN),get_errcodeTemp(TCONOUT),get_errcodeTemp(TBOILER),get_errcodeTemp(TACCUM),get_errcodeTemp(TRTOOUT),get_errcodeTemp(TCOMP)");
+		loadParam("get_adressTemp(TEVAING),get_adressTemp(TEVAOUTG),get_adressTemp(TCONING),get_adressTemp(TCONOUTG),get_adressTemp(TOUT),get_adressTemp(TIN),get_adressTemp(TEVAIN),get_adressTemp(TEVAOUT),get_adressTemp(TCONIN),get_adressTemp(TCONOUT),get_adressTemp(TBOILER),get_adressTemp(TACCUM),get_adressTemp(TRTOOUT),get_adressTemp(TCOMP),get_errcodeTemp(TEVAING),get_errcodeTemp(TEVAOUTG),get_errcodeTemp(TCONING),get_errcodeTemp(TCONOUTG),get_errcodeTemp(TOUT),get_errcodeTemp(TIN),get_errcodeTemp(TEVAIN),get_errcodeTemp(TEVAOUT),get_errcodeTemp(TCONIN),get_errcodeTemp(TCONOUT),get_errcodeTemp(TBOILER),get_errcodeTemp(TACCUM),get_errcodeTemp(TRTOOUT),get_errcodeTemp(TCOMP)");
 		updateParam("get_rawTemp(TEVAING),get_rawTemp(TEVAOUTG),get_rawTemp(TCONING),get_rawTemp(TCONOUTG),get_rawTemp(TIN),get_rawTemp(TOUT),get_rawTemp(TEVAIN),get_rawTemp(TEVAOUT),get_rawTemp(TCONIN),get_rawTemp(TCONOUT),get_rawTemp(TBOILER),get_rawTemp(TACCUM),get_rawTemp(TRTOOUT),get_rawTemp(TCOMP)");
 	};		 
 		</script>
@@ -38,23 +38,21 @@
 			  <div class="content">
 						<header>
 							<h2>ПРИВЯЗКА ДАТЧИКОВ<br> ТЕМПЕРАТУРЫ</h2>
-							<br>							
+							<p> <br />							
 					  </header>
                       
-
-
 <div class="swich">
 <h8><span id="get_work2"></span><br>
 <span id="get_work3"></span></h8>
 <span id="onoffswitch"></span>
 <br>
-
-</div> 
+<dd><span id="get_errcode" style="display:block">-</span></dd>
+</div>  
                                      
 <div class="table-wrapper">
 
 <h4>Сканирование шины OneWire [ pin <span id="get_onewirepin"></span> ]</h4>
-		<h6>ВНИМАНИЕ! Сканирование датчиков возможно только при ВЫКЛЮЧЕНОМ тепловом насосе!</h6><p></p>
+		<h6>ВНИМАНИЕ! Сканирование датчиков приводит к остановке теплового насоса!</h6><p></p>
         <button class="button special" id="scan" onclick='loadParam("scan_OneWire",true);'>Начать сканирование</button><p></p>
 		<table>
 		<thead>
@@ -77,7 +75,7 @@
 <h4>Датчики системы</h4>
 		
         <h55>Имя датчика TOUT</h55>        
-        <table id="get_ptemp-tout">        
+        <table id="get_presenttemp-tout">        
 		<tbody>
 			<tr>
             <td>Описание</td>
@@ -92,12 +90,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tout">-</td>
+            <td id="get_adresstemp-tout">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tout" onChange="setParam('set_aTemp(TOUT)','get_atemp-tout');"> <option value="0">Привязать</option> </select></td>
+			<td><select class="buttont" id="set_adresstemp-tout" onChange="setParam('set_adressTemp(TOUT)','get_adresstemp-tout');"> <option value="0">Привязать</option> </select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -108,7 +106,7 @@
 	</table>
         
     <h55>Имя датчика TIN</h55>
-		<table id="get_ptemp-tin">        
+		<table id="get_presenttemp-tin">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -123,12 +121,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tin">-</td>
+            <td id="get_adresstemp-tin">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tin" onChange="setParam('set_aTemp(TIN)','get_atemp-tin');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tin" onChange="setParam('set_adressTemp(TIN)','get_adresstemp-tin');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -139,7 +137,7 @@
 	</table> 
     
     <h55>Имя датчика TEVAIN</h55>
-		<table id="get_ptemp-tevain">        
+		<table id="get_presenttemp-tevain">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -154,12 +152,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tevain">-</td>
+            <td id="get_adresstemp-tevain">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tevain" onChange="setParam('set_aTemp(TEVAIN)','get_atemp-tevain');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tevain" onChange="setParam('set_adressTemp(TEVAIN)','get_adresstemp-tevain');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -170,7 +168,7 @@
 	</table> 
     
     <h55>Имя датчика TEVAOUT</h55>
-		<table id="get_ptemp-tevaout">        
+		<table id="get_presenttemp-tevaout">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -185,12 +183,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tevaout">-</td>
+            <td id="get_adresstemp-tevaout">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tevaout" onChange="setParam('set_aTemp(TEVAOUT)','get_atemp-tevaout');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tevaout" onChange="setParam('set_adressTemp(TEVAOUT)','get_adresstemp-tevaout');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -201,7 +199,7 @@
 	</table>
     
     <h55>Имя датчика TCONIN</h55>
-		<table id="get_ptemp-tconin">        
+		<table id="get_presenttemp-tconin">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -216,12 +214,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tconin">-</td>
+            <td id="get_adresstemp-tconin">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tconin" onChange="setParam('set_aTemp(TCONIN)','get_atemp-tconin');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tconin" onChange="setParam('set_adressTemp(TCONIN)','get_adresstemp-tconin');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -232,7 +230,7 @@
 	</table>
     
     <h55>Имя датчика TCONOUT</h55>
-		<table id="get_ptemp-tconout">        
+		<table id="get_presenttemp-tconout">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -247,12 +245,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tconout">-</td>
+            <td id="get_adresstemp-tconout">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tconout" onChange="setParam('set_aTemp(tconout)','get_atemp-tconout');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tconout" onChange="setParam('set_adressTemp(tconout)','get_adresstemp-tconout');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -263,7 +261,7 @@
 	</table>
     
     <h55>Имя датчика TBOILER</h55>
-		<table id="get_ptemp-tboiler">        
+		<table id="get_presenttemp-tboiler">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -278,12 +276,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tboiler">-</td>
+            <td id="get_adresstemp-tboiler">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tboiler" onChange="setParam('set_aTemp(tboiler)','get_atemp-tboiler');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tboiler" onChange="setParam('set_adressTemp(tboiler)','get_adresstemp-tboiler');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -294,7 +292,7 @@
 	</table>
     
     <h55>Имя датчика TACCUM</h55>
-		<table id="get_ptemp-taccum">        
+		<table id="get_presenttemp-taccum">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -309,12 +307,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-taccum">-</td>
+            <td id="get_adresstemp-taccum">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-taccum" onChange="setParam('set_aTemp(taccum)','get_atemp-taccum');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-taccum" onChange="setParam('set_adressTemp(taccum)','get_adresstemp-taccum');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -325,7 +323,7 @@
 	</table>
     
     <h55>Имя датчика TRTOOUT</h55>
-		<table id="get_ptemp-trtoout">        
+		<table id="get_presenttemp-trtoout">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -340,12 +338,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-trtoout">-</td>
+            <td id="get_adresstemp-trtoout">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-trtoout" onChange="setParam('set_aTemp(trtoout)','get_atemp-trtoout');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-trtoout" onChange="setParam('set_adressTemp(trtoout)','get_adresstemp-trtoout');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -356,7 +354,7 @@
 	</table>
     
     <h55>Имя датчика TCOMP</h55>
-		<table id="get_ptemp-tcomp">        
+		<table id="get_presenttemp-tcomp">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -371,12 +369,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tcomp">-</td>
+            <td id="get_adresstemp-tcomp">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tcomp" onChange="setParam('set_aTemp(tcomp)','get_atemp-tcomp');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tcomp" onChange="setParam('set_adressTemp(tcomp)','get_adresstemp-tcomp');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -387,7 +385,7 @@
 	</table>
     
     <h55>Имя датчика TEVAING</h55>
-		<table id="get_ptemp-tevaing">        
+		<table id="get_presenttemp-tevaing">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -402,12 +400,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tevaing">-</td>
+            <td id="get_adresstemp-tevaing">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tevaing" onChange="setParam('set_aTemp(tevaing)','get_atemp-tevaing');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tevaing" onChange="setParam('set_adressTemp(tevaing)','get_adresstemp-tevaing');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -418,7 +416,7 @@
 	</table>
     
     <h55>Имя датчика TEVAOUTG</h55>
-		<table id="get_ptemp-tevaoutg">        
+		<table id="get_presenttemp-tevaoutg">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -433,12 +431,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tevaoutg">-</td>
+            <td id="get_adresstemp-tevaoutg">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tevaoutg" onChange="setParam('set_aTemp(tevaoutg)','get_atemp-tevaoutg');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tevaoutg" onChange="setParam('set_adressTemp(tevaoutg)','get_adresstemp-tevaoutg');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -449,7 +447,7 @@
 	</table>
     
     <h55>Имя датчика TCONING</h55>
-		<table id="get_ptemp-tconing">        
+		<table id="get_presenttemp-tconing">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -464,12 +462,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tconing">-</td>
+            <td id="get_adresstemp-tconing">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tconing" onChange="setParam('set_aTemp(tconing)','get_atemp-tconing');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tconing" onChange="setParam('set_adressTemp(tconing)','get_adresstemp-tconing');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -480,7 +478,7 @@
 	</table>
     
     <h55>Имя датчика TCONOUTG</h55>
-		<table id="get_ptemp-tconoutg">        
+		<table id="get_presenttemp-tconoutg">        
 		<tbody>
             <tr>
             <td>Описание</td>
@@ -495,12 +493,12 @@
             <tr>
             <td>Адрес</td>
             <td></td><td></td>
-            <td id="get_atemp-tconoutg">-</td>
+            <td id="get_adresstemp-tconoutg">-</td>
             </tr>
             <tr>
             <td>Привязка</td>
             <td></td><td></td>
-			<td><select class="buttont" id="set_atemp-tconoutg" onChange="setParam('set_aTemp(tconoutg)','get_atemp-tconoutg');"><option value="0">Привязать</option></select></td>
+			<td><select class="buttont" id="set_adresstemp-tconoutg" onChange="setParam('set_adressTemp(tconoutg)','get_adresstemp-tconoutg');"><option value="0">Привязать</option></select></td>
             </tr>
             <tr>
             <td>Код ошибки</td>
@@ -512,7 +510,54 @@
                        
 </div>
 </div>
-
+<script>  
+        function show()   
+        {   
+           	
+			$.get(urlcontrol + '/&get_MODE&get_errcode&get_error&get_WORK&&', function(data) {
+  				$('.result').html(data);
+  					console.log(data);
+					var oldString = (data); 
+					var newString = oldString.replace("&&","\"}");
+					newString = newString.replace("&get_","{\"");
+					newString = newString.replace(/=/g,"\":\"");
+					newString = newString.replace(/&get_/g,"\",\"");
+					console.log(newString);
+					var obj = JSON.parse(newString);
+					console.log(obj);
+					if(obj["WORK"] == "ON") {
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "ON";
+						} else {
+						document.getElementById("onoffswitch").checked = false;
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						
+										}
+					} else if(obj["WORK"] == "OFF") {
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "OFF";
+						} else {
+						document.getElementById("onoffswitch").checked = true;
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+					}
+					}
+								
+					if(obj["errcode"] == 0) {
+					document.getElementById("get_errcode").innerHTML = obj["error"];
+					document.getElementById("get_errcode").style.display = "none";
+						} else if(obj["errcode"] < 0) {
+						document.getElementById("get_errcode").innerHTML = obj["error"];}
+	});
+		} 
+		$(document).ready(function(){   
+            show();   
+            setInterval('show()',3000);   
+        });   
+    </script> 
  
   <br>
  </div>                   

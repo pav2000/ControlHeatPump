@@ -37,20 +37,18 @@
 				<section id="banner">
 			  <div class="content">
 						<header>
-							<h2>РЕЛЕ<br> ТЕПЛОВОГО НАСОСА</h2>
+							<h2>УПРАВЛЕНИЕ РЕЛЕ<br> ТЕПЛОВОГО НАСОСА</h2>
 							<p> <br />
 							
 					  </header>
-                      
-
-
-<div class="swich">
+ <div class="swich">
 <h8><span id="get_work2"></span><br>
 <span id="get_work3"></span></h8>
 <span id="onoffswitch"></span>
 <br>
-
+<dd><span id="get_errcode" style="display:block">-</span></dd>
 </div> 
+
                                      
 <div class="table-wrapper">
 
@@ -66,6 +64,55 @@
 		<tbody id="get_listrelay">
 		</tbody>
 	</table>	
+
+<script>  
+        function show()   
+        {   
+           	
+			$.get(urlcontrol + '/&get_MODE&get_errcode&get_error&get_WORK&&', function(data) {
+  				$('.result').html(data);
+  					console.log(data);
+					var oldString = (data); 
+					var newString = oldString.replace("&&","\"}");
+					newString = newString.replace("&get_","{\"");
+					newString = newString.replace(/=/g,"\":\"");
+					newString = newString.replace(/&get_/g,"\",\"");
+					console.log(newString);
+					var obj = JSON.parse(newString);
+					console.log(obj);
+					if(obj["WORK"] == "ON") {
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "ON";
+						} else {
+						document.getElementById("onoffswitch").checked = false;
+						document.getElementById("get_work2").innerHTML = '<input class="button3 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН включен. Выключить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						
+										}
+					} else if(obj["WORK"] == "OFF") {
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+						var element = document.getElementById("onoffswitch");
+						if(!element) {
+						document.getElementById(obj["WORK"].toLowerCase()).innerHTML = "OFF";
+						} else {
+						document.getElementById("onoffswitch").checked = true;
+						document.getElementById("get_work2").innerHTML = '<input class="button4 small" type="submit" value="" onClick="swich(\'onoffswitch\')" /><input type="submit" value="ТН выключен. Включить ТН?" onClick="swich(\'onoffswitch\')" class="button small" />';
+					}
+					}
+								
+					if(obj["errcode"] == 0) {
+					document.getElementById("get_errcode").innerHTML = obj["error"];
+					document.getElementById("get_errcode").style.display = "none";
+						} else if(obj["errcode"] < 0) {
+						document.getElementById("get_errcode").innerHTML = obj["error"];}
+	});
+		} 
+		$(document).ready(function(){   
+            show();   
+            setInterval('show()',3000);   
+        });   
+    </script> 
 </div>
 </div>
 

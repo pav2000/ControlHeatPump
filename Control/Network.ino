@@ -533,23 +533,23 @@ boolean pingServer()
 	WDT_Restart(WDT);                                   // Сбросить вачдог
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
 	SemaphoreGive(xWebThreadSemaphore);                 // отдать семафор
+	journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, echoReply.addr[0], echoReply.addr[1], echoReply.addr[2], echoReply.addr[3]);
 	if (echoReply.status == SUCCESS)
 	{
-		journal.jprintf(pP_DATE," Ping[%d] from: %d.%d.%d.%d: bytes=%d time=%ldms TTL=%d\n",echoReply.data.seq, echoReply.addr[0], echoReply.addr[1], echoReply.addr[2], echoReply.addr[3],REQ_DATASIZE, millis() - echoReply.data.time, echoReply.ttl);
+		journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
 		return true;
 	}
 	else
 	{
-		journal.jprintf( "%s Ping request failed, ",NowTimeToStr());                                 // Неудача, пинга нет
+		journal.jprintf("FAILED - ");                                 // Неудача, пинга нет
 		switch (echoReply.status)
 		{
-		case SEND_TIMEOUT: journal.jprintf( " timed out sending the request.\n");  break;
-		case NO_RESPONSE:  journal.jprintf( " died waiting for a response.\n");    break;
-		case BAD_RESPONSE: journal.jprintf( " got back the wrong type.\n");        break;
-		default:           journal.jprintf( " unknow code error:%d.\n",echoReply.status); break;
-
+		case SEND_TIMEOUT: journal.jprintf( " send timed out");  break;
+		case NO_RESPONSE:  journal.jprintf( " no response");    break;
+		case BAD_RESPONSE: journal.jprintf( " bad reponse");        break;
+		default:           journal.jprintf( " error: %d", echoReply.status); break;
 		}
-		journal.jprintf("Resetting the chip %s by ping . . .\n", nameWiznet);
+		journal.jprintf("\nResetting the chip %s . . .\n", nameWiznet);
 		HP.num_resPing++;
 		HP.sendCommand(pNETWORK);                                                // Если связь потеряна то подать команду на сброс сетевого чипа
 		//     HP.num_resW5200++;                                                       // Добавить счетчик инициализаций

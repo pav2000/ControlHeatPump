@@ -46,10 +46,11 @@ struct type_status
 }; 
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
 #define fHP_ON    0         // флаг Включения ТН (пишется внутрь счетчиков flags)
+
 struct type_motoHour
 {
   byte magic;       // признак данных, должно быть  0xaa  пока не используется!!!!!!!!!!
-  uint8_t  flags;   // флаги                  пока не используется!!!!!!!!!!
+  uint8_t  flags;   // флаги
   uint32_t H1;      // моточасы ТН ВСЕГО
   uint32_t H2;      // моточасы ТН сбрасываемый счетчик (сезон)
   uint32_t C1;      // моточасы компрессора ВСЕГО
@@ -73,16 +74,13 @@ struct type_motoHour
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
 #define fBeep               1               // флаг Использование звука
 #define fNextion            2               // флаг Использование nextion дисплея
-#define fEEV_close          3               // флаг Закрытие ЭРВ при выключении компрессора
-#define fSD_card            4               // флаг записи статистики на карту памяти
-#define fSaveON             5               // флаг записи в EEPROM включения ТН
-#define fEEV_start          6               // флаг Всегда начинать работу ЭРВ со стратовой позиции
-#define fEEV_light_start    7               // флаг Облегчение пуска компрессора при старте ЭРВ открывается после запуска уходит на рабочуюю позицию
-#define fTypeRHEAT          8               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
-#define fSDMLogErrors  		9               // флаг писать в лог нерегулярные ошибки счетчика SDM
-#define f1Wire2TSngl		10				// На 2-ой шине 1-Wire(DS2482) только один датчик
-#define f1Wire3TSngl		11				// На 3-ей шине 1-Wire(DS2482) только один датчик
-#define f1Wire4TSngl		12				// На 4-ей шине 1-Wire(DS2482) только один датчик
+#define fSD_card            3               // флаг записи статистики на карту памяти
+#define fSaveON             4               // флаг записи в EEPROM включения ТН
+#define fTypeRHEAT          5               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define fSDMLogErrors  		6               // флаг писать в лог нерегулярные ошибки счетчика SDM
+#define f1Wire2TSngl		7				// На 2-ой шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl		8				// На 3-ей шине 1-Wire(DS2482) только один датчик
+#define f1Wire4TSngl		9				// На 4-ей шине 1-Wire(DS2482) только один датчик
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -333,7 +331,7 @@ class HeatPump
    void     set_startTime(uint32_t t){Prof.SaveON.startTime = t;}           // Запомить время включения ТН
    
    // Бойлер ТН
-    int16_t get_boilerTempTarget(){return Prof.Boiler.TempTarget;}          // Получить целевую температуру бойлера
+    int16_t get_boilerTempTarget();					          // Получить целевую температуру бойлера с учетом корректировки
     boolean get_Circulation(){return GETBIT(Prof.Boiler.flags,fCirculation);} // Нужно ли управлять циркуляционным насосом болйлера
     uint16_t get_CirculWork(){ return Prof.Boiler.Circul_Work; }            // Время  работы насоса ГВС секунды (fCirculation)
     uint16_t get_CirculPause(){ return Prof.Boiler.Circul_Pause;}           // Пауза в работе насоса ГВС  секунды (fCirculation)

@@ -1,0 +1,88 @@
+= rBASE64 Library for Arduino =
+
+Real Base64 library is a speed optimized flexible implementations of BASE64
+Encoding and Decoding logic.
+
+There are native as well as object oriented functions.
+
+Here is the List of the Native Functions for those who want more Control:
+
+  - `size_t rbase64_encode(char *output, char *input, size_t inputLen)`
+
+This function helps to Encode the Stream of Bytes provided at the *input* to *output*
+User needs to ensure that that the Output buffer is adequacy sized.
+
+  - `size_t rbase64_decode(char *output, char *input, size_t inputLen)`
+
+This function helps to Decode the Stream ob Bytes provided at the *input* to *output*  
+User needs to ensure that that the Output buffer is adequacy sized.
+
+  - `size_t rbase64_enc_len(size_t inputLen)`
+  
+This function can be used to ascertain the maximum size of buffer needed to accommodate  
+the converted BASE64 output 
+
+  - `size_t rbase64_dec_len(char *input, size_t inputLen)`
+  
+This function can be used to find out the maximum size of the buffer needed to accommodate  
+the converted original string from BASE64
+
+
+Here is the List of the OO Function in `rbase64` class:
+
+  - `String rBASE64::encode(uint8_t *data, size_t length)` - For Direct byte Stream
+
+  - `String rBASE64::encode(char *data)` - For NULL Terminated character Array as shown in the **Example Below**
+  
+  - `String rBASE64::encode(String text)` - String containing the source
+  
+Function to Convert into BASE64 encoded string else returns the string `"-FAIL"`
+
+  - `String rBASE64::decode(uint8_t *data, size_t length)` - For Direct byte Stream
+  
+  - `String rBASE64::decode(char *data)` - For NULL Terminated character Array as shown in the **Example Below**
+  
+  - `String rBASE64::decode(String text)` - String containing the source
+  
+Function to Convert back from BASE64 encoding else returns the string `"-FAIL"`
+
+
+== Example ==
+
+```arduino
+#include <rBase64.h>
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  Serial.println(rbase64.encode("Hello There, I am doing Good."));
+  Serial.println(rbase64.decode("SGVsbG8gVGhlcmUsIEkgYW0gZG9pbmcgR29vZC4="));
+  delay(2000);
+}
+```
+
+=== Dependencies ===
+ WString Library
+ Thread Safe: No
+ Extendable: Yes
+
+
+=== Limitations ===
+
+==== OO Implementation Limits:
+  - Can't take Encodeing strings more than "70 Characters".
+  - Can't Decode the BASE64 strings beyond "100 Characters".
+  - Memory usage is approximately 280Bytes in RAM.
+
+==== The Native Implementation has no such Limiations.
+
+For more information about this library please view the code at
+http://github.com/boseji/rBASE64
+
+
+== License ==
+
+Released Under creative commons license 3.0: Attribution-ShareAlike CC BY-SA
+
