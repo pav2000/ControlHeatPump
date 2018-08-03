@@ -369,12 +369,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
        continue;
        }        
     if (strcmp(str,"RESET")==0)   // Команда сброса контроллера
-       {
+    {
        strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
        strcat(strReturn,"&");
        HP.sendCommand(pRESET);        // Послать команду на сброс
        continue;
-       }
+    }
     if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
        {
        journal.jprintf("$RESET counter moto hour . . .\n"); 

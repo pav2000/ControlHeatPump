@@ -76,6 +76,9 @@ EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+#ifdef RADIO_SENSORS
+void check_radio_sensors(void);
+#endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
@@ -972,6 +975,9 @@ void vReadSensor_delay10ms(int16_t msec)
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
+#endif
+#ifdef RADIO_SENSORS
+		check_radio_sensors();
 #endif
 	}
 }

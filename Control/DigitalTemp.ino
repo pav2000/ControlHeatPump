@@ -69,7 +69,7 @@ void sensorTemp::initTemp(int sensor)
       flags=0x00;                              // Сбросить все флаги
 
       if(SENSORTEMP[sensor]) SETBIT1(flags, fPresent); // наличие датчика в текушей конфигурации
-      Chart.init(SENSORTEMP[sensor]);          // инициалазация статистики
+      Chart.init(SENSORTEMP[sensor] && !(SENSORTEMP[sensor] & 4));     // инициалазация статистики, если датчик есть и бит_2 = 0
       memset(address, 0, sizeof(address));	   // обнуление адресс датчика
       busOneWire = NULL;
       testMode = NORMAL;                         // Значение режима тестирования
@@ -325,13 +325,19 @@ void sensorIP::after_load()
 
 #ifdef RADIO_SENSORS
 
+enum {
+	RS_WAIT_HEADER = 0,
+	RS_WAIT_DATA,
+	RS_SEND_RESPONSE
+};
+
 uint8_t rs_serial_buf[128];
 uint8_t rs_serial_idx = 0;
-uint8_t rs_serial_flag = 0; // 0 - ждем заголовок, 1 - ждем данные
+uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
 #define rs_serial_full_header_size 7
 #define rs_serial_addr_idx	5
-#define rs_addr	1
+#define rs_addr	0x05
 
 unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 {
@@ -342,22 +348,6 @@ unsigned short RS_SUM_CRC(unsigned char *Address, unsigned char Lenght)
 		WCRC += ((*Address) * 256);
 	}
 	return WCRC;
-}
-
-void RS_send_response(void)
-{
-	uint8_t *p = (uint8_t *)strchr((char *)rs_serial_buf + rs_serial_full_header_size, ':');
-	if(p) {
-		*p = '\0';
-		rs_serial_buf[rs_serial_addr_idx] = rs_addr;
-		rs_serial_buf[rs_serial_full_header_size + 2] &= ~0x20; // В нижний регистр cmd
-		p++;
-		uint8_t len = p - ((uint8_t *)rs_serial_buf + rs_serial_full_header_size);
-		rs_serial_buf[rs_serial_full_header_size - 1] = len;
-		*(uint16_t *)p = RS_SUM_CRC((uint8_t *)rs_serial_buf + rs_serial_full_header_size, len);
-		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
-		RADIO_SENSORS_SERIAL.write(rs_serial_buf, p + 2 - (uint8_t *)rs_serial_buf);
-	}
 }
 
 uint8_t get_next_byte_from_string(char **ptr)
@@ -375,39 +365,50 @@ uint8_t get_next_byte_from_string(char **ptr)
 	return 0;
 }
 
-// Новые данные в порту от радиодатчиков
-#if RADIO_SENSORS_PORT == 2
-void serialEvent2()
-#elif RADIO_SENSORS_PORT == 3
-void serialEvent3()
-#endif
+// Новые данные в порту от радиодатчиков, вызывать с паузой
+void check_radio_sensors(void)
 {
-	if(rs_serial_idx < sizeof(rs_serial_buf)) {
+	if(rs_serial_flag == RS_SEND_RESPONSE) {
+		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
+		//RADIO_SENSORS_SERIAL._pUart->UART_CR = US_CR_RXDIS; // Disables USART RX
+		RADIO_SENSORS_SERIAL.write(rs_serial_buf, rs_serial_idx);
+		//RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
+		rs_serial_idx = 0;
+		rs_serial_flag = RS_WAIT_HEADER;
+		return;
+	}
+	while(RADIO_SENSORS_SERIAL.available())
+	{
 		rs_serial_buf[rs_serial_idx++] = RADIO_SENSORS_SERIAL.read();
-		if(rs_serial_flag == 0) { // ждем заголовок
+		if(rs_serial_flag == RS_WAIT_HEADER) {
 			if(memcmp(rs_serial_buf, rs_serial_header, rs_serial_idx < sizeof(rs_serial_header) ? rs_serial_idx : sizeof(rs_serial_header)) == 0) {
 				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = 1;
 			} else {
 				rs_serial_idx = 0;
 			}
-		} else if(rs_serial_flag == 1) { // ждем данные
+		}
+		if(rs_serial_flag == RS_WAIT_DATA) {
 			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
-				if(RS_SUM_CRC(rs_serial_buf + rs_serial_full_header_size, len) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
+				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					journal.jprintf("RS CRC error!\n");
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS<=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					journal.jprintf("RS<=%s ", rs_serial_buf + rs_serial_full_header_size);
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
-						char *p = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
+						char *pdata = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
+						if(pdata) {
+							*pdata = '\0';
+							pdata++;
+						}
 						if(c == 'I') { // Присутствие
-							if(p) {
-								*p = '\0';
+							if(pdata) {
 								radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
 							}
 						} else if(c == 'D') { // Данные
-							p = strchr(p, 'R');
+							char *p = pdata;
+							if(p) p = strchr(p, 'R');
 							if(p) {
 								char *p2 = strchr(p, ' ');
 								if(p2) {
@@ -439,8 +440,19 @@ void serialEvent3()
 									}
 								}
 							}
+						} else if(c >= 'a' && c <= 'z') { // echo - skip
+							rs_serial_idx = 0;
+							return;
 						}
-						RS_send_response();
+						// Send response
+						rs_serial_buf[rs_serial_addr_idx] = rs_addr;
+						rs_serial_buf[rs_serial_full_header_size + 2] |= 0x20; // В нижний регистр cmd
+						uint8_t len = pdata - ((char *)rs_serial_buf + rs_serial_full_header_size);
+						rs_serial_buf[rs_serial_full_header_size - 1] = len;
+						*(uint16_t *)pdata = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header));
+						rs_serial_idx = pdata + 2 - (char *)rs_serial_buf;
+						rs_serial_flag = RS_SEND_RESPONSE;
+						return;
 					}
 				}
 				rs_serial_idx = 0;
