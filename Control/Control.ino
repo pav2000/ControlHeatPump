@@ -78,6 +78,7 @@ EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
 PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
 #ifdef RADIO_SENSORS
 void check_radio_sensors(void);
+void radio_sensor_send(char *cmd);
 #endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:

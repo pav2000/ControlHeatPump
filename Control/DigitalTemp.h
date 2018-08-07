@@ -105,7 +105,7 @@ struct radio_received_type {
 };
 radio_received_type radio_received[RADIO_SENSORS_MAX];
 uint8_t radio_received_num = 0;
-uint32_t radio_hub_serial;
+uint32_t radio_hub_serial = 0;
 #endif
 
 // класс датчик DS18B20 Температура хранится в сотых градуса в целых значениях

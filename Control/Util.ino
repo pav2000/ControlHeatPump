@@ -809,7 +809,7 @@ void urldecode(char *dst, char *src, uint16_t len)
                 } else {
                         *dst++ = *src++; i++;
                 }
-           if (i == len-1) break;    // Не забываем про конец строки!
+           if (i >= len-1) break;    // Не забываем про конец строки!
         }
         
        *dst = '\0';  // Добавить конец строки

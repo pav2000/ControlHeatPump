@@ -293,13 +293,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
    int32_t e;
   
  // strcpy(strReturn,"&");   // начало запроса
-   strcat(strReturn,"&");   // начало запроса
-  strstr(buf,"&&")[1]=0;   // Обрезать строку после комбинации &&
+  strcat(strReturn,"&");   // начало запроса
+  str = strstr(buf,"&&");
+  if(str) str[1] = 0;   // Обрезать строку после комбинации &&
   while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
-   {
-   if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
+  {
+     if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
      {
-      strcat(strReturn,str); strcat(strReturn,"="); 
+       strcat(strReturn,str); strcat(strReturn,"=");
      } 
      if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
      {  
@@ -1178,7 +1179,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
           for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
           strcat(strReturn,"&") ;    continue;
          }
-         
+        if(strstr(str, "set_radio_cmd")) {
+        	if((x = strchr(str, '='))) {
+        		x++;
+        		urldecode(x, x, m_strlen(x) + 1);
+        		radio_sensor_send(x);
+        	}
+        	strcat(strReturn, "&");	continue;
+        }
+
+
        // -----------------------------------------------------------------------------------------------------        
        // 2. Функции с параметром ------------------------------------------------------------------------------
        // Ищем скобки ------------------------------------------------------------------------------------------
@@ -1419,20 +1429,18 @@ void parserGET(char *buf, char *strReturn, int8_t )
                }  //if (strstr(str,"eraseProfile"))     
           // -----------------------------------------------------------------------------     
             if (strstr(str,"set_listProfile"))  // Функция set_listProfil загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
-             {
-            if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
-              else
-                {
+            {
+                if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
+                else {
             	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
             		  HP.Prof.set_list((int8_t) pm);
             		  HP.save();
             		  HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
-            	  }
-                  else strcat(strReturn,"E29");  
+            	  } else strcat(strReturn,"E29");
                   strcat(strReturn,"&") ;    continue; 
                 }
-               }  //if (strstr(str,"set_listProfile"))     
+            }  //if (strstr(str,"set_listProfile"))
 
        //  2.3 Функции с параметрами
       // проверяем наличие функции set_  конструкция типа (TIN=23)
