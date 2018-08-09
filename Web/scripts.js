@@ -107,8 +107,8 @@ function loadParam(paramid, noretry, resultdiv) {
 			if(this.readyState != 4) return;
 			if(request.status == 200) {
 				if(request.responseText != null) {
-					strResponse = request.responseText.replace(/^&*/, '').replace(/&&*$/, '');
-					var arr = strResponse.split('&');
+					strResponse = request.responseText.replace(/^&+/, '').replace(/&&*$/, '').replace(/&([^#])/g, '¦$1');
+					var arr = strResponse.split('¦');
 					if(arr != null && arr != 0) {
 						check_ready = 1; // ответ получен, можно слать следующий запрос.
 						if(req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
@@ -375,7 +375,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										var content = "<tr><td>" + values[1].replace(/\:/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";
 										document.getElementById(values[0].toLowerCase()).innerHTML = content;
-										content = values[1].replace(/[0-9]:.{1,10}:[-0-9\.]{1,5}:/g, "").replace(/;$/g, "");
+										content = values[1].replace(/:[^;]+/g, "").replace(/;$/g, "");
 										var cont2 = content.split(';');
 										var elems = document.getElementById("scan_table").getElementsByTagName('select');
 										for(var j = 0; j < elems.length; j++) {

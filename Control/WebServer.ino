@@ -1873,7 +1873,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
     						   strcat(strReturn, "]");
     					   }
     					 #else
-    					   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    					   if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
+    					   else _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
     					 #endif
     				   } else strcat(strReturn, "-");             // Датчика нет ставим прочерк
     				   strcat(strReturn, "&");
@@ -1922,7 +1923,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 					#ifdef RADIO_SENSORS
     				   if(HP.sTemp[p].get_fRadio()) {
     					   i = HP.sTemp[p].get_radio_received_idx(HP.sTemp[p].get_address());
-    					   if(i >= 0) m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.1fV %d]", (float)radio_received[i].battery / 10, radio_received[i].RSSI / 24);
+    					   if(i >= 0) m_snprintf(strReturn + m_strlen(strReturn), 24, " [%.1fV &#5833;&#%d;]", (float)radio_received[i].battery / 10, 9601+Radio_RSSI_to_Level(radio_received[i].RSSI));
     				   }
 					#endif
     				   strcat(strReturn, "&"); continue;

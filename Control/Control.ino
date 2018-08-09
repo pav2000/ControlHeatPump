@@ -262,7 +262,11 @@ pinMode(21, OUTPUT);
   #else
     journal.jprintf("Control EEV driver no support \n"); 
   #endif
-  
+
+#ifdef RADIO_SENSORS
+  RADIO_SENSORS_SERIAL.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
+#endif
+
 // 3. Инициализация и проверка шины i2c
    journal.jprintf("1. Setting and checking I2C devices . . .\n");
  
@@ -371,6 +375,14 @@ x_I2C_init_std_message:
   else journal.jprintf("1-Wire init Ok\n");
   #endif
 
+#ifdef RADIO_SENSORS
+  check_radio_sensors();
+  if(rs_serial_flag == RS_SEND_RESPONSE) {
+	  _delay(5);
+	  check_radio_sensors();
+  }
+#endif
+
 // 4. Инициализировать основной класс
   journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
   HP.initHeatPump();                                               // Основной класс
@@ -410,10 +422,6 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
-
-#ifdef RADIO_SENSORS
-  RADIO_SENSORS_SERIAL.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
-#endif
 
 // 9. Сетевые настройки
    journal.jprintf("6. Setting Network . . .\n");
