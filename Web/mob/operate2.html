@@ -697,7 +697,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
-												loadsens += "get_eTemp(" +T+ "),get_noteTemp(" +T+ "),get_bTemp(" +T+ "),";
+												loadsens += "get_eTemp(" +T+ "),get_nTemp(" +T+ "),get_bTemp(" +T+ "),";
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
 													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
@@ -711,7 +711,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												T = T.toLowerCase();
 												content += '<tr>';
 												content += ' <td>' +count[j]+ '</td>';
-												content += ' <td id="get_notetemp-' +T+ '"></td>';
+												content += ' <td id="get_ntemp-' +T+ '"></td>';
 												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
 													content += ' <td id="get_mintemp-' +T+ '">-</td>';

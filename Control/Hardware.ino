@@ -1645,8 +1645,8 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 char * devOmronMX2::get_infoFC(char *buf)
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-  if(!HP.dFC.get_present()) { strcat(buf,"|Данные не доступны (нет инвертора)|;&"); return buf;}          // Инвертора нет в конфигурации
-  if(HP.dFC.get_blockFC())  { strcat(buf,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;&"); return buf;}  // Инвертор заблокирован
+  if(!HP.dFC.get_present()) { strcat(buf,"|Данные не доступны (нет инвертора)|;"); return buf;}          // Инвертора нет в конфигурации
+  if(HP.dFC.get_blockFC())  { strcat(buf,"|Данные не доступны (нет связи по Modbus, инвертор заблокирован)|;"); return buf;}  // Инвертор заблокирован
   int8_t i;  
        strcat(buf,"-|Состояние инвертора [0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током ");strcat(buf,"7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]|");_itoa(read_0x03_16(MX2_STATE),buf);strcat(buf,";");
        _delay(FC_DELAY_READ);
