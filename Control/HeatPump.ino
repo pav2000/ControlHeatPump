@@ -1646,8 +1646,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
 	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old) && (dRelay[RPUMPBH].get_Relay() || dRelay[RPUMPO].get_Relay())) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
-	{
+	if((!b) && (old) && (dRelay[RPUMPO].get_Relay()
+#ifdef RPUMPBH
+						|| dRelay[RPUMPBH].get_Relay()
+#endif
+	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
