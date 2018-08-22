@@ -1196,6 +1196,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
           for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
           ADD_WEBDELIM(strReturn) ;    continue;
          }
+#ifdef RADIO_SENSORS
         if(strstr(str, "set_radio_cmd")) {
         	if((x = strchr(str, '='))) {
         		x++;
@@ -1203,7 +1204,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         	}
         	ADD_WEBDELIM(strReturn);	continue;
         }
-
+#endif
 
        // -----------------------------------------------------------------------------------------------------        
        // 2. Функции с параметром ------------------------------------------------------------------------------

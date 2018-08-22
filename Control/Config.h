@@ -2321,7 +2321,7 @@ enum TYPE_SENSOR
     //#define PIN_SENSOR_SFLOWCON 39             // Датчик потока по кондесатору
     //#define PIN_SENSOR_SFLOWEVA 40             // Датчик потока по испарителю
     //#define PIN_SENSOR_SEVA     41             // Датчик протока по испарителю
-    
+
     // Имена индексов ВАЖЕН ПОРЯДОК!
 	#define SHIGHP            0        // Датчик высокого давления
 	#define SPOWER            1        // Датчик наличия питания (220/380V)
