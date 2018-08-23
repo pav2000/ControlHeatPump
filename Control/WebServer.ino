@@ -1939,8 +1939,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   if(HP.sTemp[p].get_fRadio()) {
     					   i = HP.sTemp[p].get_radio_received_idx(HP.sTemp[p].get_address());
     					   if(i >= 0) {
-    						   if(str[9] == '2') m_snprintf(strReturn + m_strlen(strReturn), 16, ", %.1fV", (float)radio_received[i].battery / 10);
-    						   m_snprintf(strReturn + m_strlen(strReturn), 16, " ᛉ%d", Radio_RSSI_to_Level(radio_received[i].RSSI));
+    						   if(str[9] == '2') m_snprintf(strReturn + m_strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10);
+    						   m_snprintf(strReturn + m_strlen(strReturn), 20, " ᛉ%d", Radio_RSSI_to_Level(radio_received[i].RSSI));
     					   }
     				   }
 					#endif

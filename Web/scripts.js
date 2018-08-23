@@ -102,7 +102,7 @@ function loadParam(paramid, noretry, resultdiv) {
 			if(this.readyState != 4) return;
 			if(request.status == 200) {
 				if(request.responseText != null) {
-					var arr = request.responseText.replace(/^&+/, '').replace(/&&*$/, '').split('\x7f');
+					var arr = request.responseText.replace(/^\x7f+/, '').replace(/\x7f\x7f*$/, '').split('\x7f');
 					if(arr != null && arr != 0) {
 						check_ready = 1; // ответ получен, можно слать следующий запрос.
 						if(req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
@@ -652,19 +652,19 @@ function loadParam(paramid, noretry, resultdiv) {
 												T = T.toLowerCase();
 												content += '<tr>';
 												content += '<td>' +count[j]+ '</td>';
-												content += '<td id="get_ntemp-' +T+ '"></td>';
-												content += '<td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
+													content += '<td id="get_ntemp-' +T+ '"></td>';
+													content += '<td id="get_fulltemp-' +T+ '">-</td>';
 													content += '<td id="get_mintemp-' +T+ '">-</td>';
 													content += '<td id="get_maxtemp-' +T+ '">-</td>';
 													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
 													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
-												}	
-												if(tnum == 1) {
 													content += '<td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
 													content += '<td id="get_btemp-' +T+ '">-</td>';
 													content += '<td id="get_estemp-' +T+ '">-</td>';
 												} else if(tnum == 2) {
+													content += '<td id="get_ntemp2-' +T+ '"></td>';
+													content += '<td id="get_rawtemp-' +T+ '">-</td>';
 													content += '<td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
 													content += '<td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
 													content += '<td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';
