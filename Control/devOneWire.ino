@@ -154,6 +154,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 
 	OW_scan_flags = 1; // Идет сканирование
 	if(lock_I2C_bus_reset(0)) { // reset 1-wire
+		OW_scan_flags = 0;
 		if(err == ERR_ONEWIRE) journal.jprintf("1-Wire bus %d is empty. . .\n", bus + 1);
 		return err;
 	}

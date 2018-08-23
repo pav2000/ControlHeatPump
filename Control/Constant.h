@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.958 beta"        // Версия прошивки
+#define VERSION         "0.959 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -437,6 +437,7 @@ const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
 const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
 const uint8_t save_end_marker[1] = { 0 };
+#define WEBDELIM	"\x7f" // ALT+127
 
 // Многозадачность, деление аппартных ресурсов
 const char *nameFREERTOS =     {"Free RTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система

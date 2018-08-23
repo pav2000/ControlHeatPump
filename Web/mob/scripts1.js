@@ -43,7 +43,7 @@ if(!rec.test(paramid)) { document.getElementById(valueid).value = ""; document.g
 //	else if	(elsend == "set_OFF=)") {elsend="set_OFF";}
 }
 
-loadParam(elsend, true, valueid);
+loadParam(encodeURIComponent(elsend), true, valueid);
 }
 
 
@@ -68,10 +68,7 @@ var req_stek = new Array();
   check_ready = 0;
     
 var request = new XMLHttpRequest(); 
-var findz = new RegExp('/,/gi');
-//if (oneparamid.search(findz) != -1 )  { 
-  var reqstr = oneparamid.replace(/,/g,'&'); 
-  // } else { var reqstr = oneparamid; } 
+var reqstr = oneparamid.replace(/,/g,'&'); 
 request.open("GET", urlcontrol + "/&" + reqstr + "&&", true); //console.log(reqstr);
 request.timeout = urltimeout; 
 request.send(null);
@@ -82,8 +79,7 @@ request.onreadystatechange = function()
     { 
       if (request.responseText != null)
       {
-          strResponse = request.responseText.replace(/^&*/,'').replace(/&&*$/,'');
-        var arr = strResponse.split('&'); //console.log(strResponse);
+		var arr = request.responseText.replace(/^&+/, '').replace(/&&*$/, '').split('\x7f');
         if (arr != null && arr != 0  ) {
           check_ready = 1; // ответ получен, можно слать следующий запрос.
           if (req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
@@ -555,12 +551,12 @@ content = content + '</tr></table><p></p>';
                   var count = values[1].split(';'); console.log("list:" + count);
                     for (var i=0;i<count.length-1;i++) {
                       input = count[i].toLowerCase(); console.log("input:" + count[i]);
-                      loadsens = loadsens + "get_noteTemp("+count[i]+"),";
+                      loadsens = loadsens + "get_nTemp("+count[i]+"),";
                       upsens = upsens + "get_fullTemp("+count[i]+"),"; console.log("get_fullTemp:" + upsens);
 					  content_t = "get_fullTemp("+count[i]+")"; //console.log("$$$$$$$$$$$$$$$$$$$$$$$content_t:" + content_t);
                         content = content + '<tr id="get_presenttemp-'+input+'">';
                             content = content + ' <td>'+count[i]+'</td>';
-                            content = content + ' <td id="get_notetemp-'+input+'"></td>';
+                            content = content + ' <td id="get_ntemp-'+input+'"></td>';
 							content = content + ' <td></td>';
 							content = content + ' <td id="get_fulltemp-'+input+'">-</td>';
 							content = content + '</tr>';

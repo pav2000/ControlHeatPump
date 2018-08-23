@@ -54,7 +54,7 @@ function setParam(paramid, resultid) {
 			element = document.getElementById(resultid);
 			elval = element.value;
 		}
-		if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
+		//if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
 	}
 	if(res.test(paramid)) {
 		var elsend = paramid.replace(/get_/g, "set_").replace(/\)/g, "") + "(" + elval + ")";
@@ -76,7 +76,7 @@ function setParam(paramid, resultid) {
 			element.placeholder = "";
 		}
 	}
-	loadParam(elsend, true, resultid);
+	loadParam(encodeURIComponent(elsend), true, resultid);
 }
 
 function loadParam(paramid, noretry, resultdiv) {
@@ -89,17 +89,12 @@ function loadParam(paramid, noretry, resultdiv) {
 		req_stek.unshift(paramid);
 		queue = 0;
 	}
-
 	if(check_ready == 1) {
 		unique(req_stek);
 		var oneparamid = req_stek.shift();
 		check_ready = 0;
-
 		var request = new XMLHttpRequest();
-		var findz = new RegExp('/,/gi');
-		//if (oneparamid.search(findz) != -1 )  { 
 		var reqstr = oneparamid.replace(/,/g, '&');
-		// } else { var reqstr = oneparamid; } 
 		request.open("GET", urlcontrol + "/&" + reqstr + "&&", true);
 		request.timeout = urltimeout;
 		request.send(null);
@@ -107,8 +102,7 @@ function loadParam(paramid, noretry, resultdiv) {
 			if(this.readyState != 4) return;
 			if(request.status == 200) {
 				if(request.responseText != null) {
-					strResponse = request.responseText.replace(/^&*/, '').replace(/&&*$/, '');
-					var arr = strResponse.split('&');
+					var arr = request.responseText.replace(/^\x7f+/, '').replace(/\x7f\x7f*$/, '').split('\x7f');
 					if(arr != null && arr != 0) {
 						check_ready = 1; // ответ получен, можно слать следующий запрос.
 						if(req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
@@ -375,7 +369,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										var content = "<tr><td>" + values[1].replace(/\:/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";
 										document.getElementById(values[0].toLowerCase()).innerHTML = content;
-										content = values[1].replace(/[0-9]:.{1,10}:[-0-9\.]{1,5}:/g, "").replace(/;$/g, "");
+										content = values[1].replace(/:[^;]+/g, "").replace(/;$/g, "");
 										var cont2 = content.split(';');
 										var elems = document.getElementById("scan_table").getElementsByTagName('select');
 										for(var j = 0; j < elems.length; j++) {
@@ -623,10 +617,10 @@ function loadParam(paramid, noretry, resultdiv) {
 											var content = "", loadsens = "", upsens = "";
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
-												loadsens += "get_noteTemp(" +T+ "),";
+												loadsens += "get_nTemp(" +T+ "),";
 												upsens += "get_fullTemp(" +T+ "),";
 												T = T.toLowerCase();
-												content += '<tr><td id="get_notetemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
+												content += '<tr><td id="get_ntemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											loadParam(loadsens);
@@ -643,34 +637,34 @@ function loadParam(paramid, noretry, resultdiv) {
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
 												loadsens += "get_eTemp(" +T+ "),";
-												loadsens3 += "get_noteTemp(" +T+ "),"; 
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
 													loadsens += "get_maxTemp(" +T+ "),get_errTemp(" +T+ "),";
 													loadsens2 += "get_esTemp(" +T+ "),get_minTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
-													loadsens3 += "get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
+													loadsens3 += "get_nTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
 													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ "),";
 												} else if(tnum == 2) {
 													loadsens += "get_aTemp(" +T+ "),";
 													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
+													loadsens3 += "get_nTemp2(" +T+ "),"; 
 													upsens += "get_rawTemp(" +T+ "),";
 												}
 												T = T.toLowerCase();
 												content += '<tr>';
 												content += '<td>' +count[j]+ '</td>';
-												content += '<td id="get_notetemp-' +T+ '"></td>';
-												content += '<td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
+													content += '<td id="get_ntemp-' +T+ '"></td>';
+													content += '<td id="get_fulltemp-' +T+ '">-</td>';
 													content += '<td id="get_mintemp-' +T+ '">-</td>';
 													content += '<td id="get_maxtemp-' +T+ '">-</td>';
 													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
 													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
-												}	
-												if(tnum == 1) {
 													content += '<td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
 													content += '<td id="get_btemp-' +T+ '">-</td>';
 													content += '<td id="get_estemp-' +T+ '">-</td>';
 												} else if(tnum == 2) {
+													content += '<td id="get_ntemp2-' +T+ '"></td>';
+													content += '<td id="get_rawtemp-' +T+ '">-</td>';
 													content += '<td nowrap><span id="get_btemp-' +T+ '">-</span>:<span id="get_atemp-' +T+ '">-</span></td>';
 													content += '<td><select id="set_atemp-' +T+ '" onchange="setParam(\'set_aTemp(' +count[j]+ ')\');"></select></td>';
 													content += '<td nowrap><input type="checkbox" id="get_ftemp1-' +T+ '" onchange="setParam(\'get_fTemp1(' +count[j]+')\');"><input type="checkbox" id="get_ftemp2-' +T+ '" onchange="setParam(\'get_fTemp2(' +count[j]+')\');"><input type="checkbox" id="get_ftemp3-' +T+ '" onchange="setParam(\'get_fTemp3(' +count[j]+ ')\');"></td>';

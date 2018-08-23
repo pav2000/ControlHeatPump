@@ -53,7 +53,7 @@ function setParam(paramid, resultid) {
 			element = document.getElementById(resultid);
 			elval = element.value;
 		}
-		if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
+		//if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
 	}
 	if(res.test(paramid)) {
 		var elsend = paramid.replace(/get_/g, "set_").replace(/\)/g, "") + "(" + elval + ")";
@@ -75,7 +75,7 @@ function setParam(paramid, resultid) {
 			element.placeholder = "";
 		}
 	}
-	loadParam(elsend, true, resultid);
+	loadParam(encodeURIComponent(elsend), true, resultid);
 }
 
 function loadParam(paramid, noretry, resultdiv) {
@@ -95,10 +95,7 @@ function loadParam(paramid, noretry, resultdiv) {
 		check_ready = 0;
 
 		var request = new XMLHttpRequest();
-		var findz = new RegExp('/,/gi');
-		//if (oneparamid.search(findz) != -1 )  { 
 		var reqstr = oneparamid.replace(/,/g, '&');
-		// } else { var reqstr = oneparamid; } 
 		request.open("GET", urlcontrol + "/&" + reqstr + "&&", true);
 		request.timeout = urltimeout;
 		request.send(null);
@@ -106,8 +103,7 @@ function loadParam(paramid, noretry, resultdiv) {
 			if(this.readyState != 4) return;
 			if(request.status == 200) {
 				if(request.responseText != null) {
-					strResponse = request.responseText.replace(/^&*/, '').replace(/&&*$/, '');
-					var arr = strResponse.split('&');
+					var arr = request.responseText.replace(/^&+/, '').replace(/&&*$/, '').split('\x7f');
 					if(arr != null && arr != 0) {
 						check_ready = 1; // ответ получен, можно слать следующий запрос.
 						if(req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
@@ -708,7 +704,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
-												loadsens += "get_eTemp(" +T+ "),get_noteTemp(" +T+ "),get_bTemp(" +T+ "),";
+												loadsens += "get_eTemp(" +T+ "),get_nTemp(" +T+ "),get_bTemp(" +T+ "),";
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
 													loadsens += "get_esTemp(" +T+ "),get_errTemp(" +T+ "),";
@@ -724,14 +720,14 @@ function loadParam(paramid, noretry, resultdiv) {
 												content_t = "get_fullTemp(" + count[i] + ")";
 												content = content + '<tr id="get_presenttemp-' + input + '">';
 												content = content + ' <td>' + count[i] + '</td>';
-												content = content + ' <td id="get_notetemp-' + input + '"></td>';
+												content = content + ' <td id="get_ntemp-' + input + '"></td>';
 												content = content + ' <td></td>';
 												content = content + ' <td id="get_fulltemp-' + input + '">-</td>';
 												content = content + '</tr>';
 												
 												content += '<tr>';
 												content += ' <td>' +count[j]+ '</td>';
-												content += ' <td id="get_notetemp-' +T+ '"></td>';
+												content += ' <td id="get_ntemp-' +T+ '"></td>';
 												content += ' <td id="get_' + (tnum == 2 ? 'raw':'full') + 'temp-' +T+ '">-</td>';
 												if(tnum == 1) {
 													content += ' <td id="get_mintemp-' +T+ '">-</td>';

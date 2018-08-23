@@ -325,15 +325,8 @@ void sensorIP::after_load()
 
 #ifdef RADIO_SENSORS
 
-enum {
-	RS_WAIT_HEADER = 0,
-	RS_WAIT_DATA,
-	RS_SEND_RESPONSE
-};
-
 uint8_t rs_serial_buf[128];
 uint8_t rs_serial_idx = 0;
-uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
 #define rs_serial_full_header_size 7
 #define rs_serial_addr_idx	5
@@ -365,16 +358,27 @@ uint8_t get_next_byte_from_string(char **ptr)
 	return 0;
 }
 
+
+void radio_transmit(void)
+{
+	RADIO_SENSORS_SERIAL._pUart->UART_CR = US_CR_RXDIS; // Disables USART RX
+	RADIO_SENSORS_SERIAL.write(rs_serial_buf, rs_serial_idx);
+	// Пустой буфер: Serial.availableForWrite() == SERIAL_BUFFER_SIZE - 1
+	while(RADIO_SENSORS_SERIAL.availableForWrite() < SERIAL_BUFFER_SIZE - 1 || (RADIO_SENSORS_SERIAL._pUart->UART_SR & (UART_SR_TXEMPTY | UART_SR_TXRDY)) != (UART_SR_TXEMPTY | UART_SR_TXRDY))
+		_delay(1); // Ждем отправки
+	RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
+	#ifdef DEBUG_RADIO
+	journal.jprintf("RS>%s\n", rs_serial_buf + rs_serial_full_header_size);
+	#endif
+	rs_serial_idx = 0;
+	rs_serial_flag = RS_WAIT_HEADER;
+}
+
 // Новые данные в порту от радиодатчиков, вызывать с паузой
 void check_radio_sensors(void)
 {
 	if(rs_serial_flag == RS_SEND_RESPONSE) {
-		journal.jprintf("RS=>%s\n", rs_serial_buf + rs_serial_full_header_size);
-		//RADIO_SENSORS_SERIAL._pUart->UART_CR = US_CR_RXDIS; // Disables USART RX
-		RADIO_SENSORS_SERIAL.write(rs_serial_buf, rs_serial_idx);
-		//RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
-		rs_serial_idx = 0;
-		rs_serial_flag = RS_WAIT_HEADER;
+		radio_transmit();
 		return;
 	}
 	while(RADIO_SENSORS_SERIAL.available())
@@ -394,60 +398,77 @@ void check_radio_sensors(void)
 					journal.jprintf("RS CRC error!\n");
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS<=%s ", rs_serial_buf + rs_serial_full_header_size);
+					#ifdef DEBUG_RADIO
+					journal.jprintf("RS=%s ", rs_serial_buf + rs_serial_full_header_size);
+					#endif
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
 						char *pdata = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
-						if(pdata) {
-							*pdata = '\0';
-							pdata++;
+						if((c >= 'a' && c <= 'z')) { // echo - skip
+							rs_serial_idx = 0;
+							return;
 						}
-						if(c == 'I') { // Присутствие
-							if(pdata) {
-								radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
-							}
-						} else if(c == 'D') { // Данные
-							char *p = pdata;
-							if(p) p = strchr(p, 'R');
-							if(p) {
-								char *p2 = strchr(p, ' ');
-								if(p2) {
-									*p2 = '\0';
-									uint32_t ser = atoi(++p);
-									p = p2 + 1;
-									uint8_t i = 0;
-									for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
-									if(i < RADIO_SENSORS_MAX) {
-										if(i == radio_received_num) { // new
-											radio_received_num++;
-											memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
-										}
-										radio_received[i].serial_num = ser;
-										while(p) {
-											c = get_next_byte_from_string(&p);
-											if(p == NULL || c == 0) break;
-											if(c == 0xC0) { // Температура 2b
-												radio_received[i].Temp = get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2731;
-											} else if(c == 0xB4) { // Питание 1b
-												radio_received[i].battery = ((uint32_t) get_next_byte_from_string(&p) * 125 * 3 / 128 + 5) / 10;
-											} else if(c == 0xBF) { // Test 1b
-												get_next_byte_from_string(&p);
-											} else if(c == 0xB0) { // RSSI 1b
-												radio_received[i].RSSI = get_next_byte_from_string(&p);
-											} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
+						if(pdata) {
+							if(c == 'A') { //    // Новый датчик ждем в течении 2-х минуты после старта НК (нажать кнопку датчика пока не загорится его светодиод)
+								if(HP.get_uptime() < 120) {
+									journal.jprintf("New radio sensor:%s\n", (char *)rs_serial_buf + rs_serial_full_header_size);
+									pdata = strchr(pdata, ' ');
+									if(pdata) {
+										*(pdata+1) = '1'; // Разрешение регистрации
+										*(pdata+2) = '\0';
+									}
+								}
+							} else {
+								*pdata = '\0';
+								pdata++;
+								if(c == 'I') { // Присутствие
+									if(pdata) {
+										radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
+										if(radio_hub_serial) journal.jprintf("Radio module: #%d %s\n", radio_hub_serial, pdata);
+									}
+								} else if(c == 'D') { // Данные
+									char *p = pdata;
+									if(p) p = strchr(p, 'R');
+									if(p) {
+										char *p2 = strchr(p, ' ');
+										if(p2) {
+											*p2 = '\0';
+											uint32_t ser = atoi(++p);
+											p = p2 + 1;
+											uint8_t i = 0;
+											for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
+											if(i < RADIO_SENSORS_MAX) {
+												if(i == radio_received_num) { // new
+													radio_received_num++;
+													memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
+												}
+												radio_received[i].serial_num = ser;
+												while(p) {
+													c = get_next_byte_from_string(&p);
+													if(p == NULL || c == 0) break;
+													if(c == 0xC0) { // Температура 2b
+														radio_received[i].Temp = (get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2730) * 10;
+													} else if(c == 0xB4) { // Питание 1b
+														radio_received[i].battery = ((uint32_t) get_next_byte_from_string(&p) * 125 * 3 / 128 + 5) / 10;
+													} else if(c == 0xBF) { // Test 1b
+														get_next_byte_from_string(&p);
+													} else if(c == 0xB0) { // RSSI 1b
+														c = get_next_byte_from_string(&p);
+														if(c >= 128) c -= 256;
+														radio_received[i].RSSI = abs(c/2 - 73);
+													} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
+													}
+												}
 											}
 										}
 									}
 								}
 							}
-						} else if(c >= 'a' && c <= 'z') { // echo - skip
-							rs_serial_idx = 0;
-							return;
 						}
 						// Send response
 						rs_serial_buf[rs_serial_addr_idx] = rs_addr;
 						rs_serial_buf[rs_serial_full_header_size + 2] |= 0x20; // В нижний регистр cmd
-						uint8_t len = pdata - ((char *)rs_serial_buf + rs_serial_full_header_size);
+						uint8_t len = m_strlen((char *)rs_serial_buf + rs_serial_full_header_size) + 1;
 						rs_serial_buf[rs_serial_full_header_size - 1] = len;
 						*(uint16_t *)pdata = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header));
 						rs_serial_idx = pdata + 2 - (char *)rs_serial_buf;
@@ -460,6 +481,23 @@ void check_radio_sensors(void)
 			if(rs_serial_idx >= sizeof(rs_serial_buf)) rs_serial_idx = 0;  // кривые данные
 		}
 	}
+}
+
+void radio_sensor_send(char *cmd)
+{
+	journal.jprintf("Radio cmd: %s", cmd);
+	while(rs_serial_idx && rs_serial_idx) _delay(1); // Ждем принятия сообщения
+	memcpy(rs_serial_buf, rs_serial_header, sizeof(rs_serial_header));
+	rs_serial_buf[sizeof(rs_serial_header)] = 0; // адрес приёмника 1 байт (0 – широковещат кадр)
+	rs_serial_buf[sizeof(rs_serial_header) + 1] = rs_addr; // адрес источника 1 байт
+	uint8_t len = m_strlen(cmd) + 2; // +sizeof(" \0")
+	rs_serial_buf[sizeof(rs_serial_header) + 2] = len; // длина данных
+	rs_serial_buf[sizeof(rs_serial_header) + 3] = ' '; // Тип текст
+	strcpy((char *)&rs_serial_buf[sizeof(rs_serial_header) + 4], cmd);
+	len += 3; // sizeof(Adr_dest + Adr_source + Len_data)
+	*(uint16_t *)(rs_serial_buf + sizeof(rs_serial_header) + len) = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len);
+	rs_serial_idx = sizeof(rs_serial_header) + len + 2;
+	radio_transmit();
 }
 
 #endif

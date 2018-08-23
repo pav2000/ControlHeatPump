@@ -62,6 +62,7 @@ const char* HEADER_FILE_CSS       = {"HTTP/1.1 200 OK\r\nContent-Type: text/css\
 const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};  // начало ответа на запрос
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
+#define ADD_WEBDELIM(str) strcat(str, WEBDELIM)
 
 void web_server(uint8_t thread)
 {
@@ -292,19 +293,20 @@ void parserGET(char *buf, char *strReturn, int8_t )
    #endif
    int32_t e;
   
- // strcpy(strReturn,"&");   // начало запроса
-   strcat(strReturn,"&");   // начало запроса
-  strstr(buf,"&&")[1]=0;   // Обрезать строку после комбинации &&
+  ADD_WEBDELIM(strReturn);   // начало запроса
+  str = strstr(buf,"&&");
+  if(str) str[1] = 0;   // Обрезать строку после комбинации &&
+  urldecode(buf, buf, W5200_MAX_LEN);
   while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
-   {
-   if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
+  {
+     if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
      {
-      strcat(strReturn,str); strcat(strReturn,"="); 
+       strcat(strReturn,str); strcat(strReturn,"=");
      } 
      if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
      {  
          strcat(strReturn,"E07"); 
-         strcat(strReturn,"&") ;
+         ADD_WEBDELIM(strReturn) ;
          journal.jprintf("$ERROR - strReturn long, request circumcised . . . \n"); 
          journal.jprintf("%s\n",strReturn);    
           break;   // выход из обработки запроса
@@ -313,7 +315,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
    if (strcmp(str,"TEST")==0)   // Команда TEST
        {
        _itoa(random(-50,50),strReturn);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
 
@@ -325,7 +327,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
          #else
          strcat(strReturn,NO_SUPPORT);
        #endif
-         strcat(strReturn,"&");  continue;
+         ADD_WEBDELIM(strReturn);  continue;
        } 
   if (strcmp(str,"TASK_LIST_RST")==0)  // Функция сброс статистики по задачам
        {
@@ -334,44 +336,44 @@ void parserGET(char *buf, char *strReturn, int8_t )
          #else
          strcat(strReturn,NO_SUPPORT);
        #endif
-         strcat(strReturn,"&");  continue;
+         ADD_WEBDELIM(strReturn);  continue;
        }
    if (strcmp(str,"RESET_STAT")==0)   // Команда очистки статистики (в зависимости от типа)
        {
       
        #ifndef I2C_EEPROM_64KB     // Статистика в памяти
-           strcat(strReturn,"Статистика не поддерживается в конфигурации . . .&");
+           strcat(strReturn,"Статистика не поддерживается в конфигурации . . .");
            journal.jprintf("No support statistics (low I2C) . . .\n");
        #else                      // Статистика в ЕЕПРОМ
            if (HP.get_modWork()==pOFF)
              {
-              strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .&");
+              strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .");
               HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
              }
-             else strcat(strReturn,"The heat pump must be switched OFF&");  
+             else strcat(strReturn,"The heat pump must be switched OFF");
        #endif
-       continue;
+           ADD_WEBDELIM(strReturn); continue;
        }         
         
      if (strcmp(str,"RESET_JOURNAL")==0)   // Команда очистки журнала (в зависимости от типа)
        {
       
        #ifndef I2C_EEPROM_64KB     // журнал в памяти
-           strcat(strReturn,"Сброс системного журнала в RAM . . .&");
+           strcat(strReturn,"Сброс системного журнала в RAM . . .");
            journal.Clear();       // Послать команду на очистку журнала в памяти
            journal.jprintf("Reset system RAM journal . . .\n"); 
        #else                      // Журнал в ЕЕПРОМ
             journal.Format(strReturn);
             //HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
             strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
-            strcat(strReturn,"OK&");
+            strcat(strReturn,"OK");
        #endif
-       continue;
+            ADD_WEBDELIM(strReturn); continue;
        }        
     if (strcmp(str,"RESET")==0)   // Команда сброса контроллера
     {
        strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
-       strcat(strReturn,"&");
+       ADD_WEBDELIM(strReturn);
        HP.sendCommand(pRESET);        // Послать команду на сброс
        continue;
     }
@@ -379,7 +381,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        {
        journal.jprintf("$RESET counter moto hour . . .\n"); 
        strcat(strReturn,"Сброс счетчика моточасов за сезон");
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        HP.resetCount(false);
        continue;
        }
@@ -387,7 +389,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        {
        journal.jprintf("$RESET All counter moto hour . . .\n"); 
        strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        HP.resetCount(true);  // Полный сброс
        continue;
        }    
@@ -399,8 +401,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	   	   writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
 	       HP.sendCommand(pRESET);        // Послать команду на сброс
 	       //HP.resetSettingHP(); // не работает!!
-	       strcat(strReturn, "OK&");
-	       continue;
+	       strcat(strReturn, "OK");
+	       ADD_WEBDELIM(strReturn); continue;
 	   }
    }
    if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
@@ -434,73 +436,73 @@ void parserGET(char *buf, char *strReturn, int8_t )
         		strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
         	}
         } else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-        strcat(strReturn,"|&"); continue;
+        strcat(strReturn,"|" WEBDELIM); continue;
        }
        
    if (strcmp(str,"get_version")==0) // Команда get_version
        {
        strcat(strReturn,VERSION);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
    if (strcmp(str,"get_uptime")==0) // Команда get_uptime
        {
        TimeIntervalToStr(HP.get_uptime(),strReturn);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
     if (strcmp(str,"get_startDT")==0) // Команда get_startDT
        {
        DecodeTimeDate(HP.get_startDT(),strReturn);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
    if (strcmp(str,"get_resetCause")==0) // Команда  get_resetCause
        {
        strcat(strReturn,ResetCause());
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
     if (strcmp(str,"get_config")==0)  // Функция get_config
        {
        strcat(strReturn,CONFIG_NAME);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
     if (strcmp(str,"get_configNote")==0)  // Функция get_configNote
        {
        strcat(strReturn,CONFIG_NOTE);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
     if (strcmp(str,"get_freeRam")==0)  // Функция freeRam
        {
        _itoa(freeRam()+HP.startRAM,strReturn);
-       strcat(strReturn," b&") ;
+       strcat(strReturn," b" WEBDELIM) ;
        continue;
        }   
     if (strcmp(str,"get_loadingCPU")==0)  // Функция freeRam
        {
         _itoa(100-HP.CPU_IDLE,strReturn);
-        strcat(strReturn,"%&") ;
+        strcat(strReturn,"%" WEBDELIM) ;
        continue;
        }        
      if (strcmp(str,"get_socketInfo")==0)  // Функция  get_socketInfo
        {
        socketInfo(strReturn);    // Информация  о сокетах
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
      if (strcmp(str,"get_socketRes")==0)  // Функция  get_socketRes
        {
        _itoa(HP.socketRes(),strReturn);
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }  
      if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
        {
        HP.get_listChart(strReturn);  // строка добавляется
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
      if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
@@ -510,13 +512,13 @@ void parserGET(char *buf, char *strReturn, int8_t )
        #else
        strcat(strReturn,"absent:1;") ;
        #endif
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }   
     if (strncmp(str,"get_listProfile", 15)==0)  // Функция get_listProfile - получить список доступных профилей
        {
        HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }
        if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
@@ -524,15 +526,15 @@ void parserGET(char *buf, char *strReturn, int8_t )
       // set_time_NTP();                                                 // Обновить время
        HP.timeNTP=0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
        strcat(strReturn,"Update time from NTP");
-       strcat(strReturn,"&");
+       ADD_WEBDELIM(strReturn);
        continue;
        }
        if(strcmp(str, "get_NTP") == 0)  // тип NTP
        {
 			#ifdef HTTP_TIME_REQUEST
-    	   	   strcat(strReturn, "TCP&");
+    	   	   strcat(strReturn, "TCP" WEBDELIM);
 			#else
-    	   	   strcat(strReturn, "NTP&");
+    	   	   strcat(strReturn, "NTP" WEBDELIM);
 			#endif
     	   continue;
        }
@@ -541,30 +543,30 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			#ifdef HTTP_TIME_REQUEST
        		   strcat(strReturn, (char *)&HTTP_TIME_REQ);
 			#endif
-       		 strcat(strReturn, "&");
+       		ADD_WEBDELIM(strReturn);
        	   }
        if ((strcmp(str,"set_updateNet")==0)||(strcmp(str,"RESET_NET")==0))  // Функция Сброс w5200 и применение сетевых настроек, подождите 5 сек . . .
        {
        journal.jprintf("Update network setting . . .\r\n");
        HP.sendCommand(pNETWORK);        // Послать команду применение сетевых настроек
        strcat(strReturn,"Сброс Wiznet w5XXX и применение сетевых настроек, подождите 5 сек . . .");
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
        {
-       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); strcat(strReturn,"&"); continue;
+       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); ADD_WEBDELIM(strReturn); continue;
        }   
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {
        strcat(strReturn,HP.StateToStr());
-       strcat(strReturn,"&") ;    continue;
+       ADD_WEBDELIM(strReturn) ;    continue;
        }    
  
     if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
         {
     		web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_modeHouse() );
-    		strcat(strReturn,"&") ; continue;
+    		ADD_WEBDELIM(strReturn) ; continue;
         } // strcmp(str,"get_modeHP")==0)   
     if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
        {
@@ -573,13 +575,13 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	else
 		#endif
     		strcat(strReturn, HP.dRelay[PUMP_OUT].get_Relay() ? "Вкл" : "Выкл");
-    	strcat(strReturn,"&") ;    continue;
+    	ADD_WEBDELIM(strReturn) ;    continue;
        }
     if (strcmp(str,"get_testMode")==0)  // Функция get_testMode
        {
        for(i=0;i<=HARD_TEST;i++) // Формирование списка
            { strcat(strReturn,noteTestMode[i]); strcat(strReturn,":"); if(i==HP.get_testMode()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }          
-       strcat(strReturn,"&") ;    continue;
+       ADD_WEBDELIM(strReturn) ;    continue;
        }  
     if (strcmp(str,"get_remarkTest")==0)  // Функция remarkTest
        {
@@ -590,7 +592,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
           case TEST:      strcat(strReturn,noteRemarkTest[2]);     break; //  Включаем все кроме компрессора
           case HARD_TEST: strcat(strReturn,noteRemarkTest[3]);     break; //  Все включаем и компрессор тоже
          }     
-       strcat(strReturn,"&") ;    continue;
+       ADD_WEBDELIM(strReturn) ;    continue;
        }  
      
         
@@ -609,7 +611,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				_itoa(len, strReturn); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
 			}
-			strcat(strReturn,"&");
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
@@ -620,46 +622,46 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				#endif
 			} else {
 			}
-			strcat(strReturn,"&");
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
     if (strcmp(str,"set_ON")==0)  // Функция set_ON
        {
        HP.sendCommand(pSTART);        // Послать команду на пуск ТН
-       if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&") ;    continue;
+       if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn) ;    continue;
        }   
     if (strcmp(str,"set_OFF")==0)  // Функция set_OFF
        {
        HP.sendCommand(pSTOP);        // Послать команду на останов ТН
-       if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&") ;    continue;
+       if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn) ;    continue;
        }   
     if (strcmp(str,"get_errcode")==0)  // Функция get_errcode
        {
-       _itoa(HP.get_errcode(),strReturn); strcat(strReturn,"&") ;    continue;
+       _itoa(HP.get_errcode(),strReturn); ADD_WEBDELIM(strReturn) ;    continue;
        }   
     if (strcmp(str,"get_error")==0)  // Функция get_error
        {
-       strcat(strReturn,HP.get_lastErr()); strcat(strReturn,"&") ;    continue;
+       strcat(strReturn,HP.get_lastErr()); ADD_WEBDELIM(strReturn) ;    continue;
        } 
     if (strcmp(str,"get_tempSAM3x")==0)  // Функция get_tempSAM3x  - получение температуры чипа sam3x
        {
-       _ftoa(strReturn,temp_DUE(),2); strcat(strReturn,"&"); continue;
+       _ftoa(strReturn,temp_DUE(),2); ADD_WEBDELIM(strReturn); continue;
        }   
     if (strcmp(str,"get_tempDS3231")==0)  // Функция get_tempDS3231  - получение температуры DS3231
        {
-       _ftoa(strReturn,getTemp_RtcI2C(),2); strcat(strReturn,"&"); continue;
+       _ftoa(strReturn,getTemp_RtcI2C(),2); ADD_WEBDELIM(strReturn); continue;
        }  
     if (strcmp(str,"get_fullCOP")==0)  //  получение полного COP
        {
-       if (HP.fullCOP!=-1000) _ftoa(strReturn,(float)HP.fullCOP/100.0,2); else strcat(strReturn,"-"); strcat(strReturn,"&"); continue;
+       if (HP.fullCOP!=-1000) _ftoa(strReturn,(float)HP.fullCOP/100.0,2); else strcat(strReturn,"-"); ADD_WEBDELIM(strReturn); continue;
        }  
     if (strcmp(str,"get_PowerCO") == 0)
        {
-   		_ftoa(strReturn, HP.powerCO/1000.0,3); strcat(strReturn,"&"); continue;
+   		_ftoa(strReturn, HP.powerCO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
        }
     if (strcmp(str,"get_PowerGEO") == 0)
        {
-   		_ftoa(strReturn, HP.powerGEO/1000.0,3); strcat(strReturn,"&"); continue;
+   		_ftoa(strReturn, HP.powerGEO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
        }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
@@ -668,7 +670,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #else 
            strcat(strReturn,NO_SUPPORT); 
         #endif
-       strcat(strReturn,"&"); continue;
+       ADD_WEBDELIM(strReturn); continue;
        }       
     if (strcmp(str,"get_OneWirePin")==0)  // Функция get_OneWirePin
        {
@@ -683,22 +685,22 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		#ifdef ONEWIRE_DS2482_FOURTH
         strcat(strReturn, ",4");
 		#endif
-        strcat(strReturn, ")&");
+        strcat(strReturn, ")" WEBDELIM);
        #else
-        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); strcat(strReturn,"&");
+        strcat(strReturn,"D"); _itoa((int)(PIN_ONE_WIRE_BUS),strReturn); ADD_WEBDELIM(strReturn);
        #endif
         continue;
        }       
     if (strcmp(str,"scan_OneWire")==0)  // Функция scan_OneWire  - сканирование датчикиков
        {
-    	HP.scan_OneWire(strReturn); strcat(strReturn,"&"); continue;
+    	HP.scan_OneWire(strReturn); ADD_WEBDELIM(strReturn); continue;
        }
      if (strstr(str,"get_numberIP"))  // Удаленные датчики - получить число датчиков
        { 
         #ifdef SENSOR_IP                           
-         _itoa(IPNUMBER,strReturn);strcat(strReturn,"&"); continue;
+         _itoa(IPNUMBER,strReturn);ADD_WEBDELIM(strReturn); continue;
         #else
-         strcat(strReturn,"0&");continue;
+         strcat(strReturn,"0" WEBDELIM);continue;
         #endif 
        }   
       if (strcmp(str,"set_testStat")==0)  // сгенерить тестовые данные статистики ОЧИСТКА СТАРЫХ ДАННЫХ!!!!!
@@ -707,9 +709,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
        if (HP.get_modWork()==pOFF)
        {
          HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-         strcat(strReturn,"Generation of test data - OK&");
+         strcat(strReturn,"Generation of test data - OK" WEBDELIM);
        }
-       else strcat(strReturn,"The heat pump must be switched OFF&");  
+       else strcat(strReturn,"The heat pump must be switched OFF" WEBDELIM);
        #else
        strcat(strReturn,NO_STAT);
        #endif
@@ -722,7 +724,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        #else
        strcat(strReturn,NO_STAT) ;
        #endif
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        }   
 
@@ -746,36 +748,36 @@ void parserGET(char *buf, char *strReturn, int8_t )
       //  strcat(strReturn,HP.StateToStrEN());                                      strcat(strReturn,";");
         if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStrEN());                   // Ошибок нет
         else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-        strcat(strReturn,";");   strcat(strReturn,"&") ;    continue;
+        strcat(strReturn,";");   ADD_WEBDELIM(strReturn) ;    continue;
        }   
      if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
     	str += 5;
     	if(strcmp(str, "fcanalog") == 0) {
 			#ifdef FC_ANALOG_CONTROL
-    			strcat(strReturn,"0&");
+    			strcat(strReturn,"0");
 			#else
-    			strcat(strReturn,"1&");
+    			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "rpumpfl") == 0) {
 			#ifdef RPUMPFL
-    			strcat(strReturn,"0&");
+    			strcat(strReturn,"0");
 			#else
-    			strcat(strReturn,"1&");
+    			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
 			#ifdef TRTOUT
-    			strcat(strReturn,"0&");
+    			strcat(strReturn,"0");
 			#else
-    			strcat(strReturn,"1&");
+    			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "sun") == 0) { // hide: SUN
 			#ifdef USE_SUN_COLLECTOR
-    			strcat(strReturn,"0&");
+    			strcat(strReturn,"0");
 			#else
-    			strcat(strReturn,"1&");
+    			strcat(strReturn,"1");
 			#endif
     	}
-    	continue;
+    	ADD_WEBDELIM(strReturn); continue;
      }
  
     if (strcmp(str,"CONST")==0)   // Команда CONST  Информация очень большая по этому разбито на 2 запроса CONST CONST1
@@ -898,7 +900,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
         #endif
         
-       strcat(strReturn,"&") ;    continue;
+       ADD_WEBDELIM(strReturn);  continue;
        } // end CONST
        
     if (strcmp(str,"CONST1")==0)   // Команда CONST1 Информация очень большая по этому разбито на 2 запроса CONST CONST1
@@ -951,7 +953,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"MQTT_NUM_ERR_OFF|Число ошибок отправки подряд при котором отключается сервис MQTT (флаг сбрасывается)|");_itoa(MQTT_NUM_ERR_OFF,strReturn);strcat(strReturn,";");
        
        #endif 
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        } // end CONST1
        
@@ -1068,37 +1070,37 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
          
-        strcat(strReturn,"&") ;    continue;
+        ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo
        
        if (strcmp(str,"test_Mail")==0)  // Функция test_mail
        {
        if (HP.message.setTestMail()) { strcat(strReturn,"Send test mail to "); HP.message.get_messageSetting((char*)mess_SMTP_RCPTTO,strReturn); }
        else { strcat(strReturn,"Error send test mail.");}
-       strcat(strReturn,"&") ;   
+       ADD_WEBDELIM(strReturn) ;
         continue;  
        }   // test_Mail  
        if (strcmp(str,"test_SMS")==0)  // Функция test_mail
        {
        if (HP.message.setTestSMS()) { strcat(strReturn,"Send SMS to "); HP.message.get_messageSetting((char*)mess_SMS_PHONE,strReturn);}  //strcat(strReturn,HP.message.get_messageSetting(pSMS_PHONE));}
        else { strcat(strReturn,"Error send test sms.");}
-       strcat(strReturn,"&") ;           
+       ADD_WEBDELIM(strReturn) ;
        continue;  
        }   // test_Mail    
        if(strcmp(str, "get_OverCool") == 0) {
            _ftoa(strReturn, HP.get_overcool() / 100.0, 2);
-           strcat(strReturn,"&");
+           ADD_WEBDELIM(strReturn);
            continue;
        }
        if(strcmp(str, "get_Evapor") == 0) {
     	   if(HP.sADC[PEVA].get_present()) _ftoa(strReturn, HP.get_temp_evaporating() / 100.0, 2);
     	   else strcat(strReturn,"-");
-           strcat(strReturn,"&");
+           ADD_WEBDELIM(strReturn);
     	   continue;
        }
        if(strcmp(str, "get_TCOMP_TCON") == 0) { // Нагнетание - Конденсация
            _ftoa(strReturn, (HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing()) / 100.0, 2);
-           strcat(strReturn,"&") ;    continue;
+           ADD_WEBDELIM(strReturn) ;    continue;
        }
        // ЭРВ запросы , те которые без параметра ------------------------------
          if (strcmp(str,"set_zeroEEV")==0)  // Функция set_zeroEEV
@@ -1108,38 +1110,54 @@ void parserGET(char *buf, char *strReturn, int8_t )
             #else
             strcat(strReturn,"-");  
             #endif   
-           strcat(strReturn,"&") ; continue;
+           ADD_WEBDELIM(strReturn) ; continue;
          }          
   
         // FC запросы, те которые без параметра ------------------------------
         if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
          {
-          if (!HP.dFC.get_present()) {strcat(strReturn,"Инвертор отсутствует&"); ;continue;}
+          if (!HP.dFC.get_present()) {
+        	  strcat(strReturn,"Инвертор отсутствует");
+          }
           #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+          else {
               HP.dFC.reset_errorFC();
               strcat(strReturn,"Ошибки инвертора сброшены . . .");
+          }
           #endif
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn); continue;
          } 
         if (strcmp(str,"reset_FC")==0)    
-         {
-          if (!HP.dFC.get_present()) {strcat(strReturn,"Инвертор отсутствует&"); ;continue;}
-           HP.dFC.reset_FC();                             // подать команду на сброс
-           strcat(strReturn,"Cброс преобразователя частоты . . ."); strcat(strReturn,"&") ;    continue;
-         } 
+        {
+          if (!HP.dFC.get_present()) {
+        	  strcat(strReturn,"Инвертор отсутствует");
+          } else {
+        	  HP.dFC.reset_FC();                             // подать команду на сброс
+        	  strcat(strReturn,"Cброс преобразователя частоты . . .");
+          }
+          ADD_WEBDELIM(strReturn); continue;
+        }
          #ifdef USE_ELECTROMETER_SDM
         // SDM запросы которые без параметра
         if (strcmp(str,"settingSDM")==0)     // Функция settingSDM  Запрограммировать параметры связи счетчика
-         {
-          if (!HP.dSDM.get_present()) {strcat(strReturn,"Счетчик отсутвует &"); ;continue;}
-          HP.dSDM.progConnect();
-          strcat(strReturn,"Счетчик запрограммирован, необходимо сбросить счетчик!!"); strcat(strReturn,"&") ;    continue;
-         } 
+        {
+          if (!HP.dSDM.get_present()) {
+        	  strcat(strReturn,"Счетчик отсутвует");
+          } else {
+        	  HP.dSDM.progConnect();
+        	  strcat(strReturn,"Счетчик запрограммирован, необходимо сбросить счетчик!!");
+          }
+          ADD_WEBDELIM(strReturn);  continue;
+        }
         if (strcmp(str,"uplinkSDM")==0)     // Функция settingSDM  Попытаться возобновить связь со счетчиком при ее потери
          {
-          if (!HP.dSDM.get_present()) {strcat(strReturn,"Счетчик отсутвует &"); ;continue;}
-          HP.dSDM.uplinkSDM();
-          strcat(strReturn,"Проверка связи со счетчиком"); strcat(strReturn,"&") ;    continue;
+          if (!HP.dSDM.get_present()) {
+        	  strcat(strReturn,"Счетчик отсутвует");
+          } else {
+        	  HP.dSDM.uplinkSDM();
+        	  strcat(strReturn,"Проверка связи со счетчиком");
+          }
+       	  ADD_WEBDELIM(strReturn);  continue;
          } 
           #endif
         // -------------- СПИСКИ ДАТЧИКОВ и ИСПОЛНИТЕЛЬНЫХ УСТРОЙСТВ  -----------------------------------------------------
@@ -1147,12 +1165,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
         if (strcmp(str,"get_listPress")==0)     // Функция get_listPress
          {
           for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn) ;    continue;
          } 
         if(strcmp(str, "get_listTemp") == 0) // Возвращает список датчиков через ";"
         {
         	for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
-        	strcat(strReturn, "&"); continue;
+        	ADD_WEBDELIM(strReturn); continue;
         }
         if(strncmp(str, "get_tblTemp", 11) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
         {
@@ -1161,24 +1179,33 @@ void parserGET(char *buf, char *strReturn, int8_t )
         		if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
         			strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
         		}
-        	strcat(strReturn, "&"); continue;
+        	ADD_WEBDELIM(strReturn); continue;
         }
         if (strcmp(str,"get_listInput")==0)     // Функция get_listInput
          {
           for(i=0;i<INUMBER;i++) if (HP.sInput[i].get_present()){strcat(strReturn,HP.sInput[i].get_name());strcat(strReturn,";");}
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn) ;    continue;
          }         
         if (strcmp(str,"get_listRelay")==0)     // Функция get_listRelay
          {
           for(i=0;i<RNUMBER;i++) if (HP.dRelay[i].get_present()){strcat(strReturn,HP.dRelay[i].get_name());strcat(strReturn,";");}
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn) ;    continue;
          }
         if (strcmp(str,"get_listFlow")==0)     // Функция get_lisFlow
          {
           for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn) ;    continue;
          }
-         
+#ifdef RADIO_SENSORS
+        if(strstr(str, "set_radio_cmd")) {
+        	if((x = strchr(str, '='))) {
+        		x++;
+        		radio_sensor_send(x);
+        	}
+        	ADD_WEBDELIM(strReturn);	continue;
+        }
+#endif
+
        // -----------------------------------------------------------------------------------------------------        
        // 2. Функции с параметром ------------------------------------------------------------------------------
        // Ищем скобки ------------------------------------------------------------------------------------------
@@ -1198,44 +1225,44 @@ void parserGET(char *buf, char *strReturn, int8_t )
        // разбор строки формат "номер:температура:уровень_сигнала:питание:счетчик"
   //     Serial.println(x+1); 
        ptr=strtok(x+1,":");
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}
-       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
+       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
 
        ptr=strtok(NULL,":");
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
        b=100*my_atof(ptr);
-       if ((b<-4000)||(b>12000))      {strcat(strReturn,"E24&");continue;}  // проверка диапазона температуры -40...+120
+       if ((b<-4000)||(b>12000))      {strcat(strReturn,"E24" WEBDELIM);continue;}  // проверка диапазона температуры -40...+120
          
        ptr=strtok(NULL,":");
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}
-       if ((c=10*my_atof(ptr))==0)   {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((c<-1000)||(c>0))         {strcat(strReturn,"E24&");continue;}  // проверка диапазона уровня сигнала -100...-1 дБ
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
+       if ((c=10*my_atof(ptr))==0)   {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((c<-1000)||(c>0))         {strcat(strReturn,"E24" WEBDELIM);continue;}  // проверка диапазона уровня сигнала -100...-1 дБ
      
        ptr=strtok(NULL,":");
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}
-       if ((d=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((d<1000)||(d>5000))       {strcat(strReturn,"E24&");continue;}  // проверка диапазона питания 1000...4000 мВ
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
+       if ((d=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((d<1000)||(d>5000))       {strcat(strReturn,"E24" WEBDELIM);continue;}  // проверка диапазона питания 1000...4000 мВ
        
        ptr=strtok(NULL,":");
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
        e=atoi(ptr);
-       if (e<0)                      {strcat(strReturn,"E24&");continue;}  // счетичк больше 0
+       if (e<0)                      {strcat(strReturn,"E24" WEBDELIM);continue;}  // счетичк больше 0
          
        
        // Дошли до сюда - ошибок нет, можно использовать данные
        byte adr[4];
        W5100.readSnDIPR(sock, adr);
        HP.sIP[a-1].set_DataIP(a,b,c,d,e,BytesToIPAddress(adr));
-       strcat(strReturn,"OK&"); continue;
+       strcat(strReturn,"OK" WEBDELIM); continue;
       }
  
       if (strstr(str,"get_sensorParamIP"))    // Удаленные датчики - Получить отдельное значение конкретного параметра
       {
        ptr=strtok(x+1,":");     // Нужно
-       if (ptr==NULL)                {strcat(strReturn,"E21&");continue;}  // нет параметра
-       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования не число
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+       if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}  // нет параметра
+       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования не число
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
        // Получили номер запрашиваемого датчика, теперь определяем параметр
          ptr=strtok(NULL,":");
        /*  
@@ -1252,14 +1279,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
        else strcat(strReturn,"E26");
       */
        HP.sIP[a-1].get_sensorIP(ptr,strReturn);
-       strcat(strReturn,"&") ; continue;
+       ADD_WEBDELIM(strReturn) ; continue;
       }
       
      if (strstr(str,"get_sensorIP"))    // Удаленные датчики - Получить параметры (ВСЕ) удаленного датчика в виде строки
       {
        ptr=x+1; 
-       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
        // Формируем строку
        HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,":");
        
@@ -1276,14 +1303,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
        }
        else strcat(strReturn,"-:-:-:-:-:");  // После включения еще ни разу данные не поступали поэтому прочерки
         
-       strcat(strReturn,"&") ; continue; 
+       ADD_WEBDELIM(strReturn) ; continue;
       }  
       
       if (strstr(str,"get_sensorListIP"))    // Удаленные датчики - список привязки удаленного датчика
       {
        ptr=x+1; 
-       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+       if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
        
        strcat(strReturn,"Reset:"); if (HP.sIP[a-1].get_link()==-1) strcat(strReturn,"1;"); else strcat(strReturn,"0;");
        for(i=0;i<TNUMBER;i++)        // формирование списка
@@ -1294,27 +1321,27 @@ void parserGET(char *buf, char *strReturn, int8_t )
                if (HP.sIP[a-1].get_link()==i) strcat(strReturn,"1;"); else strcat(strReturn,"0;");
                }
            }
-       strcat(strReturn,"&") ; continue; 
+       ADD_WEBDELIM(strReturn) ; continue;
       }   
       
 
       if (strstr(str,"get_sensorUseIP"))    // Удаленные датчики - ПОЛУЧИТЬ использование удаленного датчика
       {
-       if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
-       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_USE,strReturn);strcat(strReturn,"&") ;continue;  
+       if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
+       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_USE,strReturn);ADD_WEBDELIM(strReturn) ;continue;
       }
 
  
       if (strstr(str,"get_sensorRuleIP"))    // Удаленные датчики - ПОЛУЧИТЬ использование усреднение
       {
-       if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
-       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_RULE,strReturn);strcat(strReturn,"&") ;continue;  
+       if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+       if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
+       HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_RULE,strReturn);ADD_WEBDELIM(strReturn) ;continue;
       }
    
       #else
-       if (strstr(str,"set_sensorIP"))   {strcat(strReturn,"E25&");continue;}        // Удаленные датчики  НЕ ПОДДЕРЖИВАЕТСЯ
+       if (strstr(str,"set_sensorIP"))   {strcat(strReturn,"E25" WEBDELIM);continue;}        // Удаленные датчики  НЕ ПОДДЕРЖИВАЕТСЯ
      #endif  
 
         // ----------------------------------------------------------------------------------------------------------
@@ -1335,7 +1362,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
                    }  
            }
    //        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_modeHouse() );
-           strcat(strReturn,"&") ; continue;
+           ADD_WEBDELIM(strReturn) ; continue;
           } // strcmp(str,"set_modeHP")==0)      
       // ------------------------------------------------------------------------  
       if (strstr(str,"set_testMode"))  // Функция set_testMode  - Установить режим работы бойлера
@@ -1347,7 +1374,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            for(i=0;i<=HARD_TEST;i++)                    // Формирование списка
               { strcat(strReturn,noteTestMode[i]); strcat(strReturn,":"); if(i==HP.get_testMode()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }                
            } // else  
-          strcat(strReturn,"&") ;    continue;
+          ADD_WEBDELIM(strReturn) ;    continue;
         } //  if (strcmp(str,"set_testMode")==0)  
 
          // -----------------------------------------------------------------------------  
@@ -1361,10 +1388,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
                 _itoa(pm,strReturn);  // если значение правильное его возвращаем сразу
                 else strcat(strReturn,"E12"); 
      //           Serial.print("set_EEV ");    Serial.print(pm); Serial.print(" set "); Serial.println(int2str(HP.dEEV.get_EEV())); 
-                strcat(strReturn,"&") ;    continue; 
+                ADD_WEBDELIM(strReturn) ;    continue;
                 } 
              #else
-                strcat(strReturn,"-&") ;    continue;
+                strcat(strReturn,"-" WEBDELIM) ;    continue;
              #endif 
                }  //  if (strcmp(str,"set_set_EEV")==0)    
          // -----------------------------------------------------------------------------  
@@ -1373,7 +1400,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if(HP.dFC.set_targetFreq(pm*100+0.005,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  strcat(strReturn,"&") ;    continue;   // ручное управление границы максимальны
+                  if(HP.dFC.set_targetFreq(pm*100+0.005,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  ADD_WEBDELIM(strReturn) ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
@@ -1384,7 +1411,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) _itoa(HP.Prof.save((int8_t)pm),strReturn); else strcat(strReturn,"E29");  strcat(strReturn,"&") ;    continue; 
+                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) _itoa(HP.Prof.save((int8_t)pm),strReturn); else strcat(strReturn,"E29");  ADD_WEBDELIM(strReturn) ;    continue;
                 }
                }  //if (strstr(str,"saveProfile"))  
            // -----------------------------------------------------------------------------     
@@ -1393,7 +1420,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) _itoa(HP.Prof.load((int8_t)pm),strReturn); else strcat(strReturn,"E29");  strcat(strReturn,"&") ;    continue; 
+                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) _itoa(HP.Prof.load((int8_t)pm),strReturn); else strcat(strReturn,"E29");  ADD_WEBDELIM(strReturn) ;    continue;
                 }
                }  //if (strstr(str,"loadProfile"))  
             // -----------------------------------------------------------------------------     
@@ -1402,7 +1429,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) HP.Prof.get_info(strReturn,(int8_t)pm); else strcat(strReturn,"E29");  strcat(strReturn,"&") ;    continue; 
+                  if ((pm>=0)&&(pm<I2C_PROFIL_NUM)) HP.Prof.get_info(strReturn,(int8_t)pm); else strcat(strReturn,"E29");  ADD_WEBDELIM(strReturn) ;    continue;
                 }
                }  //if (strstr(str,"infoProfile"))   
            // -----------------------------------------------------------------------------     
@@ -1414,25 +1441,23 @@ void parserGET(char *buf, char *strReturn, int8_t )
                   if (pm==HP.Prof.get_idProfile())  {strcat(strReturn,"E30");}  // попытка стереть текущий профиль
                   else if((pm>=0)&&(pm<I2C_PROFIL_NUM)) { _itoa(HP.Prof.erase((int8_t)pm),strReturn); HP.Prof.update_list(HP.Prof.get_idProfile()); }
                   else strcat(strReturn,"E29"); 
-                  strcat(strReturn,"&") ;    continue; 
+                  ADD_WEBDELIM(strReturn) ;    continue;
                 }
                }  //if (strstr(str,"eraseProfile"))     
           // -----------------------------------------------------------------------------     
             if (strstr(str,"set_listProfile"))  // Функция set_listProfil загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
-             {
-            if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
-              else
-                {
+            {
+                if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
+                else {
             	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
             		  HP.Prof.set_list((int8_t) pm);
             		  HP.save();
             		  HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
-            	  }
-                  else strcat(strReturn,"E29");  
-                  strcat(strReturn,"&") ;    continue; 
+            	  } else strcat(strReturn,"E29");
+                  ADD_WEBDELIM(strReturn) ;    continue;
                 }
-               }  //if (strstr(str,"set_listProfile"))     
+            }  //if (strstr(str,"set_listProfile"))
 
        //  2.3 Функции с параметрами
       // проверяем наличие функции set_  конструкция типа (TIN=23)
@@ -1448,7 +1473,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
           strcat(strReturn,str); 
           strcat(strReturn,")=");
     //      if (pm==ATOF_ERROR)        // Ошибка преобразования   - завершить запрос с ошибкой
-   //       { strcat(strReturn,"E04");strcat(strReturn,"&");  continue;  }
+   //       { strcat(strReturn,"E04");ADD_WEBDELIM(strReturn);  continue;  }
          } else z=NULL; // "=" - не обнаружено, значит значение пустая строка
          
         // --------------------------------НОВЫЙ ПАРСЕР ------------------------------------------------------------------- 
@@ -1464,7 +1489,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
               if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
                   {
                   HP.dEEV.get_paramEEV(x+1,strReturn);	
-                  strcat(strReturn,"&"); continue;	 
+                  ADD_WEBDELIM(strReturn); continue;
                   }
                else if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
                   {
@@ -1472,12 +1497,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
                     if (HP.dEEV.set_paramEEV(x+1,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
                     else  strcat(strReturn,"E11");  // выход за диапазон значений   
                   } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
-                  strcat(strReturn,"&") ; 
+                  ADD_WEBDELIM(strReturn) ;
                   continue;	 
                   }
-                else   strcat(strReturn,"E03&");  continue;	 
+                else   strcat(strReturn,"E03" WEBDELIM);  continue;
               #else
-               strcat(strReturn,"no support EEV&");  continue;	 
+               strcat(strReturn,"no support EEV" WEBDELIM);  continue;
               #endif   
               }  //  if (strstr(str,"EEV"))    
           // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
@@ -1486,14 +1511,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			   #ifdef MQTT
                    if (strcmp(str,"get_MQTT")==0){           // Функция получить настройки MQTT
                         HP.clMQTT.get_paramMQTT(x+1,strReturn);
-                        strcat(strReturn,"&") ; continue;
+                        ADD_WEBDELIM(strReturn) ; continue;
                    } else if (strcmp(str,"set_MQTT")==0) {         // Функция записать настройки MQTT
                          if (HP.clMQTT.set_paramMQTT(x+1,strbuf))  HP.clMQTT.get_paramMQTT(x+1,strReturn);   // преобразование удачно
                          else strcat(strReturn,"E32") ; // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
+                      ADD_WEBDELIM(strReturn) ; continue;
                       } // (strcmp(str,"set_MQTT")==0) 
 				#else
-					 strcat(strReturn,"no support MQTT&");  continue; // не поддерживается
+					 strcat(strReturn,"no support MQTT" WEBDELIM);  continue; // не поддерживается
 				#endif
                } //if ((strstr(str,"MQTT")>0)
           
@@ -1504,52 +1529,50 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				x++;
 				if(strncmp(str, "set", 3) == 0) { // set_SCHDLR(x=n)
 					if((i = HP.Schdlr.web_set_param(x, z+1))) {
-						strcat(strReturn, i == 1 ? "E33&" : "E34&");
+						strcat(strReturn, i == 1 ? "E33" : "E34");
+						ADD_WEBDELIM(strReturn);
 						continue;
 					}
 				} else if(strncmp(str, "get", 3) == 0) { // get_SCHDLR(x)
 				} else goto x_FunctionNotFound;
 				HP.Schdlr.web_get_param(x, strReturn);
-				strcat(strReturn,"&");
+				ADD_WEBDELIM(strReturn);
 				continue;
 			}
 		 #endif
 
          // 4. Настройки счетчика SDM ------------------------------------------------
-               if (strstr(str,"SDM"))          // Проверка для запросов содержащих SDM
-                 {
-                  #ifdef USE_ELECTROMETER_SDM  	
-                   if (strcmp(str,"get_SDM")==0)           // Функция получить настройки счетчика
-                      {
-                        HP.dSDM.get_paramSDM(x+1,strReturn);
-                        strcat(strReturn,"&") ; continue;
-                      } // (strcmp(str,"get_SDM")==0) 
-                   else if (strcmp(str,"set_SDM")==0)           // Функция записать настройки счетчика
-                      {
-                       if (HP.dSDM.set_paramSDM(x+1,strbuf)) HP.dSDM.get_paramSDM(x+1,strReturn); // преобразование удачно
-                       else                                  strcat(strReturn,"E31") ;            // ошибка преобразования строки
-                      strcat(strReturn,"&") ; continue;
-                      }  strcat(strReturn,"E03&");  continue;	 
-	              	#else
-					 strcat(strReturn,"no support SDM&");  continue; // не поддерживается
-					#endif   
-                  } //if ((strstr(str,"SDM")>0)  
+			if(strstr(str, "SDM"))          // Проверка для запросов содержащих SDM
+			{
+#ifdef USE_ELECTROMETER_SDM
+				if(strcmp(str, "get_SDM") == 0)           // Функция получить настройки счетчика
+				{
+					HP.dSDM.get_paramSDM(x + 1, strReturn);
+				} else if(strcmp(str, "set_SDM") == 0)           // Функция записать настройки счетчика
+				{
+					if(HP.dSDM.set_paramSDM(x + 1, strbuf)) HP.dSDM.get_paramSDM(x + 1, strReturn); // преобразование удачно
+					else strcat(strReturn, "E31");            // ошибка преобразования строки
+				} else strcat(strReturn, "E03");
+#else
+				strcat(strReturn,"no support SDM"); // не поддерживается
+#endif
+				ADD_WEBDELIM(strReturn); continue;
+			}
 
             // 5.  Настройки профилей ---------------------------------------------------------         
-		        if (strstr(str,"Profile"))          // Проверка для запросов содержащих Profile
-		          {
-		             if (strcmp(str,"get_Profile")==0)           // Функция получить настройки профиля
-		                  {
-		                    HP.Prof.get_paramProfile(x+1,strReturn);
-		                    strcat(strReturn,"&") ; continue;
-		                  } // (strcmp(str,"get_Profile")==0) 
-		              else if (strcmp(str,"set_Profile")==0)           // Функция записать настройки профиля
-		                  {
-		                   if (HP.Prof.set_paramProfile(x+1,strbuf)) HP.Prof.get_paramProfile(x+1,strReturn); // преобразование удачно
-		                   else                                      strcat(strReturn,"E28") ; // ошибка преобразования строки
-		                  strcat(strReturn,"&") ; continue;
-		                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_Profile")==0) 
-		           } //if ((strstr(str,"Profile")>0)
+			if(strstr(str, "Profile"))          // Проверка для запросов содержащих Profile
+			{
+				if(strcmp(str, "get_Profile") == 0)           // Функция получить настройки профиля
+				{
+					HP.Prof.get_paramProfile(x + 1, strReturn);
+				} // (strcmp(str,"get_Profile")==0)
+				else if(strcmp(str, "set_Profile") == 0)           // Функция записать настройки профиля
+				{
+					if(HP.Prof.set_paramProfile(x + 1, strbuf)) HP.Prof.get_paramProfile(x + 1, strReturn); // преобразование удачно
+					else strcat(strReturn, "E28"); // ошибка преобразования строки
+				} else strcat(strReturn, "E03");
+				ADD_WEBDELIM(strReturn); continue;
+			}
 		           
              //6.  Настройки Уведомлений --------------------------------------------------------
             if (strstr(str,"Message"))          // Проверка для запросов содержащих messageSetting
@@ -1557,14 +1580,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
               if (strcmp(str,"get_Message")==0)           // Функция get_Message - получить значение настройки уведомлений
                   {
                     HP.message.get_messageSetting(x+1,strReturn);
-                    strcat(strReturn,"&") ; continue;
+                    ADD_WEBDELIM(strReturn) ; continue;
                   } // (strcmp(str,"get_messageSetting")==0) 
               else if (strcmp(str,"set_Message")==0)           // Функция set_Message - установить значениена стройки уведомлений
                   {
                    if (HP.message.set_messageSetting(x+1,strbuf)) HP.message.get_messageSetting(x+1,strReturn); // преобразование удачно
                    else                                                     strcat(strReturn,"E20") ; // ошибка преобразования строки
-                  strcat(strReturn,"&") ; continue;
-                  } else strcat(strReturn,"E03&");  continue;	// (strcmp(str,"set_messageSetting")==0) 
+                  ADD_WEBDELIM(strReturn) ; continue;
+                  } else strcat(strReturn,"E03" WEBDELIM);  continue;	// (strcmp(str,"set_messageSetting")==0)
               } //if ((strstr(str,"messageSetting")>0)   
               
 	          //7.  Настройки бойлера --------------------------------------------------
@@ -1573,14 +1596,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	              if (strcmp(str,"get_Boiler")==0)           // Функция get_Boiler - получить значение настройки бойлера
 	                  {
 	                    HP.Prof.get_boiler(x+1,strReturn);
-	                    strcat(strReturn,"&") ; continue;
+	                    ADD_WEBDELIM(strReturn) ; continue;
 	                  } // (strcmp(str,"get_Boiler")==0) 
 	              else if (strcmp(str,"set_Boiler")==0)           // Функция set_Boiler - установить значениена стройки бойлера
 	                  {
 	                   if (HP.Prof.set_boiler(x+1,strbuf)) HP.Prof.get_boiler(x+1,strReturn);  // преобразование удачно
 	                   else 	                      strcat(strReturn,"E19") ; // ошибка преобразования строки
-	                  strcat(strReturn,"&") ; continue;
-	                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Boiler")==0) 
+	                  ADD_WEBDELIM(strReturn) ; continue;
+	                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"set_Boiler")==0)
 	             } //if ((strstr(str,"Boiler")>0)   
 
 	           //8.  Настройки дата время --------------------------------------------------------
@@ -1589,14 +1612,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		              if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
 		                  {
 		                    HP.get_datetime(x+1,strReturn);
-		                    strcat(strReturn,"&") ; continue;
+		                    ADD_WEBDELIM(strReturn) ; continue;
 		                  } // (strcmp(str,"get_datetime")==0) 
    		              else if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
  		                  {
 		                   if (HP.set_datetime(x+1,strbuf))  HP.get_datetime(x+1,strReturn);    // преобразование удачно
 	                       else  strcat(strReturn,"E18") ; // ошибка преобразования строки
-		                  strcat(strReturn,"&") ; continue;
-		                  }  else strcat(strReturn,"E03&");  continue;// (strcmp(str,"set_datetime")==0) 
+		                  ADD_WEBDELIM(strReturn) ; continue;
+		                  }  else strcat(strReturn,"E03" WEBDELIM);  continue;// (strcmp(str,"set_datetime")==0)
 		            } //if ((strstr(str,"datetime")>0)   
 
 	           //9.  Настройки сети -----------------------------------------------------------
@@ -1605,14 +1628,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	               if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
 	                  {
 	                    HP.get_network(x+1,strReturn);
-	                    strcat(strReturn,"&") ; continue;
+	                    ADD_WEBDELIM(strReturn) ; continue;
 	                  } // (strcmp(str,"get_Network")==0) 
 	              else if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
 	                  {
 	                   if (HP.set_network(x+1,strbuf))  HP.get_network(x+1,strReturn);     // преобразование удачно
 	                   else strcat(strReturn,"E15") ; // ошибка преобразования строки
-	                  strcat(strReturn,"&") ; continue;
-	                  }  else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_Network")==0) 
+	                  ADD_WEBDELIM(strReturn) ; continue;
+	                  }  else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"set_Network")==0)
 	             } //if ((strstr(str,"Network")>0)   
 
 		         //10.  Статистика используется в одной функции get_Stat ---------------------------------------
@@ -1625,8 +1648,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		                  #else
 		                  strcat(strReturn,"");
 		                  #endif
-		                  strcat(strReturn,"&") ; continue;
-		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"get_Stat")==0) 
+		                  ADD_WEBDELIM(strReturn) ; continue;
+		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"get_Stat")==0)
 		            } //if ((strstr(str,"Stat")>0) 
                   
 		          //11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
@@ -1635,8 +1658,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
 		                  {
 		                  HP.get_Chart(x+1,strReturn);
-		                  strcat(strReturn,"&") ; continue;
-		                  } else strcat(strReturn,"E03&");  continue;  // (strcmp(str,"get_Chart")==0) 
+		                  ADD_WEBDELIM(strReturn) ; continue;
+		                  } else strcat(strReturn,"E03" WEBDELIM);  continue;  // (strcmp(str,"get_Chart")==0)
 		            } //if ((strstr(str,"Chart")>0)  
          
                   //12.  Частотный преобразователь -----------------------------------------------------------------
@@ -1644,7 +1667,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		             {
      	               if (strcmp(str,"get_paramFC")==0)           // Функция get_paramFC - получить значение параметра FC
 		                  {
-		                    HP.dFC.get_paramFC(x+1,strReturn); strcat(strReturn,"&") ; continue;
+		                    HP.dFC.get_paramFC(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
 		                  } 
 		              else if (strcmp(str,"set_paramFC")==0)           // Функция set_paramFC - установить значение паремтра FC
 		                  {
@@ -1652,8 +1675,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
                     		if (HP.dFC.set_paramFC(x+1,pm)) HP.dFC.get_paramFC(x+1,strReturn);
                     		else  strcat(strReturn,"E27");  // выход за диапазон значений   
                   			} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
-                           strcat(strReturn,"&") ; 
-   		                  } else strcat(strReturn,"E03&");  continue; // (strcmp(str,"set_paramFC")==0) 
+                           ADD_WEBDELIM(strReturn) ;
+   		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"set_paramFC")==0)
 		            } //if ((strstr(str,"FC")>0)  
 
                   // 13 Опции теплового насоса
@@ -1661,7 +1684,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		             {         
                       if (strcmp(str,"get_optionHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
 		                  {
-		                   HP.get_optionHP(x+1,strReturn); strcat(strReturn,"&") ; continue; 
+		                   HP.get_optionHP(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
 		                  } 
 	                  else if (strcmp(str,"set_optionHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
 				          {
@@ -1669,31 +1692,31 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				           if (HP.set_optionHP(x+1,pm))   HP.get_optionHP(x+1,strReturn);  // преобразование удачно, 
 				           else strcat(strReturn,"E17") ; // выход за диапазон значений
 				           } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
-				          strcat(strReturn,"&") ; continue;
-				          } else strcat(strReturn,"E03&");  continue;   
+				          ADD_WEBDELIM(strReturn) ; continue;
+				          } else strcat(strReturn,"E03" WEBDELIM);  continue;
 		             }
 		          //14.  Параметры  отопления и охлаждения ТН
 		          if (strstr(str,"HP"))          // Проверка для запросов содержащих HP
 		             {
 		               if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
-		                  { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); strcat(strReturn,"&") ; continue;   } 
+		                  { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
 		              else if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
 		                  {
 		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 		                    if (HP.Prof.set_paramCoolHP(x+1,pm))  HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
 		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
 		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
-		                  strcat(strReturn,"&") ; continue;
+		                  ADD_WEBDELIM(strReturn) ; continue;
 		                  } // (strcmp(str,"paramCoolHP")==0) 
 		               else if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
-		                  { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); strcat(strReturn,"&") ; continue;   } 
+		                  { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
 		               else if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
 		                  {
 		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 		                    if (HP.Prof.set_paramHeatHP(x+1,pm))  HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
 		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
 		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
-		                  strcat(strReturn,"&") ; continue;
+		                  ADD_WEBDELIM(strReturn) ; continue;
 		                  } 
 		             }
                    
@@ -1736,7 +1759,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 					if(i != OK) {
 						strcat(strReturn, "E"); _itoa(i, strReturn);
 					}
-					strcat(strReturn, "&");
+					ADD_WEBDELIM(strReturn);
 					continue;
 				}
 			}
@@ -1748,14 +1771,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
               if (strstr(str,"set_sensorListIP"))    // Удаленные датчики - привязка датчика
               {
                // первое число (имя удаленного датчика)
-               if ((x+1)==NULL)              {strcat(strReturn,"E21&");continue;}
-               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+               if ((x+1)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
+               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
                
                // Второе число (новое значение параметра)
-               if (strbuf==NULL)             {strcat(strReturn,"E21&");continue;}  
+               if (strbuf==NULL)             {strcat(strReturn,"E21" WEBDELIM);continue;}
                b=atoi(strbuf);
-               if ((b<0)||(b>TNUMBER))       {strcat(strReturn,"E24&");continue;}  //  проверка диапазона номеров датчиков учитываем reset!!
+               if ((b<0)||(b>TNUMBER))       {strcat(strReturn,"E24" WEBDELIM);continue;}  //  проверка диапазона номеров датчиков учитываем reset!!
                
                c=-1; 
                HP.sIP[a-1].set_link(-1);     // Сбросить старую привязку (привязки нет)
@@ -1781,47 +1804,47 @@ void parserGET(char *buf, char *strReturn, int8_t )
                        if (HP.sIP[a-1].get_link()==i) strcat(strReturn,"1;"); else strcat(strReturn,"0;");
                        }
                    }
-                 strcat(strReturn,"&") ; continue;     
+                 ADD_WEBDELIM(strReturn) ; continue;
                 
                 } 
       
              if (strstr(str,"set_sensorUseIP"))    // Удаленные датчики - УСТАНОВИТЬ использование удаленного датчика
               {
                // первое число (имя удаленного датчика)
-               if ((x+1)==NULL)              {strcat(strReturn,"E21&");continue;}
-               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+               if ((x+1)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
+               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
                // Второе число (зновое значение параметра)
-               if (strbuf==NULL)             {strcat(strReturn,"E21&");continue;}  
+               if (strbuf==NULL)             {strcat(strReturn,"E21" WEBDELIM);continue;}
                b=atoi(strbuf);
-               if ((b<0)||(b>1))             {strcat(strReturn,"E24&");continue;}  //  проверка диапазона
+               if ((b<0)||(b>1))             {strcat(strReturn,"E24" WEBDELIM);continue;}  //  проверка диапазона
  
                if (b==1) HP.sIP[a-1].set_fUse(true); else HP.sIP[a-1].set_fUse(false);
                
                HP.updateLinkIP();                 // Обновить ВСЕ привязки удаленных датчиков
                
-               _itoa(HP.sIP[a-1].get_fUse(),strReturn);strcat(strReturn,"&") ;continue;  
+               _itoa(HP.sIP[a-1].get_fUse(),strReturn);ADD_WEBDELIM(strReturn) ;continue;
               }
 
              if (strstr(str,"set_sensorRuleIP"))    // Удаленные датчики - УСТАНОВИТЬ использование усреднение
               {
                // первое число (имя удаленного датчика)
-               if ((x+1)==NULL)              {strcat(strReturn,"E21&");continue;}
-               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22&");continue;}  // если возвращен 0 то ошибка преобразования
-               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23&");continue;}  // проверка диапазона номеров датчиков
+               if ((x+1)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
+               if ((a=atoi(x+1))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
+               if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
                
-               if (strbuf==NULL)             {strcat(strReturn,"E21&");continue;}  
+               if (strbuf==NULL)             {strcat(strReturn,"E21" WEBDELIM);continue;}
                b=atoi(strbuf);
-               if ((b<0)||(b>1))             {strcat(strReturn,"E24&");continue;}  //  проверка диапазона
+               if ((b<0)||(b>1))             {strcat(strReturn,"E24" WEBDELIM);continue;}  //  проверка диапазона
           
                if (b==1) HP.sIP[a-1].set_fRule(true); else HP.sIP[a-1].set_fRule(false);
-               _itoa(HP.sIP[a-1].get_fRule(),strReturn);strcat(strReturn,"&") ;continue;  
+               _itoa(HP.sIP[a-1].get_fRule(),strReturn);ADD_WEBDELIM(strReturn) ;continue;
               }              
          #endif //  #ifdef SENSOR_IP  
 
        //////////////////////////////////////////// массивы датчиков ////////////////////////////////////////////////
 
-       if(pm==ATOF_ERROR) { strcat(strReturn,"E04");strcat(strReturn,"&");continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
+       if(pm==ATOF_ERROR) { strcat(strReturn,"E04");ADD_WEBDELIM(strReturn);continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
 
        { // Массивы датчиков
     	   int16_t p = -1;
@@ -1831,26 +1854,26 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if(p==-1)  {for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=200+i; break;}} // Поиск среди имен смещение 200
     	   if(p==-1)  {for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=300+i; break;}} // Частотные датчики смещение 300
     	   if(p==-1)  {for(i=0;i<RNUMBER;i++) if(strcmp(x,HP.dRelay[i].get_name())==0) {p=400+i; break;}} // Реле
-    	   if(p==-1)  { strcat(strReturn,"E02");strcat(strReturn,"&");  continue; }  // Не верный параметр
+    	   if(p==-1)  { strcat(strReturn,"E02");ADD_WEBDELIM(strReturn);  continue; }  // Не верный параметр
 
     	   //     x[0]=0;                                                                        // Обрезаем строку до скобки (
     	   // Все готово к разбору имен функций c параметром
     	   // 1. Датчики температуры смещение param 0
     	   if (strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
     	   {
-    		   if(p >= TNUMBER)  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   if(p >= TNUMBER)  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
     		   else  // параметр верный
     		   {
     			   if (strcmp(str,"get_Temp")==0)              // Функция get_Temp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_rawTemp")==0)           // Функция get_RawTemp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if(strcmp(str, "get_fullTemp") == 0)         // Функция get_FulTemp
     			   {
     				   if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)         // Если датчик есть в конфигурации то выводим значение
@@ -1865,10 +1888,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
     						   strcat(strReturn, "]");
     					   }
     					 #else
-    					   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    					   if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
+    					   else _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
     					 #endif
     				   } else strcat(strReturn, "-");             // Датчика нет ставим прочерк
-    				   strcat(strReturn, "&");
+    				   ADD_WEBDELIM(strReturn);
     				   continue;
     			   }
 
@@ -1876,78 +1900,81 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   { if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
     				   _ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100.0,1);
     			   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_maxTemp")==0)           // Функция get_maxTemp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     				   _ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100.0,1);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
 
     			   if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
     			   {
     				   x_get_aTemp:
 					   strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
-					   strcat(strReturn, "&"); continue;
+					   ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&"); continue; }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
-    			   { _itoa(HP.sTemp[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sTemp[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
-    			   { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
     			   {
     				   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
-    			   if(strcmp(str, "get_noteTemp") == 0)           // Функция get_noteTemp
+    			   if(strncmp(str, "get_nTemp", 9) == 0)           // Функция get_nTemp, если радиодатчик: добавляется уровень сигнала, если get_nTemp2 - +напряжение батарейки
     			   {
     				   strcat(strReturn, HP.sTemp[p].get_note());
 					#ifdef RADIO_SENSORS
     				   if(HP.sTemp[p].get_fRadio()) {
     					   i = HP.sTemp[p].get_radio_received_idx(HP.sTemp[p].get_address());
-    					   if(i >= 0) m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.1fV %d]", (float)radio_received[i].battery / 10, radio_received[i].RSSI / 24);
+    					   if(i >= 0) {
+    						   if(str[9] == '2') m_snprintf(strReturn + m_strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10);
+    						   m_snprintf(strReturn + m_strlen(strReturn), 20, " ᛉ%d", Radio_RSSI_to_Level(radio_received[i].RSSI));
+    					   }
     				   }
 					#endif
-    				   strcat(strReturn, "&"); continue;
+    				   ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if(strcmp(str, "get_bTemp") == 0)           // Функция get_noteTemp
     			   {
     				   if(HP.sTemp[p].get_fAddress()) _itoa(HP.sTemp[p].get_bus() + 1, strReturn); else strcat(strReturn, "-");
-    				   strcat(strReturn, "&"); continue;
+    				   ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if(strncmp(str, "get_fTemp", 9)==0){  // get_flagTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика
     				   _itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
-    				   strcat(strReturn,"&");  continue;
+    				   ADD_WEBDELIM(strReturn);  continue;
     			   }
 
     			   // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
     			   { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); strcat(strReturn,"&");  continue;  }
-    			   else { strcat(strReturn,"E05&");  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); ADD_WEBDELIM(strReturn);  continue;  }
+    			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
     			   { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E05&");  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
     			   if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
     				   i = str[9] - '0' - 1 + fTEMP_ignory_errors;
     				   HP.sTemp[p].set_setup_flag(i, int(pm));
     				   _itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
-    				   strcat(strReturn, "&"); continue;
+    				   ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   /*
@@ -1957,7 +1984,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
                    else if (p==5)  {HP.set_TempTargetCO(pm*100+0.005); }
                      else if (p==6)  {HP.set_TempTargetBoil(pm*100+0.005); }
                        else  strcat(strReturn,"E06");                 // использование имя устанавливаемого параметра «здесь» запрещено
-                         strcat(strReturn,"&");  continue;
+                         ADD_WEBDELIM(strReturn);  continue;
                  }
     			    */
     			   if (strcmp(str,"set_aTemp")==0)        // Функция set_addressTemp
@@ -1968,10 +1995,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
     					   if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
     					   else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
     				   }
-    				   //      strcat(strReturn,int2str(pm)); strcat(strReturn,"&"); continue;}   // вернуть номер
+    				   //      strcat(strReturn,int2str(pm)); ADD_WEBDELIM(strReturn); continue;}   // вернуть номер
     				   goto x_get_aTemp;
     			   }  // вернуть адрес
-    			   else { strcat(strReturn,"E08");strcat(strReturn,"&");   continue;}      // выход за диапазон допустимых номеров, значение не установлено
+    			   else { strcat(strReturn,"E08");ADD_WEBDELIM(strReturn);   continue;}      // выход за диапазон допустимых номеров, значение не установлено
 
     		   }  // end else
     	   } //if ((strstr(str,"Temp")>0)
@@ -1980,7 +2007,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if (strstr(str,"Press"))          // Проверка для запросов содержащих Press
     	   {
     		   p -= 100;                             // Убрать смещение
-    		   if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
     		   else  // параметр верный
     		   {
     			   if (strcmp(str,"get_Press")==0)           // Функция get_Press
@@ -1996,28 +2023,28 @@ void parserGET(char *buf, char *strReturn, int8_t )
 #endif
     			   }
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_adcPress")==0)           // Функция get_adcPress
-    			   { _itoa(HP.sADC[p].get_lastADC(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sADC[p].get_lastADC(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_minPress")==0)           // Функция get_minPress
     			   { if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     				   x_get_minPress: _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2);
     			   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_maxPress")==0)           // Функция get_maxPress
     			   { if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
     				   x_get_maxPress: _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2);
     			   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_zeroPress")==0)           // Функция get_zeroTPress
-    			   { _itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sADC[p].get_zeroPress(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_transPress")==0)           // Функция get_transTPress
-    			   { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue; }
+    			   { _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
     			   {
@@ -2029,49 +2056,49 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   {
     					   strcat(strReturn,"AD"); _itoa(HP.sADC[p].get_pinA(),strReturn);
     				   }
-    				   strcat(strReturn,"&"); continue;
+    				   ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if (strcmp(str,"get_testPress")==0)           // Функция get_testPress
-    			   { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
+    			   { _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_errcodePress")==0)           // Функция get_errcodePress
-    			   { _itoa(HP.sADC[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sADC[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_presentPress")==0)           // Функция get_presentPress
     			   {
     				   if (HP.sADC[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_notePress")==0)           // Функция get_notePress
-    			   { strcat(strReturn,HP.sADC[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,HP.sADC[p].get_note()); ADD_WEBDELIM(strReturn); continue; }
 
     			   // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
 
     			   if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
     			   { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
-    			   {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E05" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if(strcmp(str, "set_minPress") == 0) {
     				   if(HP.sADC[p].set_minPress(pm * 100 + 0.005) == OK) goto x_get_minPress;
-    				   else { strcat(strReturn, "E05&");  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    				   else { strcat(strReturn, "E05" WEBDELIM);  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if(strcmp(str, "set_maxPress") == 0) {
     				   if(HP.sADC[p].set_maxPress(pm * 100 + 0.005) == OK) goto x_get_maxPress;
-    				   else {  strcat(strReturn, "E05&"); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    				   else {  strcat(strReturn, "E05" WEBDELIM); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
     			   if (strcmp(str,"set_transPress")==0)           // Функция set_transPress float
     			   { if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
-    			   {_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); strcat(strReturn,"&"); continue;}
-    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   {_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); ADD_WEBDELIM(strReturn); continue;}
+    			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
     			   if (strcmp(str,"set_zeroPress")==0)           // Функция set_zeroTPress
     			   { if (HP.sADC[p].set_zeroPress((int16_t)pm)==OK)    // Установить значение
-    			   {_itoa(HP.sADC[p].get_zeroPress(),strReturn); strcat(strReturn,"&"); continue;}
-    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   {_itoa(HP.sADC[p].get_zeroPress(),strReturn); ADD_WEBDELIM(strReturn); continue;}
+    			   else { strcat(strReturn,"E05" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
     		   }  // end else
@@ -2082,7 +2109,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if (strstr(str,"Input"))          // Проверка для запросов содержащих Input
     	   {
     		   p -= 200;
-    		   if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
     		   else  // параметр верный
     		   {
     			   if (strcmp(str,"get_Input")==0)           // Функция get_Input
@@ -2090,33 +2117,33 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   if (HP.sInput[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     				   { if (HP.sInput[p].get_Input()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_presentInput")==0)           // Функция get_presentInput
     			   {
     				   if (HP.sInput[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
-    			   { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,HP.sInput[p].get_note()); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_testInput")==0)           // Функция get_testInput
     			   {
     				   if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
 
     			   if (strcmp(str,"get_alarmInput")==0)           // Функция get_alarmInput
     			   {
     				   if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_errcodeInput")==0)           // Функция get_errcodeInput
-    			   { _itoa(HP.sInput[p].get_lastErr(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sInput[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_pinInput")==0)           // Функция get_pinInput
     			   { strcat(strReturn,"D"); _itoa(HP.sInput[p].get_pinD(),strReturn);
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_typeInput")==0)           // Функция get_pinInput
     			   { if (HP.sInput[p].get_present()==true)  // датчик есть в кнфигурации
     				   switch((int)HP.sInput[p].get_typeInput())
@@ -2127,22 +2154,22 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   default:strcat(strReturn,"err_type"); break;                  // Ошибка??
     				   }
     			   else strcat(strReturn,"none");                                 // датчик отсутвует
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_noteInput")==0)           // Функция get_noteInput
-    			   { strcat(strReturn,HP.sInput[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,HP.sInput[p].get_note()); ADD_WEBDELIM(strReturn); continue; }
 
 
     			   // ---- SET ----------------- Для датчиков сухой контакт - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_testInput")==0)           // Функция set_testInput
     			   { if (HP.sInput[p].set_testInput((int16_t)pm)==OK)    // Установить значение
-    			   { if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   { if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
     			   if (strcmp(str,"set_alarmInput")==0)           // Функция set_alarmInput
     			   { if (HP.sInput[p].set_alarmInput((int16_t)pm)==OK)    // Установить значение
-    			   { if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E05&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   { if (HP.sInput[p].get_alarmInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E05" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     		   }  // else end
     	   } //if ((strstr(str,"Input")>0)
@@ -2151,7 +2178,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if (strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
     	   {
     		   p -= 300;
-    		   if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
     		   else  // параметр верный
     		   {
     			   if (strcmp(str,"get_Flow")==0)           // Функция get_Flow
@@ -2159,79 +2186,79 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     					   _ftoa(strReturn,(float)HP.sFrequency[p].get_Value()/1000.0,3);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_frFlow")==0)           // Функция get_frFlow
     			   {
     				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     					   _ftoa(strReturn,(float)HP.sFrequency[p].get_Frequency()/1000.0,3);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_minFlow")==0)           // Функция get_minFlow
     			   {
     				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     					   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_kfFlow")==0)           // Функция get_kfFlow
     			   {
     				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     					   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_capacityFlow")==0)           // Функция get_capacityFlow
     			   {
     				   if (HP.sFrequency[p].get_present())        // Если датчик есть в конфигурации то выводим значение
     					   _itoa(HP.sFrequency[p].get_Capacity(),strReturn);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_testFlow")==0)           // Функция get_testFlow
     			   {
     				   if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
     					   _ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3);
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_pinFlow")==0)              // Функция get_pinFlow
     			   { strcat(strReturn,"D"); _itoa(HP.sFrequency[p].get_pinF(),strReturn);
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_errcodeFlow")==0)           // Функция get_errcodeFlow
     			   { _itoa(HP.sFrequency[p].get_lastErr(),strReturn);
-    			   strcat(strReturn,"&"); continue; }
+    			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_noteFlow")==0)               // Функция get_noteFlow
-    			   { strcat(strReturn,HP.sFrequency[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,HP.sFrequency[p].get_note()); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_checkFlow")==0)
-    			   { _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue; }
+    			   { _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   // ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_minFlow")==0) {           // Функция set_testPress
     				   HP.sFrequency[p].set_minValue(pm);
-    				   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); strcat(strReturn,"&"); continue;
+    				   _ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if (strcmp(str,"set_checkFlow")==0) {           // Функция set_testPress
     				   HP.sFrequency[p].set_checkFlow(pm != 0);
-    				   _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); strcat(strReturn,"&"); continue;
+    				   _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); ADD_WEBDELIM(strReturn); continue;
     			   }
     			   if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
     			   { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
-    			   {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E35&"); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E35" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
     			   { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
-    			   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); strcat(strReturn,"&"); continue;
+    			   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); ADD_WEBDELIM(strReturn); continue;
     			   }
     			   if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
     			   {
     				   if (HP.sFrequency[p].set_Capacity(pm)==OK)    // Установить значение
-    				   {  _itoa(HP.sFrequency[p].get_Capacity(),strReturn);  strcat(strReturn,"&"); continue;}
-    				   else { strcat(strReturn,"E35&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    				   {  _itoa(HP.sFrequency[p].get_Capacity(),strReturn);  ADD_WEBDELIM(strReturn); continue;}
+    				   else { strcat(strReturn,"E35" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     		   }  // else end
     	   } //if ((strstr(str,"Flow")>0)
@@ -2240,30 +2267,30 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if (strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
     	   {
     		   p -= 400;
-    		   if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");strcat(strReturn,"&");  continue; }  // Не соответсвие имени функции и параметра
+    		   if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
     		   else  // параметр верный
     		   {
     			   if (strcmp(str,"get_Relay")==0)           // Функция get_relay
     			   {
     				   if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_presentRelay")==0)           // Функция get_presentRelay
     			   {
     				   if (HP.dRelay[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-    				   strcat(strReturn,"&") ;    continue;
+    				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
     			   if (strcmp(str,"get_noteRelay")==0)           // Функция get_noteRelay
-    			   { strcat(strReturn,HP.dRelay[p].get_note()); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,HP.dRelay[p].get_note()); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_pinRelay")==0)           // Функция get_pinRelay
-    			   { strcat(strReturn,"D"); _itoa(HP.dRelay[p].get_pinD(),strReturn); strcat(strReturn,"&"); continue; }
+    			   { strcat(strReturn,"D"); _itoa(HP.dRelay[p].get_pinD(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
     			   // ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
     			   { if (HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual)==OK)    // Установить значение
-    			   { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); strcat(strReturn,"&"); continue; }
-    			   else { strcat(strReturn,"E05&");  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+    			   { if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn); continue; }
+    			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     		   }  // else end
     	   } //if ((strstr(str,"Relay")>0)  5
@@ -2272,15 +2299,15 @@ void parserGET(char *buf, char *strReturn, int8_t )
         // ------------------------ конец разбора -------------------------------------------------
 x_FunctionNotFound:    
        strcat(strReturn,"E01");                             // функция не найдена ошибка
-       strcat(strReturn,"&") ;
+       ADD_WEBDELIM(strReturn) ;
        continue;
        } // 2. Функции с параметром
        
   if (str[0]=='&') {break; } // второй символ & подряд признак конца запроса и мы выходим
   strcat(strReturn,"E01");   // Ошибка нет такой команды
-  strcat(strReturn,"&") ;
+  ADD_WEBDELIM(strReturn) ;
   }
-  strcat(strReturn,"&") ; // двойной знак закрытие посылки
+  ADD_WEBDELIM(strReturn) ; // двойной знак закрытие посылки
 }
 
 // ===============================================================================================================

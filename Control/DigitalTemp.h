@@ -97,15 +97,23 @@ class sensorIP
 #endif
 
 #ifdef RADIO_SENSORS
+#define DEBUG_RADIO
+enum {
+	RS_WAIT_HEADER = 0,
+	RS_WAIT_DATA,
+	RS_SEND_RESPONSE
+};
+uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 struct radio_received_type {
 	uint32_t serial_num;
 	int16_t  Temp;		// Температура в сотых градуса
 	uint8_t  battery;	// в десятых вольта
-	uint8_t  RSSI;		// уровень сигнала
+	uint8_t  RSSI;		// уровень сигнала = -(-120..-10)dBm
 };
 radio_received_type radio_received[RADIO_SENSORS_MAX];
 uint8_t radio_received_num = 0;
-uint32_t radio_hub_serial;
+uint32_t radio_hub_serial = 0;
+#define Radio_RSSI_to_Level(RSSI) (RSSI>100?0:(100-RSSI)/7) // 0..9
 #endif
 
 // класс датчик DS18B20 Температура хранится в сотых градуса в целых значениях

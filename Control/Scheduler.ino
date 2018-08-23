@@ -99,7 +99,7 @@ void 	Scheduler::web_get_param(char *param, char *result)
 		// Возврат: {wd+h};{profile|};... Если профайл -1(255), то вывод ""
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) {
-			strcat(result, "E33&");
+			strcat(result, "E33");
 		} else {
 			uint8_t ptr = Timetable_ptr(cnum);
 			uint8_t max = ptr + sch_data.Timetable[ptr];

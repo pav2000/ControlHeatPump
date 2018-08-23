@@ -144,7 +144,7 @@ void HeatPump::scan_OneWire(char *result_str)
 			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
 			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
 			char *p = result_str + m_strlen(result_str);
-			m_snprintf(p, 32, "%d:RADIO:%.2f:%X:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].Temp / 100.0, radio_received[i].serial_num);
+			m_snprintf(p, 32, "%d:RADIO %.1fV,%d:%.2f:%X:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].battery/10, Radio_RSSI_to_Level(radio_received[i].RSSI), (float)radio_received[i].Temp/100.0, radio_received[i].serial_num);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}
@@ -1646,8 +1646,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
 	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old) && (dRelay[RPUMPBH].get_Relay() || dRelay[RPUMPO].get_Relay())) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
-	{
+	if((!b) && (old) && (dRelay[RPUMPO].get_Relay()
+#ifdef RPUMPBH
+						|| dRelay[RPUMPBH].get_Relay()
+#endif
+	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	}
