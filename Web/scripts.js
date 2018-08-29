@@ -751,7 +751,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												element.innerHTML = element.title.substr(valuevar,1);
 											} else if(element != document.activeElement) {
 												element.innerHTML = values[1];
-												element.value = values[1].replace(/[^-0-9.,]/g, "");
+												element.value = element.type == "number" ? values[1].replace(/[^-0-9.,]/g, "") : values[1];
 											}
 										}
 										if((element = document.getElementById(valueid + "-div1000"))) {
