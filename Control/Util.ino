@@ -786,30 +786,29 @@ void urldecode(char *dst, char *src, uint16_t len)
 {       char a, b;
         uint16_t i=0;
         while (*src) {
-                if ((*src == '%') &&
-                    ((a = src[1]) && (b = src[2])) &&
-                    (isxdigit(a) && isxdigit(b))) {
-                        if (a >= 'a')
-                                a -= 'a'-'A';
-                        if (a >= 'A')
-                                a -= ('A' - 10);
-                        else
-                                a -= '0';
-                        if (b >= 'a')
-                                b -= 'a'-'A';
-                        if (b >= 'A')
-                                b -= ('A' - 10);
-                        else
-                                b -= '0';
-                        *dst++ = 16*a+b; i++;
-                        src+=3;
-                } else if (*src == '+') {
-                        *dst++ = ' '; i++;
-                        src++;
-                } else {
-                        *dst++ = *src++; i++;
-                }
-           if (i >= len-1) break;    // Не забываем про конец строки!
+			if (*src == '%') {
+				a = src[1];
+				b = src[2];
+				if(a >= '0' && a <= '9') a -= '0';
+				else {
+					a &= ~0x20;
+					if(a >= 'A' && a <= 'F') a -= 'A' - 10; else goto xCopyChar;
+				}
+				if(b >= '0' && b <= '9') b -= '0';
+				else {
+					b &= ~0x20;
+					if(b >= 'A' && b <= 'F') b -= 'A' - 10; else goto xCopyChar;
+				}
+				*dst++ = 16*a+b; i++;
+				src+=3;
+			} else if (*src == '+') {
+				*dst++ = ' '; i++;
+				src++;
+			} else {
+xCopyChar:
+				*dst++ = *src++; i++;
+			}
+			if (i >= len-1) break;    // Не забываем про конец строки!
         }
         
        *dst = '\0';  // Добавить конец строки
