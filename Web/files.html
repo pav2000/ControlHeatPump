@@ -36,18 +36,23 @@
 			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
-				<td> 
-					<form name="upload">
-						<input type="file" name="myfile">
+				<td> <form name="upload">
+						<input type="file" name="myfile" >
 						<p><input type="submit" value="Восстановить"></p>
-					</form>
-
-				</td>
+				</form>	</td>
+                        <tr><td><b>Web интерфейса контроллера</b></td></tr>
+                        <tr><td>Выбор файлов для копирования их на SPI eeprom<sup>2</sup><p> </p> </td>
+				<td><form name="upload">
+                                                <input type="file" name="myfile" multiple />
+                                                <p><input type="submit" value="Загрузить"></p>
+				</form></td>
 			</tr>
 		</tbody>
 		</table>
-		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН)
+		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН)<br/>
+		 2. SPI eeprom будет отформатирована, и затем на нее будут записаны все выбранные файлы.<br/>
 	</div>
 </div>
+
 </body>
 </html>

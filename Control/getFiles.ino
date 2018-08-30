@@ -948,9 +948,8 @@ int16_t x;
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcpy(tempBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),tempBuf);
-#endif
               strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));  
-              
+#endif              
         } 
         else {strcpy(tempBuf,"FC absent");  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));}   
 
