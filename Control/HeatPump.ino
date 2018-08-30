@@ -553,6 +553,7 @@ void HeatPump::resetSettingHP()
   Prof.initProfile();                           // Инициализировать профиль по умолчанию
     
   flags = 0;
+  NO_Power = 0;
   Status.modWork=pOFF;;                         // Что сейчас делает ТН (7 стадий)
   Status.State=pOFF_HP;                         // Сотояние ТН - выключен
   Status.ret=pNone;                             // точка выхода алгоритма

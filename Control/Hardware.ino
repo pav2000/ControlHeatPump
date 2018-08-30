@@ -317,7 +317,7 @@ int8_t sensorDiditalInput::Read()
          if(i == 2) Input = in;
      }
  }
- if ((Input==alarmInput) && (type==pALARM))     // Срабатывание аварийного датчика (только его!)
+ if (type == pALARM && Input == alarmInput)     // Срабатывание аварийного датчика (только его!)
      { err=ERR_DINPUT;set_Error(err,name); }    // Сработал датчик АВАРИЯ!!!!
  return err;
 

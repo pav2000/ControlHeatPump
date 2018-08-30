@@ -852,7 +852,10 @@ void vReadSensor(void *)
 		ttime = xTaskGetTickCount();
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-		HP.dSDM.get_readState(0); // Основная группа регистров
+	#ifdef USE_UPS
+		if(!HP.NO_Power)
+	#endif
+		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
 		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 
@@ -895,19 +898,25 @@ void vReadSensor(void *)
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 		//  Опрос состояния инвертора
-		if((HP.dFC.get_present()) && (xTaskGetTickCount() - readFC > FC_TIME_READ)) {
-			readFC = xTaskGetTickCount();
-			HP.dFC.get_readState();
-		}
+	#ifdef USE_UPS
+		if(!HP.NO_Power)
+	#endif
+			if((HP.dFC.get_present()) && (xTaskGetTickCount() - readFC > FC_TIME_READ)) {
+				readFC = xTaskGetTickCount();
+				HP.dFC.get_readState();
+			}
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-		if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
-		{
-			readSDM=xTaskGetTickCount();
-			HP.dSDM.get_readState(2);     // Последняя группа регистров
-		}
+	#ifdef USE_UPS
+		if(!HP.NO_Power)
+	#endif
+			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
+			{
+				readSDM=xTaskGetTickCount();
+				HP.dSDM.get_readState(2);     // Последняя группа регистров
+			}
 #endif
 
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
@@ -984,6 +993,20 @@ void vReadSensor_delay10ms(int16_t msec)
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
+#endif
+#ifdef USE_UPS
+		if(HP.sInput[SPOWER].is_alarm() && !HP.NO_Power) {  // Электричество кончилось
+			HP.NO_Power = 1;
+			if(HP.get_State() != pWAIT_HP && HP.get_State() != pSTOPING_HP) {
+				HP.sendCommand(pWAIT);
+			}
+		} else if(HP.NO_Power) { // Включаемся
+			HP.NO_Power = 0;
+			#ifdef USE_SCHEDULER
+			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
+			#endif
+				HP.sendCommand(pRESUME);
+		}
 #endif
 #ifdef RADIO_SENSORS
 		check_radio_sensors();
@@ -1072,8 +1095,7 @@ void vReadSensor_delay10ms(int16_t msec)
 					 HP.sendCommand(pRESUME);
 				 }
 			 }
-		 }  // Расписание активно
-		 else if (HP.get_State()==pWAIT_HP) HP.sendCommand(pRESUME);   // Если расписание не активно и есть режим ожидания (т.е.изменение флага расписания) надо подать команду старт
+		 }
 #endif
 
 		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!

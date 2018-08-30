@@ -121,7 +121,12 @@ uint8_t Scheduler::web_set_param(char *param, char *val)
 {
 	uint8_t cnum;
 	ifparam(WEB_SCH_On) {
-		if(atoi(val)) sch_data.Flags |= (1<<bScheduler_active); else sch_data.Flags &= ~(1<<bScheduler_active);
+		if(atoi(val)) { // Вкл.
+			sch_data.Flags |= (1<<bScheduler_active);
+		} else { // Выкл.
+			sch_data.Flags &= ~(1<<bScheduler_active);
+			if (HP.get_State() == pWAIT_HP) HP.sendCommand(pRESUME);   // Если расписание не активно и есть режим ожидания (т.е.изменение флага расписания) надо подать команду старт
+		}
 	} else ifparam(WEB_SCH_Active) {
 		cnum = atoi(val);
 		if(cnum >= MAX_CALENDARS) return 1;
