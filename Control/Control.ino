@@ -996,16 +996,19 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif
 #ifdef USE_UPS
 		if(HP.sInput[SPOWER].is_alarm() && !HP.NO_Power) {  // Электричество кончилось
-			HP.NO_Power = 1;
-			if(HP.get_State() != pWAIT_HP && HP.get_State() != pSTOPING_HP) {
+			if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 				HP.sendCommand(pWAIT);
-			}
+				HP.NO_Power = 2;
+			} else HP.NO_Power = 1;
 		} else if(HP.NO_Power) { // Включаемся
-			HP.NO_Power = 0;
 			#ifdef USE_SCHEDULER
 			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
 			#endif
-				HP.sendCommand(pRESUME);
+				if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
+					HP.NO_Power = 0;
+					HP.sendCommand(pRESUME);
+				}
+			HP.NO_Power = 0;
 		}
 #endif
 #ifdef RADIO_SENSORS

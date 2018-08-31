@@ -7,16 +7,15 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 	window.onload = function() {
-	var arr = document.getElementById('links').getElementsByTagName('a'); //var arr = document.links;
-	var chang1 = "http://.*/"; // Точки экранируем
-	chang1 = new RegExp(chang1,"i");
-	for (i=0;i<arr.length;i++){ arr[i].href = arr[i].href.replace(chang1,urlcontrol + '/'); }		
-		document.forms.upload.onsubmit = function() {
-			var input = this.elements.myfile;
-			var file = input.files[0];
-			if (file) { upload(file); }
-			return false;
-		}
+		var arr = document.getElementById('links').getElementsByTagName('a'); //var arr = document.links;
+		var chang1 = "http://.*/"; // Точки экранируем
+		chang1 = new RegExp(chang1,"i");
+		for (i=0;i<arr.length;i++){ arr[i].href = arr[i].href.replace(chang1,urlcontrol + '/'); }
+	}
+	function send_files(id) {
+		var fs = document.getElementById(id).files;
+		for(i = 0; i < fs.length; i++) upload(fs[i]);
+		return false;
 	}
 	</script>
 </head>
@@ -36,21 +35,21 @@
 			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
-				<td> <form name="upload">
-						<input type="file" name="myfile" >
-						<p><input type="submit" value="Восстановить"></p>
-				</form>	</td>
-                        <tr><td><b>Web интерфейса контроллера</b></td></tr>
-                        <tr><td>Выбор файлов для копирования их на SPI eeprom<sup>2</sup><p> </p> </td>
-				<td><form name="upload">
-                                                <input type="file" name="myfile" multiple />
-                                                <p><input type="submit" value="Загрузить"></p>
-				</form></td>
+				<td>
+					<input type="file" id="setup">
+					<p><input type="submit" value="Восстановить" onclick="send_files('setup')"></p>
+				</td>
+				<tr><td><b>Web интерфейса контроллера</b></td></tr>
+				<tr><td>Выбор файлов для копирования их на SPI eeprom<sup>2</sup><p> </p> </td>
+				<td>
+					<input type="file" id="spi" multiple>
+					<p><input type="submit" value="Загрузить" onclick="send_files('spi')"></p>
+				</td>
 			</tr>
 		</tbody>
 		</table>
-		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН)<br/>
-		 2. SPI eeprom будет отформатирована, и затем на нее будут записаны все выбранные файлы.<br/>
+		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН)<br>
+		 2. SPI eeprom будет отформатирована, и затем на нее будут записаны все выбранные файлы.<br>
 	</div>
 </div>
 

@@ -987,6 +987,7 @@ function upload(file) {
 		}
 	};
 	xhr.open("POST", urlcontrol, true);
+	xhr.setRequestHeader('Title', encodeURIComponent(file.name));
 	xhr.send(file);
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;

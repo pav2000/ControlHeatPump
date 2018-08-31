@@ -2211,7 +2211,8 @@ enum TYPE_SENSOR
 
 	#define FORMAT_DATE_STR_CUSTOM
     const char *FORMAT_DATE_STR	 = { "%02d.%02d.%04d" };
-	#define HTTP_TIME_REQUEST
+	#define HTTP_TIME_REQUEST	// Запрос времени по HTTP протоколу с собственного сервера (текстовый файл формата: "<время UTC>;").
+    							// У меня берется с электросчетчика Меркурий 231 АТ через подключенный к нему esp8266 (http://vad-7.blogspot.com/2017/03/mercury231.html)
 	#ifdef HTTP_TIME_REQUEST
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
 	#endif
@@ -2339,7 +2340,7 @@ enum TYPE_SENSOR
       // Описание датчиков
       const char *noteInput[INUMBER] = {
                                          "Датчик высокого давления",      // аварийный
-    		  	  	  	  	  	  	  	 "Датчик наличия 380V"
+    		  	  	  	  	  	  	  	 "Датчик наличия электричества"
     		                           //"Датчик низкого давления",       // аварийный
                                        //"Сигнал ошибки Частотника"        // аварийный
                                        };

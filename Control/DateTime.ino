@@ -94,7 +94,7 @@ boolean set_time_NTP(void)
 						break;
 					}
 				}
-				if(flag > 0) { // Ответ получен
+				if(flag > 0) { // Ответ получен, формат: "<время UTC>;"
 					if(tTCP.read((uint8_t *)&NTP_buffer, sizeof(http_key_ok1)-1) == sizeof(http_key_ok1)-1) {
 						if(memcmp(&NTP_buffer, &http_key_ok1, sizeof(http_key_ok1)-1) == 0) {
 							if(tTCP.read((uint8_t *)&NTP_buffer, 3 + sizeof(http_key_ok2)-1) == 3 + sizeof(http_key_ok2)-1) { // HTTP/
