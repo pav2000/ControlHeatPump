@@ -45,7 +45,10 @@ void HeatPump::initHeatPump()
   
   sADC[PEVA].initSensorADC(PEVA,ADC_SENSOR_PEVA);          // Инициализация аналогово датчика PEVA
   sADC[PCON].initSensorADC(PCON,ADC_SENSOR_PCON);          // Инициализация аналогово датчика TCON
- 
+#ifdef PGEO
+  sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO);			// Инициализация аналогово датчика PGEO
+#endif
+
   for(i=0;i<INUMBER;i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
   for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
   for(i=0;i<RNUMBER;i++) dRelay[i].initRelay(i);           // Инициализация реле
