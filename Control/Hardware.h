@@ -143,6 +143,7 @@ public:
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void  set_testMode(TEST_MODE t){testMode=t;}           // Установить значение текущий режим работы
   boolean get_alarmInput(){return alarmInput;}           // Состояние аварии датчика
+  boolean is_alarm() { return Input == alarmInput; }	// Датчик сработал?
   int8_t  set_alarmInput(int16_t i);                     // Установить Состояние аварии датчика
   inline int8_t  get_pinD(){return pin;}                 // Получить ногу куда прицеплен датчик
   TYPE_SENSOR get_typeInput(){return type;}              // Получить тип датчика

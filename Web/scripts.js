@@ -1,8 +1,8 @@
 /* ver 0.956 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
-//var urlcontrol = 'http://192.168.1.10';
+//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
 
@@ -987,6 +987,7 @@ function upload(file) {
 		}
 	};
 	xhr.open("POST", urlcontrol, true);
+	xhr.setRequestHeader('Title', encodeURIComponent(file.name));
 	xhr.send(file);
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;

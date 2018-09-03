@@ -150,7 +150,7 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                                }
                           case HTTP_POST_: // предвариательный запрос post
                                {
-                                sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: HEAD, OPTIONS, GET, POST\r\nAccess-Control-Allow-Headers: Overwrite, Content-Type, Cache-Control\r\n\r\n");  
+                                sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: HEAD, OPTIONS, GET, POST\r\nAccess-Control-Allow-Headers: Overwrite, Content-Type, Cache-Control, Title\r\n\r\n");
                                 break;
                                }
                          case UNAUTHORIZED:
@@ -2015,12 +2015,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   {
     				   int16_t x=HP.sADC[p].get_Press();
     				   _ftoa(strReturn,(float)x/100.0,2);
-    				   strcat(strReturn," [t:");
-#ifdef EEV_DEF
-    				   _ftoa(strReturn,(float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0,2);strcat(strReturn,"]");
-#else
-    				   strcat(strReturn," -.-]");
-#endif
+    				   if(p < 2) {
+    					   m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0);
+    				   }
     			   }
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }
@@ -2397,6 +2394,7 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 	byte *ptr;
 	int32_t len, full_len=0;
 	// Определение начала данных (поиск HEADER_BIN)
+	//Serial.println(Socket[thread].inPtr);
 	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
 		journal.jprintf("Wrong save file format!\n");
 		return false;

@@ -457,6 +457,7 @@ class HeatPump
     type_optionHP Option;                  // Опции теплового насоса
 
     uint32_t time_Sun_ON;                 // время включение солнечного коллектора
+    uint8_t  NO_Power;					  // Нет питания основных узлов
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
