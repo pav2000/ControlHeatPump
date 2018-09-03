@@ -499,19 +499,19 @@ HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
 if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
-vTaskSuspend(HP.xHandleUpdateCommand);                              // Оставновить задачу разбор очереди комнад
+vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
 if (xTaskCreate(vUpdate,"updateHP",200,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
 HP.mRTOS=HP.mRTOS+64+4*200;//до обрезки стеков было 350
-vTaskSuspend(HP.xHandleUpdate);                                 // Оставновить задачу обновление ТН
+vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 
 #ifdef EEV_DEF
   if (xTaskCreate(vUpdateEEV,"updateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
-  vTaskSuspend(HP.xHandleUpdateEEV);                              // Оставновить задачу обновление EEV
+  vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
 #endif  
 
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion

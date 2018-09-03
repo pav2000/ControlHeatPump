@@ -315,6 +315,10 @@ enum TYPE_SENSOR
     * #define PEVA        0                // Датчик давления испарителя.
     * #define PCON        1                // Датчик давления нагнетания.
     */
+     const char *namePress[] =       {
+                                      "PEVA",
+                                      "PCON"
+                                      };
      // Описание датчиков
      const char *notePress[] = {"Датчик давления испарителя (bar)",
                                 "Датчик давления конденсации (bar)"};
@@ -715,6 +719,10 @@ enum TYPE_SENSOR
      * #define PEVA        0                // Датчик давления испарителя.
      * #define PCON        1                // Датчик давления нагнетания.
      */
+     const char *namePress[] =       {
+                                      "PEVA",
+                                      "PCON"
+                                      };
      // Описание датчиков
      const char *notePress[] = {"Датчик давления испарителя (bar)",
                                 "Датчик давления конденсации (bar)"};
@@ -1192,6 +1200,10 @@ enum TYPE_SENSOR
        * #define PEVA        0                // Датчик давления испарителя.
        * #define PCON        1                // Датчик давления нагнетания.
        */
+       const char *namePress[] =       {
+                                        "PEVA",
+                                        "PCON"
+                                        };
 	    // Описание датчиков
       const char *notePress[] = {"Датчик давления испарителя (bar)",
                                  "Датчик давления конденсации (bar)"};
@@ -1586,6 +1598,10 @@ enum TYPE_SENSOR
        * #define PEVA        0                // Датчик давления испарителя.
        * #define PCON        1                // Датчик давления нагнетания.
        */
+     const char *namePress[] =       {
+                                      "PEVA",
+                                      "PCON"
+                                      };
        // Описание датчиков
        const char *notePress[] = {"Датчик давления испарителя (bar)",
                                   "Датчик давления конденсации (bar)"};
@@ -2057,6 +2073,10 @@ enum TYPE_SENSOR
       * #define PEVA        0                // Датчик давления испарителя.
       * #define PCON        1                // Датчик давления нагнетания.
       */
+       const char *namePress[] =       {
+                                        "PEVA",
+                                        "PCON"
+                                        };
       // Описание датчиков
       const char *notePress[] = {"Датчик давления испарителя (bar)",
                                  "Датчик давления конденсации (bar)"};
@@ -2631,7 +2651,7 @@ enum TYPE_SENSOR
   * #define PCON        1                // Датчик давления конденсатора.
   */
   #define PGEO		2
-  // Описание датчиков
+  // Имена датчиков
   const char *namePress[] = { "PEVA",
 		  	  	  	  	  	  "PCON",
 							  "PGEO"
