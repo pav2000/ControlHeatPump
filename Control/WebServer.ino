@@ -2015,9 +2015,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   {
     				   int16_t x=HP.sADC[p].get_Press();
     				   _ftoa(strReturn,(float)x/100.0,2);
+					#ifdef EEV_DEF
     				   if(p < 2) {
     					   m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0);
     				   }
+					#endif
     			   }
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }

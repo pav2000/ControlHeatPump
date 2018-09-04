@@ -293,12 +293,12 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
         }
         OneWireDrv.select(addr);
 #ifdef ONEWIRE_DS2482_2WAY
-		if((ONEWIRE_2WAY & (1<<bus)) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
+		if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
     	OneWireDrv.write(0x48);  // Записать в чип разрешение на всякий случай
     	_delay(12);
 #ifdef ONEWIRE_DS2482_2WAY
-		if((ONEWIRE_2WAY & (1<<bus)) OneWireDrv.configure(DS2482_CONFIG);
+		if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG);
 #endif
     }
 #endif

@@ -208,49 +208,6 @@ void HeatPump::set_testMode(TEST_MODE b)
     }
 #endif
 
-// Сохраняет структуру настроек: <длина><структура>, считает CRC, возвращает ошибку или OK
-int8_t HeatPump::save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_t &crc)
-{
-	if(size < 128) { // Меньше 128 байт, длина 1 байт, первый бит = 0
-		size <<= 1;
-		if(writeEEPROM_I2C(addr_to++, (uint8_t *)&size, 1)) return error = ERR_SAVE_EEPROM;
-		crc = _crc16(crc, size);
-	} else { // длина 2 байта, первый бит = 1
-		size = (size << 1) | 1;
-		if(writeEEPROM_I2C(addr_to, (uint8_t *)&size, 2)) return error = ERR_SAVE_EEPROM;
-		addr_to += 2;
-		crc = _crc16(crc, size & 0xFF);
-		crc = _crc16(crc, size >> 8);
-	}
-	size >>= 1;
-	if(writeEEPROM_I2C(addr_to, addr_from, size)) {
-		return error = ERR_SAVE_EEPROM;
-	}
-	addr_to += size;
-	while(size--) crc = _crc16(crc, *addr_from++);
-	return OK;
-}
-
-int8_t HeatPump::save_2bytes(uint32_t &addr_to, uint16_t data, uint16_t &crc)
-{
-	if(writeEEPROM_I2C(addr_to, (uint8_t *)&data, 2)) return error = ERR_SAVE_EEPROM;
-	addr_to += 2;
-	crc = _crc16(crc, data & 0xFF);
-	crc = _crc16(crc, data >> 8);
-	return OK;
-}
-
-// memcpy: <size[byte: 1|2]><struct>
-void HeatPump::load_struct(void *to, uint8_t **from, uint16_t to_size)
-{
-	uint16_t size = *((uint16_t *)*from);
-	if((size & 1) == 0) size &= 0xFF; else (*from)++;
-	(*from)++;
-	size >>= 1;
-	if(to != NULL) memcpy(to, *from, size <= to_size ? size : to_size);
-	*from += size;
-}
-
 // РАБОТА с НАСТРОЙКАМИ ТН -----------------------------------------------------
 // Записать настройки в память i2c: <size all><Option><DateTime><Network><message><dFC> <TYPE_sTemp><sTemp[TNUMBER]><TYPE_sADC><sADC[ANUMBER]><TYPE_sInput><sInput[INUMBER]>...<0x0000><CRC16>
 // старотвый адрес I2C_SETTING_EEPROM
@@ -932,6 +889,8 @@ boolean HeatPump::set_optionHP(char *var, float x)
 		   return true;
 	   }
    } else
+   if(strcmp(var,option_SunRegGeo)==0)        { Option.flags = (Option.flags & (1<<fSunRegenerateGeo)) | ((x!=0)<<fSunRegenerateGeo); return true; }else
+   if(strcmp(var,option_SunRegGeoTemp)==0)    { Option.SunRegGeoTemp = x*100; return true; }else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -979,6 +938,8 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 		   return strcat(ret,(char*)(GETBIT(Option.flags, f1Wire2TSngl + bit) ? cOne : cZero));
 	   }
    } else
+   if(strcmp(var,option_SunRegGeo)==0)    	  {return _itoa(GETBIT(Option.flags, fSunRegenerateGeo), ret);}else
+   if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100.0,1); return ret; }else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else     // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {return _itoa(Option.delayStartRes,ret);}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)

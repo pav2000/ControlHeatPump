@@ -899,3 +899,46 @@ char *web_fill_tag_select(char *str, const char *select, uint8_t selected)
 	if(outstr != NULL) *(outstr-1) = '1';
 	return str;
 }
+
+// Сохраняет структуру настроек: <длина><структура>, считает CRC, возвращает ошибку или OK
+int8_t save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_t &crc)
+{
+	if(size < 128) { // Меньше 128 байт, длина 1 байт, первый бит = 0
+		size <<= 1;
+		if(writeEEPROM_I2C(addr_to++, (uint8_t *)&size, 1)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		crc = _crc16(crc, size);
+	} else { // длина 2 байта, первый бит = 1
+		size = (size << 1) | 1;
+		if(writeEEPROM_I2C(addr_to, (uint8_t *)&size, 2)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		addr_to += 2;
+		crc = _crc16(crc, size & 0xFF);
+		crc = _crc16(crc, size >> 8);
+	}
+	size >>= 1;
+	if(writeEEPROM_I2C(addr_to, addr_from, size)) {
+		return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+	}
+	addr_to += size;
+	while(size--) crc = _crc16(crc, *addr_from++);
+	return OK;
+}
+
+int8_t save_2bytes(uint32_t &addr_to, uint16_t data, uint16_t &crc)
+{
+	if(writeEEPROM_I2C(addr_to, (uint8_t *)&data, 2)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+	addr_to += 2;
+	crc = _crc16(crc, data & 0xFF);
+	crc = _crc16(crc, data >> 8);
+	return OK;
+}
+
+// memcpy: <size[byte: 1|2]><struct>
+void load_struct(void *to, uint8_t **from, uint16_t to_size)
+{
+	uint16_t size = *((uint16_t *)*from);
+	if((size & 1) == 0) size &= 0xFF; else (*from)++;
+	(*from)++;
+	size >>= 1;
+	if(to != NULL) memcpy(to, *from, size <= to_size ? size : to_size);
+	*from += size;
+}

@@ -236,6 +236,9 @@ pinMode(21, OUTPUT);
   #ifdef DEMO
      journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
   #endif 
+  #ifdef TEST_BOARD
+     journal.jprintf("\n---> TEST BOARD!!!\n\n");
+  #endif
   journal.jprintf("Vesion firmware: %s\n",VERSION); 
   showID();                                                                  // информация о чипе
   journal.jprintf("Chip ID SAM3X8E: %s\n",getIDchip((char*)Socket[0].inBuf));// информация об серийном номере чипа
@@ -1164,11 +1167,14 @@ void vReadSensor_delay10ms(int16_t msec)
 
 		 // Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
-		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))
+		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.get_State() == pWAIT_HP;
+		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)) || fregen)
 				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
-				if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= HP.sTemp[TEVAING].get_Temp()) { // ON
+				if(fregen) {
+					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();
+				} else if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
+			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAING].get_Temp())) { // ON
 				HP.flags |= (1<<fHP_SunActive);
 				HP.dRelay[RSUN].set_Relay(fR_StatusSun);
 				HP.dRelay[PUMP_OUT].set_Relay(fR_StatusSun);
