@@ -1201,7 +1201,7 @@ uint8_t i;
 // В начале имена совпадающие с именами объектов
  for(i=0;i<TNUMBER;i++) if((strcmp(var, sTemp[i].get_name()) == 0)&&(sTemp[i].Chart.get_present()))            { sTemp[i].Chart.get_PointsStr(100, str); return str;} 
  for(i=0;i<ANUMBER;i++) if((strcmp(var, sADC[i].get_name()) == 0)&&(sADC[i].Chart.get_present()))              { sADC[i].Chart.get_PointsStr(100, str); return str;}    
- for(i=0;i<FNUMBER;i++) if((strcmp(var, sFrequency[i].get_name()) == 0)&&(sFrequency[i].Chart.get_present()))  { sFrequency[i].Chart.get_PointsStr(100, str); return str;}  
+ for(i=0;i<FNUMBER;i++) if((strcmp(var, sFrequency[i].get_name()) == 0)&&(sFrequency[i].Chart.get_present()))  { sFrequency[i].Chart.get_PointsStr(1000, str); return str;}  
 	if(strcmp(var, chart_NONE) == 0) {
 		strcat(str, "");
 	} else
