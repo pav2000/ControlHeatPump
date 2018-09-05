@@ -2189,7 +2189,7 @@ enum TYPE_SENSOR
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
     //#define DEMO                  // Включение демо режима
-	#define TEST_BOARD 				// Тестовая плата!
+//	#define TEST_BOARD 				// Тестовая плата!
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхронник 3 фазы, ЭРВ, РТО, 2 датчика давления"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -2668,9 +2668,9 @@ enum TYPE_SENSOR
   #define ADC_SENSOR_PCON		12		// X31.  датчик давления конденсатора
   #define ADC_SENSOR_PGEO		5		// X16.3 датчик давления геоконтура - желтый, красный "+5V", черный "-".
   // Коэффициент преобразования отсчеты АЦП-давление
-  const float    TRANsADC[ANUMBER]  = {0.373, 1.459, 0.5};
+  const float    TRANsADC[ANUMBER]  = {0.373, 1.459, 0.181};
   // напряжение (отсчеты АЦП) соответсвующее cZero
-  const uint16_t ZEROPRESS[ANUMBER] = {290, 793, 500};
+  const uint16_t ZEROPRESS[ANUMBER] = {290, 793, 70};
 
   const boolean SENSORPRESS[ANUMBER]= {true , true, true};	// Присутствие датчика в конфигурации
   const int16_t MINPRESS[ANUMBER]   = {  30 ,  100,  100};		// минимальные значения давления, в сотых бар
