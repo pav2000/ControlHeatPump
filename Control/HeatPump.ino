@@ -3184,7 +3184,7 @@ switch ((int)get_State())  //TYPE_STATE_HP
          }
         break;   
   case pWAIT_HP:    return (char*)"Ожидание";  break;                     // 4 Ожидание
-  case pERROR_HP:   return (char*)"Ошибка#";    break;                    // 5 Ошибка ТН
+  case pERROR_HP:   return (char*)"Ошибка";    break;                     // 5 Ошибка ТН
   default:          return (char*)"Вн.Ошибка"; break;                     // 6 - Эта ошибка возникать не должна!
   }
   
