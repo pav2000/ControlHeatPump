@@ -3164,6 +3164,12 @@ int8_t HeatPump::runCommand()
 	return error;
 }
 
+// Возвращает 1, если ТН в паузе
+uint8_t HeatPump::is_pause()
+{
+	return ((get_State() == pWORK_HP && (get_modWork() == pOFF || !COMPRESSOR_IS_ON)) || get_State() == pWAIT_HP);
+}
+
 // --------------------------Строковые функции ----------------------------
 const char *strRusPause={"Пауза"};
 const char *strEngPause={"Pause"};
@@ -3192,7 +3198,6 @@ switch ((int)get_State())  //TYPE_STATE_HP
   case pERROR_HP:   return (char*)"Ошибка";    break;                     // 5 Ошибка ТН
   default:          return (char*)"Вн.Ошибка"; break;                     // 6 - Эта ошибка возникать не должна!
   }
-  
 }
 // Получить строку состояния ТН в виде строки АНГЛИСКИЕ буквы
 char *HeatPump::StateToStrEN()

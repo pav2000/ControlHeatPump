@@ -1167,15 +1167,15 @@ void vReadSensor_delay10ms(int16_t msec)
 
 		 // Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
-		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && ((HP.get_State() == pWORK_HP && HP.get_modWork() == pOFF) || HP.get_State() == pWAIT_HP);
-		if(((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)) || fregen)
+		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
+		if(((HP.get_State() == pWORK_HP && !HP.is_pause() && ((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))) || fregen)
 				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
 				if(fregen) {
 					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();
-				} else if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAOUTG].get_Temp()) HP.Sun_OFF();
-			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp())) { // ON
-				if(HP.time_Sun_OFF == 0 || millis() - HP.time_Sun_OFF > SUN_MIN_PAUSE) {
+				} else if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + SUNG_TDELTA) HP.Sun_OFF();
+			} else if(HP.sTemp[TSUN].get_Temp() >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + SUN_TDELTA) {
+				if(HP.time_Sun_OFF == 0 || millis() - HP.time_Sun_OFF > SUN_MIN_PAUSE) { // ON
 					HP.flags |= (1<<fHP_SunActive);
 					HP.dRelay[RSUN].set_Relay(fR_StatusSun);
 					HP.dRelay[PUMP_IN].set_Relay(fR_StatusSun);

@@ -199,6 +199,7 @@ class HeatPump
     int8_t   runCommand();               // Выполнить команду по управлению ТН
     char *get_command_name(TYPE_COMMAND c) { return (char*)hp_commands_names[c < pEND14 ? c : pEND14]; }
     boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
+    uint8_t is_pause();					// Возвращает 1, если ТН в паузе
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
