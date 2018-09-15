@@ -155,7 +155,7 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 	  #ifdef ANALOG_MODBUS
       flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
 	  #endif
-      Chart.init(SENSORPRESS[sensor]);            // инициалазация статистики
+      Chart.init(sensor <= PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
       err=OK;                                     // ошибка датчика (работа)
       Press=0;                                    // давление датчика (обработанная)
       note=(char*)notePress[sensor];              // присвоить наименование датчика

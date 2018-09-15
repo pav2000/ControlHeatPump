@@ -59,11 +59,11 @@
 		</tr>
 		<tr>
 			<td>Целевая температура бойлера °C [5..90]</td>
-			<td><input id="get_boiler-temp_target" type="number" min="5" max="90" step="0.1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
+			<td nowrap><input id="get_boiler-temp_target" type="number" min="5" max="90" step="0.1" value="40"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_TARGET)');"></td>
 		</tr>
 		<tr>
 			<td>Гистерезис целевой температуры °C [1..20]<sup>1</sup></td>
-			<td><input id="get_boiler-dtarget" type="number" min="0" max="20" step="0.1" value="10"><input id="get_boiler-dtarget2" type="submit" value=">"  onclick="setParam('get_Boiler(DTARGET)');"></td>
+			<td nowrap><input id="get_boiler-dtarget" type="number" min="0" max="20" step="0.1" value="10"><input type="submit" value=">" onclick="setParam('get_Boiler(DTARGET)');"></td>
 		</tr>
 		<tr>
 			<td><b>Использование ночного тарифа</b></td>
@@ -71,15 +71,15 @@
 		</tr>
 		<tr>
 			<td>Добавка к целевой температуре по часам C° [-50..50]<sup>2</sup></td>
-			<td><input id="get_boiler-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADT)');"></td>
+			<td nowrap><input id="get_boiler-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADT)');"></td>
 		</tr>
 		<tr>
 			<td>Начальный час добавки к целевой температуре [0..23]</td>
-			<td><input id="get_boiler-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADH)');"></td>
+			<td nowrap><input id="get_boiler-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADH)');"></td>
 		</tr>
 		<tr>
 			<td>Конечный час добавки к целевой температуре [0..23]</td>
-			<td><input id="get_boiler-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADEH)');"></td>
+			<td nowrap><input id="get_boiler-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(ADEH)');"></td>
 		</tr>
 		<tr>
 			<td><b>Встроенный ТЭН</b></td>
@@ -97,34 +97,33 @@
 		</tr>
 		<tr>
 			<td>Температура догрева бойлера (выкл. нагрев ТН и вкл. ТЭН бойлера) °C [0..60]</td>
-			<td>
-				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1" value="0">
-				<input id="get_boiler-temp_rboiler2" type="submit" value=">" onclick="setParam('get_Boiler(TEMP_RBOILER)');">
+			<td nowrap>
+				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_RBOILER)');">
 			</td>
 		</tr>
 		<tr>
 			<td><b>ПИД</b></td>
 			<td></td>
-		</tr>
+		</tr>                                                                                            
 		<tr>
 			<td>Целевая температура подачи °C [30..70]</td>
-			<td><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input id="get_boiler-boil_temp2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
+			<td nowrap><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
 		</tr>
 		<tr>
 			<td>Постоянная интегрирования времени (сек.) [5..300]</td>
-			<td><input id="get_boiler-boil_time" type="number" min="5" max="300" step="1" value="0"><input id="get_boiler-boil_time2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
+			<td nowrap><input id="get_boiler-boil_time" type="number" min="5" max="300" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
 		</tr>
 		<tr>
 			<td>Пропорциональная составляющая [0..100]</td>
-			<td><input id="get_boiler-boil_pro" type="number" min="0" max="100" step="1" value="0"><input id="get_boiler-boil_pro2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_PRO)');"></td>
+			<td nowrap><input id="get_boiler-boil_pro" type="number" min="0" max="100" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_PRO)');"></td>
 		</tr>
 		<tr>
 			<td>Интегральная составляющая [0..20]</td>
-			<td><input id="get_boiler-boil_in" type="number" min="0" max="20" step="1" value="0"><input id="get_boiler-boil_in2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_IN)');"></td>
+			<td nowrap><input id="get_boiler-boil_in" type="number" min="0" max="20" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_IN)');"></td>
 		</tr>
 		<tr>
 			<td>Дифференциальная составляющая [0..10]</td>
-			<td><input id="get_boiler-boil_dif" type="number" min="0" max="10" step="1" value="0"><input id="get_boiler-boil_dif2" type="submit" value=">"  onclick="setParam('get_Boiler(BOIL_DIF)');"></td>
+			<td nowrap><input id="get_boiler-boil_dif" type="number" min="0" max="10" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_DIF)');"></td>
 		</tr>
 		<tr>
 			<td><b>Опции</b></td>
@@ -148,11 +147,11 @@
 		</tr>
 		<tr>
 			<td>Время работы циркуляционного насоса ГВС (мин.) [0...60]<sup>6</sup></td>
-			<td><input id="get_boiler-circul_work" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_work2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_WORK)');"></td>
+			<td nowrap><input id="get_boiler-circul_work" type="number" min="0" max="60" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCUL_WORK)');"></td>
 		</tr>
 		<tr>
 			<td>Пауза между включениями насоса циркуляции (мин.) [0...60]<sup>7</sup></td>
-			<td><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input id="get_boiler-circul_pause2" type="submit" value=">"  onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
+			<td nowrap><input id="get_boiler-circul_pause" type="number" min="0" max="60" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCUL_PAUSE)');"></td>
 		</tr>
 		<tr>
 			<td>При нагреве бойлера сбрасывать "избыточное" тепло<sup>8</sup> </td>
@@ -160,7 +159,7 @@
 		</tr>
 		<tr>
 			<td>Время сброса тепла (сек.) [1..10000]</td>
-			<td><input id="get_boiler-reset_time" type="number" min="1" max="10000" step="1" value=""><input id="get_boiler-reset_time2" type="submit" value=">"  onclick="setParam('get_Boiler(RESET_TIME)');"></td>
+			<td nowrap><input id="get_boiler-reset_time" type="number" min="1" max="10000" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(RESET_TIME)');"></td>
 		</tr>
 		<tr>
 			<td><b>Защиты при работе теплового насоса</b></td>
@@ -168,11 +167,11 @@
 		</tr>
 		<tr>
 			<td>Максимальная температура подачи °C [20..70]</td>
-			<td><input id="get_boiler-temp_max" type="number" min="20" max="70" step="0.1" value="20"><input id="get_boiler-temp_max2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_MAX)');"></td>
+			<td nowrap><input id="get_boiler-temp_max" type="number" min="20" max="70" step="0.1" value="20"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_MAX)');"></td>
 		</tr>
 		<tr>
 			<td>Минимальное время «простоя» компрессора ТН перед включением (мин.) [0..60]</td>
-			<td><input id="get_boiler-pause1" type="number" min="0" max="60" step="1"><input id="get_boiler-pause12" type="submit" value=">"  onclick="setParam('get_Boiler(PAUSE1)');"></td>
+			<td nowrap><input id="get_boiler-pause1" type="number" min="0" max="60" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(PAUSE1)');"></td>
 		</tr>
 	</tbody>
 	</table>

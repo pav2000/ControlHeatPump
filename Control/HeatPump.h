@@ -455,7 +455,8 @@ class HeatPump
     // Настройки опций
     type_optionHP Option;                  // Опции теплового насоса
 
-    uint32_t time_Sun_ON;                 // время включение солнечного коллектора
+    uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
+    uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
 
   private:

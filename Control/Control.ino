@@ -1173,12 +1173,15 @@ void vReadSensor_delay10ms(int16_t msec)
 			if((HP.flags & (1<<fHP_SunActive))) {
 				if(fregen) {
 					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();
-				} else if(HP.time_Sun_ON && rtcSAM3X8.unixtime() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAING].get_Temp()) HP.Sun_OFF();
-			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAING].get_Temp())) { // ON
-				HP.flags |= (1<<fHP_SunActive);
-				HP.dRelay[RSUN].set_Relay(fR_StatusSun);
-				HP.dRelay[PUMP_OUT].set_Relay(fR_StatusSun);
-				HP.time_Sun_ON = rtcSAM3X8.unixtime();
+				} else if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() + SUN_TDELTA < HP.sTemp[TEVAOUTG].get_Temp()) HP.Sun_OFF();
+			} else if(HP.sTemp[TSUN].get_Temp() + SUN_TDELTA >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp())) { // ON
+				if(HP.time_Sun_OFF == 0 || millis() - HP.time_Sun_OFF > SUN_MIN_PAUSE) {
+					HP.flags |= (1<<fHP_SunActive);
+					HP.dRelay[RSUN].set_Relay(fR_StatusSun);
+					HP.dRelay[PUMP_IN].set_Relay(fR_StatusSun);
+					HP.time_Sun_ON = millis();
+					HP.time_Sun_OFF = 0;
+				}
 			}
 		} else HP.Sun_OFF();
 #endif

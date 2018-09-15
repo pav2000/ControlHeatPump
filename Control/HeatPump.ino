@@ -48,6 +48,9 @@ void HeatPump::initHeatPump()
 #ifdef PGEO
   sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO);			// Инициализация аналогово датчика PGEO
 #endif
+#ifdef POUT
+  sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT);			// Инициализация аналогово датчика POUT
+#endif
 
   for(i=0;i<INUMBER;i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
   for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
@@ -562,6 +565,7 @@ void HeatPump::resetSettingHP()
   startSallmonela=0;                            // время начала обеззараживания
   command_completed = 0;
   time_Sun_ON = 0;
+  time_Sun_OFF = 0;
    
   safeNetwork=false;                            // режим safeNetwork
  
@@ -2777,8 +2781,9 @@ void HeatPump::vUpdate()
       #endif
       
           Status.modWork=get_Work();                                         // определяем что делаем
+#ifdef DEBUG_MODWORK
           save_DumpJournal(false);                                           // Вывод строки состояния
-
+#endif
          //  реализуем требуемый режим
           switch ((int)get_modWork())
           {
@@ -3463,9 +3468,10 @@ void HeatPump::Sun_OFF(void)
 #ifdef USE_SUN_COLLECTOR
 	if(flags & (1<<fHP_SunActive)) {
 		dRelay[RSUN].set_Relay(-fR_StatusSun);
-		dRelay[PUMP_OUT].set_Relay(-fR_StatusSun);
+		dRelay[PUMP_IN].set_Relay(-fR_StatusSun);
 		flags &= ~(1<<fHP_SunActive);
 		time_Sun_ON = 0;
+		time_Sun_OFF = millis();
 	}
 #endif
 }
