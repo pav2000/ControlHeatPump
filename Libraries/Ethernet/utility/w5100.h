@@ -17,7 +17,7 @@
 
 //#include "utility/spi_dma.h"
 // ----------- Настройки либы ---------------
-#define SPI_RATE 2       // делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+extern uint8_t SPI_RATE; // делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
 #define SPI_CS 10        // Ножка CS SPI для сети
 
 //#define USE_ARDUINO_SPI_LIBRARY 0   // Стандартный  SPI

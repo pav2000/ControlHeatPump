@@ -231,6 +231,7 @@ void spiSend(const uint8_t* buf, size_t len) {
   uint8_t b = pSpi->SPI_RDR;
 }
 
+/*
 void _switch(uint8_t spiRate) //pav2000
 {
     spiBegin();
@@ -283,4 +284,5 @@ void _switch(uint8_t spiRate) //pav2000
 #endif  // USE_SAM3X_BUS_MATRIX_FIX
 #endif  // USE_SAM3X_DMAC
 }
+*/
 #endif
