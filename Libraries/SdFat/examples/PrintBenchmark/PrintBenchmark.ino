@@ -2,8 +2,9 @@
  * This program is a simple Print benchmark.
  */
 #include <SPI.h>
-#include <SdFat.h>
-#include <FreeStack.h>
+#include "SdFat.h"
+#include "sdios.h"
+#include "FreeStack.h"
 
 // SD chip select pin
 const uint8_t chipSelect = SS;
@@ -25,8 +26,9 @@ ArduinoOutStream cout(Serial);
 //------------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
+  // Wait for USB Serial 
   while (!Serial) {
-    // wait for Leonardo
+    SysCall::yield();
   }
 }
 //------------------------------------------------------------------------------
@@ -35,19 +37,22 @@ void loop() {
   uint32_t minLatency;
   uint32_t totalLatency;
 
-  while (Serial.read() >= 0) {
-  }
-  // pstr stores strings in flash to save RAM
+  // Read any existing Serial data.
+  do {
+    delay(10);
+  } while (Serial.available() && Serial.read() >= 0);
+  // F stores strings in flash to save RAM
   cout << F("Type any character to start\n");
-  while (Serial.read() <= 0) {
+  while (!Serial.available()) {
+    SysCall::yield();
   }
   delay(400);  // catch Due reset problem
 
   cout << F("FreeStack: ") << FreeStack() << endl;
 
-  // initialize the SD card at SPI_FULL_SPEED for best performance.
-  // try SPI_HALF_SPEED if bus errors occur.
-  if (!sd.begin(chipSelect, SPI_FULL_SPEED)) {
+  // Initialize at the highest speed supported by the board that is
+  // not over 50 MHz. Try a lower speed if SPI errors occur.
+  if (!sd.begin(chipSelect, SD_SCK_MHZ(50))) {
     sd.initErrorHalt();
   }
 

@@ -1,17 +1,18 @@
-// Quick hardware test.
+// Quick hardware test for SPI card access.
 //
 #include <SPI.h>
-#include <SdFat.h>
+#include "SdFat.h"
+#include "sdios.h"
 //
 // Set DISABLE_CHIP_SELECT to disable a second SPI device.
 // For example, with the Ethernet shield, set DISABLE_CHIP_SELECT
 // to 10 to disable the Ethernet controller.
 const int8_t DISABLE_CHIP_SELECT = -1;
 //
-// Test with reduced SPI speed for breadboards.
-// Change spiSpeed to SPI_FULL_SPEED for better performance
-// Use SPI_QUARTER_SPEED for even slower SPI bus speed
-const uint8_t spiSpeed = SPI_HALF_SPEED;
+// Test with reduced SPI speed for breadboards.  SD_SCK_MHZ(4) will select 
+// the highest speed supported by the board that is not over 4 MHz.
+// Change SPI_SPEED to SD_SCK_MHZ(50) for best performance.
+#define SPI_SPEED SD_SCK_MHZ(4)
 //------------------------------------------------------------------------------
 // File system object.
 SdFat sd;
@@ -28,7 +29,7 @@ int chipSelect;
 
 void cardOrSpeed() {
   cout << F("Try another SD card or reduce the SPI bus speed.\n");
-  cout << F("Edit spiSpeed in this program to change it.\n");
+  cout << F("Edit SPI_SPEED in this program to change it.\n");
 }
 
 void reformatMsg() {
@@ -39,8 +40,11 @@ void reformatMsg() {
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial) {}  // Wait for Leonardo.
-
+  
+  // Wait for USB Serial 
+  while (!Serial) {
+    SysCall::yield();
+  }
   cout << F("\nSPI pins:\n");
   cout << F("MISO: ") << int(MISO) << endl;
   cout << F("MOSI: ") << int(MOSI) << endl;
@@ -64,8 +68,10 @@ void setup() {
 
 bool firstTry = true;
 void loop() {
-  // read any existing Serial data
-  while (Serial.read() >= 0) {}
+  // Read any existing Serial data.
+  do {
+    delay(10);
+  } while (Serial.available() && Serial.read() >= 0);
 
   if (!firstTry) {
     cout << F("\nRestarting\n");
@@ -73,9 +79,9 @@ void loop() {
   firstTry = false;
 
   cout << F("\nEnter the chip select pin number: ");
-  while (!Serial.available()) {}
-  delay(400);  // catch Due restart problem
-
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
   cin.readline();
   if (cin >> chipSelect) {
     cout << chipSelect << endl;
@@ -93,7 +99,7 @@ void loop() {
     pinMode(DISABLE_CHIP_SELECT, OUTPUT);
     digitalWrite(DISABLE_CHIP_SELECT, HIGH);
   }
-  if (!sd.begin(chipSelect, spiSpeed)) {
+  if (!sd.begin(chipSelect, SPI_SPEED)) {
     if (sd.card()->errorCode()) {
       cout << F(
              "\nSD initialization failed.\n"
@@ -150,8 +156,12 @@ void loop() {
     reformatMsg();
     return;
   }
-  // read any existing Serial data
-  while (Serial.read() >= 0) {}
+  // Read any extra Serial data.
+  do {
+    delay(10);
+  } while (Serial.available() && Serial.read() >= 0);
   cout << F("\nSuccess!  Type any character to restart.\n");
-  while (Serial.read() < 0) {}
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
 }

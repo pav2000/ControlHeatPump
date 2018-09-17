@@ -1,8 +1,9 @@
 // A simple data logger for the Arduino analog pins with optional DS1307
 // uses RTClib from https://github.com/adafruit/RTClib
 #include <SPI.h>
-#include <SdFat.h>
-#include <FreeStack.h>
+#include "SdFat.h"
+#include "sdios.h"
+#include "FreeStack.h"
 
 #define SD_CHIP_SELECT  SS  // SD chip select pin
 #define USE_DS1307       0  // set nonzero to use DS1307 RTC
@@ -65,16 +66,23 @@ ostream& operator << (ostream& os, DateTime& dt) {
 //------------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  while (!Serial) {} // wait for Leonardo
-
+  
+  // Wait for USB Serial.
+  while (!Serial) {
+    SysCall::yield();
+  }
   // F() stores strings in flash to save RAM
   cout << endl << F("FreeStack: ") << FreeStack() << endl;
 
 #if WAIT_TO_START
   cout << F("Type any character to start\n");
-  while (Serial.read() <= 0) {}
-  delay(400);  // catch Due reset problem
-  while (Serial.read() >= 0) {}
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
+  // Discard input.
+  do {
+    delay(10);
+  } while(Serial.available() && Serial.read() >= 0);
 #endif  // WAIT_TO_START
 
 #if USE_DS1307
@@ -90,8 +98,9 @@ void setup() {
   cout  << now << endl;
 #endif  // USE_DS1307
 
-  // initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
-  if (!sd.begin(SD_CHIP_SELECT, SPI_HALF_SPEED)) {
+  // Initialize at the highest speed supported by the board that is
+  // not over 50 MHz. Try a lower speed if SPI errors occur.
+  if (!sd.begin(SD_CHIP_SELECT, SD_SCK_MHZ(50))) {
     sd.initErrorHalt();
   }
 
@@ -184,5 +193,5 @@ void loop() {
   }
   logfile.close();
   cout << F("Done!");
-  while (1);
+  SysCall::halt();
 }

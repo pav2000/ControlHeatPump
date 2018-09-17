@@ -2,12 +2,14 @@
  * Program to test Short File Name character case flags.
  */
 #include <SPI.h>
-#include <SdFat.h>
+#include "SdFat.h"
+
+const uint8_t chipSelect = SS;
 
 SdFat sd;
 
 SdFile file;
-char* name[] = {
+const char* name[] = {
   "low.low", "low.Mix", "low.UP",
   "Mix.low", "Mix.Mix", "Mix.UP",
   "UP.low",  "UP.Mix",  "UP.UP"
@@ -15,10 +17,16 @@ char* name[] = {
 //------------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  while (!Serial) {}  // wait for Leonardo
+  
+  // Wait for USB Serial 
+  while (!Serial) {
+    SysCall::yield();
+  }
   Serial.println("type any character to start");
-  while (Serial.read() < 0) {}
-  if (!sd.begin()) {
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
+  if (!sd.begin(chipSelect, SD_SCK_MHZ(50))) {
     Serial.println("begin failed");
     return;
   }

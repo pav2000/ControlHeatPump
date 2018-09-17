@@ -1,21 +1,26 @@
-/* Arduino SdFat Library
- * Copyright (C) 2012 by William Greiman
+/**
+ * Copyright (c) 2011-2018 Bill Greiman
+ * This file is part of the SdFat library for SD memory cards.
  *
- * This file is part of the Arduino SdFat Library
+ * MIT License
  *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 /**
  * \file
@@ -23,10 +28,17 @@
  */
 #ifndef SdFatConfig_h
 #define SdFatConfig_h
+#include <Arduino.h>
 #include <stdint.h>
 #ifdef __AVR__
 #include <avr/io.h>
 #endif  // __AVR__
+//------------------------------------------------------------------------------
+/**
+ * Set INCLUDE_SDIOS nonzero to include sdios.h in SdFat.h.
+ * sdios.h provides C++ style IO Streams.
+ */
+#define INCLUDE_SDIOS 0
 //------------------------------------------------------------------------------
 /**
  * Set USE_LONG_FILE_NAMES nonzero to use long file names (LFN).
@@ -49,67 +61,40 @@
 #define USE_LONG_FILE_NAMES 1
 //------------------------------------------------------------------------------
 /**
- * Set ARDUINO_FILE_USES_STREAM nonzero to use Stream as the base class
- * for the Arduino File class.  If ARDUINO_FILE_USES_STREAM is zero, Print
- * will be used as the base class for the Arduino File class.
+ * If the symbol ENABLE_EXTENDED_TRANSFER_CLASS is nonzero, the class SdFatEX
+ * will be defined. If the symbol ENABLE_SOFTWARE_SPI_CLASS is also nonzero,
+ * the class SdFatSoftSpiEX will be defined.
  *
- * You can save some flash if you do not use Stream input functions such as
- * find(), findUntil(), readBytesUntil(), readString(), readStringUntil(),
- * parseInt(), and parseFloat().
+ * These classes used extended multi-block SD I/O for better performance.
+ * the SPI bus may not be shared with other devices in this mode.
  */
-#define ARDUINO_FILE_USES_STREAM 1
+#define ENABLE_EXTENDED_TRANSFER_CLASS 0
+//-----------------------------------------------------------------------------
+/**
+ * If the symbol USE_STANDARD_SPI_LIBRARY is nonzero, the classes SdFat and
+ * SdFatEX use the standard Arduino SPI.h library. If USE_STANDARD_SPI_LIBRARY
+ * is zero, an optimized custom SPI driver is used if it exists.
+ */
+#define USE_STANDARD_SPI_LIBRARY 0
+//-----------------------------------------------------------------------------
+/**
+ * If the symbol ENABLE_SOFTWARE_SPI_CLASS is nonzero, the class SdFatSoftSpi
+ * will be defined. If ENABLE_EXTENDED_TRANSFER_CLASS is also nonzero,
+ * the class SdFatSoftSpiEX will be defined.
+ */
+#define ENABLE_SOFTWARE_SPI_CLASS 0
 //------------------------------------------------------------------------------
 /**
- * Determine the default SPI configuration.
+ * If CHECK_FLASH_PROGRAMMING is zero, overlap of single sector flash 
+ * programming and other operations will be allowed for faster write
+ * performance.
+ *
+ * Some cards will not sleep in low power mode unless CHECK_FLASH_PROGRAMMING
+ * is non-zero.
  */
-#if defined(__AVR__)\
-    || defined(__SAM3X8E__) || defined(__SAM3X8H__)\
-    || (defined(__arm__) && defined(CORE_TEENSY))\
-    || defined(__STM32F1__)\
-    || defined(DOXYGEN)
-// Use custom fast implementation.
-#define SD_HAS_CUSTOM_SPI 1
-#else  // SD_HAS_CUSTOM_SPI
-// Use standard SPI library.
-#define SD_HAS_CUSTOM_SPI 0
-#endif  // SD_HAS_CUSTOM_SPI
+#define CHECK_FLASH_PROGRAMMING 1
 //------------------------------------------------------------------------------
 /**
- * The symbol SD_SPI_CONFIGURATION defines SPI access to the SD card.
- *
- * IF SD_SPI_CONFIGUTATION is define to be zero, only the SdFat class
- * is define and SdFat uses a fast custom SPI implementation if avaiable.
- * If SD_HAS_CUSTOM_SPI is zero, the standard SPI library is used.
- *
- * If SD_SPI_CONFIGURATION is define to be one, only the SdFat class is
- * define and SdFat uses the standard Arduino SPI.h library.
- *
- * If SD_SPI_CONFIGURATION is define to be two, only the SdFat class is
- * define and SdFat uses software SPI on the pins defined below.
- *
- * If SD_SPI_CONFIGURATION is define to be three, the three classes, SdFat,
- * SdFatLibSpi, and SdFatSoftSpi are defined.  SdFat uses the fast
- * custom SPI implementation. SdFatLibSpi uses the standard Arduino SPI
- * library.  SdFatSoftSpi is a template class that uses Software SPI. The
- * template parameters define the software SPI pins.  See the ThreeCard
- * example for simultaneous use of all three classes.
- */
-#define SD_SPI_CONFIGURATION 0
-//------------------------------------------------------------------------------
-/**
- * If SD_SPI_CONFIGURATION is defined to be two, these definitions
- * will define the pins used for software SPI.
- *
- * The default definition allows Uno shields to be used on other boards.
- */
-/** Software SPI Master Out Slave In pin */
-uint8_t const SOFT_SPI_MOSI_PIN = 11;
-/** Software SPI Master In Slave Out pin */
-uint8_t const SOFT_SPI_MISO_PIN = 12;
-/** Software SPI Clock pin */
-uint8_t const SOFT_SPI_SCK_PIN = 13;
-//------------------------------------------------------------------------------
-/** 
  * Set MAINTAIN_FREE_CLUSTER_COUNT nonzero to keep the count of free clusters
  * updated.  This will increase the speed of the freeClusterCount() call
  * after the first call.  Extra flash will be required.
@@ -119,31 +104,26 @@ uint8_t const SOFT_SPI_SCK_PIN = 13;
 /**
  * To enable SD card CRC checking set USE_SD_CRC nonzero.
  *
- * Set USE_SD_CRC to 1 to use a smaller slower CRC-CCITT function.
+ * Set USE_SD_CRC to 1 to use a smaller CRC-CCITT function.  This function
+ * is slower for AVR but may be fast for ARM and other processors.
  *
- * Set USE_SD_CRC to 2 to used a larger faster table driven CRC-CCITT function.
+ * Set USE_SD_CRC to 2 to used a larger table driven CRC-CCITT function.  This
+ * function is faster for AVR but may be slower for ARM and other processors.
  */
-#define USE_SD_CRC 0
+#define USE_SD_CRC 1
 //------------------------------------------------------------------------------
 /**
- * Set ENABLE_SPI_TRANSACTIONS nonzero to enable the SPI transaction feature
- * of the standard Arduino SPI library.  You must include SPI.h in your
- * programs when ENABLE_SPI_TRANSACTIONS is nonzero.
- */
-#define ENABLE_SPI_TRANSACTIONS 0
-//------------------------------------------------------------------------------
-/**
- * Set ENABLE_SPI_YIELD nonzero to enable release of the SPI bus during
- * SD card busy waits.
+ * Handle Watchdog Timer for WiFi modules.
  *
- * This will allow interrupt routines to access the SPI bus if
- * ENABLE_SPI_TRANSACTIONS is nonzero.
- *
- * Setting ENABLE_SPI_YIELD will introduce some extra overhead and will
- * slightly slow transfer rates.  A few older SD cards may fail when
- * ENABLE_SPI_YIELD is nonzero.
+ * Yield will be called before accessing the SPI bus if it has been more
+ * than WDT_YIELD_TIME_MICROS microseconds since the last yield call by SdFat.
  */
-#define ENABLE_SPI_YIELD 0
+#if defined(PLATFORM_ID) || defined(ESP8266)
+// If Particle device or ESP8266 call yield.
+#define WDT_YIELD_TIME_MICROS 100000
+#else
+#define WDT_YIELD_TIME_MICROS 0
+#endif
 //------------------------------------------------------------------------------
 /**
  * Set FAT12_SUPPORT nonzero to enable use if FAT12 volumes.
@@ -178,16 +158,6 @@ uint8_t const SOFT_SPI_SCK_PIN = 13;
 #define ENDL_CALLS_FLUSH 0
 //------------------------------------------------------------------------------
 /**
- * SPI SCK divisor for SD initialization commands.
- * or greater
- */
-#ifdef __AVR__
-const uint8_t SPI_SCK_INIT_DIVISOR = 64;
-#else
-const uint8_t SPI_SCK_INIT_DIVISOR = 128;
-#endif
-//------------------------------------------------------------------------------
-/**
  * Set USE_SEPARATE_FAT_CACHE nonzero to use a second 512 byte cache
  * for FAT table entries.  This improves performance for large writes
  * that are not a multiple of 512 bytes.
@@ -206,6 +176,39 @@ const uint8_t SPI_SCK_INIT_DIVISOR = 128;
 #if defined(RAMEND) && RAMEND < 3000
 #define USE_MULTI_BLOCK_IO 0
 #else  // RAMEND
-#define USE_MULTI_BLOCK_IO 1
+#define USE_MULTI_BLOCK_IO 0 // 1
 #endif  // RAMEND
+//-----------------------------------------------------------------------------
+/** Enable SDIO driver if available. */
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#define ENABLE_SDIO_CLASS 1
+#define ENABLE_SDIOEX_CLASS 1
+#else  // ENABLE_SDIO_CLASS
+#define ENABLE_SDIO_CLASS 0
+#endif  // ENABLE_SDIO_CLASS
+//------------------------------------------------------------------------------
+/**
+ * Determine the default SPI configuration.
+ */
+#if defined(__STM32F1__) || defined(__STM32F4__) 
+// has multiple SPI ports
+#define SD_HAS_CUSTOM_SPI 2
+#elif defined(__AVR__)\
+  || defined(__SAM3X8E__) || defined(__SAM3X8H__)\
+  || (defined(__arm__) && defined(CORE_TEENSY))\
+  || defined(ESP8266)
+#define SD_HAS_CUSTOM_SPI 1
+#else  // SD_HAS_CUSTOM_SPI
+// Use standard SPI library.
+#define SD_HAS_CUSTOM_SPI 0
+#endif  // SD_HAS_CUSTOM_SPI
+//------------------------------------------------------------------------------
+/**
+ * Check if API to select HW SPI port is needed.
+ */
+#if (USE_STANDARD_SPI_LIBRARY || SD_HAS_CUSTOM_SPI < 2)
+#define IMPLEMENT_SPI_PORT_SELECTION 0
+#else  // USE_STANDARD_SPI_LIBRARY
+#define IMPLEMENT_SPI_PORT_SELECTION 1
+#endif  // USE_STANDARD_SPI_LIBRARY
 #endif  // SdFatConfig_h
