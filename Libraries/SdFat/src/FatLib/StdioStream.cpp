@@ -1,21 +1,26 @@
-/* Arduino RamDisk Library
- * Copyright (C) 2014 by William Greiman
+/**
+ * Copyright (c) 2011-2018 Bill Greiman
+ * This file is part of the SdFat library for SD memory cards.
  *
- * This file is part of the Arduino RamDisk Library
+ * MIT License
  *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino RamDisk Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 #include "StdioStream.h"
 #include "FmtNumber.h"
@@ -149,16 +154,6 @@ int StdioStream::fputs(const char* str) {
   return fwrite(str, 1, len) == len ? len : EOF;
 }
 //------------------------------------------------------------------------------
-int StdioStream::fputs_P(PGM_P str) {
-  PGM_P bgn = str;
-  for (char c; (c = pgm_read_byte(str)); str++) {
-    if (putc(c) < 0) {
-      return EOF;
-    }
-  }
-  return str - bgn;
-}
-//------------------------------------------------------------------------------
 size_t StdioStream::fread(void* ptr, size_t size, size_t count) {
   uint8_t* dst = reinterpret_cast<uint8_t*>(ptr);
   size_t total = size*count;
@@ -281,8 +276,9 @@ int StdioStream::write(const void* buf, size_t count) {
   return count;
 }
 //------------------------------------------------------------------------------
+#if (defined(ARDUINO) && ENABLE_ARDUINO_FEATURES) || defined(DOXYGEN)
 size_t StdioStream::print(const __FlashStringHelper *str) {
-  const char *p = (const char PROGMEM *)str;
+  const char *p = (const char*)str;
   uint8_t c;
   while ((c = pgm_read_byte(p))) {
     if (putc(c) < 0) {
@@ -290,89 +286,14 @@ size_t StdioStream::print(const __FlashStringHelper *str) {
     }
     p++;
   }
-  return p - (const char PROGMEM *)str;
+  return p - (const char*)str;
 }
+#endif  // (defined(ARDUINO) && ENABLE_ARDUINO_FEATURES) || defined(DOXYGEN)
 //------------------------------------------------------------------------------
 int StdioStream::printDec(float value, uint8_t prec) {
-#define FLOAT_NEW_WAY
-#ifdef FLOAT_NEW_WAY
   char buf[24];
   char *ptr = fmtFloat(value, buf + sizeof(buf), prec);
-  // return fputs(ptr);
-  // uint8_t len = buf + sizeof(buf) - ptr;
   return write(ptr, buf + sizeof(buf) - ptr);
-#else
-  char* ptr;
-  uint8_t rtn = 0;
-  uint8_t sign = 0;
-  if (value < 0) {
-    value = -value;
-    sign = '-';
-  }
-  // check for NaN INF OVF
-  if (isnan(value)) {
-    if (fputs_P(PSTR("nan")) < 0) {
-      return -1;
-    }
-    rtn += 3;
-  } else if (isinf(value)) {
-    if (fputs_P(PSTR("inf")) < 0) {
-      return -1;
-    }
-    rtn += 3;
-  } else if (value > 4294967040.0) {
-    if (fputs_P(PSTR("ovf")) < 0) {
-      return -1;
-    }
-    rtn += 3;
-  } else {
-    if (sign) {
-      if (putc(sign) < 0) {
-        return -1;
-      }
-      rtn++;
-    }
-    if (prec > 9) {
-      prec = 9;
-    }
-
-    /*
-       uint32_t s = 1;
-       for (uint8_t i = 0; i < prec; i++) {
-         // s *= 10;
-         s = ((s << 2) + s) << 1;
-       }
-       // round value
-       value += 0.5/s;
-     */
-    value += scale10(0.5, -prec);
-    uint32_t whole = value;
-    int np;
-    if ((np = printDec(whole)) < 0) {
-      return -1;
-    }
-    rtn += np;
-    if (prec) {
-      if (putc('.') < 0) {
-        return -1;
-      }
-      char* str = fmtSpace(prec);
-      if (!str) {
-        return -1;
-      }
-      char* tmp = str - prec;
-
-      //  uint32_t fraction = s*(value - whole);
-      uint32_t fraction =  scale10(value - whole, prec);
-      ptr = fmtDec(fraction, str);
-      while (ptr > tmp) {
-        *--ptr = '0';
-      }
-      rtn += prec + 1;
-    }
-  }
-  return rtn;
-#endif
 }
 //------------------------------------------------------------------------------
 int StdioStream::printDec(signed char n) {
@@ -532,7 +453,7 @@ int StdioStream::fillGet() {
 // private
 bool StdioStream::fillBuf() {
   if (!(m_flags &
-        F_SRD)) {  /////////////check for F_ERR and F_EOF ??/////////////////
+        F_SRD)) {  // check for F_ERR and F_EOF ??/////////////////
     if (!(m_flags & F_SRW)) {
       m_flags |= F_ERR;
       return false;
@@ -560,7 +481,7 @@ bool StdioStream::fillBuf() {
 // private
 bool StdioStream::flushBuf() {
   if (!(m_flags &
-        F_SWR)) {  /////////////////check for F_ERR ??////////////////////////
+        F_SWR)) {  // check for F_ERR ??////////////////////////
     if (!(m_flags & F_SRW)) {
       m_flags |= F_ERR;
       return false;

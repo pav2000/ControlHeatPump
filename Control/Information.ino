@@ -1065,7 +1065,7 @@ int8_t Profile::set_list( int8_t num)
     adr=I2C_PROFILE_EEPROM+ get_sizeProfile()*i;                                                // вычислить адрес начала профиля
     if (readEEPROM_I2C(adr, (byte*)&xx, sizeof(magic))) { continue; }                                 // прочитать заголовок
     if (xx!=0xaa)  {  continue; }                                                               // Заголовок не верен, данных нет, пропускаем чтение профиля это не ошибка
-    Serial.print("xx==0xaa ");Serial.println(i);
+    //Serial.print("xx==0xaa ");Serial.println(i);
     adr=adr+sizeof(magic)+sizeof(crc16);                                                        // вычислить адрес начала данных
     if (readEEPROM_I2C(adr, (byte*)&temp_prof, sizeof(temp_prof))) { continue; }                          // прочитать данные
     if ((GETBIT(temp_prof.flags,fEnabled))&&(temp_prof.id==i))                                            // Если разрешено использовать профиль  в  списке, и считанный номер совпадает с текущим (это должно быть всегда)

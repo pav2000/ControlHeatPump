@@ -1,0 +1,49 @@
+SPI clock 21 MHz, DMA mode
+
+SD old 2Gb, single block
+
+crc 2, new lib
+SD card test: 2.jpg - read 2445312 bytes, 305625 b/sec
+SD card test: 2.jpg - read 2445312 bytes, 305625 b/sec
+
+crc 1, new lib
+SD card test: 2.jpg - read 2494464 bytes, 311379 b/sec
+SD card test: 2.jpg - read 2494464 bytes, 311379 b/sec
+
+crc 0, new lib
+SD card test: 2.jpg - read 2795520 bytes, 349265 b/sec
+SD card test: 2.jpg - read 2783232 bytes, 347513 b/sec
+
+--------------------------
+micro SD 8Gb
+
+old lib, crc 1, single block
+SD card test: 2.jpg - read 4155781 bytes, 645508 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 651274 b/sec
+
+old lib, crc 1, multi block
+SD card test: 2.jpg - read 4155781 bytes, 1217632 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1224449 b/sec
+
+old lib, crc 0, multi block
+SD card test: 2.jpg - read 4155781 bytes, 1939235 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1940140 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1941046 b/sec
+
+
+new lib, crc 1, single block
+SD card test: 2.jpg - read 4155781 bytes, 643907 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 644207 b/sec
+
+new lib, crc 1, multi block
+SD card test: 2.jpg - read 4155781 bytes, 1122577 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1133600 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1116545 b/sec
+
+new lib, crc 0, single block
+SD card test: 2.jpg - read 4155781 bytes, 814699 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 815338 b/sec
+
+new lib, crc 0, multi block
+SD card test: 2.jpg - read 4155781 bytes, 1983666 b/sec
+SD card test: 2.jpg - read 4155781 bytes, 1984613 b/sec

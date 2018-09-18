@@ -81,6 +81,7 @@ struct type_motoHour
 #define f1Wire2TSngl		7				// На 2-ой шине 1-Wire(DS2482) только один датчик
 #define f1Wire3TSngl		8				// На 3-ей шине 1-Wire(DS2482) только один датчик
 #define f1Wire4TSngl		9				// На 4-ей шине 1-Wire(DS2482) только один датчик
+#define fSunRegenerateGeo	10				// Использовать солнечный коллектор для регенерации геоконтура в простое
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -105,6 +106,7 @@ struct type_optionHP
  uint16_t delayTRV;                    // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
  uint16_t delayBoilerSW;               // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
  uint16_t delayBoilerOff;              // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+ int16_t  SunRegGeoTemp;			   // Температура начала регенерации геоконтура с помощью СК, в сотых градуса
 };// __attribute__((packed));
 
 
@@ -197,6 +199,7 @@ class HeatPump
     int8_t   runCommand();               // Выполнить команду по управлению ТН
     char *get_command_name(TYPE_COMMAND c) { return (char*)hp_commands_names[c < pEND14 ? c : pEND14]; }
     boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
+    uint8_t is_pause();					// Возвращает 1, если ТН в паузе
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -204,9 +207,6 @@ class HeatPump
     char *TestToStr();                  // Получить режим тестирования
     int8_t save_DumpJournal(boolean f); // Записать состояние теплового насоса в журнал
     
-    int8_t save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_t &crc);
-    int8_t save_2bytes(uint32_t &addr_to, uint16_t data, uint16_t &crc);
-    void   load_struct(void *to, uint8_t **from, uint16_t to_size);
     int32_t save(void); 		        // Записать настройки в eeprom i2c на входе адрес с какого, на выходе код ошибки (меньше нуля) или количество записанных  байт
     int32_t load(uint8_t *buffer, uint8_t from_RAM); // Считать настройки из i2c или RAM, на выходе код ошибки (меньше нуля)
     int8_t loadFromBuf(int32_t adr,byte *buf);// Считать настройки из буфера на входе адрес с какого, на выходе код ошибки (меньше нуля)
@@ -456,7 +456,8 @@ class HeatPump
     // Настройки опций
     type_optionHP Option;                  // Опции теплового насоса
 
-    uint32_t time_Sun_ON;                 // время включение солнечного коллектора
+    uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
+    uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
 
   private:

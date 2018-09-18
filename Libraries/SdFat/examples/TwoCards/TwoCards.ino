@@ -1,9 +1,10 @@
 /*
+ * Warning This example requires extra RAM and may crash on Uno.
  * Example use of two SD cards.
  */
 #include <SPI.h>
-#include <SdFat.h>
-#include <FreeStack.h>
+#include "SdFat.h"
+#include "FreeStack.h"
 
 SdFat sd1;
 const uint8_t SD1_CS = 10;  // chip select for sd1
@@ -24,19 +25,23 @@ const uint16_t NWRITE = FILE_SIZE/BUF_DIM;
 //------------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  while (!Serial) {}  // wait for Leonardo
+  // Wait for USB Serial 
+  while (!Serial) {
+    SysCall::yield();
+  }
   Serial.print(F("FreeStack: "));
 
   Serial.println(FreeStack());
 
   // fill buffer with known data
-  for (int i = 0; i < sizeof(buf); i++) {
+  for (size_t i = 0; i < sizeof(buf); i++) {
     buf[i] = i;
   }
 
   Serial.println(F("type any character to start"));
-  while (Serial.read() <= 0) {}
-  delay(400);  // catch Due reset problem
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
 
   // disable sd2 while initializing sd1
   pinMode(SD2_CS, OUTPUT);
@@ -102,7 +107,7 @@ void setup() {
   Serial.println(F("Writing test.bin to sd1"));
 
   // write data to /Dir1/test.bin on sd1
-  for (int i = 0; i < NWRITE; i++) {
+  for (uint16_t i = 0; i < NWRITE; i++) {
     if (file1.write(buf, sizeof(buf)) != sizeof(buf)) {
       sd1.errorExit("sd1.write");
     }
@@ -129,7 +134,7 @@ void setup() {
     if (n == 0) {
       break;
     }
-    if (file2.write(buf, n) != n) {
+    if ((int)file2.write(buf, n) != n) {
       sd2.errorExit("write2");
     }
   }

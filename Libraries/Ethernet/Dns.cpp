@@ -138,7 +138,7 @@ int8_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
     // Ожидание ответа пакета
     uint32_t startTime = millis();
     while(1) {
-    	watchdogReset();
+    	WDT_Restart(WDT);
     	if(protocol) {
     		if((answerCount = iTCP.available())) break;
     	} else {

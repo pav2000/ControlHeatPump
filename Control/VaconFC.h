@@ -22,7 +22,7 @@
 
 #include "Config.h"
 
-#define FC_VACON_NAME "Vacon 10"
+#define FC_VACON_NAME "Vacon"
 #ifdef FC_VACON
 #define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
 #endif

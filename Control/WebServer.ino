@@ -128,6 +128,7 @@ if (Socket[thread].client) // запрос http заканчивается пу�
                                {
                                // Для обычного пользователя подменить файл меню, для сокращения функционала
                                if ((GETBIT(Socket[thread].flags,fUser))&&(strcmp(Socket[thread].inPtr,"menu.js")==0)) strcpy(Socket[thread].inPtr,"menu-user.js");
+                               urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len);
                                readFileSD(Socket[thread].inPtr,thread); 
                                break;
                                }
@@ -183,94 +184,129 @@ if (Socket[thread].client) // запрос http заканчивается пу�
 }
 
 //  Чтение файла с SD или его генерация
-void readFileSD(char *filename,uint8_t thread)
-{   
-  volatile int n,i;
-  SdFile  webFile; 
-  char *ch1,*ch2;
-  char buf[8];  // для расширения файла хватит 8 байт
-  //  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename); 
-  
-         // Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
-         if ((ch1=strchr(filename,'['))!=NULL) // скобка найдена надо обрабатывать
-         {
-           if (strstr(filename,"HPscheme")!=0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
-            {
-             if ((ch2=strchr(filename,']'))!=NULL)
-              {
-              strncpy(buf,ch2+1,sizeof(buf)-1); // скопировать хвост в промежуточный буфер
-              *ch1=0x00;  // обрезать строку filename перед [
-              _itoa(HP_SCHEME,filename); // добавить номер схемы
-              strcat(filename,buf);               // добавить расширение
-              }
-            else journal.jprintf("Not found ] in: %s",filename); // нет закрывающейся скобки
-            } // if (strstr(filename,"HPscheme")!=0) 
-         else journal.jprintf("Bad argument in: %s",filename);   // не верный аргумент в скобках
-         }
-    
-  	  	 // В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
-         if (strcmp(filename,"state.txt")==0)     {get_txtState(thread,true); return;}  
-         if (strcmp(filename,"settings.txt")==0)  {get_txtSettings(thread);   return;}      
-         if (strcmp(filename,"settings.bin")==0)  {get_binSettings(thread);   return;}   
-         if (strcmp(filename,"chart.csv")==0)     {get_csvChart(thread);      return;}   
-         if ((strcmp(filename,FILE_CHART)==0)&&(!card.exists(FILE_CHART))) {noCsvChart_SD(thread); return;}   // Если файла статистики нет то сгенерить файл с объяснением
-         if (strcmp(filename,"journal.txt")==0)   {get_txtJournal(thread);    return;}  
-         if (strcmp(filename,"test.dat")==0)      {get_datTest(thread);       return;}  
-         #ifdef I2C_EEPROM_64KB    
-         if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread);  return;}  
-         #endif
-         if (!HP.get_fSD())                       { get_indexNoSD(thread);    return;}                  // СД карта не работает - упрощенный интерфейс
-         
-          // Чтение с карты  файлов
-          SPI_switchSD();
-          if (!card.exists(filename))  // проверка на сущестование файла
-              {  
-               SPI_switchW5200(); 
-               sendConstRTOS(thread,HEADER_FILE_NOT_FOUND);
-               journal.jprintf((char*)"$WARNING - Can't find %s file!\n",filename); 
-               return;    
-              } // файл не найден
-              
-          for(i=0;i<SD_REPEAT;i++)   // Делаем SD_REPEAT попыток открытия файла
-          {
-              if (!webFile.open(filename, O_READ))    // Карта не читатаеся
-              {
-                if (i>=SD_REPEAT-1)                   // Исчерпано число попыток
-                 {
-                  SPI_switchW5200();  
-                  sendConstRTOS(thread,HEADER_FILE_NOT_FOUND);
-                  journal.jprintf("$ERROR - opening %s for read failed!\n",filename); 
-                  HP.message.setMessage(pMESSAGE_SD,(char*)"Ошибка открытия файла с SD карты",0);    // сформировать уведомление об ошибке чтения
-                  HP.set_fSD(false);                                                                 // Отказ карты, работаем без нее
-                  return;
-                  }//if
-              }
-              else  break;  // Прочиталось
-			  _delay(50);	
-              journal.jprintf("Error opening file %s repeat open . . .\n",filename);
- 
-          }  // for     
+void readFileSD(char *filename, uint8_t thread)
+{
+	volatile int n, i;
+	SdFile webFile;
+	char *ch1, *ch2;
+	char buf[8];  // для расширения файла хватит 8 байт
+	//  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
 
-          SPI_switchW5200();         // переключение на сеть
+	// Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
+	if((ch1 = strchr(filename, '[')) != NULL) // скобка найдена надо обрабатывать
+	{
+		if(strstr(filename, "HPscheme") != 0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
+		{
+			if((ch2 = strchr(filename, ']')) != NULL) {
+				strncpy(buf, ch2 + 1, sizeof(buf) - 1); // скопировать хвост в промежуточный буфер
+				*ch1 = 0x00;  // обрезать строку filename перед [
+				_itoa(HP_SCHEME, filename); // добавить номер схемы
+				strcat(filename, buf);               // добавить расширение
+			} else journal.jprintf("Not found ] in: %s", filename); // нет закрывающейся скобки
+		} // if (strstr(filename,"HPscheme")!=0)
+		else journal.jprintf("Bad argument in: %s", filename);   // не верный аргумент в скобках
+	}
 
-                // Файл открыт читаем данные и кидаем в сеть
-                 #ifdef LOG  
-                   journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename); 
-                 #endif
-              //   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
-                 if (strstr(filename,".css")!=NULL) sendConstRTOS(thread,HEADER_FILE_CSS); // разные заголовки
-                 else                               sendConstRTOS(thread,HEADER_FILE_WEB);
-                 SPI_switchSD();
-               while ((n=webFile.read(Socket[thread].outBuf,sizeof(Socket[thread].outBuf))) > 0) 
-                 {
-                  SPI_switchW5200();
-                  if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),n)==0) break;
-                  SPI_switchSD();    
-                } // while
-               SPI_switchSD(); 
-               webFile.close(); 
-               SPI_switchW5200();         
- }
+	// В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
+	if(strcmp(filename, "state.txt") == 0) { get_txtState(thread, true); return; }
+	if(strcmp(filename, "settings.txt") == 0) {	get_txtSettings(thread); return; }
+	if(strcmp(filename, "settings.bin") == 0) {	get_binSettings(thread); return; }
+	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
+	if((strcmp(filename, FILE_CHART) == 0) && (!card.exists(FILE_CHART))) { noCsvChart_SD(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
+	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
+	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
+	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
+		sendConstRTOS(thread, HEADER_FILE_WEB);
+		filename += 8;
+		journal.jprintf("SD card test: %s - ", filename);
+		SPI_switchSD();
+		if(webFile.open(filename, O_READ)) {
+			uint32_t startTick = millis();
+			uint32_t size = 0;
+			for(;;) {
+				int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
+				if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+				if(n <= 0) break;
+				size += n;
+				if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
+				WDT_Restart(WDT);
+			}
+			startTick = millis() - startTick;
+			journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
+			webFile.close();
+			/*/ check write!
+			if(!webFile.open(filename, O_RDWR)) journal.jprintf("Error open for writing!\n");
+			else {
+				n = webFile.write("Test write!");
+				journal.jprintf("Wrote %d byte\n", n);
+				if(!webFile.sync()) journal.jprintf("Sync failed (%d,%d)\n", card.cardErrorCode(), card.cardErrorData());
+				webFile.close();
+			}
+			//*/
+		} else {
+			journal.jprintf("not found!\n");
+		}
+		SPI_switchW5200();
+		return;
+	}
+#ifdef I2C_EEPROM_64KB
+	if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread); return;}
+#endif
+	if(!HP.get_fSD()) {
+		get_indexNoSD(thread);
+		return;
+	}                  // СД карта не работает - упрощенный интерфейс
+
+	// Чтение с карты  файлов
+	SPI_switchSD();
+	if(!card.exists(filename))  // проверка на сущестование файла
+	{
+		SPI_switchW5200();
+		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+		journal.jprintf((char*) "$WARNING - Can't find %s file!\n", filename);
+		return;
+	} // файл не найден
+
+	for(i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
+	{
+		if(!webFile.open(filename, O_READ))    // Карта не читатаеся
+		{
+			if(i >= SD_REPEAT - 1)                   // Исчерпано число попыток
+			{
+				SPI_switchW5200();
+				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+				journal.jprintf("$ERROR - opening %s for read failed!\n", filename);
+				HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с SD карты", 0); // сформировать уведомление об ошибке чтения
+				HP.set_fSD(false);                                                      // Отказ карты, работаем без нее
+				return;
+			}                                                                 //if
+		} else break;  // Прочиталось
+		_delay(50);
+		journal.jprintf("Error opening file %s repeat open . . .\n", filename);
+
+	}  // for
+
+	SPI_switchW5200();         // переключение на сеть
+
+	// Файл открыт читаем данные и кидаем в сеть
+#ifdef LOG
+	journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+#endif
+	//   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
+	if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+	else sendConstRTOS(thread, HEADER_FILE_WEB);
+	SPI_switchSD();
+	while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+		SPI_switchW5200();
+		if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+		SPI_switchSD();
+	} // while
+	if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+
+	SPI_switchSD();
+	webFile.close();
+	SPI_switchW5200();
+}
 
 // ========================== P A R S E R  G E T =================================
 // Разбор и обработка строк запросов buf (начало &) входная строка strReturn выходная
@@ -825,10 +861,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
         strcat(strReturn,"JOURNAL_LEN|Размер кольцевого буфера системного журнала (байт)|");_itoa(JOURNAL_LEN,strReturn);strcat(strReturn,";");
                    
        // Карта
-       strcat(strReturn,"SD_FAT_VERSION|Версия библиотеки SdFat|");_itoa(SD_FAT_VERSION,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"SD_SPI_CONFIGURATION|Режим SPI SD карты, меняется в файле SdFatConfig.h (0-DMA, 1-standard, 2-software, 3-custom)|");_itoa(SD_SPI_CONFIGURATION,strReturn);strcat(strReturn,";");
+       m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
+       strcat(strReturn,"USE_SD_CRC|Использовать проверку CRC|");_itoa(USE_SD_CRC,strReturn);strcat(strReturn,";");
        strcat(strReturn,"SD_REPEAT|Число попыток чтения карты и открытия файлов, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты, пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/SD_SPI_SPEED,strReturn);strcat(strReturn,";");
+       //strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты, пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/SD_SPI_SPEED,strReturn);strcat(strReturn,";");
 
        // W5200
        strcat(strReturn,"W5200_THREARD|Число потоков для сетевого чипа (web сервера) "); strcat(strReturn,nameWiznet);strcat(strReturn,"|");_itoa(W5200_THREARD,strReturn);strcat(strReturn,";");
@@ -2015,9 +2051,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   {
     				   int16_t x=HP.sADC[p].get_Press();
     				   _ftoa(strReturn,(float)x/100.0,2);
+					#ifdef EEV_DEF
     				   if(p < 2) {
     					   m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0);
     				   }
+					#endif
     			   }
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }

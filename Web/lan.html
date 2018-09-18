@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_Network(NO_PING),get_Network(PING_ADR),get_Network(PING_TIME),get_Network(NO_ACK),get_Network(DELAY_ACK),get_Network(SIZE_PACKET),get_Network(MAC),get_Network(PORT),get_Network(IP),get_Network(SUBNET),get_Network(GATEWAY),get_Network(DNS),get_Network(DHCP),get_Network(PASSWORD),get_Network(PASSADMIN),get_Network(PASSUSER),get_Network(INIT_W5200),get_Network(RES_SOCKET),get_Network(RES_W5200)");
+		loadParam("get_Network(NO_PING),get_Network(PING_ADR),get_Network(PING_TIME),get_Network(NO_ACK),get_Network(DELAY_ACK),get_Network(SIZE_PACKET),get_Network(MAC),get_Network(PORT),get_Network(IP),get_Network(SUBNET),get_Network(GATEWAY),get_Network(DNS),get_Network(DHCP),get_Network(PASS),get_Network(PASSADMIN),get_Network(PASSUSER),get_Network(INIT_W5200),get_Network(RES_SOCKET),get_Network(RES_W5200)");
 		updateParam("get_socketInfo,get_socketRes");
 	};
 	</script>
@@ -29,29 +29,29 @@
 		</tr>
 		<tr>
 			<td>IP адрес контроллера</td>
-			<td><input id="get_network-ip" type="text" ><input id="get_network-ip2" type="submit" value=">"  onclick="validip('get_network-ip');setParam('get_Network(IP)');"></td>
+			<td nowrap><input id="get_network-ip" type="text" ><input type="submit" value=">" onclick="validip('get_network-ip');setParam('get_Network(IP)');"></td>
 		</tr>
 		<tr>
 			<td>Маска подсети</td>
-			<td><input id="get_network-subnet" type="text" ><input id="get_network-subnet2" type="submit" value=">"  onclick="validip('get_network-subnet');setParam('get_Network(SUBNET)');"></td>
+			<td nowrap><input id="get_network-subnet" type="text" ><input type="submit" value=">" onclick="validip('get_network-subnet');setParam('get_Network(SUBNET)');"></td>
 		</tr>
 		<tr>
 			<td>Адрес шлюза</td>
-			<td><input id="get_network-gateway" type="text" ><input id="get_network-gateway2" type="submit" value=">"  onclick="validip('get_network-gateway');setParam('get_Network(GATEWAY)');"></td>
+			<td nowrap><input id="get_network-gateway" type="text" ><input type="submit" value=">" onclick="validip('get_network-gateway');setParam('get_Network(GATEWAY)');"></td>
 		</tr>
 		<tr>
 			<td>Адрес DNS сервера</td>
-			<td><input id="get_network-dns" type="text" ><input id="get_network-dns2" type="submit" value=">"  onclick="validip('get_network-dns');setParam('get_Network(DNS)');"></td>
+			<td nowrap><input id="get_network-dns" type="text" ><input type="submit" value=">" onclick="validip('get_network-dns');setParam('get_Network(DNS)');"></td>
 		</tr>
 		<tr>
 			<td>Порт веб-сервера контроллера</td>
-			<td><input id="get_network-port" type="number" min="1" max="65534"><input id="get_network-port2" type="submit" value=">"  onclick="setParam('get_Network(PORT)');"></td>
+			<td nowrap><input id="get_network-port" type="number" min="1" max="65534"><input type="submit" value=">" onclick="setParam('get_Network(PORT)');"></td>
 		</tr>								
 		<tr>
 			<td>Аппаратный mac адрес</td>
-			<td><input id="get_network-mac" type="text" ><input id="get_network-mac2" type="submit" value=">"  onclick="validmac('get_network-mac');setParam('get_Network(MAC)');"></td>
+			<td nowrap><input id="get_network-mac" type="text" ><input type="submit" value=">" onclick="validmac('get_network-mac');setParam('get_Network(MAC)');"></td>
 		</tr>					
-<tr><td></td><td><input type="submit" value="Применить настройки (2)"  onclick='loadParam("set_updateNet")'></td></tr>
+<tr><td></td><td><input type="submit" value="Применить настройки (2)" onclick='loadParam("set_updateNet")'></td></tr>
 	</tbody>
 	</table>						
 	1. Если активирован режим safeNetwork сетевые настройки берутся по умолчанию, но выводятся значения из настроек eeprom (можно корректировать)<br/>
@@ -68,15 +68,15 @@
 		</tr>				
 		<tr>
 			<td>Использование пароля для входа <sup>2</sup></td>
-			<td><input type="checkbox" name="get_network-password" id="get_network-password" onchange="setParam('get_Network(PASSWORD)');" ></td>
+			<td><input type="checkbox" name="get_network-pass" id="get_network-pass" onchange="setParam('get_Network(PASS)');" ></td>
 		</tr>			
 		<tr>
 			<td>Пароль пользователя</td>
-			<td><input id="get_network-passuser" type="text" ><input id="get_network-passuser2" type="submit" value=">"  onclick="setParam('get_Network(PASSUSER)');"></td>
+			<td nowrap><input id="get_network-passuser" type="text" ><input type="submit" value=">" onclick="setParam('get_Network(PASSUSER)');"></td>
 		</tr>
 		<tr>
 			<td>Пароль администратора</td>
-			<td><input id="get_network-passadmin" type="text" ><input id="get_network-passadmin2" type="submit" value=">"  onclick="setParam('get_Network(PASSADMIN)');"></td>
+			<td nowrap><input id="get_network-passadmin" type="text" ><input type="submit" value=">" onclick="setParam('get_Network(PASSADMIN)');"></td>
 		</tr>
 		 
 	</tbody>
@@ -94,7 +94,7 @@
 		</tr>
 		<tr>
 			<td>Адрес пингуемого сервера <sup>1</sup></td>
-			<td><input id="get_network-ping_adr" type="text" ><input id="get_network-ping_adr2" type="submit" value=">"  onclick="validip('get_network-ping_adr');setParam('get_Network(PING_ADR)');"></td>
+			<td nowrap><input id="get_network-ping_adr" type="text" ><input type="submit" value=">"  onclick="validip('get_network-ping_adr');setParam('get_Network(PING_ADR)');"></td>
 		</tr> 		
 		<tr>
 			<td>Ежеминутный контроль связи с Wiznet W5xxx, и при необходимости его сброс</td>
@@ -110,7 +110,7 @@
 		</tr>
 		<tr>
 			<td>Размер данных для передачи Wiznet W5xxx (MTU-40 байт)</td>
-			<td><input id="get_network-size_packet" min="100" max="2048" step="1" type="number" ><input id="get_network-size_packet2" type="submit" value=">"  onclick="setParam('get_Network(SIZE_PACKET)');"></td>
+			<td nowrap><input id="get_network-size_packet" min="100" max="2048" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Network(SIZE_PACKET)');"></td>
 		</tr>
 		<tr>
 			<td>Не ожидать получения ACK при посылке следующего пакета <sup>2</sup></td>
@@ -118,7 +118,7 @@
 		</tr> 
 		<tr>
 			<td>Пауза перед отправкой следующего пакета, если нет ожидания ACK (мсек) [1...50]<sup>3</sup></td>
-			<td><input id="get_network-delay_ack" min="1" max="100" step="1" type="number" ><input id="get_network-delay_ack" type="submit" value=">"  onclick="setParam('get_Network(DELAY_ACK)');"></td>
+			<td nowrap><input id="get_network-delay_ack" min="1" max="100" step="1" type="number" ><input type="submit" value=">"  onclick="setParam('get_Network(DELAY_ACK)');"></td>
 		</tr>				
 	</table>
 	1. Желательно указывать IP адрес (8.8.8.8) а не доменное имя сервера (google.com), рекомендуется вводить IP шлюза<br/>

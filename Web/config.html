@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION)");
+		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(SCG),get_optionHP(SCGT)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -28,11 +28,11 @@
 		<tr>
 			<td>Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-save_on" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');" >
+				<input type="checkbox" name="get_optionhp-save_on" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
 			</td>
 		</tr>
 			<td>Число повторных попыток пуска при ошибке [0..10]<sup>1</sup></td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-attempt" type="number" min="0" max="9999" step="1" value="0">
 				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
 			</td>
@@ -51,7 +51,7 @@
 		<tr>
 			<td>Запись графиков на карту (файл chart_sd.csv)<sup>3</sup></td>
 			<td>
-				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');" >
+				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
 			</td>
 		</tr>
 		<tr>
@@ -68,68 +68,81 @@
 		</tr>
 		<tr>
 			<td>Температура для управления дополнительным ТЭНом °C [-30..30]</td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0">
 				<input id="get_optionhp-temp_rheat2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>5</sup></td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
 			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
+		<tr>
+			<td>Использовать Солнечный Коллектор для регенерации геоконтура в простое</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-scg" onchange="setParam('get_optionHP(SCG)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Температура начала регенерации геоконтура с помощью СК (+3°)</td>
+			<td nowrap>
+				<input type="number" id="get_optionhp-scgt"> <input type="submit" value=">" onclick="setParam('get_optionHP(SCGT)');" >
+			</td>
+		</tr>	
 		<tr>
 			<td><b>Времена и задержки</b></td>
 			<td></td>
 		</tr>
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
-			<td>
-				<input type="number" id="get_optionhp-delay_on_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
+			<td nowrap>
+				<input type="number" id="get_optionhp-delay_on_pump">
+				<input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка выключения насосов после выключения компрессора (сек.) [0...900]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.) [0...6000]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Пауза после переключение ГВС (сек.) [0...1200]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.) [0...1200]</td>
-			<td>
+			<td nowrap>
 				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
 			</td>
 		</tr>
@@ -158,14 +171,14 @@
 		</tr>	
 		<tr>
 			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>7</sup></td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
 				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Яркость дисплея Nextion в % [5..100]</td>
-			<td>
+			<td nowrap>
 				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
 				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
 			</td>

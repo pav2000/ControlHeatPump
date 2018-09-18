@@ -6,7 +6,8 @@
  * The program will open and close the file 100 times.
  */
 #include <SPI.h>
-#include <SdFat.h>
+#include "SdFat.h"
+#include "sdios.h"
 
 // SD chip select pin
 const uint8_t chipSelect = SS;
@@ -25,16 +26,20 @@ void setup() {
   char name[] = "append.txt";
 
   Serial.begin(9600);
-  while (!Serial) {}  // wait for Leonardo
-
+  
+  // Wait for USB Serial 
+  while (!Serial) {
+    SysCall::yield();
+  }
   // F() stores strings in flash to save RAM
   cout << endl << F("Type any character to start\n");
-  while (Serial.read() <= 0) {}
-  delay(400);  // Catch Due reset problem
+  while (!Serial.available()) {
+    SysCall::yield();
+  }
 
-  // initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
-  // breadboards.  use SPI_FULL_SPEED for better performance.
-  if (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+  // Initialize at the highest speed supported by the board that is
+  // not over 50 MHz. Try a lower speed if SPI errors occur.
+  if (!sd.begin(chipSelect, SD_SCK_MHZ(50))) {
     sd.initErrorHalt();
   }
 

@@ -1,21 +1,26 @@
-/* Arduino RamDisk Library
- * Copyright (C) 2014 by William Greiman
+/**
+ * Copyright (c) 2011-2018 Bill Greiman
+ * This file is part of the SdFat library for SD memory cards.
  *
- * This file is part of the Arduino RamDisk Library
+ * MIT License
  *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino RamDisk Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 #ifndef StdioStream_h
 #define StdioStream_h
@@ -58,7 +63,7 @@ const uint8_t UNGETC_BUF_SIZE = 2;
 #undef getchar
 #undef gets
 #undef perror
-#undef printf
+//#undef printf  // NOLINT
 #undef putc
 #undef putchar
 #undef puts
@@ -278,16 +283,6 @@ class StdioStream : private FatFile {
    */
   int fputs(const char* str);
   //----------------------------------------------------------------------------
-  /** Write a string stored in flash.
-   *
-   * \param[in] str string to be written.
-   *
-   * \return for success, fputs() returns a non-negative
-   * number. Otherwise, it returns EOF and sets the error indicator for
-   * the stream.
-   */
-  int fputs_P(PGM_P str);
-  //----------------------------------------------------------------------------
   /** Binary input.
    *
    * Reads an array of up to count elements, each one with a size of size
@@ -414,6 +409,7 @@ class StdioStream : private FatFile {
     return n < 0 ? 0 : n;
   }
   //----------------------------------------------------------------------------
+#if (defined(ARDUINO) && ENABLE_ARDUINO_FEATURES) || defined(DOXYGEN)
   /** Print a string stored in flash memory.
    *
    * \param[in] str the string to print.
@@ -421,6 +417,7 @@ class StdioStream : private FatFile {
    * \return the number of bytes written.
    */
   size_t print(const __FlashStringHelper *str);
+#endif  // (defined(ARDUINO) && ENABLE_ARDUINO_FEATURES) || defined(DOXYGEN)
   //----------------------------------------------------------------------------
   /** Print a floating point number.
    *
