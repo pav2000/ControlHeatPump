@@ -309,7 +309,8 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
 // запуск преобразования всех датчиков на шине возвращает код ошибки
 int8_t  deviceOneWire::PrepareTemp()
 {
-	if(lock_I2C_bus_reset(0)) return ERR_ONEWIRE;
+	uint8_t err = lock_I2C_bus_reset(0);
+	if(err) return err;
 	// начать преобразование температурных ВСЕХ датчиков две команды
 	OneWireDrv.skip();    		// skip ROM command
 #ifdef ONEWIRE_DS2482_2WAY
