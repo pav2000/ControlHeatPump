@@ -482,11 +482,7 @@ boolean initSD(uint8_t num)
 
 	// 1. Инициалазация карты
 	SPI.end();
-#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-	if(!card.begin(PIN_SPI_CS_SD, SPI_HALF_SPEED)) { // Половина скорости
-#else
-	if(!card.begin(PIN_SPI_CS_SD, SPI_FULL_SPEED)) { // Полная скорость
-#endif
+	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
 		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
 /*
 		for(i = 0; i < num; i++) // Карта не инициализируется c ходу/ Дополнительные попытки инициализировать карту

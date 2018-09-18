@@ -70,6 +70,7 @@ enum TYPE_SENSOR
     // --------------------------------------------------------------------------------
     // SPI шина управление отдельными устройствами до 3 устройств
 	uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+	#define SD_CLOCK				20	// частота SPI для SD карты в МГц
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом
     #define PIN_SPI_CS_SD      4        // ++ SD-CS    сигнал CS управление SD картой
  // #define RELAY_INVERT                // инвертирование реле выходов реле
@@ -485,6 +486,7 @@ enum TYPE_SENSOR
     // --------------------------------------------------------------------------------
     // SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
 	uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+	#define SD_CLOCK				20	// частота SPI для SD карты в МГц
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом
     #define PIN_SPI_CS_SD      4        // ++ SD-CS    сигнал CS управление SD картой
     #define PIN_SPI_CS_FLASH   52       // ++ FLASH-CS сигнал CS управление чипом флеш памяти (32 мБит)
@@ -942,6 +944,7 @@ enum TYPE_SENSOR
 //###################################################################################################################################################################################################################
     // SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
 	uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+	#define SD_CLOCK				20	// частота SPI для SD карты в МГц
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом w5500
     #define PIN_SPI_CS_SD      4        // ++ SD-CS    сигнал CS управление SD картой
     #define PIN_SPI_CS_FLASH   52       // ++ FLASH-CS сигнал CS управление чипом флеш памяти (32 мБит)
@@ -1355,6 +1358,7 @@ enum TYPE_SENSOR
     // --------------------------------------------------------------------------------
     // SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
 	uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+	#define SD_CLOCK				20	// частота SPI для SD карты в МГц
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом w5500
     #define PIN_SPI_CS_SD      4        // ++ SD-CS    сигнал CS управление SD картой
     #define PIN_SPI_CS_FLASH   33 //52  // ++ FLASH-CS сигнал CS управление чипом флеш памяти (32 мБит)
@@ -1835,6 +1839,7 @@ enum TYPE_SENSOR
     // --------------------------------------------------------------------------------
     // SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
 	uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+	#define SD_CLOCK				20	// частота SPI для SD карты в МГц
     #define PIN_SPI_CS_W5XXX   10       // ++ ETH-CS   сигнал CS управление сетевым чипом w5500
     #define PIN_SPI_CS_SD      4        // ++ SD-CS    сигнал CS управление SD картой
     #define PIN_SPI_CS_FLASH   52       // ++ FLASH-CS сигнал CS управление чипом флеш памяти (32 мБит)
@@ -2267,15 +2272,15 @@ enum TYPE_SENSOR
 
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	#ifndef  TEST_BOARD
-		uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
-		//#define SD_LOW_SPEED					// Если этот дефайн то скорость для КАРТЫ понижается вдвое
+		uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
+		#define SD_CLOCK				32	// частота SPI для SD карты в МГц
 		const boolean   defaultDHCP	=	false;
 		const IPAddress defaultIP		(192, 168, 1,  10);
 		const IPAddress defaultSDNS		(  8,   8, 8,   8);
 		const IPAddress defaultGateway	(192, 168, 1,   1);
 	#else
-		uint8_t SPI_RATE 				= 4;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
-		#define SD_LOW_SPEED					// Если этот дефайн то скорость для КАРТЫ понижается вдвое
+		uint8_t SPI_RATE 			  = 4;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
+		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
 		const boolean   defaultDHCP	=	true;
 		const IPAddress defaultIP		(192, 168, 0, 199);
 		const IPAddress defaultSDNS		(192, 168, 0,   10);
