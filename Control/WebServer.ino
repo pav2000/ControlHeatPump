@@ -222,15 +222,17 @@ void readFileSD(char *filename, uint8_t thread)
 		SPI_switchSD();
 		if(webFile.open(filename, O_READ)) {
 			uint32_t startTick = millis();
+			uint32_t size = 0;
 			for(;;) {
 				int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
 				if(n < 0) journal.jprintf("Read SD error!\n");
 				if(n <= 0) break;
+				size += n;
+				if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
 				WDT_Restart(WDT);
-				//if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS)) break;
 			}
 			startTick = millis() - startTick;
-			journal.jprintf("read %d bytes, %d b/sec\n", webFile.fileSize(), webFile.fileSize() * 1000 / startTick);
+			journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
 			webFile.close();
 		} else {
 			journal.jprintf("not found!\n");
