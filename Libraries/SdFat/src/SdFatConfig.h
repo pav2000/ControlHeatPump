@@ -92,14 +92,14 @@
  * Some cards will not sleep in low power mode unless CHECK_FLASH_PROGRAMMING
  * is non-zero.
  */
-#define CHECK_FLASH_PROGRAMMING 1
+#define CHECK_FLASH_PROGRAMMING 0
 //------------------------------------------------------------------------------
 /**
  * Set MAINTAIN_FREE_CLUSTER_COUNT nonzero to keep the count of free clusters
  * updated.  This will increase the speed of the freeClusterCount() call
  * after the first call.  Extra flash will be required.
  */
-#define MAINTAIN_FREE_CLUSTER_COUNT 0
+#define MAINTAIN_FREE_CLUSTER_COUNT 1
 //------------------------------------------------------------------------------
 /**
  * To enable SD card CRC checking set USE_SD_CRC nonzero.
@@ -109,8 +109,14 @@
  *
  * Set USE_SD_CRC to 2 to used a larger table driven CRC-CCITT function.  This
  * function is faster for AVR but may be slower for ARM and other processors.
+ * 
  */
-#define USE_SD_CRC 1
+#define USE_SD_CRC 0
+// vad7 added:
+// Set USE_SD_CRC=0 and USE_SD_CRC_FOR_WRITE=1 to use a smaller CRC-CCITT function
+// and CRC used for write operations only!
+#define USE_SD_CRC_FOR_WRITE 1
+
 //------------------------------------------------------------------------------
 /**
  * Handle Watchdog Timer for WiFi modules.
@@ -176,7 +182,7 @@
 #if defined(RAMEND) && RAMEND < 3000
 #define USE_MULTI_BLOCK_IO 0
 #else  // RAMEND
-#define USE_MULTI_BLOCK_IO 0 // 1
+#define USE_MULTI_BLOCK_IO 1 // FOR OLD SD CARD -> 0
 #endif  // RAMEND
 //-----------------------------------------------------------------------------
 /** Enable SDIO driver if available. */

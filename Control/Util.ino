@@ -340,33 +340,12 @@ float temp_DUE()
 // Включение монитора питания ---------------------------------------------------
 void SupplyMonitorON(uint32_t voltage)
 {
-startSupcStatusReg=SUPC->SUPC_SR;                        // запомнить состояние при старте
-journal.jprintf("Supply Controller Status Register [SUPC_SR]: 0x%08x\n",startSupcStatusReg);
+	startSupcStatusReg = SUPC->SUPC_SR;                        // запомнить состояние при старте
+	journal.jprintf("Supply Controller Status Register [SUPC_SR]: 0x%08x\n", startSupcStatusReg);
 
-SUPC->SUPC_SMMR |= voltage|SUPC_SMMR_SMSMPL_CSM;//SUPC_SMMR_SMSMPL_2048SLCK;  // Настройка контроля пититания
-SUPC->SUPC_MR   |= SUPC_MR_KEY(SUPC_KEY_VALUE) | SUPC_MR_BODDIS_ENABLE;       // Включение контроля (это лишнее при сбросе это включено)
-char buf[8];
-switch (voltage)
-     {
-     case SUPC_SMMR_SMTH_1_9V: strcpy(buf,"1.9V"); break;
-     case SUPC_SMMR_SMTH_2_0V: strcpy(buf,"2.0V"); break;
-     case SUPC_SMMR_SMTH_2_1V: strcpy(buf,"2.1V"); break;
-     case SUPC_SMMR_SMTH_2_2V: strcpy(buf,"2.2V"); break;
-     case SUPC_SMMR_SMTH_2_3V: strcpy(buf,"2.3V"); break;
-     case SUPC_SMMR_SMTH_2_4V: strcpy(buf,"2.4V"); break;
-     case SUPC_SMMR_SMTH_2_5V: strcpy(buf,"2.5V"); break;
-     case SUPC_SMMR_SMTH_2_6V: strcpy(buf,"2.6V"); break;
-     case SUPC_SMMR_SMTH_2_7V: strcpy(buf,"2.7V"); break;
-     case SUPC_SMMR_SMTH_2_8V: strcpy(buf,"2.8V"); break;
-     case SUPC_SMMR_SMTH_2_9V: strcpy(buf,"2.9V"); break;
-     case SUPC_SMMR_SMTH_3_0V: strcpy(buf,"3.0V"); break;
-     case SUPC_SMMR_SMTH_3_1V: strcpy(buf,"3.1V"); break;
-     case SUPC_SMMR_SMTH_3_2V: strcpy(buf,"3.2V"); break;
-     case SUPC_SMMR_SMTH_3_3V: strcpy(buf,"3.3V"); break;
-     case SUPC_SMMR_SMTH_3_4V: strcpy(buf,"3.4V"); break;
-     default:    strcpy(buf,cError); break;    
-     }
- journal.jprintf("Supply monitor ON, voltage: %s\n",buf);
+	SUPC->SUPC_SMMR |= voltage | SUPC_SMMR_SMSMPL_CSM;     //SUPC_SMMR_SMSMPL_2048SLCK;  // Настройка контроля пититания
+	SUPC->SUPC_MR |= SUPC_MR_KEY(SUPC_KEY_VALUE) | SUPC_MR_BODDIS_ENABLE; // Включение контроля (это лишнее при сбросе это включено)
+	journal.jprintf("Supply monitor ON, voltage: %.1fV\n", (float) voltage / 10 + 1.9);
 }
 
 // Программный сброс контроллера
@@ -469,126 +448,127 @@ boolean set_Schedule(char *c, uint32_t *sh)
 }
 
 // преревод расписания в символьный вид
-char * get_Schedule( uint32_t *sh)
+char * get_Schedule(uint32_t *sh)
 {
-uint16_t i,j, pos=0;
-static char buf[24*7+7+1];
+	uint16_t i, j, pos = 0;
+	static char buf[24 * 7 + 7 + 1];
 
-for (i=0;i<7;i++)
-{
-   for (j=0;j<24;j++)
-   { 
-     if (((0x1u <<j)&sh[i])>0) buf[pos]='1'; else buf[pos]='0';
-     pos++;
-   }
-  buf[pos]='/';                    // разделитель
-  pos++; 
-} 
-buf[pos]=0; // конец строки
-return buf;
+	for(i = 0; i < 7; i++) {
+		for(j = 0; j < 24; j++) {
+			if(((0x1u << j) & sh[i]) > 0) buf[pos] = '1';
+			else buf[pos] = '0';
+			pos++;
+		}
+		buf[pos] = '/';                    // разделитель
+		pos++;
+	}
+	buf[pos] = 0; // конец строки
+	return buf;
 }
 
 // Инициализация СД карты, параметр num - число попыток
 // возврат true - если успешно, false - карты нет работаем без нее
 boolean initSD(uint8_t num)
 {
-uint8_t i;
-boolean success=false;   // флаг успешности инициализации
+	uint8_t i;
+	boolean success = false;   // флаг успешности инициализации
 
- journal.jprintf("Initializing SD card...\n");
- #ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
-   pinMode(PIN_NO_SD_CARD,INPUT);     // ++ CD Программирование проверки наличия карты
-   if (digitalReadDirect(PIN_NO_SD_CARD)) { journal.jprintf("ERROR - No SD card in slot.\n"); return false;}
-   else journal.jprintf("SUCCESS - SD card insert in slot.\n");
- #endif
- 
-// 1. Инициалазация карты
-digitalWriteDirect(10, HIGH);
+	journal.jprintf("Initializing SD card...\n");
+#ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
+	pinMode(PIN_NO_SD_CARD,INPUT);     // ++ CD Программирование проверки наличия карты
+	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("ERROR - No SD card in slot.\n"); return false;}
+	else journal.jprintf("SUCCESS - SD card insert in slot.\n");
+#endif
 
-  #ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-     if (card.begin(4,SPI_HALF_SPEED))  // Половина скорости
-  #else
-     if (card.begin(4,SD_SPI_SPEED))    // Полная скорость
-  #endif  
-  for (i=0;i<num;i++) // Карта не инициализируется c ходу/ Дополнительные попытки инициализировать карту
-  {
-   WDT_Restart(WDT);  // это операция долгая, сбросить вачдог
-   journal.jprintf("Repeat initializing SD card . . .\n");
-   // пытаемся реанимировать СД карту
-   digitalWriteDirect(10,HIGH);  
-   SPI.end();                 // Stop SPI
-   // MISO - Digital Pin 74, MOSI - Digital Pin 75, and SCK - Digital Pin 76.
-   pinMode(74,INPUT_PULLUP);    // MISO - Digital Pin 74
-   pinMode(75,INPUT_PULLUP);    // MOSI - Digital Pin 75
-   pinMode(76,INPUT_PULLUP);    // SCK - Digital Pin 76.
-   pinMode(10,INPUT_PULLUP);    // CS w5200 - Digital Pin 10.
-   pinMode(4,INPUT_PULLUP);     // CS SD - Digital Pin 4.
-   pinMode(87,INPUT_PULLUP);    // SD Pin 87
-   pinMode(77,INPUT_PULLUP);    // Eth Pin 77  
-   _delay(200);
-   pinMode(74,OUTPUT);          // MISO - Digital Pin 74
-   pinMode(75,OUTPUT);          // MOSI - Digital Pin 75
-   pinMode(76,OUTPUT);          // SCK - Digital Pin 76.
- //  pinMode(10,OUTPUT);        // CS w5200 - Digital Pin 10.
-   pinMode(4,OUTPUT);           // CS SD - Digital Pin 4.
-   digitalWriteDirect(74, LOW);
-   digitalWriteDirect(75, LOW);
-   digitalWriteDirect(76, LOW);
-  _delay(200);
+	// 1. Инициалазация карты
+	SPI.end();
+#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
+	if(!card.begin(PIN_SPI_CS_SD, SPI_HALF_SPEED)) { // Половина скорости
+#else
+	if(!card.begin(PIN_SPI_CS_SD, SPI_FULL_SPEED)) { // Полная скорость
+#endif
+		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
+/*
+		for(i = 0; i < num; i++) // Карта не инициализируется c ходу/ Дополнительные попытки инициализировать карту
+		{
+			WDT_Restart (WDT);  // это операция долгая, сбросить вачдог
+			journal.jprintf("Repeat initializing SD card . . .\n");
+			// пытаемся реанимировать СД карту
+			digitalWriteDirect(10, HIGH);
+			SPI.end();                 // Stop SPI
+			// MISO - Digital Pin 74, MOSI - Digital Pin 75, and SCK - Digital Pin 76.
+			pinMode(74, INPUT_PULLUP);    // MISO - Digital Pin 74
+			pinMode(75, INPUT_PULLUP);    // MOSI - Digital Pin 75
+			pinMode(76, INPUT_PULLUP);    // SCK - Digital Pin 76.
+			pinMode(10, INPUT_PULLUP);    // CS w5200 - Digital Pin 10.
+			pinMode(4, INPUT_PULLUP);     // CS SD - Digital Pin 4.
+			pinMode(87, INPUT_PULLUP);    // SD Pin 87
+			pinMode(77, INPUT_PULLUP);    // Eth Pin 77
+			_delay(200);
+			pinMode(74, OUTPUT);          // MISO - Digital Pin 74
+			pinMode(75, OUTPUT);          // MOSI - Digital Pin 75
+			pinMode(76, OUTPUT);          // SCK - Digital Pin 76.
+			//  pinMode(10,OUTPUT);        // CS w5200 - Digital Pin 10.
+			pinMode(4, OUTPUT);           // CS SD - Digital Pin 4.
+			digitalWriteDirect(74, LOW);
+			digitalWriteDirect(75, LOW);
+			digitalWriteDirect(76, LOW);
+			_delay(200);
 
-  #ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-     if (card.begin(4,SPI_HALF_SPEED)){success=true; break;}  // Половина скорости
-  #else
-     if (card.begin(4,SD_SPI_SPEED)){success=true; break;}    // Полная скорость
-  #endif   
-  }
-    else success=true;  // Карта инициализирована с первого раза
-  
-    if (success)  // Запоминаем результаты
-      journal.jprintf("SUCCESS - SD card initialized.\n");
-    else 
-    {
-    journal.jprintf((char*)"$ERROR - SD card initialization failed!\n");
-    //  set_Error(ERR_SD_INIT,"SD card");   // Уведомить об ошибке
-    HP.message.setMessage(pMESSAGE_SD,(char*)"Ошибка инициализации SD карты",0);    // сформировать уведомление
-    SPI_switchW5200(); 
-    return false;
-    }    
-  
-// 2. Проверка наличия индексного файла
-if (!card.exists(INDEX_FILE))
-    {   
-     journal.jprintf((char*)"$ERROR - Can't find index.xxx file!\n"); 
-   //   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
-     HP.message.setMessage(pMESSAGE_SD,(char*)"Файл index.xxx не найден на SD карте",0);    // сформировать уведомление
-     SPI_switchW5200(); 
-     return false;    
-     } // стартовый файл не найден
-     journal.jprintf((char*)"SUCCESS - Found %s file\n",INDEX_FILE); 
-      
-// 3. Вывод инфо о карте
-      cid_t cid;
-      if (!card.card()->readCID(&cid))
-      { 
-        journal.jprintf((char*)"$ERROR - readCID SD card failed!\n"); 
-        HP.message.setMessage(pMESSAGE_SD,(char*)"Ошибка чтения информации о карте (readCID)",0);    // сформировать уведомление
-        SPI_switchW5200();
-        return false;
-      }
-      // вывод информации о карте
-      journal.jprintf((char*)"SD card info\n");
-      journal.jprintf((char*)" Manufacturer ID: 0x%x\n",int(cid.mid));
-      journal.jprintf((char*)" OEM ID: %c%c\n",cid.oid[0],cid.oid[1]);
-      journal.jprintf((char*)" Serial number: 0x%x\n",int(cid.psn));
-      journal.jprintf((char*)" Volume is FAT%d\n",int(card.vol()->fatType()));
-      journal.jprintf((char*)" blocksPerCluster: %d\n",int(card.vol()->blocksPerCluster()));
-      journal.jprintf((char*)" clusterCount: %d\n",card.vol()->clusterCount());
-      uint32_t volFree = card.vol()->freeClusterCount();
-      float fs = 0.000512*volFree*card.vol()->blocksPerCluster();
-      journal.jprintf((char*)" freeSpace: %.2f Mb\n",fs);
-  SPI_switchW5200(); 
-  return true;
- }
+#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
+			if (card.begin(4,SPI_HALF_SPEED)) {success=true; break;}  // Половина скорости
+#else
+			if(card.begin(4, SPI_FULL_SPEED)) {
+				success = true;
+				break;
+			}    // Полная скорость
+#endif
+		}
+*/
+	} else success = true;  // Карта инициализирована с первого раза
+
+	if(success)  // Запоминаем результаты
+		journal.jprintf("SUCCESS - SD card initialized.\n");
+	else {
+		journal.jprintf((char*) "$ERROR - SD card initialization failed!\n");
+		//  set_Error(ERR_SD_INIT,"SD card");   // Уведомить об ошибке
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка инициализации SD карты", 0);    // сформировать уведомление
+		SPI_switchW5200();
+		return false;
+	}
+
+	// 2. Проверка наличия индексного файла
+	if(!card.exists(INDEX_FILE)) {
+		journal.jprintf((char*) "$ERROR - Can't find index.xxx file!\n");
+		//   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Файл index.xxx не найден на SD карте", 0); // сформировать уведомление
+		SPI_switchW5200();
+		return false;
+	} // стартовый файл не найден
+	journal.jprintf((char*) "SUCCESS - Found %s file\n", INDEX_FILE);
+
+	// 3. Вывод инфо о карте
+	cid_t cid;
+	if(!card.card()->readCID(&cid)) {
+		journal.jprintf((char*) "$ERROR - readCID SD card failed!\n");
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка чтения информации о карте (readCID)", 0); // сформировать уведомление
+		SPI_switchW5200();
+		return false;
+	}
+	// вывод информации о карте
+	journal.jprintf((char*) "SD card info\n");
+	journal.jprintf((char*) " Manufacturer ID: 0x%x\n", int(cid.mid));
+	journal.jprintf((char*) " OEM ID: %c%c\n", cid.oid[0], cid.oid[1]);
+	journal.jprintf((char*) " Serial number: 0x%x\n", int(cid.psn));
+	journal.jprintf((char*) " Volume is FAT%d\n", int(card.vol()->fatType()));
+	journal.jprintf((char*) " blocksPerCluster: %d\n", int(card.vol()->blocksPerCluster()));
+	journal.jprintf((char*) " clusterCount: %d\n", card.vol()->clusterCount());
+	uint32_t volFree = card.vol()->freeClusterCount();
+	float fs = 0.000512 * volFree * card.vol()->blocksPerCluster();
+	journal.jprintf((char*) " freeSpace: %.2f Mb\n", fs);
+	SPI_switchW5200();
+	return true;
+}
 
 // base64 -хеш функция ------------------------------------------------------------------------------------------------
 /* Copyright (c) 2013 Adam Rudd. */

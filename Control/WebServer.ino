@@ -215,9 +215,9 @@ void readFileSD(char *filename, uint8_t thread)
 	if((strcmp(filename, FILE_CHART) == 0) && (!card.exists(FILE_CHART))) { noCsvChart_SD(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, "TEST_SPEED:", 11) == 0) { // Тестирует скорость чтения файла с SD карты
+	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
 		sendConstRTOS(thread, HEADER_FILE_WEB);
-		filename += 11;
+		filename += 8;
 		journal.jprintf("SD card test: %s - ", filename);
 		SPI_switchSD();
 		if(webFile.open(filename, O_READ)) {
@@ -225,7 +225,7 @@ void readFileSD(char *filename, uint8_t thread)
 			uint32_t size = 0;
 			for(;;) {
 				int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
-				if(n < 0) journal.jprintf("Read SD error!\n");
+				if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 				if(n <= 0) break;
 				size += n;
 				if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
@@ -234,6 +234,15 @@ void readFileSD(char *filename, uint8_t thread)
 			startTick = millis() - startTick;
 			journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
 			webFile.close();
+			/*/ check write!
+			if(!webFile.open(filename, O_RDWR)) journal.jprintf("Error open for writing!\n");
+			else {
+				n = webFile.write("Test write!");
+				journal.jprintf("Wrote %d byte\n", n);
+				if(!webFile.sync()) journal.jprintf("Sync failed (%d,%d)\n", card.cardErrorCode(), card.cardErrorData());
+				webFile.close();
+			}
+			//*/
 		} else {
 			journal.jprintf("not found!\n");
 		}
@@ -292,7 +301,7 @@ void readFileSD(char *filename, uint8_t thread)
 		if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
 		SPI_switchSD();
 	} // while
-	if(n < 0) journal.jprintf("Read SD error!\n");
+	if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 
 	SPI_switchSD();
 	webFile.close();
@@ -855,7 +864,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
        strcat(strReturn,"USE_SD_CRC|Использовать проверку CRC|");_itoa(USE_SD_CRC,strReturn);strcat(strReturn,";");
        strcat(strReturn,"SD_REPEAT|Число попыток чтения карты и открытия файлов, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты, пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/SD_SPI_SPEED,strReturn);strcat(strReturn,";");
+       //strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты, пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/SD_SPI_SPEED,strReturn);strcat(strReturn,";");
 
        // W5200
        strcat(strReturn,"W5200_THREARD|Число потоков для сетевого чипа (web сервера) "); strcat(strReturn,nameWiznet);strcat(strReturn,"|");_itoa(W5200_THREARD,strReturn);strcat(strReturn,";");

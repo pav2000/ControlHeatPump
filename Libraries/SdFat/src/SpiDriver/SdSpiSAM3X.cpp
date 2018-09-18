@@ -63,10 +63,28 @@ static bool dmac_channel_transfer_done(uint32_t ul_num) {
 }
 //------------------------------------------------------------------------------
 void SdSpiAltDriver::begin(uint8_t csPin) {
+// vad7
+  PIO_Configure(
+	g_APinDescription[PIN_SPI_MOSI].pPort,
+	g_APinDescription[PIN_SPI_MOSI].ulPinType,
+	g_APinDescription[PIN_SPI_MOSI].ulPin,
+	g_APinDescription[PIN_SPI_MOSI].ulPinConfiguration);
+  PIO_Configure(
+	g_APinDescription[PIN_SPI_MISO].pPort,
+	g_APinDescription[PIN_SPI_MISO].ulPinType,
+	g_APinDescription[PIN_SPI_MISO].ulPin,
+	g_APinDescription[PIN_SPI_MISO].ulPinConfiguration);
+  PIO_Configure(
+	g_APinDescription[PIN_SPI_SCK].pPort,
+	g_APinDescription[PIN_SPI_SCK].ulPinType,
+	g_APinDescription[PIN_SPI_SCK].ulPin,
+	g_APinDescription[PIN_SPI_SCK].ulPinConfiguration);
+  pmc_enable_periph_clk(ID_SPI0);
   m_csPin = csPin;
   pinMode(m_csPin, OUTPUT);
   digitalWrite(m_csPin, HIGH);
-SPI.begin();
+//  SPI.begin(); // disabled
+// vad7
 #if USE_SAM3X_DMAC
   pmc_enable_periph_clk(ID_DMAC);
   dmac_disable();

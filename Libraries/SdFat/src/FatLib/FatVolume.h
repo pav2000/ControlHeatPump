@@ -35,7 +35,7 @@
 //------------------------------------------------------------------------------
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 /** Macro for debug. */
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #if DEBUG_MODE
 #define DBG_FAIL_MACRO Serial.print(F(__FILE__)); Serial.println(__LINE__);
 #define DBG_PRINT_IF(b) if (b) {Serial.println(F(#b)); DBG_FAIL_MACRO;}

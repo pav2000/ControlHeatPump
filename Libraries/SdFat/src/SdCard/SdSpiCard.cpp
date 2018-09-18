@@ -29,7 +29,8 @@
 #define SD_CS_DBG(m)
 // #define SD_CS_DBG(m) Serial.println(F(m));
 //==============================================================================
-#if USE_SD_CRC
+uint8_t command_crc = 0;				// vad7
+#if USE_SD_CRC || USE_SD_CRC_FOR_WRITE	// vad7
 // CRC functions
 //------------------------------------------------------------------------------
 static uint8_t CRC7(const uint8_t* data, uint8_t n) {
@@ -47,7 +48,7 @@ static uint8_t CRC7(const uint8_t* data, uint8_t n) {
   return (crc << 1) | 1;
 }
 //------------------------------------------------------------------------------
-#if USE_SD_CRC == 1
+#if USE_SD_CRC == 1 || USE_SD_CRC_FOR_WRITE // vad7
 // Shift based CRC-CCITT
 // uses the x^16,x^12,x^5,x^1 polynomial.
 static uint16_t CRC_CCITT(const uint8_t *data, size_t n) {
@@ -210,7 +211,7 @@ uint8_t SdSpiCard::cardCommand(uint8_t cmd, uint32_t arg) {
   // wait if busy
   waitNotBusy(SD_WRITE_TIMEOUT);
 
-#if USE_SD_CRC
+ if(command_crc) { //#if USE_SD_CRC // vad7
   // form message
   uint8_t buf[6];
   buf[0] = (uint8_t)0x40U | cmd;
@@ -224,7 +225,7 @@ uint8_t SdSpiCard::cardCommand(uint8_t cmd, uint32_t arg) {
 
   // send message
   spiSend(buf, 6);
-#else  // USE_SD_CRC
+ } else { //#else  // USE_SD_CRC // vad7
   // send command
   spiSend(cmd | 0x40);
 
@@ -236,7 +237,7 @@ uint8_t SdSpiCard::cardCommand(uint8_t cmd, uint32_t arg) {
 
   // send CRC - correct for CMD0 with arg zero or CMD8 with arg 0X1AA
   spiSend(cmd == CMD0 ? 0X95 : 0X87);
-#endif  // USE_SD_CRC
+ } //#endif  // USE_SD_CRC //vad7
 
   // skip stuff byte for stop read
   if (cmd == CMD12) {
@@ -527,6 +528,17 @@ bool SdSpiCard::waitNotBusy(uint16_t timeoutMS) {
 //------------------------------------------------------------------------------
 bool SdSpiCard::writeBlock(uint32_t blockNumber, const uint8_t* src) {
   SD_TRACE("WB", blockNumber);
+
+  // vad7
+#if USE_SD_CRC_FOR_WRITE
+  if(cardCommand(CMD59, 1)) { // CRC ON
+    error(SD_CARD_ERROR_CMD59);
+    goto fail;
+  }
+  command_crc = 1;
+#endif
+  // vad7
+
   // use address if not SDHC card
   if (type() != SD_CARD_TYPE_SDHC) {
     blockNumber <<= 9;
@@ -539,6 +551,15 @@ bool SdSpiCard::writeBlock(uint32_t blockNumber, const uint8_t* src) {
     goto fail;
   }
 
+  // vad7
+#if USE_SD_CRC_FOR_WRITE
+  if(cardCommand(CMD59, 0)) { // CRC OFF
+    error(SD_CARD_ERROR_CMD59);
+    goto fail;
+  }
+  command_crc = 0;
+#endif
+  // vad7
 
 #if CHECK_FLASH_PROGRAMMING
   // wait for flash programming to complete
@@ -562,6 +583,16 @@ fail:
 }
 //------------------------------------------------------------------------------
 bool SdSpiCard::writeBlocks(uint32_t block, const uint8_t* src, size_t count) {
+  // vad7
+#if USE_SD_CRC_FOR_WRITE
+  if(cardCommand(CMD59, 1)) { // CRC ON
+	error(SD_CARD_ERROR_CMD59);
+	goto fail;
+  }
+  command_crc = 1;
+#endif
+  // vad7
+
   if (!writeStart(block)) {
     goto fail;
   }
@@ -570,9 +601,21 @@ bool SdSpiCard::writeBlocks(uint32_t block, const uint8_t* src, size_t count) {
       goto fail;
     }
   }
+  // vad7
+#if USE_SD_CRC_FOR_WRITE
+  if(cardCommand(CMD59, 0)) { // CRC OFF
+	error(SD_CARD_ERROR_CMD59);
+	spiStop();
+	return false;
+  }
+  command_crc = 0;
+#endif
+  // vad7
+
   return writeStop();
 
  fail:
+  cardCommand(CMD59, 0); // CRC OFF, vad7
   spiStop();
   return false;
 }
@@ -595,7 +638,7 @@ fail:
 //------------------------------------------------------------------------------
 // send one block of data for write block or write multiple blocks
 bool SdSpiCard::writeData(uint8_t token, const uint8_t* src) {
-#if USE_SD_CRC
+#if USE_SD_CRC || USE_SD_CRC_FOR_WRITE // vad7
   uint16_t crc = CRC_CCITT(src, 512);
 #else  // USE_SD_CRC
   uint16_t crc = 0XFFFF;

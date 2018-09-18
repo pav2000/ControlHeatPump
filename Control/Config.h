@@ -2268,12 +2268,14 @@ enum TYPE_SENSOR
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	#ifndef  TEST_BOARD
 		uint8_t SPI_RATE 				= 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+		//#define SD_LOW_SPEED					// Если этот дефайн то скорость для КАРТЫ понижается вдвое
 		const boolean   defaultDHCP	=	false;
 		const IPAddress defaultIP		(192, 168, 1,  10);
 		const IPAddress defaultSDNS		(  8,   8, 8,   8);
 		const IPAddress defaultGateway	(192, 168, 1,   1);
 	#else
 		uint8_t SPI_RATE 				= 4;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz
+		#define SD_LOW_SPEED					// Если этот дефайн то скорость для КАРТЫ понижается вдвое
 		const boolean   defaultDHCP	=	true;
 		const IPAddress defaultIP		(192, 168, 0, 199);
 		const IPAddress defaultSDNS		(192, 168, 0,   10);
