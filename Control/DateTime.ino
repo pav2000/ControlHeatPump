@@ -34,7 +34,7 @@ int8_t set_time(void)
    rtcSAM3X8.init();                             // Запуск внутренних часов
    journal.jprintf(" Init internal RTC sam3x8e\n"); 
    ttime=TimeToUnixTime(getTime_RtcI2C());   // Прочитать время из часов i2c
-   rtcSAM3X8.set_clock(ttime,0);                // Установить внутренние часы по i2c   
+   rtcSAM3X8.set_clock(ttime);                // Установить внутренние часы по i2c
    _delay(200);         
    journal.jprintf(" Set time internal RTC form i2c RTC DS3231: %s ",NowDateToStr());journal.jprintf("%s\n",NowTimeToStr());  // Одним оператором есть косяк
   

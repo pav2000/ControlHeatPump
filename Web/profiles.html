@@ -20,7 +20,7 @@
 	<h1>Управление профилями</h1>
 	<div class="row1">
 		<h2>Текущий профиль
-			<input id="get_profile-id_profile" type="number" min="0" max="7">
+			<input id="get_profile-id_profile" type="number" min="1">
 			<input id="get_profile-id_profile2" type="submit" value="Изменить номер *"  onclick="setParam('get_Profile(ID_PROFILE)');">
 			<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'>
 		</h2>
@@ -31,7 +31,7 @@
 		<tr>
 			<td>Имя профиля</td>
 			<td>
-				<input id="get_profile-name_profile" type="text" maxlength="10">
+				<input id="get_profile-name_profile" type="text">
 				<input id="get_profile-name_profile2" type="submit" value=">"  onclick="setParam('get_Profile(NAME_PROFILE)');">
 			</td>
 		</tr>
@@ -44,7 +44,7 @@
 		<tr>
 			<td>Описание профиля</td>
 			<td>
-				<input id="get_profile-note_profile" type="text" maxlength="40">
+				<input id="get_profile-note_profile" type="text">
 				<input id="get_profile-note_profile2" type="submit" value=">"  onclick="setParam('get_Profile(NOTE_PROFILE)');">
 			</td>
 		</tr>

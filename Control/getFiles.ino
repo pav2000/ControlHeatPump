@@ -985,41 +985,41 @@ int16_t x;
 }
 #ifdef I2C_EEPROM_64KB     
 // Получить файл со ВСЕЙ статистикой возвращает число отправленных байт
-uint16_t get_csvStatistic(uint8_t thread)
-{
-   int16_t i; 
-   uint32_t sum=0,s=0;
-   // заголовок
-   sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nContent-Type:text/plain\r\nContent-Disposition: attachment; filename=\"statistic.csv\"\r\n\r\n");
-   strcpy(Socket[thread].outBuf,"Pos;Date;Tin;Tout;Tboiler;Hour;Hmoto;");
-   #ifdef FLOWCON
-   strcat(Socket[thread].outBuf,"EnergyCO;");   // выработанная энергия
-   #endif
-   #ifdef USE_ELECTROMETER_SDM
-   strcat(Socket[thread].outBuf,"Energy220;");  // потраченная энергия
-   strcat(Socket[thread].outBuf,"COP;");        // КОП
-   #endif
-   #ifdef FLOWCON
-   strcat(Socket[thread].outBuf,"PowerCO;");    // средння мощность СО
-   #endif
-   #ifdef USE_ELECTROMETER_SDM
-   strcat(Socket[thread].outBuf,"Power220;");   // средняя потребляемая мощность
-   #endif
-   STR_END;
-   s=strlen(Socket[thread].outBuf);
-   if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
-   sum=s;
-     for(i=0;i<HP.Stat.available();i++) // данные
-     {
-       HP.Stat.get_OneDay(Socket[thread].outBuf,i,false);  
-       STR_END; 
-       s=strlen(Socket[thread].outBuf);
-       if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                      // передать пакет, при ошибке выйти
-       sum=sum+s;      
-      }
-    
-  return sum;   
-}
+//uint16_t get_csvStatistic(uint8_t thread)
+//{
+//   int16_t i;
+//   uint32_t sum=0,s=0;
+//   // заголовок
+//   sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nContent-Type:text/plain\r\nContent-Disposition: attachment; filename=\"statistic.csv\"\r\n\r\n");
+//   strcpy(Socket[thread].outBuf,"Pos;Date;Tin;Tout;Tboiler;Hour;Hmoto;");
+//   #ifdef FLOWCON
+//   strcat(Socket[thread].outBuf,"EnergyCO;");   // выработанная энергия
+//   #endif
+//   #ifdef USE_ELECTROMETER_SDM
+//   strcat(Socket[thread].outBuf,"Energy220;");  // потраченная энергия
+//   strcat(Socket[thread].outBuf,"COP;");        // КОП
+//   #endif
+//   #ifdef FLOWCON
+//   strcat(Socket[thread].outBuf,"PowerCO;");    // средння мощность СО
+//   #endif
+//   #ifdef USE_ELECTROMETER_SDM
+//   strcat(Socket[thread].outBuf,"Power220;");   // средняя потребляемая мощность
+//   #endif
+//   STR_END;
+//   s=strlen(Socket[thread].outBuf);
+//   if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
+//   sum=s;
+//     for(i=0;i<HP.Stat.available();i++) // данные
+//     {
+//       HP.Stat.get_OneDay(Socket[thread].outBuf,i,false);
+//       STR_END;
+//       s=strlen(Socket[thread].outBuf);
+//       if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                      // передать пакет, при ошибке выйти
+//       sum=sum+s;
+//      }
+//
+//  return sum;
+//}
 #endif
 
 

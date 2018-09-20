@@ -52,7 +52,8 @@
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
- 
+#include "Graphics.h"
+
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
@@ -256,7 +257,7 @@ pinMode(21, OUTPUT);
   #endif
 
 //  #ifdef POWER_CONTROL
-  SupplyMonitorON(SUPC_SMMR_SMTH_3_2V);           // включение монитора питания
+  SupplyMonitorON(SUPC_SMMR_SMTH_3_0V);           // включение монитора питания
 //  #endif
    
   #ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
@@ -403,7 +404,7 @@ x_I2C_init_std_message:
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
    journal.jprintf("4. Init and checking SD card . . .\n");
-   HP.set_fSD(initSD(SD_REPEAT));
+   HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    //_delay(100);
@@ -448,12 +449,12 @@ x_I2C_init_std_message:
     #endif 
 
   // 13. Инициалазация Statistics
-   #ifdef I2C_EEPROM_64KB  
-     HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init statistic.\n");
-  #else    
-     journal.jprintf("10. Statistic no support (low memory).\n");
-  #endif
+   journal.jprintf("10. Statistics");
+   if(HP.get_fSD()) {
+	   //HP.InitStatistics();
+	   journal.jprintf(" - writing on SD card\n");
+   } else journal.jprintf(" - not available\n");
+
 
 #ifdef USE_SCHEDULER
    int8_t _profile = HP.Schdlr.calc_active_profile();
@@ -758,66 +759,60 @@ void vWeb0( void *)
 }
 
 // Второй поток
-void vWeb1( void * )
+void vWeb1(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(1);
-     vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
- 
-    }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(1);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+
+	}
+	vTaskDelete( NULL);
 }
 // Третий поток
-void vWeb2( void * )
+void vWeb2(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(2);
-     vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
- 
-    }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(2);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+
+	}
+	vTaskDelete( NULL);
 }
 // Четвертый поток
-void vWeb3( void * )
+void vWeb3(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(3);
-      vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-     }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(3);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete( NULL);
 }
 
 // Задача обслуживания Nextion
-void vNextion( void * )
-{ 
-  static unsigned long NextionTick=0;
-    for( ;; )
-    {
-     #ifdef NEXTION    
-      myNextion.Listen();                  // прочитать сообщения от дисплея
-      if(((long)xTaskGetTickCount()-NextionTick ) >  NEXTION_UPDATE)   
-      {
-        NextionTick=xTaskGetTickCount();
-        myNextion.Update();                  // Обновление дисплея
-      }
-     #endif
-      vTaskDelay(NEXTION_READ/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-    }
-  vTaskDelete( NULL );  
+void vNextion(void *)
+{
+	static unsigned long NextionTick = 0;
+	for(;;) {
+#ifdef NEXTION
+		myNextion.Listen();                  // прочитать сообщения от дисплея
+		if(((long) xTaskGetTickCount() - NextionTick) > NEXTION_UPDATE) {
+			NextionTick = xTaskGetTickCount();
+			myNextion.Update();                  // Обновление дисплея
+		}
+#endif
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete( NULL);
 }
 
 // Задача обновление статистики
-void vUpdateStat( void * )
+void vUpdateStat(void *)
 { //const char *pcTaskName = "statChart is running\r\n";
-   for( ;; )
-    {
-      HP.updateChart();                                       // Обновить статитсику
-      vTaskDelay((HP.get_tChart()*1000)/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-     }
-  vTaskDelete( NULL );  
+	for(;;) {
+		HP.updateChart();                                       // Обновить статитсику
+		vTaskDelay((HP.get_tChart() * 1000) / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete( NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -940,7 +935,7 @@ void vReadSensor(void *)
 			if((oldTime = rtcSAM3X8.unixtime()) - countI2C > TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
 			{
 				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				rtcSAM3X8.set_clock(ttime, 0);                 // Установить внутренние часы по i2c
+				rtcSAM3X8.set_clock(ttime);                		 // Установить внутренние часы по i2c
 				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
 				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
 				countI2C = ttime;                               // запомнить время
@@ -998,11 +993,15 @@ void vReadSensor_delay10ms(int16_t msec)
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif
 #ifdef USE_UPS
-		if(HP.sInput[SPOWER].is_alarm() && !HP.NO_Power) {  // Электричество кончилось
-			if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
-				HP.sendCommand(pWAIT);
-				HP.NO_Power = 2;
-			} else HP.NO_Power = 1;
+		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
+			if(!HP.NO_Power) {
+				HP.save_motoHour();
+				Stats.Save();
+				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
+					HP.sendCommand(pWAIT);
+					HP.NO_Power = 2;
+				} else HP.NO_Power = 1;
+			}
 		} else if(HP.NO_Power) { // Включаемся
 			#ifdef USE_SCHEDULER
 			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
@@ -1019,6 +1018,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif
 	}
 }
+
 //////////////////////////////////////////////////////////////////////////
 // Задача Управление тепловым насосом (xHandleUpdate)
  void vUpdate( void * )
@@ -1183,7 +1183,10 @@ void vReadSensor_delay10ms(int16_t msec)
 					HP.time_Sun_OFF = 0;
 				}
 			}
-		} else HP.Sun_OFF();
+		} else {
+			HP.Sun_OFF();
+			HP.time_Sun_OFF = 0;	// выключить задержку последующего включения
+		}
 #endif
 	 }// for
 	 vTaskDelete( NULL );

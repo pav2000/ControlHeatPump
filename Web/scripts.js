@@ -1,4 +1,4 @@
-/* ver 0.961 beta */
+/* ver 0.962 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
@@ -28,7 +28,7 @@ function setParam(paramid, resultid) {
 		var fprof, lprof = -2, len = 0;
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
-			var prof = colls[j].innerHTML == "" ? -1 : colls[j].innerHTML;
+			var prof = colls[j].innerHTML == "" ? 0 : colls[j].innerHTML;
 			if(prof != lprof) {
 				elval += (((j / 24 | 0) << 5) | (j % 24)) + ";" + prof + ";";
 				if(lprof == -2) {
@@ -36,7 +36,7 @@ function setParam(paramid, resultid) {
 					flen = elval.length;
 				}
 				lprof = prof;
-				len += 2;
+				if((len += 2) == 254) break;
 			}
 		}
 		if(fprof == lprof && len > 2) {
@@ -705,7 +705,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
-												content = content + '<tr id="get_profile-' + j + '"><td>' + j + '</td><td id="infoprofile-' + j + '"></td>';
+												content = content + '<tr id="get_profile-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
 												content = content + '<td><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -827,8 +827,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.checked = onoff;
 									if((element=document.getElementById('set_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
-									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
-									if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
+									//if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
+									//if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
 									if((element=document.getElementById('scan'))) element.disabled = onoff;
 									element = document.getElementById('manual_override'); if(element && element.checked) onoff = false;
 									var elements = document.getElementsByName('profile');

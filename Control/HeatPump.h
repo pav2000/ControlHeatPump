@@ -247,9 +247,6 @@ class HeatPump
    #ifdef MQTT
       clientMQTT clMQTT;                // MQTT клиент
    #endif
-   #ifdef I2C_EEPROM_64KB  
-      Statistics Stat;                 // Статистика работы теплового насоса
-   #endif
   // Сетевые настройки
     boolean set_network(char *var, char *c);        // Установить параметр из строки
     char*   get_network(char *var,char *ret);       // Получить параметр из строки
@@ -415,11 +412,6 @@ class HeatPump
     float power220;                                         // Мощность системы 220
     int16_t fullCOP;                                        // Полный СОР  сотые 
     int16_t COP;                                            // Чистый COP сотые
-    
-    #ifdef I2C_EEPROM_64KB   // Статистика ----------------------------------------------------------------------
-    void InitStatistics();    // Функция вызываемая для первого часа для инициализации первичных счетчиков
-    void UpdateStatistics();  // обновление статистики дня, если нужно то пишет в память полный день и открывает новый (вызывать надо раз в час)
-    #endif
     
     // Удаленные датчики
     #ifdef SENSOR_IP

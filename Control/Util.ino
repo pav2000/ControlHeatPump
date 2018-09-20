@@ -343,7 +343,7 @@ void SupplyMonitorON(uint32_t voltage)
 	startSupcStatusReg = SUPC->SUPC_SR;                        // запомнить состояние при старте
 	journal.jprintf("Supply Controller Status Register [SUPC_SR]: 0x%08x\n", startSupcStatusReg);
 
-	SUPC->SUPC_SMMR |= voltage | SUPC_SMMR_SMSMPL_CSM;     //SUPC_SMMR_SMSMPL_2048SLCK;  // Настройка контроля пититания
+	SUPC->SUPC_SMMR |= voltage | SUPC_SMMR_SMRSTEN_ENABLE | SUPC_SMMR_SMSMPL_CSM;   // RESET если напряжение просело, контроль 1/32768 сек
 	SUPC->SUPC_MR |= SUPC_MR_KEY(SUPC_KEY_VALUE) | SUPC_MR_BODDIS_ENABLE; // Включение контроля (это лишнее при сбросе это включено)
 	journal.jprintf("Supply monitor ON, voltage: %.1fV\n", (float) voltage / 10 + 1.9);
 }
@@ -468,20 +468,16 @@ char * get_Schedule(uint32_t *sh)
 
 // Инициализация СД карты, параметр num - число попыток
 // возврат true - если успешно, false - карты нет работаем без нее
-boolean initSD(uint8_t num)
+boolean initSD(void)
 {
-	uint8_t i;
 	boolean success = false;   // флаг успешности инициализации
-
 	journal.jprintf("Initializing SD card...\n");
 #ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
-	pinMode(PIN_NO_SD_CARD,INPUT);     // ++ CD Программирование проверки наличия карты
+	pinMode(PIN_NO_SD_CARD, INPUT);     // ++ CD Программирование проверки наличия карты
 	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("ERROR - No SD card in slot.\n"); return false;}
 	else journal.jprintf("SUCCESS - SD card insert in slot.\n");
 #endif
-
 	// 1. Инициалазация карты
-	SPI.end();
 	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
 		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
 /*
@@ -510,7 +506,6 @@ boolean initSD(uint8_t num)
 			digitalWriteDirect(75, LOW);
 			digitalWriteDirect(76, LOW);
 			_delay(200);
-
 #ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
 			if (card.begin(4,SPI_HALF_SPEED)) {success=true; break;}  // Половина скорости
 #else
@@ -917,4 +912,10 @@ void load_struct(void *to, uint8_t **from, uint16_t to_size)
 	size >>= 1;
 	if(to != NULL) memcpy(to, *from, size <= to_size ? size : to_size);
 	*from += size;
+}
+
+// Round float * mul, mul: 10, 100, 1000
+int16_t rd(float num, int16_t mul)
+{
+	return num * mul + (mul == 100 ? 0.005 : mul == 10 ? 0.05 : 0.0005) * (num < 0 ? -1 : 1);
 }

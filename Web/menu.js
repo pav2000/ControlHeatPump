@@ -36,7 +36,6 @@ document.write('\
             <li class="eev"><a href="eev.html">ЭРВ</a></li>\
             <li class="relay"><a href="relay.html">Реле</a></li>\
             <li class="invertor"><a href="invertor.html"><i></i>Инвертор</a></li>\
-            <li class="const"><a href="const.html"><i></i>Константы</a></li>\
         </ul>\
     </li>\
     <li class="lan config system files time notice mqtt  has-children">\
@@ -49,6 +48,7 @@ document.write('\
             <li class="notice"><a href="notice.html">Уведомления</a></li>\
             <li class="mqtt"><a href="mqtt.html">MQTT</a></li>\
             <li class="system"><a href="system.html">Система</a></li>\
+            <li class="const"><a href="const.html"><i></i>Константы</a></li>\
             <li class="files"><a href="files.html">Файлы</a></li>\
         </ul>\
     </li>\

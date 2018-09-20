@@ -44,9 +44,9 @@ const char* Scheduler::get_note(void)
 }
 
 // Возвращает указатель на запись календаря в TimeTable по его номеру
-uint8_t Scheduler::Timetable_ptr(uint8_t num)
+uint16_t Scheduler::Timetable_ptr(uint8_t num)
 {
-	uint8_t i = 0;
+	uint16_t i = 0;
 	while(num--) i += sch_data.Timetable[i] + 1;
 	return i;
 }
@@ -56,7 +56,8 @@ uint8_t Scheduler::Timetable_ptr(uint8_t num)
 int8_t Scheduler::calc_active_profile(void)
 {
 	Scheduler_Calendar_Item *item;
-	uint8_t cal_dw, cal_h, dw, h, ptr, max, found = 0;
+	uint8_t cal_dw, cal_h, dw, h;
+	uint16_t ptr, max, found = 0;
 
 	if((sch_data.Flags & (1<<bScheduler_active)) == 0) return SCHDLR_NotActive;
 	ptr = Timetable_ptr(sch_data.Active);
@@ -77,11 +78,11 @@ int8_t Scheduler::calc_active_profile(void)
 	} else { // Берем последнюю
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[max - sizeof(Scheduler_Calendar_Item) + 1];
 	}
-	return item->Profile;
+	return item->Profile-1;
 }
 
 // Вернуть строку параметра для веба, get_SCHDLR(param)
-void 	Scheduler::web_get_param(char *param, char *result)
+void Scheduler::web_get_param(char *param, char *result)
 {
 	uint8_t cnum;
 	result += strlen(result);
@@ -96,16 +97,16 @@ void 	Scheduler::web_get_param(char *param, char *result)
 			if(i == sch_data.Active) strcat(result, ":1;"); else strcat(result, ":0;");
 		}
 	} else ifparam(WEB_SCH_Calendar) { // get_SCHDLR(CalendarX), X - расписание, если пусто, то активное.
-		// Возврат: {wd+h};{profile|};... Если профайл -1(255), то вывод ""
+		// Возврат: {wd+h};{profile+1|};... Если профайл -1(255), то вывод ""
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) {
 			strcat(result, "E33");
 		} else {
-			uint8_t ptr = Timetable_ptr(cnum);
-			uint8_t max = ptr + sch_data.Timetable[ptr];
+			uint16_t ptr = Timetable_ptr(cnum);
+			uint16_t max = ptr + sch_data.Timetable[ptr];
 			for(ptr++; ptr <= max; ptr++) {
 				result += strlen(result);
-				if(sch_data.Timetable[ptr] != 255) itoa(sch_data.Timetable[ptr], result, 10);
+				if(sch_data.Timetable[ptr]) itoa(sch_data.Timetable[ptr], result, 10);
 				if(ptr < max) strcat(result, ";");
 			}
 		}
@@ -137,7 +138,7 @@ uint8_t Scheduler::web_set_param(char *param, char *val)
 		urldecode(sch_data.Names[cnum], val, sizeof(sch_data.Names[0]));
 	} else ifparam(WEB_SCH_Calendar) { // CalendarX=str, X - расписание, если пусто, то активное; str = length;{wday+h;profile|-1; wday+h;profile|-1; ...}
 		char *p;
-		uint8_t size, cur_ptr, cur_size;
+		uint16_t size, cur_ptr, cur_size;
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) return 1;
 		uint8_t nlen = 0;

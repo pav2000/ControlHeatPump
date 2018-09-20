@@ -524,8 +524,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 }
 
 // Установить параметр инвертора из строки
-boolean devVaconFC::set_paramFC(char *var, float x)
+boolean devVaconFC::set_paramFC(char *var, float f)
 {
+	int16_t x = f;
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
     if(strcmp(var,fc_AUTO)==0)                  { _data.setup_flags = (_data.setup_flags & ~(1<<fAuto)) | ((x!=0)<<fAuto); return true;  } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { _data.setup_flags = (_data.setup_flags & ~(1<<fAutoResetFault)) | ((x!=0)<<fAutoResetFault); return true;  } else
@@ -543,7 +544,7 @@ boolean devVaconFC::set_paramFC(char *var, float x)
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else
    
-		x = x*100 + 0.005;
+		x = rd(f, 100);
     	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
 		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_targetFreq(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
 		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
