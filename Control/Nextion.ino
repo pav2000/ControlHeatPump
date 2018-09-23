@@ -215,95 +215,98 @@ boolean Nextion::setComponentText(char* component, char* txt){
 
 
 
-String Nextion::readCommand(){//returns generic
-  char _bite;
-  char _end = 0xff;//end of file x3
-  String cmd;
-  int countEnd = 0;
-  boolean f=false;   // флаг начала команды
+String Nextion::readCommand()
+{ //returns generic
+	char _bite;
+	char _end = 0xff; //end of file x3
+	String cmd = "";
+	int countEnd = 0;
+	boolean f = false;   // флаг начала команды
 
-  while(NEXTION_PORT.available()>0){
-  _delay(1);
-	if(NEXTION_PORT.available()>0)
-        	{
-        	  _bite = NEXTION_PORT.read();
-            if ((_bite == _end)&&(f==false)) continue;   // отбрасываем если впереди FF
-            f=true; // нашли начало команды
-        	  cmd += _bite;
-        	  if(_bite == _end){
-        		countEnd++;
-        	  }//end if
-        	  if(countEnd == 3){
-        		break;
-        	  }//end if
-	}//end if
-  }//end while
+	while(NEXTION_PORT.available() > 0) {
+		_bite = NEXTION_PORT.read();
+		if((_bite == _end) && (f == false)) continue;   // отбрасываем если впереди FF
+		f = true; // нашли начало команды
+		cmd += _bite;
+		if(_bite == _end) {
+			countEnd++;
+		} //end if
+		if(countEnd == 3) {
+			break;
+		} //end if
+		_delay(1);
+	} //end while
 
 #ifdef NEXTION_DEBUG
-  if(cmd != ""){
-  journal.jprintf("Nextion get: ");  
-	for(int o  = 0 ; o < cmd.length(); o++){
-	  journal.jprintf("%x",cmd[o]);
-	}
-	journal.jprintn(cStrEnd);
-	}//
+	if(cmd != "") {
+		journal.jprintf("Nextion get: ");
+		for(int o = 0; o < cmd.length(); o++) {
+			journal.jprintf("%x",cmd[o]);
+		}
+		journal.jprintf(cStrEnd);
+	} //
 #endif
 
-  String temp = "";
-  int8_t  oldPageID=PageID; // Запомнить старую страницу
-  switch (cmd[0]) {
-  case 'e'://0x65   Same than default -.-
-	countEnd = 0;//Revision for not include last space " "
-	for(uint8_t i = 0; i<cmd.length(); i++){
-	  if(cmd[i] == _end){countEnd++;}//end if
-	  temp += String(cmd[i], HEX);//add hexadecimal value
-	  if(countEnd == 3){
-		return temp;
-	  }//end if
-	  temp += " ";//For easy visualization   
-	}//end for
-	break;
-  case 'f'://0x66
-	//Serial.print(String(cmd[1], HEX));
-//	return String(cmd[1], DEC);
-  PageID=(int8_t)cmd.charAt(1);     // 
-  if (PageID!=oldPageID) { fPageID=true;  Update();}   // Произошла смена страницы
-  return cmd;
-	break;
-  case 'g'://0x67
-	cmd = String(cmd[2], DEC) + "," + String(cmd[4], DEC) +","+ String(cmd[5], DEC);
-	return cmd;
-	break;
-  case 'h'://0x68
-	cmd = String(cmd[2], DEC) + "," + String(cmd[4], DEC) +","+ String(cmd[5], DEC);
-	cmd = "68 " + cmd;	
-	return cmd;
-	break;
-  case 'p'://0x70
-	cmd = cmd.substring(1, cmd.length()-3);
-	cmd = "70 " + cmd;
-	return cmd;
-	break;
-  case 0x87://0x87  выход из сна
-  Update();
-  fPageID=true;
-  return cmd;
-  break;
-  
-  default: 
-	//	cmd += String(b, HEX);
-	//if(ff == 3){break;}//end if
-	//cmd += " ";//
-	return cmd;//
-	break;
-  }//end switch	
-  return "";
-}//end listen
+	String temp = "";
+	int8_t oldPageID = PageID; // Запомнить старую страницу
+	switch(cmd[0]) {
+	case 'e': //0x65   Same than default -.-
+		countEnd = 0; //Revision for not include last space " "
+		for(uint8_t i = 0; i < cmd.length(); i++) {
+			if(cmd[i] == _end) {
+				countEnd++;
+			} //end if
+			temp += String(cmd[i], HEX); //add hexadecimal value
+			if(countEnd == 3) {
+				return temp;
+			} //end if
+			temp += " "; //For easy visualization
+		} //end for
+		break;
+	case 'f': //0x66
+		//Serial.print(String(cmd[1], HEX));
+		//	return String(cmd[1], DEC);
+		PageID = (int8_t) cmd.charAt(1);     //
+		if(PageID != oldPageID) {
+			fPageID = true;
+			Update();
+		}   // Произошла смена страницы
+		return cmd;
+		break;
+	case 'g':   //0x67
+		cmd = String(cmd[2], DEC) + "," + String(cmd[4], DEC) + "," + String(cmd[5], DEC);
+		return cmd;
+		break;
+	case 'h':   //0x68
+		cmd = String(cmd[2], DEC) + "," + String(cmd[4], DEC) + "," + String(cmd[5], DEC);
+		cmd = "68 " + cmd;
+		return cmd;
+		break;
+	case 'p':   //0x70
+		cmd = cmd.substring(1, cmd.length() - 3);
+		cmd = "70 " + cmd;
+		return cmd;
+		break;
+	case 0x87:   //0x87  выход из сна
+		Update();
+		fPageID = true;
+		return cmd;
+		break;
+
+	default:
+		//	cmd += String(b, HEX);
+		//if(ff == 3){break;}//end if
+		//cmd += " ";//
+		return cmd;	//
+		break;
+	}	//end switch
+	return "";
+}	//end listen
 
 
 int8_t Nextion::pageId(void){
   sendCommand("sendme");
-  _delay(20);
+  _delay(10);
   String pagId = readCommand();
  // Serial.print("ID = ");
  // Serial.println(pagId);
@@ -368,7 +371,7 @@ void Nextion::Update()
   setComponentText((char*)"time", NowTimeToStr1());  // Обновить время
  // 1. Определение текущей страницы
   sendCommand("sendme");
-  _delay(20);
+  _delay(10);
   Listen();
   #ifdef NEXTION_DEBUG     
      journal.jprintf("Nextion page=%d\n",PageID);

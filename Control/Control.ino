@@ -791,11 +791,11 @@ void vWeb3(void *)
 // Задача обслуживания Nextion
 void vNextion(void *)
 {
-	static unsigned long NextionTick = 0;
+	static uint32_t NextionTick = 0;
 	for(;;) {
 #ifdef NEXTION
 		myNextion.Listen();                  // прочитать сообщения от дисплея
-		if(((long) xTaskGetTickCount() - NextionTick) > NEXTION_UPDATE) {
+		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
 			NextionTick = xTaskGetTickCount();
 			myNextion.Update();                  // Обновление дисплея
 		}

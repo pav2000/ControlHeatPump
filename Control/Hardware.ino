@@ -2141,11 +2141,13 @@ static inline void postTransmission() // Функция вызываемая П�
 // Инициализация Modbus без проверки связи связи
 int8_t devModbus::initModbus()    
      {
-      #ifdef PIN_MODBUS_RSE
+#ifdef MODBUS_PORT_NUM
         flags=0x00;
         SETBIT1(flags,fModbus);                                                      // модбас присутствует
+	#ifdef PIN_MODBUS_RSE
         pinMode(PIN_MODBUS_RSE , OUTPUT);                                            // Подготовка управлением полудуплексом
         digitalWriteDirect(PIN_MODBUS_RSE , LOW);
+	#endif
         MODBUS_PORT_NUM.begin(MODBUS_PORT_SPEED,MODBUS_PORT_CONFIG);                 // SERIAL_8N1 - настройки по умолчанию
         RS485.begin(1,MODBUS_PORT_NUM);                                              // Привязать к сериал
         // Назначение функций обратного вызова
@@ -2153,11 +2155,11 @@ int8_t devModbus::initModbus()
         RS485.postTransmission(postTransmission);
         RS485.idle(idle);
         err=OK;                                                                      // Связь есть
-       #else
+#else
         flags=0x00;
         SETBIT0(flags,fModbus);                                                     // модбас отсутвует
         err=ERR_NO_MODBUS;
-       #endif 
+#endif
         return err;                                                                 
      }
      

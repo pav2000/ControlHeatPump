@@ -170,16 +170,16 @@
 			</td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>7</sup></td>
+			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>7</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
+				<input id="get_optionhp-next_sleep" type="number" min="0" step="1" value="0">
 				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
 			</td>
 		</tr>
 		<tr>
-			<td>Яркость дисплея Nextion в % [5..100]</td>
+			<td>Яркость дисплея Nextion в % [1..100]</td>
 			<td nowrap>
-				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
+				<input id="get_optionhp-next_dim" type="number" min="1" max="100" step="1" value="100">
 				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
 			</td>
 		</tr>
