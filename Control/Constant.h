@@ -250,7 +250,6 @@ const uint16_t  defaultPort=80;
 #define UPDATE_IP         120            // Время с получения последнего пакета от удаленного датчика (в сек) после которого считается что датчик не активен и не используетс в расчетах
 
 // ------------------- MQTT ----------------------------------
-#define MQTT                             // признак использования MQTT при неиспользовании необходимо закоментировать
 #define MQTT_REPEAT                      // Делать попытку повторного соединения с сервером
 #define MQTT_NUM_ERR_OFF   8             // Число ошибок отправки подряд при котором отключается сервис отправки MQTT (флаг сбрасывается)
 
@@ -747,12 +746,13 @@ const char *option_PUMP_PAUSE         = {"PUMP_PAUSE"};         // пауза м
 const char *option_ATTEMPT            = {"ATTEMPT"};            // число попыток пуска
 const char *option_TIME_CHART         = {"TIME_CHART"};         // период сбора статистики
 const char *option_BEEP               = {"BEEP"};               // включение звука
-const char *option_NEXTION            = {"NEXTION"};            // использование дисплея nextion
+const char *option_NEXTION            = {"NXT"};                // использование дисплея nextion
+const char *option_NEXTION_WORK       = {"NXTW"};               // Включать дисплей, когда ТН работает
 const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
 const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг писать в лог нерегулярные ошибки счетчика SDM
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
-const char *option_NEXT_SLEEP         = {"NEXT_SLEEP"};         // Время засыпания секунды NEXTION
-const char *option_NEXT_DIM           = {"NEXT_DIM"};           // Якрость % NEXTION
+const char *option_NEXT_SLEEP         = {"NXTS"};               // Время засыпания секунды NEXTION
+const char *option_NEXT_DIM           = {"NXTD"};               // Якрость % NEXTION
 const char option_SGL1W[]             = "SGL1W_";			    // SGLOW_n, На шине n (1-Wire, DS2482) только один датчик
 const char *option_DELAY_ON_PUMP      = {"DELAY_ON_PUMP"};      // Задержка включения компрессора после включения насосов (сек).
 const char *option_DELAY_OFF_PUMP     = {"DELAY_OFF_PUMP"};     // Задержка выключения насосов после выключения компрессора (сек).

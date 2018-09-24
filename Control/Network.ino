@@ -572,7 +572,7 @@ W5100.writeMR(x);
 
 // =============================== M Q T T ==================================================
 #ifdef MQTT    // признак использования MQTT
-static char root[60],topic[140], temp[12];
+static char root[60],topic[140], temp[16];
 const char* MQTTpublish={">> %s "};
 const char* MQTTPublishOK={"OK\n"};
 const char* MQTTDebugStr={" %s %s,"};  // вывод информации при отладке

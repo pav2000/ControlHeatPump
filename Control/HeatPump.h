@@ -82,6 +82,7 @@ struct type_motoHour
 #define f1Wire3TSngl		8				// На 3-ей шине 1-Wire(DS2482) только один датчик
 #define f1Wire4TSngl		9				// На 4-ей шине 1-Wire(DS2482) только один датчик
 #define fSunRegenerateGeo	10				// Использовать солнечный коллектор для регенерации геоконтура в простое
+#define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -90,8 +91,8 @@ struct type_optionHP
  int8_t numProf;                       //  Текущий номер профиля 0 стоит по дефолту
  uint16_t flags;                       //  Флаги опций до 16 флагов
  uint8_t nStart;                       //  Число попыток пуска компрессора
- uint8_t sleep;                        //  Время засыпания дисплея секунды
- uint8_t dim;                          //  Якрость дисплея %
+ uint8_t sleep;                        //  Время засыпания дисплея минуты
+ uint8_t dim;                          //  Яркость дисплея %
  uint16_t tChart;                      //  период сбора статистики в секундах!!
  int16_t tempRHEAT;                    //  Значение температуры для управления дополнительным ТЭН для нагрева СО
  uint16_t pausePump;                   //  Время паузы  насоса при выключенном компрессоре СЕКУНДЫ
@@ -312,9 +313,9 @@ class HeatPump
    uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // !save! подача звуковых сигналов
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
-   void     updateNextion();                                           // Обновить настройки дисплея
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
+   void     updateNextion();                                           // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН

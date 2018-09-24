@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav, by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления 
  * различными типами тепловых насосов для отопления и ГВС.
@@ -21,32 +21,26 @@
 #include "Constant.h"                       // Вся конфигурация и константы проекта Должен быть первым !!!!
 
 class Nextion{
- private:
-  int8_t  PageID;                               // Текущая страница
-  boolean fPageID;                              // Признак смены страницы true
-  int8_t Status;                                // Состояние ТН
-  void flushSerial();
-  void StartON();
-  int16_t getTargetTemp();                      // Получить целевую температуру
-  public:
-  Nextion(){};//Empty contructor
+ public:
+  boolean init();
   void Update();
   void StatusLine();  
   void set_fPageID() {fPageID=true;} ;           // установить необходимость обновления страницы
   void Listen();
   boolean ack(void);
   boolean setComponentText(char* component, char* txt);
-  String readCommand();
-  void sendCommand(const char* cmd);
-  int8_t pageId(void);
-  boolean init(const char* pageId = cZero);
-//  void buttonToggle(boolean &buttonState, String objName, uint8_t picDefualtId, uint8_t picPressedId);
-//  uint8_t buttonOnOff(String find_component, String unknown_component, uint8_t pin, int btn_prev_state);
-//  boolean setComponentValue(String component, int value);
-//  unsigned int getComponentValue(String component);
-//  String getComponentText(String component, uint32_t timeout = 100);
-//  boolean updateProgressBar(int x, int y, int maxWidth, int maxHeight, int value, int emptyPictureID, int fullPictureID, int orientation=0);
-//  String listenNextionGeneric(unsigned long timeout=100);
+  void    readCommand();
+  boolean sendCommand(const char* cmd);
+  boolean check_incoming(void);
+  void    refresh(uint8_t flags) { refresh_flags = flags; };	// Обновить нужные настройки
+ private:
+  int8_t  PageID;                               // Текущая страница
+  boolean fPageID;                              // Признак смены страницы true
+  uint8_t DataAvaliable;
+  int8_t Status;                                // Состояние ТН
+  uint8_t refresh_flags;
+  void StartON();
+  int16_t getTargetTemp();                      // Получить целевую температуру
 };
 #endif
 

@@ -473,7 +473,7 @@ x_I2C_init_std_message:
 
   #ifdef NEXTION   
     journal.jprintf("13. Init Nextion display\n");
-    myNextion.init(cZero);
+    myNextion.init();
   #else
     journal.jprintf("13. Nextion display absent in config\n");
   #endif
@@ -794,13 +794,15 @@ void vNextion(void *)
 	static uint32_t NextionTick = 0;
 	for(;;) {
 #ifdef NEXTION
-		myNextion.Listen();                  // прочитать сообщения от дисплея
+		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
 			NextionTick = xTaskGetTickCount();
 			myNextion.Update();                  // Обновление дисплея
 		}
-#endif
+#else
 		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+#endif
 	}
 	vTaskDelete( NULL);
 }
