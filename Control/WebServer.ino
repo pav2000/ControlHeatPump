@@ -597,9 +597,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
        continue;
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
-       {
-       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); ADD_WEBDELIM(strReturn); continue;
-       }   
+    {
+    	strcat(strReturn, HP.IsWorkingNow() ? "ON" : "OFF"); ADD_WEBDELIM(strReturn); continue;
+    }
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {
        strcat(strReturn,HP.StateToStr());

@@ -25,22 +25,22 @@ class Nextion{
   boolean init();
   void Update();
   void StatusLine();  
-  void set_fPageID() {fPageID=true;} ;           // установить необходимость обновления страницы
+  void set_need_refresh() { fPageID = true; };    // установить необходимость обновления страницы
   void Listen();
-  boolean ack(void);
-  boolean setComponentText(char* component, char* txt);
+  boolean setComponentText(const char* component, char* txt);
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean check_incoming(void);
   void    refresh(uint8_t flags) { refresh_flags = flags; };	// Обновить нужные настройки
+  void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outsize);
  private:
   int8_t  PageID;                               // Текущая страница
   boolean fPageID;                              // Признак смены страницы true
   uint8_t DataAvaliable;
-  int8_t Status;                                // Состояние ТН
+  uint16_t StatusCrc;                            // Состояние ТН
   uint8_t refresh_flags;
   void StartON();
-  int16_t getTargetTemp();                      // Получить целевую температуру
+  void getTargetTemp(char *rstr);               // Получить целевую температуру
 };
 #endif
 

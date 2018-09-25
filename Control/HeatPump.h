@@ -179,7 +179,8 @@ class HeatPump
      __attribute__((always_inline)) inline MODE_HP get_modWork()     {return Status.modWork;}  // (переменная) Получить что делает сейчас ТН [0-Пауза 1-Включить отопление 2-Включить охлаждение 3-Включить бойлер 4-Продолжаем греть отопление 5-Продолжаем охлаждение 6-Продолжаем греть бойлер]
      __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}    // (переменная) Получить состяние теплового насоса [1 Стартует 2 Останавливается  3 Работает 4 Ожидание ТН (расписание - пустое место) 5 Ошибка ТН 6 - Эта ошибка возникать не должна!]
      __attribute__((always_inline)) inline int8_t get_ret()          {return Status.ret;}      // (переменная) Точка выхода из алгоритма регулирования (причина (условие) нахождения в текущем положении modWork)
-    __attribute__((always_inline)) inline  MODE_HP get_modeHouse()   {return Prof.SaveON.mode;}// (настройка) Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!  
+    __attribute__((always_inline)) inline  MODE_HP get_modeHouse()   {return Prof.SaveON.mode;}// (настройка) Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!
+    boolean IsWorkingNow() { return !(get_State() == pOFF_HP && PauseStart == 0); }				// Включен ТН или нет
   
     void vUpdate();                                          // Итерация по управлению всем ТН - старт-стоп
     void calculatePower();                                   // Вычисление мощностей контуров и КОП
@@ -315,7 +316,7 @@ class HeatPump
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
-   void     updateNextion();                                           // Обновить настройки дисплея
+   void     updateNextion(uint8_t what = 0);                          // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН

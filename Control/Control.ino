@@ -472,8 +472,12 @@ x_I2C_init_std_message:
   journal.jprintf("12. Start read ADC sensors\n"); 
 
   #ifdef NEXTION   
-    journal.jprintf("13. Init Nextion display\n");
-    myNextion.init();
+    journal.jprintf("13. Nextion display - ");
+    if(GETBIT(HP.Option.flags, fNextion)) {
+    	if(myNextion.init()) journal.jprintf("Ok\n");
+    } else {
+    	journal.jprintf("Disabled\n");
+    }
   #else
     journal.jprintf("13. Nextion display absent in config\n");
   #endif
