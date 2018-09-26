@@ -1779,8 +1779,7 @@ int8_t HeatPump::StartResume(boolean start)
 	if ((Prof.SaveON.mode==pOFF)&&(!(GETBIT(Prof.SaveON.flags,fBoilerON))))   // Нет работы для ТН - ничего не включено
 	{
 		setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
-		error=ERR_NO_WORK;
-		set_Error(error,(char*)__FUNCTION__);
+		set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
 		return error;
 	}
 

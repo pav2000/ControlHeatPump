@@ -40,8 +40,11 @@ boolean Nextion::init()
 	//  _delay(100);
 	//  NEXTION_PORT.begin(115200);
 	sendCommand("rest");
-	_delay(100);
-	if(check_incoming()) {
+	uint16_t timeout = 500; // ~ms
+	while(timeout--) {
+		if(check_incoming()) break;
+	}
+	if(timeout) {
 		NEXTION_PORT.flush();
 		DataAvaliable = 0;
 	} else {
@@ -73,6 +76,7 @@ boolean Nextion::check_incoming(void)
 // Возвращает false, если данные начали поступать из дисплея
 boolean Nextion::sendCommand(const char* cmd)
 {
+	check_incoming();
 	NEXTION_PORT.write(cmd);
 	NEXTION_PORT.write(COMM_END_B);
 	NEXTION_PORT.write(COMM_END_B);
@@ -86,6 +90,7 @@ boolean Nextion::sendCommand(const char* cmd)
 
 boolean Nextion::setComponentText(const char* component, char* txt)
 {
+	check_incoming();
 	NEXTION_PORT.write(component);
 	NEXTION_PORT.write(".txt=\"");
 	NEXTION_PORT.write(txt);
@@ -183,10 +188,6 @@ void Nextion::readCommand()
 			fPageID = true;
 			break;
 		}
-//		if(buffer_idx > len + sizeof(comm_end))	{
-//			memmove(buffer, p, buffer_idx - (len + sizeof(comm_end)));
-//			DataAvaliable = 1;
-//		}
 	}
 	if(fPageID) Update();
 }
@@ -196,7 +197,6 @@ static char ntemp[24];
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
-	if(!setComponentText("time", NowTimeToStr1())) return;  // Обновить время
 	// 2. Вывод в зависмости от страницы
 	if(PageID == 0)  // Обновление данных 0 страницы "Главный экран"
 	{
@@ -208,10 +208,8 @@ void Nextion::Update()
 		setComponentText("t2", ntemp);
 		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t3", ntemp);
-		//          strcat(ftoa(ntemp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1),_xB0); setComponentText("t4", ntemp);
 		strcat(ftoa(ntemp, (float) HP.sTemp[TEVAING].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t4", ntemp);
-		//          strcat(ftoa(ntemp,(float)HP.RET/100.0,1),_xB0); setComponentText("t5", ntemp);
 		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
 		setComponentText("t5", ntemp);
 		if(HP.IsWorkingNow()) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
@@ -416,14 +414,16 @@ void Nextion::StartON()
 void Nextion::StatusLine()
 {
 	// Вычисление статуса
-	uint16_t newcrc = _crc16(0xFFFF, HP.get_errcode());
+	char *tm = NowTimeToStr1();
+	uint16_t newcrc = calulate_crc16((uint8_t*)tm, 5);
+	newcrc = _crc16(newcrc, HP.get_errcode());
 	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 2) | (HP.get_BoilerON() << 1) | fPageID);
 	newcrc = _crc16(newcrc, HP.get_modeHouse());
 	if(newcrc != StatusCrc) { // поменялся
 		StatusCrc = newcrc;
 
 		if(!sendCommand("ref_stop")) return;      // Остановить обновление
-		//   setComponentText("time", NowTimeToStr1());
+		setComponentText("time", tm);  // Обновить время
 		// Ошибки
 		if(HP.get_errcode() == OK) {
 			sendCommand("vis options,1");
@@ -513,15 +513,27 @@ void Nextion::getTargetTemp(char *rstr)
 	}
 }
 
+// UTF8, 1 байт или 2 байта русские, остальные символы пропускаются
 void Nextion::Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outsize)
 {
 	uint8_t c;
+	if(--outsize == 0) return;
 	while((c = *instr++)) {
 		if(c > 0x7F) {
 			uint16_t c2 = c * 256 + *instr++;
-			if(c2 >= 0xD090 && c2 <= 0xD18F) c = c2 - 0xD090 + 0xB0;
+			if(c2 >= 0xD090 && c2 <= 0xD0BF) c = c2 - 0xD090 + 0xB0;
+			else if(c2 >= 0xD180 && c2 <= 0xD18F) c = c2 - 0xD180 + 0xE0;
+			else if(c2 == 0xE284 && *instr++ == 0x96) c = 0xF0;
+			else {
+				if(c > 0xE0) {
+					instr++;
+					if(c > 0xF0) instr++;
+				}
+				continue;
+			}
 		}
 		*outstr++ = c;
 		if(--outsize == 0) break;
 	}
+	*outstr = '\0';
 }

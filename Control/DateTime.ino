@@ -266,14 +266,16 @@ char* NowTimeToStr()
 //  Получить текущее время (без секунд!) в виде строки
 char* NowTimeToStr1()
 {
-  uint32_t x;
-  static char _tmp[8];   // Длина xx:xx - 5+1 символов
-  x=rtcSAM3X8.get_hours();
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
-
-  x=rtcSAM3X8.get_minutes();
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
- 
+  uint8_t x;
+  static char _tmp[6];   // Длина xx:xx - 5+1 символов
+  x = rtcSAM3X8.get_hours();
+  _tmp[0] = '0' + x / 10;
+  _tmp[1] = '0' + x % 10;
+  _tmp[2] = ':';
+  x = rtcSAM3X8.get_minutes();
+  _tmp[3] = '0' + x / 10;
+  _tmp[4] = '0' + x % 10;
+  _tmp[5] = '\0';
   return _tmp;
 }
 
