@@ -223,24 +223,24 @@ void Nextion::Update()
 		 Адрес шлюза  - web4
 		 Адрес DNS сервера - web5
 		 Аппаратный mac адрес - web6 */
-		setComponentText("web1", (char*) (HP.get_DHCP() ? _YES_8859 : _NO_8859));
-		setComponentText("web2", HP.get_network((char*) net_IP, ntemp));
-		setComponentText("web3", HP.get_network((char*) net_SUBNET, ntemp));
-		setComponentText("web4", HP.get_network((char*) net_GATEWAY, ntemp));
-		setComponentText("web5", HP.get_network((char*) net_DNS, ntemp));
+		setComponentText("web1", (char*) (HP.get_DHCP() ? _YES_8859 : _NO_8859)); ntemp[0] = '\0';
+		setComponentText("web2", HP.get_network((char*) net_IP, ntemp)); ntemp[0] = '\0';
+		setComponentText("web3", HP.get_network((char*) net_SUBNET, ntemp)); ntemp[0] = '\0';
+		setComponentText("web4", HP.get_network((char*) net_GATEWAY, ntemp)); ntemp[0] = '\0';
+		setComponentText("web5", HP.get_network((char*) net_DNS, ntemp)); ntemp[0] = '\0';
 		setComponentText("web6", HP.get_network((char*) net_MAC, ntemp));
 		/*
 		 Использование паролей - pas1
 		 Имя - pas2 пароль - pas3
 		 Имя - pas4 пароль - pas5 */
 		setComponentText("pas1", (char*) (HP.get_fPass() ? _YES_8859 : _NO_8859));
-		setComponentText("pas2", (char*) NAME_USER);
-		setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp));
+		setComponentText("pas2", (char*) NAME_USER); ntemp[0] = '\0';
+		setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp)); ntemp[0] = '\0';
 		setComponentText("pas4", (char*) NAME_ADMIN);
 		setComponentText("pas5", HP.get_network((char*) net_PASSADMIN, ntemp));
 	} else if(PageID == 3)  // Обновление данных 3 страницы "Система"
 	{
-		setComponentText("syst1", (char*) VERSION);
+		setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
 		setComponentText("syst2", TimeIntervalToStr(HP.get_uptime(), ntemp));
 		setComponentText("syst3", ResetCause());
 		setComponentText("syst4", HP.IsWorkingNow() ? itoa(HP.num_repeat, ntemp, 10) : (char*) _HP_OFF_8859);
@@ -248,7 +248,7 @@ void Nextion::Update()
 		setComponentText("syst6", ftoa(ntemp, (float) HP.get_motoHourC2() / 60.0, 1));
 		setComponentText("syst7", itoa(100 - HP.CPU_IDLE, ntemp, 10));
 		setComponentText("syst8", itoa(HP.get_errcode(), ntemp, 10));
-		Encode_UTF8_to_ISO8859_5(buffer, noteError[HP.get_errcode()], sizeof(buffer));
+		Encode_UTF8_to_ISO8859_5(buffer, HP.get_lastErr(), sizeof(buffer));
 		setComponentText("terr", buffer);
 
 	} else if(PageID == 4)  // Обновление данных 4 страницы "СХЕМА ТН"
@@ -390,6 +390,7 @@ void Nextion::Update()
 		setComponentText("t2", buffer);
 	}
 	StatusLine();
+	sendCommand("ref_star");    // Восстановить обновление
 	fPageID = false;
 }
 
@@ -408,6 +409,7 @@ void Nextion::StartON()
 	sendCommand("vis onlygvs,0");
 	sendCommand("bt0.val=1");    // Кнопка включения в положение выключено
 	StatusLine();
+	sendCommand("ref_star");    // Восстановить обновление
 }
 
 // Показ строки статуса в зависимости от состояния ТН
@@ -432,7 +434,7 @@ void Nextion::StatusLine()
 			sendCommand("vis fault,1");
 			sendCommand("vis options,0");
 			if(PageID == 0) {
-				Encode_UTF8_to_ISO8859_5(ntemp, "Ошибка ", sizeof(ntemp));
+				Encode_UTF8_to_ISO8859_5(ntemp, "Ошибка", sizeof(ntemp));
 				_itoa(HP.get_errcode(), ntemp);
 				setComponentText("fault", ntemp);
 			}
@@ -493,8 +495,6 @@ void Nextion::StatusLine()
 			sendCommand("vis onlygvs,0");
 		}
 	}
-	sendCommand("ref_star");    // Восстановить обновление
-
 }
 
 // Получить целевую температуру отопления
