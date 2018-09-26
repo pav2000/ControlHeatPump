@@ -798,8 +798,8 @@ void vNextion(void *)
 		myNextion.readCommand();                  // прочитать сообщения от дисплея
 		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
-			NextionTick = xTaskGetTickCount();
 			myNextion.Update();                  // Обновление дисплея
+			NextionTick = xTaskGetTickCount();
 		}
 #else
 		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора

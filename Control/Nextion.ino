@@ -26,11 +26,13 @@ const char *_xB0 = { "\xB0" }; // °
 const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 char 	buffer[64];
 
+#define fSleep 1
+
 // первоначальная инициализация - страница 0
 boolean Nextion::init()
 {
 	DataAvaliable = 0;
-	refresh_flags = 0;
+	flags = 0;
 	StatusCrc = 0;
 	PageID = 0;
 	fPageID = false;
@@ -45,8 +47,8 @@ boolean Nextion::init()
 		_delay(1);
 		if(check_incoming()) break;
 	}
-	if(timeout) {
-		NEXTION_PORT.flush();
+	if(timeout && NEXTION_PORT.read() == 0x66) {
+		while(NEXTION_PORT.available()) NEXTION_PORT.read();
 		DataAvaliable = 0;
 	} else {
 		journal.jprintf(" No response!\n");
@@ -63,7 +65,7 @@ boolean Nextion::init()
 	sendCommand("sendxy=0");
 	sendCommand("thup=1");
 	//sendCommand("sleep=0");
-	StartON();
+	sendCommand("page 0");
 	return true;
 }
 
@@ -145,7 +147,7 @@ void Nextion::readCommand()
 					if(cmd2 == 0x18 || cmd2 == 0x19) {
 						setComponentText("tust", ftoa(temp, (float) HP.setTargetTemp(cmd2 == 0x18 ? 20 : -20) / 100.0, 1));
 					} else if(cmd2 == 0x1B) { // Переключение режимов отопления ТОЛЬКО если насос выключен
-						if(HP.IsWorkingNow()) {
+						if(!HP.IsWorkingNow()) {
 							HP.set_nextMode();  // выбрать следующий режим
 							switch((MODE_HP) HP.get_modeHouse()) {
 							case pOFF:
@@ -187,7 +189,7 @@ void Nextion::readCommand()
 			}
 			break;
 		case 0x66:  // 	Current Page    // Произошла смена страницы
-			fPageID = PageID != buffer[1];
+			fPageID = true;
 			PageID = buffer[1];
 			break;
 		case 0x87:   // выход из сна
@@ -208,6 +210,24 @@ static char ntemp[24];
 void Nextion::Update()
 {
 	if(!sendCommand("ref_stop")) return;      // Остановить обновление
+	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
+		if(HP.get_startCompressor()) {
+			if(!GETBIT(flags, fSleep)) {
+				myNextion.sendCommand("thsp=0");
+				myNextion.sendCommand("sleep=0");
+				flags |= (1<<fSleep);
+			}
+		} else if(GETBIT(flags, fSleep)) {
+			flags &= ~(1<<fSleep);
+			if(HP.Option.sleep > 0) {  // установлено засыпание дисплея
+				strcpy(ntemp, "thsp=");
+				_itoa(HP.Option.sleep * 60, temp); // секунды
+				myNextion.sendCommand(temp);
+				myNextion.sendCommand("thup=1");     // sleep режим активировать
+			}
+		}
+	}
+
 	// 2. Вывод в зависмости от страницы
 	if(PageID == 0)  // Обновление данных 0 страницы "Главный экран"
 	{
@@ -392,7 +412,7 @@ void Nextion::Update()
 		strcat(ftoa(ntemp, (float) HP.get_boilerTempTarget() / 100.0, 1), "");
 		setComponentText("tustgvs", ntemp);
 		if(HP.get_BoilerON()) sendCommand("gvson.val=1");    // Кнопка включения ГВС в положение ВКЛ
-		else sendCommand("bt0.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ
+		else sendCommand("gvson.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ
 
 	} else if(PageID == 7) { // Обновление данных 7 страницы "О контролллере"
 		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NAME, sizeof(buffer));
@@ -405,30 +425,12 @@ void Nextion::Update()
 	fPageID = false;
 }
 
-// Подготовка экрана к первому показу
-void Nextion::StartON()
-{
-	sendCommand("ref_stop");      // Остановить обновление
-	sendCommand("page 0");
-	sendCommand("vis tninc,0");
-	sendCommand("vis tnoff,0");
-	sendCommand("vis options,0");
-	sendCommand("vis fault,0");
-	sendCommand("vis heat,0");
-	sendCommand("vis cool,0");
-	sendCommand("vis gvs,0");
-	sendCommand("vis onlygvs,0");
-	sendCommand("bt0.val=1");    // Кнопка включения в положение выключено
-	StatusLine();
-	sendCommand("ref_star");    // Восстановить обновление
-}
-
 // Показ строки статуса в зависимости от состояния ТН
 void Nextion::StatusLine()
 {
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
-	uint16_t newcrc = 0;
+	uint16_t newcrc = !StatusCrc;
 	if(!fPageID) {
 		newcrc = calulate_crc16((uint8_t*)tm, 5);
 		newcrc = _crc16(newcrc, HP.get_errcode());

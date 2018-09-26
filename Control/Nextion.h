@@ -31,14 +31,13 @@ class Nextion{
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean check_incoming(void);
-  void    refresh(uint8_t flags) { refresh_flags = flags; };	// Обновить нужные настройки
   void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outsize);
  private:
   int8_t  PageID;                               // Текущая страница
   boolean fPageID;                              // Признак смены страницы true
   uint8_t DataAvaliable;
   uint16_t StatusCrc;                            // Состояние ТН
-  uint8_t refresh_flags;
+  uint8_t flags;
   void StartON();
   void getTargetTemp(char *rstr);               // Получить целевую температуру
 };
