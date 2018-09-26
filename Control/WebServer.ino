@@ -2426,12 +2426,13 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
+const char Title[]= {"Title: "};          // где лежит имя файла
+const char Length[]={"Content-Length: "}; // где лежит длина файла 
+const char emptyStr[]={"\r\n\r\n"};       // пустая строка после которой начинаются данные
 // Разбор и обработка POST запроса inPtr входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
 // parserPOST использует outBuf для хранения файла настроек!
-const char Title[]= {"Title: "};          // где лежит имя файла
-const char Length[]={"Content-Length: "}; // где лежит длина файла 
 boolean parserPOST(uint8_t thread, uint16_t size)
 {
 	byte *ptr,*pStart;
@@ -2440,8 +2441,6 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
-
-	
 	
 	// Определение имени файла
 	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found, skip!\n",(char*)__FUNCTION__);return false;} // Имя файла не найдено, запрос не верен, выходим
@@ -2467,8 +2466,10 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 
     // все нашлось, можно обрабатывать
     journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось
-    ptr = (byte*) strstr((char*) Socket[thread].inPtr,"/n/n"); // поиск начала файла
-    journal.jprintf("DATA >%s\n",ptr);
+    ptr = (byte*) strstr((char*) Socket[thread].inPtr,emptyStr)+strlen(emptyStr); // поиск начала даных
+    full_len=size-(ptr - (byte *)Socket[thread].inBuf); // длина данных (файла) в буфере
+    journal.jprintf("DATA >%d\n",full_len);
+ //   journal.jprintf("DATA >%s\n",ptr);
     
     // В зависимости от имени файла
     if (strcmp(nameFile,"*SETTINGS*")==0){  // Чтение настроек
@@ -2520,11 +2521,23 @@ boolean parserPOST(uint8_t thread, uint16_t size)
    	
    }
    else  if (strcmp(nameFile,"SPI_FLASH_END")==0){  // Окончание загрузки вебморды
-   	
-   }
+    }
    else { // загрузка отдельных файлов веб морды
-   }
+   	loadFileToSpi(nameFile, lenFile, thread, ptr,full_len); 	
+    }
 
    return false; 
+}
+// Загрузка файла в спай память возвращает true если файл записан false - если ошибка записи 
+// Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
+// Входные параметры:
+// nameFile - имя файла 
+// lenFile - общая длина файла
+// thread - поток веб сервера, принятый пакет (первый вместе с заголовком) лежит в Socket[thread].inPtr
+// ptr - указатель на начало данных (файла) в буфере. 
+// sizeBuf - размер данных в буфере (по сети осталось принять lenFile-sizeBuf)
+boolean loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
+{
+	
 }
 
