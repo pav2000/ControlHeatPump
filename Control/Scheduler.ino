@@ -17,7 +17,6 @@
  * GNU General Public License for more details.
  */
 #include "Config.h"
-#ifdef USE_SCHEDULER
 
 #include "Scheduler.h"
 
@@ -262,4 +261,3 @@ int8_t Scheduler::check_crc16_eeprom(void)
 	return crc == crc2 ? OK : ERR_CRC16_EEPROM;
 }
 
-#endif

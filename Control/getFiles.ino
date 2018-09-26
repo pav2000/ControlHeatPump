@@ -637,13 +637,11 @@ uint16_t get_binSettings(uint8_t thread)
 	}
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
 	
-#ifdef USE_SCHEDULER
     // 4. Расписание
 	if((uint16_t)len + HP.Schdlr.get_data_size() > sizeof(Socket[thread].outBuf)) return 0;
 	len = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf);
 	if(len <= 0) return 0; // ошибка
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
-#endif
 	return len;
 }
 

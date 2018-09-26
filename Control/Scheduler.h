@@ -25,8 +25,6 @@
 #define SCHDLR_Profile_off	-1
 #define SCHDLR_NotActive	-2
 
-#ifdef USE_SCHEDULER
-
 #define bScheduler_active	1
 
 struct Scheduler_Calendar_Item {
@@ -46,6 +44,7 @@ class Scheduler
 public:
 	Scheduler();
 	int8_t   calc_active_profile(void);					// Возвращает профиль (или -1) по календарю и текущему времени
+	boolean  IsShedulerOn() { return GETBIT(sch_data.Flags, bScheduler_active); }; // Расписание включено?
 	uint16_t  Timetable_ptr(uint8_t num);				// Возвращает указатель на запись календаря в TimeTable по его номеру
 	void	 web_get_param(char *param, char* result);	// Вернуть строку параметра для веба
 	uint8_t  web_set_param(char *param, char *val);		// Установить параметр из веба
@@ -61,5 +60,4 @@ private:
 	Scheduler_Data sch_data;
 };
 
-#endif
 #endif

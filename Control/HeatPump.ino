@@ -1670,40 +1670,44 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 }
 // Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
 // Проводится различный сброс в зависимсти от конфигурации
-int8_t HeatPump::ResetFC() 
+int8_t HeatPump::ResetFC()
 {
-  if (!dFC.get_present()) return OK;                                                 // Инвертора нет выходим
-  
-  #ifdef FC_USE_RCOMP                                                               // ЕСЛИ есть провод сброса
-          #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
-            if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сбрасывать не надо
-            dRelay[RRESET].set_ON();  _delay(100); dRelay[RRESET].set_OFF();           // Подать импульс сброса
-            journal.jprintf("Reset %s use RRESET\r\n",dFC.get_name());
-            _delay(100);
-            sInput[SERRFC].Read();
-            if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сброшен
-            else return ERR_RESET_FC;                                                 // Сброс не прошел
-            #else                                                                      // нет провода сброса - сбрасываем по модбас
-              if (dFC.get_err()!=OK)                                                       // инвертор есть ошибки
-                {
-                dFC.reset_FC();                                                       // подать команду на сброс по модбас
-                if (!dFC.get_blockFC())  return OK;                                   // Инвертор НЕ блокирован
-                else return ERR_RESET_FC;                                             // Сброс не удачный
-                }    
-              else  return OK;                                                         // Ошибок нет сбрасывать нечего
-            #endif // SERRFC
-   #else   //  #ifdef FC_USE_RCOMP 
-      if (dFC.get_err()!=OK)                                                           //  инвертор есть ошибки
-      {
-        dFC.reset_FC();                                                               // подать команду на сброс по модбас
-      if (!dFC.get_blockFC())  return OK;                                             // Инвертор НЕ блокирован
-      else return ERR_RESET_FC;                                                       // Сброс не удачный
-      }
-     else  return OK;                                                                  // Ошибок нет сбрасывать нечего
-  #endif  
-   return OK;         
-  }
+	if(!dFC.get_present()) return OK;                                                 // Инвертора нет выходим
+
+#ifdef FC_USE_RCOMP                                                               // ЕСЛИ есть провод сброса
+#ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
+	if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сбрасывать не надо
+	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();// Подать импульс сброса
+	journal.jprintf("Reset %s use RRESET\r\n",dFC.get_name());
+	_delay(100);
+	sInput[SERRFC].Read();
+	if (sInput[SERRFC].get_lastErr()==OK) return OK;// Инвертор сброшен
+	else return ERR_RESET_FC;// Сброс не прошел
+#else                                                                      // нет провода сброса - сбрасываем по модбас
+	if(dFC.get_err() != OK)                                                       // инвертор есть ошибки
+	{
+		dFC.reset_FC();                                                       // подать команду на сброс по модбас
+		if(!dFC.get_blockFC()) return OK;                                   // Инвертор НЕ блокирован
+		else return ERR_RESET_FC;                                             // Сброс не удачный
+	} else return OK;                                                         // Ошибок нет сбрасывать нечего
+#endif // SERRFC
+#else   //  #ifdef FC_USE_RCOMP
+	if (dFC.get_err()!=OK)                                                           //  инвертор есть ошибки
+	{
+		dFC.reset_FC();                                                               // подать команду на сброс по модбас
+		if (!dFC.get_blockFC()) return OK;// Инвертор НЕ блокирован
+		else return ERR_RESET_FC;// Сброс не удачный
+	}
+	else return OK;                                                                  // Ошибок нет сбрасывать нечего
+#endif
+	return OK;
+}
            
+// проверить, Если есть ли работа для ТН - true.
+boolean HeatPump::CheckAvailableWork()
+{
+	return Prof.SaveON.mode != pOFF || GETBIT(Prof.SaveON.flags, fBoilerON) || GETBIT(Option.flags, fSunRegenerateGeo) || HP.Schdlr.IsShedulerOn();
+}
 
 // START/RESUME -----------------------------------------
 // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
@@ -1714,7 +1718,7 @@ int8_t HeatPump::StartResume(boolean start)
 	volatile MODE_HP mod;
 
 	// Дана команда старт - но возможно надо переходить в ожидание
-#ifdef USE_SCHEDULER  // Определяем что делать
+	// Определяем что делать
 	int8_t profile = HP.Schdlr.calc_active_profile();
 	if((profile != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
 		if (profile == SCHDLR_Profile_off)
@@ -1731,7 +1735,6 @@ int8_t HeatPump::StartResume(boolean start)
 		startWait=false;
 		start=true;   // Делаем полный запуск, т.к. в положение wait переходили из стопа (расписания)
 	}
-#endif
 
 	// 1. Переменные  установка, остановка ТН имеет более высокий приоритет чем пуск ! -------------------------
 	if (start)  // Команда старт
@@ -1776,7 +1779,7 @@ int8_t HeatPump::StartResume(boolean start)
 
 
 	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
-	if ((Prof.SaveON.mode==pOFF)&&(!(GETBIT(Prof.SaveON.flags,fBoilerON))))   // Нет работы для ТН - ничего не включено
+	if(!CheckAvailableWork())   // Нет работы для ТН - ничего не включено
 	{
 		setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состоение выключено
 		set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
@@ -2772,75 +2775,84 @@ void HeatPump::ChangesPauseTRV()
 // Итерация по управлению всем ТН, для всего, основной цикл управления.
 void HeatPump::vUpdate()
 {
-     #ifdef FLOW_CONTROL    // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-      if((COMPRESSOR_IS_ON))                                                            // Только если компрессор включен
-    	  for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
-    		  if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {
-    			  set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-    			  journal.jprintf(" Flow: %.3f\n", (float)sFrequency[i].get_Value()/1000.0);
-    			  return;
-    		  }    // Поток меньше минимального ошибка осанавливаем ТН
-     #endif
-
-     #ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
-       if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
-       if (sInput[SEVA].get_Input()==SEVA_OFF)  {set_Error(ERR_SEVA_FLOW,(char*)"SEVA");  return; }                               // Выход по ошибке отсутствия протока
-     #endif
-     
-     if((get_State()==pOFF_HP)||(get_State()==pSTARTING_HP)||(get_State()==pSTOPING_HP)) return; // ТН выключен или включается или выключается выходим  ничего не делаем!!!
-  
-     // Различные проверки на ошибки и защиты
-      if ((Prof.SaveON.mode==pOFF)&&(!(GETBIT(Prof.SaveON.flags,fBoilerON))))          {set_Error(ERR_NO_WORK,(char*)__FUNCTION__);  return; } // Нет работы для ТН - ничего не включено, пользователь может изменить в процессе работы
-      #ifdef EEV_DEF
-      if ((!sADC[PEVA].get_present())&&(dEEV.get_ruleEEV()==TEVAOUT_PEVA))             {set_Error(ERR_PEVA_EEV,dEEV.get_name());     return; } //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует", пользователь может изменить в процессе работы
-      #endif
-            
-      #ifdef REVI
-      if (dRelay[REVI].get_present()) checkEVI() ;                           // Проверить необходимость включения ЭВИ
-      #endif
-      updateCount();                                                         // Обновить счетчики моточасов
-      
-      #ifdef DEFROST 
-         defrost();                                                          // Разморозка только для воздушных ТН
-      #endif
-      
-          Status.modWork=get_Work();                                         // определяем что делаем
-#ifdef DEBUG_MODWORK
-          save_DumpJournal(false);                                           // Вывод строки состояния
+#ifdef FLOW_CONTROL    // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
+	if((COMPRESSOR_IS_ON))                                                            // Только если компрессор включен
+		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
+			if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
+				set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
+				journal.jprintf(" Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000.0);
+				return;
+			}
 #endif
-         //  реализуем требуемый режим
-          switch ((int)get_modWork())
-          {
-              case  pOFF: if (COMPRESSOR_IS_ON){  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
-                             compressorOFF();
-                             configHP(get_modWork());
-                             if(!startPump && get_modeHouse() != pOFF)// Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
-                             {
-                               startPump=true;                                 // Поставить признак запуска задачи насос
-                               vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
-                               journal.jprintf(" %s: Task vUpdatePump RPUMPO on . . .\n",(char*)__FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
-                             }
-                             command_completed = rtcSAM3X8.unixtime();
-                          } break;
-              case  pHEAT:   
-              case  pCOOL:  
-              case  pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
-							 if (startPump)                                         // Остановить задачу насос
-							 {
-								startPump=false;                                     // Поставить признак останова задачи насос
-								vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
-								journal.jprintf(" %s: Task vUpdatePump RPUMPO pause  . . .\n",(char*)__FUNCTION__);
-							 }
-                             configHP(get_modWork());                                 // Конфигурируем насосы
-                             compressorON(get_modWork());                             // Включаем компрессор
-                             command_completed = rtcSAM3X8.unixtime();
-                             break;
-              case  pNONE_H:
-              case  pNONE_C:
-              case  pNONE_B: break;                                    // компрессор уже включен
-              default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__); break;
-           }
-  
+
+#ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
+	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
+		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                               // Выход по ошибке отсутствия протока
+#endif
+
+	if((get_State() == pOFF_HP) || (get_State() == pSTARTING_HP) || (get_State() == pSTOPING_HP)) return; // ТН выключен или включается или выключается выходим  ничего не делаем!!!
+
+	// Различные проверки на ошибки и защиты
+	if(!CheckAvailableWork()) {  // Нет работы для ТН - ничего не включено, пользователь может изменить в процессе работы
+		set_Error(ERR_NO_WORK, (char*) __FUNCTION__);
+		return;
+	}
+#ifdef EEV_DEF
+	if((!sADC[PEVA].get_present()) && (dEEV.get_ruleEEV() == TEVAOUT_PEVA)) {  //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует", пользователь может изменить в процессе работы
+		set_Error(ERR_PEVA_EEV, dEEV.get_name());
+		return;
+	}
+#endif
+
+#ifdef REVI
+	if (dRelay[REVI].get_present()) checkEVI();                           // Проверить необходимость включения ЭВИ
+#endif
+	updateCount();                                                         // Обновить счетчики моточасов
+
+#ifdef DEFROST
+	defrost();                                                          // Разморозка только для воздушных ТН
+#endif
+
+	Status.modWork = get_Work();                                         // определяем что делаем
+#ifdef DEBUG_MODWORK
+	save_DumpJournal(false);                                           // Вывод строки состояния
+#endif
+	//  реализуем требуемый режим
+	switch((int) get_modWork()) {
+	case pOFF:
+		if(COMPRESSOR_IS_ON) {  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
+			compressorOFF();
+			configHP(get_modWork());
+			if(!startPump && get_modeHouse() != pOFF)  // Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
+			{
+				startPump = true;                                 // Поставить признак запуска задачи насос
+				vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
+				journal.jprintf(" %s: Task vUpdatePump RPUMPO on . . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
+			}
+			command_completed = rtcSAM3X8.unixtime();
+		}
+		break;
+	case pHEAT:
+	case pCOOL:
+	case pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
+		if(startPump)                                         // Остановить задачу насос
+		{
+			startPump = false;                                     // Поставить признак останова задачи насос
+			vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
+			journal.jprintf(" %s: Task vUpdatePump RPUMPO pause  . . .\n", (char*) __FUNCTION__);
+		}
+		configHP(get_modWork());                                 // Конфигурируем насосы
+		compressorON(get_modWork());                             // Включаем компрессор
+		command_completed = rtcSAM3X8.unixtime();
+		break;
+	case pNONE_H:
+	case pNONE_C:
+	case pNONE_B:
+		break;                                    // компрессор уже включен
+	default:
+		set_Error(ERR_CONFIG, (char*) __FUNCTION__);
+		break;
+	}
 }
 
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена

@@ -18,10 +18,10 @@
 
 // Команды и строки дисплея (экономим место)
 // В NEXTION надо посылать сроки в кодировке iso8859-5 перевод http://codepage-encoding.online-domain-tools.com/
-const char *_YES_8859 = { "\xB4\xB0" };                                             // ДА
-const char *_NO_8859 = { "\xBD\xB5\xC2" };                                         // НЕТ
+const char *_YES_8859 = { "\xB4\xB0" };      // ДА
+const char *_NO_8859 = { "\xBD\xB5\xC2" };   // НЕТ
 const char *_HP_OFF_8859 = { "\xc2\xbd\x20\xd2\xeb\xda\xdb\xee\xe7\xd5\xdd\x0d\x0a" }; // ТН выключен
-const char *_xB0 = { "\xB0" }; // strcat(ftoa(temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1),"\xB0"); setComponentText("t4", temp);
+const char *_xB0 = { "\xB0" }; // °
 #define COMM_END_B 0xFF
 const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 char 	buffer[64];
@@ -41,7 +41,8 @@ boolean Nextion::init()
 	//  NEXTION_PORT.begin(115200);
 	sendCommand("rest");
 	uint16_t timeout = 500; // ~ms
-	while(timeout--) {
+	while(--timeout) {
+		_delay(1);
 		if(check_incoming()) break;
 	}
 	if(timeout) {
@@ -192,10 +193,10 @@ void Nextion::readCommand()
 		case 0x87:   // выход из сна
 			fPageID = true;
 			break;
-		case 0x1A:
+		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
 			sendCommand("sendme");
+			journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
 			_delay(10);
-			break;
 		}
 	}
 	if(fPageID) Update();

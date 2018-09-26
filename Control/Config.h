@@ -922,8 +922,7 @@ enum TYPE_SENSOR
     const IPAddress defaultSubnet(255, 255, 255, 0);
     const boolean  defaultDHCP=false;
 	
-	#define USE_SCHEDULER       // Использовать расписание для управления ТН
-	
+
 	  // Временные задержки/времена  начала дефайна в конфиге начинается DELAY  в константах начинается с TIME
     #define DEF_DELAY_ON_PUMP     60             // Задержка включения компрессора после включения насосов (сек).
     #define DEF_DELAY_OFF_PUMP    60             // Задержка выключения насосов после выключения компрессора (сек).
@@ -1817,7 +1816,6 @@ enum TYPE_SENSOR
     const IPAddress defaultSubnet(255, 255, 255, 0);
     const boolean  defaultDHCP=false;              
     
-    #define USE_SCHEDULER                    // Использовать расписание для управления ТН
    // #define RELAY_INVERT                   // инвертирование реле выходов реле
     #ifdef EXTERNAL_AREF                     // Какая опора для АЦП используется
        #define SAM3X_ADC_REF  2.5006         // Используется внешняя опора ADR4525ARZ плата pav2000 (UT71E результататы ЗИП 2.4997 ТН 2.5006)
@@ -2233,7 +2231,6 @@ enum TYPE_SENSOR
     #else
       #define SAM3X_ADC_REF  3.30   // Штатное подключение используется питание DUE
     #endif
-    #define USE_SCHEDULER			// Использовать расписание для управления ТН
     #define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
 
 	#define USE_SUN_COLLECTOR		// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)

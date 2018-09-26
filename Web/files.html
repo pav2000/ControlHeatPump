@@ -14,7 +14,7 @@
 	}
 	function send_files(id) {
 		var fs = document.getElementById(id).files;
-		for(i = 0; i < fs.length; i++) upload(fs[i]);
+		for(i = 0; i < fs.length; i++) upload(id, fs[i]);
 		return false;
 	}
 	</script>

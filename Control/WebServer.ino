@@ -642,9 +642,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				#ifdef USE_SCHEDULER
 				_itoa(HP.Schdlr.save(),strReturn); // сохранение расписаний
-				#endif
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 				if(len > 0) {
@@ -660,9 +658,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				#ifdef USE_SCHEDULER
 				_itoa(HP.Schdlr.load(),strReturn); // сохранение расписаний
-				#endif
 			} else {
 			}
 			ADD_WEBDELIM(strReturn);
@@ -1566,7 +1562,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
                } //if ((strstr(str,"MQTT")>0)
           
            // 3. Расписание -------------------------------------------------------- 
-		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
 				x++;
@@ -1582,7 +1577,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
-		 #endif
 
          // 4. Настройки счетчика SDM ------------------------------------------------
 			if(strstr(str, "SDM"))          // Проверка для запросов содержащих SDM
@@ -2465,9 +2459,7 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 	// Чтение профиля
 	ptr += len;
 	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
-#ifdef USE_SCHEDULER
 	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-#endif
 	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
 	return ret;
 }

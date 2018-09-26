@@ -181,6 +181,7 @@ class HeatPump
      __attribute__((always_inline)) inline int8_t get_ret()          {return Status.ret;}      // (переменная) Точка выхода из алгоритма регулирования (причина (условие) нахождения в текущем положении modWork)
     __attribute__((always_inline)) inline  MODE_HP get_modeHouse()   {return Prof.SaveON.mode;}// (настройка) Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!
     boolean IsWorkingNow() { return !(get_State() == pOFF_HP && PauseStart == 0); }				// Включен ТН или нет
+    boolean CheckAvailableWork();							// проверить есть ли работа для ТН
   
     void vUpdate();                                          // Итерация по управлению всем ТН - старт-стоп
     void calculatePower();                                   // Вычисление мощностей контуров и КОП
@@ -242,9 +243,7 @@ class HeatPump
    // Сервис
    Message message;                     // Класс уведомления
    Profile Prof;                        // Текуший профиль
-   #ifdef USE_SCHEDULER
-     Scheduler Schdlr;					// Расписание
-   #endif
+   Scheduler Schdlr;					// Расписание
 
    #ifdef MQTT
       clientMQTT clMQTT;                // MQTT клиент

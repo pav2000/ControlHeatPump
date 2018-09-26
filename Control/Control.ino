@@ -419,9 +419,8 @@ x_I2C_init_std_message:
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
   }
-#ifdef USE_SCHEDULER
+
   HP.Schdlr.load();							// Загрузка настроек расписания
-#endif
 
   // обновить хеш для пользователей
   HP.set_hashUser();
@@ -456,14 +455,12 @@ x_I2C_init_std_message:
    } else journal.jprintf(" - not available\n");
 
 
-#ifdef USE_SCHEDULER
    int8_t _profile = HP.Schdlr.calc_active_profile();
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
 	   HP.Prof.load(_profile);
 	   HP.set_profile();
 	   journal.jprintf("Profile changed to %d\n", _profile);
    }
-#endif
 
   if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
   journal.jprintf("11. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
@@ -1009,9 +1006,7 @@ void vReadSensor_delay10ms(int16_t msec)
 				} else HP.NO_Power = 1;
 			}
 		} else if(HP.NO_Power) { // Включаемся
-			#ifdef USE_SCHEDULER
 			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
-			#endif
 				if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 					HP.NO_Power = 0;
 					HP.sendCommand(pRESUME);
@@ -1080,7 +1075,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif // #ifdef RPUMPB
 		 } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
 
-#ifdef USE_SCHEDULER  // 3. Расписание проверка всегда
+// 3. Расписание проверка всегда
 		 int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		 if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			 int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
@@ -1108,7 +1103,6 @@ void vReadSensor_delay10ms(int16_t msec)
 				 }
 			 }
 		 }
-#endif
 
 		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
 		 switch (HP.get_State())  // Состояние ТН 
