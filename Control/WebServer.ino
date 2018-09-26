@@ -2358,7 +2358,9 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 	uint8_t i;
 	uint16_t len;
 
-	// journal.jprintf(">%s\n",Socket[thread].inBuf);
+//	journal.jprintf(">%s\n",Socket[thread].inBuf);
+//	journal.jprintf("--------------------------------------------------------\n");
+	
 
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
@@ -2415,7 +2417,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 			return HTTP_invalid;  // слишком длинная строка HTTP_invalid
 		}
 	}   //if (strcmp(str_token, "GET") == 0)
-	else if(strcmp(str_token, "POST") == 0) return HTTP_POST;    // Запрос POST
+	else if(strcmp(str_token, "POST") == 0) {Socket[thread].inPtr = (char*) (str_token +strlen("POST") + 1);  return HTTP_POST;}    // Запрос POST Socket[thread].inPtr - указывает на начало запроса (начало полезных данных)
 	else if(strcmp(str_token, "OPTIONS") == 0) return HTTP_POST_;
 	#ifdef DEBUG
 	journal.jprintf("WEB:Error request %s\n", Socket[thread].inBuf);
@@ -2424,42 +2426,118 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
-// Разбор и обработка POST запроса buf входная строка strReturn выходная
+const char Title[]= {"Title: "};          // где лежит имя файла
+const char Length[]={"Content-Length: "}; // где лежит длина файла 
+const char emptyStr[]={"\r\n\r\n"};       // пустая строка после которой начинаются данные
+// Разбор и обработка POST запроса inPtr входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
 // parserPOST использует outBuf для хранения файла настроек!
 boolean parserPOST(uint8_t thread, uint16_t size)
 {
-	byte *ptr;
-	int32_t len, full_len=0;
-	// Определение начала данных (поиск HEADER_BIN)
-	//Serial.println(Socket[thread].inPtr);
-	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
-		journal.jprintf("Wrong save file format!\n");
-		return false;
-	}
-	full_len=size-(ptr - (byte *)Socket[thread].inBuf);
+	byte *ptr,*pStart;
+	char nameFile[64]; // имя файла
+	char sizeFile[8];  // длина файла
+	uint8_t  i=0;
+	int32_t len, full_len=0, lenFile;
+	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
+	
+	// Определение имени файла
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found, skip!\n",(char*)__FUNCTION__);return false;} // Имя файла не найдено, запрос не верен, выходим
+    pStart=pStart+strlen((char*)Title);  // начало имени файла
+    for(i=0;i<sizeof(nameFile);i++)      // копирование имени файла
+    	if (*(pStart+i)!=13) nameFile[i]=*(pStart+i); else {nameFile[i]=0;break;} 
+    if (strlen(nameFile)>=sizeof(nameFile)-1){ // проверка длины
+		journal.jprintf("%s: File name big size, skip!\n",(char*)__FUNCTION__); return false; }  	    
+    urldecode(nameFile, nameFile, sizeof(nameFile));
+ 
+    // Определение длины файла
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)) == 0) {journal.jprintf("%s: Size file not found, skip!\n",(char*)__FUNCTION__);return false;} // Размер файла не найден, запрос не верен, выходим
+    pStart=pStart+strlen((char*)Length);  // начало размера файла
+    for(i=0;i<sizeof(sizeFile);i++)    // копирование длины файла
+       {
+        if   (*(pStart+i)==13) {sizeFile[i]=0;break;} // перенос строки - конец длины
+       	if   ((*(pStart+i)<'0')||(*(pStart+i)>'9')) { journal.jprintf("%s: Wrong size file, skip!\n",(char*)__FUNCTION__); return false; } // только цифры
+    	sizeFile[i]=*(pStart+i);// копирование
+       }
+    if (strlen(sizeFile)>=sizeof(sizeFile)-1){ journal.jprintf("%s: Size file big, skip!\n",(char*)__FUNCTION__); return false; } // проверка длины
+    lenFile=atoi(sizeFile);	
+    if (lenFile==0) {journal.jprintf("%s: Size file zero, skip!\n",(char*)__FUNCTION__); return false; } 
 
-	// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
-	memcpy(Socket[thread].outBuf,ptr,full_len);
-	_delay(50);
-    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить окончание пакета
-	ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
-	full_len=full_len+len-m_strlen(HEADER_BIN);
-	
-	journal.jprintf("Loading %d bytes:\n", full_len);
-	
-	// Чтение настроек
-	len = HP.load(ptr, 1);
-	if(len <= 0) return false;
-	boolean ret = true;
-	// Чтение профиля
-	ptr += len;
-	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
-	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-	return ret;
+    // все нашлось, можно обрабатывать
+    journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось
+    ptr = (byte*) strstr((char*) Socket[thread].inPtr,emptyStr)+strlen(emptyStr); // поиск начала даных
+    full_len=size-(ptr - (byte *)Socket[thread].inBuf); // длина данных (файла) в буфере
+    journal.jprintf("DATA >%d\n",full_len);
+ //   journal.jprintf("DATA >%s\n",ptr);
+    
+    // В зависимости от имени файла
+    if (strcmp(nameFile,"*SETTINGS*")==0){  // Чтение настроек
+
+/*		   // Чтение настроек
+			len = HP.load(ptr, 1);
+			if(len <= 0) return false;
+			boolean ret = true;
+			// Чтение профиля
+			ptr += len;
+			if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
+			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
+			HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
+			return ret;
+*/  
+			// Определение начала данных (поиск HEADER_BIN)
+			if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
+				journal.jprintf("%s: Wrong save file format!\n",(char*)__FUNCTION__);
+				return false;
+			}
+			full_len=size-(ptr - (byte *)Socket[thread].inBuf);
+		
+			// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
+			memcpy(Socket[thread].outBuf,ptr,full_len);
+			_delay(50);
+		    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+		    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+		    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить окончание пакета
+			ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
+			full_len=full_len+len-m_strlen(HEADER_BIN);
+			
+			journal.jprintf("Loading %d bytes:\n", full_len);
+
+			
+			// Чтение настроек
+			len = HP.load(ptr, 1);
+			if(len <= 0) return false;
+			boolean ret = true;
+			// Чтение профиля
+			ptr += len;
+			if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
+			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
+			HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
+			return ret;
+    } //if (strcmp(nameFile,"*SETTINGS*")==0)
+    // загрузка вебморды
+   else  if (strcmp(nameFile,"SPI_FLASH")==0){  // начало загрузки вебморды
+   	
+   }
+   else  if (strcmp(nameFile,"SPI_FLASH_END")==0){  // Окончание загрузки вебморды
+    }
+   else { // загрузка отдельных файлов веб морды
+   	loadFileToSpi(nameFile, lenFile, thread, ptr,full_len); 	
+    }
+
+   return false; 
 }
+// Загрузка файла в спай память возвращает true если файл записан false - если ошибка записи 
+// Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
+// Входные параметры:
+// nameFile - имя файла 
+// lenFile - общая длина файла
+// thread - поток веб сервера, принятый пакет (первый вместе с заголовком) лежит в Socket[thread].inPtr
+// ptr - указатель на начало данных (файла) в буфере. 
+// sizeBuf - размер данных в буфере (по сети осталось принять lenFile-sizeBuf)
+boolean loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
+{
+	
+}
+
