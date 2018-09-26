@@ -276,7 +276,7 @@ int32_t HeatPump::save(void)
 	if(tasks_suspended) xTaskResumeAll(); // Разрешение других задач
 
 	if(error) {
-		set_Error(error, (char*)nameHeatPump);
+		set_Error(error, (char*)__FUNCTION__);
 		return error;
 	}
 	// суммарное число байт
@@ -400,7 +400,7 @@ int8_t HeatPump::save_motoHour()
 		_delay(i * 50);
 	}
 	if(errcode) {
-		set_Error(ERR_SAVE2_EEPROM, (char*) nameHeatPump);
+		set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
 		return ERR_SAVE2_EEPROM;
 	}  // записать счетчики
 	journal.jprintf("Counters saved\n");
@@ -411,9 +411,9 @@ int8_t HeatPump::save_motoHour()
 int8_t HeatPump::load_motoHour()          
 {
  byte x=0xff;
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
+ if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
  if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)nameHeatPump); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
+ if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
  journal.jprintf(" Load counters OK, read: %d bytes\n",sizeof(motoHour));
  return OK; 
 
@@ -1787,8 +1787,7 @@ int8_t HeatPump::StartResume(boolean start)
 	if ((!sADC[PEVA].get_present())&&(dEEV.get_ruleEEV()==TEVAOUT_PEVA))  //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует",
 	{
 		setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-		error=ERR_PEVA_EEV;
-		set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+	    set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке;
 		return error;
 	}
 #endif
@@ -1799,22 +1798,19 @@ int8_t HeatPump::StartResume(boolean start)
 		if (!dRelay[PUMP_OUT].get_present())  // отсутсвует насос на конденсаторе, пользователь НЕ может изменить в процессе работы проверка при старте
 		{
 			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-			error=ERR_PUMP_CON;
-			set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+			set_Error(ERR_PUMP_CON,(char*)__FUNCTION__);        // остановить по ошибке;
 			return error;
 		}
 		if (!dRelay[PUMP_IN].get_present())   // отсутсвует насос на испарителе, пользователь может изменить в процессе работы
 		{
 			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-			error=ERR_PUMP_EVA;
 			set_Error(ERR_PUMP_EVA,(char*)__FUNCTION__);        // остановить по ошибке;
 			return error;
 		}
 		if ((!dRelay[RCOMP].get_present())&&(!dFC.get_present()))   // отсутсвует компрессор, пользователь может изменить в процессе работы
 		{
 			setState(pOFF_HP);    // Еще ничего не сделали по этому сразу ставим состоение выключено
-			error=ERR_NO_COMPRESS;
-			set_Error(error,(char*)__FUNCTION__);        // остановить по ошибке;
+			set_Error(ERR_NO_COMPRESS,(char*)__FUNCTION__);        // остановить по ошибке;
 			return error;
 		}
 	} //  if (start)  // Команда старт
@@ -1863,14 +1859,14 @@ int8_t HeatPump::StartResume(boolean start)
 		{
 			journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
 			setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
-			error=ERR_MODBUS_BLOCK; set_Error(error,(char*)__FUNCTION__);
+			set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);
 			return error;
 		}
 #endif
-		if ((error=ResetFC())!=OK)                         // Сброс инвертора если нужно
+		if ((ResetFC())!=OK)                         // Сброс инвертора если нужно
 		{
 			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
-			set_Error(error,(char*)__FUNCTION__);
+			set_Error(ERR_RESET_FC,(char*)__FUNCTION__);
 			return error;
 		}
 		compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
