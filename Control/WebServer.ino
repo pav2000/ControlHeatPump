@@ -2512,7 +2512,15 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			return ret;
     } //if (strcmp(nameFile,"*SETTINGS*")==0)
     // загрузка вебморды
-	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
+   else  if (strcmp(nameFile,"SPI_FLASH")==0){  // начало загрузки вебморды
+   	
+   }
+   else  if (strcmp(nameFile,"SPI_FLASH_END")==0){  // Окончание загрузки вебморды
+   	
+   }
+   else { // загрузка отдельных файлов веб морды
+   }
 
    return false; 
 }
+
