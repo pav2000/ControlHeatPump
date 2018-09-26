@@ -2440,18 +2440,9 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
-	
-	// Чтение настроек
-	len = HP.load(ptr, 1);
-	if(len <= 0) return false;
-	boolean ret = true;
-	// Чтение профиля
-	ptr += len;
-	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
-	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-	return ret;
 
+	
+	
 	// Определение имени файла
 	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found, skip!\n",(char*)__FUNCTION__);return false;} // Имя файла не найдено, запрос не верен, выходим
     pStart=pStart+strlen((char*)Title);  // начало имени файла
@@ -2476,8 +2467,23 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 
     // все нашлось, можно обрабатывать
     journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось
-
+    ptr = (byte*) strstr((char*) Socket[thread].inPtr,"/n/n"); // поиск начала файла
+    journal.jprintf("DATA >%s\n",ptr);
+    
+    // В зависимости от имени файла
     if (strcmp(nameFile,"*SETTINGS*")==0){  // Чтение настроек
+
+/*		   // Чтение настроек
+			len = HP.load(ptr, 1);
+			if(len <= 0) return false;
+			boolean ret = true;
+			// Чтение профиля
+			ptr += len;
+			if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
+			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
+			HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
+			return ret;
+*/  
 			// Определение начала данных (поиск HEADER_BIN)
 			if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
 				journal.jprintf("%s: Wrong save file format!\n",(char*)__FUNCTION__);
@@ -2496,6 +2502,7 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			full_len=full_len+len-m_strlen(HEADER_BIN);
 			
 			journal.jprintf("Loading %d bytes:\n", full_len);
+
 			
 			// Чтение настроек
 			len = HP.load(ptr, 1);
@@ -2504,11 +2511,8 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			// Чтение профиля
 			ptr += len;
 			if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
-		#ifdef USE_SCHEDULER
 			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-		#endif
 			HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-			
 			return ret;
     } //if (strcmp(nameFile,"*SETTINGS*")==0)
     // загрузка вебморды
