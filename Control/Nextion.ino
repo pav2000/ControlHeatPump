@@ -52,7 +52,12 @@ boolean Nextion::init()
 		return false;
 	}
 
-	sendCommand("bkcmd=0");     // Ответов нет от дисплея
+	// bkcmd:
+	//– Level 0 is Off – no pass/fail will be returned
+	//– Level 1 is OnSuccess,  only when last serial command successful.
+	//– Level 2 is OnFailure, only when last serial command failed
+	//– Level 3 is Always, returns 0x00 to 0x23 result of serial command.
+	sendCommand("bkcmd=2");
 	_delay(10);
 	sendCommand("sendxy=0");
 	sendCommand("thup=1");
@@ -187,6 +192,10 @@ void Nextion::readCommand()
 		case 0x87:   // выход из сна
 			fPageID = true;
 			break;
+		case 0x1A:
+			sendCommand("sendme");
+			_delay(10);
+			break;
 		}
 	}
 	if(fPageID) Update();
@@ -197,6 +206,7 @@ static char ntemp[24];
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
+	if(!sendCommand("ref_stop")) return;      // Остановить обновление
 	// 2. Вывод в зависмости от страницы
 	if(PageID == 0)  // Обновление данных 0 страницы "Главный экран"
 	{
@@ -417,14 +427,16 @@ void Nextion::StatusLine()
 {
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
-	uint16_t newcrc = calulate_crc16((uint8_t*)tm, 5);
-	newcrc = _crc16(newcrc, HP.get_errcode());
-	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 2) | (HP.get_BoilerON() << 1) | fPageID);
-	newcrc = _crc16(newcrc, HP.get_modeHouse());
+	uint16_t newcrc = 0;
+	if(!fPageID) {
+		newcrc = calulate_crc16((uint8_t*)tm, 5);
+		newcrc = _crc16(newcrc, HP.get_errcode());
+		newcrc = _crc16(newcrc, HP.get_modeHouse());
+		newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
+	}
 	if(newcrc != StatusCrc) { // поменялся
 		StatusCrc = newcrc;
 
-		if(!sendCommand("ref_stop")) return;      // Остановить обновление
 		setComponentText("time", tm);  // Обновить время
 		// Ошибки
 		if(HP.get_errcode() == OK) {
