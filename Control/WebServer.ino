@@ -2426,10 +2426,15 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
-const char Title[]= {"Title: "};          // где лежит имя файла
-const char Length[]={"Content-Length: "}; // где лежит длина файла 
-const char emptyStr[]={"\r\n\r\n"};       // пустая строка после которой начинаются данные
-uint16_t numFilesWeb=0;
+const char Title[]        = {"Title: "};           // где лежит имя файла
+const char Length[]       = {"Content-Length: "};  // где лежит длина файла 
+const char emptyStr[]     = {"\r\n\r\n"};          // пустая строка после которой начинаются данные
+const char SETTINGS[]     = {"*SETTINGS*"};        // Идентификатор передачи настроек
+const char LOAD_START[]   = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды
+const char LOAD_END[]     = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды
+
+uint16_t numFilesWeb=0;                   // Число загруженных файлов
+boolean  settingNow=false;                // признак начала загрузки настроек
 // Разбор и обработка POST запроса inPtr входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
@@ -2442,8 +2447,8 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
-	
-	// Определение имени файла
+
+ 	// Определение имени файла
 	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found, skip!\n",(char*)__FUNCTION__);return false;} // Имя файла не найдено, запрос не верен, выходим
     pStart=pStart+strlen((char*)Title);  // начало имени файла
     for(i=0;i<sizeof(nameFile);i++)      // копирование имени файла
@@ -2463,17 +2468,16 @@ boolean parserPOST(uint8_t thread, uint16_t size)
        }
     if (strlen(sizeFile)>=sizeof(sizeFile)-1){ journal.jprintf("%s: Size file big, skip!\n",(char*)__FUNCTION__); return false; } // проверка длины
     lenFile=atoi(sizeFile);	
-    if (lenFile==0) {journal.jprintf("%s: Size file zero, skip!\n",(char*)__FUNCTION__); return false; } 
+    if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("%s: Size file zero, skip!\n",(char*)__FUNCTION__); return false; } 
 
     // все нашлось, можно обрабатывать
-    journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось
+ //  if (lenFile>0) journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
     ptr = (byte*) strstr((char*) Socket[thread].inPtr,emptyStr)+strlen(emptyStr); // поиск начала даных
     full_len=size-(ptr - (byte *)Socket[thread].inBuf); // длина данных (файла) в буфере
-    journal.jprintf("DATA >%d\n",full_len);
- //   journal.jprintf("DATA >%s\n",ptr);
+//    journal.jprintf("DATA >%d\n",full_len);
     
     // В зависимости от имени файла
-    if (strcmp(nameFile,"*SETTINGS*")==0){  // Чтение настроек
+    if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
 
 /*		   // Чтение настроек
 			len = HP.load(ptr, 1);
@@ -2502,10 +2506,9 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить окончание пакета
 			ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
 			full_len=full_len+len-m_strlen(HEADER_BIN);
-			
+	
 			journal.jprintf("Loading %d bytes:\n", full_len);
 
-			
 			// Чтение настроек
 			len = HP.load(ptr, 1);
 			if(len <= 0) return false;
@@ -2518,46 +2521,63 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			return ret;
     } //if (strcmp(nameFile,"*SETTINGS*")==0)
     // загрузка вебморды
-   else  if (strcmp(nameFile,"SPI_FLASH")==0){  // начало загрузки вебморды
-   if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) {journal.jprintf("%s: Download already in progress, skip\n",(char*)__FUNCTION__);return false;} // Cемафор  захвачен, загрузка уже идет в другом потоке	
+   else  if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
+   if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Download already in progress, skip\n",(char*)__FUNCTION__);return false;} // Cемафор не был захвачен, загрузка уже идет в другом потоке	
    numFilesWeb=0;
-   journal.jprintf("POST: Start download web files.\n");
+   journal.jprintf("POST: %s start download web files.\n",nameFile);
    journal.jprintf(" Format SPI disk ");
    SerialFlash.eraseAll();
     while (SerialFlash.ready() == false) {
       vTaskDelay(1000/ portTICK_PERIOD_MS);    
       journal.jprintf(".");
     }
-    journal.jprintf("OK");	
+    journal.jprintf(" OK\n");	
     
    }
-   else  if (strcmp(nameFile,"SPI_FLASH_END")==0){  // Окончание загрузки вебморды
-    if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) {journal.jprintf("POST: End of download, total %d files downloads.\n",numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);}	
-  	else {journal.jprintf("%s: Trying to end download without starting the download, skip\n",(char*)__FUNCTION__);return false;}	// семафор не захвачен, ошибка
+   else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("POST: %s end of download, total %d files downloads.\n",nameFile,numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);} // Семафор не захвачен (был захвачен ранее) все ок
+  	else {journal.jprintf("%s: Trying to end download without starting the download, skip\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return false;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
     }
    else { // загрузка отдельных файлов веб морды
-    if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) 	if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)) numFilesWeb++; // Cемафор  захвачен загрузка файла
-   	else {journal.jprintf("%s: Trying to download file without starting the download, skip\n",(char*)__FUNCTION__);return false;}	// семафор не захвачен, ошибка
+    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)) numFilesWeb++; }// Cемафор  захвачен загрузка файла
+   	else {journal.jprintf("%s: Trying to download file without starting the download, skip\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return false;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
     }
 
    return false; 
 }
-// Загрузка файла в спай память возвращает true если файл записан false - если ошибка записи 
+// Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
 // Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
 // Входные параметры:
 // nameFile - имя файла 
 // lenFile - общая длина файла
 // thread - поток веб сервера, принятый пакет (первый вместе с заголовком) лежит в Socket[thread].inPtr
 // ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr. 
-// sizeBuf - размер данных в буфере (по сети осталось принять lenFile-sizeBuf)
-boolean loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
+// sizeBuf - размер данных в буфере ptr (по сети осталось принять lenFile-sizeBuf)
+uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
 {
-uint16_t i;
-uint32_t loadLen=0; // Обрабоатнная (загруженная) длина
-// запись первого пакета, где заголовок
+//uint16_t len;       .
+uint32_t loadLen=0,len; // Обработанная (загруженная) длина
 
+if (SerialFlash.create(nameFile,lenFile)) 
+  {   SerialFlashFile ff = SerialFlash.open(nameFile);
+      if (ff) {
+        journal.jprintf("File %s load ",nameFile); 
+        loadLen=ff.write(ptr, sizeBuf);  // первый пакет упаковали
+        while (loadLen<lenFile)  // Чтене остальных пакетов из сети
+        {
+        len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+        if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+        Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер	
+        loadLen=loadLen+ff.write(Socket[thread].inBuf,len);                        // записать
+        journal.jprintf(".");
+        }
+       ff.close();  
+      if (loadLen==lenFile)  journal.jprintf(" %d bytes OK\n",loadLen); 
+      else {journal.jprintf(" %d bytes, error len\n",loadLen);loadLen=0;}           // Длины не совпали   
+      }
+  } // if (SerialFlash.create(filename, length))   
 
-	
+return 	loadLen;
 }
 
 
