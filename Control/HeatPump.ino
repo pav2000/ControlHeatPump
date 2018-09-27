@@ -568,7 +568,7 @@ void HeatPump::resetSettingHP()
   time_Sun_OFF = 0;
    
   safeNetwork=false;                            // режим safeNetwork
- 
+  presentSpiDisk=false;                         // Признак наличия (физического) spi диска - диска нет по умолчанию
   
   // Установка сетевых параметров по умолчанию
   if (defaultDHCP) SETBIT1(Network.flags,fDHCP);else SETBIT0(Network.flags,fDHCP); // использование DHCP

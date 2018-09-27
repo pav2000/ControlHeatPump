@@ -45,6 +45,7 @@
 #ifdef MQTT                                 // признак использования MQTT
     #include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
 #endif
+#include <SerialFlash.h>                    // Либа по работе с spi флешом как диском
 
 #include "Hardware.h"
 #include "HeatPump.h"
@@ -59,6 +60,7 @@ SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, 
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
 SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
 SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xLoadingWebSemaphore;               // Семафор загрузки веб морды в spi память
 static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
 static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
@@ -94,6 +96,7 @@ SdFat card;                                                              // Ка
 #ifdef NEXTION   
   Nextion myNextion;                                                     // Дисплей
 #endif
+
 
 // Структура для хранения одного сокета, нужна для организации многопотоковой обработки
 #define fABORT_SOCK   0                     // флаг прекращения передачи (произошел сброс сети)
@@ -409,8 +412,24 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    //_delay(100);
 
-// 8. Чтение ЕЕПРОМ
-   journal.jprintf("5. Load data from I2C memory . . .\n");
+// 8. Инициализация spi флеш диска
+  journal.jprintf("5. Init and checking SPI flash disk . . .\n");
+ if (!SerialFlash.begin(PIN_SPI_CS_FLASH)) { Serial.println(" Unable to access SPI flash chip, use SPI disk block");HP.presentSpiDisk=false;}
+ else {
+ 	  unsigned char id[8];
+      SerialFlash.readID(id);
+      journal.jprintf(" Manufacturer ID: 0x%02x\n",id[0]);
+      journal.jprintf(" Memory type: 0x%02x\n",id[1]);
+      journal.jprintf(" Capacity: 0x%02x\n",id[2]);
+      journal.jprintf(" Chip size: %d bytes\n",SerialFlash.capacity(id));
+      SerialFlash.readSerialNumber(id);
+      journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n",id[0],id[1],id[2],id[3],id[4],id[5],id[6],id[7]);
+ 	  HP.presentSpiDisk=true;
+ 	  }
+
+
+// 9. Чтение ЕЕПРОМ
+   journal.jprintf("6. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
 	  journal.jprintf("I2C memory is empty, use default settings\n");
@@ -426,29 +445,29 @@ x_I2C_init_std_message:
   HP.set_hashUser();
   HP.set_hashAdmin();
 
-// 9. Сетевые настройки
-   journal.jprintf("6. Setting Network . . .\n");
+// 10. Сетевые настройки
+   journal.jprintf("7. Setting Network . . .\n");
    initW5200(true);   // Инициализация сети с выводом инфы в консоль
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
-// 10. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("7. Setting time and clock . . .\n");
+// 11. Разбираемся со всеми часами и синхронизацией
+   journal.jprintf("8. Setting time and clock . . .\n");
    set_time();        
    
- // 11. Инициалазация уведомлений
-   journal.jprintf("8. Message update IP from DNS . . .\n");
+ // 12. Инициалазация уведомлений
+   journal.jprintf("9. Message update IP from DNS . . .\n");
    HP.message.dnsUpdateStart(); 
    
- // 12. Инициалазация MQTT
+ // 13. Инициалазация MQTT
     #ifdef MQTT  
-      journal.jprintf("9. Client MQTT update IP from DNS . . .\n"); 
+      journal.jprintf("10. Client MQTT update IP from DNS . . .\n"); 
       HP.clMQTT.dnsUpdateStart();
     #else
-      journal.jprintf("9. Client MQTT disabled by config\n");
+      journal.jprintf("10. Client MQTT disabled by config\n");
     #endif 
 
-  // 13. Инициалазация Statistics
-   journal.jprintf("10. Statistics");
+  // 14. Инициалазация Statistics
+   journal.jprintf("11. Statistics");
    if(HP.get_fSD()) {
 	   //HP.InitStatistics();
 	   journal.jprintf(" - writing on SD card\n");
@@ -463,20 +482,20 @@ x_I2C_init_std_message:
    }
 
   if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
-  journal.jprintf("11. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
+  journal.jprintf("12. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
   start_ADC(); // после инициализации HP
-  journal.jprintf("12. Start read ADC sensors\n"); 
+  journal.jprintf("13. Start read ADC sensors\n"); 
 
   #ifdef NEXTION   
-    journal.jprintf("13. Nextion display - ");
+    journal.jprintf("14. Nextion display - ");
     if(GETBIT(HP.Option.flags, fNextion)) {
     	if(myNextion.init()) journal.jprintf("Ok\n");
     } else {
     	journal.jprintf("Disabled\n");
     }
   #else
-    journal.jprintf("13. Nextion display absent in config\n");
+    journal.jprintf("14. Nextion display absent in config\n");
   #endif
 
   #ifdef TEST_BOARD
@@ -485,7 +504,7 @@ x_I2C_init_std_message:
   #endif
 
   // Создание задач Free RTOS  ----------------------
-    journal.jprintf("14. Create tasks free RTOS . . .\n");
+    journal.jprintf("15. Create tasks free RTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
 HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
 HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
@@ -546,6 +565,9 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Остано�
   if ( xTaskCreate(vWeb3,"Web3", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
 #endif
+vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
+if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+//xLoadingWebMutex=xSemaphoreCreateMutex();
 
 vSemaphoreCreateBinary(xWebThreadSemaphore);               // Создание мютекса
 if (xWebThreadSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
@@ -582,9 +604,9 @@ vTaskSuspend(HP.xHandlePauseStart);
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("15. Send a notification . . .\n");
+journal.jprintf("16. Send a notification . . .\n");
 //HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
-journal.jprintf("16. Information:\n");
+journal.jprintf("17. Information:\n");
 freeRamShow();
 HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM); 

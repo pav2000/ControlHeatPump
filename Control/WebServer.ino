@@ -2429,6 +2429,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 const char Title[]= {"Title: "};          // где лежит имя файла
 const char Length[]={"Content-Length: "}; // где лежит длина файла 
 const char emptyStr[]={"\r\n\r\n"};       // пустая строка после которой начинаются данные
+uint16_t numFilesWeb=0;
 // Разбор и обработка POST запроса inPtr входная строка strReturn выходная
 // Сейчас реализована загрузка настроек
 // Возврат - true ok  false - error
@@ -2513,17 +2514,30 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 			ptr += len;
 			if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
 			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-			HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
+			HP.Prof.update_list(HP.Prof.get_idProfile());                                        // обновить список
 			return ret;
     } //if (strcmp(nameFile,"*SETTINGS*")==0)
     // загрузка вебморды
    else  if (strcmp(nameFile,"SPI_FLASH")==0){  // начало загрузки вебморды
-   	
+   if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) {journal.jprintf("%s: Download already in progress, skip\n",(char*)__FUNCTION__);return false;} // Cемафор  захвачен, загрузка уже идет в другом потоке	
+   numFilesWeb=0;
+   journal.jprintf("POST: Start download web files.\n");
+   journal.jprintf(" Format SPI disk ");
+   SerialFlash.eraseAll();
+    while (SerialFlash.ready() == false) {
+      vTaskDelay(1000/ portTICK_PERIOD_MS);    
+      journal.jprintf(".");
+    }
+    journal.jprintf("OK");	
+    
    }
    else  if (strcmp(nameFile,"SPI_FLASH_END")==0){  // Окончание загрузки вебморды
+    if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) {journal.jprintf("POST: End of download, total %d files downloads.\n",numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);}	
+  	else {journal.jprintf("%s: Trying to end download without starting the download, skip\n",(char*)__FUNCTION__);return false;}	// семафор не захвачен, ошибка
     }
    else { // загрузка отдельных файлов веб морды
-   	loadFileToSpi(nameFile, lenFile, thread, ptr,full_len); 	
+    if (SemaphoreTake(xLoadingWebSemaphore,0)==pdPASS) 	if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)) numFilesWeb++; // Cемафор  захвачен загрузка файла
+   	else {journal.jprintf("%s: Trying to download file without starting the download, skip\n",(char*)__FUNCTION__);return false;}	// семафор не захвачен, ошибка
     }
 
    return false; 
@@ -2534,10 +2548,19 @@ boolean parserPOST(uint8_t thread, uint16_t size)
 // nameFile - имя файла 
 // lenFile - общая длина файла
 // thread - поток веб сервера, принятый пакет (первый вместе с заголовком) лежит в Socket[thread].inPtr
-// ptr - указатель на начало данных (файла) в буфере. 
+// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr. 
 // sizeBuf - размер данных в буфере (по сети осталось принять lenFile-sizeBuf)
 boolean loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
 {
+uint16_t i;
+uint32_t loadLen=0; // Обрабоатнная (загруженная) длина
+// запись первого пакета, где заголовок
+
+
 	
 }
+
+
+
+ 
 
