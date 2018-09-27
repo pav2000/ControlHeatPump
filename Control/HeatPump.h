@@ -389,6 +389,8 @@ class HeatPump
     boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
     type_SecurityHP Security;                              // хеш паролей
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
+    boolean presentSpiDisk;                                // Признак наличия (физического) spi диска
+    
    
     // функции для работой с графикками
     uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
@@ -436,7 +438,7 @@ class HeatPump
     TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
 
     SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
-
+ 
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
     void Sun_OFF(void);					  // Выключить СК
