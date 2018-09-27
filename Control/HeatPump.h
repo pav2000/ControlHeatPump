@@ -83,6 +83,7 @@ struct type_motoHour
 #define f1Wire4TSngl		9				// На 4-ей шине 1-Wire(DS2482) только один датчик
 #define fSunRegenerateGeo	10				// Использовать солнечный коллектор для регенерации геоконтура в простое
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
+#define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP

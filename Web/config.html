@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT)");
+		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -26,9 +26,15 @@
 		</thead>			
 		<tbody>
 		<tr>
+			<td>Расположение файлов веб-сервера на SPI Flash (иначе на SD карте)</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-wspif" onChange="setParam('get_optionHP(WSPIF)');">
+			</td>
+		</tr>
+		<tr>
 			<td>Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-save_on" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
+				<input type="checkbox" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
 			</td>
 		</tr>
 			<td>Число повторных попыток пуска при ошибке [0..10]<sup>1</sup></td>
@@ -51,7 +57,7 @@
 		<tr>
 			<td>Запись графиков на карту (файл chart_sd.csv)<sup>3</sup></td>
 			<td>
-				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
+				<input type="checkbox" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
 			</td>
 		</tr>
 		<tr>
