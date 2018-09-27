@@ -13,8 +13,15 @@
 		for (i=0;i<arr.length;i++){ arr[i].href = arr[i].href.replace(chang1,urlcontrol + '/'); }
 	}
 	function send_files(id) {
+		var mrk = {name:"*SETTINGS*", toString: function(){return "";}};
+		if(id == "spi") mkr.name = "*SPI_FLASH*";
+		upload(mrk);
 		var fs = document.getElementById(id).files;
-		for(i = 0; i < fs.length; i++) upload(id, fs[i]);
+		for(i = 0; i < fs.length; i++) upload(fs[i]);
+		if(id == "spi") {
+			mkr.name = "*SPI_FLASH_END*";
+			upload(mrk);
+		}
 		return false;
 	}
 	</script>
