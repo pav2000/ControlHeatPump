@@ -972,14 +972,13 @@ function upload(file) {
 		}
 	};
 	xhr.open("POST", urlcontrol, true);
-	xhr.setRequestHeader('Title', encodeURIComponent(file.name));
+	xhr.setRequestHeader('Title', file.settings ? "*SETTINGS*" : encodeURIComponent(file.name));
 	xhr.send(file);
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;
 		if(xhr.status == 200) {
-			if(xhr.responseText != null) {
-				strResponse = xhr.responseText;
-				alert(strResponse);
+			if(xhr.responseText != null && xhr.responseText != "") {
+				alert(xhr.responseText);
 			}
 		}
 	}
