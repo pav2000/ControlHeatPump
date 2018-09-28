@@ -87,6 +87,7 @@ class Statistics
 public:
 	void Init();
 	void Update();							// Обновить статистику, раз в период
+	void UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void Save();							// Записать статистику на SD
 
 private:

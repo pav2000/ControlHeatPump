@@ -205,7 +205,7 @@ public:
     
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
-   uint16_t Value;                                       // значение датчика ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) 
+   uint16_t Value;                                       // значение датчика ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА)
    struct { // SAVE GROUP, number the first
    uint8_t  number;										 // номер
    uint16_t testValue;                                   // !save! Состояние датчика в режиме теста

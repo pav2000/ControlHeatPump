@@ -868,10 +868,11 @@ void vReadSensor(void *)
 	#endif
 		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
+		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
+
 		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 
-		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
-		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		if(OW_scan_flags == 0) {
 			uint8_t flags = 0;
 			for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
@@ -900,6 +901,22 @@ void vReadSensor(void *)
 			}
 			if(temp2 != 32767) HP.sTemp[TIN].set_Temp(temp2);
 		}
+
+#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
+	#ifdef USE_UPS
+		if(!HP.NO_Power)
+	#endif
+			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
+			{
+				readSDM=xTaskGetTickCount();
+				HP.dSDM.get_readState(2);     // Последняя группа регистров
+			}
+#endif
+
+		HP.calculatePower();  // Расчет мощностей и СОР	}
+
+		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
+
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
@@ -919,17 +936,6 @@ void vReadSensor(void *)
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
-#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-	#ifdef USE_UPS
-		if(!HP.NO_Power)
-	#endif
-			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
-			{
-				readSDM=xTaskGetTickCount();
-				HP.dSDM.get_readState(2);     // Последняя группа регистров
-			}
-#endif
-
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
 		{
@@ -938,10 +944,6 @@ void vReadSensor(void *)
 		}
 #endif
 
-//        if (xTaskGetTickCount()-calcPower>10*1000) {  // раз в десять секунд
-//			calcPower=xTaskGetTickCount();
-			HP.calculatePower();  // Расчет мощностей и СОР	}
-       
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
@@ -957,9 +959,6 @@ void vReadSensor(void *)
 		// Проверка и сброс митекса шины I2C
 //       if (SemaphoreTake(xI2CSemaphore,(3*I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) { SemaphoreGive(xI2CSemaphore);journal.jprintf("UNLOCK mutex xI2CSemaphore\n");  HP.num_resMutexI2C++;} // Захват мютекса I2C или ОЖИДАНИНЕ 3 времен I2C_TIME_WAIT  и его освобождение
 //       else  SemaphoreGive(xI2CSemaphore);
-
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
-
 		// Проверки граничных температур для уведомлений, если разрешено!
 		static uint16_t countTEMP = 0;        // Для проверки критических температур для рассылки уведомлений
 		if(HP.message.get_fMessageTemp()) {

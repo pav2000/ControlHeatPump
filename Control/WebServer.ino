@@ -2501,7 +2501,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
 		    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
 		    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-		    if (full_len+len>=sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
+		    if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
 			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
 			full_len=full_len+len;                                                     // определить размер данных
 	        }

@@ -1,7 +1,7 @@
 /* ver 0.962 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -961,30 +961,21 @@ function toggleclass(elem, onoff) {
 
 function upload(file) {
 	var xhr = new XMLHttpRequest();
-	xhr.upload.onprogress = function(event) {
-		console.log(event.loaded + ' / ' + event.total);
-	}
-	xhr.onload = xhr.onerror = function() {
-		if(this.status == 200) {
-			console.log("success");
-		} else {
-			console.log("error " + this.status);
-		}
-	};
-	xhr.open("POST", urlcontrol, true);
+//	xhr.upload.onprogress = function(event) { console.log(event.loaded + ' / ' + event.total); }
+//	xhr.onload = xhr.onerror = function() {
+//		if(this.status == 200) { console.log("success"); } else { console.log("error " + this.status); }
+//	};
+	xhr.open("POST", urlcontrol, false);
 	xhr.setRequestHeader('Title', file.settings ? "*SETTINGS*" : encodeURIComponent(file.name));
-	xhr.send(file);
-	xhr.req_end = 0;
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;
-		xhr.req_end = 1;
 		if(xhr.status == 200) {
 			if(xhr.responseText != null && xhr.responseText != "") {
 				alert(xhr.responseText);
 			}
 		}
 	}
-	while(xhr.req_end == 0) ;
+	xhr.send(file);
 }
 
 function autoheight() {
