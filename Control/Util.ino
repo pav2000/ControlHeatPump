@@ -466,7 +466,7 @@ char * get_Schedule(uint32_t *sh)
 	return buf;
 }
 
-// Инициализация СД карты, параметр num - число попыток
+// Инициализация СД карты
 // возврат true - если успешно, false - карты нет работаем без нее
 boolean initSD(void)
 {
@@ -480,42 +480,6 @@ boolean initSD(void)
 	// 1. Инициалазация карты
 	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
 		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
-/*
-		for(i = 0; i < num; i++) // Карта не инициализируется c ходу/ Дополнительные попытки инициализировать карту
-		{
-			WDT_Restart (WDT);  // это операция долгая, сбросить вачдог
-			journal.jprintf("Repeat initializing SD card . . .\n");
-			// пытаемся реанимировать СД карту
-			digitalWriteDirect(10, HIGH);
-			SPI.end();                 // Stop SPI
-			// MISO - Digital Pin 74, MOSI - Digital Pin 75, and SCK - Digital Pin 76.
-			pinMode(74, INPUT_PULLUP);    // MISO - Digital Pin 74
-			pinMode(75, INPUT_PULLUP);    // MOSI - Digital Pin 75
-			pinMode(76, INPUT_PULLUP);    // SCK - Digital Pin 76.
-			pinMode(10, INPUT_PULLUP);    // CS w5200 - Digital Pin 10.
-			pinMode(4, INPUT_PULLUP);     // CS SD - Digital Pin 4.
-			pinMode(87, INPUT_PULLUP);    // SD Pin 87
-			pinMode(77, INPUT_PULLUP);    // Eth Pin 77
-			_delay(200);
-			pinMode(74, OUTPUT);          // MISO - Digital Pin 74
-			pinMode(75, OUTPUT);          // MOSI - Digital Pin 75
-			pinMode(76, OUTPUT);          // SCK - Digital Pin 76.
-			//  pinMode(10,OUTPUT);        // CS w5200 - Digital Pin 10.
-			pinMode(4, OUTPUT);           // CS SD - Digital Pin 4.
-			digitalWriteDirect(74, LOW);
-			digitalWriteDirect(75, LOW);
-			digitalWriteDirect(76, LOW);
-			_delay(200);
-#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-			if (card.begin(4,SPI_HALF_SPEED)) {success=true; break;}  // Половина скорости
-#else
-			if(card.begin(4, SPI_FULL_SPEED)) {
-				success = true;
-				break;
-			}    // Полная скорость
-#endif
-		}
-*/
 	} else success = true;  // Карта инициализирована с первого раза
 
 	if(success)  // Запоминаем результаты
@@ -560,7 +524,25 @@ boolean initSD(void)
 	SPI_switchW5200();
 	return true;
 }
-
+// Инициализация SPI диска, параметр true - вывод инфо в журнал false молча проверяем состояние
+// Возврат true - если успешно, false - диск не рабоатет
+boolean initSpiDisk(boolean show)
+{
+unsigned char id[8];	
+if (!SerialFlash.begin(PIN_SPI_CS_FLASH)) {if (show) Serial.println(" Unable to access SPI flash chip, use SPI disk block");return false;}
+ else {
+ 	  if (show) {
+	 	  SerialFlash.readID(id);
+	      journal.jprintf(" Manufacturer ID: 0x%02x\n",id[0]);
+	      journal.jprintf(" Memory type: 0x%02x\n",id[1]);
+	      journal.jprintf(" Capacity: 0x%02x\n",id[2]);
+	      journal.jprintf(" Chip size: %d bytes\n",SerialFlash.capacity(id));
+	      SerialFlash.readSerialNumber(id);
+	      journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n",id[0],id[1],id[2],id[3],id[4],id[5],id[6],id[7]);
+	 	  }
+ 	  return true;
+ 	  }
+}
 // base64 -хеш функция ------------------------------------------------------------------------------------------------
 /* Copyright (c) 2013 Adam Rudd. */
 const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

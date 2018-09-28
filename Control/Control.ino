@@ -414,19 +414,7 @@ x_I2C_init_std_message:
 
 // 8. Инициализация spi флеш диска
   journal.jprintf("5. Init and checking SPI flash disk . . .\n");
- if (!SerialFlash.begin(PIN_SPI_CS_FLASH)) { Serial.println(" Unable to access SPI flash chip, use SPI disk block");HP.presentSpiDisk=false;}
- else {
- 	  unsigned char id[8];
-      SerialFlash.readID(id);
-      journal.jprintf(" Manufacturer ID: 0x%02x\n",id[0]);
-      journal.jprintf(" Memory type: 0x%02x\n",id[1]);
-      journal.jprintf(" Capacity: 0x%02x\n",id[2]);
-      journal.jprintf(" Chip size: %d bytes\n",SerialFlash.capacity(id));
-      SerialFlash.readSerialNumber(id);
-      journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n",id[0],id[1],id[2],id[3],id[4],id[5],id[6],id[7]);
- 	  HP.presentSpiDisk=true;
- 	  }
-
+  HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
 
 // 9. Чтение ЕЕПРОМ
    journal.jprintf("6. Load data from I2C memory . . .\n");
