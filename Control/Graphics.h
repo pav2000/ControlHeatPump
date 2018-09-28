@@ -90,6 +90,7 @@ public:
 	void Save();							// Записать статистику на SD
 
 private:
+	void UpdateValue(int32_t *value, uint8_t type);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint32_t previous;
 };

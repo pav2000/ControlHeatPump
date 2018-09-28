@@ -33,9 +33,29 @@ void Statistics::Update()
 	if(tm - previous >= STAT_PERIOD) {
 		previous = tm;
 		for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+			int32_t newval;
+			switch(Stats_data[i].object) {
+			case STATS_OBJ_Temp:
+				newval = HP.sTemp[Stats_data[i].number].get_Temp();
+				break;
+			case STATS_OBJ_Power:
+				if(Stats_data[i].number == OBJ_powerCO) newval =
+				break;
+			}
+			UpdateValue(Stats_data[i].value, Stats_data[i].type);
 
 
 		}
+		counts++;
+	}
+}
+
+void Statistics::UpdateValue(int32_t *value, uint8_t type)
+{
+	switch(type){
+	case STATS_TYPE_MIN:
+		if()
+		break;
 	}
 }
 

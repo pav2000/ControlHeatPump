@@ -974,14 +974,17 @@ function upload(file) {
 	xhr.open("POST", urlcontrol, true);
 	xhr.setRequestHeader('Title', file.settings ? "*SETTINGS*" : encodeURIComponent(file.name));
 	xhr.send(file);
+	xhr.req_end = 0;
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;
+		xhr.req_end = 1;
 		if(xhr.status == 200) {
 			if(xhr.responseText != null && xhr.responseText != "") {
 				alert(xhr.responseText);
 			}
 		}
 	}
+	while(xhr.req_end == 0) ;
 }
 
 function autoheight() {
