@@ -26,13 +26,14 @@ class Nextion{
   void init_display();
   void Update();
   void StatusLine();  
-  void set_need_refresh() { fPageID = true; };    // установить необходимость обновления страницы
+  void set_need_refresh() { fPageID = true; };    // установить необходиmмость обновления страницы
   void Listen();
   boolean setComponentText(const char* component, char* txt);
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean check_incoming(void);
   void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outstrsize);
+  void    set_dim(uint8_t dim);
  private:
   int8_t  PageID;                               // Текущая страница
   boolean fPageID;                              // Признак смены страницы true

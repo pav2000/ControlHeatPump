@@ -445,7 +445,7 @@ const uint8_t save_end_marker[1] = { 0 };
 #define WEBDELIM	"\x7f" // ALT+127
 
 // Многозадачность, деление аппартных ресурсов
-const char *nameFREERTOS =     {"Free RTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
+const char *nameFREERTOS =     {"FreeRTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
 const char *nameHeatPump =     {"Heat Pump"};           // Имя теплового насоса (для лога ошибок) Здесь можно его поменять
 const char *MutexI2CBuzy =     {"I2C"}; 
 const char *MutexModbusBuzy=   {"Modbus"}; 

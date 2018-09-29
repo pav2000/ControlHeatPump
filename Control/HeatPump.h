@@ -316,7 +316,7 @@ class HeatPump
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
-   void     updateNextion(uint8_t what = 0);                          // Обновить настройки дисплея
+   void     updateNextion();                                          // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН

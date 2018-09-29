@@ -1120,6 +1120,7 @@ int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 // ---------------------------------------------------------------------------------
 //  MQTT клиент ТН -----------------------------------------------------------------
 // ---------------------------------------------------------------------------------
+#ifdef MQTT
 // инициализация MQTT
 void clientMQTT::initMQTT()
 {
@@ -1521,3 +1522,4 @@ if((x=W5100.readSnSR(W5200_SOCK_SYS))!=SnSR::CLOSED) { if(debug) journal.jprintf
 return true; 
 }
 
+#endif

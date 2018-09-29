@@ -879,7 +879,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_NEXTION)==0)          { Option.flags = (Option.flags & ~(1<<fNextion)) | ((x!=0)<<fNextion); updateNextion(); return true; } else            // использование дисплея nextion
    if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(); return true; } else            // использование дисплея nextion
    if(strcmp(var,option_NEXT_SLEEP)==0)       {if (x>=0.0) {Option.sleep=x; updateNextion(); return true;} else return false;                                                      }else       // Время засыпания секунды NEXTION минуты
-   if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=1.0)&&(x<=100.0)) {Option.dim=x; updateNextion(1); return true;} else return false;                                                       }else       // Якрость % NEXTION
+   if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=1.0)&&(x<=100.0)) {Option.dim=x; myNextion.set_dim(Option.dim); return true;} else return false;                                                       }else       // Якрость % NEXTION
    if(strcmp(var,option_SD_CARD)==0)          {if (x==0) {SETBIT0(Option.flags,fSD_card); return true;} else if (x==1) {SETBIT1(Option.flags,fSD_card); return true;} else return false;       }else       // Сбрасывать статистику на карту
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((x!=0)<<fWebStoreOnSPIFlash); return true; } else
@@ -1301,43 +1301,16 @@ return Security.hashAdminLen;
 }
 
 // Обновить настройки дисплея Nextion
-void HeatPump::updateNextion(uint8_t what)
+void HeatPump::updateNextion()
 {
 #ifdef NEXTION
-	char temp[16];
 	if(GETBIT(Option.flags, fNextion))  // Дисплей подключен
 	{
-		if(what) {
-			strcpy(temp, "dims=");
-			_itoa(Option.dim, temp);
-			myNextion.sendCommand(temp);
-		} else {
-			if(Option.sleep > 0)   // установлено засыпание дисплея
-			{
-				strcpy(temp, "thsp=");
-				_itoa(Option.sleep * 60, temp); // секунды
-				myNextion.sendCommand(temp);
-				myNextion.sendCommand("thup=1");     // sleep режим активировать
-			} else {
-				myNextion.sendCommand("thsp=0");   // sleep режим выключен  - ЭТО  РАБОТАЕТ
-				myNextion.sendCommand("thup=0");      // sleep режим активировать
-				/*
-				 myNextion.sendCommand("rest");         // Запретить режим сна получается только через сброс экрана
-				 _delay(50);
-				 myNextion.sendCommand("page 0");
-				 myNextion.sendCommand("bkcmd=0");     // Ответов нет от дисплея
-				 myNextion.sendCommand("sendxy=0");
-				 myNextion.sendCommand("thup=1");      // sleep режим активировать
-				 */
-			}
-
-		}
+		myNextion.init_display();
 		myNextion.set_need_refresh();
 		vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
 	} else                        // Дисплей выключен
 	{
-//		myNextion.sendCommand("thsp=0");    // sleep режим выключен
-//		myNextion.sendCommand("dim=0");
 //		myNextion.sendCommand("sleep=1");
 		vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
 	}

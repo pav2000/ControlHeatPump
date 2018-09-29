@@ -24,7 +24,8 @@ const char *_HP_OFF_8859 = { "\xc2\xbd\x20\xd2\xeb\xda\xdb\xee\xe7\xd5\xdd\x0d\x
 const char *_xB0 = { "\xB0" }; // °
 #define COMM_END_B 0xFF
 const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
-char 	buffer[64];
+char buffer[64];
+#define ntemp buffer
 
 #define fSleep 1
 
@@ -69,8 +70,30 @@ void Nextion::init_display()
 	//_delay(10);
 	sendCommand("sendxy=0");
 	sendCommand("thup=1");
-	//sendCommand("sleep=0");
+	if(HP.Option.sleep > 0)   // установлено засыпание дисплея
+	{
+		strcpy(ntemp, "thsp=");
+		_itoa(HP.Option.sleep * 60, ntemp); // секунды
+		sendCommand(ntemp);
+	} else {
+		sendCommand("thsp=0");   // sleep режим выключен  - ЭТО  РАБОТАЕТ
+		/*
+		 sendCommand("rest");         // Запретить режим сна получается только через сброс экрана
+		 _delay(50);
+		 sendCommand("page 0");
+		 sendCommand("bkcmd=0");     // Ответов нет от дисплея
+		 sendCommand("sendxy=0");
+		 sendCommand("thup=1");      // sleep режим активировать
+		 */
+	}
 	sendCommand("page 0");
+}
+
+void Nextion::set_dim(uint8_t dim)
+{
+	strcpy(ntemp, "dims=");
+	_itoa(dim, ntemp);
+	sendCommand(ntemp);
 }
 
 // Проверка на начало получения данных из дисплея и ожидание
@@ -149,7 +172,7 @@ void Nextion::readCommand()
 					}
 				} else if(cmd1 == 0x05) { // Изменение целевой температуры СО шаг изменения сотые градуса
 					if(cmd2 == 0x17 || cmd2 == 0x18) {
-						setComponentText("tust", ftoa(temp, (float) HP.setTargetTemp(cmd2 == 0x17 ? 20 : -20) / 100.0, 1));
+						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == 0x17 ? 20 : -20) / 100.0, 1));
 					} else if(cmd2 == 0x1A) { // Переключение режимов отопления ТОЛЬКО если насос выключен
 						if(!HP.IsWorkingNow()) {
 							HP.set_nextMode();  // выбрать следующий режим
@@ -187,7 +210,7 @@ void Nextion::readCommand()
 					if(HP.get_BoilerON()) HP.set_BoilerOFF(); else HP.set_BoilerON();
 				} else if(cmd1 == 0x06) { // Изменение целевой температуры ГВС шаг изменения сотые градуса
 					if(cmd2 == 0x0D || cmd2 == 0x0E) {
-						setComponentText("tustgvs", ftoa(temp, (float) HP.setTempTargetBoiler(cmd2 == 0x0D ? 100 : -100) / 100.0, 1));
+						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == 0x0D ? 100 : -100) / 100.0, 1));
 					}
 				}
 			}
@@ -211,8 +234,6 @@ void Nextion::readCommand()
 	if(fPageID) Update();
 }
 
-static char ntemp[24];
-
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
@@ -227,10 +248,10 @@ void Nextion::Update()
 		} else if(GETBIT(flags, fSleep)) {
 			flags &= ~(1<<fSleep);
 			if(HP.Option.sleep > 0) {  // установлено засыпание дисплея
-				strcpy(ntemp, "thsp=");
-				_itoa(HP.Option.sleep * 60, temp); // секунды
-				sendCommand(temp);
-				sendCommand("thup=1");     // sleep режим активировать
+				strcpy(ntemp, "thsp=");      // sleep режим активировать
+				_itoa(HP.Option.sleep * 60, ntemp); // секунды
+				sendCommand(ntemp);
+				sendCommand("thup=1");
 			}
 		}
 	}

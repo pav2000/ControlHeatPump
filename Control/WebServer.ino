@@ -845,7 +845,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            #else
              strcat(strReturn,"OFF;");
            #endif 
-        strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики Free RTOS (отладка)|");
+        strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики FreeRTOS (отладка)|");
            #ifdef STAT_FREE_RTOS
              strcat(strReturn,"ON;");
            #else
@@ -922,10 +922,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"NEXTION_UPDATE|Время обновления информации на дисплее Nextion (мсек)|");_itoa(NEXTION_UPDATE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"NEXTION_READ|Время опроса дисплея Nextion (мсек)|");_itoa(NEXTION_READ,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_ZONE|Часовой пояс|");_itoa(TIME_ZONE,strReturn);strcat(strReturn,";");
-       // Free RTOS
-       strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки Free RTOS due|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
+       // FreeRTOS
+       strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки FreeRTOS due|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
        strcat(strReturn,"configCPU_CLOCK_HZ|Частота CPU (мГц)|");_itoa(configCPU_CLOCK_HZ/1000000,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы Free RTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы FreeRTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
        strcat(strReturn,"WDT_TIME|Период Watchdog таймера, 0 - запрет таймера (сек)|");_itoa(WDT_TIME,strReturn);strcat(strReturn,";");
     
        // Удаленные датчики

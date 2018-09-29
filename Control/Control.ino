@@ -42,9 +42,6 @@
 // Глубоко переделанные библиотеки
 #include <Ethernet.h>                       // Ethernet - модифицированная
 #include <Dns.h>                            // DNS - модифицированная
-#ifdef MQTT                                 // признак использования MQTT
-    #include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
-#endif
 #include <SerialFlash.h>                    // Либа по работе с spi флешом как диском
 
 #include "Hardware.h"
@@ -78,10 +75,15 @@ extern boolean set_time_NTP(void);
 EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
-PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+
 #ifdef RADIO_SENSORS
 void check_radio_sensors(void);
 void radio_sensor_send(char *cmd);
+#endif
+
+#ifdef MQTT                                 // признак использования MQTT
+#include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
+PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
 #endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
@@ -249,7 +251,7 @@ pinMode(21, OUTPUT);
   if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
   lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
   journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
-  journal.jprintf("Last Free RTOS task + error: 0x%04x\n", lastErrorFreeRtosCode);
+  journal.jprintf("Last FreeRTOS task + error: 0x%04x\n", lastErrorFreeRtosCode);
 
   #ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
     pinMode(PIN_LED1,OUTPUT);  
@@ -483,7 +485,7 @@ x_I2C_init_std_message:
     	journal.jprintf("Disabled\n");
     }
   #else
-    journal.jprintf("14. Nextion display absent in config\n");
+    journal.jprintf("14. Nextion display is absent in config\n");
   #endif
 
   #ifdef TEST_BOARD
@@ -491,8 +493,8 @@ x_I2C_init_std_message:
   //HP.scan_OneWire(Socket[0].outBuf);
   #endif
 
-  // Создание задач Free RTOS  ----------------------
-    journal.jprintf("15. Create tasks free RTOS . . .\n");
+  // Создание задач FreeRTOS  ----------------------
+    journal.jprintf("15. Create tasks FreeRTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
 HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
 HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
@@ -573,7 +575,7 @@ if(Modbus.get_present())
 #ifdef NEXTION    
   if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*120; //120
-  HP.updateNextion();  // Обновить настройки дисплея
+  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
 #endif 
 
 // ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
@@ -601,11 +603,11 @@ journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM);
 journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE()); 
 journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C()); 
 //HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-journal.jprintf("Start Free RTOS scheduler :-))\n");
+journal.jprintf("Start FreeRTOS scheduler :-))\n");
 journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
 vTaskStartScheduler();              // СТАРТ !!
-journal.jprintf("CRASH Free RTOS!!!\n");
+journal.jprintf("CRASH FreeRTOS!!!\n");
 }
 
 
@@ -669,8 +671,10 @@ void vWeb0( void *)
    volatile unsigned long resW5200=0;
    volatile unsigned long iniW5200=0;
    volatile unsigned long pingt=0;
+#ifdef MQTT
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
+#endif
    volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
    static boolean network_last_link = true;
    
