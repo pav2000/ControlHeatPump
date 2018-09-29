@@ -14,6 +14,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU General Public License for more details.
  */
+#include "Util.h"
 // --------------------------------------- функции общего использования -------------------------------------------
 // Быстрый вывод в порт
  __attribute__((always_inline))  inline void digitalWriteDirect(int pin, boolean val)
@@ -719,9 +720,9 @@ const uint16_t Crc16Table[256] = {
     0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len)
+// defaults crc = 0xFFFF
+uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
 {
-    uint16_t crc = 0xFFFF;
     while (len--)
         crc = (crc >> 8) ^ Crc16Table[(crc & 0xFF) ^ *pcBlock++];
     return crc;

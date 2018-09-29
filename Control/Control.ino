@@ -571,8 +571,8 @@ if(Modbus.get_present())
 }
 
 #ifdef NEXTION    
-  if ( xTaskCreate(vNextion,"Nextion",200,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*200; //200
+  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*120; //120
   HP.updateNextion();  // Обновить настройки дисплея
 #endif 
 
@@ -1009,17 +1009,21 @@ void vReadSensor_delay10ms(int16_t msec)
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
 				Stats.Save();
+				journal.jprintf(pP_DATE, "Power lost!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
 					HP.NO_Power = 2;
 				} else HP.NO_Power = 1;
 			}
 		} else if(HP.NO_Power) { // Включаемся
-			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
+			journal.jprintf(pP_DATE, "Power restored!\n");
+			if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 				if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 					HP.NO_Power = 0;
+					journal.jprintf("Resuming work\n");
 					HP.sendCommand(pRESUME);
 				}
+			}
 			HP.NO_Power = 0;
 		}
 #endif

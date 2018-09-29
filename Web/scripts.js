@@ -605,7 +605,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												input = count[j].toLowerCase();
 												loadsens = loadsens + "get_alarmInput(" + count[j] + "),get_errcodeInput(" + count[j] + "),get_typeInput(" + count[j] + "),get_pinInput(" + count[j] + "),get_Input(" + count[j] + "),get_noteInput(" + count[j] + "),get_testInput(" + count[j] + "),";
 												upsens = upsens + "get_Input(" + count[j] + "),get_errcodeInput(" + count[j] + "),";
-												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
+												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1"><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -734,11 +734,6 @@ function loadParam(paramid, noretry, resultdiv) {
 												setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 												console.log("wait response...");
 											} else alert(values[1]);
-										}
-										if(values[1] == "Alarm") {
-											document.getElementById(valueid.replace(/type/g, "alarm")).disabled = false;
-										} else if(values[1] == "Work") {
-											document.getElementById(valueid.replace(/type/g, "alarm")).disabled = true;
 										}
 										element3 = document.getElementById(valueid + "3");
 										if(element3) {

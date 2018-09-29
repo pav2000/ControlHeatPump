@@ -20,7 +20,7 @@
 #ifndef Constant_h
 #define Constant_h
 #include "Config.h"                         // Цепляем сразу конфигурацию
-
+#include "Util.h"
 
 // Макросы работы с битами байта, используется для флагов
 #define GETBIT(b,f)   ((b&(1<<(f)))?true:false)              // получить состяние бита

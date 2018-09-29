@@ -23,6 +23,7 @@
 class Nextion{
  public:
   boolean init();
+  void init_display();
   void Update();
   void StatusLine();  
   void set_need_refresh() { fPageID = true; };    // установить необходимость обновления страницы
@@ -31,7 +32,7 @@ class Nextion{
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean check_incoming(void);
-  void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outsize);
+  void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outstrsize);
  private:
   int8_t  PageID;                               // Текущая страница
   boolean fPageID;                              // Признак смены страницы true

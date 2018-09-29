@@ -1333,15 +1333,13 @@ void HeatPump::updateNextion(uint8_t what)
 
 		}
 		myNextion.set_need_refresh();
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
+		vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
 	} else                        // Дисплей выключен
 	{
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-			myNextion.sendCommand("thsp=0");    // sleep режим выключен
-			myNextion.sendCommand("dim=0");
-			myNextion.sendCommand("sleep=1");
-			vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
-		}
+//		myNextion.sendCommand("thsp=0");    // sleep режим выключен
+//		myNextion.sendCommand("dim=0");
+//		myNextion.sendCommand("sleep=1");
+		vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
 	}
 #endif
 }
@@ -2837,6 +2835,7 @@ void HeatPump::vUpdate()
 	case pHEAT:
 	case pCOOL:
 	case pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
+		journal.jprintf(" vUpdate: %d", get_modWork());
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
