@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(NEXT_SLEEP),get_optionHP(ADD_HEAT),get_optionHP(NEXT_DIM),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NEXTION),get_optionHP(SCG),get_optionHP(SCGT)");
+		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -26,9 +26,15 @@
 		</thead>			
 		<tbody>
 		<tr>
+			<td>Расположение файлов веб-сервера на SPI Flash (иначе на SD карте)</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-wspif" onChange="setParam('get_optionHP(WSPIF)');">
+			</td>
+		</tr>
+		<tr>
 			<td>Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-save_on" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
+				<input type="checkbox" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
 			</td>
 		</tr>
 			<td>Число повторных попыток пуска при ошибке [0..10]<sup>1</sup></td>
@@ -51,7 +57,7 @@
 		<tr>
 			<td>Запись графиков на карту (файл chart_sd.csv)<sup>3</sup></td>
 			<td>
-				<input type="checkbox" name="get_optionhp-sd_card" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
+				<input type="checkbox" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
 			</td>
 		</tr>
 		<tr>
@@ -160,27 +166,33 @@
 		<tr>
 			<td>Генерация звукового сигнала</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-beep" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');" >
+				<input type="checkbox" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');" >
 			</td>
 		</tr>					
 		<tr>
 			<td>Использование дисплея Nextion</td>
 			<td>
-				<input type="checkbox" name="get_optionhp-nextion" id="get_optionhp-nextion" onchange="setParam('get_optionHP(NEXTION)');" >
+				<input type="checkbox" id="get_optionhp-nxt" onchange="setParam('get_optionHP(NXT)');" >
 			</td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (мин.) [0..60] <sup>7</sup></td>
+			<td>Включать дисплей при пуске компрессора</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-nxtw" onchange="setParam('get_optionHP(NXTW)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>7</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-next_sleep" type="number" min="0" max="60" step="1" value="0">
-				<input id="get_optionhp-next_sleep2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_SLEEP)');">
+				<input id="get_optionhp-nxts" type="number" min="0" step="1" value="0">
+				<input type="submit" value=">"  onclick="setParam('get_optionHP(NXTS)');">
 			</td>
 		</tr>
 		<tr>
-			<td>Яркость дисплея Nextion в % [5..100]</td>
+			<td>Яркость дисплея Nextion в % [1..100]</td>
 			<td nowrap>
-				<input id="get_optionhp-next_dim" type="number" min="5" max="100" step="1" value="100">
-				<input id="get_optionhp-next_dim2" type="submit" value=">"  onclick="setParam('get_optionHP(NEXT_DIM)');">
+				<input id="get_optionhp-nxtd" type="number" min="1" max="100" step="1" value="100">
+				<input type="submit" value=">"  onclick="setParam('get_optionHP(NXTD)');">
 			</td>
 		</tr>
 		<tr>

@@ -62,125 +62,138 @@ const char* HEADER_FILE_CSS       = {"HTTP/1.1 200 OK\r\nContent-Type: text/css\
 const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};  // начало ответа на запрос
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
+
+const char *postRet[]            = {"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n",                           //  Ответы на пост запросы
+									"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n",
+									"", // пустая строка - ответ не выводится
+									"Файлы загружены, подробности смотри в журнале\r\n\r\n",
+									"Ошибка загрузки файла, подробности смотри в журнале\r\n\r\n",
+									"Внутренняя ошибка парсера post запросов\r\n\r\n",
+									"Файл настроек для разбора не влезает во внутренний буфер (max 6144 bytes)\r\n\r\n"
+									};
+
+
 #define ADD_WEBDELIM(str) strcat(str, WEBDELIM)
 
 void web_server(uint8_t thread)
 {
- int32_t len;
- int8_t sock;
+	int32_t len;
+	int8_t sock;
 
-if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  { return;}          // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+		return;
+	}          // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 
-Socket[thread].sock=-1;                      // Сокет свободный
+	Socket[thread].sock = -1;                      // Сокет свободный
 
-SPI_switchW5200();                    // Это лишнее но для надежности пусть будет
-    for (sock = 0; sock < W5200_SOCK_SYS; sock++)  // Цикл по сокетам веб сервера!!!! служебный не трогаем!!
-       {
+	SPI_switchW5200();                    // Это лишнее но для надежности пусть будет
+	for(sock = 0; sock < W5200_SOCK_SYS; sock++)  // Цикл по сокетам веб сервера!!!! служебный не трогаем!!
+	{
 
-        #if    W5200_THREARD < 2 
-         if (Socket[0].sock==sock)  continue;   // исключение повторного захвата сокетов
-        #elif  W5200_THREARD < 3
-          if((Socket[0].sock==sock)||(Socket[1].sock==sock))  continue;   // исключение повторного захвата сокетов
-        #elif  W5200_THREARD < 4
-          if((Socket[0].sock==sock)||(Socket[1].sock==sock)||(Socket[2].sock==sock))  continue;   // исключение повторного захвата сокетов
-        #else
-          if((Socket[0].sock==sock)||(Socket[1].sock==sock)||(Socket[2].sock==sock)||(Socket[3].sock==sock))  continue;   // исключение повторного захвата сокетов
-        #endif
-
-        // Настройка  переменных потока для работы
-        Socket[thread].http_req_type = HTTP_invalid;        // нет полезной инфы
-        SETBIT0(Socket[thread].flags,fABORT_SOCK);          // Сокет сброса нет
-        SETBIT0(Socket[thread].flags,fUser);                // Признак идентификации как обычный пользователь (нужно подменить файл меню)
-        Socket[thread].client =  server1.available_(sock);  // надо обработать
-        Socket[thread].sock=sock;                           // запомнить сокет с которым рабоатет поток
-
-if (Socket[thread].client) // запрос http заканчивается пустой строкой
-{  
-        while (Socket[thread].client.connected())
-        {   
-          // Ставить вот сюда
-            if (Socket[thread].client.available()) 
-             {
-             len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-             if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-             Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-             Socket[thread].inBuf[len]=0;                                // обрезать строку
-                     // Ищем в запросе полезную информацию (имя файла или запрос ajax)
-                     #ifdef LOG
-                        journal.jprintf("$INPUT: %s\n",(char*)Socket[thread].inBuf);
-                     #endif
-                      // пройти авторизацию и разобрать заголовок -  получить имя файла, тип, тип запроса, и признак меню пользователя
-                      Socket[thread].http_req_type = GetRequestedHttpResource(thread);  
-                    #ifdef LOG
-                        journal.jprintf("\r\n$QUERY: %s\r\n",Socket[thread].inPtr);
-                     #endif
-                       switch (Socket[thread].http_req_type)  // По типу запроса
-                          {
-                          case HTTP_invalid:
-                               {
-							 	#ifndef DEBUG
-                                   journal.jprintf("WEB:Error GET request\n");
-								#endif
-                               sendConstRTOS(thread,"HTTP/1.1 Error GET request\r\n\r\n");
-                               break;
-                               }
-                          case HTTP_GET:     // чтение файла
-                               {
-                               // Для обычного пользователя подменить файл меню, для сокращения функционала
-                               if ((GETBIT(Socket[thread].flags,fUser))&&(strcmp(Socket[thread].inPtr,"menu.js")==0)) strcpy(Socket[thread].inPtr,"menu-user.js");
-                               urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len);
-                               readFileSD(Socket[thread].inPtr,thread); 
-                               break;
-                               }
-                          case HTTP_REQEST:  // Запрос AJAX
-                               {
-                               strcpy(Socket[thread].outBuf,HEADER_ANSWER);   // Начало ответа
-                               parserGET(Socket[thread].inPtr,Socket[thread].outBuf,sock);    // выполнение запроса
-                               #ifdef LOG
-                                journal.jprintf("$RETURN: %s\n",Socket[thread].outBuf);
-                               #endif
-                               if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
-                               break;
-                               }
-                          case HTTP_POST:    // загрузка настроек
-                               {
-                               if(parserPOST(thread, len)) {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n");} // parserPOST использует outBuf для хранения файла настроек!
-                               else                        {strcpy(Socket[thread].outBuf,HEADER_ANSWER);strcat(Socket[thread].outBuf,"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n");}
-                               if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),strlen(Socket[thread].outBuf))==0) journal.jprintf("$Error send buf:  %s\n",(char*)Socket[thread].inBuf);
-                               break;
-                               }
-                          case HTTP_POST_: // предвариательный запрос post
-                               {
-                                sendConstRTOS(thread,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: HEAD, OPTIONS, GET, POST\r\nAccess-Control-Allow-Headers: Overwrite, Content-Type, Cache-Control, Title\r\n\r\n");
-                                break;
-                               }
-                         case UNAUTHORIZED:
-                               {
-                               journal.jprintf("$UNAUTHORIZED\n");
-                               sendConstRTOS(thread,pageUnauthorized);
-                               break;
-                               }
-                          case BAD_LOGIN_PASS:
-                               {
-                               journal.jprintf("$Wrong login or password\n");
-                               sendConstRTOS(thread,pageUnauthorized);
-                               break;
-                               }
-
-                          default: journal.jprintf("$Unknow  %s\n",(char*)Socket[thread].inBuf);   break;        
-                         }
-                   
-                   Socket[thread].inBuf[0]=0;    break;   // Подготовить к следующей итерации
-             } // end if (client.available())
-        } // end while (client.connected())
-       taskYIELD();
-       Socket[thread].client.stop();   // close the connection
-       Socket[thread].sock=-1;
-     } // end if (client)
-#ifdef FAST_LIB  // Переделка
-  }  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
+#if    W5200_THREARD < 2
+		if (Socket[0].sock==sock) continue;   // исключение повторного захвата сокетов
+#elif  W5200_THREARD < 3
+		if((Socket[0].sock==sock)||(Socket[1].sock==sock)) continue; // исключение повторного захвата сокетов
+#elif  W5200_THREARD < 4
+		if((Socket[0].sock == sock) || (Socket[1].sock == sock) || (Socket[2].sock == sock)) continue; // исключение повторного захвата сокетов
+#else
+		if((Socket[0].sock==sock)||(Socket[1].sock==sock)||(Socket[2].sock==sock)||(Socket[3].sock==sock)) continue; // исключение повторного захвата сокетов
 #endif
-    SemaphoreGive(xWebThreadSemaphore);              // Семафор отдать
+
+		// Настройка  переменных потока для работы
+		Socket[thread].http_req_type = HTTP_invalid;        // нет полезной инфы
+		SETBIT0(Socket[thread].flags, fABORT_SOCK);          // Сокет сброса нет
+		SETBIT0(Socket[thread].flags, fUser); // Признак идентификации как обычный пользователь (нужно подменить файл меню)
+		Socket[thread].client = server1.available_(sock);  // надо обработать
+		Socket[thread].sock = sock;                           // запомнить сокет с которым рабоатет поток
+
+		if(Socket[thread].client) // запрос http заканчивается пустой строкой
+		{
+			while(Socket[thread].client.connected()) {
+				// Ставить вот сюда
+				if(Socket[thread].client.available()) {
+					len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
+					if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
+					Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+					Socket[thread].inBuf[len] = 0;                                // обрезать строку
+					// Ищем в запросе полезную информацию (имя файла или запрос ajax)
+#ifdef LOG
+					journal.jprintf("$INPUT: %s\n",(char*)Socket[thread].inBuf);
+#endif
+					// пройти авторизацию и разобрать заголовок -  получить имя файла, тип, тип запроса, и признак меню пользователя
+					Socket[thread].http_req_type = GetRequestedHttpResource(thread);
+#ifdef LOG
+					journal.jprintf("\r\n$QUERY: %s\r\n",Socket[thread].inPtr);
+#endif
+					switch(Socket[thread].http_req_type)  // По типу запроса
+					{
+					case HTTP_invalid: {
+#ifndef DEBUG
+						journal.jprintf("WEB:Error GET request\n");
+#endif
+						sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
+						break;
+					}
+					case HTTP_GET:     // чтение файла
+					{
+						// Для обычного пользователя подменить файл меню, для сокращения функционала
+						if((GETBIT(Socket[thread].flags, fUser)) && (strcmp(Socket[thread].inPtr, "menu.js") == 0)) strcpy(Socket[thread].inPtr, "menu-user.js");
+						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len);
+						readFileSD(Socket[thread].inPtr, thread);
+						break;
+					}
+					case HTTP_REQEST:  // Запрос AJAX
+					{
+						strcpy(Socket[thread].outBuf, HEADER_ANSWER);   // Начало ответа
+						parserGET(Socket[thread].inPtr, Socket[thread].outBuf, sock);    // выполнение запроса
+#ifdef LOG
+						journal.jprintf("$RETURN: %s\n",Socket[thread].outBuf);
+#endif
+						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) journal.jprintf("$Error send buf:  %s\n", (char*) Socket[thread].inBuf);
+						break;
+					}
+					case HTTP_POST:    // загрузка настроек
+					{
+                        uint8_t ret= parserPOST(thread, len);         // разобрать и получить тип ответа
+                        strcpy(Socket[thread].outBuf, HEADER_ANSWER);
+						strcat(Socket[thread].outBuf,postRet[ret]);   // вернтуть текстовый ответ, котороый надо вывести
+               			if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) journal.jprintf("$Error send buf:  %s\n", (char*) Socket[thread].inBuf);
+						break;
+					}
+					case HTTP_POST_: // предвариательный запрос post
+					{
+						sendConstRTOS(thread,
+								"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: HEAD, OPTIONS, GET, POST\r\nAccess-Control-Allow-Headers: Overwrite, Content-Type, Cache-Control, Title\r\n\r\n");
+						break;
+					}
+					case UNAUTHORIZED: {
+						journal.jprintf("$UNAUTHORIZED\n");
+						sendConstRTOS(thread, pageUnauthorized);
+						break;
+					}
+					case BAD_LOGIN_PASS: {
+						journal.jprintf("$Wrong login or password\n");
+						sendConstRTOS(thread, pageUnauthorized);
+						break;
+					}
+
+					default:
+						journal.jprintf("$Unknow  %s\n", (char*) Socket[thread].inBuf);
+						break;
+					}
+
+					Socket[thread].inBuf[0] = 0;
+					break;   // Подготовить к следующей итерации
+				} // end if (client.available())
+			} // end while (client.connected())
+			taskYIELD();
+			Socket[thread].client.stop();   // close the connection
+			Socket[thread].sock = -1;
+		} // end if (client)
+#ifdef FAST_LIB  // Переделка
+	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
+#endif
+	SemaphoreGive (xWebThreadSemaphore);              // Семафор отдать
 }
 
 //  Чтение файла с SD или его генерация
@@ -250,7 +263,7 @@ void readFileSD(char *filename, uint8_t thread)
 		return;
 	}
 #ifdef I2C_EEPROM_64KB
-	if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread); return;}
+//	if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread); return;}
 #endif
 	if(!HP.get_fSD()) {
 		get_indexNoSD(thread);
@@ -541,16 +554,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
        ADD_WEBDELIM(strReturn) ;
        continue;
        }
-     if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
-       {
-       #ifdef I2C_EEPROM_64KB 
-       HP.Stat.get_listStat(strReturn, true);  // строка добавляется
-       #else
-       strcat(strReturn,"absent:1;") ;
-       #endif
-       ADD_WEBDELIM(strReturn) ;
-       continue;
-       }   
+//     if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
+//       {
+//       #ifdef I2C_EEPROM_64KB
+//       HP.Stat.get_listStat(strReturn, true);  // строка добавляется
+//       #else
+//       strcat(strReturn,"absent:1;") ;
+//       #endif
+//       ADD_WEBDELIM(strReturn) ;
+//       continue;
+//       }
     if (strncmp(str,"get_listProfile", 15)==0)  // Функция get_listProfile - получить список доступных профилей
        {
        HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
@@ -590,9 +603,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
        continue;
        }         
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
-       {
-       if (HP.get_State()==pOFF_HP && HP.PauseStart==0) strcat(strReturn,"OFF"); else  strcat(strReturn,"ON"); ADD_WEBDELIM(strReturn); continue;
-       }   
+    {
+    	strcat(strReturn, HP.IsWorkingNow() ? "ON" : "OFF"); ADD_WEBDELIM(strReturn); continue;
+    }
     if (strcmp(str,"get_MODE")==0)  // Функция get_MODE в каком состояниии находится сейчас насос
        {
        strcat(strReturn,HP.StateToStr());
@@ -635,9 +648,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				#ifdef USE_SCHEDULER
 				_itoa(HP.Schdlr.save(),strReturn); // сохранение расписаний
-				#endif
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 				if(len > 0) {
@@ -653,9 +664,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				#ifdef USE_SCHEDULER
 				_itoa(HP.Schdlr.load(),strReturn); // сохранение расписаний
-				#endif
 			} else {
 			}
 			ADD_WEBDELIM(strReturn);
@@ -739,30 +748,30 @@ void parserGET(char *buf, char *strReturn, int8_t )
          strcat(strReturn,"0" WEBDELIM);continue;
         #endif 
        }   
-      if (strcmp(str,"set_testStat")==0)  // сгенерить тестовые данные статистики ОЧИСТКА СТАРЫХ ДАННЫХ!!!!!
-       {
-       #ifdef I2C_EEPROM_64KB  // рабоатет на выключенном ТН
-       if (HP.get_modWork()==pOFF)
-       {
-         HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-         strcat(strReturn,"Generation of test data - OK" WEBDELIM);
-       }
-       else strcat(strReturn,"The heat pump must be switched OFF" WEBDELIM);
-       #else
-       strcat(strReturn,NO_STAT);
-       #endif
-       continue;
-       }   
-     if (strcmp(str,"get_infoStat")==0)  // Получить информацию о статистике
-       {
-       #ifdef I2C_EEPROM_64KB    
-       HP.Stat.get_Info(strReturn,true);
-       #else
-       strcat(strReturn,NO_STAT) ;
-       #endif
-       ADD_WEBDELIM(strReturn) ;
-       continue;
-       }   
+//      if (strcmp(str,"set_testStat")==0)  // сгенерить тестовые данные статистики ОЧИСТКА СТАРЫХ ДАННЫХ!!!!!
+//       {
+//       #ifdef I2C_EEPROM_64KB  // рабоатет на выключенном ТН
+//       if (HP.get_modWork()==pOFF)
+//       {
+//         HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
+//         strcat(strReturn,"Generation of test data - OK" WEBDELIM);
+//       }
+//       else strcat(strReturn,"The heat pump must be switched OFF" WEBDELIM);
+//       #else
+//       strcat(strReturn,NO_STAT);
+//       #endif
+//       continue;
+//       }
+//     if (strcmp(str,"get_infoStat")==0)  // Получить информацию о статистике
+//       {
+//       #ifdef I2C_EEPROM_64KB
+//       HP.Stat.get_Info(strReturn,true);
+//       #else
+//       strcat(strReturn,NO_STAT) ;
+//       #endif
+//       ADD_WEBDELIM(strReturn) ;
+//       continue;
+//       }
 
     if (strstr(str,"get_infoESP"))  // Удаленные датчики - запрос состояния контрола
        { 
@@ -836,7 +845,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            #else
              strcat(strReturn,"OFF;");
            #endif 
-        strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики Free RTOS (отладка)|");
+        strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики FreeRTOS (отладка)|");
            #ifdef STAT_FREE_RTOS
              strcat(strReturn,"ON;");
            #else
@@ -849,7 +858,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
              strcat(strReturn,"OFF;");
            #endif 
         #ifdef I2C_EEPROM_64KB   
-       strcat(strReturn,"STAT_POINT|Максимальное число дней накопления статистики|");_itoa(STAT_POINT,strReturn);strcat(strReturn,";");
+//       strcat(strReturn,"STAT_POINT|Максимальное число дней накопления статистики|");_itoa(STAT_POINT,strReturn);strcat(strReturn,";");
        #endif
        strcat(strReturn,"CHART_POINT|Максимальное число точек графиков|");_itoa(CHART_POINT,strReturn);strcat(strReturn,";");
        strcat(strReturn,"I2C_EEPROM_64KB|Место хранения системного журнала|");
@@ -913,10 +922,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"NEXTION_UPDATE|Время обновления информации на дисплее Nextion (мсек)|");_itoa(NEXTION_UPDATE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"NEXTION_READ|Время опроса дисплея Nextion (мсек)|");_itoa(NEXTION_READ,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_ZONE|Часовой пояс|");_itoa(TIME_ZONE,strReturn);strcat(strReturn,";");
-       // Free RTOS
-       strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки Free RTOS due|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
+       // FreeRTOS
+       strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки FreeRTOS due|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
        strcat(strReturn,"configCPU_CLOCK_HZ|Частота CPU (мГц)|");_itoa(configCPU_CLOCK_HZ/1000000,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы Free RTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы FreeRTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
        strcat(strReturn,"WDT_TIME|Период Watchdog таймера, 0 - запрет таймера (сек)|");_itoa(WDT_TIME,strReturn);strcat(strReturn,";");
     
        // Удаленные датчики
@@ -999,7 +1008,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 		  _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
 		#else
-			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
+		   m_snprintf(strReturn+m_strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
 		#endif
         m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
@@ -1436,7 +1445,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
             if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
               else
                 {
-                  if(HP.dFC.set_targetFreq(pm*100+0.005,true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  ADD_WEBDELIM(strReturn) ;    continue;   // ручное управление границы максимальны
+                  if(HP.dFC.set_targetFreq(rd(pm, 100),true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  ADD_WEBDELIM(strReturn) ;    continue;   // ручное управление границы максимальны
                 }
                }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
@@ -1485,8 +1494,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
             {
                 if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
                 else {
-            	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
-            		  HP.Prof.set_list((int8_t) pm);
+            	  if((pm > 0) && (pm <= I2C_PROFIL_NUM)) {
+            		  HP.Prof.set_list((int8_t)pm - 1);
             		  HP.save();
             		  HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
@@ -1559,7 +1568,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
                } //if ((strstr(str,"MQTT")>0)
           
            // 3. Расписание -------------------------------------------------------- 
-		 #ifdef USE_SCHEDULER // vad711
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
 				x++;
@@ -1575,7 +1583,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
-		 #endif
 
          // 4. Настройки счетчика SDM ------------------------------------------------
 			if(strstr(str, "SDM"))          // Проверка для запросов содержащих SDM
@@ -1675,18 +1682,18 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	             } //if ((strstr(str,"Network")>0)   
 
 		         //10.  Статистика используется в одной функции get_Stat ---------------------------------------
-		          if (strstr(str,"Stat"))   // Проверка для запросов содержащих Stat
-		           {
-		               if (strcmp(str,"get_Stat")==0)           
-		                  {
-		                  #ifdef I2C_EEPROM_64KB    
-		                  HP.Stat.get_Stat(x+1,strReturn, true);
-		                  #else
-		                  strcat(strReturn,"");
-		                  #endif
-		                  ADD_WEBDELIM(strReturn) ; continue;
-		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"get_Stat")==0)
-		            } //if ((strstr(str,"Stat")>0) 
+//		          if (strstr(str,"Stat"))   // Проверка для запросов содержащих Stat
+//		           {
+//		               if (strcmp(str,"get_Stat")==0)
+//		                  {
+//		                  #ifdef I2C_EEPROM_64KB
+//		                  HP.Stats.get_Stat(x+1,strReturn, true);
+//		                  #else
+//		                  strcat(strReturn,"");
+//		                  #endif
+//		                  ADD_WEBDELIM(strReturn) ; continue;
+//		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"get_Stat")==0)
+//		            } //if ((strstr(str,"Stat")>0)
                   
 		          //11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
 		          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
@@ -1996,12 +2003,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
 
     			   // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
-    			   { if (HP.sTemp[p].set_testTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
+    			   { if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
     			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); ADD_WEBDELIM(strReturn);  continue;  }
     			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
-    			   { if (HP.sTemp[p].set_errTemp(pm*100+0.005)==OK)    // Установить значение в сотых градуса
+    			   { if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
     			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
     			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
@@ -2016,9 +2023,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   /*
               if (strcmp(str,"set_targetTemp")==0)           // Функция set_targetTemp резрешены не все датчики при этом.
                  {
-                  if (p==1) {HP.set_TempTargetIn(pm*100+0.005);  }
-                   else if (p==5)  {HP.set_TempTargetCO(pm*100+0.005); }
-                     else if (p==6)  {HP.set_TempTargetBoil(pm*100+0.005); }
+                  if (p==1) {HP.set_TempTargetIn(rd(pm, 100));  }
+                   else if (p==5)  {HP.set_TempTargetCO(rd(pm, 100)); }
+                     else if (p==6)  {HP.set_TempTargetBoil(rd(pm, 100)); }
                        else  strcat(strReturn,"E06");                 // использование имя устанавливаемого параметра «здесь» запрещено
                          ADD_WEBDELIM(strReturn);  continue;
                  }
@@ -2111,16 +2118,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			   // ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
 
     			   if (strcmp(str,"set_testPress")==0)           // Функция set_testPress
-    			   { if (HP.sADC[p].set_testPress(pm*100+0.005)==OK)    // Установить значение
+    			   { if (HP.sADC[p].set_testPress(rd(pm, 100))==OK)    // Установить значение
     			   {_ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); ADD_WEBDELIM(strReturn); continue; }
     			   else { strcat(strReturn,"E05" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if(strcmp(str, "set_minPress") == 0) {
-    				   if(HP.sADC[p].set_minPress(pm * 100 + 0.005) == OK) goto x_get_minPress;
+    				   if(HP.sADC[p].set_minPress(rd(pm, 100)) == OK) goto x_get_minPress;
     				   else { strcat(strReturn, "E05" WEBDELIM);  continue; }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if(strcmp(str, "set_maxPress") == 0) {
-    				   if(HP.sADC[p].set_maxPress(pm * 100 + 0.005) == OK) goto x_get_maxPress;
+    				   if(HP.sADC[p].set_maxPress(rd(pm, 100)) == OK) goto x_get_maxPress;
     				   else {  strcat(strReturn, "E05" WEBDELIM); continue;  }         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
@@ -2281,12 +2288,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   _itoa(HP.sFrequency[p].get_checkFlow(), strReturn); ADD_WEBDELIM(strReturn); continue;
     			   }
     			   if (strcmp(str,"set_testFlow")==0)           // Функция set_testFlow
-    			   { if (HP.sFrequency[p].set_testValue(pm*1000+0.0005)==OK)    // Установить значение
+    			   { if (HP.sFrequency[p].set_testValue(rd(pm, 1000))==OK)    // Установить значение
     			   {_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); ADD_WEBDELIM(strReturn); continue; }
     			   else { strcat(strReturn,"E35" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if (strcmp(str,"set_kfFlow")==0)           // Функция set_kfFlow float
-    			   { HP.sFrequency[p].set_kfValue(pm*100+0.005);    // Установить значение
+    			   { HP.sFrequency[p].set_kfValue(rd(pm, 100));    // Установить значение
     			   _ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); ADD_WEBDELIM(strReturn); continue;
     			   }
     			   if (strcmp(str,"set_capacityFlow")==0)           // Функция set_capacityFlow float
@@ -2357,7 +2364,9 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 	uint8_t i;
 	uint16_t len;
 
-	// journal.jprintf(">%s\n",Socket[thread].inBuf);
+//	journal.jprintf(">%s\n",Socket[thread].inBuf);
+//	journal.jprintf("--------------------------------------------------------\n");
+	
 
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
@@ -2414,7 +2423,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 			return HTTP_invalid;  // слишком длинная строка HTTP_invalid
 		}
 	}   //if (strcmp(str_token, "GET") == 0)
-	else if(strcmp(str_token, "POST") == 0) return HTTP_POST;    // Запрос POST
+	else if(strcmp(str_token, "POST") == 0) {Socket[thread].inPtr = (char*) (str_token +strlen("POST") + 1);  return HTTP_POST;}    // Запрос POST Socket[thread].inPtr - указывает на начало запроса (начало полезных данных)
 	else if(strcmp(str_token, "OPTIONS") == 0) return HTTP_POST_;
 	#ifdef DEBUG
 	journal.jprintf("WEB:Error request %s\n", Socket[thread].inBuf);
@@ -2423,44 +2432,158 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
-// Разбор и обработка POST запроса buf входная строка strReturn выходная
-// Сейчас реализована загрузка настроек
-// Возврат - true ok  false - error
-// parserPOST использует outBuf для хранения файла настроек!
-boolean parserPOST(uint8_t thread, uint16_t size)
-{
-	byte *ptr;
-	int32_t len, full_len=0;
-	// Определение начала данных (поиск HEADER_BIN)
-	//Serial.println(Socket[thread].inPtr);
-	if((ptr = (byte*) strstr((char*) Socket[thread].inPtr,HEADER_BIN)) == NULL) {  // Заголовок не найден
-		journal.jprintf("Wrong save file format!\n");
-		return false;
-	}
-	full_len=size-(ptr - (byte *)Socket[thread].inBuf);
+const char Title[]          = {"Title: "};           // где лежит имя файла
+const char Length[]         = {"Content-Length: "};  // где лежит длина файла 
+const char emptyStr[]       = {"\r\n\r\n"};          // пустая строка после которой начинаются данные
+const char SETTINGS[]       = {"*SETTINGS*"};        // Идентификатор передачи настроек (лежит в Title:)
+const char LOAD_START[]     = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды (лежит в Title:)
+const char LOAD_END[]       = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды (лежит в Title:)
 
-	// т.к. данные не влезают в один пакет, то читаем два пакета и копируем в выходной буфер
-	memcpy(Socket[thread].outBuf,ptr,full_len);
-	_delay(50);
-    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-	memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить окончание пакета
-	ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);
-	full_len=full_len+len-m_strlen(HEADER_BIN);
-	
-	journal.jprintf("Loading %d bytes:\n", full_len);
-	
-	// Чтение настроек
-	len = HP.load(ptr, 1);
-	if(len <= 0) return false;
-	boolean ret = true;
-	// Чтение профиля
-	ptr += len;
-	if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;
-#ifdef USE_SCHEDULER
-	if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;
-#endif
-	HP.Prof.update_list(HP.Prof.get_idProfile());                                                     // обновить список
-	return ret;
+uint16_t numFilesWeb=0;                   // Число загруженных файлов
+boolean  settingNow=false;                // признак начала загрузки настроек
+// Разбор и обработка POST запроса inPtr входная строка использует outBuf для хранения файла настроек!
+// Сейчас реализована загрузка настроек и загрузка веб морды в спи диск
+// Возврат тип ответа (потом берется из массива строк)
+// char nameFile[128]; // имя файла
+TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
+{
+	byte *ptr,*pStart;
+	char nameFile[128]; // имя файла
+	char sizeFile[8];   // длина файла
+	uint8_t  i=0;
+	int32_t len, full_len=0, lenFile;
+	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
+
+ 	// Определение имени файла
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found.\n",(char*)__FUNCTION__);return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
+    pStart=pStart+strlen((char*)Title);  // начало имени файла
+    for(i=0;i<sizeof(nameFile);i++)      // копирование имени файла
+    	if (*(pStart+i)!=13) nameFile[i]=*(pStart+i); else {nameFile[i]=0;break;} 
+    if (strlen(nameFile)>=sizeof(nameFile)-1){ // проверка длины
+    	nameFile[sizeof(nameFile)-1]=0;      // обрезать
+ 		journal.jprintf("%s: File name %s big size.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; }  	    
+    urldecode(nameFile, nameFile, sizeof(nameFile));
+ 
+    // Определение длины файла
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)) == 0) {journal.jprintf("%s: Size file %s not found.\n",(char*)__FUNCTION__,nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
+    pStart=pStart+strlen((char*)Length);  // начало размера файла
+    for(i=0;i<sizeof(sizeFile);i++)    // копирование длины файла
+       {
+        if   (*(pStart+i)==13) {sizeFile[i]=0;break;} // перенос строки - конец длины
+       	if   ((*(pStart+i)<'0')||(*(pStart+i)>'9')) { journal.jprintf("%s: Wrong size file %s.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } // только цифры
+    	sizeFile[i]=*(pStart+i);// копирование
+       }
+    if (strlen(sizeFile)>=sizeof(sizeFile)-1){ journal.jprintf("%s: Size file %s big.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } // проверка длины
+    lenFile=atoi(sizeFile);	
+    if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("%s: Size file %s zero.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } 
+
+   // journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  return pNULL; // тестирование заголовков
+   
+    // все нашлось, можно обрабатывать
+ //  if (lenFile>0) journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
+    ptr = (byte*) strstr((char*) Socket[thread].inPtr,emptyStr)+strlen(emptyStr); // поиск начала даных
+    full_len=size-(ptr - (byte *)Socket[thread].inBuf); // длина данных (файла) в буфере
+    
+       
+    // В зависимости от имени файла (Title)
+    if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
+			// Определение начала данных (поиск HEADER_BIN)
+		    if((strstr((char*) ptr,HEADER_BIN)) == NULL) {  // Заголовок не найден
+				journal.jprintf("%s: Wrong save file %s format.\n",(char*)__FUNCTION__,nameFile);
+				return pSETTINGS_ERR;
+			}
+			full_len=size-(ptr - (byte *)Socket[thread].inBuf); // определяем размер данных в пакете
+	    	memcpy(Socket[thread].outBuf,ptr,full_len);         // копируем начало данных в буфер
+
+	        while (full_len<lenFile)  // Чтение остальных данных по сети
+	        {
+			_delay(10);
+		    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+		    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+		    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+		    if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
+			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
+			full_len=full_len+len;                                                     // определить размер данных
+	        }
+			ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);                     // отрезать заголовок в данных
+
+			journal.jprintf("Loading %s length  %d bytes:\n",SETTINGS, full_len);
+
+			// Чтение настроек из ptr
+		    len = HP.load(ptr, 1);
+			if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
+			boolean ret = true;
+			// Чтение профиля
+			ptr += len;
+			if(HP.Prof.loadFromBuf(0, ptr)!= OK) ret = false;   // чтение профиля
+			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;  // чтения расписания
+			HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
+			if (ret) return pSETTINGS_OK; else return pSETTINGS_ERR;
+    } //if (strcmp(nameFile,"*SETTINGS*")==0)
+    
+    // загрузка вебморды
+   else  if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
+   if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Download already in progress.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
+   numFilesWeb=0;
+   journal.jprintf("POST: %s start download, format SPI disk ",nameFile);
+   SerialFlash.eraseAll();
+	    while (SerialFlash.ready() == false) {
+	      vTaskDelay(1000/ portTICK_PERIOD_MS);    
+	      journal.jprintf(".");
+	    }
+	    journal.jprintf(" OK\n");	
+	    return pNULL;
+   }
+    else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("POST: %s end of download, total %d files downloads.\n",nameFile,numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
+  	else {journal.jprintf("%s: Trying to end download without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+    }
+   else { // загрузка отдельных файлов веб морды
+    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
+   	else {journal.jprintf("%s: Trying to download file without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+    }
+
+   return pPOST_ERR; // До сюда добегать не должны
 }
+// Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
+// Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
+// Входные параметры:
+// nameFile - имя файла 
+// lenFile - общая длина файла
+// thread - поток веб сервера,котрый обрабатывает post запрос
+// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr. 
+// sizeBuf - размер данных в буфере ptr (по сети осталось принять lenFile-sizeBuf)
+uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
+{
+uint16_t len,numPoint=0;       
+uint32_t loadLen=0; // Обработанная (загруженная) длина
+
+if (SerialFlash.create(nameFile,lenFile)) 
+  {   SerialFlashFile ff = SerialFlash.open(nameFile);
+      if (ff) {
+        journal.jprintf("File %s load ",nameFile); 
+        loadLen=ff.write(ptr, sizeBuf);  // первый пакет упаковали
+        while (loadLen<lenFile)  // Чтене остальных пакетов из сети
+        {
+        len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+        if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+        Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер	
+        loadLen=loadLen+ff.write(Socket[thread].inBuf,len);                        // записать
+  //      journal.jprintf(".");
+        numPoint++;
+        if (numPoint>=10) {numPoint=0;journal.jprintf(".");}                       // точка на 15 кб приема (10 пакетов по 1540)
+        }
+       ff.close();  
+      if (loadLen==lenFile)  journal.jprintf(" %d bytes OK\n",loadLen); 
+      else {journal.jprintf(" %d bytes, error length\n",loadLen);loadLen=0;}        // Длины не совпали   
+      }
+      else journal.jprintf(" %s: error open file %s\n",(char*)__FUNCTION__,nameFile);
+  } // if (SerialFlash.create(filename, length))   
+else journal.jprintf(" %s: error create file %s\n",(char*)__FUNCTION__,nameFile);
+return 	loadLen;
+}
+
+
+
+ 
+

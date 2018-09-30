@@ -29,7 +29,7 @@
 
 // Chose between a table based CRC (flash expensive, fast) or a computed CRC (smaller, slow)
 #ifndef ONEWIRE_CRC8_TABLE
-#define ONEWIRE_CRC8_TABLE     1         // использовать таблицу при расчете crc
+#define ONEWIRE_CRC8_TABLE     0         // использовать таблицу при расчете crc
 #endif
 
 #define DS2482_CONFIG_APU (1<<0)

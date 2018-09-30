@@ -1,3 +1,4 @@
+// modified for optimisation by vad7
 #ifndef RTC_clock_h
 #define RTC_clock_h
 
@@ -17,6 +18,7 @@
 */
 #define SECONDS_PER_HOUR 3600
 
+//#define RTC_USE_UTC_TIME
 #define UTC 0
 #define Germany 2000
 
@@ -28,60 +30,56 @@ class RTC_clock
 	public:
 		RTC_clock (int source);
 		void init ();
-		void set_time (int hour, int minute, int second);
+		void set_time (uint8_t hour, uint8_t minute, uint8_t second);
 		void set_time (char* time);
-		int get_hours ();
-		int get_minutes ();
-		int get_seconds ();
-		void set_date (int day, int month, uint16_t year);
+		uint8_t get_hours ();
+		uint8_t get_minutes ();
+		uint8_t get_seconds ();
+		void set_date (uint8_t day, uint8_t month, uint16_t year);
 		void set_date (char* date);
 		void set_clock (char* date, char* time);
 		void set_clock (unsigned long timestamp, int timezone = 0);
-		uint16_t get_years ();
-		int get_months ();
-		int date_already_set ();
-		int get_days ();
-		int get_day_of_week ();
-		uint32_t get_valid_entry ();
-		int calculate_day_of_week (uint16_t _year, int _month, int _day);
-		int set_hours (int _hour);
-		int set_minutes (int minute);
-		int set_seconds (int second);
-		int set_days (int day);
-		int set_months (int month);
-		int set_years (uint16_t year);
-		void set_alarmtime (int hour, int minute, int second);
-		void set_alarmdate (int month, int day);
-
-		void attachalarm (void (*)(void));
-		uint32_t unixtime (int timezone = 0);
-		void get_time (int *hour, int *minute, int *second);
-		void get_date (int *day_of_week, int *day, int *month, int *year);
-		//int switch_years (uint16_t year);
+#ifdef RTC_USE_UTC_TIME
+		uint32_t unixtime(int timezone = 0);
 		int summertime ();
 		int UTC_abbreviation();
 		void dst_followup();
+#else
+		uint32_t unixtime(void);
+#endif
+		int time_zone_adjustment(int timezone);
+		uint16_t get_years ();
+		uint8_t get_months ();
+		int date_already_set ();
+		uint8_t get_days ();
+		uint8_t get_day_of_week ();
+		uint32_t get_valid_entry ();
+		uint8_t calculate_day_of_week (uint16_t _year, uint8_t _month, uint8_t _day);
+		void set_hours (uint8_t _hour);
+		void set_minutes (uint8_t minute);
+		void set_seconds (uint8_t second);
+		void set_days (uint8_t day);
+		void set_months (uint8_t month);
+		void set_years (uint16_t year);
+		void set_alarmtime (uint8_t hour, uint8_t minute, uint8_t second);
+		void set_alarmdate (uint8_t month, uint8_t day);
+
+		void attachalarm (void (*)(void));
+		void get_time (uint8_t *hour, uint8_t *minute, uint8_t *second);
+		void get_date (uint8_t *day_of_week, uint8_t *day, uint8_t *month, uint16_t *year);
+		//int switch_years (uint16_t year);
 
 	private:
-//		int _source;
-		int _hour;
-		int _minute;
-		int _second;
-		int _day;
-		int _month;
-		uint16_t _year;
-		int _day_of_week;
-		int timezoneadjustment (int timezone);
-//		int _abbreviation;
+#ifdef RTC_USE_UTC_TIME
+		bool dst_winter_done;
+#endif
 		uint32_t current_time ();
 		uint32_t current_date ();
-		uint32_t _current_time;
-		uint32_t _current_date;
 		uint32_t change_time (uint32_t _now);
 		uint32_t change_date (uint32_t _now);
-		uint32_t _now;
-		uint32_t _changed;
-		bool dst_winter_done;
+		uint32_t _current_time;
+		uint32_t _current_date;
+		uint32_t _utime; // current unix time
 };
 
 #endif

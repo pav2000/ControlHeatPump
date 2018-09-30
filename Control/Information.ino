@@ -518,23 +518,26 @@ void Profile::initProfile()
  // Cool.P1=0;
   
 // Отопление
-  Heat.Rule=pHYSTERESIS,               // алгоритм гистерезис, интервальный режим
-  Heat.Temp1=2200;                     // Целевая температура дома
-  Heat.Temp2=3600;                     // Целевая температура Обратки
-  SETBIT0(Heat.flags,fTarget);         // Что является целью ПИД - значения true (температура в доме), false (температура обратки).
+  Heat.Rule=pPID,              		 // алгоритм гистерезис, интервальный режим
+  Heat.Temp1=2250;                     // Целевая температура дома
+  Heat.Temp2=3500;                     // Целевая температура Обратки
+  SETBIT1(Heat.flags,fTarget);         // Что является целью ПИД - значения true (температура в доме), false (температура обратки).
   SETBIT0(Heat.flags,fWeather);        // флаг Погодозависмости
-  Heat.dTemp=300;                      // Гистерезис целевой температуры
+  Heat.dTemp=050;                      // Гистерезис целевой температуры
   Heat.dTempDay=100;                   // Гистерезис целевой температуры дневной тариф
   Heat.time=60;                        // Постоянная интегрирования времени в секундах ПИД ТН
   Heat.Kp=10;                          // Пропорциональная составляющая ПИД ТН
   Heat.Ki=0;                           // Интегральная составляющая ПИД ТН
   Heat.Kd=5;                           // Дифференциальная составляющая ПИД ТН
+  Heat.add_delta_temp = 150;	 	   // Добавка температуры к установке бойлера, в градусах
+  Heat.add_delta_hour = 5;		   	   // Начальный Час добавки температуры к установке бойлера
+  Heat.add_delta_end_hour = 6;         // Конечный Час добавки температуры к установке
  // Защиты
-  Heat.tempIn=6000;                    // Tемпература подачи (макс)
+  Heat.tempIn=5000;                    // Tемпература подачи (макс)
   Heat.tempOut=0;                   	// Tемпература обратки (минимальная)
   Heat.pause=5*60;                     // Минимальное время простоя компрессора минуты
   Heat.dt=1500;                        // Максимальная разность температур конденсатора.
-  Heat.tempPID=4000;                   // Целевая температура ПИД
+  Heat.tempPID=3500;                   // Целевая температура ПИД
   Heat.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
  // Heat.P1=0;
@@ -562,7 +565,7 @@ void Profile::initProfile()
   Boiler.Kd=0;                          // Дифференциальная составляющая ПИД ГВС
   Boiler.tempPID=3800;                  // Целевая температура ПИД ГВС
   Boiler.tempRBOILER=3500;              // Темпеартура ГВС при котором включается бойлер и отключатся ТН
-  Boiler.add_delta_temp = 0; //20;	    // Добавка температуры к установке бойлера, в градусах
+  Boiler.add_delta_temp = 1800;		    // Добавка температуры к установке бойлера, в градусах
   Boiler.add_delta_hour = 6;		    // Начальный Час добавки температуры к установке бойлера
   Boiler.add_delta_end_hour = 6;        // Конечный Час добавки температуры к установке
 }
@@ -577,24 +580,24 @@ boolean Profile::set_paramCoolHP(char *var, float x)
 				                    case 2: Cool.Rule=pHYBRID;     return true; break;
 				                    default:Cool.Rule=pHYSTERESIS; return true; break;  
 				                    }  }      else                                                                                                                    
- if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=x*100.0+0.005; return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=rd(x, 100); return true;} else return false;                                       }else             // целевая температура в доме
 
- if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=x*100.0+0.005; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=rd(x, 100); return true;} else return false;                                      }else             // целевая температура обратки
  if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
- if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=x*100.0+0.005; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=rd(x, 100); return true;} else return false;                                       }else             // гистерезис целевой температуры
  if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Cool.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
  if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Cool.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
  if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Cool.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
- if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=x*100.0+0.005; return true;} else return false;                                      }else             // температура подачи (минимальная)
- if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=x*100.0+0.005; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=rd(x, 100); return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=rd(x, 100); return true;} else return false;                                     }else             // температура обратки (максимальная)
  if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
- if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=x*100.0+0.005; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
- if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=x*100.0+0.005; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=rd(x, 100); return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=rd(x, 100); return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { Cool.flags = (Cool.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Cool.flags = (Cool.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Cool.flags = (Cool.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=(int)(x*1000.0+0.0005); return true;} else return false;                             }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=rd(x, 1000); return true;} else return false;                             }             // Коэффициент погодозависимости
  return false; 
 }
 
@@ -635,26 +638,26 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
 				                    case 2: Heat.Rule=pHYBRID;     return true; break;
 				                    default:Heat.Rule=pHYSTERESIS; return true; break;  
 				                    }  }      else                                                                                                                    
- if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))   {Heat.Temp1=x*100.0+0.005; return true;} else return false;                                       }else             // целевая температура в доме
- if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-30)&&(x<=50))  {Heat.add_delta_temp=x; return true;}else return false; }else                                                      // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))   {Heat.Temp1=rd(x, 100); return true;} else return false;                                       }else             // целевая температура в доме
+ if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-30)&&(x<=50))  {Heat.add_delta_temp=rd(x, 100); return true;}else return false; }else                                                      // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
  if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Heat.add_delta_hour=x; return true;} else return false; }else
  if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Heat.add_delta_end_hour=x; return true;} else return false; }else
- if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=x*100.0+0.005; return true;} else return false;                                      }else             // целевая температура обратки
+ if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Heat.Temp2=rd(x, 100); return true;} else return false;                                      }else             // целевая температура обратки
  if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Heat.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
- if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=x*100.0+0.005; return true;} else return false;                                       }else             // гистерезис целевой температуры
+ if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=rd(x, 100); return true;} else return false;                                       }else             // гистерезис целевой температуры
  if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Heat.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
  if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
  if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
- if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=x*100.0+0.005; return true;} else return false;                                      }else             // температура подачи (минимальная)
- if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=-10.0)&&(x<=70.0)) {Heat.tempOut=x*100.0+0.005; return true;} else return false;                                     }else             // температура обратки (максимальная)
+ if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=rd(x, 100); return true;} else return false;                                      }else             // температура подачи (минимальная)
+ if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=-10.0)&&(x<=70.0)) {Heat.tempOut=rd(x, 100); return true;} else return false;                                     }else             // температура обратки (максимальная)
  if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                          }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
- if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=x*100.0+0.005; return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
- if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=10.0)&&(x<=50.0))  {Heat.tempPID=x*100.0+0.005; return true;} else return false;                                     }else             // Целевая темпеартура ПИД
+ if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=rd(x, 100); return true;} else return false;                                          }else             // максимальная разность температур конденсатора.
+ if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=10.0)&&(x<=50.0))  {Heat.tempPID=rd(x, 100); return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=(int)(x*1000.0+0.0005); return true;} else return false;                             }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=rd(x, 1000); return true;} else return false;                             }             // Коэффициент погодозависимости
  return false; 
 }
 
@@ -665,7 +668,7 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 	  	  	  	  	  	  	  	  	  return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Heat.Rule);
 				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
    if(strcmp(var,hp_TEMP1)==0)    {_ftoa(ret,(float)Heat.Temp1/100.0,1); return ret;                } else             // целевая температура в доме
-   if(strcmp(var,ADD_DELTA_TEMP)==0) 	{  _itoa(Heat.add_delta_temp, ret); return ret;         }else
+   if(strcmp(var,ADD_DELTA_TEMP)==0) 	{  _ftoa(ret,(float)Heat.add_delta_temp/100, 1); return ret;}else
    if(strcmp(var,ADD_DELTA_HOUR)==0) 	{  _itoa(Heat.add_delta_hour, ret); return ret;         }else
    if(strcmp(var,ADD_DELTA_END_HOUR)==0){  _itoa(Heat.add_delta_end_hour, ret); return ret;    	}else
    if(strcmp(var,hp_TEMP2)==0)    {_ftoa(ret,(float)Heat.Temp2/100.0,1); return ret;                } else            // целевая температура обратки
@@ -719,14 +722,14 @@ if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.fla
 			                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fCirculation);  return true;}
 			                       else return false;  
 			                       }else 
-if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=90))       {Boiler.TempTarget=x*100.0; return true;} else return false;       // Целевая температура бойлера
+if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=90))       {Boiler.TempTarget=rd(x, 100); return true;} else return false;       // Целевая температура бойлера
                        }else             
-if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-50)&&(x<=50))  {Boiler.add_delta_temp=x; return true;}else return false; }else         // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
+if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-50)&&(x<=50))  {Boiler.add_delta_temp=rd(x, 100); return true;}else return false; }else         // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
 if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Boiler.add_delta_hour=x; return true;} else return false; }else        // Начальный Час добавки температуры к установке бойлера
 if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; }else    // Конечный Час добавки температуры к установке
-if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=x*100.0; return true;} else return false;            // гистерезис целевой температуры
+if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=rd(x, 100); return true;} else return false;            // гистерезис целевой температуры
                        }else      
-if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=x*100.0; return true;} else return false;           // Tемпература подачи максимальная
+if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=rd(x, 100); return true;} else return false;           // Tемпература подачи максимальная
                        }else 
 if(strcmp(var,boil_PAUSE1)==0){      if ((x>=0)&&(x<=60))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
                        }else  
@@ -747,12 +750,12 @@ if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.time=x; r
 if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.Kp=x; return true;} else return false;  }else               // Пропорциональная составляющая ПИД ГВС
 if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.Ki=x; return true;} else return false;  }else               // Интегральная составляющая ПИД ГВС
 if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.Kd=x; return true;} else return false;   }else              // Дифференциальная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=70))   {Boiler.tempPID=x*100.0; return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
+if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=70))   {Boiler.tempPID=rd(x, 100); return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
 if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.flags,fAddHeating); return true;}                   // флаг использования тена для догрева ГВС
                                      else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
                                      else return false;  
                                     }else
-if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=x*100.0; return true;} else return false;}else // температура включения догрева бойлера
+if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;}else // температура включения догрева бойлера
 return false;
 
 }
@@ -766,10 +769,10 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_TURBO_BOILER)==0){    if (GETBIT(Boiler.flags,fTurboBoiler))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SALLMONELA)==0){      if (GETBIT(Boiler.flags,fSalmonella)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_CIRCULATION)==0){     if (GETBIT(Boiler.flags,fCirculation))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
- if(strcmp(var,boil_TEMP_TARGET)==0){     _ftoa(ret,(float)Boiler.TempTarget/100.0,1); return ret;   }else
- if(strcmp(var,ADD_DELTA_TEMP)==0) 		{  _itoa(Boiler.add_delta_temp, ret); return ret;           }else
- if(strcmp(var,ADD_DELTA_HOUR)==0) 		{  _itoa(Boiler.add_delta_hour, ret); return ret;           }else
- if(strcmp(var,ADD_DELTA_END_HOUR)==0) 	{  _itoa(Boiler.add_delta_end_hour, ret); return ret;    	}else
+ if(strcmp(var,boil_TEMP_TARGET)==0){     _ftoa(ret,(float)Boiler.TempTarget/100.0,1); return ret;    }else
+ if(strcmp(var,ADD_DELTA_TEMP)==0) 		{ _ftoa(ret,(float)Boiler.add_delta_temp/100, 1); return ret; }else
+ if(strcmp(var,ADD_DELTA_HOUR)==0) 		{ _itoa(Boiler.add_delta_hour, ret); return ret;           }else
+ if(strcmp(var,ADD_DELTA_END_HOUR)==0) 	{ _itoa(Boiler.add_delta_end_hour, ret); return ret;    	}else
  if(strcmp(var,boil_DTARGET)==0){         _ftoa(ret,(float)Boiler.dTemp/100.0,1); return ret;        }else
  if(strcmp(var,boil_TEMP_MAX)==0){        _ftoa(ret,(float)Boiler.tempIn/100.0,1); return ret;       }else
  if(strcmp(var,boil_PAUSE1)==0){          return _itoa(Boiler.pause/60,ret);                         }else                                                         
@@ -976,8 +979,8 @@ boolean Profile::set_paramProfile(char *var, char *c)
 		}
 	} else if(strcmp(var, prof_ID_PROFILE) == 0) {
 		x = atoi(c);
-		if(x >= I2C_PROFIL_NUM) return false; // не верный номер профиля
-		dataProfile.id = x;
+		if(x == 0 || x > I2C_PROFIL_NUM) return false; // не верный номер профиля
+		dataProfile.id = x - 1;
 		return true;
 	} else if(strcmp(var, prof_NOTE_PROFILE) == 0) {
 		urldecode(dataProfile.note, c, sizeof(dataProfile.note));
@@ -998,7 +1001,7 @@ char*   Profile::get_paramProfile(char *var, char *ret)
 if(strcmp(var,prof_NAME_PROFILE)==0)   { return strcat(ret,dataProfile.name);                             }else    
 if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled)) return  strcat(ret,(char*)cOne);
                                          else                                    return  strcat(ret,(char*)cZero);}else
-if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id,ret);                                }else 
+if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id + 1,ret);                            }else
 if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
 if(strcmp(var,prof_DATE_PROFILE)==0)   { return DecodeTimeDate(dataProfile.saveTime,ret);                 }else// параметры только чтение
 if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
@@ -1099,7 +1102,7 @@ int8_t Profile::update_list(int8_t num)
    // if (GETBIT(temp.flags,fEnabled)))                                                         // Если разрешено использовать
      { 
     	p = list + m_strlen(list);
-    	_itoa(i, p);
+    	_itoa(i + 1, p);
     	strcat(p, ". ");
     	strcat(p, temp_prof.name);
     	if (i==num) strcat(p,":1;"); else strcat(p,":0;");
@@ -1115,343 +1118,9 @@ int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 }
 
 // ---------------------------------------------------------------------------------
-//  Класс Статистика ТН ------------------------------------------------------------
-//  ------------- только для 64 кбайтного чипа памяти ------------------------------
-// ---------------------------------------------------------------------------------
-#ifdef I2C_EEPROM_64KB  
-// Очистка статистики текущего дня
-void Statistics::clear_OneDay()
-{
-dateUpdate=rtcSAM3X8.unixtime();     // Время поледнего обновления статистики
-Hour=0;                              // 1 Сколько часов в точке
-tin=0;                               // 4 средняя температура в доме
-tout=0;                              // 4 средняя температура на улице
-tbol=0;                              // 4 средняя температура в бойлере
-eCO=0;                               // 4 Выработаная энергия
-eEn=0;                               // 4 Затраченная энергия 220
-moto=0;                              // 4 Моточасы компрессора
-  
-OneDay.flags=0x00;                   // Флаги точки
-OneDay.Hour=0;;                      // Сколько часов в точке
-OneDay.date=dateUpdate;              // Дата точки
-OneDay.tin=0;                        // средняя температура в доме
-OneDay.tout=0;                       // средняя температура на улице
-OneDay.tbol=0;                       // средняя температура в бойлере
-OneDay.eCO=0;                        // Выработаная энергия
-OneDay.eEn=0;                        // Затраченная энергия 220
-OneDay.moto=0;                       // Моточасы компрессора
-OneDay.P1=0;                         // резерв 1
-OneDay.P2=0;                         // резерв 2
-}
-// Инициализация статистки
-void Statistics::Init()
-{
-  clear_OneDay();
-  pos=0,
-  num=0;                            // Позиция  для записи и число точек
-  full=false;
-  journal.jprintf("Init I2C memory statistics . . . \n");
-   if (checkREADY()==false) // Проверка наличия статистики
-   { 
-    journal.jprintf("Statistic not found in I2C memory\n");
-    Format(); 
-   }   
-   journal.jprintf("Statistic found: ");
-   // Вывод найденой статистики
-    pos=readDBYTE(I2C_STAT_EEPROM+2);
-    num=readDBYTE(I2C_STAT_EEPROM+4);
-    if (error==OK)
-    {
-    if ((pos==0)&&(num==0)) journal.jprintf("is empty, total %d points\n",STAT_POINT);
-    else journal.jprintf("position=%d number=%d\n",pos,num);
-    }
-    else journal.jprintf("Error %d format statistics in I2C memory\n",error);
-}
-
-// Форматирование статистики (инициализация I2C памяти уже проведена)
-void Statistics::Format()
-{   
-    uint16_t i;
-    error=OK;
-    memset(bufferI2C,I2C_STAT_FORMAT,sizeof(bufferI2C));
-    journal.jprintf("Formating I2C memory for statistic: ");
-    for (i=0;i<STAT_LEN/sizeof(bufferI2C);i++)
-       { 
-          journal.jprintf("*");
-          if (writeEEPROM_I2C(I2C_STAT_EEPROM+i*sizeof(bufferI2C), (byte*)&bufferI2C, sizeof(bufferI2C)))
-              { error=ERR_WRITE_I2C_STAT; 
-                journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
-                break; 
-              }; 
-          WDT_Restart(WDT);      
-       }    
-    full=false;                   // Буфер не полный
-    pos = 0;
-    num = 0;
-    writePOS();
-    writeNUM();
-    if (error==OK)   // было удачное форматирование
-    {
-    writeREADY();  
-    journal.jprintf("\nFormat I2C memory statistics (size %d bytes, %d points) - Ok\n",STAT_LEN,STAT_POINT);
-    }
-}
-
-// Записать номер для записи нового дня
-void Statistics::writePOS()
-{
-if (writeEEPROM_I2C(I2C_STAT_EEPROM+2, (byte*)&pos,sizeof(pos))) 
-   { error=ERR_WRITE_I2C_STAT;
-     journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
-    }  
-}
-// Записать число хранящихся дней
-void Statistics::writeNUM()
-{
-if (writeEEPROM_I2C(I2C_STAT_EEPROM+4, (byte*)&num,sizeof(num))) 
-   { error=ERR_WRITE_I2C_STAT;
-     journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
-    }  
-}
-// Записать признак "форматирования" журнала - журналом можно пользоваться
-void Statistics::writeREADY()
-{
-uint16_t  w=I2C_STAT_READY; 
-if (writeEEPROM_I2C(I2C_STAT_EEPROM, (byte*)&w,sizeof(w))) 
-   { error=ERR_WRITE_I2C_STAT;
-     journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
-    }  
-}
-
-// Проверить наличие статистики
-boolean Statistics::checkREADY()
-{  
-    uint16_t  w=0x0; 
-    if (readEEPROM_I2C(I2C_STAT_EEPROM, (byte*)&w,sizeof(w))) 
-       { error=ERR_READ_I2C_STAT; 
-         journal.jprintf(errorReadI2C);   // Сообщение об ошибке
-        }
-    if (w!=I2C_STAT_READY) return false; else return true;
-}
-// прочитать uint16_t по адресу adr
-uint16_t Statistics::readDBYTE(uint16_t adr)
-{
-  uint16_t  ret; 
-  if (readEEPROM_I2C(adr, (byte*)&ret,sizeof(ret))) 
-     { error=ERR_READ_I2C_STAT; 
-       journal.jprintf(errorReadI2C);   // Сообщение об ошибке
-      } 
-  return ret;                         
-}
-// Возвращает размер статистики в днях (записях)
-uint16_t Statistics::available()
-{ 
-   if (full) return STAT_LEN; else return num;
-} 
-// ЗАКРЫТИЕ ДНЯ Записать один день в еепром, обратно код ошибки
-uint8_t Statistics::writeOneDay(uint32_t energyCO,uint32_t energy220,uint32_t motoH)
-{
-OneDay.date=dateUpdate;                                            // Дата точки
-OneDay.flags=0x00;                                                 // Флаги точки
-if (Hour==24) SETBIT1(OneDay.flags,fStatFull);                     // День полный
-OneDay.Hour=Hour;                                                  // Сколько часов в точке
-if (Hour>0)                                                        // если есть что закрывать
-{
-OneDay.tin=tin/Hour;                                               // средняя температура в доме
-OneDay.tout=tout/Hour;                                             // средняя температура на улице
-OneDay.tbol=tbol/Hour;                                             // средняя температура в бойлере
-}
-
-if (energyCO>eCO)  OneDay.eCO=energyCO-eCO;  else OneDay.eCO=0;    // Выработаная энергия за день
-if (energy220>eEn) OneDay.eEn=energy220-eEn; else OneDay.eEn=0;    // Затраченная энергия 220
-if (motoH>moto)    OneDay.moto=motoH-moto;   else OneDay.moto=0;   // Моточасы компрессора
-OneDay.P1=0;                   // резерв 1
-OneDay.P2=0;                   // резерв 2
-
-// Записать данные
-if (writeEEPROM_I2C(I2C_STAT_START+pos*sizeof(type_OneDay), (byte*)&OneDay,sizeof(OneDay))) 
-   { error=ERR_WRITE_I2C_STAT;
-     journal.jprintf(errorWriteI2C);   // Сообщение об ошибке
-    }  
-if (error==OK) // Если удачно индекс и число точек поправить
-  {  if (!full) {num++;writeNUM();}                            // ЧИСЛО ТОЧЕК буфер пока не полный, отсчет с 0 идет не забыть
-     journal.jprintf(pP_TIME,"Save statictic day pos=%d num=%d\n", pos,num);   // вывод именно здесть - правильные значения
-     if (pos<STAT_POINT-1) pos++; else { pos=0; full=true; }   // ПОЗИЦИЯ ДЛЯ СЛЕДУЮЩЕЙ ЗАПИСИ (Следующей!!!!!)
-     writePOS(); 
-  } 
-clear_OneDay();                                                // очитска данных дня
-// Запомнить новые начальные значения для дня
-eCO=energyCO;         // Выработаная энергия
-eEn=energy220;        // Затраченная энергия 220
-moto=motoH;           // Моточасы компрессора
-return error;                                    
-}
-// Сгенерировать тестовые данные в памяти i2c на входе число точек
-void Statistics::generate_TestData(uint16_t number)
-{
-uint32_t  last_date=rtcSAM3X8.unixtime();
-static int8_t a;
-uint16_t i;
-
-if (number>STAT_POINT) number=STAT_POINT; 
-journal.jprintf("Generate statictic %d test point \n",number); 
-pos=0;  // все с начала
-num=0;   
-for(i=0;i<number;i++)  // герация и запись одной точки в цикле
-{
- //   clear_OneDay();                      // очитска данных дня
-    // генерация данных
-    dateUpdate=last_date-(STAT_POINT-i)*(60*60*24);  
-    a=random(10,24);
-    Hour=a;                      // добавить часов
-    tin=a*random(1700,2500);     // добавить температура в доме
-    tout=a*random(-2500,0);      // добавить температура на улице
-    tbol=a*random(3500,5000);    // добавить температура в бойлере
-    writeOneDay(a*random(4,15),a*random(1,4),random(6,12));  // запись данных
-    // При генерации новые начальные значения дня равны 0
-    eCO=0;         // Выработаная энергия
-    eEn=0;         // Затраченная энергия 220
-    moto=0;        // Моточасы компрессора
- //   journal.jprintf("*"); 
-    taskYIELD();   
-}
-
- Init();  // Проинализировать статистику заново
-}
-// получить список доступой статистики кладется в str
-// cat true - список добавляется в конец, false - строка обнуляется и список добавляется
-char * Statistics::get_listStat(char* str, boolean cat)
-{
-if (!cat) strcpy(str,"");     // Обнулить строку если есть соответсвующий флаг
- strcat(str,stat_NONE);strcat(str,":1;");
- strcat(str,stat_TIN);strcat(str,":0;");        // средняя темпеартура дома
- strcat(str,stat_TOUT);strcat(str,":0;");       // средняя темпеартура улицы
- strcat(str,stat_TBOILER);strcat(str,":0;");    // средняя темпеартура бойлера
- strcat(str,stat_HOUR);strcat(str,":0;");       // число накопленных часов должно быть 24
- strcat(str,stat_HMOTO);strcat(str,":0;");      // моточасы за сутки
- #ifdef FLOWCON
- strcat(str,stat_ENERGYCO);strcat(str,":0;");   // выработанная энергия
- #endif
- #ifdef USE_ELECTROMETER_SDM
- strcat(str,stat_ENERGY220);strcat(str,":0;");  // потраченная энергия
- strcat(str,stat_COP);strcat(str,":0;");        // КОП
- #endif
- #ifdef FLOWCON
- strcat(str,stat_POWERCO);strcat(str,":0;");    // средння мощность СО
- #endif
- #ifdef USE_ELECTROMETER_SDM
- strcat(str,stat_POWER220);strcat(str,":0;");   // средняя потребляемая мощность
- #endif
- return str;      
-}
-// получить данные статистики по одному типу данных в виде строки
-// cat=true - не обнулять входную строку а добавить в конец
-char *Statistics::get_Stat(char* var,char* str, boolean cat)
-{
-uint16_t index;           // индекс текущей точки
-if (!cat) strcpy(str,""); // Обнулить строку если есть соответсвующий флаг
-
-for(int i=0;i<num;i++) // цикл по всем точкам
-  {
-   if (!full) index=i; // вычисление текущей точки
-   else { if ((pos+i)<STAT_POINT) index=pos+i; else    index=pos+i-STAT_POINT;  }  
-    // чтение данных одной точки
-   taskYIELD();
-   if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) 
-   { error=ERR_READ_I2C_STAT;
-     journal.jprintf(errorReadI2C);   // Сообщение об ошибке
-    } 
-  if (error==OK) // Если удачно
-    { 
-    StatDate(ReadDay.date,true,str); strcat(str,(char*)":");    // готовим дату кратко
-      // в зависимости от того чо нужно
-         if(strcmp(var,stat_NONE)==0)     { strcat(str,""); return str;  }else
-         if(strcmp(var,stat_TIN)==0)      { _ftoa(str,(float)(ReadDay.tin/100.0),2); }else          // средняя темпеартура дома
-         if(strcmp(var,stat_TOUT)==0)     { _ftoa(str,(float)(ReadDay.tout/100.0),2); }else         // средняя темпеартура улицы
-         if(strcmp(var,stat_TBOILER)==0)  { _ftoa(str,(float)(ReadDay.tbol/100.0),2); }else         // средняя температура бойлера
-         if(strcmp(var,stat_HOUR)==0)     { _itoa(ReadDay.Hour,str); }else                           // число накопленных часов должно быть 24
-         if(strcmp(var,stat_HMOTO)==0)    { _itoa(ReadDay.moto,str); }else                           // моточасы за сутки
-         if(strcmp(var,stat_ENERGYCO)==0) { _itoa(ReadDay.eCO,str);  }else                           // выработанная энергия
-         if(strcmp(var,stat_ENERGY220)==0){ _itoa(ReadDay.eEn,str); }else                            // потраченная энергия
-         if(strcmp(var,stat_COP)==0)      { _ftoa(str,(float)(ReadDay.eCO/ReadDay.eEn),2); }else    // КОП
-         if(strcmp(var,stat_POWERCO)==0)  { _ftoa(str,(float)(ReadDay.eCO/ReadDay.Hour),2);}else    // средння мощность СО
-         if(strcmp(var,stat_POWER220)==0) { _ftoa(str,(float)(ReadDay.eEn/ReadDay.Hour),2);}else    // средняя потребляемая мощность
-         strcat(str,(char*)cZero);  
-         strcat(str,(char*)";"); 
-     } // if
-  }  // for
-    return str; 
-}
-// получить данные статистики по одному дню в виде строки
-// cat=true - не обнулять входную строку а добавить в конец
-char *Statistics::get_OneDay(char* str,uint16_t ii,boolean cat)
-{
-  uint16_t index;           // индекс текущей точки
-  if (!cat) strcpy(str,""); // Обнулить строку если есть соответсвующий флаг
-
-  if (!full) index=ii;        // вычисление текущей точки
-  else { if ((pos+ii)<STAT_POINT) index=pos+ii; else    index=pos+ii-STAT_POINT;  }  
-
-   _delay(1); // или будут ошибки чтения из памяти
-   if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
-   { error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
- 
-  if (error==OK) // Если удачно
-    {   
-    _itoa(ii,str);                             strcat(str,(char*)";");      // номер
-    StatDate(ReadDay.date,false,str);          strcat(str,(char*)";");      // готовим дату
-    _ftoa(str,(float)(ReadDay.tin/100.0),2);   strcat(str,(char*)";");      // средняя темпеартура дома
-    _ftoa(str,(float)(ReadDay.tout/100.0),2);  strcat(str,(char*)";");      // средняя темпеартура улицы
-    _ftoa(str,(float)(ReadDay.tbol/100.0),2);  strcat(str,(char*)";");      // средняя температура бойлера
-    _itoa(ReadDay.Hour,str);                   strcat(str,(char*)";");      // число накопленных часов должно быть 24
-    _itoa(ReadDay.moto,str);                   strcat(str,(char*)";");      // моточасы за сутки
-    #ifdef FLOWCON
-    _itoa(ReadDay.eCO,str);                    strcat(str,(char*)";");      // выработанная энергия
-    #endif
-    #ifdef USE_ELECTROMETER_SDM
-    _itoa(ReadDay.eEn,str);                    strcat(str,(char*)";");      // потраченная энергия
-    _ftoa(str,(float)(ReadDay.eCO/ReadDay.eEn),2);strcat(str,(char*)";");   // КОП
-    #endif
-    #ifdef FLOWCON
-    _ftoa(str,(float)(ReadDay.eCO/ReadDay.Hour),2);strcat(str,(char*)";");  // средння мощность СО
-    #endif
-    #ifdef USE_ELECTROMETER_SDM 
-    _ftoa(str,(float)(ReadDay.eEn/ReadDay.Hour),2);strcat(str,(char*)";");  // средняя потребляемая мощность
-    #endif
-    }     
-return str;          
-}
-// получить информацию о накопленной стаитистики в виде строки
-// cat=true - не обнулять входную строку а добавить в конец
-char *Statistics::get_Info(char* str, boolean cat)
-{
-uint16_t index;           // индекс текущей точки
-if (!cat) strcpy(str,""); // Обнулить строку если есть соответсвующий флаг
-
-strcat(str,(char*)"Максимальный объем накапливаемой статистики (дни)|"); _itoa(STAT_POINT,str);  strcat(str,(char*)";");
-strcat(str,(char*)"Объем накопленной статистики (дни)|");  _itoa(num,str);  strcat(str,(char*)";");
-
-if (!full) index=0;        // начальная дата
-else { if ((pos+0)<STAT_POINT) index=pos+0; else    index=pos+0-STAT_POINT;  }  
-if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
-{ error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) { strcat(str,(char*)"Начальная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
- 
-if (!full) index=num-1;        // конечная дата
-else { if ((pos+num-1)<STAT_POINT) index=pos+num-1; else    index=pos+num-1-STAT_POINT;  }  
-if (readEEPROM_I2C(I2C_STAT_START+index*sizeof(type_OneDay), (byte*)&ReadDay,sizeof(type_OneDay))) // читаем
-{ error=ERR_READ_I2C_STAT;journal.jprintf(errorReadI2C);}  // Сообщение об ошибке
-if (error==OK) {strcat(str,(char*)"Конечная дата статистики|"); StatDate(ReadDay.date,false,str);  strcat(str,(char*)";");} // Если удачно
-    
-strcat(str,(char*)"Позиция для записи|"); _itoa(pos,str);  strcat(str,(char*)";");
-
-return str;                  
-}
-
-#endif // I2C_EEPROM_64KB
-// ---------------------------------------------------------------------------------
 //  MQTT клиент ТН -----------------------------------------------------------------
 // ---------------------------------------------------------------------------------
+#ifdef MQTT
 // инициализация MQTT
 void clientMQTT::initMQTT()
 {
@@ -1853,3 +1522,4 @@ if((x=W5100.readSnSR(W5200_SOCK_SYS))!=SnSR::CLOSED) { if(debug) journal.jprintf
 return true; 
 }
 
+#endif

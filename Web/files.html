@@ -14,8 +14,14 @@
 	}
 	function send_files(id) {
 		var fs = document.getElementById(id).files;
+		if(fs.length == 0) return;
+		var mrk = {name:"*SPI_FLASH*", toString: function(){return "";}};
+		if(id == "spi") upload(mrk); else fs[0].settings = 1;
 		for(i = 0; i < fs.length; i++) upload(fs[i]);
-		return false;
+		if(id == "spi") {
+			mrk.name = "*SPI_FLASH_END*";
+			upload(mrk);
+		}
 	}
 	</script>
 </head>

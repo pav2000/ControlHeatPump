@@ -14,6 +14,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU General Public License for more details.
  */
+#include "Util.h"
 // --------------------------------------- функции общего использования -------------------------------------------
 // Быстрый вывод в порт
  __attribute__((always_inline))  inline void digitalWriteDirect(int pin, boolean val)
@@ -343,7 +344,7 @@ void SupplyMonitorON(uint32_t voltage)
 	startSupcStatusReg = SUPC->SUPC_SR;                        // запомнить состояние при старте
 	journal.jprintf("Supply Controller Status Register [SUPC_SR]: 0x%08x\n", startSupcStatusReg);
 
-	SUPC->SUPC_SMMR |= voltage | SUPC_SMMR_SMSMPL_CSM;     //SUPC_SMMR_SMSMPL_2048SLCK;  // Настройка контроля пититания
+	SUPC->SUPC_SMMR |= voltage | SUPC_SMMR_SMRSTEN_ENABLE | SUPC_SMMR_SMSMPL_CSM;   // RESET если напряжение просело, контроль 1/32768 сек
 	SUPC->SUPC_MR |= SUPC_MR_KEY(SUPC_KEY_VALUE) | SUPC_MR_BODDIS_ENABLE; // Включение контроля (это лишнее при сбросе это включено)
 	journal.jprintf("Supply monitor ON, voltage: %.1fV\n", (float) voltage / 10 + 1.9);
 }
@@ -466,65 +467,20 @@ char * get_Schedule(uint32_t *sh)
 	return buf;
 }
 
-// Инициализация СД карты, параметр num - число попыток
+// Инициализация СД карты
 // возврат true - если успешно, false - карты нет работаем без нее
-boolean initSD(uint8_t num)
+boolean initSD(void)
 {
-	uint8_t i;
 	boolean success = false;   // флаг успешности инициализации
-
 	journal.jprintf("Initializing SD card...\n");
 #ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
-	pinMode(PIN_NO_SD_CARD,INPUT);     // ++ CD Программирование проверки наличия карты
+	pinMode(PIN_NO_SD_CARD, INPUT);     // ++ CD Программирование проверки наличия карты
 	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("ERROR - No SD card in slot.\n"); return false;}
 	else journal.jprintf("SUCCESS - SD card insert in slot.\n");
 #endif
-
 	// 1. Инициалазация карты
-	SPI.end();
-#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-	if(!card.begin(PIN_SPI_CS_SD, SPI_HALF_SPEED)) { // Половина скорости
-#else
-	if(!card.begin(PIN_SPI_CS_SD, SPI_FULL_SPEED)) { // Полная скорость
-#endif
+	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
 		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
-/*
-		for(i = 0; i < num; i++) // Карта не инициализируется c ходу/ Дополнительные попытки инициализировать карту
-		{
-			WDT_Restart (WDT);  // это операция долгая, сбросить вачдог
-			journal.jprintf("Repeat initializing SD card . . .\n");
-			// пытаемся реанимировать СД карту
-			digitalWriteDirect(10, HIGH);
-			SPI.end();                 // Stop SPI
-			// MISO - Digital Pin 74, MOSI - Digital Pin 75, and SCK - Digital Pin 76.
-			pinMode(74, INPUT_PULLUP);    // MISO - Digital Pin 74
-			pinMode(75, INPUT_PULLUP);    // MOSI - Digital Pin 75
-			pinMode(76, INPUT_PULLUP);    // SCK - Digital Pin 76.
-			pinMode(10, INPUT_PULLUP);    // CS w5200 - Digital Pin 10.
-			pinMode(4, INPUT_PULLUP);     // CS SD - Digital Pin 4.
-			pinMode(87, INPUT_PULLUP);    // SD Pin 87
-			pinMode(77, INPUT_PULLUP);    // Eth Pin 77
-			_delay(200);
-			pinMode(74, OUTPUT);          // MISO - Digital Pin 74
-			pinMode(75, OUTPUT);          // MOSI - Digital Pin 75
-			pinMode(76, OUTPUT);          // SCK - Digital Pin 76.
-			//  pinMode(10,OUTPUT);        // CS w5200 - Digital Pin 10.
-			pinMode(4, OUTPUT);           // CS SD - Digital Pin 4.
-			digitalWriteDirect(74, LOW);
-			digitalWriteDirect(75, LOW);
-			digitalWriteDirect(76, LOW);
-			_delay(200);
-
-#ifdef SD_LOW_SPEED            // Если этот дефайн то скорость для КАРТЫ понижается вдвое
-			if (card.begin(4,SPI_HALF_SPEED)) {success=true; break;}  // Половина скорости
-#else
-			if(card.begin(4, SPI_FULL_SPEED)) {
-				success = true;
-				break;
-			}    // Полная скорость
-#endif
-		}
-*/
 	} else success = true;  // Карта инициализирована с первого раза
 
 	if(success)  // Запоминаем результаты
@@ -569,7 +525,25 @@ boolean initSD(uint8_t num)
 	SPI_switchW5200();
 	return true;
 }
-
+// Инициализация SPI диска, параметр true - вывод инфо в журнал false молча проверяем состояние
+// Возврат true - если успешно, false - диск не рабоатет
+boolean initSpiDisk(boolean show)
+{
+unsigned char id[8];	
+if (!SerialFlash.begin(PIN_SPI_CS_FLASH)) {if (show) Serial.println(" Unable to access SPI flash chip, use SPI disk block");return false;}
+ else {
+ 	  if (show) {
+	 	  SerialFlash.readID(id);
+	      journal.jprintf(" Manufacturer ID: 0x%02x\n",id[0]);
+	      journal.jprintf(" Memory type: 0x%02x\n",id[1]);
+	      journal.jprintf(" Capacity: 0x%02x\n",id[2]);
+	      journal.jprintf(" Chip size: %d bytes\n",SerialFlash.capacity(id));
+	      SerialFlash.readSerialNumber(id);
+	      journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n",id[0],id[1],id[2],id[3],id[4],id[5],id[6],id[7]);
+	 	  }
+ 	  return true;
+ 	  }
+}
 // base64 -хеш функция ------------------------------------------------------------------------------------------------
 /* Copyright (c) 2013 Adam Rudd. */
 const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -746,9 +720,9 @@ const uint16_t Crc16Table[256] = {
     0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len)
+// defaults crc = 0xFFFF
+uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
 {
-    uint16_t crc = 0xFFFF;
     while (len--)
         crc = (crc >> 8) ^ Crc16Table[(crc & 0xFF) ^ *pcBlock++];
     return crc;
@@ -921,4 +895,10 @@ void load_struct(void *to, uint8_t **from, uint16_t to_size)
 	size >>= 1;
 	if(to != NULL) memcpy(to, *from, size <= to_size ? size : to_size);
 	*from += size;
+}
+
+// Round float * mul, mul: 10, 100, 1000
+int16_t rd(float num, int16_t mul)
+{
+	return num * mul + (mul == 100 ? 0.005 : mul == 10 ? 0.05 : 0.0005) * (num < 0 ? -1 : 1);
 }

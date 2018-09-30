@@ -34,7 +34,7 @@ int8_t set_time(void)
    rtcSAM3X8.init();                             // Запуск внутренних часов
    journal.jprintf(" Init internal RTC sam3x8e\n"); 
    ttime=TimeToUnixTime(getTime_RtcI2C());   // Прочитать время из часов i2c
-   rtcSAM3X8.set_clock(ttime,0);                // Установить внутренние часы по i2c   
+   rtcSAM3X8.set_clock(ttime);                // Установить внутренние часы по i2c
    _delay(200);         
    journal.jprintf(" Set time internal RTC form i2c RTC DS3231: %s ",NowDateToStr());journal.jprintf("%s\n",NowTimeToStr());  // Одним оператором есть косяк
   
@@ -266,14 +266,16 @@ char* NowTimeToStr()
 //  Получить текущее время (без секунд!) в виде строки
 char* NowTimeToStr1()
 {
-  uint32_t x;
-  static char _tmp[8];   // Длина xx:xx - 5+1 символов
-  x=rtcSAM3X8.get_hours();
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
-
-  x=rtcSAM3X8.get_minutes();
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
- 
+  uint8_t x;
+  static char _tmp[6];   // Длина xx:xx - 5+1 символов
+  x = rtcSAM3X8.get_hours();
+  _tmp[0] = '0' + x / 10;
+  _tmp[1] = '0' + x % 10;
+  _tmp[2] = ':';
+  x = rtcSAM3X8.get_minutes();
+  _tmp[3] = '0' + x / 10;
+  _tmp[4] = '0' + x % 10;
+  _tmp[5] = '\0';
   return _tmp;
 }
 

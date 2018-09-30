@@ -42,9 +42,7 @@
 // Глубоко переделанные библиотеки
 #include <Ethernet.h>                       // Ethernet - модифицированная
 #include <Dns.h>                            // DNS - модифицированная
-#ifdef MQTT                                 // признак использования MQTT
-    #include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
-#endif
+#include <SerialFlash.h>                    // Либа по работе с spi флешом как диском
 
 #include "Hardware.h"
 #include "HeatPump.h"
@@ -52,12 +50,14 @@
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
- 
+#include "Graphics.h"
+
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
 SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
 SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
 SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xLoadingWebSemaphore;               // Семафор загрузки веб морды в spi память
 static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
 static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
@@ -75,10 +75,15 @@ extern boolean set_time_NTP(void);
 EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
-PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+
 #ifdef RADIO_SENSORS
 void check_radio_sensors(void);
 void radio_sensor_send(char *cmd);
+#endif
+
+#ifdef MQTT                                 // признак использования MQTT
+#include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
+PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
 #endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
@@ -93,6 +98,7 @@ SdFat card;                                                              // Ка
 #ifdef NEXTION   
   Nextion myNextion;                                                     // Дисплей
 #endif
+
 
 // Структура для хранения одного сокета, нужна для организации многопотоковой обработки
 #define fABORT_SOCK   0                     // флаг прекращения передачи (произошел сброс сети)
@@ -245,7 +251,7 @@ pinMode(21, OUTPUT);
   if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
   lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
   journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
-  journal.jprintf("Last Free RTOS task + error: 0x%04x\n", lastErrorFreeRtosCode);
+  journal.jprintf("Last FreeRTOS task + error: 0x%04x\n", lastErrorFreeRtosCode);
 
   #ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
     pinMode(PIN_LED1,OUTPUT);  
@@ -256,7 +262,7 @@ pinMode(21, OUTPUT);
   #endif
 
 //  #ifdef POWER_CONTROL
-  SupplyMonitorON(SUPC_SMMR_SMTH_3_2V);           // включение монитора питания
+  SupplyMonitorON(SUPC_SMMR_SMTH_3_0V);           // включение монитора питания
 //  #endif
    
   #ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
@@ -403,13 +409,17 @@ x_I2C_init_std_message:
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
    journal.jprintf("4. Init and checking SD card . . .\n");
-   HP.set_fSD(initSD(SD_REPEAT));
+   HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    //_delay(100);
 
-// 8. Чтение ЕЕПРОМ
-   journal.jprintf("5. Load data from I2C memory . . .\n");
+// 8. Инициализация spi флеш диска
+  journal.jprintf("5. Init and checking SPI flash disk . . .\n");
+  HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
+
+// 9. Чтение ЕЕПРОМ
+   journal.jprintf("6. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
 	  journal.jprintf("I2C memory is empty, use default settings\n");
@@ -418,63 +428,64 @@ x_I2C_init_std_message:
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
   }
-#ifdef USE_SCHEDULER
+
   HP.Schdlr.load();							// Загрузка настроек расписания
-#endif
 
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
 
-// 9. Сетевые настройки
-   journal.jprintf("6. Setting Network . . .\n");
+// 10. Сетевые настройки
+   journal.jprintf("7. Setting Network . . .\n");
    initW5200(true);   // Инициализация сети с выводом инфы в консоль
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
-// 10. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("7. Setting time and clock . . .\n");
+// 11. Разбираемся со всеми часами и синхронизацией
+   journal.jprintf("8. Setting time and clock . . .\n");
    set_time();        
    
- // 11. Инициалазация уведомлений
-   journal.jprintf("8. Message update IP from DNS . . .\n");
+ // 12. Инициалазация уведомлений
+   journal.jprintf("9. Message update IP from DNS . . .\n");
    HP.message.dnsUpdateStart(); 
    
- // 12. Инициалазация MQTT
+ // 13. Инициалазация MQTT
     #ifdef MQTT  
-      journal.jprintf("9. Client MQTT update IP from DNS . . .\n"); 
+      journal.jprintf("10. Client MQTT update IP from DNS . . .\n"); 
       HP.clMQTT.dnsUpdateStart();
     #else
-      journal.jprintf("9. Client MQTT disabled by config\n");
+      journal.jprintf("10. Client MQTT disabled by config\n");
     #endif 
 
-  // 13. Инициалазация Statistics
-   #ifdef I2C_EEPROM_64KB  
-     HP.InitStatistics();                               // записать состояния счетчиков в RAM для начала работы статистики
-     journal.jprintf("10. Init statistic.\n");
-  #else    
-     journal.jprintf("10. Statistic no support (low memory).\n");
-  #endif
+  // 14. Инициалазация Statistics
+   journal.jprintf("11. Statistics");
+   if(HP.get_fSD()) {
+	   //HP.InitStatistics();
+	   journal.jprintf(" - writing on SD card\n");
+   } else journal.jprintf(" - not available\n");
 
-#ifdef USE_SCHEDULER
+
    int8_t _profile = HP.Schdlr.calc_active_profile();
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
 	   HP.Prof.load(_profile);
 	   HP.set_profile();
 	   journal.jprintf("Profile changed to %d\n", _profile);
    }
-#endif
 
   if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
-  journal.jprintf("11. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
+  journal.jprintf("12. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
   start_ADC(); // после инициализации HP
-  journal.jprintf("12. Start read ADC sensors\n"); 
+  journal.jprintf("13. Start read ADC sensors\n"); 
 
   #ifdef NEXTION   
-    journal.jprintf("13. Init Nextion display\n");
-    myNextion.init(cZero);
+    journal.jprintf("14. Nextion display - ");
+    if(GETBIT(HP.Option.flags, fNextion)) {
+    	if(myNextion.init()) journal.jprintf("Ok\n");
+    } else {
+    	journal.jprintf("Disabled\n");
+    }
   #else
-    journal.jprintf("13. Nextion display absent in config\n");
+    journal.jprintf("14. Nextion display is absent in config\n");
   #endif
 
   #ifdef TEST_BOARD
@@ -482,8 +493,8 @@ x_I2C_init_std_message:
   //HP.scan_OneWire(Socket[0].outBuf);
   #endif
 
-  // Создание задач Free RTOS  ----------------------
-    journal.jprintf("14. Create tasks free RTOS . . .\n");
+  // Создание задач FreeRTOS  ----------------------
+    journal.jprintf("15. Create tasks FreeRTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
 HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
 HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
@@ -544,6 +555,9 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Остано�
   if ( xTaskCreate(vWeb3,"Web3", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
 #endif
+vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
+if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+//xLoadingWebMutex=xSemaphoreCreateMutex();
 
 vSemaphoreCreateBinary(xWebThreadSemaphore);               // Создание мютекса
 if (xWebThreadSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
@@ -559,9 +573,9 @@ if(Modbus.get_present())
 }
 
 #ifdef NEXTION    
-  if ( xTaskCreate(vNextion,"Nextion",200,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*200; //200
-  HP.updateNextion();  // Обновить настройки дисплея
+  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*120; //120
+  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
 #endif 
 
 // ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
@@ -580,20 +594,20 @@ vTaskSuspend(HP.xHandlePauseStart);
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("15. Send a notification . . .\n");
+journal.jprintf("16. Send a notification . . .\n");
 //HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
-journal.jprintf("16. Information:\n");
+journal.jprintf("17. Information:\n");
 freeRamShow();
 HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM); 
 journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE()); 
 journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C()); 
 //HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-journal.jprintf("Start Free RTOS scheduler :-))\n");
+journal.jprintf("Start FreeRTOS scheduler :-))\n");
 journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
 vTaskStartScheduler();              // СТАРТ !!
-journal.jprintf("CRASH Free RTOS!!!\n");
+journal.jprintf("CRASH FreeRTOS!!!\n");
 }
 
 
@@ -657,8 +671,10 @@ void vWeb0( void *)
    volatile unsigned long resW5200=0;
    volatile unsigned long iniW5200=0;
    volatile unsigned long pingt=0;
+#ifdef MQTT
    volatile unsigned long narmont=0;
    volatile unsigned long mqttt=0;
+#endif
    volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
    static boolean network_last_link = true;
    
@@ -758,66 +774,62 @@ void vWeb0( void *)
 }
 
 // Второй поток
-void vWeb1( void * )
+void vWeb1(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(1);
-     vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
- 
-    }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(1);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+
+	}
+	vTaskDelete( NULL);
 }
 // Третий поток
-void vWeb2( void * )
+void vWeb2(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(2);
-     vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
- 
-    }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(2);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+
+	}
+	vTaskDelete( NULL);
 }
 // Четвертый поток
-void vWeb3( void * )
+void vWeb3(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   for( ;; )
-    {
-      web_server(3);
-      vTaskDelay(TIME_WEB_SERVER/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-     }
-  vTaskDelete( NULL );  
+	for(;;) {
+		web_server(3);
+		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete( NULL);
 }
 
 // Задача обслуживания Nextion
-void vNextion( void * )
-{ 
-  static unsigned long NextionTick=0;
-    for( ;; )
-    {
-     #ifdef NEXTION    
-      myNextion.Listen();                  // прочитать сообщения от дисплея
-      if(((long)xTaskGetTickCount()-NextionTick ) >  NEXTION_UPDATE)   
-      {
-        NextionTick=xTaskGetTickCount();
-        myNextion.Update();                  // Обновление дисплея
-      }
-     #endif
-      vTaskDelay(NEXTION_READ/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-    }
-  vTaskDelete( NULL );  
+void vNextion(void *)
+{
+	static uint32_t NextionTick = 0;
+	for(;;) {
+#ifdef NEXTION
+		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
+			myNextion.Update();                  // Обновление дисплея
+			NextionTick = xTaskGetTickCount();
+		}
+#else
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+#endif
+	}
+	vTaskDelete( NULL);
 }
 
 // Задача обновление статистики
-void vUpdateStat( void * )
+void vUpdateStat(void *)
 { //const char *pcTaskName = "statChart is running\r\n";
-   for( ;; )
-    {
-      HP.updateChart();                                       // Обновить статитсику
-      vTaskDelay((HP.get_tChart()*1000)/portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-     }
-  vTaskDelete( NULL );  
+	for(;;) {
+		HP.updateChart();                                       // Обновить статитсику
+		vTaskDelay((HP.get_tChart() * 1000) / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete( NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -860,10 +872,11 @@ void vReadSensor(void *)
 	#endif
 		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
+		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
+
 		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
 
-		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
-		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();            // Получить значения датчиков потока
 		if(OW_scan_flags == 0) {
 			uint8_t flags = 0;
 			for(i = 0; i < TNUMBER; i++) {                                   // Прочитать данные с температурных датчиков
@@ -892,6 +905,22 @@ void vReadSensor(void *)
 			}
 			if(temp2 != 32767) HP.sTemp[TIN].set_Temp(temp2);
 		}
+
+#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
+	#ifdef USE_UPS
+		if(!HP.NO_Power)
+	#endif
+			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
+			{
+				readSDM=xTaskGetTickCount();
+				HP.dSDM.get_readState(2);     // Последняя группа регистров
+			}
+#endif
+
+		HP.calculatePower();  // Расчет мощностей и СОР	}
+
+		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
+
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
@@ -911,17 +940,6 @@ void vReadSensor(void *)
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
-#ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-	#ifdef USE_UPS
-		if(!HP.NO_Power)
-	#endif
-			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
-			{
-				readSDM=xTaskGetTickCount();
-				HP.dSDM.get_readState(2);     // Последняя группа регистров
-			}
-#endif
-
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
 		{
@@ -930,17 +948,13 @@ void vReadSensor(void *)
 		}
 #endif
 
-//        if (xTaskGetTickCount()-calcPower>10*1000) {  // раз в десять секунд
-//			calcPower=xTaskGetTickCount();
-			HP.calculatePower();  // Расчет мощностей и СОР	}
-       
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
 			if((oldTime = rtcSAM3X8.unixtime()) - countI2C > TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
 			{
 				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				rtcSAM3X8.set_clock(ttime, 0);                 // Установить внутренние часы по i2c
+				rtcSAM3X8.set_clock(ttime);                		 // Установить внутренние часы по i2c
 				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
 				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
 				countI2C = ttime;                               // запомнить время
@@ -949,9 +963,6 @@ void vReadSensor(void *)
 		// Проверка и сброс митекса шины I2C
 //       if (SemaphoreTake(xI2CSemaphore,(3*I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) { SemaphoreGive(xI2CSemaphore);journal.jprintf("UNLOCK mutex xI2CSemaphore\n");  HP.num_resMutexI2C++;} // Захват мютекса I2C или ОЖИДАНИНЕ 3 времен I2C_TIME_WAIT  и его освобождение
 //       else  SemaphoreGive(xI2CSemaphore);
-
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
-
 		// Проверки граничных температур для уведомлений, если разрешено!
 		static uint16_t countTEMP = 0;        // Для проверки критических температур для рассылки уведомлений
 		if(HP.message.get_fMessageTemp()) {
@@ -998,19 +1009,25 @@ void vReadSensor_delay10ms(int16_t msec)
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif
 #ifdef USE_UPS
-		if(HP.sInput[SPOWER].is_alarm() && !HP.NO_Power) {  // Электричество кончилось
-			if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
-				HP.sendCommand(pWAIT);
-				HP.NO_Power = 2;
-			} else HP.NO_Power = 1;
+		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
+			if(!HP.NO_Power) {
+				HP.save_motoHour();
+				Stats.Save();
+				journal.jprintf(pP_DATE, "Power lost!\n");
+				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
+					HP.sendCommand(pWAIT);
+					HP.NO_Power = 2;
+				} else HP.NO_Power = 1;
+			}
 		} else if(HP.NO_Power) { // Включаемся
-			#ifdef USE_SCHEDULER
-			if(HP.Schdlr.calc_active_profile() == SCHDLR_NotActive)  // Расписание не активно, иначе включаемся через расписание
-			#endif
+			journal.jprintf(pP_DATE, "Power restored!\n");
+			if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 				if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 					HP.NO_Power = 0;
+					journal.jprintf("Resuming work\n");
 					HP.sendCommand(pRESUME);
 				}
+			}
 			HP.NO_Power = 0;
 		}
 #endif
@@ -1019,6 +1036,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif
 	}
 }
+
 //////////////////////////////////////////////////////////////////////////
 // Задача Управление тепловым насосом (xHandleUpdate)
  void vUpdate( void * )
@@ -1074,7 +1092,7 @@ void vReadSensor_delay10ms(int16_t msec)
 #endif // #ifdef RPUMPB
 		 } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
 
-#ifdef USE_SCHEDULER  // 3. Расписание проверка всегда
+// 3. Расписание проверка всегда
 		 int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		 if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			 int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
@@ -1102,7 +1120,6 @@ void vReadSensor_delay10ms(int16_t msec)
 				 }
 			 }
 		 }
-#endif
 
 		 // 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
 		 switch (HP.get_State())  // Состояние ТН 
@@ -1183,7 +1200,10 @@ void vReadSensor_delay10ms(int16_t msec)
 					HP.time_Sun_OFF = 0;
 				}
 			}
-		} else HP.Sun_OFF();
+		} else {
+			HP.Sun_OFF();
+			HP.time_Sun_OFF = 0;	// выключить задержку последующего включения
+		}
 #endif
 	 }// for
 	 vTaskDelete( NULL );

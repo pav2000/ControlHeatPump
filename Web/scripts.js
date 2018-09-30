@@ -1,4 +1,4 @@
-/* ver 0.961 beta */
+/* ver 0.962 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
@@ -28,7 +28,7 @@ function setParam(paramid, resultid) {
 		var fprof, lprof = -2, len = 0;
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
-			var prof = colls[j].innerHTML == "" ? -1 : colls[j].innerHTML;
+			var prof = colls[j].innerHTML == "" ? 0 : colls[j].innerHTML;
 			if(prof != lprof) {
 				elval += (((j / 24 | 0) << 5) | (j % 24)) + ";" + prof + ";";
 				if(lprof == -2) {
@@ -36,7 +36,7 @@ function setParam(paramid, resultid) {
 					flen = elval.length;
 				}
 				lprof = prof;
-				len += 2;
+				if((len += 2) == 254) break;
 			}
 		}
 		if(fprof == lprof && len > 2) {
@@ -605,7 +605,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												input = count[j].toLowerCase();
 												loadsens = loadsens + "get_alarmInput(" + count[j] + "),get_errcodeInput(" + count[j] + "),get_typeInput(" + count[j] + "),get_pinInput(" + count[j] + "),get_Input(" + count[j] + "),get_noteInput(" + count[j] + "),get_testInput(" + count[j] + "),";
 												upsens = upsens + "get_Input(" + count[j] + "),get_errcodeInput(" + count[j] + "),";
-												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
+												content = content + '<tr><td>' + count[j] + '</td><td id="get_noteinput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1"><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_errcodeinput-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -705,7 +705,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
-												content = content + '<tr id="get_profile-' + j + '"><td>' + j + '</td><td id="infoprofile-' + j + '"></td>';
+												content = content + '<tr id="get_profile-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
 												content = content + '<td><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -734,11 +734,6 @@ function loadParam(paramid, noretry, resultdiv) {
 												setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 												console.log("wait response...");
 											} else alert(values[1]);
-										}
-										if(values[1] == "Alarm") {
-											document.getElementById(valueid.replace(/type/g, "alarm")).disabled = false;
-										} else if(values[1] == "Work") {
-											document.getElementById(valueid.replace(/type/g, "alarm")).disabled = true;
 										}
 										element3 = document.getElementById(valueid + "3");
 										if(element3) {
@@ -827,8 +822,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.checked = onoff;
 									if((element=document.getElementById('set_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
-									if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
-									if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
+									//if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
+									//if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
 									if((element=document.getElementById('scan'))) element.disabled = onoff;
 									element = document.getElementById('manual_override'); if(element && element.checked) onoff = false;
 									var elements = document.getElementsByName('profile');
@@ -961,28 +956,21 @@ function toggleclass(elem, onoff) {
 
 function upload(file) {
 	var xhr = new XMLHttpRequest();
-	xhr.upload.onprogress = function(event) {
-		console.log(event.loaded + ' / ' + event.total);
-	}
-	xhr.onload = xhr.onerror = function() {
-		if(this.status == 200) {
-			console.log("success");
-		} else {
-			console.log("error " + this.status);
-		}
-	};
-	xhr.open("POST", urlcontrol, true);
-	xhr.setRequestHeader('Title', encodeURIComponent(file.name));
-	xhr.send(file);
+//	xhr.upload.onprogress = function(event) { console.log(event.loaded + ' / ' + event.total); }
+//	xhr.onload = xhr.onerror = function() {
+//		if(this.status == 200) { console.log("success"); } else { console.log("error " + this.status); }
+//	};
+	xhr.open("POST", urlcontrol, false);
+	xhr.setRequestHeader('Title', file.settings ? "*SETTINGS*" : encodeURIComponent(file.name));
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;
 		if(xhr.status == 200) {
-			if(xhr.responseText != null) {
-				strResponse = xhr.responseText;
-				alert(strResponse);
+			if(xhr.responseText != null && xhr.responseText != "") {
+				alert(xhr.responseText);
 			}
 		}
 	}
+	xhr.send(file);
 }
 
 function autoheight() {

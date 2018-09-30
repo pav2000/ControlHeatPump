@@ -150,7 +150,7 @@ int8_t sensorTemp::Read()
 
 	// Усреднение значений
   #if T_NUMSAMLES == 1         // При 1 - без усреднения
-	Temp = lastTemp;
+	Temp = lastTemp + errTemp;
   #else                        // буфер может быть не полным
 	sum = sum-t[last];           // Убрать самое старое значение из суммы
 	t[last] = lastTemp;          // Запомить новое значение

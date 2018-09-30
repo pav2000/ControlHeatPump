@@ -284,6 +284,7 @@ void  sensorDiditalInput::initInput(int sensor)
    pinMode(pin, INPUT);             // Настроить ножку на вход
    note=(char*)noteInput[sensor];   // присвоить наименование датчика
    name=(char*)nameInput[sensor];   // присвоить имя датчика
+   Read();
 };
 
   // Чтение датчика возвращает ошибку или ОК
@@ -394,47 +395,47 @@ void sensorFrequency::initFrequency(int sensor)
    else err=ERR_NUM_FREQUENCY;
 }
 
-// Получить (точнее обновить) значение датчика
+// Получить (точнее обновить) значение датчика, возвращает 1, если новое значение рассчитано
 int8_t sensorFrequency::Read()
 {
 	if(testMode != NORMAL) {
 		Value = testValue;
 		Frequency = Value * kfValue / 360;
-		return err;
+		return 0;
 	}   // В режиме теста
 #ifdef DEMO
 	Frequency=random(2500,9000);
 	count=0;
 	//   Value=60.0*Frequency/kfValue/1000.0;                  // переводим в Кубы в час  (Frequency/kfValue- литры в минуту)  watt=(Value/3.600) *4.191*dT
-	Value=(float)Frequency/kfValue*360.0;// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+	Value=Frequency * 360 / kfValue;// ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
 	//  journal.jprintf("Sensor %s: frequence=%.3f flow=%.3f\n",name,Frequency/(1000.0),Value/(1000.0));
-	return err;// Если демо вернуть случайное число
 #else
-	if(GetTickCount() - sTime > (uint32_t)BASE_TIME_READ * 1000) {  // если только пришло время измерения
+	if(GetTickCount() - sTime >= (uint32_t)BASE_TIME_READ * 1000) {  // если только пришло время измерения
 		uint32_t tickCount, cnt;
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+		//if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
 		tickCount = GetTickCount();
 		cnt = count;
 		count = 0;
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+		//if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
 		__asm__ volatile ("" ::: "memory");
-		Frequency = (cnt * 500.0 * 1000.0) / (tickCount - sTime); // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
+		Frequency = (cnt * 500 * 1000) / (tickCount - sTime); // ТЫСЯЧНЫЕ ГЦ время в миллисекундах частота в тысячных герца *2 (прерывание по обоим фронтам)!!!!!!!!
 		sTime = tickCount;
 		//   Value=60.0*Frequency/kfValue/1000.0;               // Frequency/kfValue  литры в минуту а нужны кубы
 		//       Value=((float)Frequency/1000.0)/((float)kfValue/360000.0);          // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
-		Value = (float) Frequency / kfValue * 360.0; // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+		Value = Frequency * 360 / kfValue; // ЛИТРЫ В ЧАС (ИЛИ ТЫСЯЧНЫЕ КУБА) частота в тысячных, и коэффициент правим
+		return 1;
 	}
 #endif
-	return err;
+	return 0;
 }
 
 void sensorFrequency::reset(void)
 {
 
-	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
+	//if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskENTER_CRITICAL();
 	sTime = GetTickCount();
 	count = 0;
-	if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
+	//if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) taskEXIT_CRITICAL();
 }
 
 // Установить Состояние датчика в режиме теста
@@ -448,6 +449,12 @@ int8_t sensorFrequency::set_Capacity(uint16_t c)
 {  
   if (c<=5000) {Capacity=c; return OK;} else return WARNING_VALUE;    
 }   
+
+	// Установить минимальное значение датчика
+void sensorFrequency::set_minValue(float f)
+{
+	minValue = rd(f, 10);
+}
 
 // ------------------------------------------------------------------------------------------
 // Исполнительное устройство РЕЛЕ (есть 2 состяния 0 и 1) --------------------------------------
@@ -1072,15 +1079,15 @@ float temp;
 	} else if(strcmp(var, eev_TIME)==0){
 	  if ((x>=1)&&(x<=1000)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
-	  if ((x>0.0)&&(x<=20.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=(int)(x*100+0.005); ;return true;}  else return false;	// сотые градуса
+	  if ((x>0.0)&&(x<=20.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
-	   if ((x>=0)&&(x<=50.0)) { if(_data.Kp!=x) resetPID(); _data.Kp=(int)(x*100+0.005);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kp!=x) resetPID(); _data.Kp=rd(x, 100);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_KI)==0){
-	   if ((x>=0)&&(x<=50.0)) { if(_data.Ki!=x) resetPID(); _data.Ki=(int)(x*100+0.005); return true;} else return false; // сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Ki!=x) resetPID(); _data.Ki=rd(x, 100); return true;} else return false; // сотые
 	} else if(strcmp(var, eev_KD)==0){
-	   if ((x>=0)&&(x<=50.0)) { if(_data.Kd!=x) resetPID(); _data.Kd=(int)(x*100+0.005);return true;} else return false;	// сотые
+	   if ((x>=0)&&(x<=50.0)) { if(_data.Kd!=x) resetPID(); _data.Kd=rd(x, 100);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_CONST)==0){
-	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=(int)(x*100+0.005); return true;}else return false;	// сотые градуса
+	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
 	   if ((x>=_data.minSteps)&&(x<=maxEEV)){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
@@ -1094,21 +1101,21 @@ float temp;
     } else if(strcmp(var, eev_cPERIOD)==0){
 		if ((x>=0)&&(x<=10000)) { if(_data.OHCor_Period!=x) resetPID(); _data.OHCor_Period=x; return true;} else return false;	// циклы ЭРВ
     } else if(strcmp(var, eev_cDELTA)==0){
-        if ((x>=-10.0)&&(x<=50.0)) {_data.OHCor_TDIS_TCON=(int)(x*100.0+0.005); return true;}else return false;	// сотые градуса
+        if ((x>=-10.0)&&(x<=50.0)) {_data.OHCor_TDIS_TCON=rd(x, 100); return true;}else return false;	// сотые градуса
     } else if(strcmp(var, eev_cDELTAT)==0){
-        if ((x>=0.0)&&(x<=25.0)) {_data.OHCor_TDIS_TCON_Thr=(int)(x*10.0+0.05); return true;}else return false;	// десятые градуса
+        if ((x>=0.0)&&(x<=25.0)) {_data.OHCor_TDIS_TCON_Thr=rd(x, 10); return true;}else return false;	// десятые градуса
     } else if(strcmp(var, eev_cDELTAC)==0){
-        if ((x>=0.0)&&(x<=25.0)) {_data.OHCor_TDIS_ADD=(int)(x*10.0+0.05); return true;}else return false;	// десятые градуса
+        if ((x>=0.0)&&(x<=25.0)) {_data.OHCor_TDIS_ADD=rd(x, 10); return true;}else return false;	// десятые градуса
     } else if(strcmp(var, eev_cKF)==0){
-    	if ((x>=0.0)&&(x<=10.0)) {_data.OHCor_K=(int)(x*1000.0+0.0005); return true;}else return false;	// тысячные
+    	if ((x>=0.0)&&(x<=10.0)) {_data.OHCor_K=rd(x, 1000); return true;}else return false;	// тысячные
     } else if(strcmp(var, eev_cOH_MIN)==0){
-        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatMin=(int)(x*100.0+0.005); return true;}else return false;	// сотые градуса
+        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatMin=rd(x, 100); return true;}else return false;	// сотые градуса
     } else if(strcmp(var, eev_cOH_MAX)==0){
-        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatMax=(int)(x*100.0)+0.005; return true;}else return false;	// сотые градуса
+        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatMax=rd(x, 100); return true;}else return false;	// сотые градуса
     } else if(strcmp(var, eev_cOH_START)==0){
-        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatStart=(int)(x*100.0)+0.005; return true;}else return false;	// сотые градуса
+        if ((x>=0.0)&&(x<=30.0)) {_data.OHCor_OverHeatStart=rd(x, 100); return true;}else return false;	// сотые градуса
     } else if(strcmp(var, eev_ERR_KP)==0){
-      if ((x>=0.0)&&(x<=10.0)) {_data.errKp=(int)(x*100.0+0.005); return true;}else return false;	// сотые 
+      if ((x>=0.0)&&(x<=10.0)) {_data.errKp=rd(x, 100); return true;}else return false;	// сотые
     } else if(strcmp(var, eev_SPEED)==0){
       if ((x>=0)&&(x<=120)) { if(_data.speedEEV!=x) _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
     } else if(strcmp(var, eev_PRE_START_POS)==0){
@@ -2134,11 +2141,13 @@ static inline void postTransmission() // Функция вызываемая П�
 // Инициализация Modbus без проверки связи связи
 int8_t devModbus::initModbus()    
      {
-      #ifdef PIN_MODBUS_RSE
+#ifdef MODBUS_PORT_NUM
         flags=0x00;
         SETBIT1(flags,fModbus);                                                      // модбас присутствует
+	#ifdef PIN_MODBUS_RSE
         pinMode(PIN_MODBUS_RSE , OUTPUT);                                            // Подготовка управлением полудуплексом
         digitalWriteDirect(PIN_MODBUS_RSE , LOW);
+	#endif
         MODBUS_PORT_NUM.begin(MODBUS_PORT_SPEED,MODBUS_PORT_CONFIG);                 // SERIAL_8N1 - настройки по умолчанию
         RS485.begin(1,MODBUS_PORT_NUM);                                              // Привязать к сериал
         // Назначение функций обратного вызова
@@ -2146,11 +2155,11 @@ int8_t devModbus::initModbus()
         RS485.postTransmission(postTransmission);
         RS485.idle(idle);
         err=OK;                                                                      // Связь есть
-       #else
+#else
         flags=0x00;
         SETBIT0(flags,fModbus);                                                     // модбас отсутвует
         err=ERR_NO_MODBUS;
-       #endif 
+#endif
         return err;                                                                 
      }
      
