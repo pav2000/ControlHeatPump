@@ -17,8 +17,8 @@
  * GNU General Public License for more details.
  */
 //
-#ifndef Graphics_h
-#define Graphics_h
+#ifndef Statistics_h
+#define Statistics_h
 #include "Constant.h"
 
 #define STAT_PERIOD		60	// Период обновления статистики, сек
@@ -39,7 +39,9 @@ enum {
 	OBJ_Sun,
 	OBJ_powerCO,
 	OBJ_powerGEO,
-	OBJ_power220
+	OBJ_power220,
+	OBJ_COP_Compressor,
+	OBJ_COP_Full
 };
 
 enum {
@@ -68,8 +70,8 @@ Stats_Data Stats_data[] = {
 							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
 							{ 0, 1, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
 							{ 0, 1, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
-							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_MIN, 0 },
-							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_AVG, 0 },
+							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
+							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_AVG, OBJ_COP_Full },
 							{ 0, 10, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
 							{ 0, 10, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
 							{ 0, 10, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
@@ -94,8 +96,10 @@ private:
 	void UpdateValue(int32_t *value, uint8_t type);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint32_t previous;
+	uint32_t previous_energy;
 };
 
 Statistics Stats;
 
 #endif
+

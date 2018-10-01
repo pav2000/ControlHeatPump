@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU General Public License for more details.
  */
-#include "Graphics.h"
+#include "Statistics.h"
 #include "HeatPump.h"
 
 
@@ -24,6 +24,7 @@ void Statistics::Init()
 {
 	counts = 0;
 	previous = rtcSAM3X8.unixtime();
+	previous_energy = millis();
 }
 
 // Обновить статистику, раз в период
@@ -47,14 +48,27 @@ void Statistics::Update()
 	}
 }
 
-// Обновить статистику по энергии и COP, вызывается часто
+// Обновить статистику по энергии (кВт*ч) и COP, вызывается часто
 void Statistics::UpdateEnergy()
 {
+	uint32_t tm = millis() - previous_energy;
+	int32_t newval;
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Power:
 			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
-				//newval = HP.sFrequency[FLOWCON].Cumulative / (3600 / BASE_TIME_READ);
+				newval = (int32_t)HP.powerCO * tm / 3600; // в мВт
+			} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
+				newval = (int32_t)HP.powerGEO * tm / 3600; // в мВт
+			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
+				newval = (int32_t)HP.power220 * tm / 3600; // в мВт
+			}
+			break;
+		case STATS_OBJ_COP:
+			if(Stats_data[i].number == OBJ_COP_Compressor) {
+				newval = HP.COP;
+			} else if(Stats_data[i].number == OBJ_COP_Full) {
+				newval = HP.fullCOP;
 			}
 			break;
 		}

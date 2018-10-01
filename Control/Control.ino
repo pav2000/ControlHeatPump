@@ -50,19 +50,19 @@
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
-#include "Graphics.h"
+#include "Statistics.h"
 
 // Мютексы блокираторы железа
-SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
-SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
-SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
-SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
-SemaphoreHandle_t xLoadingWebSemaphore;               // Семафор загрузки веб морды в spi память
-static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
-static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
+SemaphoreHandle_t xModbusSemaphore;                 // Семафор Modbus, инвертор запас на счетчик
+SemaphoreHandle_t xWebThreadSemaphore;              // Семафор потоки вебсервера,  деление сетевой карты
+SemaphoreHandle_t xI2CSemaphore;                    // Семафор шины I2C, часы, память, мастер OneWire
+SemaphoreHandle_t xSPISemaphore;                    // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xLoadingWebSemaphore;             // Семафор загрузки веб морды в spi память
+uint16_t lastErrorFreeRtosCode;                     // код последней ошибки операционки нужен для отладки
+uint32_t startSupcStatusReg;                        // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
 
-#if defined(W5500_ETHERNET_SHIELD)                    // Задание имени чипа для вывода сообщений
+#if defined(W5500_ETHERNET_SHIELD)                  // Задание имени чипа для вывода сообщений
   const char nameWiznet[] ={"W5500"};
 #elif defined(W5200_ETHERNET_SHIELD)
   const char nameWiznet[] ={"W5200"};
@@ -82,8 +82,8 @@ void radio_sensor_send(char *cmd);
 #endif
 
 #ifdef MQTT                                 // признак использования MQTT
-#include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
-PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+#include <PubSubClient.h>                   // передаланная под многозадачность  http://knolleary.net
+PubSubClient w5200_MQTT(ethClient);  	    // клиент MQTT
 #endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
@@ -408,21 +408,25 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
-   journal.jprintf("4. Init and checking SD card . . .\n");
+   journal.jprintf("4. Init SD card . . .\n");
    HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    //_delay(100);
 
 // 8. Инициализация spi флеш диска
-  journal.jprintf("5. Init and checking SPI flash disk . . .\n");
+#ifdef SPI_FLASH
+  journal.jprintf("5. Init SPI flash disk . . .\n");
   HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
+#else
+  journal.jprintf("5. No SPI flash in config.\n");
+#endif
 
 // 9. Чтение ЕЕПРОМ
    journal.jprintf("6. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-	  journal.jprintf("I2C memory is empty, use default settings\n");
+	  journal.jprintf("I2C memory is empty, a default settings will be used!\n");
 	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
@@ -918,6 +922,7 @@ void vReadSensor(void *)
 #endif
 
 		HP.calculatePower();  // Расчет мощностей и СОР	}
+		Stats.UpdateEnergy();
 
 		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 

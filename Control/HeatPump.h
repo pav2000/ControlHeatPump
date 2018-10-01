@@ -414,7 +414,7 @@ class HeatPump
     float powerCO;                                          // Мощность системы отопления
     float powerGEO;                                         // Мощность системы GEO
     float power220;                                         // Мощность системы 220
-    int16_t fullCOP;                                        // Полный СОР  сотые 
+    int16_t fullCOP;                                        // Полный СОР сотые
     int16_t COP;                                            // Чистый COP сотые
     
     // Удаленные датчики

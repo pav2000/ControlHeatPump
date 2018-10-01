@@ -56,12 +56,10 @@ void HeatPump::initHeatPump()
   for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
   for(i=0;i<RNUMBER;i++) dRelay[i].initRelay(i);           // Инициализация реле
 
-  #ifdef I2C_EEPROM_64KB  
-     Stats.Init();                                           // Инициализовать статистику
-  #endif
-  #ifdef EEV_DEF
+  Stats.Init();                                            // Инициализовать статистику
+#ifdef EEV_DEF
   dEEV.initEEV();                                           // Инициализация ЭРВ
-  #endif
+#endif
 
   // Инициалаизация модбаса  перед частотником и счетчиком
   journal.jprintf("Init Modbus RTU via RS485:");  
@@ -2808,7 +2806,7 @@ void HeatPump::vUpdate()
 	case pHEAT:
 	case pCOOL:
 	case pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
-		journal.jprintf(" vUpdate: %d", get_modWork());
+		journal.jprintf(" vUpdate: %d\n", get_modWork());
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
@@ -3206,9 +3204,9 @@ switch ((int)get_State())  //TYPE_STATE_HP
          switch ((int)get_modWork())                                      // MODE_HP
          {
          case  pOFF: return (char*)strRusPause;      break;                // 0 Пауза
-         case  pHEAT: return (char*)"Нагрев+";        break;               // 1 Включить отопление
-         case  pCOOL: return (char*)"Заморозка+";     break;               // 2 Включить охлаждение
-         case  pBOILER: return (char*)"Нагрев ГВС+"; break;                // 3 Включить бойлер
+         case  pHEAT: return (char*)"Нагрев";        break;               // 1 Включить отопление
+         case  pCOOL: return (char*)"Заморозка";     break;               // 2 Включить охлаждение
+         case  pBOILER: return (char*)"Нагрев ГВС"; break;                // 3 Включить бойлер
          case  pNONE_H: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"Отопление";   break;  // 4 Продолжаем греть отопление
          case  pNONE_C: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
          case  pNONE_B: if (!(COMPRESSOR_IS_ON)) return (char*)strRusPause; else return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
@@ -3234,7 +3232,7 @@ switch ((int)get_State())  //TYPE_STATE_HP
          case  pOFF: return (char*)strEngPause;        break;            // 0 Выключить
          case  pHEAT: return (char*)"Pre-heat";        break;            // 1 Включить отопление
          case  pCOOL: return (char*)"Pre-cool";        break;            // 2 Включить охлаждение
-         case  pBOILER: return (char*)"Pre-boiler.";       break;        // 3 Включить бойлер
+         case  pBOILER: return (char*)"Pre-boiler";    break;            // 3 Включить бойлер
          case  pNONE_H: if (!(COMPRESSOR_IS_ON)) return (char*)strEngPause; else return (char*)"Heating";   break;                   // 4 Продолжаем греть отопление
          case  pNONE_C: if (!(COMPRESSOR_IS_ON)) return (char*)strEngPause; else return (char*)"Cooling";   break;                   // 5 Продолжаем охлаждение
          case  pNONE_B: if (!(COMPRESSOR_IS_ON)) return (char*)strEngPause; else return (char*)"Boiler";    break;                   // 6 Продолжаем греть бойлер
