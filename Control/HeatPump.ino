@@ -993,7 +993,7 @@ void  HeatPump::updateChart()
  #ifdef USE_ELECTROMETER_SDM 
     if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
     if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
-    if(dSDM.ChartPower.get_present())   power220=dSDM.get_Power();  dSDM.ChartPower.addPoint(power220); 
+    if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint(power220);
   //  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);    
     if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
  #endif
@@ -3446,11 +3446,11 @@ void HeatPump::calculatePower()
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
 if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 #endif	
-
 	COP = dFC.get_power();
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
-	if(dSDM.get_Power() != 0) fullCOP = (int16_t) ((powerCO / dSDM.get_Power() * 100)); else fullCOP = 0; // в сотых долях !!!!!!
+	power220 = dSDM.get_Power();
+	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 #endif
 
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 

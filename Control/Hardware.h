@@ -101,7 +101,7 @@ class sensorADC
     
   private:
     int16_t lastPress;                                   // последнее считанное давление с датчика
-    int16_t Press;                                       // давление датчика (обработанная)
+    int16_t Press;                                       // давление датчика (обработанное) в сотых бара
     struct {     // Save GROUP, firth number
    	uint8_t number;										 // Номер
     int16_t zeroPress;                                   // отсчеты АЦП при нуле датчика
@@ -716,15 +716,15 @@ class devSDM
       int32_t loadFromBuf(int32_t adr,byte *buf);      // Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
       uint16_t get_crc16(uint16_t crc);                // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
        // Графики из счетчика
-      statChart ChartVoltage;                              // Статистика по напряжению
-      statChart ChartCurrent;                              // Статистика по току
+      statChart ChartVoltage;                          // Статистика по напряжению
+      statChart ChartCurrent;                          // Статистика по току
       statChart ChartPower;                            // Статистика по Полная мощность
   private:
       int8_t  err;                                     // ошибка стесчика (работа)
       uint16_t numErr;                                 // число ошибок чтение по модбасу
       byte flags;                                      // флаги  0 - наличие счетчика,
        // Управление по 485
-      float Voltage;                                   // Напряжение
+      float Voltage;                                   // Напряжение в вольтах
       float Current;								   // Ток
       float AcPower;                                   // активная мощность
       float AcEnergy;                                  // Суммарная активная энергия

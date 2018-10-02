@@ -844,15 +844,17 @@ void vReadSensor(void *)
 #ifdef USE_ELECTROMETER_SDM
 	static unsigned long readSDM = 0;
 #endif
-//    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР
-	static uint32_t ttime;                                                 // новое время
-	static uint32_t oldTime;                                               // старое вермя
-	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
-	static uint8_t prtemp = 0;
+	static uint32_t ttime;
+	static uint32_t oldTime = millis();
+	static uint8_t  prtemp = 0;
 	
 	for(;;) {
 		int8_t i;
 		WDT_Restart(WDT);
+
+		ttime = millis();
+
+		journal.printf("T: %u\n", ttime);
 
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
@@ -868,7 +870,6 @@ void vReadSensor(void *)
 #endif
 #endif     // не DEMO
 		}
-		ttime = xTaskGetTickCount();
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 	#ifdef USE_UPS
@@ -879,7 +880,7 @@ void vReadSensor(void *)
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
-		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
+		vReadSensor_delay8ms((cDELAY_DS1820 - (millis() - ttime)) / 8); 	// Ожидать время преобразования
 
 		if(OW_scan_flags == 0) {
 			uint8_t flags = 0;
@@ -887,7 +888,7 @@ void vReadSensor(void *)
 				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) {
 					if(HP.sTemp[i].Read() == OK) flags |= HP.sTemp[i].get_setup_flags();
 				}
-				_delay(2);     												// пауза
+				_delay(1);     												// пауза
 			}
 			int32_t temp;
 			if(GETBIT(flags, fTEMP_as_TIN_average)) { // Расчет средних датчиков для TIN
@@ -914,17 +915,17 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
+			if ((HP.dSDM.get_present())&&(millis()-readSDM>SDM_TIME_READ))
 			{
-				readSDM=xTaskGetTickCount();
+				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров
 			}
 #endif
 
-		HP.calculatePower();  // Расчет мощностей и СОР	}
-		Stats.UpdateEnergy();
+		HP.calculatePower();  // Расчет мощностей и СОР
+		Stats.Update();
 
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
+		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 2 / 8);     // 1. Ожидать время нужное для цикла чтения
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
@@ -932,18 +933,14 @@ void vReadSensor(void *)
 		HP.dEEV.set_Overheat(HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 #endif
 
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
-
 		//  Опрос состояния инвертора
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if((HP.dFC.get_present()) && (xTaskGetTickCount() - readFC > FC_TIME_READ)) {
-				readFC = xTaskGetTickCount();
+			if((HP.dFC.get_present()) && (millis() - readFC > FC_TIME_READ)) {
+				readFC = millis();
 				HP.dFC.get_readState();
 			}
-
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
@@ -956,13 +953,14 @@ void vReadSensor(void *)
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
-			if((oldTime = rtcSAM3X8.unixtime()) - countI2C > TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
+			if(millis() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
 			{
-				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				rtcSAM3X8.set_clock(ttime);                		 // Установить внутренние часы по i2c
-				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
-				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
-				countI2C = ttime;                               // запомнить время
+				oldTime = rtcSAM3X8.unixtime();
+				uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
+				rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
+				HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
+				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+				oldTime = millis();
 			}
 		}
 		// Проверка и сброс митекса шины I2C
@@ -979,7 +977,7 @@ void vReadSensor(void *)
 						(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
 				if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
 						(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
-			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + 2 * TNUMBER) / 100; // в 0.1 сек
+			} else countTEMP += TIME_READ_SENSOR / 100; // в 0.1 сек
 		}
 		static uint8_t last_life_h = 255;
 		if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
@@ -991,22 +989,24 @@ void vReadSensor(void *)
 			last_life_h = hour;
 		}
 		////
+		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
+		ttime = TIME_READ_SENSOR - (millis() - ttime);
+		if(ttime && ttime <= 8) _delay(ttime);
 
 	}  // for
 	vTaskDelete( NULL);
 }
 
 // Вызывается во время задержек в задаче чтения датчиков
-void vReadSensor_delay10ms(int16_t msec)
+void vReadSensor_delay8ms(int16_t msec)
 {
 	if(msec <= 0) msec = 1;
 	while(msec--) {
-		_delay(10);
-#ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН нажимать надо более 4 сек  по хорошему надо это переделать - переместить в более быстрыю задачу
-		static boolean Key1_ON = HIGH;                                   // кнопка вкл/вкл дребез подавление
+		_delay(8);
+#ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
+		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
 			_delay(100);
-			//if(msec > 100) msec -= 100; else msec = 0;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
