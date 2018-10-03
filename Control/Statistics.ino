@@ -28,7 +28,18 @@ void Statistics::Init()
 // Сбросить накопленные промежуточные значения
 void Statistics::Reset()
 {
-	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) Stats_data[i].value = 0;
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		switch(Stats_data[i].type){
+		case STATS_TYPE_MIN:
+			Stats_data[i].value = 2147483647;
+			break;
+		case STATS_TYPE_MAX:
+			Stats_data[i].value = -2147483647;
+			break;
+		default:
+			Stats_data[i].value = 0;
+		}
+	}
 	counts = 0;
 	previous = millis();
 }
@@ -37,6 +48,7 @@ void Statistics::Reset()
 void Statistics::Update()
 {
 	uint32_t tm = millis() - previous;
+	previous = millis();
 	int32_t newval = 0;
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].object) {
@@ -68,7 +80,7 @@ void Statistics::Update()
 			break;
 		case STATS_OBJ_Time:
 			if(Stats_data[i].number == OBJ_Compressor && HP.get_startCompressor() && !HP.get_stopCompressor()) break;
-			if(Stats_data[i].number == OBJ_Sun && GETBIT(HP.flags, fHP_SunActive)) break;
+			else if(Stats_data[i].number == OBJ_Sun && GETBIT(HP.flags, fHP_SunActive)) break;
 		default: continue;
 		}
 		if(Stats_data[i].divider > 0) newval /= Stats_data[i].divider; else newval *= abs(Stats_data[i].divider);
@@ -90,14 +102,14 @@ void Statistics::Update()
 	}
 	counts++;
 
-	if(counts > 30) Save();
+	if(counts % 30 == 0) Save();
 
 }
 
 // Записать статистику на SD
 void Statistics::Save()
 {
-	journal.printf("Stats: \n");
+	journal.printf("Stats(%d): \n", counts);
 
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		journal.printf("%d: %d.%d.%d = %d\n", i, Stats_data[i].object, Stats_data[i].type, Stats_data[i].number, Stats_data[i].value);
@@ -105,5 +117,63 @@ void Statistics::Save()
 
 	if(HP.get_fSD()) {
 
+	}
+}
+
+void Statistics::ReturnFileHeader(char *ret)
+{
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		switch(Stats_data[i].object) {
+		case STATS_OBJ_Temp:
+			strcat(ret, "T"); // ось температур
+			strcat(ret, HP.sTemp[Stats_data[i].number].get_note());
+			break;
+		case STATS_OBJ_Press:
+			strcat(ret, "P"); // ось давление
+			strcat(ret, HP.sADC[Stats_data[i].number].get_note());
+			break;
+		case STATS_OBJ_Voltage:
+			strcat(ret, "V"); // ось напряжение
+			strcat(ret, "Напряжение");
+			break;
+		case STATS_OBJ_Power:
+			strcat(ret, "W"); // ось мощность
+			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
+				strcat(ret, "Мощность отопления"); // Вт
+			} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
+				strcat(ret, "Мощность геоконтура"); // Вт
+			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
+				strcat(ret, "Потребление"); // Вт
+			}
+			break;
+		case STATS_OBJ_COP:
+			strcat(ret, "C"); // ось COP
+			if(Stats_data[i].number == OBJ_COP_Compressor) {
+				strcat(ret, "КОП");
+			} else if(Stats_data[i].number == OBJ_COP_Full) {
+				strcat(ret, "Полный КОП");
+			}
+			break;
+		case STATS_OBJ_Time:
+			strcat(ret, "M"); // ось часы
+			if(Stats_data[i].number == OBJ_Compressor) {
+				strcat(ret, "Моточасы"); break;
+			} else if(Stats_data[i].number == OBJ_Sun) {
+				strcat(ret, "СК время"); break;
+			}
+		default: continue;
+		}
+		switch(Stats_data[i].type){
+		case STATS_TYPE_MIN:
+			strcat(ret, " - Мин.");
+			break;
+		case STATS_TYPE_MAX:
+			strcat(ret, " - Макс.");
+			break;
+		case STATS_TYPE_AVG:
+			strcat(ret, " - Сред.");
+			break;
+		}
 	}
 }

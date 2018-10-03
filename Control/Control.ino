@@ -853,9 +853,6 @@ void vReadSensor(void *)
 		WDT_Restart(WDT);
 
 		ttime = millis();
-
-		journal.printf("T: %u\n", ttime);
-
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);
@@ -998,10 +995,10 @@ void vReadSensor(void *)
 }
 
 // Вызывается во время задержек в задаче чтения датчиков
-void vReadSensor_delay8ms(int16_t msec)
+void vReadSensor_delay8ms(int16_t ms8)
 {
-	if(msec <= 0) msec = 1;
-	while(msec--) {
+	if(ms8 <= 0) ms8 = 1;
+	while(ms8--) {
 		_delay(8);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
 		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление

@@ -531,7 +531,7 @@ boolean initSpiDisk(boolean show)
 {
 	unsigned char id[8];
 	if(!SerialFlash.begin(PIN_SPI_CS_FLASH)) {
-		if(show) Serial.println(" No SPI flash chip.\n");
+		if(show) journal.jprintf(" SPI flash not found!\n");
 		return false;
 	} else {
 		if(show) {

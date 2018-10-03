@@ -259,7 +259,6 @@ const uint16_t  defaultPort=80;
 #define DEFAULT_ADR_NARMON "narodmon.ru" // Адрес сервера народного мониторинга
 #define TIME_NARMON       (5*60)         // (сек) Период отправки на народный монитоинг (константа) меньше 5 минут не ставить
 
-
 // ------------------- HEAP ----------------------------------
 #define PASS_LEN          10             // Максимальная длина пароля для входа на контроллер
 #define NAME_USER         "user"         // имя пользователя
@@ -270,6 +269,13 @@ const uint16_t  defaultPort=80;
 #define ATOF_ERROR       -9876543.00     // Код ошибки преобразования строки во флоат
 #define K_VCC_POWER       338.2          // Коэффициент пересчета ацп в вольты для контроля питания (учет опоры) (UT71E результататы ЗИП 284.02 ТН 338.2)
 #define HEAT_CAPACITY     4174           // теплоемкость жидкости в конутре по дефолту при 30 градусах [Cp, Дж/(кг·град)]
+
+//----------------------- WEB ----------------------------
+const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nContent-Type: ";
+const char WEB_HEADER_TEXT_ATTACH[] 	= "text/plain\r\nContent-Disposition: attachment; filename=\"";
+const char WEB_HEADER_BIN_ATTACH[] 		= "application/x-binary\r\nContent-Disposition: attachment; filename=\"";
+const char WEB_HEADER_TXT_KEEP[] 		= "text/html\r\nConnection: keep-alive";
+const char WEB_HEADER_END[]				= "\r\n\r\n";
 
 // Константы регистров контроллера питания SOPC SAM3x ---------------------------------------
 // Регистр SMMR

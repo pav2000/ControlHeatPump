@@ -88,9 +88,6 @@ Stats_Data Stats_data[] = {
 #endif
 						};
 
-const char stats_filename[] = "stats_";
-const char stats_filename_ext[] = ".csv";
-
 class Statistics
 {
 public:
@@ -99,7 +96,7 @@ public:
 	void UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void Reset();							// Сбросить накопленные промежуточные значения
 	void Save();							// Записать статистику на SD
-
+	void ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 private:
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint32_t previous;
