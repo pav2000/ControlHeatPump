@@ -2786,7 +2786,10 @@ void HeatPump::vUpdate()
 	defrost();                                                          // Разморозка только для воздушных ТН
 #endif
 
+
+	uint8_t old_mw = Status.modWork;
 	Status.modWork = get_Work();                                         // определяем что делаем
+	if(old_mw != Status.modWork) command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 #ifdef DEBUG_MODWORK
 	save_DumpJournal(false);                                           // Вывод строки состояния
 #endif
@@ -2802,13 +2805,11 @@ void HeatPump::vUpdate()
 				vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
 				journal.jprintf(" %s: Task vUpdatePump RPUMPO on . . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
 			}
-			command_completed = rtcSAM3X8.unixtime();
 		}
 		break;
 	case pHEAT:
 	case pCOOL:
 	case pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
-		journal.jprintf(" vUpdate: %d\n", get_modWork());
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
@@ -2817,7 +2818,6 @@ void HeatPump::vUpdate()
 		}
 		configHP(get_modWork());                                 // Конфигурируем насосы
 		compressorON(get_modWork());                             // Включаем компрессор
-		command_completed = rtcSAM3X8.unixtime();
 		break;
 	case pNONE_H:
 	case pNONE_C:

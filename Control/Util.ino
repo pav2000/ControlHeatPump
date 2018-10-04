@@ -525,10 +525,12 @@ boolean initSD(void)
 	SPI_switchW5200();
 	return true;
 }
+
 // Инициализация SPI диска, параметр true - вывод инфо в журнал false молча проверяем состояние
 // Возврат true - если успешно, false - диск не рабоатет
 boolean initSpiDisk(boolean show)
 {
+#ifdef SPI_FLASH
 	unsigned char id[8];
 	if(!SerialFlash.begin(PIN_SPI_CS_FLASH)) {
 		if(show) journal.jprintf(" SPI flash not found!\n");
@@ -545,7 +547,9 @@ boolean initSpiDisk(boolean show)
 		}
 		return true;
 	}
+#endif
 }
+
 // base64 -хеш функция ------------------------------------------------------------------------------------------------
 /* Copyright (c) 2013 Adam Rudd. */
 const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
