@@ -706,7 +706,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
 												content = content + '<tr id="get_profile-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
-												content = content + '<td><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
+												content = content + '<td nowrap><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											//document.getElementById(valueid + "-inputs").innerHTML = content2;

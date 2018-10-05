@@ -811,7 +811,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
-			#ifdef TRTOUT
+			#ifdef TRTOOUT
     			strcat(strReturn,"0");
 			#else
     			strcat(strReturn,"1");
@@ -1109,13 +1109,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
         
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
-        
         #endif
-       
+
         #ifdef  FLOWCON 
 	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
-         
+
+        strcat(strReturn,"Статистика за день:||"); Stats.ReturnFileString(strReturn); strcat(strReturn,";");
+
         ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo
        

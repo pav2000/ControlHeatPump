@@ -24,7 +24,7 @@
 			<input id="get_profile-id_profile2" type="submit" value="Изменить номер *"  onclick="setParam('get_Profile(ID_PROFILE)');">
 			<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'>
 		</h2>
-		* старый профиль с этим номером будет удален<br><br>
+		* старый профиль с этим номером при сохранении будет заменен<br><br>
 
 		<table>		
 		<tbody>
@@ -36,7 +36,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Использование профиля в списке</td>
+			<td>Использование профиля в списке (*)</td>
 			<td>
 				<input type="checkbox" name="get_profile-enable_profile" id="get_profile-enable_profile" onchange="setParam('get_Profile(ENABLE_PROFILE)');" >
 			</td>
@@ -51,7 +51,7 @@
 		<tr>
 			<td>Последнее редактирование</td>
 			<td>
-				<span id="get_profile-date_profile"></span><br/>CRC16=<span id="get_profile-crc16_profile"></span>
+				<span id="get_profile-date_profile"></span>
 			</td>
 		</tr>							
 	</tbody>

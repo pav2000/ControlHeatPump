@@ -8,7 +8,7 @@
 	<script type="text/javascript">
 		window.onload = function() {
 		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF)");
-		loadParam("get_optionHP(DONP),get_optionHP(DOFP),get_optionHP(DSRES),get_optionHP(DRST),get_optionHP(DRV),get_optionHP(),get_optionHP(DBSW),get_optionHP(DBOF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
+		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
 </head>
@@ -112,44 +112,44 @@
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-donp">
-				<input type="submit" value=">" onclick="setParam('get_optionHP(DONP)');" >
+				<input type="number" id="get_optionhp-delay_on_pump">
+				<input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка выключения насосов после выключения компрессора (сек.) [0...900]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-dofp"> <input type="submit" value=">" onclick="setParam('get_optionHP(DOFP)');" >
+				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-dsres"> <input type="submit" value=">" onclick="setParam('get_optionHP(DSRES)');" >
+				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.) [0...6000]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-drst"> <input type="submit" value=">" onclick="setParam('get_optionHP(DRST)');" >
+				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-drv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DRV)');" >
+				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Пауза после переключение ГВС (сек.) [0...1200]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-dbsw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DBSW)');" >
+				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');" >
 			</td>
 		</tr>	
 		<tr>
 			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.) [0...1200]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-dbof"> <input type="submit" value=">" onclick="setParam('get_optionHP(DBOF)');" >
+				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
 			</td>
 		</tr>
 

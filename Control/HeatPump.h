@@ -465,7 +465,6 @@ class HeatPump
     void configHP(MODE_HP conf);          // Концигурация 4-х, 3-х ходового крана и включение насосов
     void ChangesPauseTRV();               // "Интелектуальная пауза" для перекидывания на "ходу" 4-х ходового
     void defrost();                       // Все что касается разморозки воздушника
-    void setStatusRet(TYPE_RET_HP ret,uint32_t t); // Установить КОД сосояния и вывести его в консоль о текущем состоянии + пауза t сек
 
     void resetSettingHP();                // Функция сброса настроек охлаждения и отопления
     void relayAllOFF();                   // Все реле выключить
@@ -480,6 +479,7 @@ class HeatPump
     MODE_COMP UpdateBoiler();             // Итерация управления бойлером возвращает что делать компрессору
     void compressorON(MODE_HP mod);       // попытка включить компрессор  с учетом всех защит
     void compressorOFF();                 // попытка выключить компрессор  с учетом всех защит
+    boolean check_compressor_pause(MODE_HP mod); // проверка на паузу между включениями
     int8_t check_crc16_eeprom(int32_t addr, uint16_t size);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
     

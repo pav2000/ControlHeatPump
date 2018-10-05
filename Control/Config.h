@@ -52,6 +52,8 @@ enum TYPE_SENSOR
     #define CONFIG_NAME   "VictorUfa"                                 // Имя конфигурации
     #define CONFIG_NOTE   "Старт-стоп Компрессор скролл с ТРВ и РТО"  // Описание конфигурации
     #define HP_SCHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+	#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+	#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
   //  #define I2C_EEPROM_64KB                                         // В самосборе этого нет!!!!!! Использование памяти I2C для записи журнала.При коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0                                   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
@@ -444,6 +446,8 @@ enum TYPE_SENSOR
     #define CONFIG_NAME   "Sheeny"          
     #define CONFIG_NOTE   "Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя"
     #define HP_SCHEME       1                                              // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+	#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+	#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 	#define NEXTION                             // Разрешить использование дисплея ЗАКОМЕНТИРУЙТЕ эту строку что бы не использовать дисплей
     #define DEFROST        // нужна разморозка
     #define RHEAT_POWER   2000                                            // Мощность электрокотла
@@ -883,6 +887,8 @@ enum TYPE_SENSOR
     #define CONFIG_NAME   "dimex"          
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"
     #define HP_SCHEME       1            // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+	#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+	#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 	#define NEXTION                             // Разрешить использование дисплея ЗАКОМЕНТИРУЙТЕ эту строку что бы не использовать дисплей
     #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
     #define SUPERBOILER_FC (35*100)   // частота супербойлера для частотника
@@ -1324,6 +1330,8 @@ enum TYPE_SENSOR
     #define CONFIG_NAME   "dobrinia"          
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"
     #define HP_SCHEME       1                                          // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+	#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+	#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 	#define NEXTION                             // Разрешить использование дисплея ЗАКОМЕНТИРУЙТЕ эту строку что бы не использовать дисплей
     #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
     #define SUPERBOILER_FC (90*100)   // частота супербойлера для частотника
@@ -1777,6 +1785,8 @@ enum TYPE_SENSOR
     #define CONFIG_NAME   "pav2000inv"                                        // Имя конфигурации
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"  // Описание конфигурации
     #define HP_SCHEME       2                                                 // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
+	#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+	#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 	#define NEXTION                                                           // Разрешить использование дисплея ЗАКОМЕНТИРУЙТЕ эту строку что бы не использовать дисплей
     uint8_t SPI_RATE 	 = 2;	                                              // делитель для SPI шины, (2=42MHz, 3=28MHz, 4=21MHz) единый для ВСЕХ устройств
 	#define SD_CLOCK		28	                                              // частота SPI для SD карты в МГц
@@ -2202,7 +2212,6 @@ enum TYPE_SENSOR
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
 	#define TEST_BOARD 				// Тестовая плата!
-//	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, асинхронник 3 фазы, ЭРВ, РТО, охлаждение, СК, ТП"
@@ -2254,11 +2263,15 @@ enum TYPE_SENSOR
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
 	#endif
 
-	#ifndef TEST_BOARD
-	 #define I2C_EEPROM_64KB		// Использование памяти I2C для записи журнала при коментарии используется оперативка
-     #define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+	#ifdef TEST_BOARD
+		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+//    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 	#else
-	 #define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
+		#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
 	#endif
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа на шине I2C

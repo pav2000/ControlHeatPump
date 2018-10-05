@@ -41,6 +41,7 @@ void Statistics::Reset()
 		}
 	}
 	counts = 0;
+	day = rtcSAM3X8.get_days();
 	previous = millis();
 }
 
@@ -49,14 +50,19 @@ void Statistics::Update()
 {
 	uint32_t tm = millis() - previous;
 	previous = millis();
+	uint8_t d = rtcSAM3X8.get_days();
+	if(d != day) {
+		Save();
+		Reset();
+	}
 	int32_t newval = 0;
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Temp:
-			newval = HP.sTemp[Stats_data[i].number].get_Temp();
+			newval = HP.sTemp[Stats_data[i].number].get_Temp() / 10;
 			break;
 		case STATS_OBJ_Press:
-			newval = HP.sADC[Stats_data[i].number].get_Press();
+			newval = HP.sADC[Stats_data[i].number].get_Press() / 10;
 			break;
 		case STATS_OBJ_Voltage:
 			newval = HP.dSDM.get_Voltage();
@@ -69,7 +75,7 @@ void Statistics::Update()
 			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
 				newval = HP.power220; // Вт
 			} else continue;
-			if(Stats_data[i].type == STATS_TYPE_SUM || Stats_data[i].type == STATS_TYPE_AVG) newval = newval * tm / 36; // в мВт*100
+			if(Stats_data[i].type == STATS_TYPE_SUM || Stats_data[i].type == STATS_TYPE_AVG) newval = newval * tm / 3600; // в мВт
 			break;
 		case STATS_OBJ_COP:
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
@@ -83,7 +89,6 @@ void Statistics::Update()
 			else if(Stats_data[i].number == OBJ_Sun && GETBIT(HP.flags, fHP_SunActive)) break;
 		default: continue;
 		}
-		if(Stats_data[i].divider > 0) newval /= Stats_data[i].divider; else newval *= abs(Stats_data[i].divider);
 		switch(Stats_data[i].type){
 		case STATS_TYPE_MIN:
 			if(newval < Stats_data[i].value) Stats_data[i].value = newval;
@@ -101,15 +106,13 @@ void Statistics::Update()
 		}
 	}
 	counts++;
-
-	if(counts % 30 == 0) Save();
-
+	//if(counts % 30 == 0) Save();
 }
 
 // Записать статистику на SD
 void Statistics::Save()
 {
-	journal.printf("Stats(%d): \n", counts);
+/*	journal.printf("Stats(%d): \n", counts);
 
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		journal.printf("%d: %d.%d.%d = %d\n", i, Stats_data[i].object, Stats_data[i].type, Stats_data[i].number, Stats_data[i].value);
@@ -118,8 +121,10 @@ void Statistics::Save()
 	if(HP.get_fSD()) {
 
 	}
+	*/
 }
 
+// Возвращает файл с заголовками полей
 void Statistics::ReturnFileHeader(char *ret)
 {
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
@@ -174,6 +179,34 @@ void Statistics::ReturnFileHeader(char *ret)
 		case STATS_TYPE_AVG:
 			strcat(ret, " - Сред.");
 			break;
+		}
+	}
+}
+
+// Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
+void Statistics::ReturnFileString(char *ret)
+{
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].value;
+		switch(Stats_data[i].object) {
+		case STATS_OBJ_Temp:
+		case STATS_OBJ_Press:
+			_ftoa(ret, val / 10, 1);
+			break;
+		case STATS_OBJ_Voltage:
+			_ftoa(ret, val, 0);
+			break;
+		case STATS_OBJ_Power:
+			_ftoa(ret, val / 1000, 3);
+			break;
+		case STATS_OBJ_COP:
+			_ftoa(ret, val / 100, 2);
+			break;
+		case STATS_OBJ_Time:
+			_ftoa(ret, val / 60000, 1); // минуты
+			break;
+		default: continue;
 		}
 	}
 }

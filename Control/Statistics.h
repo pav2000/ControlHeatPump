@@ -56,35 +56,34 @@ enum {
 
 struct Stats_Data {
 	int32_t		value;			// Для среднего, макс единица: +-1491308
-	int8_t		divider;		// делитель значения, получаемого из класса объекта, отрицательное - умножить (1,10,100,-1,-10,-100)
 	uint8_t		object;			// STATS_OBJ_*
 	uint8_t		type;			// STATS_TYPE_*
 	uint8_t 	number;			// номер датчика
 };
 
 Stats_Data Stats_data[] = {
-							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_MIN, TOUT },
-							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
-							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
-							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
-							{ 0, 10, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
-							{ 0, 100, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
-							{ 0, 100, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
-							{ 0, 100, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
-							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
-							{ 0, 1, STATS_OBJ_COP, STATS_TYPE_AVG, OBJ_COP_Full },
-							{ 0, 1, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
-							{ 0, 1, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
-							{ 0, 1, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
-							{ 0, 1, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Compressor }
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_MIN, TOUT },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
+							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
+							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
+							{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG, OBJ_COP_Full },
+							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
+							{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
+							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
+							{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Compressor }
 #ifdef USE_SUN_COLLECTOR
-							,{ 0, 1, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Sun }
+							,{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Sun }
 #endif
 #ifdef PGEO
-							,{ 0, 1, STATS_OBJ_Press, STATS_TYPE_MIN, PGEO }
+							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, PGEO }
 #endif
 #ifdef POUT
-							,{ 0, 1, STATS_OBJ_Press, STATS_TYPE_MIN, POUT }
+							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, POUT }
 #endif
 						};
 
@@ -97,10 +96,11 @@ public:
 	void Reset();							// Сбросить накопленные промежуточные значения
 	void Save();							// Записать статистику на SD
 	void ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
+	void ReturnFileString(char *ret);		// Строка со значениями за день
 private:
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint32_t previous;
-
+	uint8_t	 day;
 };
 
 Statistics Stats;
