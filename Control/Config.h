@@ -2264,12 +2264,13 @@ enum TYPE_SENSOR
 	#endif
 
 	#ifdef TEST_BOARD
-		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
+		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
+		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
 		#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
 	#endif

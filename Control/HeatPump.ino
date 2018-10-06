@@ -2764,10 +2764,10 @@ void HeatPump::vUpdate()
 #endif
 
 
-	uint8_t old_mw = Status.modWork;
-	if(old_mw >= pNONE_H) old_mw -= pNONE_H - 1;
+//	uint8_t old_mw = Status.modWork;
+//	if(old_mw >= pNONE_H) old_mw -= pNONE_H - 1;
 	Status.modWork = get_Work();                                         // определяем что делаем
-	if(old_mw != (Status.modWork < pNONE_H ? Status.modWork : Status.modWork - (pNONE_H - 1))) command_completed = rtcSAM3X8.unixtime(); // поменялся режим
+//	if(old_mw != (Status.modWork < pNONE_H ? Status.modWork : Status.modWork - (pNONE_H - 1))) command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 #ifdef DEBUG_MODWORK
 	save_DumpJournal(false);                                           // Вывод строки состояния
 #endif
@@ -2783,6 +2783,7 @@ void HeatPump::vUpdate()
 				vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
 				journal.jprintf(" %s: Task vUpdatePump ON . . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
 			}
+			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
 		break;
 	case pHEAT:
@@ -2793,6 +2794,7 @@ void HeatPump::vUpdate()
 			startPump = false;                                     // Поставить признак останова задачи насос
 			vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
 			journal.jprintf(" %s: Task vUpdatePump OFF . . .\n", (char*) __FUNCTION__);
+			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
 		if(!check_compressor_pause(get_modWork())) {
 			configHP(get_modWork());                                 // Конфигурируем насосы
