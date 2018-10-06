@@ -35,12 +35,10 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.963 beta"        // Версия прошивки
+#define VERSION         "0.964 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
-#define DEBUG                               // В последовательный порт шлет сообщения в первую очередь ошибки
-#define DEBUG_MODWORK						// Вывод в консоль состояние HP при работе
 //#define LOG                               // В последовательный порт шлет лог веб сервера (логируются запросы)
 #define FAST_LIB                            // использование допиленной библиотеки езернета Обычно используется
 #define TIME_ZONE         3                 // поправка на часовой пояс по ДЕФОЛТУ
@@ -128,8 +126,8 @@ const uint16_t  defaultPort=80;
 #define TIME_CONTROL      (10*1000)        // мсек. Период управления тепловым насосом (цикл управления в режиме Гистерезис)
 #define TIME_EEV          (4*1000)         // мсек. Период управления ЭРВ (цикл управления)
 #define TIME_COMMAND      500              // мсек. Период разбора команд управления ТН (скорее пауза перед обработкой команды)
-#define TIME_I2C_UPDATE   (60*60)          // секунды Время обновления внутренних часов по I2С часам (если конечно нужно) каждый час 60*60
-#define TIME_MESSAGE_TEMP  300			   // 1/10 секунды, Проверка граничных температур для уведомлений
+#define TIME_I2C_UPDATE   (60*60)*1000     // мсек. Время обновления внутренних часов по I2С часам (если конечно нужно)
+#define TIME_MESSAGE_TEMP 300			   // 1/10 секунды, Проверка граничных температур для уведомлений
 #define TIME_LED_OK       1500             // Период мигания светодиода при ОК (мсек)
 #define TIME_LED_ERR      200              // Период мигания светодиода при ошибке (мсек).
 #define cDELAY_START_MESSAGE 60            // Задержка (сек) после старта на отправку сообщений
@@ -259,7 +257,6 @@ const uint16_t  defaultPort=80;
 #define DEFAULT_ADR_NARMON "narodmon.ru" // Адрес сервера народного мониторинга
 #define TIME_NARMON       (5*60)         // (сек) Период отправки на народный монитоинг (константа) меньше 5 минут не ставить
 
-
 // ------------------- HEAP ----------------------------------
 #define PASS_LEN          10             // Максимальная длина пароля для входа на контроллер
 #define NAME_USER         "user"         // имя пользователя
@@ -270,6 +267,13 @@ const uint16_t  defaultPort=80;
 #define ATOF_ERROR       -9876543.00     // Код ошибки преобразования строки во флоат
 #define K_VCC_POWER       338.2          // Коэффициент пересчета ацп в вольты для контроля питания (учет опоры) (UT71E результататы ЗИП 284.02 ТН 338.2)
 #define HEAT_CAPACITY     4174           // теплоемкость жидкости в конутре по дефолту при 30 градусах [Cp, Дж/(кг·град)]
+
+//----------------------- WEB ----------------------------
+const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nContent-Type: ";
+const char WEB_HEADER_TEXT_ATTACH[] 	= "text/plain\r\nContent-Disposition: attachment; filename=\"";
+const char WEB_HEADER_BIN_ATTACH[] 		= "application/x-binary\r\nContent-Disposition: attachment; filename=\"";
+const char WEB_HEADER_TXT_KEEP[] 		= "text/html\r\nConnection: keep-alive";
+const char WEB_HEADER_END[]				= "\r\n\r\n";
 
 // Константы регистров контроллера питания SOPC SAM3x ---------------------------------------
 // Регистр SMMR

@@ -525,25 +525,31 @@ boolean initSD(void)
 	SPI_switchW5200();
 	return true;
 }
+
 // Инициализация SPI диска, параметр true - вывод инфо в журнал false молча проверяем состояние
 // Возврат true - если успешно, false - диск не рабоатет
 boolean initSpiDisk(boolean show)
 {
-unsigned char id[8];	
-if (!SerialFlash.begin(PIN_SPI_CS_FLASH)) {if (show) Serial.println(" Unable to access SPI flash chip, use SPI disk block");return false;}
- else {
- 	  if (show) {
-	 	  SerialFlash.readID(id);
-	      journal.jprintf(" Manufacturer ID: 0x%02x\n",id[0]);
-	      journal.jprintf(" Memory type: 0x%02x\n",id[1]);
-	      journal.jprintf(" Capacity: 0x%02x\n",id[2]);
-	      journal.jprintf(" Chip size: %d bytes\n",SerialFlash.capacity(id));
-	      SerialFlash.readSerialNumber(id);
-	      journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n",id[0],id[1],id[2],id[3],id[4],id[5],id[6],id[7]);
-	 	  }
- 	  return true;
- 	  }
+#ifdef SPI_FLASH
+	unsigned char id[8];
+	if(!SerialFlash.begin(PIN_SPI_CS_FLASH)) {
+		if(show) journal.jprintf(" SPI flash not found!\n");
+		return false;
+	} else {
+		if(show) {
+			SerialFlash.readID(id);
+			journal.jprintf(" Manufacturer ID: 0x%02x\n", id[0]);
+			journal.jprintf(" Memory type: 0x%02x\n", id[1]);
+			journal.jprintf(" Capacity: 0x%02x\n", id[2]);
+			journal.jprintf(" Chip size: %d bytes\n", SerialFlash.capacity(id));
+			SerialFlash.readSerialNumber(id);
+			journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n", id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7]);
+		}
+		return true;
+	}
+#endif
 }
+
 // base64 -хеш функция ------------------------------------------------------------------------------------------------
 /* Copyright (c) 2013 Adam Rudd. */
 const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

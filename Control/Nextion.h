@@ -18,30 +18,28 @@
 #define __NEXTION_H__
 
 #include <Arduino.h>
-#include "Constant.h"                       // Вся конфигурация и константы проекта Должен быть первым !!!!
+#include "Constant.h"
 
-class Nextion{
- public:
+class Nextion {
+public:
   boolean init();
-  void init_display();
-  void Update();
-  void StatusLine();  
-  void set_need_refresh() { fPageID = true; };    // установить необходиmмость обновления страницы
-  void Listen();
-  boolean setComponentText(const char* component, char* txt);
+  void    init_display();
+  void    Update();
+  void	  set_need_refresh() { fUpdate = 2; };	// обновить дисплей
+  boolean check_incoming(void);
   void    readCommand();
   boolean sendCommand(const char* cmd);
-  boolean check_incoming(void);
+  boolean setComponentText(const char* component, char* txt);
+  void    set_dim(uint8_t dim);					// Установить яркость экрана
   void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outstrsize);
-  void    set_dim(uint8_t dim);
- private:
-  int8_t  PageID;                               // Текущая страница
-  boolean fPageID;                              // Признак смены страницы true
-  uint8_t DataAvaliable;
-  uint16_t StatusCrc;                            // Состояние ТН
-  uint8_t flags;
-  void StartON();
-  void getTargetTemp(char *rstr);               // Получить целевую температуру
+private:
+  int8_t   PageID;								// Текущая страница
+  uint8_t  fUpdate;								// Признак обновления: 0 - нет, 1 - штатно, 2 - обновить срочно
+  uint8_t  DataAvaliable;
+  uint16_t StatusCrc;
+  uint8_t  flags;
+  void    getTargetTemp(char *rstr);			// Получить целевую температуру
+  void    StatusLine();
 };
 #endif
 

@@ -24,10 +24,27 @@ const char *_HP_OFF_8859 = { "\xc2\xbd\x20\xd2\xeb\xda\xdb\xee\xe7\xd5\xdd\x0d\x
 const char *_xB0 = { "\xB0" }; // °
 #define COMM_END_B 0xFF
 const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
-char buffer[64];
-#define ntemp buffer
+
+#define NXTID_PAGE_MAIN		0x00
+#define NXTID_PAGE_MENU		0x01
+#define NXTID_PAGE_NETWORK	0x02
+#define NXTID_PAGE_SYSTEM	0x03
+#define NXTID_PAGE_SCHEME	0x04
+#define NXTID_PAGE_HEAT		0x05
+#define NXTID_PAGE_BOILER	0x06
+#define NXTID_PAGE_INFO		0x07
+#define NXTID_ONOFF			0x03
+#define NXTID_TEMP_PLUS		0x17
+#define NXTID_TEMP_MINUS	0x18
+#define NXTID_NEXT_MODE		0x1A
+#define NXTID_BOILER_ONOFF	0x14
+#define NXTID_BOILER_PLUS	0x0D
+#define NXTID_BOILER_MINUS	0x0E
 
 #define fSleep 1
+
+char buffer[64];
+#define ntemp buffer
 
 // первоначальная инициализация - страница 0
 boolean Nextion::init()
@@ -35,8 +52,8 @@ boolean Nextion::init()
 	DataAvaliable = 0;
 	flags = 0;
 	StatusCrc = 0;
-	PageID = 0;
-	fPageID = false;
+	fUpdate = 0;
+	PageID = NXTID_PAGE_MAIN;
 	NEXTION_PORT.begin(9600);
 	// Поднятие скорости обмена
 	//  sendCommand("baud=115200");
@@ -51,6 +68,7 @@ boolean Nextion::init()
 	if(timeout) {
 		while(NEXTION_PORT.available()) NEXTION_PORT.read();
 		DataAvaliable = 0;
+		fUpdate = 1;
 	} else {
 		journal.jprintf(" No response!\n");
 		return false;
@@ -165,15 +183,15 @@ void Nextion::readCommand()
 			if(len == 4 && buffer[3] == 0) { // event: release
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
-				if(cmd1 == 0x00 && cmd2 == 0x03) {  // событие нажатие кнопки вкл/выкл ТН
+				if(cmd1 == NXTID_PAGE_MAIN && cmd2 == NXTID_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
 					if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
 						if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART);
 						else HP.sendCommand(pSTOP);
 					}
-				} else if(cmd1 == 0x05) { // Изменение целевой температуры СО шаг изменения сотые градуса
-					if(cmd2 == 0x17 || cmd2 == 0x18) {
-						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == 0x17 ? 20 : -20) / 100.0, 1));
-					} else if(cmd2 == 0x1A) { // Переключение режимов отопления ТОЛЬКО если насос выключен
+				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
+					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
+						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == NXTID_TEMP_PLUS ? 20 : -20) / 100.0, 1));
+					} else if(cmd2 == NXTID_NEXT_MODE) { // Переключение режимов отопления ТОЛЬКО если насос выключен
 						if(!HP.IsWorkingNow()) {
 							HP.set_nextMode();  // выбрать следующий режим
 							switch((MODE_HP) HP.get_modeHouse()) {
@@ -206,21 +224,27 @@ void Nextion::readCommand()
 							}
 						}
 					}
-				} else if(cmd1 == 0x06 && cmd2 == 0x14) {                       // событие нажатие кнопки вкл/выкл ГВС
-					if(HP.get_BoilerON()) HP.set_BoilerOFF(); else HP.set_BoilerON();
-				} else if(cmd1 == 0x06) { // Изменение целевой температуры ГВС шаг изменения сотые градуса
-					if(cmd2 == 0x0D || cmd2 == 0x0E) {
-						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == 0x0D ? 100 : -100) / 100.0, 1));
+				} else if(cmd1 == NXTID_PAGE_BOILER) {
+					if(cmd2 == NXTID_BOILER_ONOFF) {                       // событие нажатие кнопки вкл/выкл ГВС
+						if(HP.get_BoilerON()) HP.set_BoilerOFF(); else HP.set_BoilerON();
+					} else if(cmd2 == NXTID_BOILER_PLUS || cmd2 == NXTID_BOILER_MINUS) {  // Изменение целевой температуры ГВС шаг изменения сотые градуса
+						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 100.0, 1));
 					}
 				}
 			}
 			break;
 		case 0x66:  // 	Current Page    // Произошла смена страницы
-			fPageID = true;
+			fUpdate = 2;
 			PageID = buffer[1];
 			break;
+		case 0x67:  // Touch Coordinate (awake)
+		case 0x68:  // Touch Coordinate (sleep)
+			break;
+		case 0x86:  // Auto Entered Sleep Mode
+			fUpdate = 0;
+			break;
 		case 0x87:   // выход из сна
-			fPageID = true;
+			fUpdate = 2;
 			break;
 		case 0x88:   // Power on
 			init_display();
@@ -231,19 +255,19 @@ void Nextion::readCommand()
 			_delay(10);
 		}
 	}
-	if(fPageID) Update();
+	if(fUpdate == 2) Update();
 }
 
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
-	if(!sendCommand("ref_stop")) return;      // Остановить обновление
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-		if(HP.get_startCompressor()) {
+		if(HP.get_startCompressor() && !HP.get_stopCompressor()) {
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("thsp=0");
 				sendCommand("sleep=0");
 				flags |= (1<<fSleep);
+				fUpdate = 2;
 			}
 		} else if(GETBIT(flags, fSleep)) {
 			flags &= ~(1<<fSleep);
@@ -256,8 +280,10 @@ void Nextion::Update()
 		}
 	}
 
+	if(fUpdate == 0) return;
+	//if(!sendCommand("ref_stop")) return;      // Остановить обновление
 	// 2. Вывод в зависмости от страницы
-	if(PageID == 0)  // Обновление данных 0 страницы "Главный экран"
+	if(PageID == NXTID_PAGE_MAIN)  // Обновление данных 0 страницы "Главный экран"
 	{
 		strcat(ftoa(ntemp, (float) HP.sTemp[TIN].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t0", ntemp);
@@ -273,7 +299,7 @@ void Nextion::Update()
 		setComponentText("t5", ntemp);
 		if(HP.IsWorkingNow()) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 		else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
-	} else if(PageID == 2)  // Обновление данных первой страницы "СЕТЬ"
+	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{
 		/*
 		 Использовать DHCP сервер  -web1
@@ -297,7 +323,7 @@ void Nextion::Update()
 		setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp)); ntemp[0] = '\0';
 		setComponentText("pas4", (char*) NAME_ADMIN);
 		setComponentText("pas5", HP.get_network((char*) net_PASSADMIN, ntemp));
-	} else if(PageID == 3)  // Обновление данных 3 страницы "Система"
+	} else if(PageID == NXTID_PAGE_SYSTEM)  // Обновление данных 3 страницы "Система"
 	{
 		setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
 		setComponentText("syst2", TimeIntervalToStr(HP.get_uptime(), ntemp));
@@ -310,7 +336,7 @@ void Nextion::Update()
 		Encode_UTF8_to_ISO8859_5(buffer, HP.get_lastErr(), sizeof(buffer)-1);
 		setComponentText("terr", buffer);
 
-	} else if(PageID == 4)  // Обновление данных 4 страницы "СХЕМА ТН"
+	} else if(PageID == NXTID_PAGE_SCHEME)  // Обновление данных 4 страницы "СХЕМА ТН"
 	{
 		/*
 		 темп на улице - tout
@@ -343,7 +369,7 @@ void Nextion::Update()
 #else
 		strcat(ftoa(ntemp,0.0/100.0,1),_xB0); setComponentText("tper", ntemp);
 #endif
-	} else if(PageID == 5)  // Обновление данных 5 страницы "Отопление/Охлаждение"
+	} else if(PageID == NXTID_PAGE_HEAT)  // Обновление данных 5 страницы "Отопление/Охлаждение"
 	{
 		/*
 		 установленная Т - tust
@@ -429,7 +455,7 @@ void Nextion::Update()
 					break;
 		} // switch ((MODE_HP)HP.get_modeHouse() )
 
-	} else if(PageID == 6)  // Обновление данных 6 страницы "ГВС"
+	} else if(PageID == NXTID_PAGE_BOILER)  // Обновление данных 6 страницы "ГВС"
 	{
 		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("tboiler", ntemp);
@@ -442,15 +468,15 @@ void Nextion::Update()
 		if(HP.get_BoilerON()) sendCommand("gvson.val=1");    // Кнопка включения ГВС в положение ВКЛ
 		else sendCommand("gvson.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ
 
-	} else if(PageID == 7) { // Обновление данных 7 страницы "О контролллере"
+	} else if(PageID == NXTID_PAGE_INFO) { // Обновление данных 7 страницы "О контролллере"
 		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NAME, sizeof(buffer)-1);
 		setComponentText("t1", buffer);
 		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NOTE, sizeof(buffer)-1);
 		setComponentText("t2", buffer);
 	}
 	StatusLine();
-	sendCommand("ref_star");    // Восстановить обновление
-	fPageID = false;
+	//sendCommand("ref_star");    // Восстановить обновление
+	fUpdate = 1;
 }
 
 // Показ строки статуса в зависимости от состояния ТН
@@ -460,7 +486,7 @@ void Nextion::StatusLine()
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
 	uint16_t newcrc = !StatusCrc;
-	if(!fPageID) {
+	if(fUpdate == 1) {
 		newcrc = calulate_crc16((uint8_t*)tm, 5);
 		newcrc = _crc16(newcrc, HP.get_errcode());
 		newcrc = _crc16(newcrc, HP.get_modeHouse());
@@ -478,7 +504,7 @@ void Nextion::StatusLine()
 		} else {
 			sendCommand("vis fault,1");
 			sendCommand("vis options,0");
-			if(PageID == 0) {
+			if(PageID == NXTID_PAGE_MAIN) {
 				Encode_UTF8_to_ISO8859_5(ntemp, "Ошибка", sizeof(ntemp)-1);
 				_itoa(HP.get_errcode(), ntemp);
 				setComponentText("fault", ntemp);

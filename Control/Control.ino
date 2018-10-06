@@ -50,19 +50,19 @@
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
-#include "Graphics.h"
+#include "Statistics.h"
 
 // Мютексы блокираторы железа
-SemaphoreHandle_t xModbusSemaphore;                   // Семафор Modbus, инвертор запас на счетчик
-SemaphoreHandle_t xWebThreadSemaphore;                // Семафор потоки вебсервера,  деление сетевой карты
-SemaphoreHandle_t xI2CSemaphore;                      // Семафор шины I2C, часы, память, мастер OneWire
-SemaphoreHandle_t xSPISemaphore;                      // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
-SemaphoreHandle_t xLoadingWebSemaphore;               // Семафор загрузки веб морды в spi память
-static uint16_t lastErrorFreeRtosCode;                // код последней ошибки операционки нужен для отладки
-static uint32_t startSupcStatusReg;                   // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
+SemaphoreHandle_t xModbusSemaphore;                 // Семафор Modbus, инвертор запас на счетчик
+SemaphoreHandle_t xWebThreadSemaphore;              // Семафор потоки вебсервера,  деление сетевой карты
+SemaphoreHandle_t xI2CSemaphore;                    // Семафор шины I2C, часы, память, мастер OneWire
+SemaphoreHandle_t xSPISemaphore;                    // Семафор шины SPI  сетевая карта, память. SD карта // пока не используется
+SemaphoreHandle_t xLoadingWebSemaphore;             // Семафор загрузки веб морды в spi память
+uint16_t lastErrorFreeRtosCode;                     // код последней ошибки операционки нужен для отладки
+uint32_t startSupcStatusReg;                        // Состояние при старте SUPC Supply Controller Status Register - проверяем что с питание
 
 
-#if defined(W5500_ETHERNET_SHIELD)                    // Задание имени чипа для вывода сообщений
+#if defined(W5500_ETHERNET_SHIELD)                  // Задание имени чипа для вывода сообщений
   const char nameWiznet[] ={"W5500"};
 #elif defined(W5200_ETHERNET_SHIELD)
   const char nameWiznet[] ={"W5200"};
@@ -82,8 +82,8 @@ void radio_sensor_send(char *cmd);
 #endif
 
 #ifdef MQTT                                 // признак использования MQTT
-#include <PubSubClient.h>               // передаланная под многозадачность  http://knolleary.net
-PubSubClient w5200_MQTT(ethClient);  				// клиент MQTT
+#include <PubSubClient.h>                   // передаланная под многозадачность  http://knolleary.net
+PubSubClient w5200_MQTT(ethClient);  	    // клиент MQTT
 #endif
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
@@ -408,21 +408,25 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
 
 // 7. Инициализация СД карты и запоминание результата 3 попытки
-   journal.jprintf("4. Init and checking SD card . . .\n");
+   journal.jprintf("4. Init SD card . . .\n");
    HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
    digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
    //_delay(100);
 
 // 8. Инициализация spi флеш диска
-  journal.jprintf("5. Init and checking SPI flash disk . . .\n");
+#ifdef SPI_FLASH
+  journal.jprintf("5. Init SPI flash disk . . .\n");
   HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
+#else
+  journal.jprintf("5. No SPI flash in config.\n");
+#endif
 
 // 9. Чтение ЕЕПРОМ
    journal.jprintf("6. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-	  journal.jprintf("I2C memory is empty, use default settings\n");
+	  journal.jprintf("I2C memory is empty, a default settings will be used!\n");
 	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
@@ -504,22 +508,22 @@ if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOUL
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",150,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*150;//до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
+if (xTaskCreate(vUpdateCommand,"Command",160,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*160;// 200, до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",200,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;//до обрезки стеков было 350
+if (xTaskCreate(vUpdate,"updateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 
 #ifdef EEV_DEF
@@ -583,13 +587,13 @@ if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD
 HP.mRTOS=HP.mRTOS+64+4*100;  //100
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",150,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*150; //до обрезки стеков было 200
+if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
 vTaskSuspend(HP.xHandleUpdatePump); 
 
 // Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",150,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*150;  // до обрезки стеков было 200
+if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
 vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
@@ -840,16 +844,15 @@ void vReadSensor(void *)
 #ifdef USE_ELECTROMETER_SDM
 	static unsigned long readSDM = 0;
 #endif
-//    static unsigned long calcPower = 0;                                    // время расчета мощностей и СОР
-	static uint32_t ttime;                                                 // новое время
-	static uint32_t oldTime;                                               // старое вермя
-	static uint32_t countI2C = TimeToUnixTime(getTime_RtcI2C());           // Последнее врямя обновления часов
-	static uint8_t prtemp = 0;
+	static uint32_t ttime;
+	static uint32_t oldTime = millis();
+	static uint8_t  prtemp = 0;
 	
 	for(;;) {
 		int8_t i;
 		WDT_Restart(WDT);
 
+		ttime = millis();
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);
@@ -864,7 +867,6 @@ void vReadSensor(void *)
 #endif
 #endif     // не DEMO
 		}
-		ttime = xTaskGetTickCount();
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 	#ifdef USE_UPS
@@ -875,7 +877,7 @@ void vReadSensor(void *)
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
-		vReadSensor_delay10ms((cDELAY_DS1820 - (xTaskGetTickCount() - ttime)) / 10); 	// Ожитать время преобразования
+		vReadSensor_delay8ms((cDELAY_DS1820 - (millis() - ttime)) / 8); 	// Ожидать время преобразования
 
 		if(OW_scan_flags == 0) {
 			uint8_t flags = 0;
@@ -883,7 +885,7 @@ void vReadSensor(void *)
 				if((prtemp & (1<<HP.sTemp[i].get_bus())) == 0) {
 					if(HP.sTemp[i].Read() == OK) flags |= HP.sTemp[i].get_setup_flags();
 				}
-				_delay(2);     												// пауза
+				_delay(1);     												// пауза
 			}
 			int32_t temp;
 			if(GETBIT(flags, fTEMP_as_TIN_average)) { // Расчет средних датчиков для TIN
@@ -910,16 +912,17 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if ((HP.dSDM.get_present())&&(xTaskGetTickCount()-readSDM>SDM_TIME_READ))
+			if ((HP.dSDM.get_present())&&(millis()-readSDM>SDM_TIME_READ))
 			{
-				readSDM=xTaskGetTickCount();
+				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров
 			}
 #endif
 
-		HP.calculatePower();  // Расчет мощностей и СОР	}
+		HP.calculatePower();  // Расчет мощностей и СОР
+		Stats.Update();
 
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
+		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 2 / 8);     // 1. Ожидать время нужное для цикла чтения
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
@@ -927,18 +930,14 @@ void vReadSensor(void *)
 		HP.dEEV.set_Overheat(HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 #endif
 
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
-
 		//  Опрос состояния инвертора
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if((HP.dFC.get_present()) && (xTaskGetTickCount() - readFC > FC_TIME_READ)) {
-				readFC = xTaskGetTickCount();
+			if((HP.dFC.get_present()) && (millis() - readFC > FC_TIME_READ)) {
+				readFC = millis();
 				HP.dFC.get_readState();
 			}
-
-		vReadSensor_delay10ms(TIME_READ_SENSOR / 30);     // Ожидать время нужное для цикла чтения
 
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
@@ -951,13 +950,14 @@ void vReadSensor(void *)
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
-			if((oldTime = rtcSAM3X8.unixtime()) - countI2C > TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
+			if(millis() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
 			{
-				ttime = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				rtcSAM3X8.set_clock(ttime);                		 // Установить внутренние часы по i2c
-				HP.updateDateTime((int32_t) (ttime - oldTime));  // Обновить переменные времени с новым значением часов
-				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr()); // тут может быть засада переменные для хранения строк
-				countI2C = ttime;                               // запомнить время
+				oldTime = rtcSAM3X8.unixtime();
+				uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
+				rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
+				HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
+				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+				oldTime = millis();
 			}
 		}
 		// Проверка и сброс митекса шины I2C
@@ -974,7 +974,7 @@ void vReadSensor(void *)
 						(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
 				if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
 						(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
-			} else countTEMP += (cDELAY_DS1820 + TIME_READ_SENSOR + 2 * TNUMBER) / 100; // в 0.1 сек
+			} else countTEMP += TIME_READ_SENSOR / 100; // в 0.1 сек
 		}
 		static uint8_t last_life_h = 255;
 		if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
@@ -986,22 +986,24 @@ void vReadSensor(void *)
 			last_life_h = hour;
 		}
 		////
+		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
+		ttime = TIME_READ_SENSOR - (millis() - ttime);
+		if(ttime && ttime <= 8) _delay(ttime);
 
 	}  // for
 	vTaskDelete( NULL);
 }
 
 // Вызывается во время задержек в задаче чтения датчиков
-void vReadSensor_delay10ms(int16_t msec)
+void vReadSensor_delay8ms(int16_t ms8)
 {
-	if(msec <= 0) msec = 1;
-	while(msec--) {
-		_delay(10);
-#ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН нажимать надо более 4 сек  по хорошему надо это переделать - переместить в более быстрыю задачу
-		static boolean Key1_ON = HIGH;                                   // кнопка вкл/вкл дребез подавление
+	if(ms8 <= 0) ms8 = 1;
+	while(ms8--) {
+		_delay(8);
+#ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
+		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
 			_delay(100);
-			//if(msec > 100) msec -= 100; else msec = 0;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
@@ -1115,7 +1117,7 @@ void vReadSensor_delay10ms(int16_t msec)
 						 journal.jprintf(pP_TIME, "Profile changed to %d\n", _profile);
 						 if(frestart) HP.sendCommand(pRESUME);
 					 }
-				 } else if(HP.get_State() == pWAIT_HP) {
+				 } else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {
 					 HP.sendCommand(pRESUME);
 				 }
 			 }

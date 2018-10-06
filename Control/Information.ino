@@ -1028,17 +1028,16 @@ char *Profile::get_info(char *c,int8_t num)
   adr=adr+sizeof(crc16);                                                                         // вычислить адрес начала данных
 
     if (readEEPROM_I2C(adr, (byte*)&temp_prof, sizeof(temp_prof))) {strcat(c,"Error read profile");return c;}    // прочитать данные
-    // прочли формируем строку  сописанием
-    if (GETBIT(temp_prof.flags,fEnabled)) strcat(c,"+ ");else strcat(c,"- ");                         // отметка об использовании в списке
+    // прочли формируем строку с описанием
+    if(GETBIT(temp_prof.flags, fEnabled)) strcat(c,"* ");                         // отметка об использовании в списке
     strcat(c,temp_prof.name);
     strcat(c,":  ");
     strcat(c,temp_prof.note);
     strcat(c," [");
     DecodeTimeDate(temp_prof.saveTime,c);
-    strcat(c," ");
-    strcat(c,uint16ToHex(crc16temp));  
+//    strcat(c," ");
+//    strcat(c,uint16ToHex(crc16temp));
     strcat(c,"]");
-  //  Serial.print("num=");Serial.print(num); Serial.print(" : "); Serial.println(c);
     return c;
 }
 

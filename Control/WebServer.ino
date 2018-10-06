@@ -228,6 +228,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if((strcmp(filename, FILE_CHART) == 0) && (!card.exists(FILE_CHART))) { noCsvChart_SD(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
+	if(strncmp(filename, "stats_", 6) == 0) { get_statistics_file(thread, filename); return; }
 	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
 		sendConstRTOS(thread, HEADER_FILE_WEB);
 		filename += 8;
@@ -810,7 +811,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
-			#ifdef TRTOUT
+			#ifdef TRTOOUT
     			strcat(strReturn,"0");
 			#else
     			strcat(strReturn,"1");
@@ -955,12 +956,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
        strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа I2C с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
        strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа I2C с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
-       strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков + DELAY_DS1820 (мсек)|");_itoa(TIME_READ_SENSOR+cDELAY_DS1820,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков|");_itoa(TIME_READ_SENSOR,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_CONTROL|Период управления тепловым насосом (мсек)|");_itoa(TIME_CONTROL,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_EEV|Период управления ЭРВ (мсек)|");_itoa(TIME_EEV,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_WEB_SERVER|Период опроса web сервера (мсек)"); strcat(strReturn,nameWiznet);strcat(strReturn," (мсек)|");_itoa(TIME_WEB_SERVER,strReturn);strcat(strReturn,";");
        strcat(strReturn,"TIME_COMMAND|Период разбора команд управления ТН (мсек)|");_itoa(TIME_COMMAND,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (сек)|");_itoa(TIME_I2C_UPDATE,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (мсек)|");_itoa(TIME_I2C_UPDATE,strReturn);strcat(strReturn,";");
        // Датчики
        strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
        strcat(strReturn,"PRESS_FREQ|Частота опроса датчика давления (Гц)|");_itoa(PRESS_FREQ,strReturn);strcat(strReturn,";");
@@ -1108,13 +1109,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
         
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
-        
         #endif
-       
+
         #ifdef  FLOWCON 
 	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
-         
+
+        strcat(strReturn,"Статистика за день:||"); Stats.ReturnFileString(strReturn); strcat(strReturn,";");
+
         ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo
        
@@ -2434,7 +2436,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // ========================== P A R S E R  P O S T =================================
 const char Title[]          = {"Title: "};           // где лежит имя файла
 const char Length[]         = {"Content-Length: "};  // где лежит длина файла 
-const char emptyStr[]       = {"\r\n\r\n"};          // пустая строка после которой начинаются данные
+#define emptyStr			WEB_HEADER_END  		// пустая строка после которой начинаются данные
 const char SETTINGS[]       = {"*SETTINGS*"};        // Идентификатор передачи настроек (лежит в Title:)
 const char LOAD_START[]     = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды (лежит в Title:)
 const char LOAD_END[]       = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды (лежит в Title:)
