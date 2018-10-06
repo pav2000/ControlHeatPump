@@ -1799,7 +1799,6 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(" EEV init\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
-		dEEV.CorrectOverheatInit();
 #endif
 
 		journal.jprintf(" Charts clear and start\n");
@@ -2869,6 +2868,8 @@ void HeatPump::compressorON(MODE_HP mod)
 		else                                       { dEEV.set_EEV(dEEV.get_StartPos());   journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }      // Всегда начинать работу ЭРВ со стратовой позиции
 	}
 #endif
+
+	dEEV.CorrectOverheatInit();
 
 	// 3. Управление компрессором
 	if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок

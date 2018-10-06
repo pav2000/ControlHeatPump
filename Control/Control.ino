@@ -508,22 +508,22 @@ if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOUL
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",150,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*150;//до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",200,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
+if (xTaskCreate(vUpdateCommand,"Command",160,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*160;// 200, до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",200,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*200;//до обрезки стеков было 350
+if (xTaskCreate(vUpdate,"updateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 
 #ifdef EEV_DEF
@@ -587,13 +587,13 @@ if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD
 HP.mRTOS=HP.mRTOS+64+4*100;  //100
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",150,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*150; //до обрезки стеков было 200
+if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
 vTaskSuspend(HP.xHandleUpdatePump); 
 
 // Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",150,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*150;  // до обрезки стеков было 200
+if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
 vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
@@ -1117,7 +1117,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 						 journal.jprintf(pP_TIME, "Profile changed to %d\n", _profile);
 						 if(frestart) HP.sendCommand(pRESUME);
 					 }
-				 } else if(HP.get_State() == pWAIT_HP) {
+				 } else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {
 					 HP.sendCommand(pRESUME);
 				 }
 			 }

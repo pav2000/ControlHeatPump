@@ -113,7 +113,7 @@ extern uint32_t SystemCoreClock;
 #endif  // WHG
 #define configTICK_RATE_HZ				( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES			( 5 )
-#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 150 )  //pav2000 было 130, 200 - виснет после 2-5 часов
+#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 100 )  // 150, pav2000 было 130, 200 - виснет после 2-5 часов
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 0) )  // WHG uses type 3 heap
 #define configMAX_TASK_NAME_LEN			( 11 )               // pav2000  было 10
 #define configUSE_16_BIT_TICKS			0
