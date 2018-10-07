@@ -262,7 +262,7 @@ void Nextion::readCommand()
 void Nextion::Update()
 {
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-		if(HP.get_startCompressor() && !HP.get_stopCompressor()) {
+		if(HP.get_startCompressor() && HP.get_startCompressor() > HP.get_stopCompressor()) {
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("thsp=0");
 				sendCommand("sleep=0");

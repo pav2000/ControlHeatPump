@@ -1735,7 +1735,6 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump OFF . . .\n",(char*)__FUNCTION__);
 	}
 
-	stopCompressor=0;                                    // Компрессор никогда не выключался пауза при старте не нужна
 	offBoiler=0;                                         // Бойлер никогда не выключался
 	onSallmonela=false;                                  // Если true то идет Обеззараживание
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
