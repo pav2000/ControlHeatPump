@@ -1496,8 +1496,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
             {
                 if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
                 else {
-            	  if((pm > 0) && (pm <= I2C_PROFIL_NUM)) {
-            		  HP.Prof.set_list((int8_t)pm - 1);
+            	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
+            		  HP.Prof.set_list((int8_t)pm);
             		  HP.save();
             		  HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
