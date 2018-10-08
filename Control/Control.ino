@@ -942,7 +942,7 @@ void vReadSensor(void *)
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
 		{
-			vReadSensor_delay10ms(5);
+			vReadSensor_delay8ms(5);
 			if (digitalReadDirect(PIN_STEP_DIAG)) set_Error(ERR_DRV_EEV,(char*)__FUNCTION__); // Контроль за работой драйвера ЭРВ
 		}
 #endif

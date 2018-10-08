@@ -2816,7 +2816,7 @@ boolean HeatPump::check_compressor_pause(MODE_HP mod)
 	if(stopCompressor) {
 		int32_t nTime = rtcSAM3X8.unixtime() - stopCompressor;
 #ifdef DEMO
-		if (nTime<10) {journal.jprintf(MinPauseOffCompressor);return true;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
+		if (nTime<10) {journal.jprintf("Compressor pause\n");return true;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
 #else
 		if((nTime = (mod == pHEAT ? Prof.Heat.pause : mod == pCOOL ? Prof.Cool.pause : mod == pBOILER ? Prof.Boiler.pause : 0) - nTime) > 0) {
 			#ifdef DEBUG_MODWORK
@@ -2824,9 +2824,9 @@ boolean HeatPump::check_compressor_pause(MODE_HP mod)
 			#endif
 			return true;
 		}
+#endif
 	}
 	return false;
-#endif
 }
 
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена

@@ -179,7 +179,6 @@ boolean sendNTPpacket(IPAddress &ip)
 boolean set_time_NTP(void)
 {
 	unsigned long secs;
-	int8_t protocol;
 	boolean flag = false;
 	IPAddress ip(0, 0, 0, 0);
 
