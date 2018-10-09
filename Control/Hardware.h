@@ -39,19 +39,6 @@
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
 
-// Структура для хранения "сырых"данных с аналогового датчика.
-struct type_rawADC
-{
- uint32_t sum;                          // сумма
- uint16_t *p;              				 // массив накопленных значений
- uint8_t  filter_size;
- uint16_t last;                         // текущий индекс
- boolean flagFull;                      // буфер полный
- uint16_t lastVal;                      // последнее считанное значение
- //uint32_t err_read;                     // счетчик ошибкок чтения
- uint8_t  error;                        // Последняя ошибка чтения датчика
-};
-
 static uint32_t adc_mil = 0;  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // ------------------------------------------------------------------------------------------
@@ -100,7 +87,14 @@ class sensorADC
     uint16_t get_save_size(void) { return sizeof(cfg); } // Размер структуры сохранения
    
     statChart Chart;                                      // График по датчику
-    type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
+    //type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
+    uint32_t adc_sum;                          			// сумма
+    uint16_t *adc_filter;              						// массив накопленных значений
+    uint8_t  adc_filter_max;
+    uint16_t adc_last;       			                // текущий индекс
+    boolean  adc_flagFull;              			    // буфер полный
+    uint16_t adc_lastVal;                      			// последнее считанное значение
+    uint16_t adc_Mask;
     
   private:
     int16_t lastPress;                                   // последнее считанное давление с датчика

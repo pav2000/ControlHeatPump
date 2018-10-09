@@ -38,41 +38,44 @@ void start_ADC()
               TC_CMR_WAVE |                            // waveform mode
               TC_CMR_WAVSEL_UP_RC |                    // count-up PWM using RC as threshold
               TC_CMR_EEVT_XC0 |                        // Set external events from XC0 (this setup TIOB as output)
-              TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_CLEAR |
-              TC_CMR_BCPB_CLEAR | TC_CMR_BCPC_CLEAR ;
+              TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |    // set clear and set from RA and RC compares
+              TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
  
-  t->TC_RC = VARIANT_MCK/2/PRESS_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
-  t->TC_RA = VARIANT_MCK/2/PRESS_FREQ/2 ;     // roughly square wave
-  t->TC_CMR = (t->TC_CMR & 0xFFF0FFFF) | TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET ;  // set clear and set from RA and RC compares
+  t->TC_RC = SystemCoreClock/2/PRESS_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
+  t->TC_RA = SystemCoreClock/2/PRESS_FREQ/2 ;     // roughly square wave
   t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG ;  // re-enable local clocking and switch to hardware trigger source.
 
  }
 
 // Установка АЦП
-void adc_setup ()
+void adc_setup()
 {
-  uint32_t adcMask=0x00;
-   #ifdef VCC_CONTROL                                   // если разрешено чтение напряжение питания
-     adcMask=adcMask|(0x1u<<PIN_ADC_VCC);               // Добавить маску контроля питания
-   #endif
-  //   adcMask=adcMask|(0x1u<<ADC_TEMPERATURE_SENSOR);         // добавить маску для внутреннего датчика температуры
-  //   adc_enable_ts(ADC);                                     // разрешить чтение температурного датчика в регистре ADC Analog Control Register
+	uint16_t adcMask = 0;
+#ifdef VCC_CONTROL                                   // если разрешено чтение напряжение питания
+	adcMask=adcMask|(0x1u<<PIN_ADC_VCC);               // Добавить маску контроля питания
+#endif
+	//   adcMask=adcMask|(0x1u<<ADC_TEMPERATURE_SENSOR);         // добавить маску для внутреннего датчика температуры
+	//   adc_enable_ts(ADC);                                     // разрешить чтение температурного датчика в регистре ADC Analog Control Register
 
-  
-// Расчет маски каналов
-for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
-      if (HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
- 
-  NVIC_EnableIRQ (ADC_IRQn) ;        // enable ADC interrupt vector
-  ADC->ADC_IDR = 0xFFFFFFFF ;        // disable interrupts IDR Interrupt Disable Register
-  ADC->ADC_IER = adcMask;            // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
-//  ADC->ADC_IER =(0x1u <<28);       // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
-  ADC->ADC_CHDR = 0xFFFF ;           // Channel Disable Register CHDR disable all channels
-  ADC->ADC_CHER =adcMask;            // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
-  ADC->ADC_CGR = 0x15555555 ;        // All gains set to x1 Channel Gain Register
- // ADC->ADC_CGR = 0x55555555 ;        // All gains set to x1 Channel Gain Register
-  ADC->ADC_COR = 0x00000000 ;        // All offsets off Channel Offset Register
-  ADC->ADC_MR = (ADC->ADC_MR & 0xFFFFFFF0) | (1 << 1) | ADC_MR_TRGEN ;  // 1 = trig source TIO from TC0
+	// Расчет маски каналов
+	for(uint8_t i = 0; i < ANUMBER; i++) {   // по всем датчикам
+		if(HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) {
+			HP.sADC[i].adc_Mask = 0x1u << HP.sADC[i].get_pinA();
+			adcMask |= HP.sADC[i].adc_Mask;
+		} else HP.sADC[i].adc_Mask = 0;
+
+	}
+	ADC->ADC_IDR = 0xFFFFFFFF;        // disable interrupts IDR Interrupt Disable Register
+	ADC->ADC_IER = adcMask;            // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
+	//  ADC->ADC_IER =(0x1u <<28);       // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
+	ADC->ADC_CHDR = 0xFFFF;           // Channel Disable Register CHDR disable all channels
+	ADC->ADC_CHER = adcMask;            // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
+	ADC->ADC_CGR = 0x15555555;        // All gains set to x1 Channel Gain Register
+	// ADC->ADC_CGR = 0x55555555 ;        // All gains set to x1 Channel Gain Register
+	ADC->ADC_COR = 0x00000000;        // All offsets off Channel Offset Register
+	// 12bit, 14MHz, trig source TIO from TC0
+	ADC->ADC_MR = ADC_MR_PRESCAL(2) | ADC_MR_LOWRES_BITS_12 | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(8) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(1) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
+	NVIC_EnableIRQ(ADC_IRQn);        // enable ADC interrupt vector
 }
 
 
@@ -83,8 +86,6 @@ extern "C"
 #endif
 void ADC_Handler(void)
 {
-	uint8_t i = 0;
-
 #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 	if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
 	{
@@ -94,26 +95,20 @@ void ADC_Handler(void)
 
 	adc_mil++;
 
-	for(i = 0; i < ANUMBER; i++)    // по всем датчикам
+	for(uint8_t i = 0; i < ANUMBER; i++)    // по всем датчикам
 	{
-		if(!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
-#ifdef ANALOG_MODBUS
-		if(HP.sADC[i].get_fmodbus()) continue;
-#endif
-		type_rawADC *adc = &HP.sADC[i].adc;
-		if(ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA())) // ensure there was an End-of-Conversion and we read the ISR reg
-		{
-			adc->lastVal = (unsigned int) (*(ADC->ADC_CDR + HP.sADC[i].get_pinA()));  // get conversion result
-			adc->error = OK;
-		} else continue;
+		sensorADC *adc = &HP.sADC[i];
+		if(!(ADC->ADC_ISR & adc->adc_Mask)) continue; // ensure there was an End-of-Conversion and we read the ISR reg
+		adc->adc_lastVal = ADC->ADC_CDR[adc->get_pinA()];  // get conversion result
+		//adc->error = OK;
 		// Усреднение значений
-		adc->sum += adc->lastVal;                     // Добавить новое значение
-		adc->sum -= adc->p[adc->last]; // Убрать самое старое значение
-		adc->p[adc->last] = adc->lastVal;                       // Запомить новое значение
-		if(adc->last < adc->filter_size - 1) adc->last++;
+		adc->adc_sum += adc->adc_lastVal;                     // Добавить новое значение
+		adc->adc_sum -= adc->adc_filter[adc->adc_last]; // Убрать самое старое значение
+		adc->adc_filter[adc->adc_last] = adc->adc_lastVal;                       // Запомить новое значение
+		if(adc->adc_last < adc->adc_filter_max) adc->adc_last++;
 		else {
-			adc->last = 0;
-			adc->flagFull = true;
+			adc->adc_last = 0;
+			adc->adc_flagFull = true;
 		} // приращение счетчика
 		//        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/adc.filter_size; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
 	} // for
@@ -134,18 +129,17 @@ void sensorADC::initSensorADC(int sensor, int pinA)
 	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
 	if(SENSORPRESS[sensor] == true)    // отводим память если используем датчик под сырые данные
 	{
-		adc.filter_size = sensor < 2 ? FILTER_SIZE-1 : FILTER_SIZE_OTHER-1;
-		adc.p = (uint16_t*) malloc(sizeof(uint16_t) * adc.filter_size);
-		if(adc.p == NULL) {   // ОШИБКА если память не выделена
+		adc_filter_max = sensor < 2 ? FILTER_SIZE : FILTER_SIZE_OTHER;
+		adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
+		if(adc_filter == NULL) {   // ОШИБКА если память не выделена
 			set_Error(ERR_OUT_OF_MEMORY, (char*) "sensorADC");
 			return;
 		}
-		adc.sum = 0;                                                                   // сумма
-		adc.last = 0;                                                                  // текущий индекс
-		adc.flagFull = false;                                                          // буфер полный
-		adc.lastVal = 0;                                                               // последнее считанное значение
-		//       adc.err_read=0;                                                              // счетчик ошибкок чтения
-		adc.error = OK;                                                                // Последняя ошибка чтения датчика
+		adc_filter_max--;
+		adc_sum = 0;                                                                   // сумма
+		adc_last = 0;                                                                  // текущий индекс
+		adc_flagFull = false;                                                          // буфер полный
+		adc_lastVal = 0;                                                               // последнее считанное значение
 		clearBuffer();
 	}
 
@@ -209,19 +203,23 @@ void sensorADC::initSensorADC(int sensor, int pinA)
 		 } else
 	#endif
 		 {
-			 if(adc.flagFull) lastADC=adc.sum/adc.filter_size; else lastADC=adc.sum/adc.last;
-			 if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
+			 if(adc_flagFull) lastADC=adc_sum/(adc_filter_max+1); else lastADC=adc_sum/adc_last;
+			 //if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
 		 }
 #endif
 		 lastPress=(int)((float)lastADC*(cfg.transADC))-cfg.zeroPress;
 	 }
 	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
+#if P_NUMSAMLES > 1
 	 // Усреднение значений
 	 sum=sum+lastPress;          // Добавить новое значение
 	 sum=sum-p[last];            // Убрать самое старое значение
 	 p[last]=lastPress;          // Запомить новое значение
 	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
 	 if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last;
+#else
+	 Press = lastPress;
+#endif
 
 	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
