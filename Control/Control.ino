@@ -417,7 +417,7 @@ x_I2C_init_std_message:
 // 8. Инициализация spi флеш диска
 #ifdef SPI_FLASH
   journal.jprintf("5. Init SPI flash disk . . .\n");
-  HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
+  HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
 #else
   journal.jprintf("5. No SPI flash in config.\n");
 #endif
@@ -438,6 +438,14 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
+  journal.jprintf(" Web interface download source: ");
+        switch (HP.get_SourceWeb())
+        {
+        case pMIN_WEB:   journal.jprintf("internal\n"); break;
+        case pSD_WEB:    journal.jprintf("SD card\n"); break;
+        case pFLASH_WEB: journal.jprintf("Flash disk\n"); break;
+        default:         journal.jprintf("unknown\n"); break;
+        }
 
 // 10. Сетевые настройки
    journal.jprintf("7. Setting Network . . .\n");

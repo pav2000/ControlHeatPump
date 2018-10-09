@@ -533,6 +533,8 @@ void HeatPump::resetSettingHP()
   startPump=false;                              // Признак работы задачи насос
   flagRBOILER=false;                            // не идет нагрев бойлера
   fSD=false;                                    // СД карта не рабоатет
+  fSPIFlash=false;                              // Признак наличия (физического) spi диска - диска нет по умолчанию
+  
   startWait=false;                              // Начало работы с ожидания
   onBoiler=false;                               // Если true то идет нагрев бойлера
   onSallmonela=false;                           // Если true то идет Обеззараживание
@@ -566,8 +568,7 @@ void HeatPump::resetSettingHP()
   time_Sun_OFF = 0;
    
   safeNetwork=false;                            // режим safeNetwork
-  presentSpiDisk=false;                         // Признак наличия (физического) spi диска - диска нет по умолчанию
-  
+
   // Установка сетевых параметров по умолчанию
   if (defaultDHCP) SETBIT1(Network.flags,fDHCP);else SETBIT0(Network.flags,fDHCP); // использование DHCP
   Network.ip=IPAddress(defaultIP);              // ip адрес
