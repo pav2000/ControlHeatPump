@@ -69,6 +69,7 @@ const char *postRet[]            = {"Настройки из выбранног�
 									"Файлы загружены, подробности смотри в журнале\r\n\r\n",
 									"Ошибка загрузки файла, подробности смотри в журнале\r\n\r\n",
 									"Внутренняя ошибка парсера post запросов\r\n\r\n",
+									"Флеш диск не найден,загружать файлы некуда\r\n\r\n",
 									"Файл настроек для разбора не влезает во внутренний буфер (max 6144 bytes)\r\n\r\n"
 									};
 
@@ -266,59 +267,94 @@ void readFileSD(char *filename, uint8_t thread)
 #ifdef I2C_EEPROM_64KB
 //	if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread); return;}
 #endif
-	if(!HP.get_fSD()) {
-		get_indexNoSD(thread);
-		return;
-	}                  // СД карта не работает - упрощенный интерфейс
 
-	// Чтение с карты  файлов
-	SPI_switchSD();
-	if(!card.exists(filename))  // проверка на сущестование файла
-	{
-		SPI_switchW5200();
-		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-		journal.jprintf((char*) "$WARNING - Can't find %s file!\n", filename);
-		return;
-	} // файл не найден
-
-	for(i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
-	{
-		if(!webFile.open(filename, O_READ))    // Карта не читатаеся
-		{
-			if(i >= SD_REPEAT - 1)                   // Исчерпано число попыток
-			{
-				SPI_switchW5200();
-				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf("$ERROR - opening %s for read failed!\n", filename);
-				HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с SD карты", 0); // сформировать уведомление об ошибке чтения
-				HP.set_fSD(false);                                                      // Отказ карты, работаем без нее
-				return;
-			}                                                                 //if
-		} else break;  // Прочиталось
-		_delay(50);
-		journal.jprintf("Error opening file %s repeat open . . .\n", filename);
-
-	}  // for
-
-	SPI_switchW5200();         // переключение на сеть
-
-	// Файл открыт читаем данные и кидаем в сеть
-#ifdef LOG
-	journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-#endif
-	//   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
-	if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
-	else sendConstRTOS(thread, HEADER_FILE_WEB);
-	SPI_switchSD();
-	while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
-		SPI_switchW5200();
-		if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
-		SPI_switchSD();
-	} // while
-	if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-
-	SPI_switchSD();
-	webFile.close();
+// загрузка файла -----------
+// Разбираемся откуда грузить надо (три варианта)
+switch (HP.get_SourceWeb())
+{
+	case pMIN_WEB: 	get_indexNoSD(thread); break;  // минимальная морда
+	case pSD_WEB:
+	                { // Чтение с карты  файлов
+					SPI_switchSD();
+					if(!card.exists(filename))  // проверка на сущестование файла
+					{
+						SPI_switchW5200();
+						sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+						journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
+						return;
+					} // файл не найден
+				
+					for(i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
+					{
+						if(!webFile.open(filename, O_READ))    // Карта не читатаеся
+						{
+							if(i >= SD_REPEAT - 1)                   // Исчерпано число попыток
+							{
+								SPI_switchW5200();
+								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+								journal.jprintf("$ERROR - opening %s for read failed!\n", filename);
+								HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с SD карты", 0); // сформировать уведомление об ошибке чтения
+								HP.set_fSD(false);                                                      // Отказ карты, работаем без нее
+								return;
+							}                                                                 //if
+						} else break;  // Прочиталось
+						_delay(50);
+						journal.jprintf("Error opening file %s repeat open . . .\n", filename);
+				
+					}  // for
+				
+					SPI_switchW5200();         // переключение на сеть
+					// Файл открыт читаем данные и кидаем в сеть
+		  	     	#ifdef LOG
+					journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+			    	#endif
+					//   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
+					if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+					else sendConstRTOS(thread, HEADER_FILE_WEB);
+					SPI_switchSD();
+					while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+						SPI_switchW5200();
+						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+						SPI_switchSD();
+					} // while
+					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+					SPI_switchSD();
+					webFile.close();
+                  	} break;
+    case pFLASH_WEB: {
+					    if (!SerialFlash.exists(filename)) 
+						    {
+							sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+							journal.jprintf((char*) "$WARNING - Can't find %s file on flash disk!\n", filename);
+							return;					    	
+						    }
+					    SerialFlashFile ff=SerialFlash.open(filename);
+					      if (ff) {
+					 		#ifdef LOG
+					        journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+				           #endif
+  							if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+								else sendConstRTOS(thread, HEADER_FILE_WEB);
+							//	SPI_switchSD();
+								while((n = ff.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+									//SPI_switchW5200();
+									if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+								//	SPI_switchSD();
+								} // while
+		//						if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+//								SPI_switchSD();
+//								webFile.close();
+					            }
+					       else {
+						    	journal.jprintf("Error opening file %s, switching from flash disk to SD card.\n", filename);
+								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+						    	HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с флеш диска", 0); // сформировать уведомление об ошибке чтения				    	
+						    	HP.set_fSPIFlash(false);
+						    	}        
+                    } break; 
+    default:        get_indexNoSD(thread);break;             	             	
+	             
+}
 	SPI_switchW5200();
 }
 
@@ -1005,6 +1041,15 @@ void parserGET(char *buf, char *strReturn, int8_t )
        
       if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
        {
+        strcat(strReturn,"Источник загрузкки web интерфейса |");
+        switch (HP.get_SourceWeb())
+        {
+        case pMIN_WEB:   strcat(strReturn,"internal;"); break;
+        case pSD_WEB:    strcat(strReturn,"SD card;"); break;
+        case pFLASH_WEB: strcat(strReturn,"Flash disk;"); break;
+        default:         strcat(strReturn,"unknown;"); break;
+        }
+      	
         strcat(strReturn,"Входное напряжение питания контроллера (В): |");
 		#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 		  _ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
@@ -2434,9 +2479,10 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
+#define emptyStr			WEB_HEADER_END  		 // пустая строка после которой начинаются данные
+#define MAX_FILE_LEN		64  	                 // максимальная длина имени файла
 const char Title[]          = {"Title: "};           // где лежит имя файла
 const char Length[]         = {"Content-Length: "};  // где лежит длина файла 
-#define emptyStr			WEB_HEADER_END  		// пустая строка после которой начинаются данные
 const char SETTINGS[]       = {"*SETTINGS*"};        // Идентификатор передачи настроек (лежит в Title:)
 const char LOAD_START[]     = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды (лежит в Title:)
 const char LOAD_END[]       = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды (лежит в Title:)
@@ -2446,47 +2492,36 @@ boolean  settingNow=false;                // признак начала заг�
 // Разбор и обработка POST запроса inPtr входная строка использует outBuf для хранения файла настроек!
 // Сейчас реализована загрузка настроек и загрузка веб морды в спи диск
 // Возврат тип ответа (потом берется из массива строк)
-// char nameFile[128]; // имя файла
 TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 {
-	byte *ptr,*pStart;
-	char nameFile[128]; // имя файла
-	char sizeFile[8];   // длина файла
-	uint8_t  i=0;
+	static byte *ptr,*pStart;
+    char *nameFile;      // указатель имя файла
+ 	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
 
- 	// Определение имени файла
-	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr,Title)) == 0) {journal.jprintf("%s: Name file not found.\n",(char*)__FUNCTION__);return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
-    pStart=pStart+strlen((char*)Title);  // начало имени файла
-    for(i=0;i<sizeof(nameFile);i++)      // копирование имени файла
-    	if (*(pStart+i)!=13) nameFile[i]=*(pStart+i); else {nameFile[i]=0;break;} 
-    if (strlen(nameFile)>=sizeof(nameFile)-1){ // проверка длины
-    	nameFile[sizeof(nameFile)-1]=0;      // обрезать
- 		journal.jprintf("%s: File name %s big size.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; }  	    
-    urldecode(nameFile, nameFile, sizeof(nameFile));
- 
-    // Определение длины файла
-	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)) == 0) {journal.jprintf("%s: Size file %s not found.\n",(char*)__FUNCTION__,nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
-    pStart=pStart+strlen((char*)Length);  // начало размера файла
-    for(i=0;i<sizeof(sizeFile);i++)    // копирование длины файла
-       {
-        if   (*(pStart+i)==13) {sizeFile[i]=0;break;} // перенос строки - конец длины
-       	if   ((*(pStart+i)<'0')||(*(pStart+i)>'9')) { journal.jprintf("%s: Wrong size file %s.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } // только цифры
-    	sizeFile[i]=*(pStart+i);// копирование
-       }
-    if (strlen(sizeFile)>=sizeof(sizeFile)-1){ journal.jprintf("%s: Size file %s big.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } // проверка длины
-    lenFile=atoi(sizeFile);	
-    if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("%s: Size file %s zero.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } 
+	// Поиски во входном буфере: данных, имени файла и длинны файла
+    ptr = (byte*) strstr((char*)Socket[thread].inPtr,emptyStr)+strlen(emptyStr);                // поиск начала даных	
+	
+	if((nameFile=strstr((char*)Socket[thread].inPtr,Title)+strlen((char*)Title)) == 0) {journal.jprintf("%s: Name file not found.\n",(char*)__FUNCTION__);return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
+    for(i=0;i<MAX_FILE_LEN;i++) {     // поиск окончания имени файла 
+     	if (*(nameFile+i)==13) {*(nameFile+i)=0;break;} 
+    }
+    if (strlen(nameFile)>=MAX_FILE_LEN-1){ // проверка длины имени файла
+ 		journal.jprintf("%s: File name %s is longer than %d bytes.\n",(char*)__FUNCTION__,nameFile,MAX_FILE_LEN-1); return pLOAD_ERR; }  	  
+    urldecode((char*)Socket[thread].outBuf,nameFile,128);
+    nameFile=(char*)Socket[thread].outBuf;
 
-   // journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  return pNULL; // тестирование заголовков
-   
+
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)+strlen((char*)Length)) == 0) {journal.jprintf("%s: Size file %s not found.\n",(char*)__FUNCTION__,nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
+    lenFile=atoi((char*)pStart);	// получить длину
+    if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("%s:File %s length is zero.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } 
+
     // все нашлось, можно обрабатывать
- //  if (lenFile>0) journal.jprintf("POST: file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
-    ptr = (byte*) strstr((char*) Socket[thread].inPtr,emptyStr)+strlen(emptyStr); // поиск начала даных
-    full_len=size-(ptr - (byte *)Socket[thread].inBuf); // длина данных (файла) в буфере
+//    if (lenFile>0) journal.jprintf("-POST- file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
     
-       
+    full_len=size-(ptr - (byte *)Socket[thread].inBuf);                                           // длина (остаток) данных (файла) в буфере
+    
     // В зависимости от имени файла (Title)
     if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
 			// Определение начала данных (поиск HEADER_BIN)
@@ -2503,14 +2538,12 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
 		    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
 		    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-		    if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
+		    if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
 			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
 			full_len=full_len+len;                                                     // определить размер данных
 	        }
 			ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);                     // отрезать заголовок в данных
-
 			journal.jprintf("Loading %s length  %d bytes:\n",SETTINGS, full_len);
-
 			// Чтение настроек из ptr
 		    len = HP.load(ptr, 1);
 			if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
@@ -2524,27 +2557,30 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
     } //if (strcmp(nameFile,"*SETTINGS*")==0)
     
     // загрузка вебморды
-   else  if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
-   if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Download already in progress.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
-   numFilesWeb=0;
-   journal.jprintf("POST: %s start download, format SPI disk ",nameFile);
-   SerialFlash.eraseAll();
-	    while (SerialFlash.ready() == false) {
-	      vTaskDelay(1000/ portTICK_PERIOD_MS);    
-	      journal.jprintf(".");
-	    }
-	    journal.jprintf(" OK\n");	
-	    return pNULL;
-   }
-    else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
-    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("POST: %s end of download, total %d files downloads.\n",nameFile,numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
-  	else {journal.jprintf("%s: Trying to end download without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-    }
-   else { // загрузка отдельных файлов веб морды
-    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
-   	else {journal.jprintf("%s: Trying to download file without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-    }
-
+   else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
+		   if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
+		   
+		   if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Download already in progress.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
+		   numFilesWeb=0;
+		   journal.jprintf("POST: %s start download, format SPI disk ",nameFile);
+		   SerialFlash.eraseAll();
+			    while (SerialFlash.ready() == false) {
+			      vTaskDelay(1000/ portTICK_PERIOD_MS);    
+			      journal.jprintf(".");
+			    }
+			    journal.jprintf(" OK\n");	
+			    return pNULL;
+		   }
+		    else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+		    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("POST: %s end of download, total %d files downloads.\n",nameFile,numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
+		  	else {journal.jprintf("%s: Trying to end download without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+		    }
+		   else { // загрузка отдельных файлов веб морды
+		    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
+		   	else {journal.jprintf("%s: Trying to download file without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+		    }
+     }
+     else { journal.jprintf("%s: Flash disk not found.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
    return pPOST_ERR; // До сюда добегать не должны
 }
 // Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
@@ -2564,14 +2600,15 @@ if (SerialFlash.create(nameFile,lenFile))
   {   SerialFlashFile ff = SerialFlash.open(nameFile);
       if (ff) {
         journal.jprintf("File %s load ",nameFile); 
-        loadLen=ff.write(ptr, sizeBuf);  // первый пакет упаковали
-        while (loadLen<lenFile)  // Чтене остальных пакетов из сети
+        if (sizeBuf>0) loadLen=ff.write(ptr, sizeBuf);  // первый пакет упаковали если он не нулевой
+        while (loadLen<lenFile)  // Чтение остальных пакетов из сети
         {
+        _delay(2);                                                                 // время на приход данных
         len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-        if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+        if (len==0) continue;
+  //      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
         Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер	
         loadLen=loadLen+ff.write(Socket[thread].inBuf,len);                        // записать
-  //      journal.jprintf(".");
         numPoint++;
         if (numPoint>=10) {numPoint=0;journal.jprintf(".");}                       // точка на 15 кб приема (10 пакетов по 1540)
         }

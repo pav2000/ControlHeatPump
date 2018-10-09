@@ -196,7 +196,13 @@ class HeatPump
     boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
     boolean  get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
     void     set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
-    uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
+    boolean  get_fSPIFlash() {return fSPIFlash;}     // Получить флаг наличия РАБОТАЮЩЕГО флеш диска
+    void     set_fSPIFlash(boolean f) {fSPIFlash=f;}    // Установить флаг наличия РАБОТАЮЩЕГО флеш диска
+    TYPE_SOURSE_WEB get_SourceWeb()                    // Получить источник загрузки веб морды
+              { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
+                 else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
+      
+     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -309,10 +315,12 @@ class HeatPump
    boolean scheduleBoiler();                               // Проверить расписание бойлера true - нужно греть false - греть не надо
 
    // Опции ТН
-   uint16_t get_pausePump() {return Option.pausePump;};                // !save! Время паузы  насоса при выключенном компрессоре, секунды
-   uint16_t get_workPump() {return Option.workPump;};                  // !save! Время работы  насоса при выключенном компрессоре, секунды
-   uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // !save! подача звуковых сигналов
-   uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // !save! получить флаг записи состояния
+   uint16_t get_pausePump() {return Option.pausePump;};                // Время паузы  насоса при выключенном компрессоре, секунды
+   uint16_t get_workPump() {return Option.workPump;};                  // Время работы  насоса при выключенном компрессоре, секунды
+   uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // подача звуковых сигналов
+   uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // получить флаг записи состояния
+   uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
+   
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
@@ -390,8 +398,7 @@ class HeatPump
     boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
     type_SecurityHP Security;                              // хеш паролей
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
-    boolean presentSpiDisk;                                // Признак наличия (физического) spi диска
-    
+      
    
     // функции для работой с графикками
     uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
@@ -482,7 +489,6 @@ class HeatPump
     boolean check_compressor_pause(MODE_HP mod); // проверка на паузу между включениями
     int8_t check_crc16_eeprom(int32_t addr, uint16_t size);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
-    
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
@@ -495,6 +501,7 @@ class HeatPump
     char   source_error[16];              // источник ошибки
     char   note_error[160+1];             // Строка c описанием ошибки формат "время источник:описание"
     boolean fSD;                          // Признак наличия РАБОТАЮЩЕЙ SD карты
+    boolean fSPIFlash;                    // Признак наличия (физического) spi диска
     boolean startWait;                    // Начало работы с ожидания
      
     // Различные времена
@@ -510,7 +517,7 @@ class HeatPump
     uint32_t command_completed;			  // Время отработки команды
        
     // Сетевые настройки
-    type_NetworkHP Network;                 // !save! Структура для хранения сетевых настроек
+    type_NetworkHP Network;                 // Структура для хранения сетевых настроек
     uint32_t countResSocket;                // Число сбросов сокетов
 
     // Переменные пид регулятора Отопление
