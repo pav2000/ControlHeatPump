@@ -115,22 +115,21 @@ void ADC_Handler(void)
 void sensorADC::initSensorADC(int sensor, int pinA)
 {
 	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
-	if(SENSORPRESS[sensor] == true)    // отводим память если используем датчик под сырые данные
-	{
+	if(SENSORPRESS[sensor])    // отводим память если используем датчик под сырые данные
 		adc_filter_max = sensor <= PCON ? FILTER_SIZE : FILTER_SIZE_OTHER;
-		adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
-		if(adc_filter == NULL) {   // ОШИБКА если память не выделена
-			set_Error(ERR_OUT_OF_MEMORY, (char*) "sensorADC");
-			return;
-		}
-		memset(adc_filter, 0, sizeof(uint16_t) * adc_filter_max);
-		adc_filter_max--;
-		adc_sum = 0;                                                                   // сумма
-		adc_last = 0;                                                                  // текущий индекс
-		adc_flagFull = false;                                                          // буфер полный
-		adc_lastVal = 0;                                                               // последнее считанное значение
-		clearBuffer();
+	else adc_filter_max = 1;
+	adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
+	if(adc_filter == NULL) {   // ОШИБКА если память не выделена
+		set_Error(ERR_OUT_OF_MEMORY, (char*) "sensorADC");
+		return;
 	}
+	memset(adc_filter, 0, sizeof(uint16_t) * adc_filter_max);
+	adc_filter_max--;
+	adc_sum = 0;                                                                   // сумма
+	adc_last = 0;                                                                  // текущий индекс
+	adc_flagFull = false;                                                          // буфер полный
+	adc_lastVal = 0;                                                               // последнее считанное значение
+	clearBuffer();
 
 	testMode = NORMAL;                           // Значение режима тестирования
 	cfg.minPress = MINPRESS[sensor];                 // минимально разрешенное давление

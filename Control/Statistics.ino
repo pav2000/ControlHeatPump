@@ -122,16 +122,16 @@ void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		break;
 	case STATS_OBJ_Voltage:
 		if(flag) strcat(ret, "V"); // ось напряжение
-		strcat(ret, "Напряжение");
+		strcat(ret, "Напряжение, V");
 		break;
 	case STATS_OBJ_Power:
 		if(flag) strcat(ret, "W"); // ось мощность
 		if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
-			strcat(ret, "Мощность отопления"); // Вт
+			strcat(ret, "Выработано, кВтч"); // хранится в Вт
 		} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
-			strcat(ret, "Мощность геоконтура"); // Вт
+			strcat(ret, "Геоконтур, кВтч"); // хранится в Вт
 		} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
-			strcat(ret, "Потребление"); // Вт
+			strcat(ret, "Потребление, кВтч"); // хранится в Вт
 		}
 		break;
 	case STATS_OBJ_COP:
@@ -145,9 +145,9 @@ void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
 	case STATS_OBJ_Time:
 		if(flag) strcat(ret, "M"); // ось часы
 		if(Stats_data[i].number == OBJ_Compressor) {
-			strcat(ret, "Моточасы"); break;
+			strcat(ret, "Моточасы, м"); break;
 		} else if(Stats_data[i].number == OBJ_Sun) {
-			strcat(ret, "СК время"); break;
+			strcat(ret, "СК время, м"); break;
 		}
 	default: strcat(ret, "?");;
 	}
