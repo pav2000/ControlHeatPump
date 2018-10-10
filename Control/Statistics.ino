@@ -65,7 +65,9 @@ void Statistics::Update()
 			newval = HP.sADC[Stats_data[i].number].get_Press() / 10;
 			break;
 		case STATS_OBJ_Voltage:
+		    #ifdef USE_ELECTROMETER_SDM
 			newval = HP.dSDM.get_Voltage();
+			#endif
 			break;
 		case STATS_OBJ_Power:
 			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления

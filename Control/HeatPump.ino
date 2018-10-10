@@ -2869,9 +2869,10 @@ void HeatPump::compressorON(MODE_HP mod)
 		if (dEEV.get_LightStart()) { dEEV.set_EEV(dEEV.get_preStartPos());  journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }      // Выйти на пусковую позицию
 		else                                       { dEEV.set_EEV(dEEV.get_StartPos());   journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }      // Всегда начинать работу ЭРВ со стратовой позиции
 	}
+dEEV.CorrectOverheatInit();	
 #endif
 
-	dEEV.CorrectOverheatInit();
+	
 
 	// 3. Управление компрессором
 	if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок
