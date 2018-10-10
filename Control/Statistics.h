@@ -47,6 +47,7 @@ enum {
 enum {
 	STATS_TYPE_MIN = 0,
 	STATS_TYPE_AVG,
+	STATS_TYPE_AVG_WORK, // Во время работы компрессора
 	STATS_TYPE_MAX,
 	STATS_TYPE_SUM,
 	STATS_TYPE_CNT, // Time, ms
@@ -66,6 +67,7 @@ Stats_Data Stats_data[] = {
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG_WORK, TEVAING },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
@@ -96,9 +98,13 @@ public:
 	void Reset();							// Сбросить накопленные промежуточные значения
 	void Save();							// Записать статистику на SD
 	void ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
+	void ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
 	void ReturnFileString(char *ret);		// Строка со значениями за день
+	void ReturnFieldString(char *ret, uint8_t i);
+	void ReturnWebTable(char *ret);
 private:
 	uint16_t counts;						// Кол-во уже совершенных обновлений
+	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
 	uint32_t previous;
 	uint8_t	 day;
 };

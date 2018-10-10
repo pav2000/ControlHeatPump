@@ -41,6 +41,7 @@ void Statistics::Reset()
 		}
 	}
 	counts = 0;
+	counts_work = 0;
 	day = rtcSAM3X8.get_days();
 	previous = millis();
 }
@@ -56,6 +57,7 @@ void Statistics::Update()
 		Reset();
 	}
 	int32_t newval = 0;
+	boolean compressor_on = HP.is_compressor_on();
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Temp:
@@ -65,7 +67,9 @@ void Statistics::Update()
 			newval = HP.sADC[Stats_data[i].number].get_Press() / 10;
 			break;
 		case STATS_OBJ_Voltage:
+		    #ifdef USE_ELECTROMETER_SDM
 			newval = HP.dSDM.get_Voltage();
+			#endif
 			break;
 		case STATS_OBJ_Power:
 			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
@@ -75,7 +79,12 @@ void Statistics::Update()
 			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
 				newval = HP.power220; // Вт
 			} else continue;
-			if(Stats_data[i].type == STATS_TYPE_SUM || Stats_data[i].type == STATS_TYPE_AVG) newval = newval * tm / 3600; // в мВт
+			switch(Stats_data[i].type) {
+			case STATS_TYPE_SUM:
+			case STATS_TYPE_AVG:
+			case STATS_TYPE_AVG_WORK:
+				newval = newval * tm / 3600; // в мВт
+			}
 			break;
 		case STATS_OBJ_COP:
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
@@ -85,8 +94,9 @@ void Statistics::Update()
 			}
 			break;
 		case STATS_OBJ_Time:
-			if(Stats_data[i].number == OBJ_Compressor && HP.get_startCompressor() && !HP.get_stopCompressor()) break;
+			if(Stats_data[i].number == OBJ_Compressor && compressor_on) break;
 			else if(Stats_data[i].number == OBJ_Sun && GETBIT(HP.flags, fHP_SunActive)) break;
+			continue;
 		default: continue;
 		}
 		switch(Stats_data[i].type){
@@ -100,13 +110,127 @@ void Statistics::Update()
 		case STATS_TYPE_SUM:
 			Stats_data[i].value += newval;
 			break;
+		case STATS_TYPE_AVG_WORK:
+			if(!compressor_on) continue;
+			Stats_data[i].value += newval;
+			break;
 		case STATS_TYPE_CNT:
 			Stats_data[i].value += tm;
 			break;
 		}
 	}
 	counts++;
+	if(compressor_on) counts_work++;
 	//if(counts % 30 == 0) Save();
+}
+
+void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
+{
+	switch(Stats_data[i].object) {
+	case STATS_OBJ_Temp:
+		if(flag) strcat(ret, "T"); // ось температур
+		strcat(ret, HP.sTemp[Stats_data[i].number].get_note());
+		break;
+	case STATS_OBJ_Press:
+		if(flag) strcat(ret, "P"); // ось давление
+		strcat(ret, HP.sADC[Stats_data[i].number].get_note());
+		break;
+	case STATS_OBJ_Voltage:
+		if(flag) strcat(ret, "V"); // ось напряжение
+		strcat(ret, "Напряжение, V");
+		break;
+	case STATS_OBJ_Power:
+		if(flag) strcat(ret, "W"); // ось мощность
+		if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
+			strcat(ret, "Выработано, кВтч"); // хранится в Вт
+		} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
+			strcat(ret, "Геоконтур, кВтч"); // хранится в Вт
+		} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
+			strcat(ret, "Потребление, кВтч"); // хранится в Вт
+		}
+		break;
+	case STATS_OBJ_COP:
+		if(flag) strcat(ret, "C"); // ось COP
+		if(Stats_data[i].number == OBJ_COP_Compressor) {
+			strcat(ret, "КОП");
+		} else if(Stats_data[i].number == OBJ_COP_Full) {
+			strcat(ret, "Полный КОП");
+		}
+		break;
+	case STATS_OBJ_Time:
+		if(flag) strcat(ret, "M"); // ось часы
+		if(Stats_data[i].number == OBJ_Compressor) {
+			strcat(ret, "Моточасы, м"); break;
+		} else if(Stats_data[i].number == OBJ_Sun) {
+			strcat(ret, "СК время, м"); break;
+		}
+	default: strcat(ret, "?");;
+	}
+	switch(Stats_data[i].type){
+	case STATS_TYPE_MIN:
+		strcat(ret, " - Мин");
+		break;
+	case STATS_TYPE_MAX:
+		strcat(ret, " - Макс");
+		break;
+	case STATS_TYPE_AVG:
+		strcat(ret, " - Сред");
+		break;
+	case STATS_TYPE_AVG_WORK:
+		strcat(ret, " - Сред(компр)");
+		break;
+	}
+}
+
+// Возвращает файл с заголовками полей
+void Statistics::ReturnFileHeader(char *ret)
+{
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		ReturnFieldHeader(ret, i, 1);
+	}
+}
+
+void Statistics::ReturnFieldString(char *ret, uint8_t i)
+{
+	float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].type == STATS_TYPE_AVG_WORK ? Stats_data[i].value / counts_work : Stats_data[i].value;
+	switch(Stats_data[i].object) {
+	case STATS_OBJ_Temp:
+	case STATS_OBJ_Press:
+		_ftoa(ret, val / 10, 1);	 // bar
+		break;
+	case STATS_OBJ_Voltage:
+		_ftoa(ret, val, 0);
+		break;
+	case STATS_OBJ_Power:
+		_ftoa(ret, val / 1000000, 3); // кВт*ч
+		break;
+	case STATS_OBJ_COP:
+		_ftoa(ret, val / 100, 2);
+		break;
+	case STATS_OBJ_Time:
+		_ftoa(ret, val / 60000, 1); // минуты
+		break;
+	}
+}
+
+// Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
+void Statistics::ReturnFileString(char *ret)
+{
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		ReturnFieldString(ret, i);
+	}
+}
+
+void Statistics::ReturnWebTable(char *ret)
+{
+	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+		ReturnFieldHeader(ret, i, 0);
+		strcat(ret, "|");
+		ReturnFieldString(ret, i);
+		strcat(ret, ";");
+	}
 }
 
 // Записать статистику на SD
@@ -122,91 +246,4 @@ void Statistics::Save()
 
 	}
 	*/
-}
-
-// Возвращает файл с заголовками полей
-void Statistics::ReturnFileHeader(char *ret)
-{
-	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		if(i > 0) strcat(ret, ";");
-		switch(Stats_data[i].object) {
-		case STATS_OBJ_Temp:
-			strcat(ret, "T"); // ось температур
-			strcat(ret, HP.sTemp[Stats_data[i].number].get_note());
-			break;
-		case STATS_OBJ_Press:
-			strcat(ret, "P"); // ось давление
-			strcat(ret, HP.sADC[Stats_data[i].number].get_note());
-			break;
-		case STATS_OBJ_Voltage:
-			strcat(ret, "V"); // ось напряжение
-			strcat(ret, "Напряжение");
-			break;
-		case STATS_OBJ_Power:
-			strcat(ret, "W"); // ось мощность
-			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
-				strcat(ret, "Мощность отопления"); // Вт
-			} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
-				strcat(ret, "Мощность геоконтура"); // Вт
-			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
-				strcat(ret, "Потребление"); // Вт
-			}
-			break;
-		case STATS_OBJ_COP:
-			strcat(ret, "C"); // ось COP
-			if(Stats_data[i].number == OBJ_COP_Compressor) {
-				strcat(ret, "КОП");
-			} else if(Stats_data[i].number == OBJ_COP_Full) {
-				strcat(ret, "Полный КОП");
-			}
-			break;
-		case STATS_OBJ_Time:
-			strcat(ret, "M"); // ось часы
-			if(Stats_data[i].number == OBJ_Compressor) {
-				strcat(ret, "Моточасы"); break;
-			} else if(Stats_data[i].number == OBJ_Sun) {
-				strcat(ret, "СК время"); break;
-			}
-		default: continue;
-		}
-		switch(Stats_data[i].type){
-		case STATS_TYPE_MIN:
-			strcat(ret, " - Мин.");
-			break;
-		case STATS_TYPE_MAX:
-			strcat(ret, " - Макс.");
-			break;
-		case STATS_TYPE_AVG:
-			strcat(ret, " - Сред.");
-			break;
-		}
-	}
-}
-
-// Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
-void Statistics::ReturnFileString(char *ret)
-{
-	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		if(i > 0) strcat(ret, ";");
-		float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].value;
-		switch(Stats_data[i].object) {
-		case STATS_OBJ_Temp:
-		case STATS_OBJ_Press:
-			_ftoa(ret, val / 10, 1);
-			break;
-		case STATS_OBJ_Voltage:
-			_ftoa(ret, val, 0);
-			break;
-		case STATS_OBJ_Power:
-			_ftoa(ret, val / 1000, 3);
-			break;
-		case STATS_OBJ_COP:
-			_ftoa(ret, val / 100, 2);
-			break;
-		case STATS_OBJ_Time:
-			_ftoa(ret, val / 60000, 1); // минуты
-			break;
-		default: continue;
-		}
-	}
 }

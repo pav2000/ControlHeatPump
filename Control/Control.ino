@@ -417,7 +417,7 @@ x_I2C_init_std_message:
 // 8. Инициализация spi флеш диска
 #ifdef SPI_FLASH
   journal.jprintf("5. Init SPI flash disk . . .\n");
-  HP.presentSpiDisk=initSpiDisk(true);  // проверка диска с выводом инфо
+  HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
 #else
   journal.jprintf("5. No SPI flash in config.\n");
 #endif
@@ -438,6 +438,14 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
+  journal.jprintf(" Web interface download source: ");
+        switch (HP.get_SourceWeb())
+        {
+        case pMIN_WEB:   journal.jprintf("internal\n"); break;
+        case pSD_WEB:    journal.jprintf("SD card\n"); break;
+        case pFLASH_WEB: journal.jprintf("Flash disk\n"); break;
+        default:         journal.jprintf("unknown\n"); break;
+        }
 
 // 10. Сетевые настройки
    journal.jprintf("7. Setting Network . . .\n");
@@ -480,6 +488,8 @@ x_I2C_init_std_message:
 
   start_ADC(); // после инициализации HP
   journal.jprintf("13. Start read ADC sensors\n"); 
+  journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR); 
+  
 
   #ifdef NEXTION   
     journal.jprintf("14. Nextion display - ");
@@ -610,6 +620,21 @@ journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C());
 journal.jprintf("Start FreeRTOS scheduler :-))\n");
 journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
+//
+//vTaskSuspend(HP.xHandleReadSensor);                        // Заголовок задачи "Чтение датчиков"
+//vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);
+//vTaskSuspend(HP.xHandleUpdateCommand);                     // Разбор очереди команд
+//vTaskSuspend(HP.xHandleUpdate);                            // Заголовок задачи "Обновление ТН"
+//vTaskSuspend(HP.xHandleUpdateEEV);                         // Заголовок задачи "Обновление ЭРВ"
+//vTaskSuspend(HP.xHandleUpdateWeb0);                        // Заголовок задачи "Веб сервер"
+//vTaskSuspend(HP.xHandleUpdateWeb1);                        // Заголовок задачи "Веб сервер"
+//vTaskSuspend(HP.xHandleUpdateWeb2);                        // Заголовок задачи "Веб сервер"
+//vTaskSuspend(HP.xHandleUpdateWeb3);                        // Заголовок задачи "Веб сервер"
+//vTaskSuspend(HP.xHandleUpdateNextion);                     // заголовок задачи "Обновление дисплея nextion"
+//vTaskSuspend(HP.xHandleUpdateStat);                        // Заголовок задачи "Обновление ститистики"
+//vTaskSuspend(HP.xHandleUpdatePump);                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
+//vTaskSuspend(HP.xHandlePauseStart);                        // заголовок задачи "Отложенный старт"
+//
 vTaskStartScheduler();              // СТАРТ !!
 journal.jprintf("CRASH FreeRTOS!!!\n");
 }
@@ -624,44 +649,49 @@ void loop()
 // Это и есть поток с минимальным приоритетом измеряем простой процессора
 //extern "C" 
 //{
+static unsigned long cpu_idle_max_count = 0; // 1566594 // максимальное значение счетчика, вычисляется при калибровке и соответствует 100% CPU idle
+
 extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 {
 	static boolean ledState = LOW;
 	static unsigned long countLastTick = 0;
 	static unsigned long countLED = 0;
 	static unsigned long ulIdleCycleCount = 0;                                    // наш трудяга счетчик
-	static unsigned long max_count = 0; // максимальное значение счетчика, вычисляется при калибровке и соответствует 100% CPU idle
 
 	WDT_Restart(WDT);                                                            // Сбросить вачдог
 	ulIdleCycleCount++;                                                          // приращение счетчика
-	if(countLastTick > xTaskGetTickCount()) countLastTick = 0;                     // Переполнение
 
-	if((xTaskGetTickCount() - countLastTick) > 4000)                // если прошло 4000 тиков (4 сек для моей платформы)
+	if(xTaskGetTickCount() - countLastTick >= 3000)		// мсек
 	{
 		countLastTick = xTaskGetTickCount();                            // расчет нагрузки
-		if(ulIdleCycleCount > max_count) max_count = ulIdleCycleCount; // это калибровка запоминаем максимальные значения
-		HP.CPU_IDLE = (100 * ulIdleCycleCount) / max_count;              // вычисляем текущую загрузку
+		if(ulIdleCycleCount > cpu_idle_max_count) cpu_idle_max_count = ulIdleCycleCount; // это калибровка запоминаем максимальные значения
+		HP.CPU_IDLE = (100 * ulIdleCycleCount) / cpu_idle_max_count;              // вычисляем текущую загрузку
 		ulIdleCycleCount = 0;
-
-	} //if end  4 sec
+		//
+//		static uint8_t xxxx = 0;
+//		if(++xxxx > 3) {
+//			Serial.println(cpu_idle_max_count);
+//			Serial.println(HP.CPU_IDLE);
+//			xxxx = 0;
+//		}
+	}
 
 	// Светодиод мигание в зависимости от ошибки и подача звукового сигнала при ошибке
-	if(((long) xTaskGetTickCount() - countLED) > (unsigned long) TIME_LED_ERR) {
-		if(HP.get_errcode() != OK) {
-			countLED = xTaskGetTickCount();
-			ledState = !ledState;         // Ошибка
-			digitalWriteDirect(PIN_LED_OK, ledState);
+	if(xTaskGetTickCount() - countLED > TIME_LED_ERR) {
+		if(HP.get_errcode() != OK) {          // Ошибка
 			digitalWriteDirect(PIN_BEEP, HP.get_Beep() ? ledState : LOW); // звукового сигнала
-		} else if(((long) xTaskGetTickCount() - countLED) > (unsigned long) TIME_LED_OK)   // Ошибок нет и время пришло
-		{
+			ledState = !ledState;
+			digitalWriteDirect(PIN_LED_OK, ledState);
 			countLED = xTaskGetTickCount();
+		} else if(xTaskGetTickCount() - countLED > TIME_LED_OK)   // Ошибок нет и время пришло
+		{
+			digitalWriteDirect(PIN_BEEP, LOW);
 			ledState = !ledState;       // ОК
 			digitalWriteDirect(PIN_LED_OK, ledState);
-			digitalWriteDirect(PIN_BEEP, LOW);
+			countLED = xTaskGetTickCount();
 		}
 	}
-} //функция
-//} // 
+}
 
 // --------------------------- W E B ------------------------
 // Задача обслуживания web сервера
@@ -942,7 +972,7 @@ void vReadSensor(void *)
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
 		{
-			vReadSensor_delay10ms(5);
+			vReadSensor_delay8ms(5);
 			if (digitalReadDirect(PIN_STEP_DIAG)) set_Error(ERR_DRV_EEV,(char*)__FUNCTION__); // Контроль за работой драйвера ЭРВ
 		}
 #endif

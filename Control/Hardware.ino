@@ -38,41 +38,43 @@ void start_ADC()
               TC_CMR_WAVE |                            // waveform mode
               TC_CMR_WAVSEL_UP_RC |                    // count-up PWM using RC as threshold
               TC_CMR_EEVT_XC0 |                        // Set external events from XC0 (this setup TIOB as output)
-              TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_CLEAR |
-              TC_CMR_BCPB_CLEAR | TC_CMR_BCPC_CLEAR ;
+              TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |    // set clear and set from RA and RC compares
+              TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
  
-  t->TC_RC = VARIANT_MCK/2/PRESS_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
-  t->TC_RA = VARIANT_MCK/2/PRESS_FREQ/2 ;     // roughly square wave
-  t->TC_CMR = (t->TC_CMR & 0xFFF0FFFF) | TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET ;  // set clear and set from RA and RC compares
+  t->TC_RC = SystemCoreClock/2/PRESS_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
+  t->TC_RA = SystemCoreClock/2/PRESS_FREQ/2 ;     // roughly square wave
   t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG ;  // re-enable local clocking and switch to hardware trigger source.
 
  }
 
 // Установка АЦП
-void adc_setup ()
+void adc_setup()
 {
-  uint32_t adcMask=0x00;
-   #ifdef VCC_CONTROL                                   // если разрешено чтение напряжение питания
-     adcMask=adcMask|(0x1u<<PIN_ADC_VCC);               // Добавить маску контроля питания
-   #endif
-  //   adcMask=adcMask|(0x1u<<ADC_TEMPERATURE_SENSOR);         // добавить маску для внутреннего датчика температуры
-  //   adc_enable_ts(ADC);                                     // разрешить чтение температурного датчика в регистре ADC Analog Control Register
+	uint16_t adcMask = 0;
+	uint8_t max = 0;
+#ifdef VCC_CONTROL                             // если разрешено чтение напряжение питания
+	adcMask |= (1<<PIN_ADC_VCC);               // Добавить маску контроля питания
+	max = PIN_ADC_VCC;
+#endif
+	//   adcMask=adcMask|(0x1u<<ADC_TEMPERATURE_SENSOR);         // добавить маску для внутреннего датчика температуры
+	//   adc_enable_ts(ADC);                                     // разрешить чтение температурного датчика в регистре ADC Analog Control Register
 
-  
-// Расчет маски каналов
-for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
-      if (HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) adcMask=adcMask|(0x1u <<HP.sADC[i].get_pinA());     // датчик есть в конфигурации
- 
-  NVIC_EnableIRQ (ADC_IRQn) ;        // enable ADC interrupt vector
-  ADC->ADC_IDR = 0xFFFFFFFF ;        // disable interrupts IDR Interrupt Disable Register
-  ADC->ADC_IER = adcMask;            // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
-//  ADC->ADC_IER =(0x1u <<28);       // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
-  ADC->ADC_CHDR = 0xFFFF ;           // Channel Disable Register CHDR disable all channels
-  ADC->ADC_CHER =adcMask;            // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
-  ADC->ADC_CGR = 0x15555555 ;        // All gains set to x1 Channel Gain Register
- // ADC->ADC_CGR = 0x55555555 ;        // All gains set to x1 Channel Gain Register
-  ADC->ADC_COR = 0x00000000 ;        // All offsets off Channel Offset Register
-  ADC->ADC_MR = (ADC->ADC_MR & 0xFFFFFFF0) | (1 << 1) | ADC_MR_TRGEN ;  // 1 = trig source TIO from TC0
+	// Расчет маски каналов
+	for(uint8_t i = 0; i < ANUMBER; i++) {   // по всем датчикам
+		if(HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) {
+			if(max < HP.sADC[i].get_pinA()) max = HP.sADC[i].get_pinA();
+			adcMask |= 1 << HP.sADC[i].get_pinA();
+		}
+	}
+	NVIC_EnableIRQ(ADC_IRQn);        // enable ADC interrupt vector
+	ADC->ADC_IDR = 0xFFFFFFFF;       // disable interrupts IDR Interrupt Disable Register
+	ADC->ADC_IER = 1 << max;         // Самый старший канал
+	ADC->ADC_CHDR = 0xFFFF;          // Channel Disable Register CHDR disable all channels
+	ADC->ADC_CHER = adcMask;         // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
+	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
+	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
+	// 12bit, 14MHz, trig source TIO from TC0
+	ADC->ADC_MR = ADC_MR_PRESCAL(2) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
 }
 
 
@@ -83,92 +85,79 @@ extern "C"
 #endif
 void ADC_Handler(void)
 {
-	uint8_t i = 0;
-
 #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-	if (ADC->ADC_ISR & (0x1u <<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
-	{
-		HP.AdcVcc =(unsigned int)(*(ADC->ADC_CDR+PIN_ADC_VCC));   // если готов прочитать результат
-	}
+	HP.AdcVcc = (uint32_t)(*(ADC->ADC_CDR + PIN_ADC_VCC));
 #endif
-
-	for(i = 0; i < ANUMBER; i++)    // по всем датчикам
+	for(uint8_t i = 0; i < ANUMBER; i++)    // по всем датчикам
 	{
-		if(!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
-		#ifdef ANALOG_MODBUS
-			if(HP.sADC[i].get_fmodbus()) continue;
-		#endif
-		if(ADC->ADC_ISR & (0x1u << HP.sADC[i].get_pinA())) // ensure there was an End-of-Conversion and we read the ISR reg
-		{
-			HP.sADC[i].adc.lastVal = (unsigned int) (*(ADC->ADC_CDR + HP.sADC[i].get_pinA()));  // get conversion result
-			HP.sADC[i].adc.error = OK;
-		} else continue;
+		sensorADC *adc = &HP.sADC[i];
+		adc->adc_lastVal = (uint32_t)ADC->ADC_CDR[adc->get_pinA()];  // get conversion result
 		// Усреднение значений
-		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum + HP.sADC[i].adc.lastVal;                     // Добавить новое значение
-		HP.sADC[i].adc.sum = HP.sADC[i].adc.sum - HP.sADC[i].adc.p[HP.sADC[i].adc.last]; // Убрать самое старое значение
-		HP.sADC[i].adc.p[HP.sADC[i].adc.last] = HP.sADC[i].adc.lastVal;                       // Запомить новое значение
-		if(HP.sADC[i].adc.last < FILTER_SIZE - 1) HP.sADC[i].adc.last++;
+		adc->adc_sum = adc->adc_sum + adc->adc_lastVal - adc->adc_filter[adc->adc_last];   // Добавить новое значение, Убрать самое старое значение
+		adc->adc_filter[adc->adc_last] = adc->adc_lastVal;			                       // Запомнить новое значение
+		if(adc->adc_last < adc->adc_filter_max) adc->adc_last++;
 		else {
-			HP.sADC[i].adc.last = 0;
-			HP.sADC[i].adc.flagFull = true;
-		} // приращение счетчика
-		//        if (HP.sADC[i].adc.flagFull) HP.sADC[i].adc.val=HP.sADC[i].adc.sum/FILTER_SIZE; else HP.sADC[i].adc.val=HP.sADC[i].adc.sum/HP.sADC[i].adc.last;  // расчет
-	} // for
-	// if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
+			adc->adc_last = 0;
+			adc->adc_flagFull = true;
+		}
+	}
+	// if (ADC->ADC_ISR & (1<<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
 	//            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
 }
 
 #ifdef __cplusplus
 }
 #endif
-
     
 // ------------------------------------------------------------------------------------------
 // Аналоговые датчики давления --------------------------------------------------------------
 // Давление хранится в СОТЫХ БАР
-void sensorADC::initSensorADC(int sensor,int pinA)
-    { 
+void sensorADC::initSensorADC(int sensor, int pinA)
+{
+	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
+	if(SENSORPRESS[sensor])    // отводим память если используем датчик под сырые данные
+		adc_filter_max = sensor <= PCON ? FILTER_SIZE : FILTER_SIZE_OTHER;
+	else adc_filter_max = 1;
+	adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
+	if(adc_filter == NULL) {   // ОШИБКА если память не выделена
+		set_Error(ERR_OUT_OF_MEMORY, (char*) "sensorADC");
+		return;
+	}
+	memset(adc_filter, 0, sizeof(uint16_t) * adc_filter_max);
+	adc_filter_max--;
+	adc_sum = 0;                                                                   // сумма
+	adc_last = 0;                                                                  // текущий индекс
+	adc_flagFull = false;                                                          // буфер полный
+	adc_lastVal = 0;                                                               // последнее считанное значение
+	clearBuffer();
 
-      // Инициализация структуры для хранения "сырых"данных с аналогового датчика.
-      if (SENSORPRESS[sensor]==true)    // отводим память если используем датчик под сырые данные
-      { 
-    //    adc.p=(uint16_t*)malloc(sizeof(uint16_t)*FILTER_SIZE);
-    //    if (adc.p==NULL) { set_Error(ERR_OUT_OF_MEMORY,(char*)"sensorADC");return;}  // ОШИБКА если память не выделена
-        adc.sum=0;                                                                   // сумма
-        adc.last=0;                                                                  // текущий индекс
-        adc.flagFull=false;                                                          // буфер полный
-        adc.lastVal=0;                                                               // последнее считанное значение
- //       adc.err_read=0;                                                              // счетчик ошибкок чтения
-        adc.error=OK;                                                                // Последняя ошибка чтения датчика
-        clearBuffer();
-      }  
- 
-      testMode=NORMAL;                           // Значение режима тестирования
-      cfg.minPress=MINPRESS[sensor];                 // минимально разрешенное давление
-      cfg.maxPress=MAXPRESS[sensor];                 // максимально разрешенное давление
-      cfg.testPress=TESTPRESS[sensor];               // Значение при тестировании
-      cfg.zeroPress=ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
-      cfg.transADC=TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
-      cfg.number = sensor;
-      pin=pinA;
-      flags = SENSORPRESS[sensor]<<fPresent;	 // наличие датчика
-	  #ifdef ANALOG_MODBUS
-      flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
-	  #endif
-      Chart.init(sensor <= PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
-      err=OK;                                     // ошибка датчика (работа)
-      Press=0;                                    // давление датчика (обработанная)
-      note=(char*)notePress[sensor];              // присвоить наименование датчика
-      name=(char*)namePress[sensor];              // присвоить имя датчика
-    };
+	testMode = NORMAL;                           // Значение режима тестирования
+	cfg.minPress = MINPRESS[sensor];                 // минимально разрешенное давление
+	cfg.maxPress = MAXPRESS[sensor];                 // максимально разрешенное давление
+	cfg.testPress = TESTPRESS[sensor];               // Значение при тестировании
+	cfg.zeroPress = ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
+	cfg.transADC = TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
+	cfg.number = sensor;
+	pin = pinA;
+	flags = SENSORPRESS[sensor] << fPresent;	 // наличие датчика
+#ifdef ANALOG_MODBUS
+	flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
+#endif
+	Chart.init(sensor <= PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
+	err = OK;                                     // ошибка датчика (работа)
+	Press = 0;                                    // давление датчика (обработанная)
+	note = (char*) notePress[sensor];              // присвоить наименование датчика
+	name = (char*) namePress[sensor];              // присвоить имя датчика
+}
     
  // очистить буфер АЦП
  void sensorADC::clearBuffer()
  {
-  uint16_t i;
-      for(i=0;i<P_NUMSAMLES;i++) p[i]=0;         // обнуление буффера значений
+#if P_NUMSAMLES > 1
+      for(uint16_t i=0;i<P_NUMSAMLES;i++) p[i]=0;         // обнуление буффера значений
       sum=0;
       last=0;
+#endif
       SETBIT0(flags,fFull);                      // Буфер не полный
       lastPress=0;                               // последнее считанное давление по умолчанию ноль
  }
@@ -203,19 +192,23 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 		 } else
 	#endif
 		 {
-			 if(adc.flagFull) lastADC=adc.sum/FILTER_SIZE; else lastADC=adc.sum/adc.last;
-			 if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
+			 if(adc_flagFull) lastADC=adc_sum/(adc_filter_max+1); else lastADC=adc_sum/adc_last;
+			 //if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
 		 }
 #endif
 		 lastPress=(int)((float)lastADC*(cfg.transADC))-cfg.zeroPress;
 	 }
 	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
+#if P_NUMSAMLES > 1
 	 // Усреднение значений
 	 sum=sum+lastPress;          // Добавить новое значение
 	 sum=sum-p[last];            // Убрать самое старое значение
 	 p[last]=lastPress;          // Запомить новое значение
 	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
 	 if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last;
+#else
+	 Press = lastPress;
+#endif
 
 	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
@@ -232,14 +225,14 @@ void sensorADC::initSensorADC(int sensor,int pinA)
 //int16_t sensorADC::Test()
 //{
 //   int16_t x;
-//   if (adc.flagFull) x=adc.sum/FILTER_SIZE; else x=adc.sum/adc.last;
+//   if (adc.flagFull) x=adc.sum/adc.filter_size; else x=adc.sum/adc.last;
 //   return (int)((float)x*(transADC))-zeroPress;
 //}
 
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
 {
-  if((p>=0)&&(p<=2048)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
+  if((p>=0)&&(p<=4096)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
   else return WARNING_VALUE;
 }
 
@@ -483,37 +476,58 @@ void devRelay::initRelay(int sensor)
 // Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
-  if(!(flags & (1<<fPresent))) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
-  if(r == 0) r = -fR_StatusMain;
-  else if(r == fR_StatusAllOff) {
-	  flags &= ~fR_StatusMask;
-	  r = -fR_StatusMain;
-  }
-  flags = (flags & ~(1<<abs(r))) | ((r > 0)<<abs(r));
-  r = (flags & fR_StatusMask) != 0;
-  if(Relay==r) return OK;                              // Ничего менять не надо выходим
- // if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
- #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
-  switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-         {
-          case NORMAL: digitalWriteDirect(pin, r);                              break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-          case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, r); break; //  Включаем все кроме компрессора
-          case HARD_TEST: digitalWriteDirect(pin, r);                           break; //  Все включаем и компрессор тоже
-        }
-  #else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
-  switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-         {
-          case NORMAL: digitalWriteDirect(pin, !r);                             break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-          case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, !r);break; //  Включаем все кроме компрессора
-          case HARD_TEST: digitalWriteDirect(pin, !r);                          break; //  Все включаем и компрессор тоже
-        }
-  
-  #endif        
-  Relay=r;      
-  journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
-  return OK;
+	if(!(flags & (1 << fPresent))) {
+		return ERR_DEVICE;
+	}  // Реле не установлено  и пытаемся его включить
+	if(r == 0) r = -fR_StatusMain;
+	else if(r == fR_StatusAllOff) {
+		flags &= ~fR_StatusMask;
+		r = -fR_StatusMain;
+	}
+	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
+	r = (flags & fR_StatusMask) != 0;
+	if(Relay == r) return OK;                              // Ничего менять не надо выходим
+	// if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
+#ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
+	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
+	{
+	case NORMAL:
+		digitalWriteDirect(pin, r);
+		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
+	case SAFE_TEST:
+		break;//  Ничего не включаем
+	case TEST:
+		if(number != RCOMP) digitalWriteDirect(pin, r);
+		break;//  Включаем все кроме компрессора
+	case HARD_TEST:
+		digitalWriteDirect(pin, r);
+		break;//  Все включаем и компрессор тоже
+	}
+#else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
+	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
+	{
+	case NORMAL:
+		digitalWriteDirect(pin, !r);
+		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
+	case SAFE_TEST:
+		break; //  Ничего не включаем
+	case TEST:
+		if(number != RCOMP) digitalWriteDirect(pin, !r);
+		break; //  Включаем все кроме компрессора
+	case HARD_TEST:
+		digitalWriteDirect(pin, !r);
+		break; //  Все включаем и компрессор тоже
+	}
+
+#endif
+#ifdef RELAY_WAIT_SWITCH
+	uint8_t tasks_suspended = TaskSuspendAll();
+	delay(RELAY_WAIT_SWITCH);
+	if(tasks_suspended) xTaskResumeAll();
+#endif
+	Relay = r;
+	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
+	return OK;
 }
 
 // ------------------------------------------------------------------------------------------

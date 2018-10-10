@@ -39,18 +39,6 @@
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
 
-// Структура для хранения "сырых"данных с аналогового датчика.
-struct type_rawADC
-{
- uint32_t sum;                          // сумма
- uint16_t p[FILTER_SIZE];               // массив накопленных значений
- //uint16_t *p;                           // указатель на массив накопленных значений, не забыть память выделить
- uint16_t last;                         // текущий индекс
- boolean flagFull;                      // буфер полный
- uint16_t lastVal;                      // последнее считанное значение
- //uint32_t err_read;                     // счетчик ошибкок чтения
- uint8_t  error;                        // Последняя ошибка чтения датчика
-};
 // ------------------------------------------------------------------------------------------
 // Д А Т Ч И К И  ---------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------
@@ -76,14 +64,14 @@ class sensorADC
     int16_t get_zeroPress(){return cfg.zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
     int8_t  set_zeroPress(int16_t p);                    // Установка Выход датчика (отсчеты ацп)  соответсвующий 0
     int16_t get_lastPress(){return lastPress;}           // Последнее считанное значение датчика - НЕ обработанное (без усреднения)
-    int16_t get_lastADC(){ return lastADC; }             // Последнее считанное значение датчика в отсчетах с фильтром
+    uint16_t get_lastADC(){ return lastADC; }            // Последнее считанное значение датчика в отсчетах с фильтром
     int16_t get_Press();                                 // Получить значение давления датчика - это то что используется
-    float get_transADC(){return cfg.transADC;}               // Получить значение коэффициента преобразования напряжение-температура
+    float get_transADC(){return cfg.transADC;}           // Получить значение коэффициента преобразования напряжение-температура
     int8_t set_transADC(float p);                        // Установить значение коэффициента преобразования напряжение-температура
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
     int8_t  get_lastErr(){return err;}                   // Получить последнюю ошибку
-    inline int8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
+    inline uint8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
     int16_t get_testPress(){return cfg.testPress;}           // Получить значение давления датчика в режиме теста
     int8_t  set_testPress(int16_t p);                    // Установить значение давления датчика в режиме теста
     int8_t  set_minPress(int16_t p) { cfg.minPress = p; return OK; }
@@ -97,7 +85,13 @@ class sensorADC
     uint16_t get_save_size(void) { return sizeof(cfg); } // Размер структуры сохранения
    
     statChart Chart;                                      // График по датчику
-    type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
+    //type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
+    uint32_t adc_sum;                          			// сумма
+    uint16_t *adc_filter;              						// массив накопленных значений
+    uint16_t adc_filter_max;
+    uint16_t adc_last;       			                // текущий индекс
+    boolean  adc_flagFull;              			    // буфер полный
+    uint16_t adc_lastVal;                      			// последнее считанное значение
     
   private:
     int16_t lastPress;                                   // последнее считанное давление с датчика
@@ -118,10 +112,11 @@ class sensorADC
     byte 	flags;                                       // флаги  датчика
     // Кольцевой буфер для усреднения
     void clearBuffer();                                  // очистить буфер
+#if P_NUMSAMLES > 1
     int16_t p[P_NUMSAMLES];                              // буфер для усреднения показаний давления
     int32_t sum;                                         // Накопленная сумма
     uint8_t last;                                        // указатель на последнее (самое старое) значение в буфере диапазон от 0 до P_NUMSAMLES-1
-   
+#endif
     char *note;                                          // Описание датчика
     char *name;                                          // Имя датчика
 };
