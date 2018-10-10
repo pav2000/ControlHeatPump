@@ -73,7 +73,7 @@ class sensorADC
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
     int8_t  get_lastErr(){return err;}                   // Получить последнюю ошибку
-    inline int8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
+    inline uint8_t  get_pinA(){return pin;}               // Получить канал АЦП (нумерация SAM3X) куда прицеплен датчик
     int16_t get_testPress(){return cfg.testPress;}           // Получить значение давления датчика в режиме теста
     int8_t  set_testPress(int16_t p);                    // Установить значение давления датчика в режиме теста
     int8_t  set_minPress(int16_t p) { cfg.minPress = p; return OK; }
@@ -94,7 +94,6 @@ class sensorADC
     uint16_t adc_last;       			                // текущий индекс
     boolean  adc_flagFull;              			    // буфер полный
     uint16_t adc_lastVal;                      			// последнее считанное значение
-    uint16_t adc_Mask;
     
   private:
     int16_t lastPress;                                   // последнее считанное давление с датчика
