@@ -170,7 +170,6 @@ struct type_statusHP
  uint32_t pumpCO_OFF;                     // Время выключения насоса системы отопления
 };
 
-
 // ------------------------- ОСНОВНОЙ КЛАСС --------------------------------------
 class HeatPump
   {
@@ -210,6 +209,9 @@ class HeatPump
     char *get_command_name(TYPE_COMMAND c) { return (char*)hp_commands_names[c < pEND14 ? c : pEND14]; }
     boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
     uint8_t is_pause();					// Возвращает 1, если ТН в паузе
+	inline boolean is_compressor_on() { return dRelay[RCOMP].get_Relay() || dFC.isfOnOff(); }    // Проверка работает ли компрессор
+
+
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки

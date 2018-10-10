@@ -476,37 +476,58 @@ void devRelay::initRelay(int sensor)
 // Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
-  if(!(flags & (1<<fPresent))) { return ERR_DEVICE; }  // Реле не установлено  и пытаемся его включить
-  if(r == 0) r = -fR_StatusMain;
-  else if(r == fR_StatusAllOff) {
-	  flags &= ~fR_StatusMask;
-	  r = -fR_StatusMain;
-  }
-  flags = (flags & ~(1<<abs(r))) | ((r > 0)<<abs(r));
-  r = (flags & fR_StatusMask) != 0;
-  if(Relay==r) return OK;                              // Ничего менять не надо выходим
- // if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
- #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
-  switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-         {
-          case NORMAL: digitalWriteDirect(pin, r);                              break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-          case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, r); break; //  Включаем все кроме компрессора
-          case HARD_TEST: digitalWriteDirect(pin, r);                           break; //  Все включаем и компрессор тоже
-        }
-  #else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
-  switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-         {
-          case NORMAL: digitalWriteDirect(pin, !r);                             break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-          case SAFE_TEST:                                                       break; //  Ничего не включаем
-          case TEST:   if(number != RCOMP) digitalWriteDirect(pin, !r);break; //  Включаем все кроме компрессора
-          case HARD_TEST: digitalWriteDirect(pin, !r);                          break; //  Все включаем и компрессор тоже
-        }
-  
-  #endif        
-  Relay=r;      
-  journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
-  return OK;
+	if(!(flags & (1 << fPresent))) {
+		return ERR_DEVICE;
+	}  // Реле не установлено  и пытаемся его включить
+	if(r == 0) r = -fR_StatusMain;
+	else if(r == fR_StatusAllOff) {
+		flags &= ~fR_StatusMask;
+		r = -fR_StatusMain;
+	}
+	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
+	r = (flags & fR_StatusMask) != 0;
+	if(Relay == r) return OK;                              // Ничего менять не надо выходим
+	// if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
+#ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
+	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
+	{
+	case NORMAL:
+		digitalWriteDirect(pin, r);
+		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
+	case SAFE_TEST:
+		break;//  Ничего не включаем
+	case TEST:
+		if(number != RCOMP) digitalWriteDirect(pin, r);
+		break;//  Включаем все кроме компрессора
+	case HARD_TEST:
+		digitalWriteDirect(pin, r);
+		break;//  Все включаем и компрессор тоже
+	}
+#else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
+	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
+	{
+	case NORMAL:
+		digitalWriteDirect(pin, !r);
+		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
+	case SAFE_TEST:
+		break; //  Ничего не включаем
+	case TEST:
+		if(number != RCOMP) digitalWriteDirect(pin, !r);
+		break; //  Включаем все кроме компрессора
+	case HARD_TEST:
+		digitalWriteDirect(pin, !r);
+		break; //  Все включаем и компрессор тоже
+	}
+
+#endif
+#ifdef RELAY_WAIT_SWITCH
+	uint8_t tasks_suspended = TaskSuspendAll();
+	delay(RELAY_WAIT_SWITCH);
+	if(tasks_suspended) xTaskResumeAll();
+#endif
+	Relay = r;
+	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
+	return OK;
 }
 
 // ------------------------------------------------------------------------------------------

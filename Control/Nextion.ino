@@ -59,7 +59,9 @@ boolean Nextion::init()
 	//  sendCommand("baud=115200");
 	//  _delay(100);
 	//  NEXTION_PORT.begin(115200);
-	sendCommand("rest");
+	//sendCommand("rest");
+	sendCommand("cls 0");
+	sendCommand("sendme");
 	uint16_t timeout = 500; // ~ms
 	while(--timeout) {
 		_delay(1);
@@ -262,7 +264,7 @@ void Nextion::readCommand()
 void Nextion::Update()
 {
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-		if(HP.get_startCompressor() && HP.get_startCompressor() > HP.get_stopCompressor()) {
+		if(HP.is_compressor_on()) {
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("thsp=0");
 				sendCommand("sleep=0");

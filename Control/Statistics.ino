@@ -41,6 +41,7 @@ void Statistics::Reset()
 		}
 	}
 	counts = 0;
+	counts_work = 0;
 	day = rtcSAM3X8.get_days();
 	previous = millis();
 }
@@ -56,6 +57,7 @@ void Statistics::Update()
 		Reset();
 	}
 	int32_t newval = 0;
+	boolean compressor_on = HP.is_compressor_on();
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Temp:
@@ -77,7 +79,12 @@ void Statistics::Update()
 			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
 				newval = HP.power220; // Вт
 			} else continue;
-			if(Stats_data[i].type == STATS_TYPE_SUM || Stats_data[i].type == STATS_TYPE_AVG) newval = newval * tm / 3600; // в мВт
+			switch(Stats_data[i].type) {
+			case STATS_TYPE_SUM:
+			case STATS_TYPE_AVG:
+			case STATS_TYPE_AVG_WORK:
+				newval = newval * tm / 3600; // в мВт
+			}
 			break;
 		case STATS_OBJ_COP:
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
@@ -87,8 +94,9 @@ void Statistics::Update()
 			}
 			break;
 		case STATS_OBJ_Time:
-			if(Stats_data[i].number == OBJ_Compressor && HP.get_startCompressor() && !HP.get_stopCompressor()) break;
+			if(Stats_data[i].number == OBJ_Compressor && compressor_on) break;
 			else if(Stats_data[i].number == OBJ_Sun && GETBIT(HP.flags, fHP_SunActive)) break;
+			continue;
 		default: continue;
 		}
 		switch(Stats_data[i].type){
@@ -102,12 +110,17 @@ void Statistics::Update()
 		case STATS_TYPE_SUM:
 			Stats_data[i].value += newval;
 			break;
+		case STATS_TYPE_AVG_WORK:
+			if(!compressor_on) continue;
+			Stats_data[i].value += newval;
+			break;
 		case STATS_TYPE_CNT:
 			Stats_data[i].value += tm;
 			break;
 		}
 	}
 	counts++;
+	if(compressor_on) counts_work++;
 	//if(counts % 30 == 0) Save();
 }
 
@@ -155,13 +168,16 @@ void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
 	}
 	switch(Stats_data[i].type){
 	case STATS_TYPE_MIN:
-		strcat(ret, " - Мин.");
+		strcat(ret, " - Мин");
 		break;
 	case STATS_TYPE_MAX:
-		strcat(ret, " - Макс.");
+		strcat(ret, " - Макс");
 		break;
 	case STATS_TYPE_AVG:
-		strcat(ret, " - Сред.");
+		strcat(ret, " - Сред");
+		break;
+	case STATS_TYPE_AVG_WORK:
+		strcat(ret, " - Сред(компр)");
 		break;
 	}
 }
@@ -177,17 +193,17 @@ void Statistics::ReturnFileHeader(char *ret)
 
 void Statistics::ReturnFieldString(char *ret, uint8_t i)
 {
-	float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].value;
+	float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].type == STATS_TYPE_AVG_WORK ? Stats_data[i].value / counts_work : Stats_data[i].value;
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:
 	case STATS_OBJ_Press:
-		_ftoa(ret, val / 10, 1);
+		_ftoa(ret, val / 10, 1);	 // bar
 		break;
 	case STATS_OBJ_Voltage:
 		_ftoa(ret, val, 0);
 		break;
 	case STATS_OBJ_Power:
-		_ftoa(ret, val / 1000, 3);
+		_ftoa(ret, val / 1000000, 3); // кВт*ч
 		break;
 	case STATS_OBJ_COP:
 		_ftoa(ret, val / 100, 2);
