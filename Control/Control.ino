@@ -488,6 +488,8 @@ x_I2C_init_std_message:
 
   start_ADC(); // после инициализации HP
   journal.jprintf("13. Start read ADC sensors\n"); 
+  journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR); 
+  
 
   #ifdef NEXTION   
     journal.jprintf("14. Nextion display - ");
