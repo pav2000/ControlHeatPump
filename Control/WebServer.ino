@@ -1160,7 +1160,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
 
-        strcat(strReturn,"Статистика за день:||"); Stats.ReturnFileString(strReturn); strcat(strReturn,";");
+        strcat(strReturn,"Статистика за день:|;");
+        Stats.ReturnWebTable(strReturn);
 
         ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo

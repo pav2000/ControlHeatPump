@@ -881,13 +881,6 @@ void vReadSensor(void *)
 		WDT_Restart(WDT);
 
 		ttime = millis();
-
-
-		 Serial.print(millis());
-		 Serial.print('=');
-		 Serial.println(adc_mil);
-
-
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);

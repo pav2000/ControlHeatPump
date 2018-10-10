@@ -96,7 +96,10 @@ public:
 	void Reset();							// Сбросить накопленные промежуточные значения
 	void Save();							// Записать статистику на SD
 	void ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
+	void ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag));
 	void ReturnFileString(char *ret);		// Строка со значениями за день
+	void ReturnFieldString(char *ret, uint8_t i);
+	void ReturnWebTable(char *ret);
 private:
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint32_t previous;

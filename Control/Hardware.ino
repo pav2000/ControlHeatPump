@@ -69,11 +69,9 @@ void adc_setup()
 	NVIC_EnableIRQ(ADC_IRQn);        // enable ADC interrupt vector
 	ADC->ADC_IDR = 0xFFFFFFFF;       // disable interrupts IDR Interrupt Disable Register
 	ADC->ADC_IER = 1 << max;         // Самый старший канал
-	//  ADC->ADC_IER =(0x1u <<28);   // IER Interrupt Enable Register enable AD11 End-Of-Conv interrupt (Arduino pin A9) каналы здесь SAMX3!!
 	ADC->ADC_CHDR = 0xFFFF;          // Channel Disable Register CHDR disable all channels
 	ADC->ADC_CHER = adcMask;         // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
-	ADC->ADC_CGR = 0x15555555;       // All gains set to x1 Channel Gain Register
-	// ADC->ADC_CGR = 0x55555555 ;   // All gains set to x1 Channel Gain Register
+	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
 	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
 	// 12bit, 14MHz, trig source TIO from TC0
 	ADC->ADC_MR = ADC_MR_PRESCAL(2) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
@@ -87,23 +85,13 @@ extern "C"
 #endif
 void ADC_Handler(void)
 {
-
-
-	adc_mil++;
-
-
 #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-	if(ADC->ADC_ISR & (1<<PIN_ADC_VCC))   // ensure there was an End-of-Conversion and we read the ISR reg
-	{
-		HP.AdcVcc = (uint32_t)(*(ADC->ADC_CDR + PIN_ADC_VCC));   // если готов прочитать результат
-		return;
-	}
+	HP.AdcVcc = (uint32_t)(*(ADC->ADC_CDR + PIN_ADC_VCC));
 #endif
 	for(uint8_t i = 0; i < ANUMBER; i++)    // по всем датчикам
 	{
 		sensorADC *adc = &HP.sADC[i];
 		adc->adc_lastVal = (uint32_t)ADC->ADC_CDR[adc->get_pinA()];  // get conversion result
-		//adc->error = OK;
 		// Усреднение значений
 		adc->adc_sum = adc->adc_sum + adc->adc_lastVal - adc->adc_filter[adc->adc_last];   // Добавить новое значение, Убрать самое старое значение
 		adc->adc_filter[adc->adc_last] = adc->adc_lastVal;			                       // Запомнить новое значение
@@ -113,14 +101,13 @@ void ADC_Handler(void)
 			adc->adc_flagFull = true;
 		}
 	}
-	// if (ADC->ADC_ISR & (0x1u <<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
+	// if (ADC->ADC_ISR & (1<<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
 	//            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
 }
 
 #ifdef __cplusplus
 }
 #endif
-
     
 // ------------------------------------------------------------------------------------------
 // Аналоговые датчики давления --------------------------------------------------------------
@@ -130,7 +117,7 @@ void sensorADC::initSensorADC(int sensor, int pinA)
 	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
 	if(SENSORPRESS[sensor] == true)    // отводим память если используем датчик под сырые данные
 	{
-		adc_filter_max = sensor < 2 ? FILTER_SIZE : FILTER_SIZE_OTHER;
+		adc_filter_max = sensor <= PCON ? FILTER_SIZE : FILTER_SIZE_OTHER;
 		adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
 		if(adc_filter == NULL) {   // ОШИБКА если память не выделена
 			set_Error(ERR_OUT_OF_MEMORY, (char*) "sensorADC");
@@ -246,7 +233,7 @@ void sensorADC::initSensorADC(int sensor, int pinA)
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
 {
-  if((p>=0)&&(p<=2048)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
+  if((p>=0)&&(p<=4096)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
   else return WARNING_VALUE;
 }
 
