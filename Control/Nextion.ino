@@ -57,10 +57,12 @@ boolean Nextion::init()
 	NEXTION_PORT.begin(9600);
 	// Поднятие скорости обмена
 	//  sendCommand("baud=115200");
-	//  _delay(100);
+//	  _delay(100);
 	//  NEXTION_PORT.begin(115200);
-	//sendCommand("rest");
-	sendCommand("cls 0");
+//	sendCommand("rest");
+//	sendCommand("cls 0");
+    sendCommand("sleep=0");
+     _delay(100);
 	sendCommand("sendme");
 	uint16_t timeout = 500; // ~ms
 	while(--timeout) {
