@@ -177,9 +177,9 @@ void sensorADC::initSensorADC(int sensor, int pinA)
 	#ifdef ANALOG_MODBUS
 		 if(get_fmodbus()) {
 			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
-				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[cfg.number], ANALOG_MODBUS_REG[cfg.number] - 1, &adc.last);
+				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[cfg.number], ANALOG_MODBUS_REG[cfg.number] - 1, &adc_lastVal);
 				if(err == OK) {
-					lastADC = adc.last;
+					lastADC = adc_lastVal;
 					break;
 				}
 				_delay(ANALOG_MODBUS_ERR_DELAY);
