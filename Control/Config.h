@@ -2736,7 +2736,7 @@ enum TYPE_SENSOR
   const int16_t MINPRESS[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения давления, в сотых бар
   const uint16_t MAXPRESS[ANUMBER]  = {  700,  2200,  250,  250};	// Максимальные значения давления, в сотых бар
   const uint16_t TESTPRESS[ANUMBER] = {  150,   800,  150,  150};	// Значения датчиков при тестировании  опция TEST, в сотых бар
-  #define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
+  //#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
   #ifdef ANALOG_MODBUS
 	  #define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
 	  #define ANALOG_MODBUS_ERR_DELAY				50			// Задержка при ошибки чтения
