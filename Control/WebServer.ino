@@ -1535,8 +1535,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
                 else {
             	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
             		  HP.Prof.set_list((int8_t)pm);
-            		  HP.save();
-            		  HP.Prof.save(HP.Prof.get_idProfile());
+            		  //HP.save();
+            		  //HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
             	  } else strcat(strReturn,"E29");
                   ADD_WEBDELIM(strReturn) ;    continue;

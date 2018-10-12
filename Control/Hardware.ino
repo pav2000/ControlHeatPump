@@ -908,7 +908,9 @@ void devEEV::CorrectOverheat(void)
 		else if(delta < (x = OHCor_tdelta)) { // - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
 			if(delta < x * 3 / 4) { // Слижком мало (меньше 3/4 от дельты) - устанавливаем перегрев принудительно
 				_data.tOverheat = delta > x / 2 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
+#ifdef DEBUG_MODWORK
 				journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)delta / 100.0, (float)_data.tOverheat / 100.0);
+#endif
 				return;
 			}
 		} else return;

@@ -131,6 +131,8 @@ const uint16_t  defaultPort=80;
 #define TIME_LED_OK       1500             // Период мигания светодиода при ОК (мсек)
 #define TIME_LED_ERR      200              // Период мигания светодиода при ошибке (мсек).
 #define cDELAY_START_MESSAGE 60            // Задержка (сек) после старта на отправку сообщений
+#define UPDATE_HP_WAIT_PERIOD 5000			// Период вызова vUpdate во время ожидания или ошибки, мсек
+#define NO_POWER_ON_DELAY_CNT 2				// *TIME_READ_SENSOR
 
 // ------------------- I2C ----------------------------------
 // Устройства i2c I2C_EEPROM_64KB и I2C_FRAM_MEMORY   Размер и тип памяти, определен в config.h т.к. он часто меняется

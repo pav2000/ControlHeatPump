@@ -464,6 +464,7 @@ class HeatPump
     uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
     uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
+    uint8_t  NO_Power_delay;
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки

@@ -400,7 +400,7 @@ int8_t HeatPump::save_motoHour()
 		set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
 		return ERR_SAVE2_EEPROM;
 	}  // записать счетчики
-	journal.jprintf("Counters saved\n");
+	//journal.jprintf("Counters saved\n");
 	return OK;
 }
 
@@ -2820,7 +2820,7 @@ boolean HeatPump::check_compressor_pause(MODE_HP mod)
 #else
 		if((nTime = (mod == pHEAT ? Prof.Heat.pause : mod == pCOOL ? Prof.Cool.pause : mod == pBOILER ? Prof.Boiler.pause : 0) - nTime) > 0) {
 			#ifdef DEBUG_MODWORK
-				journal.jprintf(" Compressor pause %ds\n", nTime);
+				if(nTime <= UPDATE_HP_WAIT_PERIOD / 1000) journal.jprintf(" Compressor pause\n");
 			#endif
 			return true;
 		}
@@ -2900,8 +2900,9 @@ dEEV.CorrectOverheatInit();
 		}
 #endif
 
-
+#ifdef DEBUG_MODWORK
 		journal.jprintf(pP_TIME, "Pause %ds before start compressor\n", Option.delayOnPump);
+#endif
 		uint16_t d = Option.delayOnPump;
 #ifdef FLOW_CONTROL
 		for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
