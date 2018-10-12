@@ -18,11 +18,56 @@
  */
 #include "Statistics.h"
 #include "HeatPump.h"
-
+#include "SdFat.h"
 
 void Statistics::Init()
 {
 	Reset();
+	if(!HP.get_fSD()) {
+		journal.jprintf(" No SD card - statistics will not be saved!\n");
+		return;
+	}
+	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+	strcpy(filename, stats_file_start);
+	_itoa(rtcSAM3X8.get_years(), filename);
+	strcat(filename, stats_file_ext);
+	SPI_switchSD();
+	if(!card.exists(filename)) {
+		if(!StatsFile.createContiguous(filename, MAX_FILE_DATA_SIZE)) {
+			Error("create file");
+			return;
+		}
+
+	} else if(StatsFile.open(filename, O_RDWR)) {
+		Error("open file");
+		return;
+	}
+	if(!StatsFile.contiguousRange(&BlockStart, &BlockEnd)) {
+		journal.jprintf(" Error get blocks!\n");
+	}
+	CurrentPos = FindEndPosition(stats_buffer, BlockStart, BlockEnd);
+
+}
+
+uint32_t Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
+{
+	while(1) {
+		card.card()->readBlock();
+
+	}
+
+}
+
+void Statistics::CreateNewFile(char *filename)
+{
+	if(!StatsFile.createContiguous(filename, MAX_FILE_DATA_SIZE)) {
+		journal.jprintf(" Error create file (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+	}
+}
+
+void Statistics::Error(const char *text)
+{
+	journal.jprintf("Stats Error %s (%d,%d)!\n", text, card.cardErrorCode(), card.cardErrorData());
 }
 
 // Сбросить накопленные промежуточные значения
@@ -231,6 +276,12 @@ void Statistics::ReturnWebTable(char *ret)
 		ReturnFieldString(ret, i);
 		strcat(ret, ";");
 	}
+}
+
+void Statistics::SendFileData(uint8_t thread, char *filename)
+{
+
+
 }
 
 // Записать статистику на SD

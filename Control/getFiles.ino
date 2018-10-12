@@ -1043,6 +1043,10 @@ void get_statistics_file(uint8_t thread, char *filename)
     strcat(Socket[thread].outBuf, filename);
     strcat(Socket[thread].outBuf, "\"");
     strcat(Socket[thread].outBuf, WEB_HEADER_END);
-	Stats.ReturnFileHeader(Socket[thread].outBuf);
-	if(strncmp(filename + 6, "head", 4) == 0) sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
+		Stats.ReturnFileHeader(Socket[thread].outBuf);
+		sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	} else {
+		Stats.SendFileData(thread, filename);
+	}
 }

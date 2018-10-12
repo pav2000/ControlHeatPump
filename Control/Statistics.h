@@ -21,7 +21,9 @@
 #define Statistics_h
 #include "Constant.h"
 
-#define STAT_PERIOD		60	// Период статистики, сек
+//#define STAT_PERIOD		60	// Период статистики, сек
+#define SD_BLOCK			512
+#define MAX_FILE_DATA_SIZE (((15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8) * 366 / SD_BLOCK + 1) * SD_BLOCK)
 
 enum {
 	STATS_OBJ_Temp = 0,		// °C
@@ -89,6 +91,11 @@ Stats_Data Stats_data[] = {
 #endif
 						};
 
+const char stats_file_start[] = "stats_";
+const char stats_file_header[] = "head";
+const char stats_file_ext[] = ".csv";
+uint8_t *stats_buffer[SD_BLOCK];
+
 class Statistics
 {
 public:
@@ -102,11 +109,19 @@ public:
 	void ReturnFileString(char *ret);		// Строка со значениями за день
 	void ReturnFieldString(char *ret, uint8_t i);
 	void ReturnWebTable(char *ret);
+	void SendFileData(uint8_t thread, char *filename);
+	void CreateNewFile(char *filename);
+	uint32_t FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
 private:
+	void Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
 	uint32_t previous;
 	uint8_t	 day;
+	SdFile   StatsFile;
+	uint32_t BlockStart;
+	uint32_t BlockEnd;
+	uint32_t CurrentPos;
 };
 
 Statistics Stats;
