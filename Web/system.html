@@ -33,8 +33,10 @@
 		</tbody>	
 		<tbody id="get_sysinfo">
 		</tbody>
-		</table>		
-		<p>1. Флаг Сервис > Сеть > Ежеминутный контроль связи с w5200, и при необходимости его сброс</p>
+		</table>
+		1. Старший байт номер задачи (номер см. на странице ОС RTOS), младший байт код ошибки [1:configASSERT fails, 2:malloc fails, 3:stack overflow, 4:hard fault, 5:bus fault, 6:usage fault, 7:crash data]<br>
+		2. Установка флага Сервис > Сеть > Ежеминутный контроль связи с w5200, и при необходимости его сброс<br>
+                <br>
 		<input type="submit" value="Сброс контроллера"  onclick='loadParam("RESET")'>
 		<input type="submit" value="Сброс W5200"  onclick='loadParam("RESET_NET")'>
 		<input type="submit" value="Сброс сезонных счетчиков"  onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_COUNT,RELOAD")'> Введите RESET: <input id="reset_code" size="7">

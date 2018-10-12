@@ -443,7 +443,7 @@ x_I2C_init_std_message:
         {
         case pMIN_WEB:   journal.jprintf("internal\n"); break;
         case pSD_WEB:    journal.jprintf("SD card\n"); break;
-        case pFLASH_WEB: journal.jprintf("Flash disk\n"); break;
+        case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
         default:         journal.jprintf("unknown\n"); break;
         }
 

@@ -2870,7 +2870,6 @@ void HeatPump::compressorON(MODE_HP mod)
 	}
 dEEV.CorrectOverheatInit();	
 #endif
-
 	
 
 	// 3. Управление компрессором
@@ -2886,7 +2885,7 @@ dEEV.CorrectOverheatInit();
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
-			set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
+			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
 			return;
 		}
 #ifndef SUPERBOILER  // для супербойлера это лишнее
@@ -2896,7 +2895,7 @@ dEEV.CorrectOverheatInit();
 #endif
 		)) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", "Out pump");
-			set_Error(ERR_NO_WORK, (char*)__FUNCTION__);
+			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
 			return;
 		}
 #endif
@@ -3052,7 +3051,7 @@ void HeatPump::defrost()
       }
       journal.jprintf(" Finish defrost, wait delayDefrostOff min.\n"); 
       _delay(Option.delayDefrostOff*1000);               // Задержка перед выключением
-      compressorOFF();                                                     // выключить компрессор
+      compressorOFF();                                   // выключить компрессор
       journal.jprintf("Finish defrost\n"); 
       // выходим ТН сам определит что надо делать
 }
