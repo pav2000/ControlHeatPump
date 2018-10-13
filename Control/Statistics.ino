@@ -348,4 +348,5 @@ void Statistics::Save()
 			} else CurrentPos += len;
 		}
 	} else CurrentPos += len;
+	free(rbuf);
 }

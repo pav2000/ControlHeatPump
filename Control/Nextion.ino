@@ -62,7 +62,7 @@ boolean Nextion::init()
 //	sendCommand("rest");
 //	sendCommand("cls 0");
     sendCommand("sleep=0");
-     _delay(100);
+    _delay(100);
 	sendCommand("sendme");
 	uint16_t timeout = 500; // ~ms
 	while(--timeout) {
@@ -268,8 +268,9 @@ void Nextion::Update()
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
 		if(HP.is_compressor_on()) {
 			if(!GETBIT(flags, fSleep)) {
-				sendCommand("thsp=0");
 				sendCommand("sleep=0");
+				_delay(10);
+				sendCommand("thsp=0");
 				flags |= (1<<fSleep);
 				fUpdate = 2;
 			}
