@@ -420,9 +420,9 @@ class HeatPump
     statChart ChartCOP;                                     // Коэффициент преобразования
     statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
     
-    float powerCO;                                          // Мощность системы отопления
-    float powerGEO;                                         // Мощность системы GEO
-    float power220;                                         // Мощность системы 220
+    float powerCO;                                          // Мощность системы отопления, Вт
+    float powerGEO;                                         // Мощность системы GEO, Вт
+    float power220;                                         // Мощность системы 220, Вт
     int16_t fullCOP;                                        // Полный СОР сотые
     int16_t COP;                                            // Чистый COP сотые
     

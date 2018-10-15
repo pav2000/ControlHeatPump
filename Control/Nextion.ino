@@ -62,9 +62,9 @@ boolean Nextion::init()
 //	sendCommand("rest");
 //	sendCommand("cls 0");
     sendCommand("sleep=0");
-    _delay(100);
+    _delay(NEXTION_BOOT_TIME);
 	sendCommand("sendme");
-	uint16_t timeout = 500; // ~ms
+	uint16_t timeout = NEXTION_BOOT_TIME * 2; // ~ms
 	while(--timeout) {
 		_delay(1);
 		if(check_incoming()) break;
@@ -269,7 +269,7 @@ void Nextion::Update()
 		if(HP.is_compressor_on()) {
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("sleep=0");
-				_delay(10);
+				_delay(NEXTION_BOOT_TIME);
 				sendCommand("thsp=0");
 				flags |= (1<<fSleep);
 				fUpdate = 2;

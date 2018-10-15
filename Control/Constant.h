@@ -80,6 +80,7 @@ const uint16_t  defaultPort=80;
 //#define NEXTION_DEBUG                     // Выводить информацию в отладочный порт с дисплея
 #define NEXTION_PORT      Serial1            // Аппаратный порт куда прицеплен дисплей
 #define NEXTION_UPDATE    5000               // Время обновления информации на дисплее Nextion (мсек)
+#define NEXTION_BOOT_TIME 200				// ms
 #define NEXTION_READ      20                 // Время опроса дисплея Nextion (мсек) разбор входной очереди
 
 // Конфигурирование Modbus для инвертора и счетчика SDM
@@ -1227,6 +1228,6 @@ enum RULE_HP
     pEND1             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
- #endif
+#endif
 
 

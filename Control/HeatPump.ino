@@ -3507,6 +3507,9 @@ if (get_modWork()!=pOFF) { // Для избавления от глюков ко
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	power220 = dSDM.get_Power();
+#ifdef CORRECT_POWER220
+	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
+#endif
 	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // в сотых долях !!!!!!
 #endif
 

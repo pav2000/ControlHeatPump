@@ -745,6 +745,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
        {
    		_ftoa(strReturn, HP.powerGEO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
        }
+    if (strcmp(str,"get_Power220") == 0)
+       {
+   		_ftoa(strReturn, HP.power220/1000.0,3); ADD_WEBDELIM(strReturn); continue;
+       }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
