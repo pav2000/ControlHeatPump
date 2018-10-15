@@ -2166,7 +2166,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			journal.jprintf("%s %.2f (TCOMP: %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,sTemp[TCOMP].get_Temp()/100.0);
 #endif
 			if (dFC.get_targetFreq()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler()) { Status.ret=pBp25; return pCOMP_OFF; }      // Уменьшать дальше некуда, выключаем компрессор
-			dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); Status.ret=pBp8; return pCOMP_NONE;              // Уменьшить частоту
+			dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); Status.ret=pBp8; return pCOMP_NONE; // Уменьшить частоту
 		}
 		else if ((dFC.isfOnOff())&&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))    // давление конденсатора до максимальной минус 0.5 бара
 		{
