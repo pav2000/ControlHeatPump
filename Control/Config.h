@@ -2507,7 +2507,7 @@ struct CORRECT_POWER220_STRUCT {
 
 	//#define RELAY_WAIT_SWITCH	11			// Заморозить выполнение задач на это время после переключения реле, ms
 
-   	#define CORRECT_POWER220
+   	#define CORRECT_POWER220				// Корректировка потребляемой мощности из электросети (и для расчета COP), если включены указанные реле, Вт
 	#ifdef CORRECT_POWER220
     	const CORRECT_POWER220_STRUCT correct_power220[] = { {RPUMPFL, 45} };
 	#endif
