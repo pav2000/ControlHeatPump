@@ -2364,7 +2364,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		if (Prof.Heat.Ki>0)                                                                           // Расчет интегральной составляющей
 		{
 			temp_int=temp_int+((float)Prof.Heat.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
-#define HEAT_MAX_STEP  5                                                                     // Ограничение диапзона изменения 5 герц за один шаг ПИД
+#define HEAT_MAX_STEP  5                                                                                 // Ограничение диапзона изменения 5 герц за один шаг ПИД
 			if (temp_int>HEAT_MAX_STEP)  temp_int=HEAT_MAX_STEP;
 			if (temp_int<-1.0*HEAT_MAX_STEP)  temp_int=-1.0*HEAT_MAX_STEP;
 		}
@@ -3500,10 +3500,11 @@ void HeatPump::calculatePower()
 #endif
 
 
+
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
 if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 #endif	
-	COP = dFC.get_power();
+	COP = dFC.get_power();  // получить текущую мощность компрессора
 	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
 #ifdef USE_ELECTROMETER_SDM
 	power220 = dSDM.get_Power();
