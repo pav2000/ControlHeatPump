@@ -443,7 +443,7 @@ x_I2C_init_std_message:
         {
         case pMIN_WEB:   journal.jprintf("internal\n"); break;
         case pSD_WEB:    journal.jprintf("SD card\n"); break;
-        case pFLASH_WEB: journal.jprintf("Flash disk\n"); break;
+        case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
         default:         journal.jprintf("unknown\n"); break;
         }
 
@@ -480,7 +480,7 @@ x_I2C_init_std_message:
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
 	   HP.Prof.load(_profile);
 	   HP.set_profile();
-	   journal.jprintf("Profile changed to %d\n", _profile);
+	   journal.jprintf("Profile changed to #%d\n", _profile);
    }
 
   if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
@@ -758,14 +758,16 @@ void vWeb0( void *)
           if((HP.get_fInitW5200()) && (thisTime - iniW5200 > 60 * 1000UL) && (active)) // проверка связи с чипом сети раз в минуту
           {
         	  iniW5200 = thisTime;
-        	  boolean lst = linkStatusWiznet(false);
-        	  if(!lst || !network_last_link) {
-        		  if(!lst) journal.jprintf(pP_TIME, "%s no link, resetting . . .\n", nameWiznet);
-        		  HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
-        		  HP.num_resW5200++;              // Добавить счетчик инициализаций
-        		  active = false;
-        	  }
-        	  network_last_link = lst;
+        	  if(!HP.NO_Power) {
+				  boolean lst = linkStatusWiznet(false);
+				  if(!lst || !network_last_link) {
+					  if(!lst) journal.jprintf(pP_TIME, "%s no link, resetting . . .\n", nameWiznet);
+					  HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
+					  HP.num_resW5200++;              // Добавить счетчик инициализаций
+					  active = false;
+				  }
+				  network_last_link = lst;
+          	  }
           }
           // 5.Обновление времени 1 раз в сутки или по запросу (HP.timeNTP==0)
           if((HP.timeNTP==0)||((HP.get_updateNTP())&&(thisTime-HP.timeNTP>60*60*24*1000UL)&&(active)))      // Обновление времени раз в день 60*60*24*1000 в тиках HP.timeNTP==0 признак принудительного обновления
@@ -860,7 +862,8 @@ void vNextion(void *)
 void vUpdateStat(void *)
 { //const char *pcTaskName = "statChart is running\r\n";
 	for(;;) {
-		HP.updateChart();                                       // Обновить статитсику
+		HP.updateChart();                                       // Обновить графики
+		Stats.CheckCreateNewFile();
 		vTaskDelay((HP.get_tChart() * 1000) / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 	}
 	vTaskDelete( NULL);
@@ -1051,16 +1054,20 @@ void vReadSensor_delay8ms(int16_t ms8)
 					HP.NO_Power = 2;
 				} else HP.NO_Power = 1;
 			}
+			HP.NO_Power_delay = NO_POWER_ON_DELAY_CNT;
 		} else if(HP.NO_Power) { // Включаемся
-			journal.jprintf(pP_DATE, "Power restored!\n");
-			if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
-				if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
-					HP.NO_Power = 0;
-					journal.jprintf("Resuming work\n");
-					HP.sendCommand(pRESUME);
+			if(HP.NO_Power_delay) HP.NO_Power_delay--;
+			else {
+				journal.jprintf(pP_DATE, "Power restored!\n");
+				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
+					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
+						HP.NO_Power = 0;
+						journal.jprintf("Resuming work\n");
+						HP.sendCommand(pRESUME);
+					}
 				}
+				HP.NO_Power = 0;
 			}
-			HP.NO_Power = 0;
 		}
 #endif
 #ifdef RADIO_SENSORS
@@ -1144,7 +1151,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 						 HP.Prof.load(_profile);
 						 HP.set_profile();
 						 xTaskResumeAll();
-						 journal.jprintf(pP_TIME, "Profile changed to %d\n", _profile);
+						 journal.jprintf(pP_TIME, "Profile changed to #%d\n", _profile);
 						 if(frestart) HP.sendCommand(pRESUME);
 					 }
 				 } else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {
@@ -1206,7 +1213,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			 }  // switch(HP.get_modeHouse() )
 			 break;
 			 case  pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
-			 case  pERROR_HP:_delay(5000); break;     // 5 Ошибка ТН
+			 case  pERROR_HP:_delay(UPDATE_HP_WAIT_PERIOD); break;     // 5 Ошибка ТН
 			 case  pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
 			 default:            journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
 			 vTaskSuspend(HP.xHandleUpdate);

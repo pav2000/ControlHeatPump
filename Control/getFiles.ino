@@ -197,8 +197,15 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Целевая температура обратки:");HP.Prof.get_paramHeatHP((char*)hp_TEMP2,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Что является целью: ");  HP.Prof.get_paramHeatHP((char*)hp_TARGET,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");HP.Prof.get_paramHeatHP((char*)hp_DTEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+    
+     strcat(Socket[thread].outBuf,"  - Использование ночного тарифа -\r\n");
+     strcat(Socket[thread].outBuf,"Добавка к целевой температуре по часам C°: ");HP.Prof.get_paramHeatHP((char*)ADD_DELTA_TEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Начальный час добавки к целевой температуре: ");HP.Prof.get_paramHeatHP((char*)ADD_DELTA_HOUR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Конечный час добавки к целевой температуре: ");HP.Prof.get_paramHeatHP((char*)ADD_DELTA_END_HOUR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;  
+       
      if (HP.get_ruleHeat()!=pHYSTERESIS)
          {
+         strcat(Socket[thread].outBuf," - ПИД -\r\n");
          strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_PID,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_TIME,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");HP.Prof.get_paramHeatHP((char*)hp_HP_PRO,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
@@ -207,20 +214,30 @@ void get_txtSettings(uint8_t thread)
          strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          }
-     strcat(Socket[thread].outBuf," Защиты\r\n");
+         
+     strcat(Socket[thread].outBuf,"  - Опции -\r\n"); 
+     strcat(Socket[thread].outBuf,"Теплый пол: ");HP.Prof.get_paramHeatHP((char*)hp_HEAT_FLOOR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN*+2°>TEVAOUTG): ");HP.Prof.get_paramHeatHP((char*)hp_SUN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+        
+     strcat(Socket[thread].outBuf," - Защиты - \r\n");
      strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");HP.Prof.get_paramHeatHP((char*)hp_TEMP_OUT,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_paramHeatHP((char*)hp_PAUSE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");HP.Prof.get_paramHeatHP((char*)hp_D_TEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf)); 
  
-     strcat(Socket[thread].outBuf,"\n  1.2 Охлаждение\r\n");
+     strcpy(Socket[thread].outBuf,"\n  1.2 Охлаждение\r\n");
      strcat(Socket[thread].outBuf,"Алгоритм работы отопления: "); HP.Prof.get_paramCoolHP((char*)hp_RULE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Целевая температура дома: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP1,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Целевая температура обратки:");HP.Prof.get_paramCoolHP((char*)hp_TEMP2,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Что является целью: ");  HP.Prof.get_paramCoolHP((char*)hp_TARGET,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");HP.Prof.get_paramCoolHP((char*)hp_DTEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+
      if (HP.get_ruleCool()!=pHYSTERESIS)
          {
+         strcat(Socket[thread].outBuf," - ПИД -\r\n");	
          strcat(Socket[thread].outBuf,"Целевая температура подачи ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_PID,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Постоянная интегрирования времени в секундах ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_TIME,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая ПИД ТН: ");HP.Prof.get_paramCoolHP((char*)hp_HP_PRO,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
@@ -229,26 +246,36 @@ void get_txtSettings(uint8_t thread)
          strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          }
-     strcat(Socket[thread].outBuf," Защиты\r\n");
+     strcat(Socket[thread].outBuf," - Опции -\r\n"); 
+     strcat(Socket[thread].outBuf,"Теплый пол: ");HP.Prof.get_paramCoolHP((char*)hp_HEAT_FLOOR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN*+2°>TEVAOUTG): ");HP.Prof.get_paramCoolHP((char*)hp_SUN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+     strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
+         
+     strcat(Socket[thread].outBuf," - Защиты -\r\n");
      strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_IN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Tемпература обратки минимальная: ");HP.Prof.get_paramCoolHP((char*)hp_TEMP_OUT,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_paramCoolHP((char*)hp_PAUSE,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Максимальная разность температур конденсатора: ");HP.Prof.get_paramCoolHP((char*)hp_D_TEMP,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
-
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));   
      
      strcpy(Socket[thread].outBuf,"\n  1.3 ГВС\r\n");
      strcat(Socket[thread].outBuf,"Целевая температура бойлера: ");HP.Prof.get_boiler((char*)boil_TEMP_TARGET,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Гистерезис целевой температуры: ");HP.Prof.get_boiler((char*)boil_DTARGET,Socket[thread].outBuf);STR_END;
      
-     strcat(Socket[thread].outBuf," Встроенный ТЭН\r\n");
+     strcat(Socket[thread].outBuf," - Использование ночного тарифа - \r\n");
+     strcat(Socket[thread].outBuf,"Добавка к целевой температуре по часам C°: ");HP.Prof.get_boiler((char*)ADD_DELTA_TEMP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Начальный час добавки к целевой температуре: ");HP.Prof.get_boiler((char*)ADD_DELTA_HOUR,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Конечный час добавки к целевой температуре: ");HP.Prof.get_boiler((char*)ADD_DELTA_END_HOUR,Socket[thread].outBuf);STR_END;  
+     
+     strcat(Socket[thread].outBuf," - Встроенный ТЭН -\r\n");
      strcat(Socket[thread].outBuf,"Ускоренный нагрев ГВС (одновременное использование ТЭНа и ТН для нагрева): ");HP.Prof.get_boiler((char*)boil_TURBO_BOILER,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование ТЭНа для догрева бойлера до высоких температур: ");HP.Prof.get_boiler((char*)boil_ADD_HEATING,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для включения догрева бойлера: "); HP.Prof.get_boiler((char*)boil_TEMP_RBOILER,Socket[thread].outBuf) ;STR_END;
      
      if (HP.dFC.get_present()) // Только для инвертора
          {
-         strcat(Socket[thread].outBuf," ПИД\r\n");
+         strcat(Socket[thread].outBuf," - ПИД -\r\n");
          strcat(Socket[thread].outBuf,"Целевая температура подачи: ");HP.Prof.get_boiler((char*)boil_BOIL_TEMP,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Постоянная интегрирования времени (секунды): ");HP.Prof.get_boiler((char*)boil_BOIL_TIME,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая: ");HP.Prof.get_boiler((char*)boil_BOIL_PRO,Socket[thread].outBuf);STR_END;
@@ -256,8 +283,9 @@ void get_txtSettings(uint8_t thread)
          strcat(Socket[thread].outBuf,"Дифференциальная составляющая: ");HP.Prof.get_boiler((char*)boil_BOIL_DIF,Socket[thread].outBuf);STR_END;
          }
  
-     strcat(Socket[thread].outBuf," Опции\r\n");
+     strcat(Socket[thread].outBuf," - Опции -\r\n");
      strcat(Socket[thread].outBuf,"Использование расписания: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Работа по расписанию только для ТЭНа: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ADDHEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Борьба с сальмонелой: ");HP.Prof.get_boiler((char*)boil_SALLMONELA,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: ");HP.Prof.get_boiler((char*)boil_CIRCULATION,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС минуты: ");HP.Prof.get_boiler((char*)boil_CIRCUL_WORK,Socket[thread].outBuf);STR_END;
@@ -265,43 +293,50 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"При нагреве бойлера сбрасывать ""избыточное"" тепло систему отопления: ");HP.Prof.get_boiler((char*)boil_RESET_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время сброса тепла (минуты): ");HP.Prof.get_boiler((char*)boil_RESET_TIME,Socket[thread].outBuf);  STR_END;
      
-     strcat(Socket[thread].outBuf," Защиты при работе теплового насоса\r\n");
+     strcat(Socket[thread].outBuf," - Защиты при работе теплового насоса -\r\n");
      strcat(Socket[thread].outBuf,"Tемпература подачи максимальная: ");HP.Prof.get_boiler((char*)boil_TEMP_MAX,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора в минутах: ");HP.Prof.get_boiler((char*)boil_PAUSE1,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf," Расписание работы\r\n");
+     strcat(Socket[thread].outBuf," - Расписание работы -\r\n");
      HP.Prof.get_boiler((char*)boil_SCHEDULER,Socket[thread].outBuf);STR_END;
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
 
-     
      strcpy(Socket[thread].outBuf,"\n  1.4 Опции ТН\r\n");
+     strcat(Socket[thread].outBuf,"Расположение файлов веб-сервера на SPI Flash (иначе на SD карте): "); HP.get_optionHP((char*)option_WebOnSPIFlash,Socket[thread].outBuf);STR_END; 
      strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); HP.get_optionHP((char*)option_SAVE_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
+    
+     strcat(Socket[thread].outBuf," - Настройка встроенных графиков -\r\n");
      strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_SD_CARD,Socket[thread].outBuf);STR_END;
+
+     strcat(Socket[thread].outBuf," - Настройки контура отопления -\r\n");
+     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Температура для управления дополнительным ТЭНом °C: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре, сек: "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Число попыток пуска компрессора :"); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Значение температуры для управления дополнительным ТЭНом: ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Использование звука: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); HP.get_optionHP((char*)option_NEXT_SLEEP,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); HP.get_optionHP((char*)option_NEXT_DIM,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"На шинах 1-Wire(DS2482) только один датчик: "); if((HP.get_flags() & (1<<f1Wire2TSngl))) strcat(Socket[thread].outBuf, "2 "); if((HP.get_flags() & (1<<f1Wire3TSngl))) strcat(Socket[thread].outBuf, "3 "); if((HP.get_flags() & (1<<f1Wire4TSngl))) strcat(Socket[thread].outBuf, "4");
+
+     strcat(Socket[thread].outBuf," - Времена и задержки -\r\n");
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка перед повторным включениме ТН при ошибке, попытки пуска (сек): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка после срабатывания датчика перед включением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_ON,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка перед выключением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_OFF,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка между переключением 4-х ходового клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка между переключением реверсивного клапана и включением компрессора (сек.): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Логировать не критичные ошибки электро-счетчика SDM: ");  HP.get_optionHP((char*)option_SDM_LOG_ERR,Socket[thread].outBuf);STR_END;
-     
-     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
 
+     strcat(Socket[thread].outBuf," - Дополнительное оборудование -\r\n");
+     strcat(Socket[thread].outBuf,"Логировать не критичные ошибки электро-счетчика SDM: ");  HP.get_optionHP((char*)option_SDM_LOG_ERR,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Генерация звукового сигнала: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использование Nextion дисплея: "); HP.get_optionHP((char*)option_NEXTION,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Включать дисплей при пуске компрессора: "); HP.get_optionHP((char*)option_NEXTION_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время засыпания дисплея Nextion (минуты): "); HP.get_optionHP((char*)option_NEXT_SLEEP,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Яркость дисплея Nextion в %: "); HP.get_optionHP((char*)option_NEXT_DIM,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"На шинах 1-Wire(DS2482) только один датчик: "); if((HP.get_flags() & (1<<f1Wire2TSngl))) strcat(Socket[thread].outBuf, "2 "); if((HP.get_flags() & (1<<f1Wire3TSngl))) strcat(Socket[thread].outBuf, "3 "); if((HP.get_flags() & (1<<f1Wire4TSngl))) strcat(Socket[thread].outBuf, "4");
+     sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
     
-     strcpy(Socket[thread].outBuf,"\n  1.5 Сетевые настройки\r\n");
+     strcpy(Socket[thread].outBuf,"\n\n  1.5 Сетевые настройки\r\n");
      strcat(Socket[thread].outBuf,"Использование DHCP: "); HP.get_network((char*)net_DHCP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"IP адрес контроллера: "); HP.get_network((char*)net_IP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"DNS сервер: "); HP.get_network((char*)net_DNS,Socket[thread].outBuf); STR_END;
@@ -342,7 +377,7 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf," Граничная температура в доме (если меньше то посылается уведомление): "); HP.message.get_messageSetting((char*)mess_MESS_TIN,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf," Граничная температура бойлера (если меньше то посылается уведомление): "); HP.message.get_messageSetting((char*)mess_MESS_TBOILER,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf," Граничная температура компрессора (если больше то посылается уведомление): "); HP.message.get_messageSetting((char*)mess_MESS_TCOMP,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Проблемы с SD картой: "); HP.message.get_messageSetting((char*)mess_MESS_SD,Socket[thread].outBuf); STR_END;
+     strcat(Socket[thread].outBuf,"Проблемы с SD картой и SPI flash: "); HP.message.get_messageSetting((char*)mess_MESS_SD,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Прочие уведомления: "); HP.message.get_messageSetting((char*)mess_MESS_WARNING,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf," Настройка отправки почты\r\n");
      strcat(Socket[thread].outBuf,"Посылать уведомления по почте: "); HP.message.get_messageSetting((char*)mess_MAIL,Socket[thread].outBuf);STR_END;
@@ -551,7 +586,7 @@ void get_txtSettings(uint8_t thread)
          {
          strcat(Socket[thread].outBuf,"Текущая частота (гц): ");  HP.dFC.get_paramFC((char*)fc_cFC,Socket[thread].outBuf);STR_END; 
          #ifdef FC_ANALOG_CONTROL // Аналоговое управление
-              strcat(Socket[thread].outBuf," Аналоговое управление: \r\n");
+              strcat(Socket[thread].outBuf," налоговое управление:\r\n");
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие частоте 0 гц (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL0,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие максимальной частоте (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL100,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Частота отключения инвертора  (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVELOFF,Socket[thread].outBuf);STR_END; 
@@ -560,25 +595,35 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Блокировка инвертора: ");  HP.dFC.get_paramFC((char*)fc_BLOCK,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Флаг автоматического сброса не критичной ошибки инвертора: ");  HP.dFC.get_paramFC((char*)fc_AUTO_RESET_FAULT,Socket[thread].outBuf);STR_END; 
           #endif
-           strcat(Socket[thread].outBuf," Глобальные настройки: \r\n");
+	       strcat(Socket[thread].outBuf,"Автоматический подбор частоты (ПИД регулирование): ");  HP.dFC.get_paramFC((char*)fc_AUTO,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Время обновления алгоритма пид регулятора (сек): ");  HP.dFC.get_paramFC((char*)fc_UPTIME,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц): ");  HP.dFC.get_paramFC((char*)fc_PID_FREQ_STEP,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты (%): ");  HP.dFC.get_paramFC((char*)fc_PID_STOP,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Cколько градусов не доходит до максимальной температуры TCOMP, при при которой происходит уменьшение частоты (C): ");  HP.dFC.get_paramFC((char*)fc_DT_COMP_TEMP,Socket[thread].outBuf);STR_END; 
+	       
+           strcat(Socket[thread].outBuf," - Граничные температуры - \r\n");
+	       strcat(Socket[thread].outBuf,"Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C): ");  HP.dFC.get_paramFC((char*)fc_DT_COMP_TEMP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Превышение температуры от уставок (подача) при которой срабатыват защита, уменьшается частота (°C) : ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Превышение температуры от уставок (подача) при которой срабатыват защита ГВС, уменьшается частота (°C): ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP_BOILER,Socket[thread].outBuf);STR_END; 
+	
+	       strcat(Socket[thread].outBuf," - Стартовые частоты - \r\n");
 	       strcat(Socket[thread].outBuf,"Стартовая частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_START_FREQ,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Стартовая частота инвертора ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_START_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
+	       
+	       strcat(Socket[thread].outBuf," - Минимальные частоты - \r\n");
 	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Mинимальная  частота инвертора при охлаждении (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_COOL,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора при нагреве ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_USER,Socket[thread].outBuf);STR_END; 
+	      
+	       strcat(Socket[thread].outBuf," - Максимальные частоты - \r\n");
 	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора в режиме охлаждения (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_COOL,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора в режиме ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ_USER,Socket[thread].outBuf);STR_END; 
+	
+           strcat(Socket[thread].outBuf," - Ограничение ПИД регулятора - \r\n");	    
+	       strcat(Socket[thread].outBuf,"Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (Гц): ");  HP.dFC.get_paramFC((char*)fc_PID_FREQ_STEP,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока (гц): ");  HP.dFC.get_paramFC((char*)fc_STEP_FREQ,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_STEP_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Привышение температуры от уставок (подача) при которой уменьшается частота (C): ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Привышение температуры от уставок (подача) при которой уменьшается частота для ГВС (C): ");  HP.dFC.get_paramFC((char*)fc_DT_TEMP_BOILER,Socket[thread].outBuf);STR_END; 
 	     } 
         else strcat(Socket[thread].outBuf,"FC absent \r\n");    
         sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
@@ -1043,6 +1088,10 @@ void get_statistics_file(uint8_t thread, char *filename)
     strcat(Socket[thread].outBuf, filename);
     strcat(Socket[thread].outBuf, "\"");
     strcat(Socket[thread].outBuf, WEB_HEADER_END);
-	Stats.ReturnFileHeader(Socket[thread].outBuf);
-	if(strncmp(filename + 6, "head", 4) == 0) sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
+		Stats.ReturnFileHeader(Socket[thread].outBuf);
+		sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	} else {
+		Stats.SendFileData(thread, filename);
+	}
 }

@@ -420,9 +420,9 @@ class HeatPump
     statChart ChartCOP;                                     // Коэффициент преобразования
     statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
     
-    float powerCO;                                          // Мощность системы отопления
-    float powerGEO;                                         // Мощность системы GEO
-    float power220;                                         // Мощность системы 220
+    float powerCO;                                          // Мощность системы отопления, Вт
+    float powerGEO;                                         // Мощность системы GEO, Вт
+    float power220;                                         // Мощность системы 220, Вт
     int16_t fullCOP;                                        // Полный СОР сотые
     int16_t COP;                                            // Чистый COP сотые
     
@@ -464,6 +464,7 @@ class HeatPump
     uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
     uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
+    uint8_t  NO_Power_delay;
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки

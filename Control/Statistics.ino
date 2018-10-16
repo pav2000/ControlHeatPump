@@ -18,11 +18,79 @@
  */
 #include "Statistics.h"
 #include "HeatPump.h"
+#include "SdFat.h"
 
-
-void Statistics::Init()
+void Statistics::Init(uint8_t noreset)
 {
-	Reset();
+	if(!noreset) Reset();
+#ifdef STATS_DO_NOT_SAVE
+	return;
+#endif
+	if(!HP.get_fSD()) {
+		journal.jprintf(" No SD card - statistics will not be saved!\n");
+		return;
+	}
+	CurrentBlock = 0;
+	CurrentPos = 0;
+	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+	strcpy(filename, stats_file_start);
+	_itoa(rtcSAM3X8.get_years(), filename);
+	strcat(filename, stats_file_ext);
+	SPI_switchSD();
+	uint8_t newfile = 0;
+	if(!card.exists(filename)) {
+		if(!StatsFile.createContiguous(filename, STATS_MAX_FILE_SIZE)) {
+			Error("create");
+			return;
+		}
+		newfile = 1;
+	} else if(StatsFile.open(filename, O_RDWR)) {
+		Error("open");
+		return;
+	}
+	if(!StatsFile.contiguousRange(&BlockStart, &BlockEnd)) {
+		journal.jprintf(" Error get blocks!\n");
+	}
+	if(newfile) {
+		journal.jprintf("Stats new file: %s\n", filename);
+		CurrentBlock = BlockStart;
+		memset(stats_buffer, 0, SD_BLOCK);
+		for(uint32_t b = BlockStart; b <= BlockEnd; b++) {
+			if(!card.card()->writeBlock(b, (uint8_t*)stats_buffer)) {
+				Error("empty");
+				break;
+			}
+		}
+	} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
+		journal.jprintf("Stats endpos not found!\n");
+	}
+}
+
+boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
+{
+	uint8_t *pos = NULL;
+	uint32_t cur = 0;
+	while(cur != bst || cur != bend) {
+		WDT_Restart(WDT);
+		cur = bst + (bend - bst) / 2;
+		card.card()->readBlock(cur, buffer);
+		if(buffer[0] != 0) {
+			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
+			bst = cur;
+		} else bend = cur;
+	}
+	if(pos == NULL) return false;
+	CurrentBlock = cur;
+	CurrentPos = pos - buffer;
+#ifdef DEBUG_MODWORK
+	journal.jprintf("Stats found pos: %u, %u\n", CurrentBlock, CurrentPos);
+#endif
+	return true;
+}
+
+void Statistics::Error(const char *text)
+{
+	journal.jprintf("Stats Error %s (%d,%d)!\n", text, card.cardErrorCode(), card.cardErrorData());
 }
 
 // Сбросить накопленные промежуточные значения
@@ -43,6 +111,8 @@ void Statistics::Reset()
 	counts = 0;
 	counts_work = 0;
 	day = rtcSAM3X8.get_days();
+	month = rtcSAM3X8.get_months();
+	year = rtcSAM3X8.get_years();
 	previous = millis();
 }
 
@@ -217,8 +287,9 @@ void Statistics::ReturnFieldString(char *ret, uint8_t i)
 // Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
 void Statistics::ReturnFileString(char *ret)
 {
+	m_snprintf(ret, 16, "%d%02d%02d", year, month, day);
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		if(i > 0) strcat(ret, ";");
+		strcat(ret, ";");
 		ReturnFieldString(ret, i);
 	}
 }
@@ -233,17 +304,49 @@ void Statistics::ReturnWebTable(char *ret)
 	}
 }
 
+void Statistics::SendFileData(uint8_t thread, char *filename)
+{
+
+
+}
+
+
+void Statistics::CheckCreateNewFile()
+{
+	if(year != rtcSAM3X8.get_years()) {
+		Init(1);
+	}
+}
+
 // Записать статистику на SD
 void Statistics::Save()
 {
-/*	journal.printf("Stats(%d): \n", counts);
-
-	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		journal.printf("%d: %d.%d.%d = %d\n", i, Stats_data[i].object, Stats_data[i].type, Stats_data[i].number, Stats_data[i].value);
+#ifdef STATS_DO_NOT_SAVE
+	return;
+#endif
+	if(!HP.get_fSD()) return;
+	char *rbuf = (char*) malloc(STATS_MAX_RECORD_LEN);
+	if(rbuf == NULL) {
+		journal.jprintf("Stats memory low - not saved!\n");
+		return;
 	}
-
-	if(HP.get_fSD()) {
-
-	}
-	*/
+	ReturnFileString(rbuf);
+	uint16_t lensav, len = m_strlen(rbuf);
+	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
+	if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+		Error("save 1");
+	} else if(lensav != len){ // next block
+		if(CurrentBlock >= BlockEnd) {
+			journal.jprintf("Stats file size exceeded!\n"); // to do: increase file
+		} else {
+			CurrentBlock++;
+			CurrentPos = 0;
+			memset(stats_buffer, 0, SD_BLOCK);
+			memcpy(stats_buffer, rbuf, len - lensav);
+			if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+				Error("save 2");
+			} else CurrentPos += len;
+		}
+	} else CurrentPos += len;
+	free(rbuf);
 }

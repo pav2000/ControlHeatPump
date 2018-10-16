@@ -21,7 +21,10 @@
 #define Statistics_h
 #include "Constant.h"
 
-#define STAT_PERIOD		60	// Период статистики, сек
+#define STATS_DO_NOT_SAVE
+#define SD_BLOCK			512
+#define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
+#define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
 
 enum {
 	STATS_OBJ_Temp = 0,		// °C
@@ -89,24 +92,40 @@ Stats_Data Stats_data[] = {
 #endif
 						};
 
+const char stats_file_start[] = "stats_";
+const char stats_file_header[] = "head";
+const char stats_file_ext[] = ".csv";
+uint8_t *stats_buffer[SD_BLOCK];
+
 class Statistics
 {
 public:
-	void Init();
-	void Update();							// Обновить статистику, раз в период
-	void UpdateEnergy();					// Обновить энергию и COP, вызывается часто
-	void Reset();							// Сбросить накопленные промежуточные значения
-	void Save();							// Записать статистику на SD
-	void ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
-	void ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
-	void ReturnFileString(char *ret);		// Строка со значениями за день
-	void ReturnFieldString(char *ret, uint8_t i);
-	void ReturnWebTable(char *ret);
+	void	Init(uint8_t noreset = 0);
+	void	Update();							// Обновить статистику, раз в период
+	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
+	void	Reset();							// Сбросить накопленные промежуточные значения
+	void	Save();							// Записать статистику на SD
+	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
+	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
+	void	ReturnFileString(char *ret);		// Строка со значениями за день
+	void	ReturnFieldString(char *ret, uint8_t i);
+	void	ReturnWebTable(char *ret);
+	void	SendFileData(uint8_t thread, char *filename);
+	boolean	FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
+	void	CheckCreateNewFile();
 private:
+	void	Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
 	uint32_t previous;
 	uint8_t	 day;
+	uint8_t	 month;
+	uint16_t year;
+	uint32_t BlockStart;
+	uint32_t BlockEnd;
+	uint32_t CurrentBlock;
+	uint16_t CurrentPos;
+	SdFile   StatsFile;
 };
 
 Statistics Stats;

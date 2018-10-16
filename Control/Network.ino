@@ -536,7 +536,7 @@ boolean pingServer()
 	journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
 	if (echoReply.status == SUCCESS)
 	{
-		journal.jprintf("%.1fms TTL=%u\n", (float)(millis() - echoReply.data.time) / 1000, echoReply.ttl);
+		journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
 		return true;
 	}
 	else

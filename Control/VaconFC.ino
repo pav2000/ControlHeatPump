@@ -537,8 +537,8 @@ boolean devVaconFC::set_paramFC(char *var, float f)
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
     #endif
     if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА  
-                                                if (x==0) { SETBIT0(flags,fErrFC); note=(char*)noteFC_OK; }
-                                                else      { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
+                                                if(x==0) { if(reset_FC()) note=(char*)noteFC_OK; }
+                                                else     { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  // только чтение
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек

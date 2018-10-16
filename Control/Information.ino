@@ -245,7 +245,7 @@ int32_t Journal::send_Data(uint8_t thread)
 			if(bufferTail - num >= W5200_MAX_LEN) len = W5200_MAX_LEN;
 			else len = bufferTail - num;     // Контроль достижения хвоста журнала
 		}
-		if(readEEPROM_I2C(I2C_JOURNAL_START + num, (byte*) Socket[thread].outBuf, len))                           // чтение из памяти
+		if(readEEPROM_I2C(I2C_JOURNAL_START + num, (byte*) Socket[thread].outBuf, len))         // чтение из памяти
 		{
 			err = ERR_READ_I2C_JOURNAL;
 #ifdef DEBUG
@@ -253,11 +253,11 @@ int32_t Journal::send_Data(uint8_t thread)
 #endif
 			return 0;
 		}
-		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0;            // передать пакет, при ошибке выйти
+		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0;        // передать пакет, при ошибке выйти
 		sum = sum + len;                                                                        // сколько байт передано
 		if(sum >= available()) break;                                                           // Все передано уходим
-		num = num + len;                                                               // Указатель на переданные данные
-		if(num >= JOURNAL_LEN) num = 0;                                                           // переходим на начало
+		num = num + len;                                                                        // Указатель на переданные данные
+		if(num >= JOURNAL_LEN) num = 0;                                                         // переходим на начало
 	}  // for
 #else
 	num=bufferHead;                                                   // Начинаем с начала журнала, num позиция в буфере

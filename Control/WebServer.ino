@@ -229,7 +229,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if((strcmp(filename, FILE_CHART) == 0) && (!card.exists(FILE_CHART))) { noCsvChart_SD(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, "stats_", 6) == 0) { get_statistics_file(thread, filename); return; }
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { get_statistics_file(thread, filename); return; }
 	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
 		sendConstRTOS(thread, HEADER_FILE_WEB);
 		filename += 8;
@@ -745,6 +745,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
        {
    		_ftoa(strReturn, HP.powerGEO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
        }
+    if (strcmp(str,"get_Power220") == 0)
+       {
+   		_ftoa(strReturn, HP.power220/1000.0,3); ADD_WEBDELIM(strReturn); continue;
+       }
     if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
        {
        #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
@@ -1046,7 +1050,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         {
         case pMIN_WEB:   strcat(strReturn,"internal;"); break;
         case pSD_WEB:    strcat(strReturn,"SD card;"); break;
-        case pFLASH_WEB: strcat(strReturn,"Flash disk;"); break;
+        case pFLASH_WEB: strcat(strReturn,"SPI Flash;"); break;
         default:         strcat(strReturn,"unknown;"); break;
         }
       	
@@ -1058,7 +1062,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		#endif
         m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
+ //       strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
       
         strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
         #ifdef DRV_EEV_L9333          // Контроль за работой драйвера ЭРВ
@@ -1066,7 +1070,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #else
           strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
         #endif
-         strcat(strReturn,"Состояние FreeRTOS task+err_code [1:configASSERT fails, 2:malloc fails, 3:stack overflow, 4:hard fault, 5:bus fault, 6:usage fault, 7:crash data]|");
+         strcat(strReturn,"Состояние FreeRTOS при старте (task+err_code) <sup>1</sup>|");
          strcat(strReturn,uint16ToHex(lastErrorFreeRtosCode));strcat(strReturn,";");
           
            strcat(strReturn,"Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|");  // Регистры состояния контроллера питания
@@ -1078,19 +1082,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
            strcat(strReturn,uint32ToHex(startSupcStatusReg));
            if ((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT)  strcat(strReturn," bad VDDIN!");
            strcat(strReturn,";");
-         /*      
-        for (uint8_t i=0;i<ANUMBER;i++)    // по всем датчикам
-            {
-                if (!HP.sADC[i].get_present()) continue;    // датчик отсутсвует в конфигурации пропускаем
-                strcat(strReturn,"Счетчик числа ошибок чтения аналогового датчика AD");
-                strcat(strReturn,int2str(HP.sADC[i].get_pinA()));
-                strcat(strReturn,"|");
-                strcat(strReturn,int2str(HP.sADC[i].get_errADC()));strcat(strReturn,";");
-            }
-         */
+ 
         strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
             if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
-        strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>1</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>2</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
         strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины SPI|");_itoa(HP.num_resMutexSPI,strReturn);strcat(strReturn,";");
         strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины I2C|");_itoa(HP.num_resMutexI2C,strReturn);strcat(strReturn,";");
         #ifdef MQTT
@@ -1544,8 +1539,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
                 else {
             	  if((pm >= 0) && (pm < I2C_PROFIL_NUM)) {
             		  HP.Prof.set_list((int8_t)pm);
-            		  HP.save();
-            		  HP.Prof.save(HP.Prof.get_idProfile());
+            		  //HP.save();
+            		  //HP.Prof.save(HP.Prof.get_idProfile());
             		  HP.Prof.get_list(strReturn/*,HP.Prof.get_idProfile()*/);
             	  } else strcat(strReturn,"E29");
                   ADD_WEBDELIM(strReturn) ;    continue;
