@@ -3482,6 +3482,7 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 // Обновление расчетных величин мощностей и СОР
 void HeatPump::calculatePower()
 {
+// Мощности контуров	
 #ifdef  FLOWCON 
 	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (FEED-RET) * (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
 #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
@@ -3499,23 +3500,26 @@ void HeatPump::calculatePower()
 	powerGEO=0.0;
 #endif
 
-
-
-#ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
-if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
-#endif	
-	COP = dFC.get_power();  // получить текущую мощность компрессора
-	if(COP) COP = (int16_t) (powerCO / COP * 100); // в сотых долях !!!!!!
-#ifdef USE_ELECTROMETER_SDM
+// Получение мощностей потребления
+COP = dFC.get_power();  // получить текущую мощность компрессора 
+#ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
 	power220 = dSDM.get_Power();
-#ifdef CORRECT_POWER220
-	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
-#endif
-	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // в сотых долях !!!!!!
+	#ifdef CORRECT_POWER220
+		for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
+	#endif
+#else
+   power220=0; // электросчетчика нет
 #endif
 
+// Расчет КОП
+#ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
+//if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
+if(is_compressor_on()){      // Если компрессор рабоатет
+#endif	
+	if(COP>0) COP = (int16_t) (powerCO / COP * 100); else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
+	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
-} else { COP=0; fullCOP=0; }
+} else { COP=0; fullCOP=0; }  // компрессор не рабоатет
 #endif
 }
 
