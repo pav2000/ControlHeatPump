@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.966 beta"        // Версия прошивки
+#define VERSION         "0.967 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif

@@ -259,7 +259,7 @@ void readFileSD(char *filename, uint8_t thread)
 			}
 			//*/
 		} else {
-			journal.jprintf("not found!\n");
+			journal.jprintf("not found (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 		}
 		SPI_switchW5200();
 		return;
@@ -276,8 +276,15 @@ switch (HP.get_SourceWeb())
 	case pSD_WEB:
 	                { // Чтение с карты  файлов
 					SPI_switchSD();
-					if(!card.exists(filename))  // проверка на сущестование файла
+					if(!card.exists(filename))  // проверка на существование файла
 					{
+						//if(card.cardErrorCode(), card.cardErrorData()) {
+//						if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
+//							journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
+//						} else success = true;  // Карта инициализирована с первого раза
+//
+						//}
+
 						SPI_switchW5200();
 						sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 						journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);

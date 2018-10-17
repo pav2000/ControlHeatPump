@@ -469,10 +469,10 @@ x_I2C_init_std_message:
     #endif 
 
   // 14. Инициалазация Statistics
-   journal.jprintf("11. Statistics");
+   journal.jprintf("11. Statistics\n");
    if(HP.get_fSD()) {
-	   //HP.InitStatistics();
-	   journal.jprintf(" - writing on SD card\n");
+	   Stats.Init();             // Инициализовать статистику
+	   journal.jprintf(" writing on SD card\n");
    } else journal.jprintf(" - not available\n");
 
 

@@ -55,7 +55,6 @@ void HeatPump::initHeatPump()
   for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
   for(i=0;i<RNUMBER;i++) dRelay[i].initRelay(i);           // Инициализация реле
 
-  Stats.Init();                                            // Инициализовать статистику
 #ifdef EEV_DEF
   dEEV.initEEV();                                           // Инициализация ЭРВ
 #endif

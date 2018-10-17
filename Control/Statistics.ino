@@ -41,29 +41,35 @@ void Statistics::Init(uint8_t noreset)
 	if(!card.exists(filename)) {
 		if(!StatsFile.createContiguous(filename, STATS_MAX_FILE_SIZE)) {
 			Error("create");
-			return;
+			goto xEnd;
+		} else {
+			StatsFile.timestamp(T_CREATE | T_ACCESS | T_WRITE, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 		}
 		newfile = 1;
-	} else if(StatsFile.open(filename, O_RDWR)) {
+	} else if(!StatsFile.open(filename, O_RDWR)) {
 		Error("open");
-		return;
+		goto xEnd;
 	}
 	if(!StatsFile.contiguousRange(&BlockStart, &BlockEnd)) {
 		journal.jprintf(" Error get blocks!\n");
-	}
-	if(newfile) {
-		journal.jprintf("Stats new file: %s\n", filename);
-		CurrentBlock = BlockStart;
-		memset(stats_buffer, 0, SD_BLOCK);
-		for(uint32_t b = BlockStart; b <= BlockEnd; b++) {
-			if(!card.card()->writeBlock(b, (uint8_t*)stats_buffer)) {
-				Error("empty");
-				break;
+	} else {
+		if(newfile) {
+			journal.jprintf(" New stats file: %s\n", filename);
+			CurrentBlock = BlockStart;
+			memset(stats_buffer, 0, SD_BLOCK);
+			for(uint32_t b = BlockStart; b <= BlockEnd; b++) {
+				if(!card.card()->writeBlock(b, (uint8_t*)stats_buffer)) {
+					Error("empty");
+					break;
+				}
 			}
+		} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
+			journal.jprintf(" Endpos not found!\n");
 		}
-	} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
-		journal.jprintf("Stats endpos not found!\n");
 	}
+	StatsFile.close();
+xEnd:
+	SPI_switchW5200();
 }
 
 boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
@@ -73,24 +79,27 @@ boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend
 	while(cur != bst || cur != bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
-		card.card()->readBlock(cur, buffer);
+		if(!card.card()->readBlock(cur, buffer)) break;
 		if(buffer[0] != 0) {
 			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
 			bst = cur;
+		} else if(cur == bst) { // empty
+			pos = buffer;
+			break;
 		} else bend = cur;
 	}
 	if(pos == NULL) return false;
 	CurrentBlock = cur;
 	CurrentPos = pos - buffer;
 #ifdef DEBUG_MODWORK
-	journal.jprintf("Stats found pos: %u, %u\n", CurrentBlock, CurrentPos);
+	journal.jprintf(" Found pos: %u.%u\n", CurrentBlock, CurrentPos);
 #endif
 	return true;
 }
 
 void Statistics::Error(const char *text)
 {
-	journal.jprintf("Stats Error %s (%d,%d)!\n", text, card.cardErrorCode(), card.cardErrorData());
+	journal.jprintf(" Stats Error %s (%d,%d)!\n", text, card.cardErrorCode(), card.cardErrorData());
 }
 
 // Сбросить накопленные промежуточные значения
@@ -157,6 +166,7 @@ void Statistics::Update()
 			}
 			break;
 		case STATS_OBJ_COP:
+			if(!compressor_on) continue;
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
 				newval = HP.COP;
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
@@ -306,8 +316,29 @@ void Statistics::ReturnWebTable(char *ret)
 
 void Statistics::SendFileData(uint8_t thread, char *filename)
 {
-
-
+	if(BlockStart == 0) return;
+	uint32_t readed = m_strlen(Socket[thread].outBuf);
+	if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+		Error("send dh");
+		return;
+	}
+	SPI_switchSD();
+	readed = 0;
+	for(uint32_t i = BlockStart; i <= BlockEnd; i++) {
+		if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+			Error("read data");
+			break;
+		}
+		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
+			readed = (uint8_t*)Socket[thread].outBuf - (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK);
+		} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
+		SPI_switchW5200();
+		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+			Error("send data");
+			break;
+		}
+		SPI_switchSD();
+	}
 }
 
 
@@ -324,7 +355,7 @@ void Statistics::Save()
 #ifdef STATS_DO_NOT_SAVE
 	return;
 #endif
-	if(!HP.get_fSD()) return;
+	if(!HP.get_fSD() || CurrentBlock == 0) return;
 	char *rbuf = (char*) malloc(STATS_MAX_RECORD_LEN);
 	if(rbuf == NULL) {
 		journal.jprintf("Stats memory low - not saved!\n");
