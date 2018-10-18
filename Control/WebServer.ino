@@ -354,9 +354,9 @@ switch (HP.get_SourceWeb())
 					            }
 					       else {
 						    	journal.jprintf("Error opening file %s, switching from flash disk to SD card.\n", filename);
+						    	HP.set_fSPIFlash(false);
 								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 						    	HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с флеш диска", 0); // сформировать уведомление об ошибке чтения				    	
-						    	HP.set_fSPIFlash(false);
 						    	}        
                     } break; 
     default:        get_indexNoSD(thread);break;             	             	
