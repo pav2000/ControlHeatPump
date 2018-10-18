@@ -101,13 +101,13 @@ class Statistics
 {
 public:
 	void	Init(uint8_t noreset = 0);
-	void	Update();							// Обновить статистику, раз в период
+	void	Update();						// Обновить статистику, раз в период
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
-	void	Reset();							// Сбросить накопленные промежуточные значения
-	void	Save();							// Записать статистику на SD
+	void	Reset();						// Сбросить накопленные промежуточные значения
+	void	Save(uint8_t newday);			// Записать статистику на SD
 	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
-	void	ReturnFileString(char *ret);		// Строка со значениями за день
+	void	ReturnFileString(char *ret);	// Строка со значениями за день
 	void	ReturnFieldString(char *ret, uint8_t i);
 	void	ReturnWebTable(char *ret);
 	void	SendFileData(uint8_t thread, char *filename);

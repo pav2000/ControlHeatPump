@@ -1,7 +1,7 @@
-/* ver 0.966 beta */
+/* ver 0.968 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -25,13 +25,16 @@ function setParam(paramid, resultid) {
 		}
 	} else if(recldr.test(paramid)) { 
 		var colls = document.getElementById("calendar").getElementsByClassName("clc");
-		var fprof, lprof = -2, len = 0;
+		var fprof, lprof = -255, len = 0;
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
-			var prof = colls[j].innerHTML == "" ? 0 : colls[j].innerHTML;
+			var prof = colls[j].innerHTML;
+			if(prof == "") prof = "0";
+			else if(prof[0] == '+' || prof[0] == '-') prof = Number(prof.replace('+', '0')) * 10;
+			else prof = Number(prof) & 0x80; 
 			if(prof != lprof) {
 				elval += (((j / 24 | 0) << 5) | (j % 24)) + ";" + prof + ";";
-				if(lprof == -2) {
+				if(lprof == -255) {
 					fprof = prof;
 					flen = elval.length;
 				}
@@ -199,7 +202,16 @@ function loadParam(paramid, noretry, resultdiv) {
 												found = ptr + 1;
 											}
 											if(!found) found = cal_pack.length - 1;
-											colls[j].innerHTML = cal_pack[found];
+											var v;
+											if(cal_pack[found] < -100) {
+												v = 128 - cal_pack[found];
+												colls[j].style = "color:white";
+											} else {
+												v = cal_pack[found] / 10;
+												if(v > 0) v = '+' + v;
+												colls[j].style = "color:red";
+											}
+											colls[j].innerHTML = v;
 										}
 									}
 								} else if(type == 'chart') {

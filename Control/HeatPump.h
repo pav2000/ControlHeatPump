@@ -312,6 +312,7 @@ class HeatPump
    
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления
+   void    getTargetTempStr(char *rstr);					// Целевая температура в строку
    int16_t setTargetTemp(int16_t dt);                      // ИЗМЕНИТЬ целевую температуру
    int16_t setTempTargetBoiler(int16_t dt);                // ИЗМЕНИТЬ целевую температуру бойлера
    boolean scheduleBoiler();                               // Проверить расписание бойлера true - нужно греть false - греть не надо

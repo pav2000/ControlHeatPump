@@ -475,7 +475,6 @@ x_I2C_init_std_message:
 	   journal.jprintf(" writing on SD card\n");
    } else journal.jprintf(" - not available\n");
 
-
    int8_t _profile = HP.Schdlr.calc_active_profile();
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
 	   HP.Prof.load(_profile);
@@ -1047,7 +1046,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
-				Stats.Save();
+				Stats.Save(0);
 				journal.jprintf(pP_DATE, "Power lost!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);

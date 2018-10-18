@@ -77,7 +77,20 @@ int8_t Scheduler::calc_active_profile(void)
 	} else { // Берем последнюю
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[max - sizeof(Scheduler_Calendar_Item) + 1];
 	}
-	return item->Profile-1;
+	current_hour = h;
+	if((item->Profile < -100)) { // Set profile
+		current_change = 0;
+		return 128 - item->Profile - 1;
+	} else { // change t
+		current_change = item->Profile * 10;
+		return HP.Prof.get_idProfile();
+	}
+}
+
+int16_t Scheduler::get_temp_change(void)
+{
+	if(rtcSAM3X8.get_hours() != current_hour) calc_active_profile();
+	return current_change;
 }
 
 // Вернуть строку параметра для веба, get_SCHDLR(param)

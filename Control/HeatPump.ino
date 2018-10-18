@@ -1316,26 +1316,16 @@ void HeatPump::updateNextion()
 #endif
 }
 
-int16_t HeatPump::get_targetTempCool()
+// Переключение на следующий режим работы отопления (последовательный перебор режимов)
+void HeatPump::set_nextMode()
 {
-	if(get_ruleCool() == pHYBRID) return Prof.Cool.Temp1;
-	if(!(GETBIT(Prof.Cool.flags, fTarget))) return Prof.Cool.Temp1;
-	else return Prof.Cool.Temp2;
-}
-
-int16_t HeatPump::get_targetTempHeat()
-{
-	int16_t T;
-	if(get_ruleHeat() == pHYBRID) T = Prof.Heat.Temp1;
-	else if(!(GETBIT(Prof.Heat.flags, fTarget))) T = Prof.Heat.Temp1;
-	else T = Prof.Heat.Temp2;
-	if(Prof.Heat.add_delta_temp != 0) {
-		int8_t h = rtcSAM3X8.get_hours();
-		if((Prof.Heat.add_delta_end_hour >= Prof.Heat.add_delta_hour && h >= Prof.Heat.add_delta_hour && h <= Prof.Heat.add_delta_end_hour)
-			|| (Prof.Heat.add_delta_end_hour < Prof.Heat.add_delta_hour && (h >= Prof.Heat.add_delta_hour || h <= Prof.Heat.add_delta_end_hour)))
-			T += Prof.Heat.add_delta_temp;
-	}
-	return T;
+   switch ((MODE_HP)get_modeHouse() )
+    {
+      case  pOFF:   Prof.SaveON.mode=pHEAT;  break;
+      case  pHEAT:  Prof.SaveON.mode=pCOOL;  break;
+      case  pCOOL:  Prof.SaveON.mode=pOFF;   break;
+      default: break;
+    }
 }
 
 // Изменить целевую температуру с провекой допустимости значений
@@ -1361,31 +1351,43 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
   }
   return 0;
 }
- // Переключение на следующий режим работы отопления (последовательный перебор режимов)
-void HeatPump::set_nextMode()
+
+int16_t HeatPump::get_targetTempCool()
 {
-   switch ((MODE_HP)get_modeHouse() )  
-    {
-      case  pOFF:   Prof.SaveON.mode=pHEAT;  break;
-      case  pHEAT:  Prof.SaveON.mode=pCOOL;  break; 
-      case  pCOOL:  Prof.SaveON.mode=pOFF;   break; 
-      default: break;
-    }  
+	int16_t T;
+	if(get_ruleCool() == pHYBRID) T = Prof.Cool.Temp1;
+	else if(!(GETBIT(Prof.Cool.flags, fTarget))) T = Prof.Cool.Temp1;
+	else T = Prof.Cool.Temp2;
+	T += Schdlr.get_temp_change();
+	return T;
 }
- // ИЗМЕНИТЬ целевую температуру бойлера с провекой допустимости значений
+
+int16_t HeatPump::get_targetTempHeat()
+{
+	int16_t T;
+	if(get_ruleHeat() == pHYBRID) T = Prof.Heat.Temp1;
+	else if(!(GETBIT(Prof.Heat.flags, fTarget))) T = Prof.Heat.Temp1;
+	else T = Prof.Heat.Temp2;
+	if(Prof.Heat.add_delta_temp != 0) {
+		int8_t h = rtcSAM3X8.get_hours();
+		if((Prof.Heat.add_delta_end_hour >= Prof.Heat.add_delta_hour && h >= Prof.Heat.add_delta_hour && h <= Prof.Heat.add_delta_end_hour)
+			|| (Prof.Heat.add_delta_end_hour < Prof.Heat.add_delta_hour && (h >= Prof.Heat.add_delta_hour || h <= Prof.Heat.add_delta_end_hour)))
+			T += Prof.Heat.add_delta_temp;
+	}
+	T += Schdlr.get_temp_change();
+	return T;
+}
+
+// ИЗМЕНИТЬ целевую температуру бойлера с провекой допустимости значений
 int16_t HeatPump::setTempTargetBoiler(int16_t dt)
 {
   if ((Prof.Boiler.TempTarget+dt>=5.0*100)&&(Prof.Boiler.TempTarget+dt<=90.0*100))   Prof.Boiler.TempTarget=Prof.Boiler.TempTarget+dt;
   return Prof.Boiler.TempTarget;     
 }
-                                 
-// --------------------------------------------------------------------------------------------------------     
-// ---------------------------------- ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ ТН ------------------------------------------
-// --------------------------------------------------------------------------------------------------------    
 
- // Получить целевую температуру бойлера с учетом корректировки
- int16_t HeatPump::get_boilerTempTarget()
- {
+// Получить целевую температуру бойлера с учетом корректировки
+int16_t HeatPump::get_boilerTempTarget()
+{
 	 if(Prof.Boiler.add_delta_temp != 0) {
 		int8_t h = rtcSAM3X8.get_hours();
 		if((Prof.Boiler.add_delta_end_hour >= Prof.Boiler.add_delta_hour && h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour)
@@ -1393,7 +1395,27 @@ int16_t HeatPump::setTempTargetBoiler(int16_t dt)
 			return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp;
 	 }
 	 return Prof.Boiler.TempTarget;
- }
+}
+
+// Получить целевую температуру отопления
+void HeatPump::getTargetTempStr(char *rstr)
+{
+	switch(HP.get_modeHouse())   // проверка отопления
+	{
+	case pHEAT:
+		ftoa(rstr, (float) HP.get_targetTempHeat() / 100, 1);
+		break;
+	case pCOOL:
+		ftoa(rstr, (float) HP.get_targetTempCool() / 100, 1);
+		break;
+	default:
+		strcpy(rstr, "-.-");
+	}
+}
+
+// --------------------------------------------------------------------------------------------------------
+// ---------------------------------- ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ ТН ------------------------------------------
+// --------------------------------------------------------------------------------------------------------
 
  #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
  // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
@@ -2438,10 +2460,11 @@ MODE_COMP HeatPump::UpdateCool()
 	if ((!dRelay[RTRV].get_Relay())&&is_compressor_on())  dRelay[RTRV].set_ON();                                        // Охлаждение Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
 #endif
 	Status.ret=pNone;                                                                                   // Сбросить состояние пида
+	t1 = GETBIT(Prof.Cool.flags,fTarget) ? RET : sTemp[TIN].get_Temp(); // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
+	target = get_targetTempCool();
 	switch (Prof.Cool.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис охлаждение.
-		if (GETBIT(Prof.Cool.flags,fTarget)) { target=Prof.Cool.Temp2; t1=RET;}  else { target=Prof.Cool.Temp1; t1=sTemp[TIN].get_Temp();}  // вычислить темературы для сравнения Prof.Heat.Target 0-дом   1-обратка
 		if(t1<target)             {Status.ret=pCh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)){Status.ret=pCh1;return pCOMP_OFF;}// Достигнута минимальная температура подачи ВЫКЛ
 		else if(t1>target+Prof.Cool.dTemp)  {Status.ret=pCh2;   return pCOMP_ON; }                       // Достигнут гистерезис ВКЛ
@@ -2450,7 +2473,6 @@ MODE_COMP HeatPump::UpdateCool()
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if (GETBIT(Prof.Cool.flags,fTarget)) { target=Prof.Cool.Temp2; t1=RET;}  else { target=Prof.Cool.Temp1; t1=sTemp[TIN].get_Temp();} // вычислить темературы для сравнения Prof.Heat.Target 0-дом  1-обратка
 
 		if(t1<target)                     { Status.ret=pCp3; return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
 		else if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет

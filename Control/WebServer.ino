@@ -278,19 +278,20 @@ switch (HP.get_SourceWeb())
 					SPI_switchSD();
 					if(!card.exists(filename))  // проверка на существование файла
 					{
-						//if(card.cardErrorCode(), card.cardErrorData()) {
-//						if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
-//							journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
-//						} else success = true;  // Карта инициализирована с первого раза
-//
-						//}
-
+						if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
+							if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
+								if(card.exists(filename)) goto xFileFound;
+							} else {
+								journal.jprintf("Reinit SD card failed!\n");
+								//HP.set_fSD(false);
+							}
+						}
 						SPI_switchW5200();
 						sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 						journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
 						return;
 					} // файл не найден
-				
+xFileFound:
 					for(i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
 					{
 						if(!webFile.open(filename, O_READ))    // Карта не читатаеся
@@ -821,6 +822,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
 //       continue;
 //       }
 
+     if(strcmp(str, "get_TrgT") == 0) { // целевая температура
+    	 HP.getTargetTempStr(strReturn + m_strlen(strReturn));
+    	 ADD_WEBDELIM(strReturn); continue;
+     }
+
+#ifdef SENSOR_IP
     if (strstr(str,"get_infoESP"))  // Удаленные датчики - запрос состояния контрола
        { 
        // TIN, TOUT, TBOILER, ВЕРСИЯ, ПАМЯТЬ, ЗАГРУЗКА, АПТАЙМ, ПЕРЕГРЕВ, ОБОРОТЫ, СОСТОЯНИЕ.
@@ -842,7 +849,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
         if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStrEN());                   // Ошибок нет
         else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
         strcat(strReturn,";");   ADD_WEBDELIM(strReturn) ;    continue;
-       }   
+       }
+#endif
      if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
     	str += 5;
     	if(strcmp(str, "fcanalog") == 0) {

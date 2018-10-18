@@ -121,18 +121,19 @@ void Statistics::Reset()
 	counts_work = 0;
 	day = rtcSAM3X8.get_days();
 	month = rtcSAM3X8.get_months();
-	year = rtcSAM3X8.get_years();
+	if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
 	previous = millis();
 }
 
 // Обновить статистику, вызывается часто, раз в TIME_READ_SENSOR
 void Statistics::Update()
 {
+	if(year == 0) return; // waiting to switch a next year
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	uint8_t d = rtcSAM3X8.get_days();
 	if(d != day) {
-		Save();
+		Save(1);
 		Reset();
 	}
 	int32_t newval = 0;
@@ -302,6 +303,7 @@ void Statistics::ReturnFileString(char *ret)
 		strcat(ret, ";");
 		ReturnFieldString(ret, i);
 	}
+	strcat(ret, "\n");
 }
 
 void Statistics::ReturnWebTable(char *ret)
@@ -344,13 +346,14 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 
 void Statistics::CheckCreateNewFile()
 {
-	if(year != rtcSAM3X8.get_years()) {
+	if(year == 0) {
+		year = rtcSAM3X8.get_years();
 		Init(1);
 	}
 }
 
-// Записать статистику на SD
-void Statistics::Save()
+// Записать статистику на SD, 0 - только записать, 1 - новый день
+void Statistics::Save(uint8_t newday)
 {
 #ifdef STATS_DO_NOT_SAVE
 	return;
@@ -364,20 +367,27 @@ void Statistics::Save()
 	ReturnFileString(rbuf);
 	uint16_t lensav, len = m_strlen(rbuf);
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
-	if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
-		Error("save 1");
-	} else if(lensav != len){ // next block
-		if(CurrentBlock >= BlockEnd) {
-			journal.jprintf("Stats file size exceeded!\n"); // to do: increase file
-		} else {
-			CurrentBlock++;
-			CurrentPos = 0;
-			memset(stats_buffer, 0, SD_BLOCK);
-			memcpy(stats_buffer, rbuf, len - lensav);
-			if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
-				Error("save 2");
-			} else CurrentPos += len;
-		}
-	} else CurrentPos += len;
+#ifdef USE_UPS
+	if(newday && lensav != len) { // save when there is no space in buffer
+#endif
+		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+			Error("save 1");
+		} else if(lensav != len){ // next block
+			if(CurrentBlock >= BlockEnd) {
+				journal.jprintf("Stats file size exceeded!\n"); // to do: increase file
+			} else {
+				memset(stats_buffer, 0, SD_BLOCK);
+				memcpy(stats_buffer, rbuf, lensav = len - lensav);
+				if(!card.card()->writeBlock(CurrentBlock + 1, (uint8_t*)stats_buffer)) {
+					Error("save 2");
+				} else if(newday) {
+					CurrentBlock++;
+					CurrentPos = lensav;
+				}
+			}
+		} else if(newday) CurrentPos += lensav;
+#ifdef USE_UPS
+	}
+#endif
 	free(rbuf);
 }
