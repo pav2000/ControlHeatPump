@@ -524,8 +524,8 @@ HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",160,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*160;// 200, до обрезки стеков было 300
+if (xTaskCreate(vUpdateCommand,"Command",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
@@ -544,29 +544,29 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Остано�
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 // ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 #if    W5200_THREARD < 2 
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*(W5200_STACK_SIZE+20);
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+20);
 #elif  W5200_THREARD < 3
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #elif  W5200_THREARD < 4
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb2,"Web2", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #else
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb2,"Web2", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb3,"Web3", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb3,"Web3", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif
 vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
 if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
@@ -592,8 +592,8 @@ if(Modbus.get_present())
 #endif 
 
 // ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
-if (xTaskCreate(vUpdateStat,"upStat",150,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*150;  //150
+if (xTaskCreate(vUpdateStat,"upStat",STACK_vUpdateStat,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateStat;  //150
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
 if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
