@@ -80,7 +80,7 @@ int8_t Scheduler::calc_active_profile(void)
 	current_hour = h;
 	if((item->Profile < -100)) { // Set profile
 		current_change = 0;
-		return 128 - item->Profile - 1;
+		return 128 + item->Profile - 1;
 	} else { // change t
 		current_change = item->Profile * 10;
 		return HP.Prof.get_idProfile();

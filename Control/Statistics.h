@@ -21,7 +21,7 @@
 #define Statistics_h
 #include "Constant.h"
 
-//#define STATS_DO_NOT_SAVE
+#define STATS_DO_NOT_SAVE
 #define SD_BLOCK			512
 #define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
