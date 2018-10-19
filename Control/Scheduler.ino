@@ -51,25 +51,28 @@ uint16_t Scheduler::Timetable_ptr(uint8_t num)
 }
 
 // Установка профиля по календарю и текущему времени
-// Возврат: -1 - расписание не активно или пустой календарь
+// Возврат: -2 - расписание не активно, -1 - пустой календарь
 int8_t Scheduler::calc_active_profile(void)
 {
 	Scheduler_Calendar_Item *item;
-	uint8_t cal_dw, cal_h, dw, h;
+	uint8_t cal_dw, cal_h, dw;
 	uint16_t ptr, max, found = 0;
 
-	if((sch_data.Flags & (1<<bScheduler_active)) == 0) return SCHDLR_NotActive;
+	current_hour = rtcSAM3X8.get_hours();
+	if((sch_data.Flags & (1<<bScheduler_active)) == 0) {
+		current_change = 0;
+		return SCHDLR_NotActive;
+	}
 	ptr = Timetable_ptr(sch_data.Active);
 	dw = rtcSAM3X8.get_day_of_week(); // 0 - вск
 	if(dw == 0) dw = 6; else dw--; // 0 - пон
-	h = rtcSAM3X8.get_hours();
 	max = ptr + sch_data.Timetable[ptr];
 	if(ptr == max) return SCHDLR_Profile_off; // Пустой календарь
 	for(ptr++; ptr < max; ptr += sizeof(Scheduler_Calendar_Item)) {
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[ptr];
 		cal_dw = item->WD_Hour >> 5; 	// День недели
 		cal_h = item->WD_Hour & 0x1F; 	// Час
-		if(cal_dw > dw || (cal_dw == dw && cal_h > h)) break;
+		if(cal_dw > dw || (cal_dw == dw && cal_h > current_hour)) break;
 		found = ptr;
 	}
 	if(found) {
@@ -77,8 +80,10 @@ int8_t Scheduler::calc_active_profile(void)
 	} else { // Берем последнюю
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[max - sizeof(Scheduler_Calendar_Item) + 1];
 	}
-	current_hour = h;
-	if((item->Profile < -100)) { // Set profile
+	if((item->Profile == 0)) { // Set profile
+		current_change = 0;
+		return -1;
+	} else if((item->Profile < -100)) { // Set profile
 		current_change = 0;
 		return 128 + item->Profile - 1;
 	} else { // change t
