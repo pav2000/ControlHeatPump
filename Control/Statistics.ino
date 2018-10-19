@@ -20,9 +20,13 @@
 #include "HeatPump.h"
 #include "SdFat.h"
 
-void Statistics::Init(uint8_t noreset)
+#define temp_initbuf Socket[0].outBuf
+const char format_stats[] = "%04d%02d%02d";
+
+void Statistics::Init(uint8_t newyear)
 {
-	if(!noreset) Reset();
+	if(!newyear) Reset();
+	year = rtcSAM3X8.get_years();
 #ifdef STATS_DO_NOT_SAVE
 	return;
 #endif
@@ -30,11 +34,15 @@ void Statistics::Init(uint8_t noreset)
 		journal.jprintf(" No SD card - statistics will not be saved!\n");
 		return;
 	}
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexWebThreadBuzy);
+		return;
+	}
 	CurrentBlock = 0;
 	CurrentPos = 0;
 	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
 	strcpy(filename, stats_file_start);
-	_itoa(rtcSAM3X8.get_years(), filename);
+	_itoa(year, filename);
 	strcat(filename, stats_file_ext);
 	SPI_switchSD();
 	uint8_t newfile = 0;
@@ -65,11 +73,41 @@ void Statistics::Init(uint8_t noreset)
 			}
 		} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
 			journal.jprintf(" Endpos not found!\n");
+		} else if(!newyear) { // read last record
+			int32_t pos = (CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos;
+			uint8_t b;
+			while(--pos >= 0) {
+				if(!StatsFile.seekSet(pos)) {
+					Error("seek");
+					break;
+				}
+				if(!StatsFile.read(&b, 1)) {
+					Error("readb");
+					break;
+				}
+				if(b == '\n' || pos == 0) {
+					if(pos) pos++;
+					if(!StatsFile.read(temp_initbuf, STATS_MAX_RECORD_LEN)) {
+						Error("readl");
+						break;
+					}
+					m_snprintf(temp_initbuf + STATS_MAX_RECORD_LEN, 16, format_stats, year, month, day);
+					if(memcmp(temp_initbuf, temp_initbuf + STATS_MAX_RECORD_LEN, 8) == 0) { // the same
+						CurrentBlock = BlockStart + pos / SD_BLOCK;
+						CurrentPos = pos % SD_BLOCK;
+						if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+							Error("readp");
+						}
+					}
+					break;
+				}
+			}
 		}
 	}
 	StatsFile.close();
 xEnd:
 	SPI_switchW5200();
+	SemaphoreGive(xWebThreadSemaphore);  // Отдать мютекс
 }
 
 boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
@@ -79,7 +117,10 @@ boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend
 	while(cur != bst || cur != bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
-		if(!card.card()->readBlock(cur, buffer)) break;
+		if(!card.card()->readBlock(cur, buffer)) {
+			Error("fndpos");
+			break;
+		}
 		if(buffer[0] != 0) {
 			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
 			bst = cur;
@@ -92,7 +133,7 @@ boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend
 	CurrentBlock = cur;
 	CurrentPos = pos - buffer;
 #ifdef DEBUG_MODWORK
-	journal.jprintf(" Found pos: %u.%u\n", CurrentBlock, CurrentPos);
+	journal.jprintf(" Found pos: %u/%u\n", CurrentBlock, CurrentPos);
 #endif
 	return true;
 }
@@ -108,10 +149,10 @@ void Statistics::Reset()
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		switch(Stats_data[i].type){
 		case STATS_TYPE_MIN:
-			Stats_data[i].value = 2147483647;
+			Stats_data[i].value = MAX_INT32_VALUE;
 			break;
 		case STATS_TYPE_MAX:
-			Stats_data[i].value = -2147483647;
+			Stats_data[i].value = MIN_INT32_VALUE;
 			break;
 		default:
 			Stats_data[i].value = 0;
@@ -121,7 +162,6 @@ void Statistics::Reset()
 	counts_work = 0;
 	day = rtcSAM3X8.get_days();
 	month = rtcSAM3X8.get_months();
-	if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
 	previous = millis();
 }
 
@@ -131,10 +171,10 @@ void Statistics::Update()
 	if(year == 0) return; // waiting to switch a next year
 	uint32_t tm = millis() - previous;
 	previous = millis();
-	uint8_t d = rtcSAM3X8.get_days();
-	if(d != day) {
+	if(rtcSAM3X8.get_days() != day) {
 		Save(1);
 		Reset();
+		if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
 	}
 	int32_t newval = 0;
 	boolean compressor_on = HP.is_compressor_on();
@@ -173,6 +213,7 @@ void Statistics::Update()
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
 				newval = HP.fullCOP;
 			}
+			if(newval == 0) continue;
 			break;
 		case STATS_OBJ_Time:
 			if(Stats_data[i].number == OBJ_Compressor && compressor_on) break;
@@ -275,6 +316,7 @@ void Statistics::ReturnFileHeader(char *ret)
 void Statistics::ReturnFieldString(char *ret, uint8_t i)
 {
 	float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].type == STATS_TYPE_AVG_WORK ? Stats_data[i].value / counts_work : Stats_data[i].value;
+	if(val == MIN_INT32_VALUE || val == MAX_INT32_VALUE) val = 0;
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:
 	case STATS_OBJ_Press:
@@ -298,7 +340,7 @@ void Statistics::ReturnFieldString(char *ret, uint8_t i)
 // Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
 void Statistics::ReturnFileString(char *ret)
 {
-	m_snprintf(ret, 16, "%d%02d%02d", year, month, day);
+	m_snprintf(ret, 16, format_stats, year, month, day);
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		strcat(ret, ";");
 		ReturnFieldString(ret, i);
@@ -341,8 +383,8 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 		}
 		SPI_switchSD();
 	}
+	SPI_switchW5200();
 }
-
 
 void Statistics::CheckCreateNewFile()
 {
@@ -367,11 +409,22 @@ void Statistics::Save(uint8_t newday)
 	ReturnFileString(rbuf);
 	uint16_t lensav, len = m_strlen(rbuf);
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
+
+
+	journal.printf("Sav: %d, %d\n", CurrentPos, lensav);
+
+
 #ifdef USE_UPS
-	if(newday && lensav != len) { // save when there is no space in buffer
+	if(!newday || lensav != len) { // save when there is no space in buffer
 #endif
+		if(SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) return;
+		SPI_switchSD();
 		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 			Error("save 1");
+//			if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
+//				if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) goto xContinue;
+//				else journal.jprintf("Reinit SD card failed!\n");
+//			}
 		} else if(lensav != len){ // next block
 			if(CurrentBlock >= BlockEnd) {
 				journal.jprintf("Stats file size exceeded!\n"); // to do: increase file
@@ -383,11 +436,17 @@ void Statistics::Save(uint8_t newday)
 				} else if(newday) {
 					CurrentBlock++;
 					CurrentPos = lensav;
+				} else { // reread current block
+					if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+						Error("read 1");
+					}
 				}
 			}
 		} else if(newday) CurrentPos += lensav;
+	    SPI_switchW5200();
+	    SemaphoreGive(xWebThreadSemaphore);
 #ifdef USE_UPS
-	}
+	} else CurrentPos += lensav;
 #endif
 	free(rbuf);
 }

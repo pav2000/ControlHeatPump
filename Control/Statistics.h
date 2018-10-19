@@ -25,6 +25,8 @@
 #define SD_BLOCK			512
 #define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define MAX_INT32_VALUE 2147483647
+#define MIN_INT32_VALUE -2147483647
 
 enum {
 	STATS_OBJ_Temp = 0,		// °C
@@ -100,7 +102,7 @@ uint8_t *stats_buffer[SD_BLOCK];
 class Statistics
 {
 public:
-	void	Init(uint8_t noreset = 0);
+	void	Init(uint8_t newyear = 0);
 	void	Update();						// Обновить статистику, раз в период
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void	Reset();						// Сбросить накопленные промежуточные значения

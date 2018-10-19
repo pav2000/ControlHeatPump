@@ -469,11 +469,11 @@ x_I2C_init_std_message:
     #endif 
 
   // 14. Инициалазация Statistics
-   journal.jprintf("11. Statistics\n");
+   journal.jprintf("11. Statistics: ");
    if(HP.get_fSD()) {
 	   Stats.Init();             // Инициализовать статистику
-	   journal.jprintf(" writing on SD card\n");
-   } else journal.jprintf(" - not available\n");
+	   journal.jprintf(" Writing on SD card\n");
+   } else journal.jprintf("not available\n");
 
    int8_t _profile = HP.Schdlr.calc_active_profile();
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
@@ -592,8 +592,8 @@ if(Modbus.get_present())
 #endif 
 
 // ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
-if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*100;  //100
+if (xTaskCreate(vUpdateStat,"upStat",150,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*150;  //150
 vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
 if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
