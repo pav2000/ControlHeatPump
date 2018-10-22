@@ -386,7 +386,7 @@ void check_radio_sensors(void)
 		rs_serial_buf[rs_serial_idx++] = RADIO_SENSORS_SERIAL.read();
 		if(rs_serial_flag == RS_WAIT_HEADER) {
 			if(memcmp(rs_serial_buf, rs_serial_header, rs_serial_idx < sizeof(rs_serial_header) ? rs_serial_idx : sizeof(rs_serial_header)) == 0) {
-				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = 1;
+				if(rs_serial_idx >= sizeof(rs_serial_header)) rs_serial_flag = RS_WAIT_DATA;
 			} else {
 				rs_serial_idx = 0;
 			}
@@ -396,6 +396,7 @@ void check_radio_sensors(void)
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					journal.jprintf("RS CRC error!\n");
+					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
 					#ifdef DEBUG_RADIO
@@ -424,7 +425,7 @@ void check_radio_sensors(void)
 								if(c == 'I') { // Присутствие
 									if(pdata) {
 										radio_hub_serial = atoi((char *)&rs_serial_buf[rs_serial_full_header_size + 3]);
-										if(radio_hub_serial) journal.jprintf("Radio module: #%d %s\n", radio_hub_serial, pdata);
+										if(radio_hub_serial) journal.jprintf("Radio module found: #%d\n", radio_hub_serial);
 									}
 								} else if(c == 'D') { // Данные
 									char *p = pdata;
@@ -439,8 +440,8 @@ void check_radio_sensors(void)
 											for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
 											if(i < RADIO_SENSORS_MAX) {
 												if(i == radio_received_num) { // new
-													radio_received_num++;
 													memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
+													radio_received_num++;
 												}
 												radio_received[i].serial_num = ser;
 												while(p) {
