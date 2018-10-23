@@ -97,7 +97,7 @@ Stats_Data Stats_data[] = {
 const char stats_file_start[] = "stats_";
 const char stats_file_header[] = "head";
 const char stats_file_ext[] = ".csv";
-uint8_t *stats_buffer[SD_BLOCK];
+uint8_t stats_buffer[SD_BLOCK];
 
 class Statistics
 {
