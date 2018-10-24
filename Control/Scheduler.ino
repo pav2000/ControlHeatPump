@@ -46,7 +46,7 @@ const char* Scheduler::get_note(void)
 uint16_t Scheduler::Timetable_ptr(uint8_t num)
 {
 	uint16_t i = 0;
-	while(num--) i += sch_data.Timetable[i] + 1;
+	while(num--) if((i += sch_data.Timetable[i] + 1) >= TIMETABLES_MAXSIZE - 1) return 0;
 	return i;
 }
 
@@ -67,7 +67,10 @@ int8_t Scheduler::calc_active_profile(void)
 	dw = rtcSAM3X8.get_day_of_week(); // 0 - вск
 	if(dw == 0) dw = 6; else dw--; // 0 - пон
 	max = ptr + sch_data.Timetable[ptr];
-	if(ptr == max) return SCHDLR_Profile_off; // Пустой календарь
+	if(ptr == max || max > TIMETABLES_MAXSIZE) {
+		current_change = 0;
+		return SCHDLR_Profile_off; // Пустой календарь
+	}
 	for(ptr++; ptr < max; ptr += sizeof(Scheduler_Calendar_Item)) {
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[ptr];
 		cal_dw = item->WD_Hour >> 5; 	// День недели
@@ -121,8 +124,9 @@ void Scheduler::web_get_param(char *param, char *result)
 		} else {
 			uint16_t ptr = Timetable_ptr(cnum);
 			uint16_t max = ptr + sch_data.Timetable[ptr];
+			if(max > TIMETABLES_MAXSIZE) return;
 			for(ptr++; ptr <= max; ptr++) {
-				result += strlen(result);
+				result += m_strlen(result);
 				if(sch_data.Timetable[ptr]) itoa(sch_data.Timetable[ptr], result, 10);
 				if(ptr < max) strcat(result, ";");
 			}

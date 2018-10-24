@@ -21,7 +21,7 @@
 #define Statistics_h
 #include "Constant.h"
 
-#define STATS_DO_NOT_SAVE
+//#define STATS_DO_NOT_SAVE
 #define SD_BLOCK			512
 #define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
@@ -78,7 +78,7 @@ Stats_Data Stats_data[] = {
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
 							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG_WORK, OBJ_COP_Full },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },

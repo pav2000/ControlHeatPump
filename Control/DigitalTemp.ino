@@ -399,9 +399,9 @@ void check_radio_sensors(void)
 					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					#ifdef DEBUG_RADIO
-					journal.jprintf("RS=%s ", rs_serial_buf + rs_serial_full_header_size);
-					#endif
+					//#ifdef DEBUG_RADIO
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					//#endif
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
 						char *pdata = strchr((char *)&rs_serial_buf[rs_serial_full_header_size + 2], ':');
@@ -412,7 +412,7 @@ void check_radio_sensors(void)
 						if(pdata) {
 							if(c == 'A') { //    // Новый датчик ждем в течении 2-х минуты после старта НК (нажать кнопку датчика пока не загорится его светодиод)
 								if(HP.get_uptime() < 120) {
-									journal.jprintf("New radio sensor:%s\n", (char *)rs_serial_buf + rs_serial_full_header_size);
+									journal.jprintf("New radio sensor: %s\n", (char *)rs_serial_buf + rs_serial_full_header_size);
 									pdata = strchr(pdata, ' ');
 									if(pdata) {
 										*(pdata+1) = '1'; // Разрешение регистрации

@@ -97,7 +97,7 @@ class sensorIP
 #endif
 
 #ifdef RADIO_SENSORS
-#define DEBUG_RADIO
+//#define DEBUG_RADIO
 enum {
 	RS_WAIT_HEADER = 0,
 	RS_WAIT_DATA,

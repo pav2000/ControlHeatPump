@@ -21,7 +21,8 @@
 #include "SdFat.h"
 
 #define temp_initbuf Socket[0].outBuf
-const char format_stats[] = "%04d%02d%02d";
+const char format_date[] = "%04d%02d%02d";
+#define format_date_size 8
 
 void Statistics::Init(uint8_t newyear)
 {
@@ -74,7 +75,7 @@ void Statistics::Init(uint8_t newyear)
 		} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
 			journal.jprintf(" Endpos not found!\n");
 		} else if(!newyear) { // read last record
-			int32_t pos = (CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos;
+			int32_t pos = (CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos - 1;
 			uint8_t b;
 			while(--pos >= 0) {
 				if(!StatsFile.seekSet(pos)) {
@@ -91,12 +92,48 @@ void Statistics::Init(uint8_t newyear)
 						Error("readl");
 						break;
 					}
-					m_snprintf(temp_initbuf + STATS_MAX_RECORD_LEN, 16, format_stats, year, month, day);
-					if(memcmp(temp_initbuf, temp_initbuf + STATS_MAX_RECORD_LEN, 8) == 0) { // the same
+					m_snprintf(temp_initbuf + STATS_MAX_RECORD_LEN, 16, format_date, year, month, day);
+					if(memcmp(temp_initbuf, temp_initbuf + STATS_MAX_RECORD_LEN, format_date_size) == 0) { // date the same
 						CurrentBlock = BlockStart + pos / SD_BLOCK;
 						CurrentPos = pos % SD_BLOCK;
+						temp_initbuf[format_date_size] = '\0';
+						journal.printf(" %s restored\n", temp_initbuf);
 						if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 							Error("readp");
+						} else {
+							memcpy(temp_initbuf, stats_buffer + CurrentPos, SD_BLOCK - CurrentPos);
+							temp_initbuf[STATS_MAX_RECORD_LEN] = '\0';
+							char *p = temp_initbuf + format_date_size;
+							if((p = strchr(p, '\n'))) *p = '\0';
+							p = temp_initbuf + format_date_size;
+							while((p = strchr(p, ';'))) *p++ = '\0';
+							p = temp_initbuf + format_date_size;
+							for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
+								float val = my_atof(++p);
+								if(val != ATOF_ERROR) {
+									switch(Stats_data[i].object) {
+									case STATS_OBJ_Temp:
+									case STATS_OBJ_Press:
+										Stats_data[i].value = val * 10;
+										break;
+									case STATS_OBJ_Voltage:
+										Stats_data[i].value = val;
+										break;
+									case STATS_OBJ_Power:
+										Stats_data[i].value = val * 1000000;
+										break;
+									case STATS_OBJ_COP:
+										Stats_data[i].value = val * 100;
+										break;
+									case STATS_OBJ_Time:
+										Stats_data[i].value = val * 60000;
+										break;
+									}
+									if(Stats_data[i].type == STATS_TYPE_AVG_WORK && Stats_data[i].value) counts_work = 1;
+									if((p = (char*)memchr(p, '\0', STATS_MAX_RECORD_LEN)) == NULL) break;
+								}
+							}
+							counts = 1;
 						}
 					}
 					break;
@@ -207,7 +244,6 @@ void Statistics::Update()
 			}
 			break;
 		case STATS_OBJ_COP:
-			if(!compressor_on) continue;
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
 				newval = HP.COP;
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
@@ -315,24 +351,24 @@ void Statistics::ReturnFileHeader(char *ret)
 
 void Statistics::ReturnFieldString(char *ret, uint8_t i)
 {
-	float val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].type == STATS_TYPE_AVG_WORK ? Stats_data[i].value / counts_work : Stats_data[i].value;
+	int32_t val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / counts : Stats_data[i].type == STATS_TYPE_AVG_WORK ? Stats_data[i].value / counts_work : Stats_data[i].value;
 	if(val == MIN_INT32_VALUE || val == MAX_INT32_VALUE) val = 0;
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:
 	case STATS_OBJ_Press:
-		_ftoa(ret, val / 10, 1);	 // bar
+		int_to_dec_str(val, 10, ret, 1); 	 // bar
 		break;
 	case STATS_OBJ_Voltage:
-		_ftoa(ret, val, 0);
+		int_to_dec_str(val, 1, ret, 0);
 		break;
 	case STATS_OBJ_Power:
-		_ftoa(ret, val / 1000000, 3); // кВт*ч
+		int_to_dec_str(val, 1000000, ret, 3);  // кВт*ч
 		break;
 	case STATS_OBJ_COP:
-		_ftoa(ret, val / 100, 2);
+		int_to_dec_str(val, 100, ret, 2);
 		break;
 	case STATS_OBJ_Time:
-		_ftoa(ret, val / 60000, 1); // минуты
+		int_to_dec_str(val, 60000, ret, 1);  // минуты
 		break;
 	}
 }
@@ -340,7 +376,7 @@ void Statistics::ReturnFieldString(char *ret, uint8_t i)
 // Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
 void Statistics::ReturnFileString(char *ret)
 {
-	m_snprintf(ret, 16, format_stats, year, month, day);
+	m_snprintf(ret, 20, format_date, year, month, day);
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		strcat(ret, ";");
 		ReturnFieldString(ret, i);
@@ -374,7 +410,7 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 			break;
 		}
 		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
-			readed = (uint8_t*)Socket[thread].outBuf - (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK);
+			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
 		} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
 		SPI_switchW5200();
 		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
@@ -382,6 +418,7 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 			break;
 		}
 		SPI_switchSD();
+		readed = 0;
 	}
 	SPI_switchW5200();
 }
@@ -407,7 +444,7 @@ void Statistics::Save(uint8_t newday)
 		return;
 	}
 	ReturnFileString(rbuf);
-	uint16_t lensav, len = m_strlen(rbuf);
+	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
 
 
