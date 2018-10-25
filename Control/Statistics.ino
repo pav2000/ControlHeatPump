@@ -35,7 +35,7 @@ void Statistics::Init(uint8_t newyear)
 		journal.jprintf(" No SD card - statistics will not be saved!\n");
 		return;
 	}
-	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
+	if(newyear && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexWebThreadBuzy);
 		return;
 	}
@@ -144,7 +144,7 @@ void Statistics::Init(uint8_t newyear)
 	StatsFile.close();
 xEnd:
 	SPI_switchW5200();
-	SemaphoreGive(xWebThreadSemaphore);  // Отдать мютекс
+	if(newyear) SemaphoreGive(xWebThreadSemaphore);  // Отдать мютекс
 }
 
 boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
