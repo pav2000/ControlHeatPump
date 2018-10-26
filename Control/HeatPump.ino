@@ -417,70 +417,51 @@ int8_t HeatPump::load_motoHour()
 // Сборос сезонного счетчика моточасов
 // параметр true - сброс всех счетчиков
 void HeatPump::resetCount(boolean full)
-{ 
-if (full) // Полный сброс счетчиков
-  {  
-    motoHour.H1=0;
-    motoHour.C1=0;
-    #ifdef USE_ELECTROMETER_SDM
-    motoHour.E1=dSDM.get_Energy();
-    #endif
-    motoHour.P1=0;
-    motoHour.Z1=0;
-    motoHour.D1=rtcSAM3X8.unixtime();           // Дата сброса общих счетчиков
-  } 
-  // Сезон
-  motoHour.H2=0;
-  motoHour.C2=0;
-  #ifdef USE_ELECTROMETER_SDM
-  motoHour.E2=dSDM.get_Energy();
-  #endif 
-  motoHour.P2=0;
-  motoHour.Z2=0;
-  motoHour.D2=rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
-  save_motoHour();  // записать счетчики
+{
+	if(full) // Полный сброс счетчиков
+	{
+		motoHour.H1 = 0;
+		motoHour.C1 = 0;
+#ifdef USE_ELECTROMETER_SDM
+		motoHour.E1 = dSDM.get_Energy();
+#endif
+		motoHour.P1 = 0;
+		motoHour.Z1 = 0;
+		motoHour.D1 = rtcSAM3X8.unixtime();           // Дата сброса общих счетчиков
+	}
+	// Сезон
+	motoHour.H2 = 0;
+	motoHour.C2 = 0;
+#ifdef USE_ELECTROMETER_SDM
+	motoHour.E2 = dSDM.get_Energy();
+#endif
+	motoHour.P2 = 0;
+	motoHour.Z2 = 0;
+	motoHour.D2 = rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
+	save_motoHour();  // записать счетчики
+	motohour_OUT_work = 0;
 }
-// Обновление счетчиков моточасов
+
+// Обновление счетчиков моточасов, вызывается раз в минуту
 // Электрическая энергия не обновляется, Тепловая энергия обновляется
-volatile uint32_t  t1=0,t2=0,t;
-volatile uint8_t   countMin=0;  // счетчик минут
 void HeatPump::updateCount()
 {
-float power;  
-if (get_State()==pOFF_HP) {t1=0;t2=0; return;}         // ТН не работает, вообще этого не должно быть
- 
-t=rtcSAM3X8.unixtime(); 
-if (t1==0) t1=t; 
-if (t2==0) t2=t; // первоначальная инициализация
-
-// Время работы компрессора и выработанная энергия
-   if (is_compressor_on()&&((t-t2)>=60)) // прошла 1 минута  и компрессор работает
-    {
-      t2=t;
-      motoHour.C1++;      // моточасы компрессора ВСЕГО
-      motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
-	   #ifdef FLOWCON     // Расчет выработанной энергии Если есть соответсвующее оборудование
-	   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) 
-	   {
-	    power=(float)(FEED-RET)*(float)sFrequency[FLOWCON].get_Value()/sFrequency[FLOWCON].get_kfCapacity(); // Мгновенная мощность в ВАТТАХ
-        motoHour.P1=motoHour.P1+(int)(power/60.0);   // потребленная энергия за минуту
-        motoHour.P2=motoHour.P2+(int)(power/60.0);   // потребленная энергия за минуту	
-	   }
-	   #endif
-      
-    }
-   if (!is_compressor_on()) t2=t;  // Компрессор не работает то сбросить время
-
-// Время работы ТН
-    if ((get_State()==pWORK_HP)&&((t-t1)>=60)) // прошла 1 минута и ТН работает
-    {
-      t1=t;
-      motoHour.H1++;          // моточасы ТН ВСЕГО
-      motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
-      countMin++;
-      // Пишем именно здесь т.к. Время работы ТН всегда больше компрессора
-      if (countMin>=60) {countMin=0; save_motoHour(); } // Записать  счетчики раз в час, экономим ресурс флехи
-    }
+	if(is_compressor_on()) {
+		motoHour.C1++;      // моточасы компрессора ВСЕГО
+		motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
+	}
+	int32_t p;
+	taskENTER_CRITICAL();
+	p = motohour_OUT_work;
+	motohour_OUT_work = 0;
+	taskEXIT_CRITICAL();
+	p /= 1000;
+	motoHour.P1 += p;
+	motoHour.P2 += p;
+	if(get_State() == pWORK_HP) {
+		motoHour.H1++;          // моточасы ТН ВСЕГО
+		motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
+	}
 }
 
 // После любого изменения часов необходимо пересчитать все времна которые используются
@@ -2780,7 +2761,6 @@ void HeatPump::vUpdate()
 #ifdef REVI
 	if (dRelay[REVI].get_present()) checkEVI();                           // Проверить необходимость включения ЭВИ
 #endif
-	updateCount();                                                         // Обновить счетчики моточасов
 
 #ifdef DEFROST
 	defrost();                                                          // Разморозка только для воздушных ТН

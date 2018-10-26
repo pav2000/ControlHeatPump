@@ -860,10 +860,23 @@ void vNextion(void *)
 // Задача обновление статистики
 void vUpdateStat(void *)
 { //const char *pcTaskName = "statChart is running\r\n";
+	static uint16_t task_updstat_chars = 0;
+	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	for(;;) {
-		HP.updateChart();                                       // Обновить графики
+		uint32_t ms = GetTickCount();
+		if(++task_updstat_chars >= HP.get_tChart()) {
+			task_updstat_chars = 0;
+			HP.updateChart();                                       // Обновить графики
+		}
+		uint8_t m = rtcSAM3X8.get_minutes();
+		if(m != task_updstat_countm) {
+			task_updstat_countm = m;
+			HP.updateCount();                                       // Обновить счетчики моточасов
+			if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+		}
 		Stats.CheckCreateNewFile();
-		vTaskDelay((HP.get_tChart() * 1000) / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+		ms = 1000 - (GetTickCount() - ms);
+		if(ms <= 1000) vTaskDelay(ms); 		// раз в 1 сек
 	}
 	vTaskDelete( NULL);
 }

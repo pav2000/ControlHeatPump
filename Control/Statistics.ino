@@ -241,6 +241,7 @@ void Statistics::Update()
 			case STATS_TYPE_AVG:
 			case STATS_TYPE_AVG_WORK:
 				newval = newval * tm / 3600; // в мВт
+				if(Stats_data[i].number == OBJ_powerCO) motohour_OUT_work += newval; // для motoHour
 			}
 			break;
 		case STATS_OBJ_COP:
@@ -279,7 +280,6 @@ void Statistics::Update()
 	}
 	counts++;
 	if(compressor_on) counts_work++;
-	//if(counts % 30 == 0) Save();
 }
 
 void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
@@ -335,7 +335,7 @@ void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		strcat(ret, " - Сред");
 		break;
 	case STATS_TYPE_AVG_WORK:
-		strcat(ret, " - Сред(компр)");
+		strcat(ret, " - Сред(W)");
 		break;
 	}
 }
@@ -446,11 +446,6 @@ void Statistics::Save(uint8_t newday)
 	ReturnFileString(rbuf);
 	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
-
-
-	journal.printf("Sav: %d, %d\n", CurrentPos, lensav);
-
-
 #ifdef USE_UPS
 	if(!newday || lensav != len) { // save when there is no space in buffer
 #endif

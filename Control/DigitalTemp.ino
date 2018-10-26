@@ -263,7 +263,7 @@ int8_t sensorTemp::inc_error(void)
 int8_t sensorTemp::get_radio_received_idx(byte * addr)
 {
 #ifdef RADIO_SENSORS
-	for(uint8_t i = 0; i < radio_received_num; i++) if(radio_received[i].RSSI && memcmp(&radio_received[i].serial_num, addr + 1, sizeof(radio_received[0].serial_num)) == 0) {
+	for(uint8_t i = 0; i < radio_received_num; i++) if(memcmp(&radio_received[i].serial_num, addr + 1, sizeof(radio_received[0].serial_num)) == 0) {
 		return i;
 	}
 #endif
