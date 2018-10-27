@@ -109,7 +109,10 @@ int8_t sensorTemp::Read()
 #ifdef RADIO_SENSORS
 				err = OK;
 				int8_t i = get_radio_received_idx(address);
-				if(i >= 0) lastTemp = radio_received[i].Temp; else return err;
+				if(i >= 0) {
+					lastTemp = radio_received[i].Temp;
+					if(radio_timecnt - radio_received[i].timecnt > RADIO_LOST_TIMEOUT/TIME_READ_SENSOR) radio_received[i].RSSI = 0;
+				} else return err;
 #endif
 			} else {
 				int16_t ttemp;
@@ -325,7 +328,7 @@ void sensorIP::after_load()
 
 #ifdef RADIO_SENSORS
 
-uint8_t rs_serial_buf[128];
+uint8_t rs_serial_buf[96];
 uint8_t rs_serial_idx = 0;
 const uint8_t rs_serial_header[] = { 0x02, 'M', 'l', 0x02 }; // <addr to><addr from><Len><' '><'#'><cmd>
 #define rs_serial_full_header_size 7
@@ -368,7 +371,7 @@ void radio_transmit(void)
 		_delay(1); // Ждем отправки
 	RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
 	#ifdef DEBUG_RADIO
-	journal.jprintf("RS>%s\n", rs_serial_buf + rs_serial_full_header_size);
+	journal.jprintf("RA: %s\n", rs_serial_buf + rs_serial_full_header_size);
 	#endif
 	rs_serial_idx = 0;
 	rs_serial_flag = RS_WAIT_HEADER;
@@ -377,6 +380,7 @@ void radio_transmit(void)
 // Новые данные в порту от радиодатчиков, вызывать с паузой
 void check_radio_sensors(void)
 {
+	radio_timecnt++;
 	if(rs_serial_flag == RS_SEND_RESPONSE) {
 		radio_transmit();
 		return;
@@ -395,12 +399,13 @@ void check_radio_sensors(void)
 			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
-					journal.jprintf("RS CRC error!\n");
+					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
+					journal.jprintf("RS CRC error: %s\n", rs_serial_buf + rs_serial_full_header_size);
 					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
 					//#ifdef DEBUG_RADIO
-					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS: %s\n", rs_serial_buf + rs_serial_full_header_size);
 					//#endif
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];
@@ -434,11 +439,11 @@ void check_radio_sensors(void)
 										char *p2 = strchr(p, ' ');
 										if(p2) {
 											*p2 = '\0';
-											uint32_t ser = atoi(++p);
+											uint32_t ser = atoi(p+1);
 											p = p2 + 1;
 											uint8_t i = 0;
 											for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
-											if(i < RADIO_SENSORS_MAX) {
+											if(i < RADIO_SENSORS_MAX && ser) {
 												if(i == radio_received_num) { // new
 													memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
 													radio_received_num++;
@@ -449,14 +454,14 @@ void check_radio_sensors(void)
 													if(p == NULL || c == 0) break;
 													if(c == 0xC0) { // Температура 2b
 														radio_received[i].Temp = (get_next_byte_from_string(&p) + get_next_byte_from_string(&p) * 256 - 2730) * 10;
+														radio_received[i].timecnt = radio_timecnt;
 													} else if(c == 0xB4) { // Питание 1b
 														radio_received[i].battery = ((uint32_t) get_next_byte_from_string(&p) * 125 * 3 / 128 + 5) / 10;
 													} else if(c == 0xBF) { // Test 1b
 														get_next_byte_from_string(&p);
 													} else if(c == 0xB0) { // RSSI 1b
 														c = get_next_byte_from_string(&p);
-														if(c >= 128) c -= 256;
-														radio_received[i].RSSI = abs(c/2 - 73);
+														radio_received[i].RSSI = abs((c >= 128 ? ((int16_t)c - 256) : (int16_t)c) / 2 - 73);
 													} else if(c >= 0x80 && c <= 0x8F) { // состояние батареи 0b
 													}
 												}
@@ -499,6 +504,11 @@ void radio_sensor_send(char *cmd)
 	*(uint16_t *)(rs_serial_buf + sizeof(rs_serial_header) + len) = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len);
 	rs_serial_idx = sizeof(rs_serial_header) + len + 2;
 	radio_transmit();
+}
+
+char Radio_RSSI_to_Level(uint8_t RSSI)
+{
+	return RSSI == 255 ? '-' : '0' + (RSSI>100?0:(100-RSSI)/7); // 0..9
 }
 
 #endif

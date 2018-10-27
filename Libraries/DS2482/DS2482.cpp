@@ -110,7 +110,7 @@ uint8_t DS2482::reset_bridge(void)
 	begin();
 	Wire.write(0xf0);
 	uint8_t res = end();
-	if(res) CurrPtr = 0xF0; // Status Register
+	CurrPtr = res ? 0xF0 : 0; // Status Register
 	return res;
 }
 

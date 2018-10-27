@@ -106,14 +106,16 @@ enum {
 struct radio_received_type {
 	uint32_t serial_num;
 	int16_t  Temp;		// Температура в сотых градуса
+	uint16_t timecnt;	// Время чтения *TIME_READ_SENSOR
 	uint8_t  battery;	// в десятых вольта
-	uint8_t  RSSI;		// уровень сигнала = -(-120..-10)dBm
+	uint8_t  RSSI;		// уровень сигнала = -(-120..-10)dBm, 255 - lost
 };
 static uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 static radio_received_type radio_received[RADIO_SENSORS_MAX];
 static uint8_t radio_received_num = 0;
 static uint32_t radio_hub_serial = 0;
-#define Radio_RSSI_to_Level(RSSI) (RSSI>100?0:(100-RSSI)/7) // 0..9
+static uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
+char Radio_RSSI_to_Level(uint8_t RSSI);
 #endif
 
 // класс датчик DS18B20 Температура хранится в сотых градуса в целых значениях

@@ -93,10 +93,11 @@ const uint16_t  defaultPort=80;
 #endif
 //#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
 #if RADIO_SENSORS_PORT == 2
-	#define RADIO_SENSORS_SERIAL	Serial2			// Аппаратный порт
+	#define RADIO_SENSORS_SERIAL	Serial2	// Аппаратный порт
 #elif RADIO_SENSORS_PORT == 3
-	#define RADIO_SENSORS_SERIAL	Serial3			// Аппаратный порт
+	#define RADIO_SENSORS_SERIAL	Serial3	// Аппаратный порт
 #endif
+#define RADIO_LOST_TIMEOUT 30*60*1000		// через сколько считать, что связь потеряна с датчиком, мсек
 
 // Глобальные параметры инвертора инвертора на модбасе зависят от компрессора!!!!!!!!!
 #define FC_MODBUS_ADR      1             // Адрес частотного преобразователя на шине не должно совпадать SMD_MODBUS_ADR
