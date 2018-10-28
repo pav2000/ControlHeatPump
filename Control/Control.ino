@@ -898,6 +898,7 @@ void vReadSensor(void *)
 		WDT_Restart(WDT);
 
 		ttime = millis();
+		radio_timecnt++;
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);
@@ -1033,7 +1034,7 @@ void vReadSensor(void *)
 		////
 		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
 		ttime = TIME_READ_SENSOR - (millis() - ttime);
-		if(ttime && ttime <= 8) _delay(ttime);
+		if(ttime && ttime <= 8) vTaskDelay(ttime);
 
 	}  // for
 	vTaskDelete( NULL);
@@ -1044,11 +1045,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 {
 	if(ms8 <= 0) ms8 = 1;
 	while(ms8--) {
-		_delay(8);
+		vTaskDelay(8);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
 		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
-			_delay(100);
+			vTaskDelay(100);
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
