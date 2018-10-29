@@ -510,33 +510,51 @@ x_I2C_init_std_message:
     journal.jprintf("15. Create tasks FreeRTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
 HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
-HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
+//HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
 
 // ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if (xTaskCreate(vReadSensor,"ReadSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
-vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
+vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
+
+//#ifdef NEXTION
+//  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//  HP.mRTOS=HP.mRTOS+64+4*120; //120
+//  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
+//#endif
+//// ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
+//if (xTaskCreate(vUpdateStat,"upStat",STACK_vUpdateStat,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateStat;  //150
+//vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
+// Создание задачи для отложенного пуска ТН
+//if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
+//vTaskSuspend(HP.xHandlePauseStart);
+if(xTaskCreate(vSericeHP, "SericeHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+vTaskSuspend(HP.xHandleSericeHP);                              // Остановить задачу
+
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"updateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  if (xTaskCreate(vUpdateEEV,"UpdateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
   vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
 #endif  
@@ -585,29 +603,15 @@ if(Modbus.get_present())
  if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 }
 
-#ifdef NEXTION    
-  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*120; //120
-  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
-#endif 
-
-// ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
-if (xTaskCreate(vUpdateStat,"upStat",STACK_vUpdateStat,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateStat;  //150
-vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
 // Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if (xTaskCreate(vUpdatePump,"UpdatePump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
 vTaskSuspend(HP.xHandleUpdatePump); 
+journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 
-// Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
-vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
-journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("16. Send a notification . . .\n");
+//journal.jprintf("16. Send a notification . . .\n");
 //HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
 journal.jprintf("17. Information:\n");
 freeRamShow();
@@ -834,49 +838,6 @@ void vWeb3(void *)
 	for(;;) {
 		web_server(3);
 		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-	}
-	vTaskDelete( NULL);
-}
-
-// Задача обслуживания Nextion
-void vNextion(void *)
-{
-	static uint32_t NextionTick = 0;
-	for(;;) {
-#ifdef NEXTION
-		myNextion.readCommand();                  // прочитать сообщения от дисплея
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
-			myNextion.Update();                  // Обновление дисплея
-			NextionTick = xTaskGetTickCount();
-		}
-#else
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-#endif
-	}
-	vTaskDelete( NULL);
-}
-
-// Задача обновление статистики
-void vUpdateStat(void *)
-{ //const char *pcTaskName = "statChart is running\r\n";
-	static uint16_t task_updstat_chars = 0;
-	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
-	for(;;) {
-		uint32_t ms = GetTickCount();
-		if(++task_updstat_chars >= HP.get_tChart()) {
-			task_updstat_chars = 0;
-			HP.updateChart();                                       // Обновить графики
-		}
-		uint8_t m = rtcSAM3X8.get_minutes();
-		if(m != task_updstat_countm) {
-			task_updstat_countm = m;
-			HP.updateCount();                                       // Обновить счетчики моточасов
-			if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
-		}
-		Stats.CheckCreateNewFile();
-		ms = 1000 - (GetTickCount() - ms);
-		if(ms <= 1000) vTaskDelay(ms); 		// раз в 1 сек
 	}
 	vTaskDelete( NULL);
 }
@@ -1299,19 +1260,6 @@ void vReadSensor_delay8ms(int16_t ms8)
 	 vTaskDelete( NULL);
  }
 #endif
-// Задача Разбор очереди команд
-void vUpdateCommand( void * )
-{ //const char *pcTaskName = "HP_UpdateCommand\r\n";
-  for( ;; )
-  {
-//  if (SemaphoreTake(HP.xCommandSemaphore,(30*1000/portTICK_PERIOD_MS))==pdPASS)                // Cемафор  захвачен
-    HP.runCommand();                                                                            // Выполнение команд управления ТН
-//  SemaphoreGive(HP.xCommandSemaphore);                                                         // Семафор отдан
-//    vTaskDelay(TIME_COMMAND/portTICK_PERIOD_MS); 
-    vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
-  }
- vTaskDelete( NULL ); 
-}  
 
 // Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
@@ -1440,6 +1388,60 @@ void vUpdatePump(void *)
 	vTaskDelete( NULL);
 }
 
+///////////////////////////////////////////////////////// ServiceHP
+// Задача Разбор очереди команд
+void vUpdateCommand(void *)
+{ //const char *pcTaskName = "HP_UpdateCommand\r\n";
+	for(;;) {
+		HP.runCommand();                                                                            // Выполнение команд управления ТН
+		vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
+	}
+	vTaskDelete( NULL);
+}
+
+/*
+// Задача обслуживания Nextion
+void vNextion(void *)
+{
+	static uint32_t NextionTick = 0;
+	for(;;) {
+#ifdef NEXTION
+		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
+			myNextion.Update();                  // Обновление дисплея
+			NextionTick = xTaskGetTickCount();
+		}
+#else
+		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+#endif
+	}
+	vTaskDelete( NULL);
+}
+// Задача обновление статистики
+void vUpdateStat(void *)
+{ //const char *pcTaskName = "statChart is running\r\n";
+	static uint16_t task_updstat_chars = 0;
+	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
+	for(;;) {
+		uint32_t ms = GetTickCount();
+		if(++task_updstat_chars >= HP.get_tChart()) {
+			task_updstat_chars = 0;
+			HP.updateChart();                                       // Обновить графики
+		}
+		uint8_t m = rtcSAM3X8.get_minutes();
+		if(m != task_updstat_countm) {
+			task_updstat_countm = m;
+			HP.updateCount();                                       // Обновить счетчики моточасов
+			if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+		}
+		Stats.CheckCreateNewFile();
+		ms = 1000 - (GetTickCount() - ms);
+		if(ms <= 1000) vTaskDelay(ms); 		// раз в 1 сек
+	}
+	vTaskDelete( NULL);
+}
+*/
 // Задача отложеного старта ТН
 // используется при старте контроллера если есть запись состояния
 // также используется для повторных попыток пуска контроллера
@@ -1481,5 +1483,40 @@ void vPauseStart(void *)
 	journal.jprintf((const char*) "Delete task vPauseStart?\n");
 	vTaskDelete( NULL);
 }
+//*/
 
-
+// Запуск команд, графики в ОЗУ, счетчики моточасов, сохранение статистики, дисплей Nextion
+void vSericeHP(void *)
+{
+	static uint32_t NextionTick = 0;
+	static uint16_t task_updstat_chars = 0;
+	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
+	static uint32_t timer_sec = GetTickCount();
+	for(;;) {
+		register uint32_t t = GetTickCount();
+		if(t - timer_sec >= 1000) { // 1 sec
+			timer_sec = t;
+			if(++task_updstat_chars >= HP.get_tChart()) {
+				task_updstat_chars = 0;
+				HP.updateChart();                                       // Обновить графики
+			}
+			uint8_t m = rtcSAM3X8.get_minutes();
+			if(m != task_updstat_countm) {
+				task_updstat_countm = m;
+				HP.updateCount();                                       // Обновить счетчики моточасов
+				if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+			}
+			Stats.CheckCreateNewFile();
+		}
+#ifdef NEXTION
+		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
+			myNextion.Update();                  // Обновление дисплея
+			NextionTick = xTaskGetTickCount();
+		}
+#endif
+		t = GetTickCount() - timer_sec;
+		vTaskDelay(t < NEXTION_READ) ? t : NEXTION_READ); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete(NULL);
+}

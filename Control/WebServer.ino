@@ -2014,9 +2014,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
 
     			   if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
     			   {
-    				   x_get_aTemp:
-					   strcat(strReturn, HP.sTemp[p].get_fAddress() ? addressToHex(HP.sTemp[p].get_address()) : "не привязан");
-					   ADD_WEBDELIM(strReturn); continue;
+x_get_aTemp:
+						if(!HP.sTemp[p].get_fAddress()) strcat(strReturn, "не привязан");
+						else if(HP.sTemp[p].get_fRadio()) _itoa(*(uint32_t*)(HP.sTemp[p].get_address() + 1), strReturn);
+						else strcat(strReturn, addressToHex(HP.sTemp[p].get_address()));
+						ADD_WEBDELIM(strReturn); continue;
     			   }
 
     			   if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
@@ -2038,11 +2040,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   strcat(strReturn, HP.sTemp[p].get_note());
 					#ifdef RADIO_SENSORS
     				   if(HP.sTemp[p].get_fRadio()) {
-    					   i = HP.sTemp[p].get_radio_received_idx(HP.sTemp[p].get_address());
+    					   i = HP.sTemp[p].get_radio_received_idx();
     					   if(i >= 0) {
     						   if(str[9] == '2') m_snprintf(strReturn + m_strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10);
     						   m_snprintf(strReturn + m_strlen(strReturn), 20, ", ᛉ%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
-    					   }
+    					   } else strcat(strReturn, ", -");
     				   }
 					#endif
     				   ADD_WEBDELIM(strReturn); continue;

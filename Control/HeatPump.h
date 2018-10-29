@@ -434,22 +434,23 @@ class HeatPump
     #endif        
 
    
-    TaskHandle_t xHandleUpdate;                            // Заголовок задачи "Обновление ТН"
+    TaskHandle_t xHandleUpdate;                         // Заголовок задачи "Обновление ТН"
     #ifdef EEV_DEF
-    TaskHandle_t xHandleUpdateEEV;                         // Заголовок задачи "Обновление ЭРВ"
+    TaskHandle_t xHandleUpdateEEV;                      // Заголовок задачи "Обновление ЭРВ"
     #endif
-    TaskHandle_t xHandleUpdateCommand;                     // Разбор очереди команд
-    TaskHandle_t xHandleReadSensor;                        // Заголовок задачи "Чтение датчиков"
-    TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
-    TaskHandle_t xHandleUpdatePump;                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
-    TaskHandle_t xHandleUpdateWeb0;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb1;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb2;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb3;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
-    TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
+    TaskHandle_t xHandleReadSensor;                     // Заголовок задачи "Чтение датчиков"
+    TaskHandle_t xHandleUpdatePump;                     // Заголовок задачи "Работа насоса при выключенном компрессоре"
+    TaskHandle_t xHandleSericeHP;						// Задача обслуживания ТН:
+    //TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
+    //TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
+    //TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
+    TaskHandle_t xHandleUpdateCommand;                  // Разбор очереди команд
+    TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
-    SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
+    SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
  
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП

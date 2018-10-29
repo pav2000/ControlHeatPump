@@ -108,7 +108,7 @@ int8_t sensorTemp::Read()
 			if(GETBIT(flags, fRadio)) {
 #ifdef RADIO_SENSORS
 				err = OK;
-				int8_t i = get_radio_received_idx(address);
+				int8_t i = get_radio_received_idx();
 				if(i >= 0) {
 					lastTemp = radio_received[i].Temp;
 					if(radio_timecnt - radio_received[i].timecnt > RADIO_LOST_TIMEOUT/TIME_READ_SENSOR) radio_received[i].RSSI = 255;
@@ -249,10 +249,13 @@ void sensorTemp::set_address(byte *addr, byte bus)
 // Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
 void sensorTemp::after_load()
 {
-	if((address[0] | address[1] | address[3] | address[4] | address[5] | address[6] | address[7])) // Если адрес не 00000000 Установить адрес датчика
+	if(address[0] || address[1]) // Если адрес не пустой то Установить адрес датчика
 	{
 		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен
-		if(address[0] == tRadio) SETBIT1(flags, fRadio); else set_onewire_bus_type();
+		if(address[0] == tRadio) {
+			SETBIT1(flags, fRadio);
+			busOneWire = NULL;
+		} else set_onewire_bus_type();
 	}
 }
 
@@ -263,10 +266,10 @@ int8_t sensorTemp::inc_error(void)
 	return numErrorRead > NUM_READ_TEMP_ERR;
 }
 
-int8_t sensorTemp::get_radio_received_idx(byte * addr)
+int8_t sensorTemp::get_radio_received_idx()
 {
 #ifdef RADIO_SENSORS
-	for(uint8_t i = 0; i < radio_received_num; i++) if(memcmp(&radio_received[i].serial_num, addr + 1, sizeof(radio_received[0].serial_num)) == 0) {
+	for(uint8_t i = 0; i < radio_received_num; i++) if(memcmp(&radio_received[i].serial_num, &address[1], sizeof(radio_received[0].serial_num)) == 0) {
 		return i;
 	}
 #endif
@@ -395,8 +398,8 @@ void check_radio_sensors(void)
 			}
 		}
 		if(rs_serial_flag == RS_WAIT_DATA) {
-			uint8_t len = rs_serial_buf[rs_serial_full_header_size-1];
-			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + len + 2) {
+			uint8_t len;
+			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + (len = rs_serial_buf[rs_serial_full_header_size-1]) + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
 					journal.jprintf("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
@@ -444,7 +447,7 @@ void check_radio_sensors(void)
 											for(; i < radio_received_num; i++) if(radio_received[i].serial_num == ser) break;
 											if(i < RADIO_SENSORS_MAX && ser) {
 												if(i == radio_received_num) { // new
-													memset(&radio_received[radio_received_num], 0, sizeof(radio_received[0]));
+													memset(&radio_received[i], 0, sizeof(radio_received[0]));
 													radio_received_num++;
 												}
 												radio_received[i].serial_num = ser;

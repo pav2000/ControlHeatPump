@@ -280,7 +280,7 @@ extern "C" {
 #endif /* configUSE_TIMERS */
 
 #ifndef INCLUDE_xTaskGetSchedulerState
-	#define INCLUDE_xTaskGetSchedulerState 0
+	#define INCLUDE_xTaskGetSchedulerState 1 // vad7, was 0
 #endif
 
 #ifndef INCLUDE_xTaskGetCurrentTaskHandle

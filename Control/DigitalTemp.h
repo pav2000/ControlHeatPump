@@ -97,7 +97,7 @@ class sensorIP
 #endif
 
 #ifdef RADIO_SENSORS
-//#define DEBUG_RADIO
+#define DEBUG_RADIO
 enum {
 	RS_WAIT_HEADER = 0,
 	RS_WAIT_DATA,
@@ -110,11 +110,11 @@ struct radio_received_type {
 	uint8_t  battery;	// в десятых вольта
 	uint8_t  RSSI;		// уровень сигнала = -(-120..-10)dBm, 255 - lost
 };
-static uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
-static radio_received_type radio_received[RADIO_SENSORS_MAX];
-static uint8_t radio_received_num = 0;
-static uint32_t radio_hub_serial = 0;
-static uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
+uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
+radio_received_type radio_received[RADIO_SENSORS_MAX];
+uint8_t radio_received_num = 0;
+uint32_t radio_hub_serial = 0;
+uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
 char Radio_RSSI_to_Level(uint8_t RSSI);
 #endif
 
@@ -150,7 +150,7 @@ class sensorTemp
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     __attribute__((always_inline)) inline uint8_t get_setup_flags(void){ return setup_flags; }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
-    int8_t   get_radio_received_idx(byte * addr);		// Индекс массива полученных данных
+    int8_t   get_radio_received_idx();					// Индекс массива полученных данных
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
     char*    get_note(){return note;}                   // Получить оисание датчика

@@ -119,7 +119,7 @@ void HeatPump::scan_OneWire(char *result_str)
 		//strcat(result_str, "-:Не доступно - ТН работает!:::;");
 		return;
 	}
-	if(!OW_scan_flags && !OW_prepare_buffers()) {
+	if(!OW_scan_flags && OW_prepare_buffers()) {
 		OW_scan_flags = 1; // Идет сканирование
 		char *_result_str = result_str + m_strlen(result_str);
 		OneWireBus.Scan(result_str);
@@ -147,11 +147,10 @@ void HeatPump::scan_OneWire(char *result_str)
 			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
 			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
 			char *p = result_str + m_strlen(result_str);
-			m_snprintf(p, 48, "%d:RADIO %.1fV/%c:%.2f:%u:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].battery/10, Radio_RSSI_to_Level(radio_received[i].RSSI), (float)radio_received[i].Temp/100.0, radio_received[i].serial_num);
+			m_snprintf(p, 64, "%d:RADIO %.1fV/%c:%.2f:%u:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].battery/10, Radio_RSSI_to_Level(radio_received[i].RSSI), (float)radio_received[i].Temp/100.0, radio_received[i].serial_num);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}
-		OW_scan_flags = 0;
 #endif
 		journal.jprintf("\n");
 		OW_scan_flags = 0;
@@ -1075,7 +1074,7 @@ void HeatPump::startChart()
 // powerCO=0;
 // powerGEO=0;
 // power220=0;
- vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
+//vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
 
  if(GETBIT(Option.flags,fSD_card))  // ЗАГОЛОВОК Запись статистики в файл
    {
@@ -1293,11 +1292,11 @@ void HeatPump::updateNextion()
 	{
 		myNextion.init_display();
 		myNextion.set_need_refresh();
-		vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
+		//vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
 	} else                        // Дисплей выключен
 	{
 //		myNextion.sendCommand("sleep=1");
-		vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
+		//vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
 	}
 #endif
 }
@@ -1963,7 +1962,7 @@ int8_t HeatPump::StopWait(boolean stop)
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
   {
-     vTaskSuspend(xHandleUpdateStat);                    // Остановить задачу обновления статистики
+     //vTaskSuspend(xHandleUpdateStat);                    // Остановить задачу обновления статистики
      journal.jprintf(" statChart stop\n");      
      setState(pOFF_HP);
      journal.jprintf(pP_TIME,"%s OFF . . .\n",(char*)nameHeatPump);
@@ -3145,9 +3144,10 @@ void HeatPump::sendCommand(TYPE_COMMAND c)
 		}
 		return;
 	}
-	if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;     // Пришла команда на старт а насос останавливается ничего не делаем игнорируем
+	if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;    // Пришла команда на старт а насос останавливается ничего не делаем игнорируем
 	command=c;
-	vTaskResume(xHandleUpdateCommand);                    // Запустить выполнение команды
+	//vTaskResume(xHandleUpdateCommand);                   // Запустить выполнение команды
+	xTaskAbortDelay(xHandleSericeHP);						// Запустить выполнение команды
 }  
 // Выполнить команду по управлению ТН true-команда выполнена
 int8_t HeatPump::runCommand()

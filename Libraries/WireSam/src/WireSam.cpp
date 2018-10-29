@@ -150,7 +150,7 @@ size_t TwoWire::requestFrom(uint8_t address, uint8_t *buffer, size_t quantity, u
 	// WaitTransmission(use_RTOS_delay);
 	// use inline function:
 	uint8_t ret;
-	uint16_t _timeout;
+	uint16_t _timeout = 0;
 	InterruptOccured = 1;
 	while((ret = TransmissionStatus()) == 0) {
 		if(use_RTOS_delay) { RTOS_delay(1); }
@@ -230,7 +230,7 @@ uint8_t TwoWire::endTransmissionReceive(uint8_t use_RTOS_delay)
 	// return WaitTransmission(use_RTOS_delay);
 	// use inline function:
 	uint8_t ret;
-	uint16_t _timeout;
+	uint16_t _timeout = 0;
 	InterruptOccured = 1;
 	while((ret = TransmissionStatus()) == 0) {
 		if(use_RTOS_delay) { RTOS_delay(1); }

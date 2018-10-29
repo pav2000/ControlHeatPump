@@ -660,7 +660,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												} else if(tnum == 2) {
 													loadsens += "get_aTemp(" +T+ "),";
 													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
-													loadsens3 += "get_nTemp2(" +T+ "),"; 
+													loadsens3 += "get_nTemp2(" +T+ "),get_bTemp(" +T+ "),"; 
 													upsens += "get_rawTemp(" +T+ "),";
 												}
 												T = T.toLowerCase();

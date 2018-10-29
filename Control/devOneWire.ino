@@ -19,6 +19,7 @@
 
 const char OW_Error_memory_low[] = { "Scan: Memory low!\n" };
 
+// Return 1 - success
 int8_t OW_prepare_buffers(void)
 {
 	OW_scanTableIdx = 0;
@@ -26,10 +27,10 @@ int8_t OW_prepare_buffers(void)
 		OW_scanTable = (type_scanOneWire *)malloc(sizeof(type_scanOneWire) * OW_scanTable_max);
 		if(OW_scanTable == NULL) {
 			journal.jprintf(OW_Error_memory_low);
-			return 1;
+			return 0;
 		}
 	}
-	return 0;
+	return 1;
 }
 
 // Возврат Temp * 100, Если ошибка возвращает ERROR_TEMPERATURE
@@ -153,7 +154,6 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	WDT_Restart(WDT);
 
 	if(lock_I2C_bus_reset(0)) { // reset 1-wire
-		OW_scan_flags = 0;
 		if(err == ERR_ONEWIRE) journal.jprintf("1-Wire bus %d is empty. . .\n", bus + 1);
 		return err;
 	}

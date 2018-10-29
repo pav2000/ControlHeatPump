@@ -4625,3 +4625,79 @@ return (int16_t)pxCurrentTCB->uxTCBNumber;
 //return (int16_t)pxCurrentTCB->uxTaskNumber;
 }
 #endif
+
+// vad7, from FreeRTOS v10
+#if ( INCLUDE_xTaskAbortDelay == 1 )
+
+	BaseType_t xTaskAbortDelay( TaskHandle_t xTask )
+	{
+	TCB_t *pxTCB = ( TCB_t * ) xTask;
+	BaseType_t xReturn;
+
+		configASSERT( pxTCB );
+
+		vTaskSuspendAll();
+		{
+			/* A task can only be prematurely removed from the Blocked state if
+			it is actually in the Blocked state. */
+			if( eTaskGetState( xTask ) == eBlocked )
+			{
+				xReturn = pdPASS;
+
+				/* Remove the reference to the task from the blocked list.  An
+				interrupt won't touch the xStateListItem because the
+				scheduler is suspended. */
+				( void ) uxListRemove( &( pxTCB->xGenericListItem ) );
+
+				/* Is the task waiting on an event also?  If so remove it from
+				the event list too.  Interrupts can touch the event list item,
+				even though the scheduler is suspended, so a critical section
+				is used. */
+				taskENTER_CRITICAL();
+				{
+					if( listLIST_ITEM_CONTAINER( &( pxTCB->xEventListItem ) ) != NULL )
+					{
+						( void ) uxListRemove( &( pxTCB->xEventListItem ) );
+						//pxTCB->ucDelayAborted = pdTRUE;
+					}
+					else
+					{
+						mtCOVERAGE_TEST_MARKER();
+					}
+				}
+				taskEXIT_CRITICAL();
+
+				/* Place the unblocked task into the appropriate ready list. */
+				prvAddTaskToReadyList( pxTCB );
+
+				/* A task being unblocked cannot cause an immediate context
+				switch if preemption is turned off. */
+				#if (  configUSE_PREEMPTION == 1 )
+				{
+					/* Preemption is on, but a context switch should only be
+					performed if the unblocked task has a priority that is
+					equal to or higher than the currently executing task. */
+					if( pxTCB->uxPriority > pxCurrentTCB->uxPriority )
+					{
+						/* Pend the yield to be performed when the scheduler
+						is unsuspended. */
+						xYieldPending = pdTRUE;
+					}
+					else
+					{
+						mtCOVERAGE_TEST_MARKER();
+					}
+				}
+				#endif /* configUSE_PREEMPTION */
+			}
+			else
+			{
+				xReturn = pdFAIL;
+			}
+		}
+		( void ) xTaskResumeAll();
+
+		return xReturn;
+	}
+
+#endif /* INCLUDE_xTaskAbortDelay */

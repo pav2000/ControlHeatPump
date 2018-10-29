@@ -115,7 +115,7 @@ extern uint32_t SystemCoreClock;
 #define configMAX_PRIORITIES			( 5 )
 #define configMINIMAL_STACK_SIZE		( ( unsigned short ) 100 )  // 150, pav2000 было 130, 200 - виснет после 2-5 часов
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 0) )  // WHG uses type 3 heap
-#define configMAX_TASK_NAME_LEN			( 11 )               // pav2000  было 10
+#define configMAX_TASK_NAME_LEN			( 10 )
 #define configUSE_16_BIT_TICKS			0
 #define configIDLE_SHOULD_YIELD			1
 #define configUSE_MUTEXES			1
@@ -151,7 +151,7 @@ extern uint32_t SystemCoreClock;
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
 
 /* Software timer definitions. */
-#define configUSE_TIMERS			1  // pav2000 было 1 разрешить программные таймера
+#define configUSE_TIMERS			0  // vad7 // pav2000 было 1 разрешить программные таймера
 #define configTIMER_TASK_PRIORITY		( 2 )
 #define configTIMER_QUEUE_LENGTH		5
 #define configTIMER_TASK_STACK_DEPTH    	( 100)  // pav2000 было  configMINIMAL_STACK_SIZE * 2
@@ -160,13 +160,14 @@ extern uint32_t SystemCoreClock;
 to exclude the API function. */
 #define INCLUDE_vTaskPrioritySet		1
 #define INCLUDE_uxTaskPriorityGet		1
-#define INCLUDE_vTaskDelete			1
-#define INCLUDE_vTaskCleanUpResources	        1
+#define INCLUDE_vTaskDelete				1
+#define INCLUDE_vTaskCleanUpResources	1
 #define INCLUDE_vTaskSuspend			1
-#define INCLUDE_vTaskDelayUntil			1
-#define INCLUDE_vTaskDelay			1
+#define INCLUDE_vTaskDelayUntil			0 // vad7, was 1
+#define INCLUDE_vTaskDelay				1
 #define INCLUDE_eTaskGetState			1
-#define INCLUDE_xTimerPendFunctionCall	        1  // pav2000 было 1 разрешить программные таймера
+#define INCLUDE_xTimerPendFunctionCall	0 // vad7       1  // pav2000 было 1 разрешить программные таймера
+#define INCLUDE_xTaskAbortDelay			1
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS
