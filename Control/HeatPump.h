@@ -399,7 +399,7 @@ class HeatPump
     
     uint8_t PauseStart;                                    // 1 - ТН в отложенном запуске, 0 - нет, начать отсчет времени с начала при отложенном старте
        
-    boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
+    uint8_t startPump;                                     // Признак запуска задачи насос 0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл)
     type_SecurityHP Security;                              // хеш паролей
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
       
@@ -439,11 +439,11 @@ class HeatPump
     TaskHandle_t xHandleUpdateEEV;                      // Заголовок задачи "Обновление ЭРВ"
     #endif
     TaskHandle_t xHandleReadSensor;                     // Заголовок задачи "Чтение датчиков"
-    TaskHandle_t xHandleUpdatePump;                     // Заголовок задачи "Работа насоса при выключенном компрессоре"
     TaskHandle_t xHandleSericeHP;						// Задача обслуживания ТН:
     //TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
     //TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
     //TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
+    //TaskHandle_t xHandleUpdatePump;                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
     TaskHandle_t xHandleUpdateCommand;                  // Разбор очереди команд
     TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"

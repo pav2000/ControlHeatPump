@@ -541,6 +541,11 @@ vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу
 //if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 //HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
 //vTaskSuspend(HP.xHandlePauseStart);
+// Создание задачи по переодической работе насоса конденсатора
+//if (xTaskCreate(vUpdatePump,"UpdatePump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
+//vTaskSuspend(HP.xHandleUpdatePump);
+
 if(xTaskCreate(vSericeHP, "SericeHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 vTaskSuspend(HP.xHandleSericeHP);                              // Остановить задачу
@@ -603,10 +608,6 @@ if(Modbus.get_present())
  if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 }
 
-// Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"UpdatePump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
-vTaskSuspend(HP.xHandleUpdatePump); 
 journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
@@ -1348,46 +1349,6 @@ void vUpdateStepperEEV( void * )
 }
 #endif
 
-// Задача: Работа насосов отопления, когда ТН в паузе (xHandleUpdatePump)
-void vUpdatePump(void *)
-{ //const char *pcTaskName = "Pump is running\r\n";
-	uint16_t i;
-	for(;;) {
-		if((HP.get_workPump() == 0) && (HP.startPump)) {
-			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
-			HP.Pump_HeatFloor(false);						// выключить насос ТП
-			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
-		}         // все время выключено  но раз в 2 секунды проверяем
-		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
-			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
-			HP.Pump_HeatFloor(true);
-			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
-		}  // все время включено  но раз в 2 секунды проверяем
-		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
-		{
-			if(HP.startPump) {
-				HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
-				HP.Pump_HeatFloor(false);						// выключить насос ТП
-			}
-			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
-			{
-				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
-			}
-			if(HP.startPump) {
-				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
-				HP.Pump_HeatFloor(true);						// включить насос ТП
-			}
-			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
-			{
-				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
-			}
-		}
-	}  //for
-	vTaskDelete( NULL);
-}
-
 ///////////////////////////////////////////////////////// ServiceHP
 // Задача Разбор очереди команд
 void vUpdateCommand(void *)
@@ -1399,92 +1360,6 @@ void vUpdateCommand(void *)
 	vTaskDelete( NULL);
 }
 
-/*
-// Задача обслуживания Nextion
-void vNextion(void *)
-{
-	static uint32_t NextionTick = 0;
-	for(;;) {
-#ifdef NEXTION
-		myNextion.readCommand();                  // прочитать сообщения от дисплея
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
-			myNextion.Update();                  // Обновление дисплея
-			NextionTick = xTaskGetTickCount();
-		}
-#else
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-#endif
-	}
-	vTaskDelete( NULL);
-}
-// Задача обновление статистики
-void vUpdateStat(void *)
-{ //const char *pcTaskName = "statChart is running\r\n";
-	static uint16_t task_updstat_chars = 0;
-	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
-	for(;;) {
-		uint32_t ms = GetTickCount();
-		if(++task_updstat_chars >= HP.get_tChart()) {
-			task_updstat_chars = 0;
-			HP.updateChart();                                       // Обновить графики
-		}
-		uint8_t m = rtcSAM3X8.get_minutes();
-		if(m != task_updstat_countm) {
-			task_updstat_countm = m;
-			HP.updateCount();                                       // Обновить счетчики моточасов
-			if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
-		}
-		Stats.CheckCreateNewFile();
-		ms = 1000 - (GetTickCount() - ms);
-		if(ms <= 1000) vTaskDelay(ms); 		// раз в 1 сек
-	}
-	vTaskDelete( NULL);
-}
-*/
-// Задача отложеного старта ТН
-// используется при старте контроллера если есть запись состояния
-// также используется для повторных попыток пуска контроллера
-void vPauseStart(void *)
-{
-	int16_t i, tt;
-	for(;;) {
-		HP.PauseStart = 1;               // мы в начале задачи ставим флаг - ТН в режиме перезапуска
-		journal.jprintf(pP_TIME, (const char*) "Start vPauseStart\n");
-#ifdef DEMO
-		tt=30;
-#else
-		if(HP.isCommand() == pRESTART) tt = HP.Option.delayStartRes;
-		else tt = HP.Option.delayRepeadStart;  // Определение времени задержки
-#endif
-		// задержка перед пуском ТН
-		for(i = tt; i > 0; i = i - 10) // задержка перед стартом обратный отсчет
-		{
-			if(!HP.PauseStart) break;               // если задача пущена не сначала
-			if(i % 60 == 0) journal.jprintf((const char*) "Start over %d sec . . .\n", i);
-			vTaskDelay(10 * 1000 / portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
-			if(!HP.PauseStart) break;               // если задача пущена не сначала
-			//       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT))
-			if((i == HP.get_delayRepeadStart() / 2) && (HP.isCommand() == pREPEAT)) {
-				HP.eraseError();
-				if(!HP.PauseStart) break;               // если задача пущена не сначала
-				journal.jprintf((const char*) "Erase error %s\n", (char*) nameHeatPump);
-			}
-		}
-
-		if(HP.PauseStart)                    // если задача пущена сначала то запускаемся
-		{
-			HP.sendCommand(pAUTOSTART);
-		}
-		HP.PauseStart = 0;
-		vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
-
-	}
-	journal.jprintf((const char*) "Delete task vPauseStart?\n");
-	vTaskDelete( NULL);
-}
-//*/
-
 // Запуск команд, графики в ОЗУ, счетчики моточасов, сохранение статистики, дисплей Nextion
 void vSericeHP(void *)
 {
@@ -1492,6 +1367,8 @@ void vSericeHP(void *)
 	static uint16_t task_updstat_chars = 0;
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint32_t timer_sec = GetTickCount();
+	static uint16_t restart_cnt;
+	static uint16_t pump_in_pause_timer = 0;
 	for(;;) {
 		register uint32_t t = GetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
@@ -1507,6 +1384,35 @@ void vSericeHP(void *)
 				if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
 			}
 			Stats.CheckCreateNewFile();
+			if(HP.PauseStart) {
+				if(HP.PauseStart == 1) {
+					restart_cnt = HP.isCommand() == pRESTART ? HP.Option.delayStartRes : HP.Option.delayRepeadStart;  // Определение времени задержки
+					journal.jprintf((const char*) "Start over %d sec . . .\n", restart_cnt);
+					HP.PauseStart = 2;
+				} else if(restart_cnt-- == 0) {
+					HP.PauseStart = 0;
+					HP.sendCommand(pAUTOSTART);
+				}
+			}
+			if(HP.startPump) {
+				if(HP.startPump == 1 && HP.get_pausePump() == 0) { // Постоянно работают
+					goto xPumpsOn;
+				} else if(HP.get_workPump()) {
+					if(pump_in_pause_timer <= 1) {
+						if(HP.startPump <= 2) { // включить
+							pump_in_pause_timer = HP.get_workPump();
+xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
+							HP.Pump_HeatFloor(true);						// включить насос ТП
+							HP.startPump = 3;
+						} else { // выключить
+							HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
+							HP.Pump_HeatFloor(false);						// выключить насос ТП
+							pump_in_pause_timer = HP.get_pausePump();
+							HP.startPump = 2;
+						}
+					} else pump_in_pause_timer--;
+				}
+			}
 		}
 #ifdef NEXTION
 		myNextion.readCommand();                  // прочитать сообщения от дисплея
@@ -1516,7 +1422,7 @@ void vSericeHP(void *)
 		}
 #endif
 		t = GetTickCount() - timer_sec;
-		vTaskDelay(t < NEXTION_READ) ? t : NEXTION_READ); // задержка чтения уменьшаем загрузку процессора
+		vTaskDelay(t < NEXTION_READ ? t : NEXTION_READ); // задержка чтения уменьшаем загрузку процессора
 	}
 	vTaskDelete(NULL);
 }

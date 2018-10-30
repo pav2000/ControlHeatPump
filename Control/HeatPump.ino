@@ -1739,8 +1739,8 @@ int8_t HeatPump::StartResume(boolean start)
 	if (startPump)                                       // Проверка задачи насос
 	{
 		startPump=false;                               // Поставить признак останова задачи насос
-		vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
-		journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump OFF . . .\n",(char*)__FUNCTION__);
+		//vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
+		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 	}
 
 	offBoiler=0;                                         // Бойлер никогда не выключался
@@ -1912,8 +1912,8 @@ int8_t HeatPump::StopWait(boolean stop)
   if(startPump)
   {
      startPump=false;                                    // Поставить признак что насос выключен
-     vTaskSuspend(xHandleUpdatePump);                    // Остановить задачу насос
-     journal.jprintf(" %s: Task vUpdatePump OFF . . .\n",(char*)__FUNCTION__);
+     //vTaskSuspend(xHandleUpdatePump);                    // Остановить задачу насос
+     journal.jprintf(" %s: startPump OFF. . .\n",(char*)__FUNCTION__);
   }
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
@@ -2785,8 +2785,8 @@ void HeatPump::vUpdate()
 			if(!startPump && get_modeHouse() != pOFF)  // Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
 			{
 				startPump = true;                                 // Поставить признак запуска задачи насос
-				vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
-				journal.jprintf(" %s: Task vUpdatePump ON . . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
+				//vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
+				journal.jprintf(" %s: startPump ON. . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
 			}
 			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
@@ -2797,9 +2797,9 @@ void HeatPump::vUpdate()
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
-			vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
-			journal.jprintf(" %s: Task vUpdatePump OFF . . .\n", (char*) __FUNCTION__);
-			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
+			//vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
+		    journal.jprintf(" %s: startPump OFF. . .\n",(char*)__FUNCTION__);
+		    command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
 		if(!check_compressor_pause(get_modWork())) {
 			configHP(get_modWork());                                 // Конфигурируем насосы
@@ -2885,8 +2885,8 @@ dEEV.CorrectOverheatInit();
 		if (startPump)                                      // Проверка задачи насос - должен быть выключен
 		{
 			startPump=false;                               // Поставить признак останова задачи насос
-			vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
-			journal.jprintf(" WARNING! %s: Bad startPump, task vUpdatePump OFF . . .\n",(char*)__FUNCTION__);
+			//vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
+			journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 		}
 	#ifdef DEFROST
 	  if(mod!=pDEFROST)  // При разморозке есть лишние проверки
@@ -3146,8 +3146,7 @@ void HeatPump::sendCommand(TYPE_COMMAND c)
 	}
 	if ((c==pSTART)&&(get_State()==pSTOPING_HP)) return;    // Пришла команда на старт а насос останавливается ничего не делаем игнорируем
 	command=c;
-	//vTaskResume(xHandleUpdateCommand);                   // Запустить выполнение команды
-	xTaskAbortDelay(xHandleSericeHP);						// Запустить выполнение команды
+	vTaskResume(xHandleUpdateCommand);                   	// Запустить выполнение команды
 }  
 // Выполнить команду по управлению ТН true-команда выполнена
 int8_t HeatPump::runCommand()
@@ -3181,12 +3180,14 @@ int8_t HeatPump::runCommand()
 			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
 			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
 			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat);
-			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			PauseStart = 1;
+			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pRESTART:
 			// Stop();                                          // пуск Тн после сброса - есть задержка
 			journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
-			vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			PauseStart = 1;
+			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pNETWORK:
 			journal.jprintf("Update network setting . . .\r\n");
