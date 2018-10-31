@@ -688,12 +688,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
          }     
        ADD_WEBDELIM(strReturn) ;    continue;
        }  
-     
-        
+
     if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
-			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				_itoa(HP.Schdlr.save(),strReturn); // сохранение расписаний
+    		str += 8;
+			if(strcmp(str, "_SCHDLR") == 0) {
+				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
+			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
+				if((i = HP.save_motoHour()) == OK)
+					i = Stats.Save(0);
+				_itoa(i, strReturn);
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 				if(len > 0) {
@@ -708,9 +712,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		}
     if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
-			if(strncmp(str+8, "_SCHDLR", 7) == 0) {
-				_itoa(HP.Schdlr.load(),strReturn); // сохранение расписаний
-			} else {
+			if(strcmp(str+8, "_SCHDLR") == 0) {
+				_itoa(HP.Schdlr.load(), strReturn); // загрузка расписаний
 			}
 			ADD_WEBDELIM(strReturn);
 			continue;

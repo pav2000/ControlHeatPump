@@ -106,7 +106,7 @@ public:
 	void	Update();						// Обновить статистику, раз в период
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void	Reset();						// Сбросить накопленные промежуточные значения
-	void	Save(uint8_t newday);			// Записать статистику на SD
+	int8_t	Save(uint8_t newday);			// Записать статистику на SD
 	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
 	void	ReturnFileString(char *ret);	// Строка со значениями за день

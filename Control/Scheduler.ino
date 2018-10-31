@@ -46,7 +46,7 @@ const char* Scheduler::get_note(void)
 uint16_t Scheduler::Timetable_ptr(uint8_t num)
 {
 	uint16_t i = 0;
-	while(num--) if((i += sch_data.Timetable[i] + 1) >= TIMETABLES_MAXSIZE - 1) return 0;
+	while(num--) if((i += sch_data.Timetable[i] + 1) >= TIMETABLES_MAXSIZE - 1) return TIMETABLES_MAXSIZE - 1;
 	return i;
 }
 
@@ -157,33 +157,38 @@ uint8_t Scheduler::web_set_param(char *param, char *val)
 		if((cnum = param[sizeof(WEB_SCH_Name)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) return 1;
 		urldecode(sch_data.Names[cnum], val, sizeof(sch_data.Names[0]));
+	} else ifparam("Clear") {
+		memset(&sch_data.Timetable, 0, sizeof(sch_data.Timetable));
 	} else ifparam(WEB_SCH_Calendar) { // CalendarX=str, X - расписание, если пусто, то активное; str = length;{wday+h;profile|-1; wday+h;profile|-1; ...}
 		char *p;
-		uint16_t size, cur_ptr, cur_size;
+		uint16_t size, cur_size, cur_ptr = 0xFFFF;
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) return 1;
-		uint8_t nlen = 0;
 		while((p = strpbrk(val, ";"))) {
 			p[0] = 0;
 			uint8_t dec = atoi(val);
 			val = p + 1;
-			if(nlen == 0) {
-				nlen = dec;
+			if(cur_ptr == 0xFFFF) {
 				size = Timetable_ptr(MAX_CALENDARS-1);
 				size += 1 + sch_data.Timetable[size];
 				cur_ptr = Timetable_ptr(cnum);
 				cur_size = sch_data.Timetable[cur_ptr];
-				if(size - cur_size + nlen > TIMETABLES_MAXSIZE) return 2; // не лезет в память
-				cur_size += cur_ptr + 1;
-				memmove(sch_data.Timetable + cur_ptr + 1 + nlen, sch_data.Timetable + cur_size, size - cur_size - 1);
-				sch_data.Timetable[cur_ptr++] = nlen;
-				if(nlen == 0) return 0;
+				if(size - cur_size + dec > TIMETABLES_MAXSIZE) { // не лезет в память
+					journal.jprintf("Scheduler full: %d - %d + %d > %d\n", size, cur_size, dec, TIMETABLES_MAXSIZE);
+					return 2;
+				}
+				if(cnum < MAX_CALENDARS - 1) {
+					cur_size += cur_ptr + 1;
+					memmove(sch_data.Timetable + cur_ptr + 1 + dec, sch_data.Timetable + cur_size, size - cur_size - 1);
+				}
+				sch_data.Timetable[cur_ptr++] = dec;
+				if(dec == 0) return OK;
 			} else {
 				sch_data.Timetable[cur_ptr++] = dec;
 			}
 		}
 	}
-	return 0;
+	return OK;
 }
 
 // Записать настройки в eeprom i2c, если число меньше 0 это код ошибки

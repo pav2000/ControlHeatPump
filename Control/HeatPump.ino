@@ -3171,8 +3171,9 @@ int8_t HeatPump::runCommand()
 			break;
 		case pRESET:                          // 4 Сброс контроллера
 			StopWait(_stop);        // Выключить ТН
-			journal.jprintf("$SOFTWARE RESET control . . .\r\n");
-			journal.jprintf("");
+			journal.jprintf("$SOFTWARE RESET control . . .\n\n");
+			save_motoHour();
+			Stats.Save(0);
 			_delay(500);            // задержка что бы вывести сообщение в консоль
 			Software_Reset() ;      // Сброс
 			break;

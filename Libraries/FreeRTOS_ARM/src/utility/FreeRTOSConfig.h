@@ -115,7 +115,7 @@ extern uint32_t SystemCoreClock;
 #define configMAX_PRIORITIES			( 5 )
 #define configMINIMAL_STACK_SIZE		( ( unsigned short ) 100 )  // 150, pav2000 было 130, 200 - виснет после 2-5 часов
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 0) )  // WHG uses type 3 heap
-#define configMAX_TASK_NAME_LEN			( 10 )
+#define configMAX_TASK_NAME_LEN			( 12 ) // was 10
 #define configUSE_16_BIT_TICKS			0
 #define configIDLE_SHOULD_YIELD			1
 #define configUSE_MUTEXES			1
@@ -167,7 +167,7 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelay				1
 #define INCLUDE_eTaskGetState			1
 #define INCLUDE_xTimerPendFunctionCall	0 // vad7       1  // pav2000 было 1 разрешить программные таймера
-#define INCLUDE_xTaskAbortDelay			1
+#define INCLUDE_xTaskAbortDelay			0 // vad7
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS

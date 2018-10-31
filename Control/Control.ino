@@ -1354,13 +1354,13 @@ void vUpdateStepperEEV( void * )
 void vUpdateCommand(void *)
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
 	for(;;) {
-		HP.runCommand();                                                                            // Выполнение команд управления ТН
+		HP.runCommand();                          // Выполнение команд управления ТН
 		vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
 	}
 	vTaskDelete( NULL);
 }
 
-// Запуск команд, графики в ОЗУ, счетчики моточасов, сохранение статистики, дисплей Nextion
+// Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
 void vSericeHP(void *)
 {
 	static uint32_t NextionTick = 0;

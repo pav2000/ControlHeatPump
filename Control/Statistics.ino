@@ -405,7 +405,9 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 	SPI_switchSD();
 	readed = 0;
 	for(uint32_t i = BlockStart; i <= BlockEnd; i++) {
-		if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+		if(i == CurrentBlock) {
+			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+		} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
 			Error("read data");
 			break;
 		}
@@ -432,24 +434,29 @@ void Statistics::CheckCreateNewFile()
 }
 
 // Записать статистику на SD, 0 - только записать, 1 - новый день
-void Statistics::Save(uint8_t newday)
+int8_t Statistics::Save(uint8_t newday)
 {
 #ifdef STATS_DO_NOT_SAVE
-	return;
+	return OK;
 #endif
-	if(!HP.get_fSD() || CurrentBlock == 0) return;
+	if(!HP.get_fSD() || CurrentBlock == 0) return OK;
 	char *rbuf = (char*) malloc(STATS_MAX_RECORD_LEN);
 	if(rbuf == NULL) {
 		journal.jprintf("Stats memory low - not saved!\n");
-		return;
+		return ERR_OUT_OF_MEMORY;
 	}
+	int8_t retval = OK;
 	ReturnFileString(rbuf);
 	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
-#ifdef USE_UPS
+#ifdef STATS_USE_BUFFER_FOR_SAVING
 	if(!newday || lensav != len) { // save when there is no space in buffer
 #endif
-		if(SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) return;
+		if(SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
+			retval = ERR_CONFIG;
+			free(rbuf);
+			return retval;
+		}
 		SPI_switchSD();
 		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 			Error("save 1");
@@ -457,28 +464,33 @@ void Statistics::Save(uint8_t newday)
 //				if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) goto xContinue;
 //				else journal.jprintf("Reinit SD card failed!\n");
 //			}
+			retval = ERR_SD_WRITE;
 		} else if(lensav != len){ // next block
 			if(CurrentBlock >= BlockEnd) {
 				journal.jprintf("Stats file size exceeded!\n"); // to do: increase file
+				retval = ERR_SD_WRITE;
 			} else {
 				memset(stats_buffer, 0, SD_BLOCK);
 				memcpy(stats_buffer, rbuf, lensav = len - lensav);
 				if(!card.card()->writeBlock(CurrentBlock + 1, (uint8_t*)stats_buffer)) {
 					Error("save 2");
+					retval = ERR_SD_WRITE;
 				} else if(newday) {
 					CurrentBlock++;
 					CurrentPos = lensav;
 				} else { // reread current block
 					if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 						Error("read 1");
+						retval = ERR_SD_READ;
 					}
 				}
 			}
 		} else if(newday) CurrentPos += lensav;
 	    SPI_switchW5200();
 	    SemaphoreGive(xWebThreadSemaphore);
-#ifdef USE_UPS
+#ifdef STATS_USE_BUFFER_FOR_SAVING
 	} else CurrentPos += lensav;
 #endif
 	free(rbuf);
+	return retval;
 }

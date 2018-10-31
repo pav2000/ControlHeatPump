@@ -863,11 +863,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
 								} else if(values[0].match(/^set_SAVE/)) { 
 									if(values[1] >= 0) {
-										if(values[0].match(/SCHDLR$/)) { 
-											alert("Настройки расписаний сохранены!");
-										} else {
-											alert("Настройки сохранены, записано " + values[1] + " байт");
-										}
+										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
+										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!"); 											
+										else alert("Настройки сохранены, записано " + values[1] + " байт");
 									} else alert("Ошибка записи, код ошибки:" + values[1]);
 								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "reset_errorFC") {
 									alert(values[1]);
