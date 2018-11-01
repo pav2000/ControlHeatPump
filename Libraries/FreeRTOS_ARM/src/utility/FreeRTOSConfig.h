@@ -118,15 +118,15 @@ extern uint32_t SystemCoreClock;
 #define configMAX_TASK_NAME_LEN			( 12 ) // was 10
 #define configUSE_16_BIT_TICKS			0
 #define configIDLE_SHOULD_YIELD			1
-#define configUSE_MUTEXES			1
+#define configUSE_MUTEXES				0
 #define configQUEUE_REGISTRY_SIZE		0
-#define configCHECK_FOR_STACK_OVERFLOW	        2
-#define configUSE_RECURSIVE_MUTEXES		1
-#define configUSE_MALLOC_FAILED_HOOK    	1
-#define configUSE_APPLICATION_TASK_TAG  	0
-#define configUSE_COUNTING_SEMAPHORES        	1
-#define configUSE_QUEUE_SETS	        	1
-#define configSUPPORT_DYNAMIC_ALLOCATION	1
+#define configCHECK_FOR_STACK_OVERFLOW	2
+#define configUSE_RECURSIVE_MUTEXES		0
+#define configUSE_MALLOC_FAILED_HOOK    1
+#define configUSE_APPLICATION_TASK_TAG  0
+#define configUSE_COUNTING_SEMAPHORES   1
+#define configUSE_QUEUE_SETS	        1
+#define configSUPPORT_DYNAMIC_ALLOCATION 1
 
 
  // СТАТИСТИКА    по условиям из проекта     pav2000

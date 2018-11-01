@@ -209,9 +209,10 @@ void Statistics::Update()
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	if(rtcSAM3X8.get_days() != day) {
-		Save(1);
-		Reset();
-		if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
+		if(Save(2) == OK) {
+			Reset();
+			if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
+		}
 	}
 	int32_t newval = 0;
 	boolean compressor_on = HP.is_compressor_on();
@@ -433,7 +434,7 @@ void Statistics::CheckCreateNewFile()
 	}
 }
 
-// Записать статистику на SD, 0 - только записать, 1 - новый день
+// Записать статистику на SD, 0 - только записать, 1 - только записать c веба, 2 - новый день
 int8_t Statistics::Save(uint8_t newday)
 {
 #ifdef STATS_DO_NOT_SAVE
@@ -450,9 +451,9 @@ int8_t Statistics::Save(uint8_t newday)
 	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
 #ifdef STATS_USE_BUFFER_FOR_SAVING
-	if(!newday || lensav != len) { // save when there is no space in buffer
+	if(newday < 2 || lensav != len) { // save when there is no space in buffer
 #endif
-		if(SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
+		if(newday == 1 && SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
 			retval = ERR_CONFIG;
 			free(rbuf);
 			return retval;
@@ -460,6 +461,7 @@ int8_t Statistics::Save(uint8_t newday)
 		SPI_switchSD();
 		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 			Error("save 1");
+			// to do - reinit card but in other task
 //			if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
 //				if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) goto xContinue;
 //				else journal.jprintf("Reinit SD card failed!\n");
@@ -487,7 +489,7 @@ int8_t Statistics::Save(uint8_t newday)
 			}
 		} else if(newday) CurrentPos += lensav;
 	    SPI_switchW5200();
-	    SemaphoreGive(xWebThreadSemaphore);
+	    if(newday == 1) SemaphoreGive(xWebThreadSemaphore);
 #ifdef STATS_USE_BUFFER_FOR_SAVING
 	} else CurrentPos += lensav;
 #endif
