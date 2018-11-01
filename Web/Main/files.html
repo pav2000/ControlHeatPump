@@ -1,0 +1,64 @@
+<html>
+<head>
+	<title>Файлы. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+	window.onload = function() {
+		var arr = document.getElementById('links').getElementsByTagName('a'); //var arr = document.links;
+		var chang1 = "http://.*/"; // Точки экранируем
+		chang1 = new RegExp(chang1,"i");
+		for (i=0;i<arr.length;i++){ arr[i].href = arr[i].href.replace(chang1,urlcontrol + '/'); }
+	}
+	function send_files(id) {
+		var fs = document.getElementById(id).files;
+		if(fs.length == 0) return;
+		var mrk = {name:"*SPI_FLASH*", toString: function(){return "";}};
+		if(id == "spi") upload(mrk); else fs[0].settings = 1;
+		for(i = 0; i < fs.length; i++) upload(fs[i]);
+		if(id == "spi") {
+			mrk.name = "*SPI_FLASH_END*";
+			upload(mrk);
+		}
+	}
+	</script>
+</head>
+<body class="about">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Файлы</h1>
+	<div class="row1" id="links">
+		<table>
+		<tbody>
+			<tr><td>Документация</td><td><a class="download" href="/manual.pdf" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Текущее состояние ТН</td><td><a class="download" href="/state.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Графики работы ТН из RAM</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Графики работы ТН с SD карты <sup>1</sup></td><td><a class="download" href="/chart_sd.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Статистика работы ТН (максимум 364 дня)</td><td><a class="download" href="/statistic.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
+				<td>
+					<input type="file" id="setup">
+					<p><input type="submit" value="Восстановить" onclick="send_files('setup')"></p>
+				</td>
+				<tr><td><b>Web интерфейс контроллера на чипе SPI Flash <sup>2</sup></b></td></tr>
+				<tr><td>Выбор файлов для копирования их на SPI Flash<sup>3</sup><p> </p> </td>
+				<td>
+					<input type="file" id="spi" multiple>
+					<p><input type="submit" value="Загрузить" onclick="send_files('spi')"></p>
+				</td>
+			</tr>
+		</tbody>
+		</table>
+		 1. Файл будет создан если включена сответствующая опция (страница ОПЦИИ ТН).<br>
+		 2. Чип SPI Flash должен быть установлен и для активации его использования должна быть включена соответстующая опция (страница ОПЦИИ ТН).<br>
+		 3. SPI Flash будет отформатирована, и затем на нее будут записаны ВСЕ выбранные файлы (добавление файлов не возможно).<br>
+	</div>
+</div>
+
+</body>
+</html>

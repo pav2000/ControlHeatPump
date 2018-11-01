@@ -1,0 +1,26 @@
+<html>
+<head>
+	<title>Журнал. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+  updatelog();
+ 
+});
+
+</script>
+</head>
+<body class="log">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Журнал  <a href="/journal.txt" download=""><button>Загрузить</button></a> <a href="#" onclick="updatelog();return false"><button>Обновить</button></a> <input type="submit" value="Очистить"  onclick='loadParam("RESET_JOURNAL",true)'></h1>
+	<div class="row1">
+		<textarea wrap="off" readonly="readonly" id="textarea"></textarea>
+	</div>
+</div>
+</body>
+</html>

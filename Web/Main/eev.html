@@ -1,0 +1,162 @@
+﻿<html>
+<head> 
+  <title>ЭРВ. Народный контроллер ТН</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script type="text/javascript" src="jquery.min.js"></script>
+  <script type="text/javascript" src="scripts.js"></script>
+  <script type="text/javascript" src="highcharts.js"></script>
+  <script type="text/javascript" src="exporting.js"></script>
+  <script type="text/javascript">
+    window.onload = function() {
+	urlupdate = 2000;
+	loadParam("get_optionHP(TIME_CHART),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(PINS),get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(CONST),get_paramEEV(RULE),get_paramEEV(MANUAL)");
+    loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
+    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_paramEEV(cTDELTA),get_Evapor");
+    loadParam("get_Chart(posEEV)");
+    setParam('get_listChart','chart1');
+   // setParam('get_listChart2','chart2')
+	/*Highcharts.setOptions({ global: { useUTC: false } }); */ 
+    $("#autoupdate").change(function(){
+    if(this.checked){
+      var timerId = setInterval(function() { loadParam("get_Chart(posEEV)"); setParam('get_listChart','chart1'); }, 4000)
+      window.timerId = timerId
+    }else{
+      timerId = window.timerId
+      clearInterval(timerId);
+    }
+});       
+  };
+  </script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+ <h1>ЭРВ <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'><input type="submit" value="Настройки ЭРВ" onclick='location.assign("eevset.html")' style="margin-right:10px;"></h1>
+
+  <div class="row1">
+   <h2>Определение перегрева</h2>
+   <table>
+   <thead>
+    <tr>
+      <th>Формула перегрева</th>
+      <th>Описание</th>
+      <th>Поправка °С</th>
+      <th>Тип фреона</th>
+      <th>Открытие ЭРВ шаги</th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr>
+      <td>
+        <select id="get_parameev-rule" onchange="setParam('get_paramEEV(RULE)');loadParam('get_paramEEV(REMARK)')"></select>
+      </td>
+      <td id="get_parameev-remark"></td>
+      <td nowrap><input id="get_parameev-const" type="number"  min="-5" max="5" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">"  onclick="setParam('get_paramEEV(CONST)');"></td>
+      <td>
+        <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
+      </td>
+      <td nowrap><input id="get_parameev-manual" type="number" step="1" value="0"><input id="get_parameev-manual2" type="submit" value=">"  onclick="setParam('get_paramEEV(MANUAL)');"></td>
+    </tr>         
+   </tbody>
+   </table>            
+  </div>
+ 
+ <div class="row1">
+  <h2>Состояние ЭРВ</h2>
+  <table>
+  <thead>
+   <tr>
+	<th>Имя</th>
+	<th>Описание</th>
+	<th>Положение (шаги)</th>
+	<th>Текущий перегрев </th>
+	<th>Температура кипения</th>
+	<th>Разница: Нагнетание-Конденсация</th>
+	<th>Разница: Цель</th>
+	<th>Код ошибки</th>
+	<th>Pins</th>
+   </tr>
+  </thead>
+  <tbody>
+   <tr>
+	<td id="get_parameev-name"></td>
+	<td id="get_parameev-note"></td>
+	<td id="get_parameev-pospp" nowrap></td>
+	<td id="get_parameev-overheat"></td>
+	<td id="get_evapor"></td>
+	<td id="get_tcomp_tcon"></td>
+	<td id="get_parameev-ctdelta"></td>
+	<td id="get_parameev-error"></td>
+	<td id="get_parameev-pins"></td>
+   </tr>
+  </tbody>
+  </table>            
+ </div>
+ 
+ <div class="row1">
+   <h2>Корректировка перегрева <input id="get_parameev-ccorrect" type="checkbox" onclick="setParam('get_paramEEV(cCORRECT)')"></h2>
+   <table>
+   <thead>
+   <tr>
+	<th>Задержка после старта, сек</th>
+	<th>Период в циклах ЭРВ</th>
+	<th>Разница Нагнетание-Конденсации (при 30°)</th>
+	<th>Увеличение на каждые 10° конд.</th>
+	<th>Порог разницы, °C</th>
+	<th>Коэффициент</th>
+	<th>Мин. перегрев, °C</th>
+	<th>Макс. перегрев, °C</th>
+	<th>Начальный перегрев, °C</th>
+   </tr>
+   </thead>
+   <tbody>
+   <tr>
+	<td nowrap><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
+	<td nowrap><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
+	<td nowrap><input id="get_parameev-cdelta" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTA)')"></td>
+	<td nowrap><input id="get_parameev-cdeltac" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAC)')"></td>
+	<td nowrap><input id="get_parameev-cdeltat" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAT)')"></td>
+	<td nowrap><input id="get_parameev-ckf" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(cKF)')"></td>
+	<td nowrap><input id="get_parameev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MIN)')"></td>
+	<td nowrap><input id="get_parameev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MAX)')"></td>
+	<td nowrap><input id="get_parameev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_START)')"></td>
+   </tr>
+ </tbody>
+ </table>            
+ </div>
+ 
+ <div class="row1">
+   <h2>Параметры ПИД ЭРВ</h2>
+   <table>
+   <thead>
+   <tr>
+	<th>Целевой перегрев</th>
+	<th>Время интегрирования<br>[1...1000] сек.</th>
+	<th><a data-tooltip="Представляет собой коэффициент усиления. Он определяет действие, прямо пропорциональное разнице между заданной температурой и фактической температурой перегрева. Данный параметр регулирует скорость работы вентиля в следующих единицах измерения: шаг/°C. Вентиль поворачивается на количество шагов, заданное параметром P4, при изменении температуры перегрева на сотую долю градуса: открывается или закрывается в зависимости от увеличения или уменьшения температуры перегрева. Кроме этого, данный параметр влияет на другие факторы регулирования и действителен как в условиях нормального регулирования, так и аварийных условиях. Чем больше значение параметра, тем быстрее и оперативнее изменяется положение вентиля (например, для систем с циклом CO2  значение параметра составляет 20). Чем меньше значение параметра, тем медленнее реагирует вентиль.">Пропорциональная <br>составляющая [0..50] шаг/°C</a></th>
+	<th><a data-tooltip="Представляет собой время, необходимое контроллеру для компенсации  разницы между заданной температурой и фактической температурой перегрева. На практике данный параметр ограничивает количество шагов, которое вентиль совершает каждую секунду. Данный параметр действителен только в условиях нормального регулирования, потому что специальные функции регулирования используют собственную интегральную составляющую. Чем больше значения параметра, тем медленней изменяется положение вентиля (например, для систем с циклом CO2  значение параметра составляет 400). Чем ниже значения параметра, тем быстрее и оперативнее изменяется положение вентиля. 0 ==> интегральная составляющая выключена">Интегральная <br>составляющая [0..50] шаг/°C</a></th>
+	<th><a data-tooltip="Оперативность реагирования вентиля на изменения температуры перегрева. Усиливает или уменьшает изменения температуры перегрева. Чем больше значения, тем больше изменения Чем ниже значения, тем меньше изменения. 0 ==> дифференциальное действие выключено">Дифференциальная <br>составляющая [0..50] шаг/°C</a></th>  
+   </tr>
+   </thead>
+   <tbody>
+   <tr>
+	<td nowrap><input id="get_parameev-target" type="number" min="0" max="20" step="0.01"><input id="get_parameev-target2" type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
+	<td nowrap><input id="get_parameev-time" type="number" min="1" max="1000" step="1"><input id="get_parameev-time2" type="submit" value=">" onclick="setParam('get_paramEEV(TIME)');"></td>
+	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="50" step="0.01"><input id="get_parameev-kp2" type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
+	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="50" step="0.01"><input id="get_parameev-ki2" type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
+	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="50" step="0.01"><input id="get_parameev-kd2" type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
+   </tr>
+ </tbody>
+ </table>            
+ </div>
+
+<div>Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" >
+<input type="submit" value="Обновить графики"  onclick="setParam('get_listChart','chart1');">
+<select style="display:none" id="get_optionhp-time_chart" disabled></select>
+<select style="display:none" id="get_listchart" onchange="setParam('get_listChart','chart1')"><option value="OVERHEAT">OVERHEAT</option></select>
+</div>
+    <div id="chart1">График не выбран</div>
+</div>
+</body>
+</html>

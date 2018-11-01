@@ -1,0 +1,47 @@
+<html>
+<head>
+	<title>Система. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() { //clock();
+		updateParam("get_resetCause,get_uptime,get_tempSAM3x,get_tempDS3231,get_startDT,get_freeRam,get_sysInfo");
+	};
+	</script>
+</head>
+<body class="about">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Система <input type="submit" value="Сохранить статистику" onclick='loadParam("set_SAVE_STATS")'></h1>
+	<div class="row1">
+		<table>
+		<thead>
+		<tr>
+			<th>Параметр</th>
+			<th>Значение</th>
+		</tr>
+		</thead>
+		<tbody>
+			<tr><td>Время с последней перезагрузки</td><td id="get_uptime"></td></tr>
+			<tr><td>Последний сброс</td><td id="get_startdt"></td></tr>
+			<tr><td>Причина последнего сброса контроллера</td><td id="get_resetcause"></td></tr>
+			<tr><td>Температура чипа SAM3</td><td id="get_tempsam3x"></td></tr>
+			<tr><td>Температура блока</td><td id="get_tempds3231"></td></tr>
+			<tr><td>Свободная память</td><td id="get_freeram"></td></tr>
+		</tbody>	
+		<tbody id="get_sysinfo">
+		</tbody>
+		</table>
+		1. Старший байт номер задачи (номер см. на странице ОС RTOS), младший байт код ошибки [1:configASSERT fails, 2:malloc fails, 3:stack overflow, 4:hard fault, 5:bus fault, 6:usage fault, 7:crash data]<br>
+		2. Установка флага Сервис > Сеть > Ежеминутный контроль связи с w5200, и при необходимости его сброс<br>
+                <br>
+		<input type="submit" value="Сброс контроллера" onclick='if(confirm("Перезагрузить контроллер?")) loadParam("RESET");'>
+		<input type="submit" value="Сброс W5200" onclick='loadParam("RESET_NET")'>
+		<input type="submit" value="Сброс сезонных счетчиков" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_COUNT,RELOAD")'> Введите RESET: <input id="reset_code" size="7">
+		<p>Для сброса всех счетчиков используйте запрос RESET_ALL_COUNT</p>
+	</div>
+</div>
+</body>
+</html>

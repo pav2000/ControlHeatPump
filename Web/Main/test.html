@@ -1,0 +1,100 @@
+<html>
+<head>
+	<title>Тестирование. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		urlupdate = 2000;
+		loadParam("get_listRelay");
+		loadParam("get_WORK,get_paramFC(ON_OFF),get_paramFC(NAME),get_paramFC(NOTE),get_paramFC(FC),get_testMode,get_paramEEV(PINS),get_presentRelay(RPUMPB),get_noteRelay(RPUMPB),get_pinRelay(RPUMPB),get_presentRelay(RCOMP),get_noteRelay(RCOMP),get_pinRelay(RCOMP),get_presentRelay(RPUMPI),get_noteRelay(RPUMPI),get_pinRelay(RPUMPI),get_presentRelay(RPUMPO),get_noteRelay(RPUMPO),get_pinRelay(RPUMPO),get_presentRelay(RBOILER),get_noteRelay(RBOILER),get_pinRelay(RBOILER),get_presentRelay(RHEAT),get_noteRelay(RHEAT),get_pinRelay(RHEAT),get_paramEEV(POS),get_paramEEV(POSp),get_paramEEV(POSpp),get_pinRelay(RTRV),get_presentRelay(RFAN1),get_noteRelay(RFAN1),get_pinRelay(RFAN1),get_presentRelay(RFAN2),get_noteRelay(RFAN2),get_pinRelay(RFAN2),get_presentRelay(R3WAY),get_noteRelay(R3WAY),get_pinRelay(R3WAY),get_presentRelay(REVI),get_noteRelay(REVI),get_pinRelay(REVI),get_paramEEV(NAME),get_paramEEV(NOTE),get_presentRelay(RTRV),get_noteRelay(RTRV)");
+		updateParam("get_paramFC(cFC),get_paramFC(INFO1),get_remarkTest,get_paramEEV(POS),get_paramEEV(POSp),get_paramEEV(POSpp),get_error,get_Relay(RCOMP),get_Relay(RPUMPB),get_Relay(RTRV),get_Relay(RPUMPI),get_Relay(RPUMPO),get_Relay(RBOILER),get_Relay(RHEAT),get_Relay(RFAN1),get_Relay(RFAN2),get_Relay(R3WAY),get_Relay(REVI)"); 
+	};
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("FC(NAME)") != -1 && document.getElementById("get_paramfc-name").innerHTML.substr(0,5) == "Omron") {
+			document.getElementById("str1").innerHTML = "Целевая частота, Гц";
+			document.getElementById("str2").innerHTML = "Текущая частота, Гц";
+			document.getElementById("str3").innerHTML = "Мощность текущая";
+		}
+	}
+	</script>
+</head>
+<body class="test">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Режим тест</h1>
+	<h2 >Режим работы: <select id="get_testmode" onchange="setParam('get_testMode','get_testmode');"></select></h2>
+	<h3>Описание: <span id="get_remarktest"></span></h3>
+	<h3>Ошибка: <span id="get_error"></span></h3>
+	<h1>Ручное управление</h1>
+	<h3>Внимание! Необдуманные действия при ручном управлении могут повредить оборудование.</h3>
+	<h3>Снятие блокировки<input type="checkbox" id="manual_override"></h3>
+	<div id="testmode1" >
+		<h2>Реле</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Pin</th>
+			<th>Управление</th>
+		</tr>
+		</thead>
+		<tbody id="get_listrelay">
+	</tbody>
+	</table>		
+	</div>
+	<div id="testmode2">
+		<h2>ЭРВ [pins: <span id="get_parameev-pins"></span>] <button id="set_zeroEEV" onclick='loadParam("set_zeroEEV");'>Установка в 0</button></h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Описание</th>
+			<th>Текущее положение ЭРВ</th>
+			<th>Задать, шаги</th>
+			<th>Задать, %</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td id="get_parameev-name">-</td>
+			<td id="get_parameev-note">-</td>
+			<td id="get_parameev-pospp"></td>
+			<td><input id="get_parameev-pos" type="number" step="1" value=""><input id="set-eev" type="submit" value=">" onclick="setParam('get_paramEEV(POS)');"></td>
+			<td><input id="get_parameev-posp" type="number" step="1" value=""><input id="set-eevp" type="submit" value=">" onclick="setParam('get_paramEEV(POSp)');"></td>
+		</tr>
+		</tbody>
+		</table>						
+	</div>	
+
+	<div id="testmode3">
+		<h2>Инвертор <span id="get_paramfc-name"></span> <span id="get_paramfc-note"></span> <input type="submit" value="Сброс инвертора"  onclick='loadParam("reset_FC")'  style="float:right;"> </h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Включение</th>
+			<th id="str1">Цель</th>
+			<th id="str2">Текущая скорость</th>
+			<th id="str3">Частота</th>
+		</tr>
+		<tr>
+			<td><input type="checkbox" id="get_paramfc-on_off" onchange="setParam('get_paramFC(ON_OFF))');"></td>
+			<td><input id="get_paramfc-fc" type="number" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_paramFC(FC)');"></td>
+			<td id="get_paramfc-cfc"></td>
+			<td id="get_paramfc-info1"></td>
+		</tr>			
+		</thead>
+		<tbody>
+	</tbody>
+	</table>						
+	</div>	
+
+	<div id="testmode4">
+		Радиомодуль ZONT МЛ-489, команда: <input id="radio_cmd"> <input type="submit" value=">" onclick='var Rcmd=document.getElementById("radio_cmd").value; if(Rcmd) loadParam("set_radio_cmd="+encodeURIComponent(Rcmd));'>
+	</div>	
+</div>
+</body>
+</html>

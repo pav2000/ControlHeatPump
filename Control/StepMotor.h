@@ -17,6 +17,7 @@
 #ifndef StepMotor_h
 #define StepMotor_h
 
+#include "Arduino.h"
 //#include "FreeRTOS_ARM.h"
 
 // library interface description
@@ -42,6 +43,6 @@ class StepMotor {
     int motor_pin_2;
     int motor_pin_3;
     int motor_pin_4;
-    friend void vUpdateStepperEEV( void *pvParameters );
+    friend void vUpdateStepperEEV(void *);
 };
 #endif

@@ -46,11 +46,13 @@
 
 #include "Hardware.h"
 #include "HeatPump.h"
-#include "StepMotor.h" 
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
 #include "Statistics.h"
+
+void vUpdateStepperEEV(void *);
+#include "StepMotor.h"
 
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                 // Семафор Modbus, инвертор запас на счетчик
@@ -1264,7 +1266,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 
 // Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
-void vUpdateStepperEEV( void * )
+void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   static int16_t  cmd=0;
   volatile int16_t steps_left=0, step_number=0, start_pos=0, pos=0;

@@ -1,0 +1,217 @@
+<html>
+<head>
+	<title>Уведомления теплового насоса. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		loadParam("get_Message(SMTP_IP),get_Message(SMS_IP),get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_P1),get_Message(SMS_P1),get_Message(SMS_SERVICE),get_Message(MESS_TEMP),get_Message(MESS_RESET),get_Message(MESS_ERROR),get_Message(MESS_LIFE),get_Message(MESS_TIN),get_Message(MESS_TBOILER),get_Message(MESS_TCOMP),get_Message(MESS_SD),get_Message(MESS_WARNING),get_Message(MAIL),get_Message(SMTP_SERVER),get_Message(SMTP_PORT),get_Message(MAIL_AUTH),get_Message(SMTP_LOGIN),get_Message(SMTP_PASS),get_Message(MAIL_INFO),get_Message(SMTP_MAILTO),get_Message(SMTP_RCPTTO),get_Message(SMS),get_Message(SMS_PHONE)");
+		//updateParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
+	}; 
+	</script>
+</head>
+<body class="test">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+	<h1>Уведомления <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+	<div class="row1">
+		<h2>Требуемые уведомления</h2>
+		<table>
+		<thead>
+		<tr>
+			<th>Описание</th>
+			<th>Значение</th>
+		</tr>
+		</thead>			
+		<tbody>
+		<tr>
+			<td>Сброс контроллера</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_reset" id="get_message-mess_reset" onchange="setParam('get_Message(MESS_RESET)');" >
+			</td>
+		</tr>			
+		<tr>
+			<td>Возникновение ошибок</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_error" id="get_message-mess_error" onchange="setParam('get_Message(MESS_ERROR)');" >
+			</td>
+		</tr>
+		<tr>
+			<td>Сигнал «жизни» (ежедневно в 12:00)</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_life" id="get_message-mess_life" onchange="setParam('get_Message(MESS_LIFE)');" >
+			</td>
+		</tr>
+		<tr>
+			<td>Достижение граничной температуры</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_temp" id="get_message-mess_temp" onchange="setParam('get_Message(MESS_TEMP)');" >
+			</td>
+		</tr>
+		<tr>
+			<td> Граничная температура в доме (если меньше то посылается уведомление) °C [0...30]</td>
+			<td>
+				<input id="get_message-mess_tin" type="number" min="0" max="30" step="1">
+				<input id="get_message-mess_tin2" type="submit" value=">"  onclick="setParam('get_Message(MESS_TIN)');">
+			</td>
+		</tr>
+		<tr>
+			<td> Граничная температура бойлера (если меньше то посылается уведомление) °C [0...70]</td>
+			<td>
+				<input id="get_message-mess_tboiler" type="number" min="0" max="70" step="1">
+				<input id="get_message-mess_tboiler2" type="submit" value=">"  onclick="setParam('get_Message(MESS_TBOILER)');">
+			</td>
+		</tr>
+		<tr>
+			<td> Граничная температура компрессора (если больше то посылается уведомление) °C [0...80]</td>
+			<td>
+				<input id="get_message-mess_tcomp" type="number" min="0" max="80" step="1">
+				<input id="get_message-mess_tcomp2" type="submit" value=">"  onclick="setParam('get_Message(MESS_TCOMP)');">
+			</td>
+		</tr>		
+		<tr>
+			<td>Проблемы с SD картой или SPI Flash</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_sd" id="get_message-mess_sd" onchange="setParam('get_Message(MESS_SD)');" >
+			</td>
+		</tr>
+		<tr>
+			<td>Прочие уведомления</td>
+			<td>
+				<input type="checkbox" name="get_message-mess_warning" id="get_message-mess_warning" onchange="setParam('get_Message(MESS_WARNING)');" >
+			</td>
+		</tr>							
+	</tbody>
+	</table>
+</div>
+
+	<div class="row1">
+	<h2>Настройка отправки почты<sup>1</sup></h2>
+	<table>
+	<thead>
+		<tr>
+			<th>Описание</th>
+			<th>Значение</th>
+		</tr>
+		</thead>			
+		<tbody>
+		<tr>
+			<td>Посылать уведомления по почте</td>
+			<td>
+				<input type="checkbox" name="get_message-mail" id="get_message-mail" onchange="setParam('get_Message(MAIL)');" >
+			</td>
+		</tr>	
+		<tr>
+			<td>Адрес smtp сервера <span id="get_message-smtp_ip"></span></td>
+			<td>
+				<input id="get_message-smtp_server" type="text" maxlength="31">
+				<input id="get_message-smtp_server2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_SERVER)'),loadParam('get_Message(SMTP_IP)');">
+			</td>
+		</tr>
+		<tr>
+			<td>Порт smtp сервера  [1...65534]</td>
+			<td>
+				<input id="get_message-smtp_port" type="number" style="max-width:100px" min="1" max="65535" step="1">
+				<input id="get_message-smtp_port2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_PORT)');">
+			</td>
+		</tr>
+		<tr>
+			<td>Необходимость авторизации на сервере</td>
+			<td>
+				<input type="checkbox" name="get_message-mail_auth" id="get_message-mail_auth" onchange="setParam('get_Message(MAIL_AUTH)');" >
+			</td>
+		</tr>			
+		<tr>
+			<td>Логин для входа</td>
+			<td>
+				<input id="get_message-smtp_login" type="text" maxlength="31">
+				<input id="get_message-smtp_login2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_LOGIN)');">
+			</td>
+		</tr>
+		<tr>
+			<td>Пароль для входа</td>
+			<td>
+				<input id="get_message-smtp_pass" type="text" maxlength="31">
+				<input id="get_message-smtp_pass2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_PASS)');">
+			</td>
+		</tr>		
+		<tr>
+			<td>Добавлять в уведомление информацию о состоянии ТН</td>
+			<td>
+				<input type="checkbox" name="get_message-mail_info" id="get_message-mail_info" onchange="setParam('get_Message(MAIL_INFO)');" >
+			</td>
+		</tr>
+		<tr>
+			<td>Адрес отправителя</td>
+			<td>
+				<input id="get_message-smtp_mailto" type="text" maxlength="31">
+				<input id="get_message-smtp_mailto2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_MAILTO)');">
+			</td>
+		</tr>		
+		<tr>
+			<td>Адрес получателя</td>
+			<td>
+				<input id="get_message-smtp_rcptto" type="text" maxlength="31">
+				<input id="get_message-smtp_rcptto2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_RCPTTO)');">
+			</td>
+		</tr>				
+	</tbody>
+	</table>
+	<p>1. Отправлять почту можно только через smtp сервер без шифрования ssl или tsl.</p>
+	<input type="submit" value="Отправить тестовое письмо"  onclick="loadParam('test_Mail')">
+	</div>
+
+	<div class="row1">
+	<h2>Настройка отправки SMS</h2>
+	<table>
+	<thead>
+		<tr>
+			<th>Описание</th>
+			<th>Значение</th>
+		</tr>
+		</thead>			
+		<tbody>
+		<tr>
+			<td>Посылать уведомления по SMS</td>
+			<td>
+				<input type="checkbox" name="get_message-sms" id="get_message-sms" onchange="setParam('get_Message(SMS)');" >
+			</td>
+		</tr>
+		<tr>
+			<td>Сервис отправки SMS <span id="get_message-sms_ip"></span></td>
+			<td><select id="get_message-sms_service" onchange="setParam('get_Message(SMS_SERVICE)','get_message-sms_service'),loadParam('get_Message(SMS_IP)');"></select></td>
+		</tr>
+		<tr>
+			<td id="get_message-sms_namep1"></td>
+			<td>
+				<input id="get_message-sms_p1" type="text" maxlength="100">
+				<input id="get_message-sms_p12" type="submit" value=">"  onclick="setParam('get_Message(SMS_P1)');">
+			</td>
+		</tr>
+		<tr>
+			<td id="get_message-sms_namep2"></td>
+			<td>
+				<input id="get_message-sms_p2" type="text" maxlength="100">
+				<input id="get_message-sms_p22" type="submit" value=">"  onclick="setParam('get_Message(SMS_P2)');">
+			</td>
+		</tr>		
+		<tr>
+			<td>Телефон получателя (формат 79161234567)</td>
+			<td>
+				<input id="get_message-sms_phone" type="text" maxlength="20">
+				<input id="get_message-sms_phone2" type="submit" value=">"  onclick="setParam('get_Message(SMS_PHONE)');">
+			</td>
+		</tr>		
+		<tr>
+			<td><input type="submit" value="Отправить тестовое SMS" onclick="loadParam('test_SMS')"></td>
+			<td></td>
+		</tr>
+	</tbody>
+	</table>
+	
+</div>
+</div>
+</body>
+</html>
