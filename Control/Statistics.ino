@@ -395,35 +395,67 @@ void Statistics::ReturnWebTable(char *ret)
 	}
 }
 
+// Return: OK, 1 - not found, >2 - error. Network is active
 void Statistics::SendFileData(uint8_t thread, char *filename)
 {
-	if(BlockStart == 0) return;
+	SdFile File;
+	SPI_switchSD();
+	if(!File.open(filename, O_READ)) {
+		SPI_switchW5200();
+		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+		return;
+	}
+	uint32_t BStart, BEnd;
+	if(!StatsFile.contiguousRange(&BStart, &BEnd)) {
+		journal.jprintf(" Error get blocks!\n");
+		File.close();
+		SPI_switchW5200();
+		return;
+	}
+	File.close();
+	SPI_switchW5200();
 	uint32_t readed = m_strlen(Socket[thread].outBuf);
 	if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
 		Error("send dh");
 		return;
-	}
-	SPI_switchSD();
-	readed = 0;
-	for(uint32_t i = BlockStart; i <= BlockEnd; i++) {
-		if(i == CurrentBlock) {
-			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
-			Error("read data");
-			break;
-		}
-		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
-			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
-		} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
-		SPI_switchW5200();
-		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-			Error("send data");
-			break;
-		}
+	} else {
 		SPI_switchSD();
 		readed = 0;
+		for(uint32_t i = BStart; i <= BEnd; i++) {
+			if(i == CurrentBlock) {
+				memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+			} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+				Error("read data");
+				break;
+			}
+			if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
+				readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
+			} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
+			SPI_switchW5200();
+			if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+				Error("send data");
+				break;
+			}
+			SPI_switchSD();
+			readed = 0;
+		}
+		SPI_switchW5200();
 	}
-	SPI_switchW5200();
+}
+
+void Statistics::GetStatsList(char *ret)
+{
+	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+	uint8_t first = 1;
+	for(uint16_t i = rtcSAM3X8.get_years(); i > 2000; i--) {
+		m_snprintf(filename, sizeof(filename), "%s%04d%s", stats_file_start, i, stats_file_ext);
+		if(!card.exists(filename)) break;
+		strcat(ret, filename);
+		if(first) {
+			strcat(ret, ":1;");
+			first = 0;
+		} else strcat(ret, ":0;");
+	}
 }
 
 void Statistics::CheckCreateNewFile()

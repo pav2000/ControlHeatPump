@@ -1,7 +1,7 @@
-/* ver 0.968 beta */
+/* ver 0.970 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -125,7 +125,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var rep = new RegExp('^get_present|^get_pT');
 								var ret = new RegExp('[(]SCHEDULER[)]');
 								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
+								var res = new RegExp('PING_TIME|et_list|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
 								var rev = new RegExp(/\([a-z0-9_]+\)/i);
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');

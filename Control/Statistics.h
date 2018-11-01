@@ -115,6 +115,7 @@ public:
 	void	SendFileData(uint8_t thread, char *filename);
 	boolean	FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
 	void	CheckCreateNewFile();
+	void	GetStatsList(char *ret);
 private:
 	void	Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений

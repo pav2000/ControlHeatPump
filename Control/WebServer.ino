@@ -53,13 +53,7 @@ static const char *noteRemarkTest[] = {"Тестирование отключе�
                                
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
 
-const char*  pageUnauthorized     = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
-const char* HEADER_FILE_NOT_FOUND = {"HTTP/1.1 404 Not Found\r\n\r\n<html>\r\n<head><title>404 NOT FOUND</title><meta charset=\"utf-8\" /></head>\r\n<body><h1>404 NOT FOUND</h1></body>\r\n</html>\r\n\r\n"};
-//const char* HEADER_FILE_WEB       = {"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n"}; // КЕШ НЕ ИСПОЛЬЗУЕМ
-const char* HEADER_FILE_WEB       = {"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: keep-alive\r\nCache-Control: max-age=3600, must-revalidate\r\n\r\n"}; // КЕШ ИСПОЛЬЗУЕМ
-const char* HEADER_FILE_CSS       = {"HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nConnection: keep-alive\r\nCache-Control: max-age=3600, must-revalidate\r\n\r\n"}; // КЕШ ИСПОЛЬЗУЕМ
-
-const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};  // начало ответа на запрос
+const char* pageUnauthorized     = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
 
@@ -226,16 +220,16 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "settings.txt") == 0) {	get_txtSettings(thread); return; }
 	if(strcmp(filename, "settings.bin") == 0) {	get_binSettings(thread); return; }
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
-	if(strcmp(filename, FILE_STATISTIC) == 0){  // прочитать файл статистики с карты
-       char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)]; 
-       strcpy(filename, stats_file_start); // Получить имя файла	 
-	   _itoa(rtcSAM3X8.get_years(), filename);
-	   strcat(filename, stats_file_ext);
-	   if (!card.exists(filename)) { noCsvStatistic(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
-	   journal.jprintf((const char*) "Load statistic file: %s\n", filename);
-	   get_statistics_file(thread,filename);
-	   return;	
-    	} 
+//	if(strcmp(filename, FILE_STATISTIC) == 0){  // прочитать файл статистики с карты
+//       char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+//       strcpy(filename, stats_file_start); // Получить имя файла
+//	   _itoa(rtcSAM3X8.get_years(), filename);
+//	   strcat(filename, stats_file_ext);
+//	   if (!card.exists(filename)) { noCsvStatistic(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
+//	   journal.jprintf((const char*) "Load statistic file: %s\n", filename);
+//	   get_statistics_file(thread,filename);
+//	   return;
+//    	}
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { get_statistics_file(thread, filename); return; }
@@ -590,24 +584,24 @@ void parserGET(char *buf, char *strReturn, int8_t )
         strcat(strReturn,"%" WEBDELIM) ;
        continue;
        }        
-     if (strcmp(str,"get_socketInfo")==0)  // Функция  get_socketInfo
+    if (strcmp(str,"get_socketInfo")==0)  // Функция  get_socketInfo
        {
        socketInfo(strReturn);    // Информация  о сокетах
        ADD_WEBDELIM(strReturn) ;
        continue;
        }
-     if (strcmp(str,"get_socketRes")==0)  // Функция  get_socketRes
+    if (strcmp(str,"get_socketRes")==0)  // Функция  get_socketRes
        {
        _itoa(HP.socketRes(),strReturn);
        ADD_WEBDELIM(strReturn) ;
        continue;
        }  
-     if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
-       {
+    if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
+    {
        HP.get_listChart(strReturn);  // строка добавляется
        ADD_WEBDELIM(strReturn) ;
        continue;
-       }
+    }
 //     if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
 //       {
 //       #ifdef I2C_EEPROM_64KB
@@ -619,43 +613,49 @@ void parserGET(char *buf, char *strReturn, int8_t )
 //       continue;
 //       }
     if (strncmp(str,"get_listProfile", 15)==0)  // Функция get_listProfile - получить список доступных профилей
-       {
+    {
        HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
        ADD_WEBDELIM(strReturn) ;
        continue;
-       }
-       if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
-       {
+    }
+    if (strcmp(str,"get_listStats")==0)  // получить список доступных файлов статистики
+    {
+       Stats.GetStatsList(strReturn);
+       ADD_WEBDELIM(strReturn) ;
+       continue;
+    }
+    if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
+    {
       // set_time_NTP();                                                 // Обновить время
        HP.timeNTP=0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
        strcat(strReturn,"Update time from NTP");
        ADD_WEBDELIM(strReturn);
        continue;
-       }
-       if(strcmp(str, "get_NTP") == 0)  // тип NTP
-       {
+    }
+    if(strcmp(str, "get_NTP") == 0)  // тип NTP
+    {
 			#ifdef HTTP_TIME_REQUEST
     	   	   strcat(strReturn, "TCP" WEBDELIM);
 			#else
     	   	   strcat(strReturn, "NTP" WEBDELIM);
 			#endif
     	   continue;
-       }
-       	   if(strcmp(str, "get_NTPr") == 0)  // Запрос
-       	   {
+    }
+    if(strcmp(str, "get_NTPr") == 0)  // Запрос
+    {
 			#ifdef HTTP_TIME_REQUEST
        		   strcat(strReturn, (char *)&HTTP_TIME_REQ);
 			#endif
        		ADD_WEBDELIM(strReturn);
-       	   }
-       if ((strcmp(str,"set_updateNet")==0)||(strcmp(str,"RESET_NET")==0))  // Функция Сброс w5200 и применение сетевых настроек, подождите 5 сек . . .
-       {
+    }
+    if ((strcmp(str,"set_updateNet")==0)||(strcmp(str,"RESET_NET")==0))  // Функция Сброс w5200 и применение сетевых настроек, подождите 5 сек . . .
+    {
        journal.jprintf("Update network setting . . .\r\n");
        HP.sendCommand(pNETWORK);        // Послать команду применение сетевых настроек
        strcat(strReturn,"Сброс Wiznet w5XXX и применение сетевых настроек, подождите 5 сек . . .");
        ADD_WEBDELIM(strReturn) ;
        continue;
-       }         
+    }
     if (strcmp(str,"get_WORK")==0)  // Функция get_WORK  ТН включен если он работает или идет его пуск
     {
     	strcat(strReturn, HP.IsWorkingNow() ? "ON" : "OFF"); ADD_WEBDELIM(strReturn); continue;

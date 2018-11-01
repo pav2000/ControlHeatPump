@@ -620,20 +620,6 @@ journal.jprintf("Start FreeRTOS scheduler :-))\n");
 journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
 //
-//vTaskSuspend(HP.xHandleReadSensor);                        // Заголовок задачи "Чтение датчиков"
-//vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);
-//vTaskSuspend(HP.xHandleUpdateCommand);                     // Разбор очереди команд
-//vTaskSuspend(HP.xHandleUpdate);                            // Заголовок задачи "Обновление ТН"
-//vTaskSuspend(HP.xHandleUpdateEEV);                         // Заголовок задачи "Обновление ЭРВ"
-//vTaskSuspend(HP.xHandleUpdateWeb0);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb1);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb2);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb3);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateNextion);                     // заголовок задачи "Обновление дисплея nextion"
-//vTaskSuspend(HP.xHandleUpdateStat);                        // Заголовок задачи "Обновление ститистики"
-//vTaskSuspend(HP.xHandleUpdatePump);                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
-//vTaskSuspend(HP.xHandlePauseStart);                        // заголовок задачи "Отложенный старт"
-//
 vTaskStartScheduler();              // СТАРТ !!
 journal.jprintf("CRASH FreeRTOS!!!\n");
 }
@@ -1370,17 +1356,18 @@ void vSericeHP(void *)
 		register uint32_t t = GetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
-			if(++task_updstat_chars >= HP.get_tChart()) {
-				task_updstat_chars = 0;
-				HP.updateChart();                                       // Обновить графики
+			if(HP.IsWorkingNow()) {
+				if(++task_updstat_chars >= HP.get_tChart()) {
+					task_updstat_chars = 0;
+					HP.updateChart();                                       // Обновить графики
+				}
+				uint8_t m = rtcSAM3X8.get_minutes();
+				if(m != task_updstat_countm) {
+					task_updstat_countm = m;
+					HP.updateCount();                                       // Обновить счетчики моточасов
+					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+				}
 			}
-			uint8_t m = rtcSAM3X8.get_minutes();
-			if(m != task_updstat_countm) {
-				task_updstat_countm = m;
-				HP.updateCount();                                       // Обновить счетчики моточасов
-				if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
-			}
-			Stats.CheckCreateNewFile();
 			if(HP.PauseStart) {
 				if(HP.PauseStart == 1) {
 					restart_cnt = HP.isCommand() == pRESTART ? HP.Option.delayStartRes : HP.Option.delayRepeadStart;  // Определение времени задержки
@@ -1410,6 +1397,7 @@ xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включит�
 					} else pump_in_pause_timer--;
 				}
 			}
+			Stats.CheckCreateNewFile();
 		}
 #ifdef NEXTION
 		myNextion.readCommand();                  // прочитать сообщения от дисплея
