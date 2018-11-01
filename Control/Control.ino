@@ -213,16 +213,16 @@ void setup() {
 // Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
 // https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
 // http://forum.arduino.cc/index.php?topic=243778.0;nowap
-pinMode(87,INPUT_PULLUP);                   // SD Pin 87
-pinMode(77,INPUT_PULLUP);                   // Eth Pin 77  
-pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
-pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
+  pinMode(PIN_SPI_SS0,INPUT_PULLUP);          // Eth Pin 77
+  pinMode(PIN_SPI_SS1,INPUT_PULLUP);          // SD Pin  87
+  pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
+  pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
 
 #ifdef SPI_FLASH
   pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
   pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти (ВРЕМЕННО, пока нет реализации)
 #endif
-SPI_switchAllOFF();                          // Выключить все устройства на SPI
+  SPI_switchAllOFF();                          // Выключить все устройства на SPI
 
   #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
@@ -230,13 +230,7 @@ SPI_switchAllOFF();                          // Выключить все уст
   #endif
   
 // Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
-// https://forum.arduino.cc/index.php?topic=288573.0  
-pinMode(21, OUTPUT);  
-  for (int i = 0; i < 8; i++) {
-    digitalWriteDirect(21, HIGH); delayMicroseconds(3);
-    digitalWriteDirect(21, LOW);  delayMicroseconds(3);
-  }
-  pinMode(21, INPUT);
+  Recover_I2C_bus();
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();

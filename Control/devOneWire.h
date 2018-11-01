@@ -90,4 +90,6 @@ deviceOneWire OneWireBus4(I2C_ADR_DS2482_4, 3);        // Создание ши�
 deviceOneWire OneWireBus(PIN_ONE_WIRE_BUS);             // Создание шины
 #endif // ONEWIRE_DS2482
 
+void Recover_I2C_bus(void);
+
 #endif
