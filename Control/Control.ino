@@ -862,7 +862,9 @@ void vReadSensor(void *)
 		WDT_Restart(WDT);
 
 		ttime = millis();
+#ifdef RADIO_SENSORS		
 		radio_timecnt++;
+#endif		
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);

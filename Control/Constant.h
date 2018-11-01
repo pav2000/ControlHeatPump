@@ -260,7 +260,8 @@ const uint16_t  defaultPort=80;
 #define PASS_LEN          10             // Максимальная длина пароля для входа на контроллер
 #define NAME_USER         "user"         // имя пользователя
 #define NAME_ADMIN        "admin"        // имя администратора
-#define FILE_CHART        "chart_sd.csv" // имя файла графиков при записи на карту памяти
+#define FILE_STATISTIC    "statistic.csv"// имя файла статистики за ТЕКУШИЙ период
+
 #define HOUR_SIGNAL_LIFE  12             // Час когда генерится сигнал жизни
 
 #define ATOF_ERROR       -9876543.00     // Код ошибки преобразования строки во флоат

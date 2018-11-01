@@ -39,7 +39,7 @@ extern uint16_t get_csvStatistic(uint8_t thread);
 extern void  get_datTest(uint8_t thread);
 extern uint16_t get_csvChart(uint8_t thread);
 extern int16_t  get_indexNoSD(uint8_t thread);
-extern void  noCsvChart_SD(uint8_t thread);
+extern void  noCsvStatistic(uint8_t thread);
 
 
 // Названия режимов теста
@@ -226,7 +226,16 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "settings.txt") == 0) {	get_txtSettings(thread); return; }
 	if(strcmp(filename, "settings.bin") == 0) {	get_binSettings(thread); return; }
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
-	if((strcmp(filename, FILE_CHART) == 0) && (!card.exists(FILE_CHART))) { noCsvChart_SD(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
+	if(strcmp(filename, FILE_STATISTIC) == 0){  // прочитать файл статистики с карты
+       char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)]; 
+       strcpy(filename, stats_file_start); // Получить имя файла	 
+	   _itoa(rtcSAM3X8.get_years(), filename);
+	   strcat(filename, stats_file_ext);
+	   if (!card.exists(filename)) { noCsvStatistic(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
+	   journal.jprintf((const char*) "Load statistic file: %s\n", filename);
+	   get_statistics_file(thread,filename);
+	   return;	
+    	} 
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { get_statistics_file(thread, filename); return; }

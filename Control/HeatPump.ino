@@ -985,62 +985,7 @@ void  HeatPump::updateChart()
  #endif
 
 
-// ДАННЫЕ Запись графика в файл
- if(GETBIT(Option.flags,fSD_card))
-   {
-	 if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy);return;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
-     SPI_switchSD();
- //   _delay(10);   // подождать очистку буфера
-        if (!statFile.open(FILE_CHART,O_WRITE| O_AT_END)) 
-           {
-            journal.jprintf("$ERROR - opening %s for write stat data is failed!\n",FILE_CHART);
-           }
-         else     // Заголовок
-           { 
-           statFile.print(NowDateToStr());statFile.print(" ");statFile.print(NowTimeToStr());statFile.print(";");  // дата и время
-           for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present()) {statFile.print((float)sTemp[i].get_Temp()/100.0); statFile.print(";");}
-           for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) {statFile.print((float)sADC[i].get_Press()/100.0);statFile.print(";");} 
-           for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) {statFile.print((float)sFrequency[i].get_Value()/1000.0);statFile.print(";");} // Частотные датчики
-           #ifdef EEV_DEF
-           if(dEEV.Chart.get_present())       { statFile.print(dEEV.get_EEV()); statFile.print(";");}
-           if(ChartOVERHEAT.get_present())    { statFile.print((float)dEEV.get_Overheat()/100.0); statFile.print(";");}
-           if(ChartTPCON.get_present())       { statFile.print((float)(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()))/100.0); statFile.print(";");}
-           if(ChartTPEVA.get_present())       { statFile.print((float)(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()))/100.0); statFile.print(";");}
-           #endif
-         
-           if(dFC.ChartFC.get_present())      { statFile.print((float)dFC.get_freqFC()/100.0);   statFile.print(";");} 
-           if(dFC.ChartPower.get_present())   { statFile.print((float)dFC.get_power()/1000.0);    statFile.print(";");}
-           if(dFC.ChartCurrent.get_present()) { statFile.print((float)dFC.get_current()/100.0); statFile.print(";");}
-           
-           if(ChartRCOMP.get_present())       { statFile.print((int16_t)dRelay[RCOMP].get_Relay()); statFile.print(";");}
-           if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  { statFile.print((float)(FEED-RET)/100.0); statFile.print(";");}
-           if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  { statFile.print((float)(sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp())/100.0); statFile.print(";");}
-
-    	   #ifdef FLOWCON 
-		   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))  {statFile.print((int16_t)powerCO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
-		   #endif
-		   #ifdef FLOWEVA
-		   if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))  {statFile.print((int16_t)powerGEO); statFile.print(";");} // Мощность контура в ваттах!!!!!!!!!
-		   #endif
-         
-           if(ChartCOP.get_present())      { statFile.print((float)COP); statFile.print(";"); }    // в еденицах
-           #ifdef USE_ELECTROMETER_SDM 
-           if(dSDM.ChartVoltage.get_present())     { statFile.print((float)dSDM.get_Voltage());    statFile.print(";");} 
-           if(dSDM.ChartCurrent.get_present())     { statFile.print((float)dSDM.get_Current());    statFile.print(";");} 
- //          if(dSDM.sAcPower.get_present())     { statFile.print((float)dSDM.get_AcPower());    statFile.print(";");} 
- //          if(dSDM.sRePower.get_present())     { statFile.print((float)dSDM.get_RePower());    statFile.print(";");}   
-           if(dSDM.ChartPower.get_present())       { statFile.print((float)dSDM.get_Power());      statFile.print(";");}  
- //          if(dSDM.ChartPowerFactor.get_present()) { statFile.print((float)dSDM.get_PowerFactor());statFile.print(";");}  
-           if(ChartFullCOP.get_present())          {  statFile.print((float)fullCOP);statFile.print(";");}  
-           #endif
-           statFile.println("");
-           statFile.flush();
-           statFile.close();
-           }   
-      SPI_switchW5200();        
-      SemaphoreGive(xWebThreadSemaphore);                                      // Отдать мютекс
-  }  
-          
+     
 }
 
 // сбросить статистику и запустить новую запись
@@ -1075,68 +1020,6 @@ void HeatPump::startChart()
 // powerGEO=0;
 // power220=0;
 //vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
-
- if(GETBIT(Option.flags,fSD_card))  // ЗАГОЛОВОК Запись статистики в файл
-   {
-	 if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy);return;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
-        SPI_switchSD();
-        if (!statFile.open(FILE_CHART,O_WRITE |O_CREAT | O_TRUNC)) 
-           {
-               journal.jprintf("$ERROR - opening %s for write stat header is failed!\n",FILE_CHART);
-           }
-         else     // Заголовок
-           { 
-           statFile.print("time;");
-           for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present()) {statFile.print(sTemp[i].get_name()); statFile.print(";");}
-           for(i=0;i<ANUMBER;i++) if(sADC[i].Chart.get_present()) {statFile.print(sADC[i].get_name());statFile.print(";");} 
-           for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) {statFile.print(sFrequency[i].get_name());statFile.print(";");} 
-           
-           #ifdef EEV_DEF
-           if(dEEV.Chart.get_present())        statFile.print("posEEV;");
-           if(ChartOVERHEAT.get_present())     statFile.print("OVERHEAT;");
-           if(ChartTPEVA.get_present())        statFile.print("T[PEVA];");
-           if(ChartTPCON.get_present())        statFile.print("T[PCON];");
-           #endif
-           
-           if(dFC.ChartFC.get_present())       statFile.print("freqFC;");
-           if(dFC.ChartPower.get_present())    statFile.print("powerFC;");
-           if(dFC.ChartCurrent.get_present())  statFile.print("currentFC;");
-           
-           if(ChartRCOMP.get_present())        statFile.print("RCOMP;");
-           
-           if ((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) statFile.print("dCO;");
-           if ((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) statFile.print("dGEO;");
-
-
-		   #ifdef FLOWCON 
-		   if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present()))   statFile.print("PowerCO;");
-		   #endif
-		   #ifdef FLOWEVA
-		   if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present()))    statFile.print("PowerGEO;");
-		   #endif
-           
-           if(ChartCOP.get_present())          statFile.print("COP;");
-
-           #ifdef USE_ELECTROMETER_SDM 
-           if(dSDM.ChartVoltage.get_present())    statFile.print("VOLTAGE;");
-           if(dSDM.ChartCurrent.get_present())    statFile.print("CURRENT;");
-   //      if(dSDM.sAcPower.get_present())    statFile.print("acPOWER;");
-  //       if(dSDM.sRePower.get_present())    statFile.print("rePOWER;");
-           if(dSDM.ChartPower.get_present())      statFile.print("fullPOWER;");
-  //         if(dSDM.ChartPowerFactor.get_present())statFile.print("kPOWER;");
-           if(ChartFullCOP.get_present())      statFile.print("fullCOP;");
-           #endif
-           
-           statFile.println("");
-           statFile.flush();
-           statFile.close();
-           journal.jprintf(" Write header %s  on SD card Ok\n",FILE_CHART);
-           }  
-  //    _delay(10);   // подождать очистку буфера
-      SPI_switchW5200();  
-      SemaphoreGive(xWebThreadSemaphore);                                      // Отдать мютекс
-  }
-     
 }
 
 
