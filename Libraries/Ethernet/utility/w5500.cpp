@@ -147,7 +147,7 @@ digitalWriteDirectARM(SS,LOW);
 
 void W5500Class::execCmdSn(SOCKET s, SockCMD _cmd) {
     writeSnCR(s, _cmd);     // Send command to socket
-    uint32_t t = GetTickCount();
-    while(readSnCR(s)) if(GetTickCount() - t > W5500_EXEC_CMD_TIMEOUT) break;   // Wait for command to complete
+//    uint32_t t = GetTickCount();
+    while(readSnCR(s)) ; //if(GetTickCount() - t > W5500_EXEC_CMD_TIMEOUT) break;   // Wait for command to complete
 }
 #endif
