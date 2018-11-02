@@ -191,28 +191,25 @@ void web_server(uint8_t thread)
 	SemaphoreGive (xWebThreadSemaphore);              // Семафор отдать
 }
 
+const char filename_subst_scheme[] = "HPscheme";
+
 //  Чтение файла с SD или его генерация
 void readFileSD(char *filename, uint8_t thread)
 {
-	int n, i;
+	int n;
 	SdFile webFile;
-	char *ch1, *ch2;
-	char buf[8];  // для расширения файла хватит 8 байт
 	//  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-
 	// Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
-	if((ch1 = strchr(filename, '[')) != NULL) // скобка найдена надо обрабатывать
+	char *str;
+	if((str = strchr(filename, '[')) != NULL) // скобка найдена надо обрабатывать
 	{
-		if(strstr(filename, "HPscheme") != 0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
+		if(strncmp(str + 1, filename_subst_scheme, sizeof(filename_subst_scheme)-1) == 0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
 		{
-			if((ch2 = strchr(filename, ']')) != NULL) {
-				strncpy(buf, ch2 + 1, sizeof(buf) - 1); // скопировать хвост в промежуточный буфер
-				*ch1 = 0x00;  // обрезать строку filename перед [
-				_itoa(HP_SCHEME, filename); // добавить номер схемы
-				strcat(filename, buf);               // добавить расширение
+			if(*(str + 1 + sizeof(filename_subst_scheme)-1) == ']') {
+				itoa(HP_SCHEME, str, 10); // вставить номер схемы
+				strcat(filename, str + 1 + sizeof(filename_subst_scheme)-1 + 1);
 			} else journal.jprintf("Not found ] in: %s", filename); // нет закрывающейся скобки
-		} // if (strstr(filename,"HPscheme")!=0)
-		else journal.jprintf("Bad argument in: %s", filename);   // не верный аргумент в скобках
+		}
 	}
 
 	// В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
@@ -220,16 +217,6 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "settings.txt") == 0) {	get_txtSettings(thread); return; }
 	if(strcmp(filename, "settings.bin") == 0) {	get_binSettings(thread); return; }
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
-//	if(strcmp(filename, FILE_STATISTIC) == 0){  // прочитать файл статистики с карты
-//       char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
-//       strcpy(filename, stats_file_start); // Получить имя файла
-//	   _itoa(rtcSAM3X8.get_years(), filename);
-//	   strcat(filename, stats_file_ext);
-//	   if (!card.exists(filename)) { noCsvStatistic(thread); return; }   // Если файла статистики нет то сгенерить файл с объяснением
-//	   journal.jprintf((const char*) "Load statistic file: %s\n", filename);
-//	   get_statistics_file(thread,filename);
-//	   return;
-//    	}
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) {
@@ -308,7 +295,7 @@ switch (HP.get_SourceWeb())
 						return;
 					} // файл не найден
 xFileFound:
-					for(i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
+					for(uint8_t i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
 					{
 						if(!webFile.open(filename, O_READ))    // Карта не читатаеся
 						{

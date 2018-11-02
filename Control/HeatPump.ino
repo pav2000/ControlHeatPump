@@ -988,7 +988,7 @@ void  HeatPump::updateChart()
      
 }
 
-// сбросить статистику и запустить новую запись
+// сбросить графики в ОЗУ
 void HeatPump::startChart()
 {
  uint8_t i; 
@@ -1693,7 +1693,7 @@ int8_t HeatPump::StartResume(boolean start)
 
 		journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-		else  startChart();                                      // Запустить графики
+		//else  startChart();                                      // Запустить графики <- тут не запуск, тут очистка
 	}
 	
 	// 4. Определяем что нужно делать -----------------------------------------------------------
