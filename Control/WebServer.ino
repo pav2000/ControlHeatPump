@@ -1125,41 +1125,17 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #else
           strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
         #endif
-         strcat(strReturn,"Состояние FreeRTOS при старте (task+err_code) <sup>1</sup>|");
+         strcat(strReturn,"Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|");
          strcat(strReturn,uint16ToHex(lastErrorFreeRtosCode));strcat(strReturn,";");
           
            strcat(strReturn,"Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|");  // Регистры состояния контроллера питания
            strcat(strReturn,uint32ToHex(SUPC->SUPC_SMMR));strcat(strReturn," ");
            strcat(strReturn,uint32ToHex(SUPC->SUPC_MR));strcat(strReturn," ");
-     //      strcat(strReturn,uint32ToHex(SUPC->SUPC_SR));strcat(strReturn,"/");
-      //     strcat(strReturn,uint32ToHex(startSupcStatusReg));strcat(strReturn,";");
            startSupcStatusReg |= SUPC->SUPC_SR;                                  // Копим изменения
            strcat(strReturn,uint32ToHex(startSupcStatusReg));
            if ((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT)  strcat(strReturn," bad VDDIN!");
            strcat(strReturn,";");
- 
-        strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
-            if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
-        strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>2</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины SPI|");_itoa(HP.num_resMutexSPI,strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины I2C|");_itoa(HP.num_resMutexI2C,strReturn);strcat(strReturn,";");
-        #ifdef MQTT
-        strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
-        #endif
-        strcat(strReturn,"Счетчик потерянных пакетов ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
-        #ifdef USE_ELECTROMETER_SDM  
-        strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
-        #endif
-        if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
        
-        strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
-
-        strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Время завершения последней команды ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
-        
         // Вывод строки статуса
         strcat(strReturn,"Строка статуса ТН| modWork:");_itoa((int)HP.get_modWork(),strReturn);strcat(strReturn,"[");strcat(strReturn,codeRet[HP.get_ret()]);strcat(strReturn,"]");
         if(!(HP.dFC.get_present())) { strcat(strReturn," RCOMP:");if (HP.dRelay[RCOMP].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); }
@@ -1182,35 +1158,65 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #ifdef REVI
         if (HP.dRelay[REVI].get_present()) { strcat(strReturn," REVI:");      if (HP.dRelay[REVI].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
         #endif
+        #ifdef RPUMPB
+        if (HP.dRelay[RPUMPB].get_present()) { strcat(strReturn," RPUMPB:");      if (HP.dRelay[RPUMPB].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
+        #endif     
+        #ifdef RPUMPBH
+        if (HP.dRelay[RPUMPBH].get_present()) { strcat(strReturn," RPUMPBH:");      if (HP.dRelay[RPUMPBH].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
+        #endif     
+        #ifdef RPUMPFL
+        if (HP.dRelay[RPUMPFL].get_present()) { strcat(strReturn," RPUMPFL:");      if (HP.dRelay[RPUMPFL].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}   
+        #endif
         if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
         if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
         strcat(strReturn,";");  
-   
-           
-        strcat(strReturn,"Время сброса счетчиков с момента запуска ТН|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Часы работы ТН с момента запуска (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
-        strcat(strReturn,"Часы работы компрессора ТН с момента запуска (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
+
+        strcat(strReturn,"<b> Времена</b>|;");  
+        strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время завершения последней команды ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
+
+        strcat(strReturn,"<b> Счетчики ошибок</b>|;");     
+        strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
+            if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
+        strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>3</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины SPI|");_itoa(HP.num_resMutexSPI,strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины I2C|");_itoa(HP.num_resMutexI2C,strReturn);strcat(strReturn,";");
+        #ifdef MQTT
+        strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
+        #endif
+        strcat(strReturn,"Счетчик потерянных пакетов ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
         #ifdef USE_ELECTROMETER_SDM  
-          strcat(strReturn,"Потребленная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2);strcat(strReturn,";");
+        strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
         #endif
-        
+        if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
+   
+        strcat(strReturn,"<b> Глобальные счетчики (с момента монтажа ТН)</b>|;");   
+        strcat(strReturn,"Время сброса счетчиков с момента монтажа|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Часы работы ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
+        strcat(strReturn,"Часы работы компрессора ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
+        #ifdef USE_ELECTROMETER_SDM  
+          strcat(strReturn,"Потребленная энергия ТН с момента монтажа (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2);strcat(strReturn,";");
+        #endif
         #ifdef  FLOWCON 
-        if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента запуска (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+        if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента монтажа (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
-        
+
+        strcat(strReturn,"<b> Сезонные счетчики</b>|;");  
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
-        
         #ifdef USE_ELECTROMETER_SDM  
           strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
         #endif
-
         #ifdef  FLOWCON 
 	    if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
 
-        strcat(strReturn,"Статистика за день:|;");
+        strcat(strReturn,"<b> Статистика за день</b>|;");
         Stats.ReturnWebTable(strReturn);
 
         ADD_WEBDELIM(strReturn) ;    continue;
