@@ -576,6 +576,10 @@ class FatFile {
    *
    * \return true for success or false for failure.
    */
+
+
+  bool opens(const char* path, uint8_t oflag, fname_t *fname); // Open file in current dir, low memory usage. // vad7
+
   bool openNext(FatFile* dirFile, uint8_t oflag = O_READ);
   /** Open a volume's root directory.
    *

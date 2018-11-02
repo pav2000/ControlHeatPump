@@ -12,8 +12,7 @@
 		loadParam("get_listStats");
 	}
 	function fix_href(el) {
-		var chang1 = new RegExp("http://.*/", "i"); // Точки экранируем
-		el.href = el.href.replace(chang1, urlcontrol + '/');
+		el.href = el.href.replace(/^.+:\/+.*\//i, urlcontrol + '/');
 	}
 	function send_files(id) {
 		var fs = document.getElementById(id).files;
@@ -26,8 +25,16 @@
 			upload(mrk);
 		}
 	}
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("et_listStats")!=-1) {
+			fix_stats();
+		}
+	}
 	function fix_stats() {
-		fix_href(document.getElementById("stats_name"));
+		var op = document.getElementById('get_liststats').options;
+		var el = document.getElementById("stats_name");
+		el.href = op[op.selectedIndex].innerHTML;
+		fix_href(el);
 	}
 	</script>
 </head>
@@ -42,7 +49,7 @@
 			<tr><td>Текущее состояние ТН</td><td><a class="download" href="/state.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Графики работы ТН из RAM</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Статистика работы ТН (файлы по годам): <select id="get_liststats" onchange='fix_stats()'></select></td><td><a id="stats_name" class="download" href="" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Статистика работы ТН (файлы по годам): <select id="get_liststats" onchange='fix_stats()'></select></td><td><a id="stats_name" class="download" href="stats_2017.csv" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>

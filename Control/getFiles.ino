@@ -1048,19 +1048,3 @@ int16_t x;
        
 }
 
-
-// Return file "stats_*"
-void get_statistics_file(uint8_t thread, char *filename)
-{
-    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
-    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
-    strcat(Socket[thread].outBuf, filename);
-    strcat(Socket[thread].outBuf, "\"");
-    strcat(Socket[thread].outBuf, WEB_HEADER_END);
-	if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
-		Stats.ReturnFileHeader(Socket[thread].outBuf);
-		sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-	} else {
-		Stats.SendFileData(thread, filename);
-	}
-}

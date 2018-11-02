@@ -396,23 +396,23 @@ void Statistics::ReturnWebTable(char *ret)
 }
 
 // Return: OK, 1 - not found, >2 - error. Network is active
-void Statistics::SendFileData(uint8_t thread, char *filename)
+void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 {
-	SdFile File;
+	fname_t fname;
 	SPI_switchSD();
-	if(!File.open(filename, O_READ)) {
+	if(!File->opens(filename, O_READ, &fname)) {
 		SPI_switchW5200();
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
 	uint32_t BStart, BEnd;
-	if(!StatsFile.contiguousRange(&BStart, &BEnd)) {
+	if(!File->contiguousRange(&BStart, &BEnd)) {
 		journal.jprintf(" Error get blocks!\n");
-		File.close();
+		File->close();
 		SPI_switchW5200();
 		return;
 	}
-	File.close();
+	File->close();
 	SPI_switchW5200();
 	uint32_t readed = m_strlen(Socket[thread].outBuf);
 	if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
@@ -440,21 +440,6 @@ void Statistics::SendFileData(uint8_t thread, char *filename)
 			readed = 0;
 		}
 		SPI_switchW5200();
-	}
-}
-
-void Statistics::GetStatsList(char *ret)
-{
-	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
-	uint8_t first = 1;
-	for(uint16_t i = rtcSAM3X8.get_years(); i > 2000; i--) {
-		m_snprintf(filename, sizeof(filename), "%s%04d%s", stats_file_start, i, stats_file_ext);
-		if(!card.exists(filename)) break;
-		strcat(ret, filename);
-		if(first) {
-			strcat(ret, ":1;");
-			first = 0;
-		} else strcat(ret, ":0;");
 	}
 }
 

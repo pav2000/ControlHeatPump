@@ -112,10 +112,9 @@ public:
 	void	ReturnFileString(char *ret);	// Строка со значениями за день
 	void	ReturnFieldString(char *ret, uint8_t i);
 	void	ReturnWebTable(char *ret);
-	void	SendFileData(uint8_t thread, char *filename);
+	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
 	boolean	FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
 	void	CheckCreateNewFile();
-	void	GetStatsList(char *ret);
 private:
 	void	Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений

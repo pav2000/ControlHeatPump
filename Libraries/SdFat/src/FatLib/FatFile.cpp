@@ -417,6 +417,21 @@ bool FatFile::open(FatFile* dirFile, const char* path, uint8_t oflag) {
 fail:
   return false;
 }
+
+// vad7
+// Open current dir file
+bool FatFile::opens(const char* path, uint8_t oflag, fname_t *fname) {
+  if (!parsePathName(path, fname, &path)) {
+    DBG_FAIL_MACRO;
+    goto fail;
+  }
+  if(*path != 0) goto fail;
+  return open(m_cwd, fname, oflag);
+
+fail:
+  return false;
+}
+
 //------------------------------------------------------------------------------
 bool FatFile::open(FatFile* dirFile, uint16_t index, uint8_t oflag) {
   uint8_t chksum = 0;

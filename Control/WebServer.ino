@@ -194,7 +194,7 @@ void web_server(uint8_t thread)
 //  Чтение файла с SD или его генерация
 void readFileSD(char *filename, uint8_t thread)
 {
-	volatile int n, i;
+	int n, i;
 	SdFile webFile;
 	char *ch1, *ch2;
 	char buf[8];  // для расширения файла хватит 8 байт
@@ -232,7 +232,20 @@ void readFileSD(char *filename, uint8_t thread)
 //    	}
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { get_statistics_file(thread, filename); return; }
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) {
+	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
+	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
+	    strcat(Socket[thread].outBuf, filename);
+	    strcat(Socket[thread].outBuf, "\"");
+	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
+		if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
+			Stats.ReturnFileHeader(Socket[thread].outBuf);
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+		} else {
+			Stats.SendFileData(thread, &webFile, filename);
+		}
+		return;
+	}
 	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
 		sendConstRTOS(thread, HEADER_FILE_WEB);
 		filename += 8;
@@ -620,9 +633,24 @@ void parserGET(char *buf, char *strReturn, int8_t )
     }
     if (strcmp(str,"get_listStats")==0)  // получить список доступных файлов статистики
     {
-       Stats.GetStatsList(strReturn);
-       ADD_WEBDELIM(strReturn) ;
-       continue;
+		i = 1;
+		x = strReturn;
+		static SdFile File;
+		static fname_t fname;
+		for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
+			x += m_strlen(x);
+			m_snprintf(x, sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext), "%s%04d%s", stats_file_start, e, stats_file_ext);
+			if(!File.opens(x, O_READ, &fname)) {
+				*x = '\0';
+				break;
+			} else File.close();
+			if(i) {
+				strcat(x, ":1;");
+				i = 0;
+			} else strcat(x, ":0;");
+		}
+		ADD_WEBDELIM(strReturn) ;
+		continue;
     }
     if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
     {
