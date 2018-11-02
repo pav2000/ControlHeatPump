@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF)");
+		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF),get_optionHP(LOGWS)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -96,13 +96,13 @@
 		<tr>
 			<td>Использовать Солнечный Коллектор для регенерации геоконтура в простое</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-scg" onchange="setParam('get_optionHP(SCG)');" >
+				<input type="checkbox" id="get_optionhp-scg" onchange="setParam('get_optionHP(SCG)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Температура начала регенерации геоконтура с помощью СК (+2°)</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-scgt"> <input type="submit" value=">" onclick="setParam('get_optionHP(SCGT)');" >
+				<input type="number" id="get_optionhp-scgt"> <input type="submit" value=">" onclick="setParam('get_optionHP(SCGT)');">
 			</td>
 		</tr>	
 		<tr>
@@ -113,43 +113,43 @@
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
 			<td nowrap>
 				<input type="number" id="get_optionhp-delay_on_pump">
-				<input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');" >
+				<input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка выключения насосов после выключения компрессора (сек.) [0...900]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');" >
+				<input type="number" id="get_optionhp-delay_off_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_OFF_PUMP)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');" >
+				<input type="number" id="get_optionhp-delay_start_res"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_START_RES)');">
 			</td>
 		</tr>	
 		<tr>
-			<td>Задержка перед повторным включениме ТН при ошибке (попытки пуска) (сек.) [0...6000]</td>
+			<td>Задержка перед повторным включением ТН при ошибке (попытке пуска) (сек.) [0...6000]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');" >
+				<input type="number" id="get_optionhp-delay_repead_start"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_REPEAD_START)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');" >
+				<input type="number" id="get_optionhp-delay_trv"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_TRV)');">
 			</td>
 		</tr>	
 		<tr>
-			<td>Пауза после переключение ГВС (сек.) [0...1200]</td>
+			<td>Пауза после переключения ГВС (сек.) [0...1200]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');" >
+				<input type="number" id="get_optionhp-delay_boiler_sw"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_SW)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.) [0...1200]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');" >
+				<input type="number" id="get_optionhp-delay_boiler_off"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_BOILER_OFF)');">
 			</td>
 		</tr>
 
@@ -160,25 +160,31 @@
 		<tr>
 			<td>Логировать не критичные ошибки электро-счетчика SDM</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sdm_loger" onchange="setParam('get_optionHP(SDM_LOGER)');" >
+				<input type="checkbox" id="get_optionhp-sdm_loger" onchange="setParam('get_optionHP(SDM_LOGER)');">
+			</td>
+		</tr>	
+		<tr>
+			<td>Логировать обмен между беспроводными датчиками</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-logws" onchange="setParam('get_optionHP(LOGWS)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Генерация звукового сигнала</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');" >
+				<input type="checkbox" id="get_optionhp-beep" onchange="setParam('get_optionHP(BEEP)');">
 			</td>
 		</tr>					
 		<tr>
 			<td>Использование дисплея Nextion</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-nxt" onchange="setParam('get_optionHP(NXT)');" >
+				<input type="checkbox" id="get_optionhp-nxt" onchange="setParam('get_optionHP(NXT)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>Включать дисплей при пуске компрессора</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-nxtw" onchange="setParam('get_optionHP(NXTW)');" >
+				<input type="checkbox" id="get_optionhp-nxtw" onchange="setParam('get_optionHP(NXTW)');">
 			</td>
 		</tr>	
 		<tr>
@@ -198,19 +204,19 @@
 		<tr>
 			<td>На второй шине 1-Wire только один датчик температуры</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_2" onchange="setParam('get_optionHP(SGL1W_2)');" >
+				<input type="checkbox" id="get_optionhp-sgl1w_2" onchange="setParam('get_optionHP(SGL1W_2)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>На третей шине 1-Wire только один датчик температуры</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_3" onchange="setParam('get_optionHP(SGL1W_3)');" >
+				<input type="checkbox" id="get_optionhp-sgl1w_3" onchange="setParam('get_optionHP(SGL1W_3)');">
 			</td>
 		</tr>	
 		<tr>
 			<td>На четвертой шине 1-Wire только один датчик температуры</td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sgl1w_4" onchange="setParam('get_optionHP(SGL1W_4)');" >
+				<input type="checkbox" id="get_optionhp-sgl1w_4" onchange="setParam('get_optionHP(SGL1W_4)');">
 			</td>
 		</tr>	
 

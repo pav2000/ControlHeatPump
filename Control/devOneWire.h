@@ -45,13 +45,13 @@ struct type_scanOneWire
   byte address[8];     // адрес
 };
 
-#define OW_scanTable_max (TNUMBER + RADIO_SENSORS_MAX + 1)
-type_scanOneWire	*OW_scanTable = NULL;//[TNUMBER+1];			// массив структур для хранения информации о дачиках при сканировании шины onewire
+#define OW_scanTable_max (TNUMBER)
+type_scanOneWire	*OW_scanTable = NULL;				// массив структур для хранения информации о дачиках при сканировании шины onewire
 uint8_t				 OW_scanTableIdx;
-uint8_t				 OW_scan_flags = 0;							// 1 - идет сканирование
+uint8_t				 OW_scan_flags = 0;					// 1 - идет сканирование
 int8_t 				 OW_prepare_buffers(void);
 
-class deviceOneWire 									       // Класс шина   OneWire
+class deviceOneWire 								    // Класс шина   OneWire
 {
   public:
 #ifdef ONEWIRE_DS2482
@@ -89,5 +89,7 @@ deviceOneWire OneWireBus4(I2C_ADR_DS2482_4, 3);        // Создание ши�
 };
 deviceOneWire OneWireBus(PIN_ONE_WIRE_BUS);             // Создание шины
 #endif // ONEWIRE_DS2482
+
+void Recover_I2C_bus(void);
 
 #endif

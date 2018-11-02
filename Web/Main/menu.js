@@ -69,8 +69,8 @@ document.write('\
 document.write('\
 <div class="dateinfo">\
     <div id="get_status"></div>\
-    <div>&#128241 <a href="/mob/">Мобильная версия</a></div>\
 </div>');
+//    <div>&#128241 <a href="/mob/">Мобильная версия</a></div>\
 var extract = new RegExp('[a-z0-9-]+\.html'); 
 var pathname = location.pathname;
 pathmath = pathname.match(extract);

@@ -8,7 +8,7 @@
 	<script type="text/javascript">
 		window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
 		loadParam("get_paramHeatHP(DTEMP_DAY),get_paramCoolHP(DTEMP_DAY),get_Temp(TOUT),get_paramHeatHP(RULE),get_paramCoolHP(RULE),get_paramCoolHP(TARGET),get_paramHeatHP(TARGET),get_modeHP,get_paramCoolHP(TEMP1),get_paramHeatHP(TEMP1),get_paramCoolHP(TEMP2),get_paramHeatHP(TEMP2),get_paramCoolHP(DTEMP),get_paramHeatHP(DTEMP),get_paramCoolHP(HP_TIME),get_paramHeatHP(HP_TIME),get_paramCoolHP(HP_PRO),get_paramHeatHP(HP_PRO),get_paramCoolHP(TEMP_IN),get_paramHeatHP(TEMP_IN),get_paramCoolHP(TEMP_OUT),get_paramHeatHP(TEMP_OUT),get_paramCoolHP(PAUSE),get_paramHeatHP(PAUSE),get_paramCoolHP(D_TEMP),get_paramHeatHP(D_TEMP),get_paramCoolHP(HP_IN),get_paramHeatHP(HP_IN),get_paramCoolHP(HP_DIF),get_paramHeatHP(HP_DIF),get_paramCoolHP(K_WEATHER),get_paramHeatHP(K_WEATHER),get_paramCoolHP(WEATHER),get_paramHeatHP(WEATHER),get_paramCoolHP(TEMP_PID),get_paramHeatHP(TEMP_PID),get_paramHeatHP(HFL),get_paramCoolHP(HFL),get_paramHeatHP(SUN),get_paramCoolHP(SUN)");
-		loadParam("get_paramHeatHP(ADT),get_paramHeatHP(ADH),get_paramHeatHP(ADEH)");
+		loadParam("get_paramHeatHP(ADT),get_paramHeatHP(ADH),get_paramHeatHP(ADEH),get_TrgT");
 	};
 
 	</script>
@@ -20,7 +20,7 @@
 	<h1>Отопление <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 	</div>
 		<h2>Параметры отопления</h2>
-		<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select></h2>
+		<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select> Цель: <span id="get_trgt">-</span>°</h2>
 		<table>
 			<thead>
 		<tr>

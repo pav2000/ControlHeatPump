@@ -442,9 +442,9 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 	// послать данные
 	taskENTER_CRITICAL();
 	W5100.send_data_processing_offset(Socket[thread].sock, 0, (uint8_t *)buf,ret);
-	W5100.execCmdSn(Socket[thread].sock,Sock_SEND);
-	//Serial.println("Sock_SEND");
 	taskEXIT_CRITICAL();
+	W5100.execCmdSn(Socket[thread].sock, Sock_SEND);
+	//taskEXIT_CRITICAL();
 
 	// +2008.01 bj : reduce code
 	while ( (W5100.readSnIR(Socket[thread].sock) & SnIR::SEND_OK) != SnIR::SEND_OK )

@@ -21,10 +21,12 @@
 #define Statistics_h
 #include "Constant.h"
 
-#define STATS_DO_NOT_SAVE
+//#define STATS_DO_NOT_SAVE
 #define SD_BLOCK			512
 #define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define MAX_INT32_VALUE 2147483647
+#define MIN_INT32_VALUE -2147483647
 
 enum {
 	STATS_OBJ_Temp = 0,		// °C
@@ -33,16 +35,15 @@ enum {
 	STATS_OBJ_Flow,			// м³ч
 	STATS_OBJ_COP,			//
 	STATS_OBJ_Voltage,		// V
-	STATS_OBJ_Time,			// время работы, для OBJ_*
+	STATS_OBJ_Compressor,
+	STATS_OBJ_Sun
 };
 
 enum {
-	OBJ_Compressor = 0,
-	OBJ_Boiler,
-	OBJ_Sun,
-	OBJ_powerCO,
+	OBJ_powerCO = 0,
 	OBJ_powerGEO,
 	OBJ_power220,
+	OBJ_Boiler,
 	OBJ_COP_Compressor,
 	OBJ_COP_Full
 };
@@ -50,11 +51,15 @@ enum {
 enum {
 	STATS_TYPE_MIN = 0,
 	STATS_TYPE_AVG,
-	STATS_TYPE_AVG_WORK, // Во время работы компрессора
 	STATS_TYPE_MAX,
 	STATS_TYPE_SUM,
-	STATS_TYPE_CNT, // Time, ms
+	STATS_TYPE_TIME // Time, ms
 };
+
+#define STATS_WORKD		0x80 // Во время работы компрессора, прошло STATS_WORKD_TIME
+//#define STATS_WORK		0x40 // Во время работы компрессора
+#define STATS_TYPE_MASK	(~(STATS_WORKD))
+#define STATS_WORKD_TIME 60000 // ms
 
 //static char *stats_format = { "%.1f", "" }; // printf format string
 
@@ -70,19 +75,19 @@ Stats_Data Stats_data[] = {
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG_WORK, TEVAING },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG+STATS_WORKD, TEVAING },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN+STATS_WORKD, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG+STATS_WORKD, OBJ_COP_Full },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
-							{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Compressor }
+							{ 0, STATS_OBJ_Compressor, STATS_TYPE_TIME, 0 }
 #ifdef USE_SUN_COLLECTOR
-							,{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Sun }
+							,{ 0, STATS_OBJ_Sun, STATS_TYPE_TIME, 0 }
 #endif
 #ifdef PGEO
 							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, PGEO }
@@ -95,28 +100,29 @@ Stats_Data Stats_data[] = {
 const char stats_file_start[] = "stats_";
 const char stats_file_header[] = "head";
 const char stats_file_ext[] = ".csv";
-uint8_t *stats_buffer[SD_BLOCK];
+uint8_t stats_buffer[SD_BLOCK];
 
 class Statistics
 {
 public:
-	void	Init(uint8_t noreset = 0);
-	void	Update();							// Обновить статистику, раз в период
+	void	Init(uint8_t newyear = 0);
+	void	Update();						// Обновить статистику, раз в период
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
-	void	Reset();							// Сбросить накопленные промежуточные значения
-	void	Save();							// Записать статистику на SD
+	void	Reset();						// Сбросить накопленные промежуточные значения
+	int8_t	Save(uint8_t newday);			// Записать статистику на SD
 	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
-	void	ReturnFileString(char *ret);		// Строка со значениями за день
+	void	ReturnFileString(char *ret);	// Строка со значениями за день
 	void	ReturnFieldString(char *ret, uint8_t i);
 	void	ReturnWebTable(char *ret);
-	void	SendFileData(uint8_t thread, char *filename);
+	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
 	boolean	FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
 	void	CheckCreateNewFile();
 private:
 	void	Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
+	uint32_t compressor_on_timer;
 	uint32_t previous;
 	uint8_t	 day;
 	uint8_t	 month;

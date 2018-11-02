@@ -19,6 +19,7 @@
 
 const char OW_Error_memory_low[] = { "Scan: Memory low!\n" };
 
+// Return 1 - success
 int8_t OW_prepare_buffers(void)
 {
 	OW_scanTableIdx = 0;
@@ -26,10 +27,10 @@ int8_t OW_prepare_buffers(void)
 		OW_scanTable = (type_scanOneWire *)malloc(sizeof(type_scanOneWire) * OW_scanTable_max);
 		if(OW_scanTable == NULL) {
 			journal.jprintf(OW_Error_memory_low);
-			return 1;
+			return 0;
 		}
 	}
-	return 0;
+	return 1;
 }
 
 // Возврат Temp * 100, Если ошибка возвращает ERROR_TEMPERATURE
@@ -73,7 +74,7 @@ int8_t	deviceOneWire::Init(void)
 // Возвращает OK или err. Если checkpresence=1, то только проверка на присутствие ds2482; семафор взведен, если нет ошибки
 int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 {
-	uint8_t presence;
+	uint8_t presence = 0;
 	err = OK;
 #ifdef ONEWIRE_DS2482
 	if(SemaphoreTake(xI2CSemaphore,(I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {
@@ -102,6 +103,7 @@ int8_t  deviceOneWire::lock_I2C_bus_reset(uint8_t checkpresence)
 x_Reset_bridge:
 	#endif
 		if(!OneWireDrv.reset_bridge()) {
+			Recover_I2C_bus();
 			err = ERR_DS2482_NOT_FOUND;
 			break;
 		}
@@ -152,9 +154,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	byte addr[8];
 	WDT_Restart(WDT);
 
-	OW_scan_flags = 1; // Идет сканирование
 	if(lock_I2C_bus_reset(0)) { // reset 1-wire
-		OW_scan_flags = 0;
 		if(err == ERR_ONEWIRE) journal.jprintf("1-Wire bus %d is empty. . .\n", bus + 1);
 		return err;
 	}
@@ -230,7 +230,6 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	}
 	//eepromI2C.use_RTOS_delay = 1;
 	release_I2C_bus();
-	OW_scan_flags = 0;
 #endif  // DEMO
 	return OK;
 }
@@ -319,4 +318,16 @@ int8_t  deviceOneWire::PrepareTemp()
 	OneWireDrv.write(0x44);	   	// convert temp
 	release_I2C_bus();
 	return OK;
+}
+
+// Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
+void Recover_I2C_bus(void)
+{
+	// https://forum.arduino.cc/index.php?topic=288573.0
+	//pinMode(PIN_WIRE_SCL, OUTPUT);
+	for(uint8_t i = 0; i < 8; i++) {
+		digitalWriteDirect(PIN_WIRE_SCL, HIGH); delayMicroseconds(3);
+		digitalWriteDirect(PIN_WIRE_SCL, LOW);  delayMicroseconds(3);
+	}
+	//pinMode(PIN_WIRE_SCL, INPUT);
 }

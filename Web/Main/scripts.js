@@ -1,4 +1,4 @@
-/* ver 0.966 beta */
+/* ver 0.970 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
@@ -25,13 +25,17 @@ function setParam(paramid, resultid) {
 		}
 	} else if(recldr.test(paramid)) { 
 		var colls = document.getElementById("calendar").getElementsByClassName("clc");
-		var fprof, lprof = -2, len = 0;
+		var fprof, lprof = -255, len = 0;
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
-			var prof = colls[j].innerHTML == "" ? 0 : colls[j].innerHTML;
+			var prof = colls[j].innerHTML;
+			if(prof == "") prof = "0";
+			else if(prof[0] == '+') prof = Number(prof.substring(1)) * 10;
+			else if(prof[0] == '-') prof = 256 + Number(prof) * 10;
+			else prof = Number(prof) + 0x80; 
 			if(prof != lprof) {
 				elval += (((j / 24 | 0) << 5) | (j % 24)) + ";" + prof + ";";
-				if(lprof == -2) {
+				if(lprof == -255) {
 					fprof = prof;
 					flen = elval.length;
 				}
@@ -121,7 +125,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var rep = new RegExp('^get_present|^get_pT');
 								var ret = new RegExp('[(]SCHEDULER[)]');
 								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
+								var res = new RegExp('PING_TIME|et_list|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
 								var rev = new RegExp(/\([a-z0-9_]+\)/i);
 								var reg = new RegExp('^get_Chart');
 								var remintemp = new RegExp('^get_mintemp');
@@ -199,7 +203,17 @@ function loadParam(paramid, noretry, resultdiv) {
 												found = ptr + 1;
 											}
 											if(!found) found = cal_pack.length - 1;
-											colls[j].innerHTML = cal_pack[found];
+											var v = cal_pack[found];
+											if(v >= 0x80 && v <= 0x9B) {
+												v ^= 0x80;
+												colls[j].style = "color:white";
+											} else {
+												if(v >= 0x80) v -= 256;
+												v = v / 10; 
+												if(v > 0) v = '+' + v;
+												colls[j].style = "color:red";
+											}
+											colls[j].innerHTML = v ? v : "";
 										}
 									}
 								} else if(type == 'chart') {
@@ -646,7 +660,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												} else if(tnum == 2) {
 													loadsens += "get_aTemp(" +T+ "),";
 													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
-													loadsens3 += "get_nTemp2(" +T+ "),"; 
+													loadsens3 += "get_nTemp2(" +T+ "),get_bTemp(" +T+ "),"; 
 													upsens += "get_rawTemp(" +T+ "),";
 												}
 												T = T.toLowerCase();
@@ -849,11 +863,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
 								} else if(values[0].match(/^set_SAVE/)) { 
 									if(values[1] >= 0) {
-										if(values[0].match(/SCHDLR$/)) { 
-											alert("Настройки расписаний сохранены!");
-										} else {
-											alert("Настройки сохранены, записано " + values[1] + " байт");
-										}
+										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
+										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!"); 											
+										else alert("Настройки сохранены, записано " + values[1] + " байт");
 									} else alert("Ошибка записи, код ошибки:" + values[1]);
 								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "reset_errorFC") {
 									alert(values[1]);

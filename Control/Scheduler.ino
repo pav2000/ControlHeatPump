@@ -46,30 +46,36 @@ const char* Scheduler::get_note(void)
 uint16_t Scheduler::Timetable_ptr(uint8_t num)
 {
 	uint16_t i = 0;
-	while(num--) i += sch_data.Timetable[i] + 1;
+	while(num--) if((i += sch_data.Timetable[i] + 1) >= TIMETABLES_MAXSIZE - 1) return TIMETABLES_MAXSIZE - 1;
 	return i;
 }
 
 // Установка профиля по календарю и текущему времени
-// Возврат: -1 - расписание не активно или пустой календарь
+// Возврат: -2 - расписание не активно, -1 - пустой календарь
 int8_t Scheduler::calc_active_profile(void)
 {
 	Scheduler_Calendar_Item *item;
-	uint8_t cal_dw, cal_h, dw, h;
+	uint8_t cal_dw, cal_h, dw;
 	uint16_t ptr, max, found = 0;
 
-	if((sch_data.Flags & (1<<bScheduler_active)) == 0) return SCHDLR_NotActive;
+	current_hour = rtcSAM3X8.get_hours();
+	if((sch_data.Flags & (1<<bScheduler_active)) == 0) {
+		current_change = 0;
+		return SCHDLR_NotActive;
+	}
 	ptr = Timetable_ptr(sch_data.Active);
 	dw = rtcSAM3X8.get_day_of_week(); // 0 - вск
 	if(dw == 0) dw = 6; else dw--; // 0 - пон
-	h = rtcSAM3X8.get_hours();
 	max = ptr + sch_data.Timetable[ptr];
-	if(ptr == max) return SCHDLR_Profile_off; // Пустой календарь
+	if(ptr == max || max > TIMETABLES_MAXSIZE) {
+		current_change = 0;
+		return SCHDLR_Profile_off; // Пустой календарь
+	}
 	for(ptr++; ptr < max; ptr += sizeof(Scheduler_Calendar_Item)) {
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[ptr];
 		cal_dw = item->WD_Hour >> 5; 	// День недели
 		cal_h = item->WD_Hour & 0x1F; 	// Час
-		if(cal_dw > dw || (cal_dw == dw && cal_h > h)) break;
+		if(cal_dw > dw || (cal_dw == dw && cal_h > current_hour)) break;
 		found = ptr;
 	}
 	if(found) {
@@ -77,7 +83,22 @@ int8_t Scheduler::calc_active_profile(void)
 	} else { // Берем последнюю
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[max - sizeof(Scheduler_Calendar_Item) + 1];
 	}
-	return item->Profile-1;
+	if((item->Profile == 0)) { // Set profile
+		current_change = 0;
+		return -1;
+	} else if((item->Profile < -100)) { // Set profile
+		current_change = 0;
+		return 128 + item->Profile - 1;
+	} else { // change t
+		current_change = item->Profile * 10;
+		return HP.Prof.get_idProfile();
+	}
+}
+
+int16_t Scheduler::get_temp_change(void)
+{
+	if(rtcSAM3X8.get_hours() != current_hour) calc_active_profile();
+	return current_change;
 }
 
 // Вернуть строку параметра для веба, get_SCHDLR(param)
@@ -103,8 +124,9 @@ void Scheduler::web_get_param(char *param, char *result)
 		} else {
 			uint16_t ptr = Timetable_ptr(cnum);
 			uint16_t max = ptr + sch_data.Timetable[ptr];
+			if(max > TIMETABLES_MAXSIZE) return;
 			for(ptr++; ptr <= max; ptr++) {
-				result += strlen(result);
+				result += m_strlen(result);
 				if(sch_data.Timetable[ptr]) itoa(sch_data.Timetable[ptr], result, 10);
 				if(ptr < max) strcat(result, ";");
 			}
@@ -135,33 +157,38 @@ uint8_t Scheduler::web_set_param(char *param, char *val)
 		if((cnum = param[sizeof(WEB_SCH_Name)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) return 1;
 		urldecode(sch_data.Names[cnum], val, sizeof(sch_data.Names[0]));
+	} else ifparam("Clear") {
+		memset(&sch_data.Timetable, 0, sizeof(sch_data.Timetable));
 	} else ifparam(WEB_SCH_Calendar) { // CalendarX=str, X - расписание, если пусто, то активное; str = length;{wday+h;profile|-1; wday+h;profile|-1; ...}
 		char *p;
-		uint16_t size, cur_ptr, cur_size;
+		uint16_t size, cur_size, cur_ptr = 0xFFFF;
 		if((cnum = param[sizeof(WEB_SCH_Calendar)-1]) == '\0') cnum = sch_data.Active; else cnum -= '0';
 		if(cnum >= MAX_CALENDARS) return 1;
-		uint8_t nlen = 0;
 		while((p = strpbrk(val, ";"))) {
 			p[0] = 0;
 			uint8_t dec = atoi(val);
 			val = p + 1;
-			if(nlen == 0) {
-				nlen = dec;
+			if(cur_ptr == 0xFFFF) {
 				size = Timetable_ptr(MAX_CALENDARS-1);
 				size += 1 + sch_data.Timetable[size];
 				cur_ptr = Timetable_ptr(cnum);
 				cur_size = sch_data.Timetable[cur_ptr];
-				if(size - cur_size + nlen > TIMETABLES_MAXSIZE) return 2; // не лезет в память
-				cur_size += cur_ptr + 1;
-				memmove(sch_data.Timetable + cur_ptr + 1 + nlen, sch_data.Timetable + cur_size, size - cur_size - 1);
-				sch_data.Timetable[cur_ptr++] = nlen;
-				if(nlen == 0) return 0;
+				if(size - cur_size + dec > TIMETABLES_MAXSIZE) { // не лезет в память
+					journal.jprintf("Scheduler full: %d - %d + %d > %d\n", size, cur_size, dec, TIMETABLES_MAXSIZE);
+					return 2;
+				}
+				if(cnum < MAX_CALENDARS - 1) {
+					cur_size += cur_ptr + 1;
+					memmove(sch_data.Timetable + cur_ptr + 1 + dec, sch_data.Timetable + cur_size, size - cur_size - 1);
+				}
+				sch_data.Timetable[cur_ptr++] = dec;
+				if(dec == 0) return OK;
 			} else {
 				sch_data.Timetable[cur_ptr++] = dec;
 			}
 		}
 	}
-	return 0;
+	return OK;
 }
 
 // Записать настройки в eeprom i2c, если число меньше 0 это код ошибки

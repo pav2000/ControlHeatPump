@@ -277,7 +277,8 @@ void  sensorDiditalInput::initInput(int sensor)
    pinMode(pin, INPUT);             // Настроить ножку на вход
    note=(char*)noteInput[sensor];   // присвоить наименование датчика
    name=(char*)nameInput[sensor];   // присвоить имя датчика
-   Read();
+ //  Read();                        // Нельзя читать до тех пор пока не ЗАГРУЖЕНЫ правильные настройки - можно уйти в аварию
+   Input=digitalReadDirect(pin);    // Состояние датчика прочитать датчик но не анализировать аварию (хотя этого можно не делать)
 };
 
   // Чтение датчика возвращает ошибку или ОК
@@ -308,7 +309,6 @@ int8_t sensorDiditalInput::Read()
  if (type == pALARM && Input == alarmInput)     // Срабатывание аварийного датчика (только его!)
      { err=ERR_DINPUT;set_Error(err,name); }    // Сработал датчик АВАРИЯ!!!!
  return err;
-
 }
     
 // Установить Состояние датчика в режиме теста

@@ -292,7 +292,7 @@ void Nextion::Update()
 	{
 		strcat(ftoa(ntemp, (float) HP.sTemp[TIN].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t0", ntemp);
-		getTargetTemp(ntemp); strcat(ntemp, _xB0);
+		HP.getTargetTempStr(ntemp); strcat(ntemp, _xB0);
 		setComponentText("t1", ntemp);
 		strcat(ftoa(ntemp, (float) HP.sTemp[TOUT].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t2", ntemp);
@@ -389,7 +389,7 @@ void Nextion::Update()
 		 Алгоритм Т в доме - alg1
 		 Алгоритм Т обратки - alg2
 		 */
-		getTargetTemp(ntemp);
+		HP.getTargetTempStr(ntemp);
 		setComponentText("tust", ntemp);
 		// Состояние системы отопления
 		switch(HP.get_modeHouse()) {
@@ -564,22 +564,6 @@ void Nextion::StatusLine()
 			sendCommand("vis gvs,0");
 			sendCommand("vis onlygvs,0");
 		}
-	}
-}
-
-// Получить целевую температуру отопления
-void Nextion::getTargetTemp(char *rstr)
-{
-	switch(HP.get_modeHouse())   // проверка отопления
-	{
-	case pHEAT:
-		ftoa(rstr, (float) HP.get_targetTempHeat() / 100, 1);
-		break;
-	case pCOOL:
-		ftoa(rstr, (float) HP.get_targetTempCool() / 100, 1);
-		break;
-	default:
-		strcpy(rstr, "-.-");
 	}
 }
 

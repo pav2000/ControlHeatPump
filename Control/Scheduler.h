@@ -29,7 +29,7 @@
 
 struct Scheduler_Calendar_Item {
 	uint8_t		WD_Hour; 	// День недели (3bits, 0 = monday)  + час (5bits)
-	int8_t		Profile;	// Номер профиля+1, 0 = выключен
+	int8_t		Profile;	// 0x80+Номер профиля(макс 27)+1, 0 = выключен, иначе температура -10,0..+10,0
 } __attribute__((packed));
 
 struct Scheduler_Data {
@@ -44,8 +44,9 @@ class Scheduler
 public:
 	Scheduler();
 	int8_t   calc_active_profile(void);					// Возвращает профиль (или -1) по календарю и текущему времени
+	int16_t  get_temp_change(void);						// Возвращает на сколько корректировать целевую температуру, сотые градуса
 	boolean  IsShedulerOn() { return GETBIT(sch_data.Flags, bScheduler_active); }; // Расписание включено?
-	uint16_t  Timetable_ptr(uint8_t num);				// Возвращает указатель на запись календаря в TimeTable по его номеру
+	uint16_t Timetable_ptr(uint8_t num);				// Возвращает указатель на запись календаря в TimeTable по его номеру
 	void	 web_get_param(char *param, char* result);	// Вернуть строку параметра для веба
 	uint8_t  web_set_param(char *param, char *val);		// Установить параметр из веба
 	const char* get_note(void); 						// Получить описание
@@ -58,6 +59,8 @@ public:
 	uint16_t get_data_size(void) { return sizeof(sch_data); }
 private:
 	Scheduler_Data sch_data;
+	uint8_t current_hour;
+	int16_t current_change; // -10,00..+10,00
 };
 
 #endif

@@ -169,7 +169,7 @@
  * that are not a multiple of 512 bytes.
  */
 #ifdef __arm__
-#define USE_SEPARATE_FAT_CACHE 1
+#define USE_SEPARATE_FAT_CACHE 0 // 1 // vad7. using own buffer
 #else  // __arm__
 #define USE_SEPARATE_FAT_CACHE 0
 #endif  // __arm__
@@ -182,7 +182,7 @@
 #if defined(RAMEND) && RAMEND < 3000
 #define USE_MULTI_BLOCK_IO 0
 #else  // RAMEND
-#define USE_MULTI_BLOCK_IO 1 // FOR OLD SD CARD -> 0
+#define USE_MULTI_BLOCK_IO 0 // 1 // FOR OLD SD CARD -> 0
 #endif  // RAMEND
 //-----------------------------------------------------------------------------
 /** Enable SDIO driver if available. */

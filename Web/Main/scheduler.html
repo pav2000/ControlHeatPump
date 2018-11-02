@@ -9,7 +9,7 @@
 	#feedback { font-size: 1.4em; }
 	#calendar .ui-selecting { background: #FECA40; }
 	#calendar .ui-selected { background: #F39814; }
-	#calendar { margin: 0; padding: 0; width: 750; }
+	#calendar { margin: 0; padding: 0; width: 850; }
 	#calendar td.clc { margin: 3px; padding: 1px; text-align: center; color: white; border: 1px dotted black; }
 	#calendar td.clh { background: #F7F7F7; } 
 	</style>
@@ -21,8 +21,22 @@
 		var shifted;
 		$( function() { $("#calendar").selectable({filter: ".clc", stop: function() {
 			$( ".ui-selected", this ).each(function() {
-				var el = document.getElementById('get_listprofile2').options;
-				this.innerHTML = el[el.selectedIndex].value == -1 || shifted ? "" : el[el.selectedIndex].innerHTML.replace(/\. .*$/, "");
+				if(shifted) this.innerHTML = "";
+				else {
+					var v, el = document.getElementById('get_listprofile2').options;
+					el = el[el.selectedIndex];
+					if(el.value == -2) {
+						v = 0;
+					} else if(el.value == -1) {
+						v = document.getElementById('delta_temp').value;
+						if(v > 0) v = '+' + v;
+						this.style = "color:red";
+					} else {
+						v = el.value == -2 ? 0 : el.innerHTML.replace(/\. .*$/, "");
+						this.style = "color:white";
+					}
+					this.innerHTML = v == 0 ? "" : v;
+				}
 			});
 			if(ResetHeights) {
 				var arrdiv = [".content",".menu"];
@@ -33,7 +47,7 @@
 	</script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(lstNames),get_SCHDLR(Calendar),get_listProfile2_skip1");
+		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(lstNames),get_SCHDLR(Calendar),get_listProfile2_skip2");
 	};
 	function get_sch_index() {
 		return document.getElementById('get_schdlr-lstnames').options.selectedIndex;
@@ -51,12 +65,15 @@
 			}
 		}
 	}
+	function SelectNewProfile() {
+		document.getElementById('delta_temp').hidden = document.getElementById('get_listprofile2').options.selectedIndex != 1;
+	}
 	</script>
 </head>
 <body class="profiles">
 <div id="menu" class="menu" style="min-height: 100%;"><script src="menu.js"></script></div>
 <div class="content" style="min-height: 100%;">
-	<h1>Управление расписаниями<input type="submit" value="Считать из EEPROM" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE_SCHDLR")' style="margin-right:10px;"></h1>
+	<h1>Управление расписаниями<input type="submit" value="Считать" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input type="submit" value="Очистить" onclick='if(confirm("Очистить все календари?")) loadParam("set_SCHDLR(Clear),RELOAD");' style="margin-right:10px;"> <input type="submit" value="Записать" onclick='loadParam("set_SAVE_SCHDLR")' style="margin-right:10px;"></h1>
 	<div class="row1">
 		<table style="width: 50%;">
 		<tr><td style="width: 40%;">Работа по расписанию</td><td style="width: 60%;"><input type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');"></td></tr>
@@ -64,7 +81,7 @@
 			<input type="submit" value=">" onclick="setParam('get_SCHDLR(Active='+get_sch_index()+')');"></td></tr>
 		<tr><td>Редактировать имя: </td><td><input id="get_schdlr-name" type="text" maxlength="30" size="15"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(Name'+get_sch_index()+')','get_schdlr-name'); loadParam('get_SCHDLR(lstNames)');"></td></tr>
 		<tr height="20"><td></td><td></td></tr>
-		<tr><td>Установить профиль:</td><td width="200"><select id="get_listprofile2"><option value="-1">-- ТН выключен</option></select></td></tr>
+		<tr><td>Установить профиль:</td><td width="200"><select id="get_listprofile2" onchange="SelectNewProfile()"><option value="-2">.. ТН выключен</option><option value="-1"> ± Температура:</option></select> <input id="delta_temp" type="number" min="-10.0" max="12.7" step="0.1" value="0.0" hidden></td></tr>
 		</table>
 	</div>
 <table id="calendar">
@@ -118,7 +135,7 @@
 	</tbody>
 </table>
 
-<br><input type="submit" value="Сохранить календарь" onclick="process_calendar(1);">
+<br><input type="submit" value="Запомнить календарь" onclick="process_calendar(1);">
 
 </div>
 </body>

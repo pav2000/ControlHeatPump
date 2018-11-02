@@ -46,11 +46,13 @@
 
 #include "Hardware.h"
 #include "HeatPump.h"
-#include "StepMotor.h" 
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
 #include "Statistics.h"
+
+void vUpdateStepperEEV(void *);
+#include "StepMotor.h"
 
 // Мютексы блокираторы железа
 SemaphoreHandle_t xModbusSemaphore;                 // Семафор Modbus, инвертор запас на счетчик
@@ -211,16 +213,16 @@ void setup() {
 // Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
 // https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
 // http://forum.arduino.cc/index.php?topic=243778.0;nowap
-pinMode(87,INPUT_PULLUP);                   // SD Pin 87
-pinMode(77,INPUT_PULLUP);                   // Eth Pin 77  
-pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
-pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
+  pinMode(PIN_SPI_SS0,INPUT_PULLUP);          // Eth Pin 77
+  pinMode(PIN_SPI_SS1,INPUT_PULLUP);          // SD Pin  87
+  pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
+  pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
 
 #ifdef SPI_FLASH
   pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
   pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти (ВРЕМЕННО, пока нет реализации)
 #endif
-SPI_switchAllOFF();                          // Выключить все устройства на SPI
+  SPI_switchAllOFF();                          // Выключить все устройства на SPI
 
   #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
@@ -228,13 +230,7 @@ SPI_switchAllOFF();                          // Выключить все уст
   #endif
   
 // Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
-// https://forum.arduino.cc/index.php?topic=288573.0  
-pinMode(21, OUTPUT);  
-  for (int i = 0; i < 8; i++) {
-    digitalWriteDirect(21, HIGH); delayMicroseconds(3);
-    digitalWriteDirect(21, LOW);  delayMicroseconds(3);
-  }
-  pinMode(21, INPUT);
+  Recover_I2C_bus();
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();
@@ -469,12 +465,11 @@ x_I2C_init_std_message:
     #endif 
 
   // 14. Инициалазация Statistics
-   journal.jprintf("11. Statistics");
+   journal.jprintf("11. Statistics: ");
    if(HP.get_fSD()) {
-	   //HP.InitStatistics();
-	   journal.jprintf(" - writing on SD card\n");
-   } else journal.jprintf(" - not available\n");
-
+	   Stats.Init();             // Инициализовать статистику
+	   journal.jprintf(" Writing on SD card\n");
+   } else journal.jprintf("not available\n");
 
    int8_t _profile = HP.Schdlr.calc_active_profile();
    if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
@@ -511,33 +506,55 @@ x_I2C_init_std_message:
     journal.jprintf("15. Create tasks FreeRTOS . . .\n");
 HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
 HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
-HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера
+//HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
 
 // ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"rSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if (xTaskCreate(vReadSensor,"ReadSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"upStepper",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 // ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if (xTaskCreate(vUpdateCommand,"Command",160,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*160;// 200, до обрезки стеков было 300
-vTaskSuspend(HP.xHandleUpdateCommand);                              // Остановить задачу разбор очереди комнад
+if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
+
+//#ifdef NEXTION
+//  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//  HP.mRTOS=HP.mRTOS+64+4*120; //120
+//  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
+//#endif
+//// ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
+//if (xTaskCreate(vUpdateStat,"upStat",STACK_vUpdateStat,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateStat;  //150
+//vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
+// Создание задачи для отложенного пуска ТН
+//if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
+//vTaskSuspend(HP.xHandlePauseStart);
+// Создание задачи по переодической работе насоса конденсатора
+//if (xTaskCreate(vUpdatePump,"UpdatePump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+//HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
+//vTaskSuspend(HP.xHandleUpdatePump);
+
+if(xTaskCreate(vSericeHP, "SericeHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
-if (xTaskCreate(vUpdate,"updateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"updateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  if (xTaskCreate(vUpdateEEV,"UpdateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
   vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
 #endif  
@@ -545,29 +562,29 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Остано�
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 // ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 #if    W5200_THREARD < 2 
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*(W5200_STACK_SIZE+20);
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+20);
 #elif  W5200_THREARD < 3
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #elif  W5200_THREARD < 4
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb2,"Web2", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #else
-  if ( xTaskCreate(vWeb0,"Web0", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb1,"Web1", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb2,"Web2", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
-  if ( xTaskCreate(vWeb3,"Web3", W5200_STACK_SIZE,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*W5200_STACK_SIZE;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb3,"Web3", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif
 vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
 if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
@@ -586,29 +603,11 @@ if(Modbus.get_present())
  if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 }
 
-#ifdef NEXTION    
-  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*120; //120
-  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
-#endif 
+journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 
-// ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
-if (xTaskCreate(vUpdateStat,"upStat",100,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-HP.mRTOS=HP.mRTOS+64+4*100;  //100
-vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
-// Создание задачи по переодической работе насоса конденсатора
-if (xTaskCreate(vUpdatePump,"upPump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
-vTaskSuspend(HP.xHandleUpdatePump); 
-
-// Создание задачи для отложенного пуска ТН
-if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
-vTaskSuspend(HP.xHandlePauseStart);  
 if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
-journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
-journal.jprintf("16. Send a notification . . .\n");
+//journal.jprintf("16. Send a notification . . .\n");
 //HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
 journal.jprintf("17. Information:\n");
 freeRamShow();
@@ -620,20 +619,6 @@ journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C());
 journal.jprintf("Start FreeRTOS scheduler :-))\n");
 journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
-//
-//vTaskSuspend(HP.xHandleReadSensor);                        // Заголовок задачи "Чтение датчиков"
-//vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);
-//vTaskSuspend(HP.xHandleUpdateCommand);                     // Разбор очереди команд
-//vTaskSuspend(HP.xHandleUpdate);                            // Заголовок задачи "Обновление ТН"
-//vTaskSuspend(HP.xHandleUpdateEEV);                         // Заголовок задачи "Обновление ЭРВ"
-//vTaskSuspend(HP.xHandleUpdateWeb0);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb1);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb2);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateWeb3);                        // Заголовок задачи "Веб сервер"
-//vTaskSuspend(HP.xHandleUpdateNextion);                     // заголовок задачи "Обновление дисплея nextion"
-//vTaskSuspend(HP.xHandleUpdateStat);                        // Заголовок задачи "Обновление ститистики"
-//vTaskSuspend(HP.xHandleUpdatePump);                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
-//vTaskSuspend(HP.xHandlePauseStart);                        // заголовок задачи "Отложенный старт"
 //
 vTaskStartScheduler();              // СТАРТ !!
 journal.jprintf("CRASH FreeRTOS!!!\n");
@@ -839,36 +824,6 @@ void vWeb3(void *)
 	vTaskDelete( NULL);
 }
 
-// Задача обслуживания Nextion
-void vNextion(void *)
-{
-	static uint32_t NextionTick = 0;
-	for(;;) {
-#ifdef NEXTION
-		myNextion.readCommand();                  // прочитать сообщения от дисплея
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
-			myNextion.Update();                  // Обновление дисплея
-			NextionTick = xTaskGetTickCount();
-		}
-#else
-		vTaskDelay(NEXTION_READ / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-#endif
-	}
-	vTaskDelete( NULL);
-}
-
-// Задача обновление статистики
-void vUpdateStat(void *)
-{ //const char *pcTaskName = "statChart is running\r\n";
-	for(;;) {
-		HP.updateChart();                                       // Обновить графики
-		Stats.CheckCreateNewFile();
-		vTaskDelay((HP.get_tChart() * 1000) / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-	}
-	vTaskDelete( NULL);
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Задача чтения датчиков
 void vReadSensor(void *)
@@ -886,6 +841,9 @@ void vReadSensor(void *)
 		WDT_Restart(WDT);
 
 		ttime = millis();
+#ifdef RADIO_SENSORS		
+		radio_timecnt++;
+#endif		
 		if(OW_scan_flags == 0) {
 #ifndef DEMO  // Если не демо
 			prtemp = HP.Prepare_Temp(0);
@@ -1021,7 +979,7 @@ void vReadSensor(void *)
 		////
 		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
 		ttime = TIME_READ_SENSOR - (millis() - ttime);
-		if(ttime && ttime <= 8) _delay(ttime);
+		if(ttime && ttime <= 8) vTaskDelay(ttime);
 
 	}  // for
 	vTaskDelete( NULL);
@@ -1032,11 +990,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 {
 	if(ms8 <= 0) ms8 = 1;
 	while(ms8--) {
-		_delay(8);
+		vTaskDelay(8);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
 		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
-			_delay(100);
+			vTaskDelay(100);
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
@@ -1047,7 +1005,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
-				Stats.Save();
+				Stats.Save(0);
 				journal.jprintf(pP_DATE, "Power lost!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
@@ -1286,23 +1244,10 @@ void vReadSensor_delay8ms(int16_t ms8)
 	 vTaskDelete( NULL);
  }
 #endif
-// Задача Разбор очереди команд
-void vUpdateCommand( void * )
-{ //const char *pcTaskName = "HP_UpdateCommand\r\n";
-  for( ;; )
-  {
-//  if (SemaphoreTake(HP.xCommandSemaphore,(30*1000/portTICK_PERIOD_MS))==pdPASS)                // Cемафор  захвачен
-    HP.runCommand();                                                                            // Выполнение команд управления ТН
-//  SemaphoreGive(HP.xCommandSemaphore);                                                         // Семафор отдан
-//    vTaskDelay(TIME_COMMAND/portTICK_PERIOD_MS); 
-    vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
-  }
- vTaskDelete( NULL ); 
-}  
 
 // Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
-void vUpdateStepperEEV( void * )
+void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   static int16_t  cmd=0;
   volatile int16_t steps_left=0, step_number=0, start_pos=0, pos=0;
@@ -1387,86 +1332,82 @@ void vUpdateStepperEEV( void * )
 }
 #endif
 
-// Задача: Работа насосов отопления, когда ТН в паузе (xHandleUpdatePump)
-void vUpdatePump(void *)
-{ //const char *pcTaskName = "Pump is running\r\n";
-	uint16_t i;
+///////////////////////////////////////////////////////// ServiceHP
+// Задача Разбор очереди команд
+void vUpdateCommand(void *)
+{ //const char *pcTaskName = "HP_UpdateCommand\r\n";
 	for(;;) {
-		if((HP.get_workPump() == 0) && (HP.startPump)) {
-			HP.dRelay[PUMP_OUT].set_OFF();						// выключить насос отопления
-			HP.Pump_HeatFloor(false);						// выключить насос ТП
-			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
-		}         // все время выключено  но раз в 2 секунды проверяем
-		else if((HP.get_pausePump() == 0) && (HP.startPump)) {
-			HP.dRelay[PUMP_OUT].set_ON();						// включить насос отопления
-			HP.Pump_HeatFloor(true);
-			vTaskDelay(DELAY_AFTER_SWITCH_PUMP / portTICK_PERIOD_MS);
-		}  // все время включено  но раз в 2 секунды проверяем
-		else if(HP.startPump)                                                                // нормальный цикл вкл выкл
-		{
-			if(HP.startPump) {
-				HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
-				HP.Pump_HeatFloor(false);						// выключить насос ТП
-			}
-			for(i = 0; i < HP.get_pausePump(); i++)                       // Режем задержку для быстрого выхода
-			{
-				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
-			}
-			if(HP.startPump) {
-				HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
-				HP.Pump_HeatFloor(true);						// включить насос ТП
-			}
-			for(i = 0; i < HP.get_workPump(); i++)                        // Режем задержку для быстрого выхода
-			{
-				if(!HP.startPump) break;                                    // Остановить задачу насос
-				vTaskDelay(1000 / portTICK_PERIOD_MS);                      // 1 sec
-			}
-		}
-	}  //for
-	vTaskDelete( NULL);
-}
-
-// Задача отложеного старта ТН
-// используется при старте контроллера если есть запись состояния
-// также используется для повторных попыток пуска контроллера
-void vPauseStart(void *)
-{
-	int16_t i, tt;
-	for(;;) {
-		HP.PauseStart = 1;               // мы в начале задачи ставим флаг - ТН в режиме перезапуска
-		journal.jprintf(pP_TIME, (const char*) "Start vPauseStart\n");
-#ifdef DEMO
-		tt=30;
-#else
-		if(HP.isCommand() == pRESTART) tt = HP.Option.delayStartRes;
-		else tt = HP.Option.delayRepeadStart;  // Определение времени задержки
-#endif
-		// задержка перед пуском ТН
-		for(i = tt; i > 0; i = i - 10) // задержка перед стартом обратный отсчет
-		{
-			if(!HP.PauseStart) break;               // если задача пущена не сначала
-			if(i % 60 == 0) journal.jprintf((const char*) "Start over %d sec . . .\n", i);
-			vTaskDelay(10 * 1000 / portTICK_PERIOD_MS); // задержка перед повторным пуском ТН, ШАГ 10 секунд
-			if(!HP.PauseStart) break;               // если задача пущена не сначала
-			//       if ((i==delayRepeadStart/2)&&(HP.get_State()== pREPEAT))
-			if((i == HP.get_delayRepeadStart() / 2) && (HP.isCommand() == pREPEAT)) {
-				HP.eraseError();
-				if(!HP.PauseStart) break;               // если задача пущена не сначала
-				journal.jprintf((const char*) "Erase error %s\n", (char*) nameHeatPump);
-			}
-		}
-
-		if(HP.PauseStart)                    // если задача пущена сначала то запускаемся
-		{
-			HP.sendCommand(pAUTOSTART);
-		}
-		HP.PauseStart = 0;
-		vTaskSuspend(HP.xHandlePauseStart);  // Останов задачи выполнение отложенного старта
-
+		HP.runCommand();                          // Выполнение команд управления ТН
+		vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
 	}
-	journal.jprintf((const char*) "Delete task vPauseStart?\n");
 	vTaskDelete( NULL);
 }
 
-
+// Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
+void vSericeHP(void *)
+{
+	static uint32_t NextionTick = 0;
+	static uint16_t task_updstat_chars = 0;
+	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
+	static uint32_t timer_sec = GetTickCount();
+	static uint16_t restart_cnt;
+	static uint16_t pump_in_pause_timer = 0;
+	for(;;) {
+		register uint32_t t = GetTickCount();
+		if(t - timer_sec >= 1000) { // 1 sec
+			timer_sec = t;
+			if(HP.IsWorkingNow()) {
+				if(++task_updstat_chars >= HP.get_tChart()) {
+					task_updstat_chars = 0;
+					HP.updateChart();                                       // Обновить графики
+				}
+				uint8_t m = rtcSAM3X8.get_minutes();
+				if(m != task_updstat_countm) {
+					task_updstat_countm = m;
+					HP.updateCount();                                       // Обновить счетчики моточасов
+					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+				}
+			}
+			if(HP.PauseStart) {
+				if(HP.PauseStart == 1) {
+					restart_cnt = HP.isCommand() == pRESTART ? HP.Option.delayStartRes : HP.Option.delayRepeadStart;  // Определение времени задержки
+					journal.jprintf((const char*) "Start over %d sec . . .\n", restart_cnt);
+					HP.PauseStart = 2;
+				} else if(restart_cnt-- == 0) {
+					HP.PauseStart = 0;
+					HP.sendCommand(pAUTOSTART);
+				}
+			}
+			if(HP.startPump) {
+				if(HP.startPump == 1 && HP.get_pausePump() == 0) { // Постоянно работают
+					goto xPumpsOn;
+				} else if(HP.get_workPump()) {
+					if(pump_in_pause_timer <= 1) {
+						if(HP.startPump <= 2) { // включить
+							pump_in_pause_timer = HP.get_workPump();
+xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включить насос отопления
+							HP.Pump_HeatFloor(true);						// включить насос ТП
+							HP.startPump = 3;
+						} else { // выключить
+							HP.dRelay[PUMP_OUT].set_OFF();                 	// выключить насос отопления
+							HP.Pump_HeatFloor(false);						// выключить насос ТП
+							pump_in_pause_timer = HP.get_pausePump();
+							HP.startPump = 2;
+						}
+					} else pump_in_pause_timer--;
+				}
+			}
+			Stats.CheckCreateNewFile();
+		}
+#ifdef NEXTION
+		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
+			myNextion.Update();                  // Обновление дисплея
+			NextionTick = xTaskGetTickCount();
+		}
+#endif
+		t = GetTickCount() - timer_sec;
+		vTaskDelay(t < NEXTION_READ ? t : NEXTION_READ); // задержка чтения уменьшаем загрузку процессора
+	}
+	vTaskDelete(NULL);
+}

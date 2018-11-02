@@ -14,7 +14,7 @@
 <body class="about">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Система</h1>
+	<h1>Система <input type="submit" value="Сохранить статистику (1)" onclick='loadParam("set_SAVE_STATS")'></h1>
 	<div class="row1">
 		<table>
 		<thead>
@@ -34,12 +34,13 @@
 		<tbody id="get_sysinfo">
 		</tbody>
 		</table>
-		1. Старший байт номер задачи (номер см. на странице ОС RTOS), младший байт код ошибки [1:configASSERT fails, 2:malloc fails, 3:stack overflow, 4:hard fault, 5:bus fault, 6:usage fault, 7:crash data]<br>
-		2. Установка флага Сервис > Сеть > Ежеминутный контроль связи с w5200, и при необходимости его сброс<br>
+		1. Запись накопленных данных за последний день в файл статистики, рекомендуется использовать перед сбросом контроллера.<br>
+		2. Старший байт номер задачи (номер см. на странице ОС RTOS), младший байт код ошибки [1:configASSERT fails, 2:malloc fails, 3:stack overflow, 4:hard fault, 5:bus fault, 6:usage fault, 7:crash data]<br>
+		3. Установка флага Сервис > Сеть > Ежеминутный контроль связи с w5200, и при необходимости его сброс<br>
                 <br>
-		<input type="submit" value="Сброс контроллера"  onclick='loadParam("RESET")'>
-		<input type="submit" value="Сброс W5200"  onclick='loadParam("RESET_NET")'>
-		<input type="submit" value="Сброс сезонных счетчиков"  onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_COUNT,RELOAD")'> Введите RESET: <input id="reset_code" size="7">
+		<input type="submit" value="Сброс контроллера" onclick='if(confirm("Перезагрузить контроллер?")) loadParam("RESET");'>
+		<input type="submit" value="Сброс W5200" onclick='loadParam("RESET_NET")'>
+		<input type="submit" value="Сброс сезонных счетчиков" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_COUNT,RELOAD")'> Введите RESET: <input id="reset_code" size="7">
 		<p>Для сброса всех счетчиков используйте запрос RESET_ALL_COUNT</p>
 	</div>
 </div>

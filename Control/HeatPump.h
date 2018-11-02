@@ -61,11 +61,11 @@ struct type_motoHour
   uint32_t D2;      // дата сброса сезонных счетчиков
   uint32_t P1;      // выработанное тепло  ВСЕГО
   uint32_t P2;      // выработанное тепло  сбрасываемый счетчик (сезон)
- // uint32_t Q1;      // Объем прочаченного теплоносителя в СО ВСЕГО
- // uint32_t Q2;      // Объем прокаченного теплоносителя в СО (сезон)
   uint32_t Z1;      // Резервный параметр 1
   uint32_t Z2;      // Резервный параметр 2
 };
+
+int32_t motohour_OUT_work = 0; // рабочий для счетчиков, энергия отопления, мВт
 
 // Рабочие флаги ТН
 #define fHP_SunActive 		0				// Солнечный контур активен
@@ -84,6 +84,7 @@ struct type_motoHour
 #define fSunRegenerateGeo	10				// Использовать солнечный коллектор для регенерации геоконтура в простое
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
 #define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
+#define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -201,7 +202,7 @@ class HeatPump
               { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
                  else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
       
-     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
+     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -312,6 +313,7 @@ class HeatPump
    
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления
+   void    getTargetTempStr(char *rstr);					// Целевая температура в строку
    int16_t setTargetTemp(int16_t dt);                      // ИЗМЕНИТЬ целевую температуру
    int16_t setTempTargetBoiler(int16_t dt);                // ИЗМЕНИТЬ целевую температуру бойлера
    boolean scheduleBoiler();                               // Проверить расписание бойлера true - нужно греть false - греть не надо
@@ -397,7 +399,7 @@ class HeatPump
     
     uint8_t PauseStart;                                    // 1 - ТН в отложенном запуске, 0 - нет, начать отсчет времени с начала при отложенном старте
        
-    boolean startPump;                                     // Признак запуска задачи насос false - останов задачи true запуск
+    uint8_t startPump;                                     // Признак запуска задачи насос 0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл)
     type_SecurityHP Security;                              // хеш паролей
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
       
@@ -432,22 +434,23 @@ class HeatPump
     #endif        
 
    
-    TaskHandle_t xHandleUpdate;                            // Заголовок задачи "Обновление ТН"
+    TaskHandle_t xHandleUpdate;                         // Заголовок задачи "Обновление ТН"
     #ifdef EEV_DEF
-    TaskHandle_t xHandleUpdateEEV;                         // Заголовок задачи "Обновление ЭРВ"
+    TaskHandle_t xHandleUpdateEEV;                      // Заголовок задачи "Обновление ЭРВ"
     #endif
-    TaskHandle_t xHandleUpdateCommand;                     // Разбор очереди команд
-    TaskHandle_t xHandleReadSensor;                        // Заголовок задачи "Чтение датчиков"
-    TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
-    TaskHandle_t xHandleUpdatePump;                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
-    TaskHandle_t xHandleUpdateWeb0;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb1;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb2;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb3;                        // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
-    TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
+    TaskHandle_t xHandleReadSensor;                     // Заголовок задачи "Чтение датчиков"
+    TaskHandle_t xHandleSericeHP;						// Задача обслуживания ТН:
+    //TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
+    //TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
+    //TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
+    //TaskHandle_t xHandleUpdatePump;                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
+    TaskHandle_t xHandleUpdateCommand;                  // Разбор очереди команд
+    TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
+    //TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
-    SemaphoreHandle_t xCommandSemaphore;                   // Семафор команды
+    SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
  
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
@@ -538,7 +541,7 @@ class HeatPump
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
     boolean onSallmonela;                 // Если true то идет Обеззараживание
     
-    SdFile  statFile;                       // файл для записи статистики
+    //SdFile  statFile;                       // файл для записи статистики
 
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };
