@@ -916,7 +916,7 @@ void int_to_dec_str(int32_t value, int32_t div, char *ret, uint8_t maxfract)
 	uint16_t i = m_itoa(value / div, ret, 10, 0);
 	if(div > 1) {
 		*(ret += i) = '.';
-		itoa(value % div, ++ret, 10);
+		m_itoa(abs(value) % div, ++ret, 10, maxfract);
 		ret[maxfract] = '\0'; // max after dot
 	}
 }

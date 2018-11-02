@@ -35,16 +35,15 @@ enum {
 	STATS_OBJ_Flow,			// м³ч
 	STATS_OBJ_COP,			//
 	STATS_OBJ_Voltage,		// V
-	STATS_OBJ_Time,			// время работы, для OBJ_*
+	STATS_OBJ_Compressor,
+	STATS_OBJ_Sun
 };
 
 enum {
-	OBJ_Compressor = 0,
-	OBJ_Boiler,
-	OBJ_Sun,
-	OBJ_powerCO,
+	OBJ_powerCO = 0,
 	OBJ_powerGEO,
 	OBJ_power220,
+	OBJ_Boiler,
 	OBJ_COP_Compressor,
 	OBJ_COP_Full
 };
@@ -52,11 +51,15 @@ enum {
 enum {
 	STATS_TYPE_MIN = 0,
 	STATS_TYPE_AVG,
-	STATS_TYPE_AVG_WORK, // Во время работы компрессора
 	STATS_TYPE_MAX,
 	STATS_TYPE_SUM,
-	STATS_TYPE_CNT, // Time, ms
+	STATS_TYPE_TIME // Time, ms
 };
+
+#define STATS_WORKD		0x80 // Во время работы компрессора, прошло STATS_WORKD_TIME
+//#define STATS_WORK		0x40 // Во время работы компрессора
+#define STATS_TYPE_MASK	(~(STATS_WORKD))
+#define STATS_WORKD_TIME 60000 // ms
 
 //static char *stats_format = { "%.1f", "" }; // printf format string
 
@@ -72,19 +75,19 @@ Stats_Data Stats_data[] = {
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG_WORK, TEVAING },
+							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG+STATS_WORKD, TEVAING },
 							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
 							{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, OBJ_COP_Full },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG_WORK, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN+STATS_WORKD, OBJ_COP_Full },
+							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG+STATS_WORKD, OBJ_COP_Full },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
 							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
-							{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Compressor }
+							{ 0, STATS_OBJ_Compressor, STATS_TYPE_TIME, 0 }
 #ifdef USE_SUN_COLLECTOR
-							,{ 0, STATS_OBJ_Time, STATS_TYPE_CNT, OBJ_Sun }
+							,{ 0, STATS_OBJ_Sun, STATS_TYPE_TIME, 0 }
 #endif
 #ifdef PGEO
 							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, PGEO }
@@ -119,6 +122,7 @@ private:
 	void	Error(const char *text);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
+	uint32_t compressor_on_timer;
 	uint32_t previous;
 	uint8_t	 day;
 	uint8_t	 month;

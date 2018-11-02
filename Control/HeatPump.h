@@ -202,7 +202,7 @@ class HeatPump
               { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
                  else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
       
-     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков темпеартуры
+     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -448,7 +448,7 @@ class HeatPump
     TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
-    TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
+    //TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
     SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
  
@@ -541,7 +541,7 @@ class HeatPump
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
     boolean onSallmonela;                 // Если true то идет Обеззараживание
     
-    SdFile  statFile;                       // файл для записи статистики
+    //SdFile  statFile;                       // файл для записи статистики
 
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };
