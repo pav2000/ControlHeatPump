@@ -118,38 +118,25 @@ function loadParam(paramid, noretry, resultdiv) {
 						}
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
-								var reerr = new RegExp('^E');
-								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
-								var rei = new RegExp('listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
-								var reo = new RegExp('^scan_');
-								var rep = new RegExp('^get_present|^get_pT');
-								var ret = new RegExp('[(]SCHEDULER[)]');
-								var recldr = new RegExp('Calendar');
-								var res = new RegExp('PING_TIME|et_list|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames');
-								var rev = new RegExp(/\([a-z0-9_]+\)/i);
-								var reg = new RegExp('^get_Chart');
-								var remintemp = new RegExp('^get_mintemp');
-								var remaxtemp = new RegExp('^get_maxtemp');
-								var retblval = new RegExp('et_modbus_');
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
-								if(rec.test(values[0])) type = "const"; 
-								else if(res.test(values[0])) type = "select"; // значения
-								else if(reg.test(values[0])) type = "chart"; // график
-								else if(ret.test(values[0])) type = "scheduler"; // расписание бойлера
-								else if(reo.test(values[0])) type = "scan"; // ответ на сканирование
-								else if(rep.test(values[0])) type = "present"; // наличие датчика в конфигурации
-								else if(recldr.test(values[0])) type = "calendar"; // расписание
-								else if(rei.test(values[0])) type = "table"; 
-								else if(retblval.test(values[0])) type = "tableval"; // таблица значений
+								if(/^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status/.test(values[0])) type = "const"; 
+								else if(/PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								else if(/listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_/.test(values[0])) type = "table"; 
+								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
+								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
 									}
 									continue;
-								} else if(values[0].match(/^set_paramEEV[(]POS/)) {
+								} else if(/^get_Chart/.test(values[0])) type = "chart"; // график
+								else if(/[(]SCHEDULER[)]/.test(values[0])) type = "scheduler"; // расписание бойлера
+								else if(/Calendar/.test(values[0])) type = "calendar"; // расписание
+								else if(/et_modbus_/.test(values[0])) type = "tableval"; // таблица значений
+								else if(values[0].match(/^set_paramEEV[(]POS/)) {
 									var s = "get_parameev-pos";
 									if(values[0].substr(-1) == 'p') s += "p";  
 									if((element = document.getElementById(s))) element.value = values[1];
@@ -174,7 +161,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										} 
 										continue;
 									} 
-									type = rev.test(values[0]) ? "values" : "str";
+									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
 								}
 								if(type == 'scheduler') {
 									var colls = document.getElementById("calendar").getElementsByClassName("clc");
@@ -766,7 +753,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										if((element = document.getElementById(valueid + "-div1000"))) {
 											element.innerHTML = element.value = (Number(values[1])/1000).toFixed(3);
 										}
-										if(reerr.test(values[1])) {
+										if(/^E/.test(values[1])) {
 											element = document.getElementById(valueid);
 											if(element) {
 												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
@@ -774,9 +761,9 @@ function loadParam(paramid, noretry, resultdiv) {
 											}
 										}
 									}
-									if(remintemp.test(valueid)) {
+									if(/^get_mintemp/.test(valueid)) {
 										document.getElementById(valueid.replace(/get_min/g, "get_test")).min = values[1];
-									} else if(remaxtemp.test(valueid)) {
+									} else if(/^get_maxtemp/.test(valueid)) {
 										document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
 									}
 
