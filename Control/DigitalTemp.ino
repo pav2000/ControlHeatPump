@@ -374,7 +374,7 @@ void radio_transmit(void)
 		_delay(1); // Ждем отправки
 	RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
 	#ifdef DEBUG_RADIO
-	journal.jprintf("RA=%s\n", rs_serial_buf + rs_serial_full_header_size);
+	if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RA=%s\n", rs_serial_buf + rs_serial_full_header_size);
 	#endif
 	rs_serial_idx = 0;
 	rs_serial_flag = RS_WAIT_HEADER;
