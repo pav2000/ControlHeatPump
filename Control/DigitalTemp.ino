@@ -374,7 +374,7 @@ void radio_transmit(void)
 		_delay(1); // Ждем отправки
 	RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX
 	#ifdef DEBUG_RADIO
-	if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RA=%s\n", rs_serial_buf + rs_serial_full_header_size);
+	if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RA=%s [%u]\n", rs_serial_buf + rs_serial_full_header_size, millis());
 	#endif
 	rs_serial_idx = 0;
 	rs_serial_flag = RS_WAIT_HEADER;
@@ -402,12 +402,12 @@ void check_radio_sensors(void)
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + (len = rs_serial_buf[rs_serial_full_header_size-1]) + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					journal.jprintf("RS CRC error=%s [%u]\n", rs_serial_buf + rs_serial_full_header_size, millis());
 					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
 					//#ifdef DEBUG_RADIO
-					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS=%s [%u]\n", rs_serial_buf + rs_serial_full_header_size, millis());
 					//#endif
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];

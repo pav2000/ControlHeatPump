@@ -272,100 +272,75 @@ void readFileSD(char *filename, uint8_t thread)
 #endif
 
 // загрузка файла -----------
-// Разбираемся откуда грузить надо (три варианта)
-switch (HP.get_SourceWeb())
-{
-	case pMIN_WEB: 	get_indexNoSD(thread); break;  // минимальная морда
+	// Разбираемся откуда грузить надо (три варианта)
+	switch(HP.get_SourceWeb()) {
+	case pMIN_WEB:
+		get_indexNoSD(thread);
+		break;  // минимальная морда
 	case pSD_WEB:
-	                { // Чтение с карты  файлов
-					SPI_switchSD();
-					if(!card.exists(filename))  // проверка на существование файла
-					{
-						if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
-							if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
-								if(card.exists(filename)) goto xFileFound;
-							} else {
-								journal.jprintf("Reinit SD card failed!\n");
-								//HP.set_fSD(false);
-							}
-						}
-						SPI_switchW5200();
-						sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-						journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
-						return;
-					} // файл не найден
+		{ // Чтение с карты  файлов
+			SPI_switchSD();
+			if(!webFile.open(filename, O_READ))
+			{
+				if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ
+						&& card.cardErrorData() == 255) { // reinit card
+					if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
+						if(webFile.open(filename, O_READ)) goto xFileFound;
+					} else {
+						journal.jprintf("Reinit SD card failed!\n");
+						//HP.set_fSD(false);
+					}
+				}
+				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+				journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
+				return;
+			} // файл не найден
 xFileFound:
-					for(uint8_t i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
-					{
-						if(!webFile.open(filename, O_READ))    // Карта не читатаеся
-						{
-							if(i >= SD_REPEAT - 1)                   // Исчерпано число попыток
-							{
-								SPI_switchW5200();
-								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-								journal.jprintf("$ERROR - opening %s for read failed!\n", filename);
-								HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с SD карты", 0); // сформировать уведомление об ошибке чтения
-								HP.set_fSD(false);                                                      // Отказ карты, работаем без нее
-								return;
-							}                                                                 //if
-						} else break;  // Прочиталось
-						_delay(50);
-						journal.jprintf("Error opening file %s repeat open . . .\n", filename);
-				
-					}  // for
-				
-					SPI_switchW5200();         // переключение на сеть
-					// Файл открыт читаем данные и кидаем в сеть
-		  	     	#ifdef LOG
-					journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-			    	#endif
-					//   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
-					if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
-					else sendConstRTOS(thread, HEADER_FILE_WEB);
-					SPI_switchSD();
-					while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
-						SPI_switchW5200();
-						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
-						SPI_switchSD();
-					} // while
-					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-					SPI_switchSD();
-					webFile.close();
-                  	} break;
-    case pFLASH_WEB: {
-					    if (!SerialFlash.exists(filename)) 
-						    {
-							sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-							journal.jprintf((char*) "$WARNING - Can't find %s file on flash disk!\n", filename);
-							return;					    	
-						    }
-					    SerialFlashFile ff=SerialFlash.open(filename);
-					      if (ff) {
-					 		#ifdef LOG
-					        journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-				           #endif
-  							if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
-								else sendConstRTOS(thread, HEADER_FILE_WEB);
-							//	SPI_switchSD();
-								while((n = ff.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
-									//SPI_switchW5200();
-									if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
-								//	SPI_switchSD();
-								} // while
-		//						if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-//								SPI_switchSD();
-//								webFile.close();
-					            }
-					       else {
-						    	journal.jprintf("Error opening file %s, switching from flash disk to SD card.\n", filename);
-						    	HP.set_fSPIFlash(false);
-								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-						    	HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с флеш диска", 0); // сформировать уведомление об ошибке чтения				    	
-						    	}        
-                    } break; 
-    default:        get_indexNoSD(thread);break;             	             	
-	             
-}
+			// Файл открыт читаем данные и кидаем в сеть
+	#ifdef LOG
+			journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+	#endif
+			if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+			else sendConstRTOS(thread, HEADER_FILE_WEB);
+			SPI_switchSD();
+			while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+				if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+				SPI_switchSD();
+			} // while
+			if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+			SPI_switchSD();
+			webFile.close();
+		}
+		break;
+	case pFLASH_WEB:
+		{
+			SerialFlashFile ff = SerialFlash.open(filename);
+			if(ff) {
+	#ifdef LOG
+				journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+	#endif
+				if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+				else sendConstRTOS(thread, HEADER_FILE_WEB);
+				//	SPI_switchSD();
+				while((n = ff.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+					//SPI_switchW5200();
+					if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+					//	SPI_switchSD();
+				} // while
+				//if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+				//SPI_switchSD();
+				//webFile.close();
+			} else {
+				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+				journal.jprintf((char*) "$WARNING - Can't find %s file on flash disk!\n", filename);
+				return;
+			}
+		}
+		break;
+	default:
+		get_indexNoSD(thread);
+		break;
+	}
 	SPI_switchW5200();
 }
 

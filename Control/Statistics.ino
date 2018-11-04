@@ -433,9 +433,9 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 		Error("send dh");
 		return;
 	} else {
-		SPI_switchSD();
 		readed = 0;
 		for(uint32_t i = BStart; i <= BEnd; i++) {
+			SPI_switchSD();
 			if(i == CurrentBlock) {
 				memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
 			} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
@@ -445,12 +445,10 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 			if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
 				readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
 			} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
-			SPI_switchW5200();
 			if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
 				Error("send data");
 				break;
 			}
-			SPI_switchSD();
 			readed = 0;
 		}
 		SPI_switchW5200();
@@ -484,7 +482,7 @@ int8_t Statistics::Save(uint8_t newday)
 #ifdef STATS_USE_BUFFER_FOR_SAVING
 	if(newday < 2 || lensav != len) { // save when there is no space in buffer
 #endif
-		if(newday == 1 && SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
+		if(newday != 1 && SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
 			retval = ERR_CONFIG;
 			free(rbuf);
 			return retval;
@@ -508,7 +506,7 @@ int8_t Statistics::Save(uint8_t newday)
 				if(!card.card()->writeBlock(CurrentBlock + 1, (uint8_t*)stats_buffer)) {
 					Error("save 2");
 					retval = ERR_SD_WRITE;
-				} else if(newday) {
+				} else if(newday == 2) { // new day
 					CurrentBlock++;
 					CurrentPos = lensav;
 				} else { // reread current block
@@ -518,11 +516,11 @@ int8_t Statistics::Save(uint8_t newday)
 					}
 				}
 			}
-		} else if(newday) CurrentPos += lensav;
+		} else if(newday == 2) CurrentPos += lensav; // new day
 	    SPI_switchW5200();
 	    if(newday == 1) SemaphoreGive(xWebThreadSemaphore);
 #ifdef STATS_USE_BUFFER_FOR_SAVING
-	} else CurrentPos += lensav;
+	} else CurrentPos += lensav; // new day
 #endif
 	free(rbuf);
 	return retval;

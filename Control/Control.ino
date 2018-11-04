@@ -434,7 +434,7 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
-  journal.jprintf(" Web interface download source: ");
+  journal.jprintf(" Web interface source: ");
         switch (HP.get_SourceWeb())
         {
         case pMIN_WEB:   journal.jprintf("internal\n"); break;

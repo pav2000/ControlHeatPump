@@ -122,7 +122,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(/^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status/.test(values[0])) type = "const"; 
-								else if(/PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								else if(/PING_TIME|et_listPress|listStats|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
 								else if(/listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_/.test(values[0])) type = "table"; 
 								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
