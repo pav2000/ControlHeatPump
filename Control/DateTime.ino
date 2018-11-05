@@ -47,7 +47,7 @@ int8_t set_time(void)
 // Формат HTTP 1.0 GET запроса: "http://server:port/curr_time.csv"
 // Ответ: "UTC time sec;"
 EthernetClient tTCP; // For get time
-char NTP_buffer[16];
+char NTP_buffer[20];
 boolean set_time_NTP(void)
 {
 	unsigned long secs = 0;
