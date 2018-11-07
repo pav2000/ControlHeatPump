@@ -23,10 +23,16 @@
 
 //#define STATS_DO_NOT_SAVE
 #define SD_BLOCK			512
-#define STATS_MAX_RECORD_LEN (15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
-#define STATS_MAX_FILE_SIZE ((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define STATS_MAX_RECORD_LEN	(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
+#define STATS_MAX_FILE_SIZE		((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define HISTORY_MAX_RECORD_LEN	(15 + 35 * 5)
+#define HISTORY_MAX_FILE_SIZE	((HISTORY_MAX_RECORD_LEN * 1440 * 366 / SD_BLOCK + 1) * SD_BLOCK)
 #define MAX_INT32_VALUE 2147483647
 #define MIN_INT32_VALUE -2147483647
+
+// what:
+#define ID_STATS 	0
+#define ID_HISTORY	1
 
 enum {
 	STATS_OBJ_Temp = 0,		// °C
@@ -100,7 +106,9 @@ Stats_Data Stats_data[] = {
 const char stats_file_start[] = "stats_";
 const char stats_file_header[] = "head";
 const char stats_file_ext[] = ".csv";
+const char history_file_start[] = "hist_";
 uint8_t stats_buffer[SD_BLOCK];
+uint8_t history_buffer[SD_BLOCK];
 
 class Statistics
 {
@@ -109,17 +117,20 @@ public:
 	void	Update();						// Обновить статистику, раз в период
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void	Reset();						// Сбросить накопленные промежуточные значения
-	int8_t	Save(uint8_t newday);			// Записать статистику на SD
+	int8_t	SaveStats(uint8_t newday);		// Записать статистику на SD
+	int8_t 	SaveHistory();					// Записать буфер истории на SD
 	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
-	void	ReturnFileString(char *ret);	// Строка со значениями за день
-	void	ReturnFieldString(char *ret, uint8_t i);
+	inline void	ReturnFileString(char *ret);// Строка со значениями за день
+	void	ReturnFieldString(char **ret, uint8_t i);
 	void	ReturnWebTable(char *ret);
 	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
-	boolean	FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend);
+	boolean	FindEndPosition(uint8_t what);
 	void	CheckCreateNewFile();
+	boolean CreateOpenFile(uint8_t what);
+	void	History();						// Логирование параметров работы ТН, раз в 1 минуту
 private:
-	void	Error(const char *text);
+	void	Error(const char *text, uint8_t what);
 	uint16_t counts;						// Кол-во уже совершенных обновлений
 	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
 	uint32_t compressor_on_timer;
@@ -131,6 +142,10 @@ private:
 	uint32_t BlockEnd;
 	uint32_t CurrentBlock;
 	uint16_t CurrentPos;
+	uint32_t HistoryBlockStart;
+	uint32_t HistoryBlockEnd;
+	uint32_t HistoryCurrentBlock;
+	uint16_t HistoryCurrentPos;
 	SdFile   StatsFile;
 };
 

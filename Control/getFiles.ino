@@ -313,7 +313,7 @@ void get_txtSettings(uint8_t thread)
     
      strcat(Socket[thread].outBuf," - Настройка встроенных графиков -\r\n");
      strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_SD_CARD,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_History,Socket[thread].outBuf);STR_END;
 
      strcat(Socket[thread].outBuf," - Настройки контура отопления -\r\n");
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;

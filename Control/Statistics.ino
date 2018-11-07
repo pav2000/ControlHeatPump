@@ -22,11 +22,122 @@
 
 #define temp_initbuf Socket[0].outBuf
 const char format_date[] = "%04d%02d%02d";
+const char format_datetime[] = "%04d%02d%02d%02d%02d%02d;";
 #define format_date_size 8
+char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+
+// what: 0 - Stats, 1 - History, Return: 0 - Error, 1 - OK
+boolean Statistics::CreateOpenFile(uint8_t what)
+{
+	if(what) {
+		HistoryBlockStart = 0;
+		HistoryCurrentPos = 0;
+		strcpy(filename, history_file_start);
+	} else {
+		BlockStart = 0;
+		CurrentPos = 0;
+		strcpy(filename, stats_file_start);
+	}
+	_itoa(year, filename);
+	strcat(filename, stats_file_ext);
+	journal.jprintf(" File: %s ", filename);
+	SPI_switchSD();
+	uint8_t newfile = 0;
+	if(!StatsFile.open(filename, O_READ)) {
+		if(!StatsFile.createContiguous(filename, what ? HISTORY_MAX_FILE_SIZE : STATS_MAX_FILE_SIZE)) {
+			Error("create", what);
+			return 0;
+		} else {
+			StatsFile.timestamp(T_CREATE | T_ACCESS | T_WRITE, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
+		}
+		newfile = 1;
+	}
+	if(!StatsFile.contiguousRange(what ? &HistoryBlockStart : &BlockStart, what ? &HistoryBlockEnd : &BlockEnd)) {
+		journal.jprintf("Error get blocks %s!\n", filename);
+	} else {
+		journal.jprintf("[%u..%u]", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
+		if(newfile) {
+			journal.jprintf(" - Create ");
+			uint32_t b;
+			if(what) {
+				b = HistoryCurrentBlock = HistoryBlockStart;
+				memset(history_buffer, 0, SD_BLOCK);
+			} else {
+				b = CurrentBlock = BlockStart;
+				memset(stats_buffer, 0, SD_BLOCK);
+			}
+			for(; b <= (what ? HistoryBlockEnd : BlockEnd); b++) {
+				WDT_Restart(WDT);
+				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
+					Error("empty", what);
+					goto xError;
+				}
+				if((b & 0x7FF) == 0) journal.jprintf("."); // каждый 1Мб
+				if((b & 0xF) == 0) _delay(1); // время другим задачам
+			}
+			journal.jprintf("Ok\n");
+		} else if(!FindEndPosition(what)) {
+			journal.jprintf(" Endpos not found!\n");
+		} else {
+			return 1;
+		}
+	}
+xError:
+	StatsFile.close();
+	return 0;
+}
+
+boolean Statistics::FindEndPosition(uint8_t what)
+{
+	uint8_t *buffer, *pos = NULL;
+	uint32_t bst, bend, cur = 0;
+	if(what) {
+		bst = HistoryBlockStart;
+		bend = HistoryBlockEnd;
+		buffer = history_buffer;
+	} else {
+		bst = BlockStart;
+		bend = BlockEnd;
+		buffer = stats_buffer;
+	}
+	while(cur != bst || cur != bend) {
+		WDT_Restart(WDT);
+		cur = bst + (bend - bst) / 2;
+		if(!card.card()->readBlock(cur, buffer)) {
+			Error("fndpos", what);
+			break;
+		}
+		if(buffer[0] != 0) {
+			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
+			bst = cur;
+		} else if(cur == bst) { // empty
+			pos = buffer;
+			break;
+		} else bend = cur;
+	}
+	if(pos == NULL) return false;
+	if(what) {
+		HistoryCurrentBlock = cur;
+		HistoryCurrentPos = pos - buffer;
+	} else {
+		CurrentBlock = cur;
+		CurrentPos = pos - buffer;
+	}
+#ifdef DEBUG_MODWORK
+	journal.jprintf(" Found pos: %u/%u\n", cur, pos - buffer);
+#endif
+	return true;
+}
+
+void Statistics::Error(const char *text, uint8_t what)
+{
+	journal.jprintf(" %s Error %s (%d,%d)!\n", what ? "History" : "Stats", text, card.cardErrorCode(), card.cardErrorData());
+}
 
 void Statistics::Init(uint8_t newyear)
 {
 	if(!newyear) Reset();
+	HistoryCurrentBlock = 0;
 	year = rtcSAM3X8.get_years();
 #ifdef STATS_DO_NOT_SAVE
 	return;
@@ -35,61 +146,23 @@ void Statistics::Init(uint8_t newyear)
 		journal.jprintf(" No SD card - statistics will not be saved!\n");
 		return;
 	}
-	if(newyear && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
-		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexWebThreadBuzy);
-		return;
-	}
-	CurrentBlock = 0;
-	CurrentPos = 0;
-	char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
-	strcpy(filename, stats_file_start);
-	_itoa(year, filename);
-	strcat(filename, stats_file_ext);
-	SPI_switchSD();
-	uint8_t newfile = 0;
-	if(!card.exists(filename)) {
-		if(!StatsFile.createContiguous(filename, STATS_MAX_FILE_SIZE)) {
-			Error("create");
-			goto xEnd;
-		} else {
-			StatsFile.timestamp(T_CREATE | T_ACCESS | T_WRITE, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
-		}
-		newfile = 1;
-	} else if(!StatsFile.open(filename, O_RDWR)) {
-		Error("open");
-		goto xEnd;
-	}
-	if(!StatsFile.contiguousRange(&BlockStart, &BlockEnd)) {
-		journal.jprintf(" Error get blocks!\n");
-	} else {
-		if(newfile) {
-			journal.jprintf(" New stats file: %s\n", filename);
-			CurrentBlock = BlockStart;
-			memset(stats_buffer, 0, SD_BLOCK);
-			for(uint32_t b = BlockStart; b <= BlockEnd; b++) {
-				if(!card.card()->writeBlock(b, (uint8_t*)stats_buffer)) {
-					Error("empty");
-					break;
-				}
-			}
-		} else if(!FindEndPosition((uint8_t*)stats_buffer, BlockStart, BlockEnd)) {
-			journal.jprintf(" Endpos not found!\n");
-		} else if(!newyear) { // read last record
+	if(CreateOpenFile(ID_STATS)) {
+		if(!newyear) { // read last stats record
 			int32_t pos = (CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos - 1;
 			uint8_t b;
 			while(--pos >= 0) {
 				if(!StatsFile.seekSet(pos)) {
-					Error("seek");
+					Error("seek", ID_STATS);
 					break;
 				}
 				if(!StatsFile.read(&b, 1)) {
-					Error("readb");
+					Error("readb", ID_STATS);
 					break;
 				}
 				if(b == '\n' || pos == 0) {
 					if(pos) pos++;
 					if(!StatsFile.read(temp_initbuf, STATS_MAX_RECORD_LEN)) {
-						Error("readl");
+						Error("readl", ID_STATS);
 						break;
 					}
 					m_snprintf(temp_initbuf + STATS_MAX_RECORD_LEN, 16, format_date, year, month, day);
@@ -99,7 +172,7 @@ void Statistics::Init(uint8_t newyear)
 						temp_initbuf[format_date_size] = '\0';
 						journal.printf(" %s restored\n", temp_initbuf);
 						if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
-							Error("readp");
+							Error("readp", ID_STATS);
 						} else {
 							memcpy(temp_initbuf, stats_buffer + CurrentPos, SD_BLOCK - CurrentPos);
 							temp_initbuf[STATS_MAX_RECORD_LEN] = '\0';
@@ -114,7 +187,7 @@ void Statistics::Init(uint8_t newyear)
 									switch(Stats_data[i].object) {
 									case STATS_OBJ_Temp:
 									case STATS_OBJ_Press:
-										Stats_data[i].value = val * 10;
+										Stats_data[i].value = val * 100;
 										break;
 									case STATS_OBJ_Voltage:
 										Stats_data[i].value = val;
@@ -136,6 +209,16 @@ void Statistics::Init(uint8_t newyear)
 										if(Stats_data[i].type == STATS_TYPE_TIME) Stats_data[i].value = val * 60000;
 										break;
 									}
+									if(Stats_data[i].value == 0) {
+										switch(Stats_data[i].type & STATS_TYPE_MASK) {
+										case STATS_TYPE_MIN:
+											Stats_data[i].value = MAX_INT32_VALUE;
+											break;
+										case STATS_TYPE_MAX:
+											Stats_data[i].value = MIN_INT32_VALUE;
+											break;
+										}
+									}
 									if((Stats_data[i].type & STATS_WORKD) && Stats_data[i].value) counts_work = 1;
 									if((p = (char*)memchr(p, '\0', STATS_MAX_RECORD_LEN)) == NULL) break;
 								}
@@ -147,44 +230,25 @@ void Statistics::Init(uint8_t newyear)
 				}
 			}
 		}
+		StatsFile.close();
 	}
-	StatsFile.close();
-xEnd:
-	SPI_switchW5200();
-	if(newyear) SemaphoreGive(xWebThreadSemaphore);  // Отдать мютекс
 }
 
-boolean Statistics::FindEndPosition(uint8_t *buffer, uint32_t bst, uint32_t bend)
+void Statistics::CheckCreateNewFile()
 {
-	uint8_t *pos = NULL;
-	uint32_t cur = 0;
-	while(cur != bst || cur != bend) {
-		WDT_Restart(WDT);
-		cur = bst + (bend - bst) / 2;
-		if(!card.card()->readBlock(cur, buffer)) {
-			Error("fndpos");
-			break;
-		}
-		if(buffer[0] != 0) {
-			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
-			bst = cur;
-		} else if(cur == bst) { // empty
-			pos = buffer;
-			break;
-		} else bend = cur;
+	uint8_t sem = 0;
+	if(year == 0) {
+		if(!(sem = SemaphoreTake(xWebThreadSemaphore, 0))) return;
+		year = rtcSAM3X8.get_years();
+		Init(1);
 	}
-	if(pos == NULL) return false;
-	CurrentBlock = cur;
-	CurrentPos = pos - buffer;
-#ifdef DEBUG_MODWORK
-	journal.jprintf(" Found pos: %u/%u\n", CurrentBlock, CurrentPos);
-#endif
-	return true;
-}
-
-void Statistics::Error(const char *text)
-{
-	journal.jprintf(" Stats Error %s (%d,%d)!\n", text, card.cardErrorCode(), card.cardErrorData());
+	if(GETBIT(HP.Option.flags, fHistory) && HistoryCurrentBlock == 0) { // Init History
+		if(!sem && !(sem = SemaphoreTake(xWebThreadSemaphore, 0))) return;
+		if(CreateOpenFile(ID_HISTORY)) {
+			StatsFile.close();
+		} else SETBIT0(HP.Option.flags, fHistory); // При ошибке выключаем опцию сохранения истории!
+	}
+	if(sem) SemaphoreGive(xWebThreadSemaphore);
 }
 
 // Сбросить накопленные промежуточные значения
@@ -217,7 +281,7 @@ void Statistics::Update()
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	if(rtcSAM3X8.get_days() != day) {
-		if(Save(2) == OK) {
+		if(SaveStats(2) == OK) {
 			Reset();
 			if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
 		}
@@ -232,10 +296,10 @@ void Statistics::Update()
 		if((Stats_data[i].type & STATS_WORKD) && compressor_on_timer < STATS_WORKD_TIME) continue;
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Temp:
-			newval = HP.sTemp[Stats_data[i].number].get_Temp() / 10;
+			newval = HP.sTemp[Stats_data[i].number].get_Temp();
 			break;
 		case STATS_OBJ_Press:
-			newval = HP.sADC[Stats_data[i].number].get_Press() / 10;
+			newval = HP.sADC[Stats_data[i].number].get_Press();
 			break;
 		case STATS_OBJ_Voltage:
 		    #ifdef USE_ELECTROMETER_SDM
@@ -357,16 +421,16 @@ void Statistics::ReturnFileHeader(char *ret)
 	}
 }
 
-void Statistics::ReturnFieldString(char *ret, uint8_t i)
+void Statistics::ReturnFieldString(char **ret, uint8_t i)
 {
 	int32_t val = (Stats_data[i].type & STATS_TYPE_MASK) == STATS_TYPE_AVG ? Stats_data[i].value / ((Stats_data[i].type & STATS_WORKD) ? counts_work : counts) : Stats_data[i].value;
 	if(val == MIN_INT32_VALUE || val == MAX_INT32_VALUE) val = 0;
 	switch(Stats_data[i].object) {
-	case STATS_OBJ_Temp:
-	case STATS_OBJ_Press:
-		int_to_dec_str(val, 10, ret, 1); 	 // bar
+	case STATS_OBJ_Temp:					// C
+	case STATS_OBJ_Press: 					// bar
+		int_to_dec_str(val, 100, ret, 1);
 		break;
-	case STATS_OBJ_Voltage:
+	case STATS_OBJ_Voltage:					// V
 		int_to_dec_str(val, 1, ret, 0);
 		break;
 	case STATS_OBJ_Power:					// кВт*ч
@@ -389,22 +453,23 @@ void Statistics::ReturnFieldString(char *ret, uint8_t i)
 }
 
 // Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
-void Statistics::ReturnFileString(char *ret)
+inline void Statistics::ReturnFileString(char *ret)
 {
-	m_snprintf(ret, 20, format_date, year, month, day);
+	ret += m_snprintf(ret, 20, format_date, year, month, day);
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		strcat(ret, ";");
-		ReturnFieldString(ret, i);
+		*ret++ = ';';
+		ReturnFieldString(&ret, i);
 	}
-	strcat(ret, "\n");
+	*ret = '\n'; *(ret+1) = '\0';
 }
 
 void Statistics::ReturnWebTable(char *ret)
 {
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		ReturnFieldHeader(ret, i, 0);
-		strcat(ret, "|");
-		ReturnFieldString(ret, i);
+		ret += m_strlen(ret);
+		*ret++ = '|';
+		ReturnFieldString(&ret, i);
 		strcat(ret, ";");
 	}
 }
@@ -430,7 +495,7 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	SPI_switchW5200();
 	uint32_t readed = m_strlen(Socket[thread].outBuf);
 	if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-		Error("send dh");
+		Error("send dh", ID_STATS);
 		return;
 	} else {
 		readed = 0;
@@ -438,15 +503,17 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 			SPI_switchSD();
 			if(i == CurrentBlock) {
 				memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+			} else if(i == HistoryCurrentBlock) {
+				memcpy((uint8_t*)Socket[thread].outBuf + readed, history_buffer, SD_BLOCK);
 			} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
-				Error("read data");
+				Error("read data", ID_STATS);
 				break;
 			}
 			if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
 				readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
 			} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
 			if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-				Error("send data");
+				Error("send data", ID_STATS);
 				break;
 			}
 			readed = 0;
@@ -455,16 +522,9 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	}
 }
 
-void Statistics::CheckCreateNewFile()
-{
-	if(year == 0) {
-		year = rtcSAM3X8.get_years();
-		Init(1);
-	}
-}
-
 // Записать статистику на SD, 0 - только записать, 1 - только записать c веба, 2 - новый день
-int8_t Statistics::Save(uint8_t newday)
+// Return: OK или Ошибка
+int8_t Statistics::SaveStats(uint8_t newday)
 {
 #ifdef STATS_DO_NOT_SAVE
 	return OK;
@@ -472,7 +532,7 @@ int8_t Statistics::Save(uint8_t newday)
 	if(!HP.get_fSD() || CurrentBlock == 0) return OK;
 	char *rbuf = (char*) malloc(STATS_MAX_RECORD_LEN);
 	if(rbuf == NULL) {
-		journal.jprintf("Stats memory low - not saved!\n");
+		Error("memory low", ID_STATS);
 		return ERR_OUT_OF_MEMORY;
 	}
 	int8_t retval = OK;
@@ -489,7 +549,7 @@ int8_t Statistics::Save(uint8_t newday)
 		}
 		SPI_switchSD();
 		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
-			Error("save 1");
+			Error("save", ID_STATS);
 			// to do - reinit card but in other task
 //			if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
 //				if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) goto xContinue;
@@ -504,24 +564,80 @@ int8_t Statistics::Save(uint8_t newday)
 				memset(stats_buffer, 0, SD_BLOCK);
 				memcpy(stats_buffer, rbuf, lensav = len - lensav);
 				if(!card.card()->writeBlock(CurrentBlock + 1, (uint8_t*)stats_buffer)) {
-					Error("save 2");
+					Error("save 2", ID_STATS);
 					retval = ERR_SD_WRITE;
 				} else if(newday == 2) { // new day
 					CurrentBlock++;
 					CurrentPos = lensav;
 				} else { // reread current block
 					if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
-						Error("read 1");
+						Error("read", ID_STATS);
 						retval = ERR_SD_READ;
 					}
 				}
 			}
 		} else if(newday == 2) CurrentPos += lensav; // new day
-	    SPI_switchW5200();
 	    if(newday == 1) SemaphoreGive(xWebThreadSemaphore);
 #ifdef STATS_USE_BUFFER_FOR_SAVING
 	} else CurrentPos += lensav; // new day
 #endif
 	free(rbuf);
 	return retval;
+}
+
+// Return: OK или Ошибка
+int8_t Statistics::SaveHistory()
+{
+#ifdef STATS_DO_NOT_SAVE
+	return OK;
+#endif
+	if(!GETBIT(HP.Option.flags, fHistory) || !HP.get_fSD() || HistoryCurrentBlock == 0) return OK;
+	if(SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) return ERR_CONFIG;
+	SPI_switchSD();
+	if(!card.card()->writeBlock(HistoryCurrentBlock, (uint8_t*)history_buffer)) {
+		Error("save", ID_STATS);
+		return ERR_SD_WRITE;
+	}
+	return OK;
+}
+
+// Логирование параметров работы ТН, раз в 1 минуту
+void Statistics::History()
+{
+	if(!GETBIT(HP.Option.flags, fHistory)) return;
+	char *mbuf = (char*) malloc(HISTORY_MAX_RECORD_LEN);
+	if(mbuf == NULL) {
+		Error("memory low", ID_HISTORY);
+	}
+	char *buf = mbuf;
+	buf += m_snprintf(buf, 20, format_datetime, year, month, day, rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
+	uint8_t i;
+	for(i=0; i<TNUMBER; i++) if((SENSORTEMP[i] & 8)) int_to_dec_str(HP.sTemp[i].get_Temp(), 100, &buf, 1);
+/*
+	for(i=0; i<ANUMBER; i++) sADC[i].Chart.clear();
+	for(i=0; i<FNUMBER; i++) sFrequency[i].Chart.clear();
+	#ifdef EEV_DEF
+	dEEV.Chart.clear();
+	ChartOVERHEAT.clear();
+	ChartTPEVA.clear();
+	ChartTPCON.clear();
+	#endif
+	dFC.ChartFC.clear();
+	dFC.ChartPower.clear();
+	dFC.ChartCurrent.clear();
+	ChartRCOMP.clear();
+	// ChartRELAY.clear();
+	ChartCOP.clear();                                     // Коэффициент преобразования
+	#ifdef USE_ELECTROMETER_SDM
+	dSDM.ChartVoltage.clear();                              // Статистика по напряжению
+	dSDM.ChartCurrent.clear();                              // Статистика по току
+	// dSDM.sAcPower.clear();                              // Статистика по активная мощность
+	// dSDM.sRePower.clear();                              // Статистика по Реактивная мощность
+	dSDM.ChartPower.clear();                                // Статистика по Полная мощность
+	// dSDM.ChartPowerFactor.clear();                          // Статистика по Коэффициент мощности
+	ChartFullCOP.clear();                                     // Коэффициент преобразования
+	#endif
+*/
+
+	free(mbuf);
 }

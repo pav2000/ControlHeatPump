@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ADD_HEAT),get_optionHP(SD_CARD),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF),get_optionHP(LOGWS)");
+		loadParam("get_optionHP(ADD_HEAT),get_optionHP(HIST),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF),get_optionHP(LOGWS)");
 		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
 	}; 
 	</script>
@@ -43,21 +43,16 @@
 				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
 			</td>
 		</tr>
-
 		<tr>
-			<td><b>Настройка встроенных графиков</b></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>Период накопления графиков <sup>2</sup></td>
+			<td>Период накопления графиков в памяти <sup>2</sup></td>
 			<td>
 				<select id="get_optionhp-time_chart" onChange="setParam('get_optionHP(TIME_CHART)','get_optionhp-time_chart');"></select>
 			</td>
 		</tr>
 		<tr>
-			<td>Запись графиков на карту (файл chart_sd.csv)<sup>3</sup></td>
+			<td>Запись истории на SD карту <sup>3</sup></td>
 			<td>
-				<input type="checkbox" id="get_optionhp-sd_card" onChange="setParam('get_optionHP(SD_CARD)');">
+				<input type="checkbox" id="get_optionhp-hist" onChange="setParam('get_optionHP(HIST)');">
 			</td>
 		</tr>
 		<tr>
@@ -225,7 +220,7 @@
 
 	1. 0 - Повторный пуск при ошибке не производится<br/>
 	2. При изменении периода графики обнуляются.<br/>
-	3. Использование этой опции может привести к повреждению фаловой системы карты<br/>
+	3. Эти данные будут использованы для пострения графиков в Истории.<br/>
 	4. Reserve - ТЭН включается если температура в доме ниже заданной, bivalent - ТЭН включится если уличная температуа ниже заданной<br/>
 	5. Установка 0 - насос вообще не работает<br/>
 	6. Установка 0 - насос работает непрерывно<br/>

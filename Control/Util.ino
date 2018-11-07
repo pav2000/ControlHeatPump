@@ -910,13 +910,15 @@ int16_t rd(float num, int16_t mul)
 }
 
 // format int/div value to string with decimal point
-void int_to_dec_str(int32_t value, int32_t div, char *ret, uint8_t maxfract)
+void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 {
-	ret += m_strlen(ret);
-	uint16_t i = m_itoa(value / div, ret, 10, 0);
+	*ret += m_itoa(value / div, *ret, 10, 0);
 	if(div > 1) {
-		*(ret += i) = '.';
-		m_itoa(abs(value) % div, ++ret, 10, maxfract);
-		ret[maxfract] = '\0'; // max after dot
+		value = abs(value) % div;
+		if(value == 0) return;
+		**ret = '.';
+		m_itoa(value, ++*ret, 10, maxfract);
+		*ret += maxfract;
+		**ret = '\0'; // max after dot
 	}
 }

@@ -695,7 +695,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
 			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
 				if((i = HP.save_motoHour()) == OK)
-					i = Stats.Save(1);
+					if((i = Stats.SaveStats(1)) == OK)
+						i = Stats.SaveHistory();
 				_itoa(i, strReturn);
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных

@@ -165,8 +165,8 @@ const uint16_t  defaultPort=80;
 	#define MAX_CALENDARS			9   		// максимум 9
 	#define TIMETABLES_MAXSIZE		500 		// bytes
 	#define I2C_JOURNAL_EEPROM 		0x1FFE      // Адрес с которого начинается журнал в памяти i2c, внечале лежит признак форматирования журнала. Длина журнала JOURNAL_LEN
-	#define I2C_JOURNAL_START 		(I2C_JOURNAL_EEPROM + 2)                                                // Адрес с которого начинается ДАННЫЕ журнал в памяти i2c ВНИМАНИЕ - 2 байт лежит признак форматирования журнала
-	#define I2C_JOURNAL_EEPROM_NEXT 0x10000
+	#define I2C_JOURNAL_START 		(I2C_JOURNAL_EEPROM + 2)      // Адрес с которого начинается ДАННЫЕ журнал в памяти i2c ВНИМАНИЕ - 2 байт лежит признак форматирования журнала
+	#define I2C_JOURNAL_EEPROM_NEXT (I2C_MEMORY_TOTAL * 1024 / 8) // Адрес после журнала = размер EEPROM
 	// Журнал
 	#define JOURNAL_LEN 			((I2C_JOURNAL_EEPROM_NEXT-I2C_JOURNAL_START)/W5200_MAX_LEN*W5200_MAX_LEN)// Размер журнала - округление на целое число страниц W5200_MAX_LEN
 	#define I2C_JOURNAL_HEAD   		(0x01)                                                                  // Признак головы журнала
@@ -758,7 +758,7 @@ const char *option_TIME_CHART         = {"TIME_CHART"};         // период 
 const char *option_BEEP               = {"BEEP"};               // включение звука
 const char *option_NEXTION            = {"NXT"};                // использование дисплея nextion
 const char *option_NEXTION_WORK       = {"NXTW"};               // Включать дисплей, когда ТН работает
-const char *option_SD_CARD            = {"SD_CARD"};            // запись статистики на карточку
+const char *option_History            = {"HIST"};               // запись истории на SD карту
 const char *option_SDM_LOG_ERR        = {"SDM_LOGER"};          // флаг писать в лог нерегулярные ошибки счетчика SDM
 const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 const char *option_NEXT_SLEEP         = {"NXTS"};               // Время засыпания секунды NEXTION
