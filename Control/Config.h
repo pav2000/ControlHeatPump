@@ -34,6 +34,37 @@ struct CORRECT_POWER220_STRUCT {
 	uint8_t  num;	// номер реле
 	int16_t  value; // Вт
 };
+enum {
+	STATS_OBJ_Temp = 0,		// °C
+	STATS_OBJ_Press,		// bar
+	STATS_OBJ_PressTemp,	// °C
+	STATS_OBJ_Flow,			// м³ч
+	STATS_OBJ_Voltage,		// V
+	STATS_OBJ_Power,		// кВт*ч, пока только TYPE_SUM для OBJ_*
+	STATS_OBJ_Compressor,
+	STATS_OBJ_COP,			//
+	STATS_OBJ_Sun,
+	STATS_OBJ_EEV			// ЭРВ
+};
+enum {
+	STATS_EEV_Steps = 0,	// Шаги
+	STATS_EEV_Percent,		// %
+	STATS_EEV_OverHeat,		// Перегрев
+	STATS_EEV_OverCool,		// Переохлаждение
+};
+enum {
+	OBJ_powerCO = 0,
+	OBJ_powerGEO,
+	OBJ_power220,
+	OBJ_COP_Compressor,
+	OBJ_COP_Full,
+	OBJ_Freq
+};
+struct History_setup {
+	uint8_t		object;			// STATS_OBJ_*
+	uint8_t 	number;			// номер датчика
+	const char *name;			// Заголовок
+};
 // Конец определений ==================================================================================================
 
 // --------------------------------------------------------------------------------
@@ -327,11 +358,10 @@ struct CORRECT_POWER220_STRUCT {
 
     // АНАЛОГОВЫЕ ДАТЧИКИ максимум 2 шт -------------------------------------------------------------------
     // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-    /* Справочно нумерация датчиков
-    * Давление харится в сотых бара
-    * #define PEVA        0                // Датчик давления испарителя.
-    * #define PCON        1                // Датчик давления нагнетания.
-    */
+    // Справочно нумерация датчиков
+    // Давление харится в сотых бара
+	#define PEVA			0                // Датчик давления испарителя.
+	#define PCON			1                // Датчик давления конденсатора.
      const char *namePress[] =       {
                                       "PEVA",
                                       "PCON"
@@ -354,7 +384,34 @@ struct CORRECT_POWER220_STRUCT {
     #define PRESS_FREQ        200            // Частота опроса аналоговых датчиков
     #define FILTER_SIZE       128            // Длина фильтра для датчика давления
     #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
-    
+
+    // История (графики)
+    const History_setup HistorySetup[] = {
+    	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+    	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+    	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+    	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+    	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+    	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+    	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+    	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+    	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+    	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+    };
+
+    // История (графики)
+    const History_setup HistorySetup[] = {
+    	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+    	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+    	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+    	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+    	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+    	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+    	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+    	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+    	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+    	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+    };
       // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
   //   #define EEV_DEF                     // Наличие ЭРВ в конфигурации
@@ -766,11 +823,10 @@ struct CORRECT_POWER220_STRUCT {
        
   // АНАЛОГОВЫЕ ДАТЧИКИ максимум 2 шт -------------------------------------------------------------------
   // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-      /* Справочно нумерация датчиков
-      * Давление харится в сотых бара
-      * #define PEVA        0                // Датчик давления испарителя.
-      * #define PCON        1                // Датчик давления нагнетания.
-      */
+    // Справочно нумерация датчиков
+    // Давление харится в сотых бара
+   	#define PEVA			0                // Датчик давления испарителя.
+   	#define PCON			1                // Датчик давления конденсатора.
        const char *namePress[] =       {
                                         "PEVA",
                                         "PCON"
@@ -795,6 +851,33 @@ struct CORRECT_POWER220_STRUCT {
       #define FILTER_SIZE       128            // Длина фильтра для датчика давления
       #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
 
+     // История (графики)
+     const History_setup HistorySetup[] = {
+     	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+     	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+     	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+     	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+     	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+     	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+     	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+     	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+     	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+     	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+     };
+
+     // История (графики)
+     const History_setup HistorySetup[] = {
+     	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+     	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+     	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+     	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+     	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+     	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+     	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+     	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+     	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+     	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+     };
   // ------------------- EEV -----------------------------------
   // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
       #define EEV_DEF                     // Наличие ЭРВ в конфигурации
@@ -1225,11 +1308,10 @@ struct CORRECT_POWER220_STRUCT {
        
       // АНАЛОГОВЫЕ ДАТЧИКИ максимум 2 шт -------------------------------------------------------------------
       // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-      /* Справочно нумерация датчиков
-       * Давление харится в сотых бара
-       * #define PEVA        0                // Датчик давления испарителя.
-       * #define PCON        1                // Датчик давления нагнетания.
-       */
+       // Справочно нумерация датчиков
+       // Давление харится в сотых бара
+      	#define PEVA			0                // Датчик давления испарителя.
+      	#define PCON			1                // Датчик давления конденсатора.
        const char *namePress[] =       {
                                         "PEVA",
                                         "PCON"
@@ -1255,7 +1337,20 @@ struct CORRECT_POWER220_STRUCT {
 
 
 //###################################################################################################################################################################################################################
-      // ------------------- EEV -----------------------------------
+       // История (графики)
+       const History_setup HistorySetup[] = {
+       	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+       	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+       	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+       	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+       	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+       	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+       	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+       	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+       	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+       	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+       };
+     // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
       #define EEV_DEF                     // Наличие ЭРВ в конфигурации
       #ifdef EEV_DEF                               // ЭРВ настройки под конкретную конфигурацию
@@ -1642,11 +1737,10 @@ struct CORRECT_POWER220_STRUCT {
 
       // АНАЛОГОВЫЕ ДАТЧИКИ максимум 2 шт -------------------------------------------------------------------
       // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-      /* Справочно нумерация датчиков
-       * Давление харится в сотых бара
-       * #define PEVA        0                // Датчик давления испарителя.
-       * #define PCON        1                // Датчик давления нагнетания.
-       */
+     // Справочно нумерация датчиков
+     // Давление харится в сотых бара
+    	#define PEVA			0                // Датчик давления испарителя.
+    	#define PCON			1                // Датчик давления конденсатора.
      const char *namePress[] =       {
                                       "PEVA",
                                       "PCON"
@@ -1670,7 +1764,20 @@ struct CORRECT_POWER220_STRUCT {
        #define FILTER_SIZE       128            // Длина фильтра для датчика давления
        #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
 
-      // ------------------- EEV -----------------------------------
+       // История (графики)
+       const History_setup HistorySetup[] = {
+       	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+       	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+       	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+       	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+       	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+       	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+       	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+       	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+       	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+       	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+       };
+     // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
       #define EEV_DEF                     // Наличие ЭРВ в конфигурации
       #ifdef EEV_DEF                               // ЭРВ настройки под конкретную конфигурацию
@@ -2135,11 +2242,10 @@ struct CORRECT_POWER220_STRUCT {
        
       // АНАЛОГОВЫЕ ДАТЧИКИ максимум 2 шт -------------------------------------------------------------------
       // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-      /* Справочно нумерация датчиков
-      * Давление харится в сотых бара
-      * #define PEVA        0                // Датчик давления испарителя.
-      * #define PCON        1                // Датчик давления нагнетания.
-      */
+       // Справочно нумерация датчиков
+       // Давление харится в сотых бара
+      	#define PEVA			0                // Датчик давления испарителя.
+      	#define PCON			1                // Датчик давления конденсатора.
        const char *namePress[] =       {
                                         "PEVA",
                                         "PCON"
@@ -2163,6 +2269,19 @@ struct CORRECT_POWER220_STRUCT {
       #define FILTER_SIZE       128            // Длина фильтра для датчика давления
       #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
 
+      // История (графики)
+      const History_setup HistorySetup[] = {
+      	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+      	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+      	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+      	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+      	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+      	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+      	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+      	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+      	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+      	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] }
+      };
       // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
       #define EEV_DEF                     // Наличие ЭРВ в конфигурации
@@ -2317,7 +2436,7 @@ struct CORRECT_POWER220_STRUCT {
 
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
-		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+//		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 	#else
@@ -2488,8 +2607,8 @@ struct CORRECT_POWER220_STRUCT {
  //                                         ,PIN_SENSOR_FLOWPCON     // Датчик протока по предконденсатору
                                     	   };
       // Описание датчиков
-    const char *noteFrequency[FNUMBER] = { "Датчик потока геоконтура (м³ч)",          // Датчик потока по испарителю
-                                           "Датчик потока отопления (м³ч)"        //  Датчик потока по кондесатору
+    const char *noteFrequency[FNUMBER] = { "Проток геоконтура (м³ч)",      // Датчик потока по испарителю
+                                           "Проток отопления (м³ч)"        // Датчик потока по кондесатору
  //                                       ,"Датчик протока по предконденсатору (кубы/час)" //  Датчик протока по предконденсатору
                                        	};
       // Имена датчиков
@@ -2661,7 +2780,7 @@ struct CORRECT_POWER220_STRUCT {
     //#define TEVAIN      0   // Температура на входе испарителя (по фреону)
     //#define TACCUM      0   // Температура на выходе теплоаккмулятора
     // Наличие датчика в конфигурации: 0 - нет, >0 - есть, +2(бит_1) - выводить датчик отдельно внизу на странице "схема ТН" (если бит_0 = 0 - то только когда привязан)
-    //                                                     +4(бит_2) - не строить график, +8(бит_3) - писать в историю
+    //                                                     +4(бит_2) - не строить график
     //...................................0.....1.....2.....3.....4.....5.....6.....7.....8.....9....10....11....12....13....14....15....16....17....18....19....20....21....
     const uint8_t SENSORTEMP[TNUMBER]={    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    3,    7,    7,    7,    4,    6,    6,    6,    6,    6 };
     // минимальные значения температур                                                                                                                              
@@ -2735,15 +2854,14 @@ struct CORRECT_POWER220_STRUCT {
   #define GAP_NUMBER_CRC    5       	  // Датчики с флагом игнорировать CRC. Максимальное число идущих подряд показаний превышающих на GAP_TEMP_VAL, после этого эти показания выдаются за действительные
 
   // АНАЛОГОВЫЕ ДАТЧИКИ  -------------------------------------------------------------------
-  #define ANUMBER     4       // Максимальное число аналоговых датчиков (то что поддерживается)
+  #define ANUMBER		4       // Максимальное число аналоговых датчиков (то что поддерживается)
   // наличие датчиков в конфигурации минимальные максимальные и тестовые значения
-  /* Справочно нумерация датчиков
-  * Давление харится в сотых бара
-  * #define PEVA        0                // Датчик давления испарителя.
-  * #define PCON        1                // Датчик давления конденсатора.
-  */
-  #define PGEO		2
-  #define POUT		3
+  // Справочно нумерация датчиков
+  // Давление харится в сотых бара
+  #define PEVA			0                // Датчик давления испарителя.
+  #define PCON			1                // Датчик давления конденсатора.
+  #define PGEO			2
+  #define POUT			3
   // Имена датчиков
   const char *namePress[] = { "PEVA",
 		  	  	  	  	  	  "PCON",
@@ -2788,6 +2906,33 @@ struct CORRECT_POWER220_STRUCT {
   // Могут быть задействованы разные датчики!
   #define FEED      sTemp[TCONOUTG].get_Temp()               // Подача системы CO
   #define RET       sTemp[TCONING].get_Temp()                // Обратка системы CO
+
+  // История (графики)
+	const History_setup HistorySetup[] = {
+		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+		{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+		{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+		{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+		{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+		{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+		{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+		{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
+		{ STATS_OBJ_Temp, TSUN, noteTemp[TSUN] },
+		{ STATS_OBJ_Temp, TSUNOUTG, noteTemp[TSUNOUTG] },
+		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
+		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
+		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
+		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
+		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
+		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
+		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
+		{ STATS_OBJ_COP, OBJ_COP_Full, "Выработка, кВт" }
+	};
 
   // ------------------- EEV -----------------------------------
   // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------

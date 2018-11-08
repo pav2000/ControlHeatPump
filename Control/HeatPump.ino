@@ -3065,7 +3065,7 @@ int8_t HeatPump::runCommand()
 			journal.jprintf("$SOFTWARE RESET control . . .\n\n");
 			save_motoHour();
 			Stats.SaveStats(0);
-			Stats.SaveHistory();
+			Stats.SaveHistory(0);
 			_delay(500);            // задержка что бы вывести сообщение в консоль
 			Software_Reset() ;      // Сброс
 			break;

@@ -25,34 +25,16 @@
 #define SD_BLOCK			512
 #define STATS_MAX_RECORD_LEN	(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE		((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
-#define HISTORY_MAX_RECORD_LEN	(15 + 35 * 5)
+
+#define HISTORY_MAX_RECORD_LEN	(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 5)
 #define HISTORY_MAX_FILE_SIZE	((HISTORY_MAX_RECORD_LEN * 1440 * 366 / SD_BLOCK + 1) * SD_BLOCK)
+
 #define MAX_INT32_VALUE 2147483647
 #define MIN_INT32_VALUE -2147483647
 
 // what:
 #define ID_STATS 	0
 #define ID_HISTORY	1
-
-enum {
-	STATS_OBJ_Temp = 0,		// °C
-	STATS_OBJ_Power,		// кВт*ч, пока только TYPE_SUM для OBJ_*
-	STATS_OBJ_Press,		// bar or °C
-	STATS_OBJ_Flow,			// м³ч
-	STATS_OBJ_COP,			//
-	STATS_OBJ_Voltage,		// V
-	STATS_OBJ_Compressor,
-	STATS_OBJ_Sun
-};
-
-enum {
-	OBJ_powerCO = 0,
-	OBJ_powerGEO,
-	OBJ_power220,
-	OBJ_Boiler,
-	OBJ_COP_Compressor,
-	OBJ_COP_Full
-};
 
 enum {
 	STATS_TYPE_MIN = 0,
@@ -62,9 +44,11 @@ enum {
 	STATS_TYPE_TIME // Time, ms
 };
 
-#define STATS_WORKD		0x80 // Во время работы компрессора, прошло STATS_WORKD_TIME
-//#define STATS_WORK		0x40 // Во время работы компрессора
-#define STATS_TYPE_MASK	(~(STATS_WORKD))
+enum { // когда
+	STATS_WHEN_ALWAYS = 0,
+	STATS_WHEN_WORKD			// Во время работы компрессора, прошло STATS_WORKD_TIME
+	//STATS_WORK				// Во время работы компрессора
+};
 #define STATS_WORKD_TIME 60000 // ms
 
 //static char *stats_format = { "%.1f", "" }; // printf format string
@@ -73,35 +57,36 @@ struct Stats_Data {
 	int32_t		value;			// Для среднего, макс единица: +-1491308
 	uint8_t		object;			// STATS_OBJ_*
 	uint8_t		type;			// STATS_TYPE_*
+	uint8_t		when;			// STATS_WHEN_*
 	uint8_t 	number;			// номер датчика
 };
 
 Stats_Data Stats_data[] = {
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_MIN, TOUT },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TOUT },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, TOUT },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TIN },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG+STATS_WORKD, TEVAING },
-							{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, TBOILER },
-							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_powerCO },
-							{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, OBJ_power220 },
-							{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, OBJ_power220 },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_MIN+STATS_WORKD, OBJ_COP_Full },
-							{ 0, STATS_OBJ_COP, STATS_TYPE_AVG+STATS_WORKD, OBJ_COP_Full },
-							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, 0 },
-							{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, 0 },
-							{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, 0 },
-							{ 0, STATS_OBJ_Compressor, STATS_TYPE_TIME, 0 }
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_MIN, STATS_WHEN_ALWAYS, TOUT },
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, TOUT },
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_MAX, STATS_WHEN_ALWAYS, TOUT },
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, TIN },
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_WORKD, TEVAING },
+	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, TBOILER },
+	{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, STATS_WHEN_ALWAYS, OBJ_powerCO },
+	{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, STATS_WHEN_ALWAYS, OBJ_power220 },
+	{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, STATS_WHEN_ALWAYS, OBJ_power220 },
+	{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, STATS_WHEN_WORKD, OBJ_COP_Full },
+	{ 0, STATS_OBJ_COP, STATS_TYPE_AVG, STATS_WHEN_WORKD, OBJ_COP_Full },
+	{ 0, STATS_OBJ_Voltage, STATS_TYPE_MIN, STATS_WHEN_ALWAYS, 0 },
+	{ 0, STATS_OBJ_Voltage, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, 0 },
+	{ 0, STATS_OBJ_Voltage, STATS_TYPE_MAX, STATS_WHEN_ALWAYS, 0 },
+	{ 0, STATS_OBJ_Compressor, STATS_TYPE_TIME, STATS_WHEN_ALWAYS, 0 }
 #ifdef USE_SUN_COLLECTOR
-							,{ 0, STATS_OBJ_Sun, STATS_TYPE_TIME, 0 }
+	,{ 0, STATS_OBJ_Sun, STATS_TYPE_TIME, STATS_WHEN_ALWAYS, 0 }
 #endif
 #ifdef PGEO
-							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, PGEO }
+	,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, STATS_WHEN_ALWAYS, PGEO }
 #endif
 #ifdef POUT
-							,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, POUT }
+	,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, STATS_WHEN_ALWAYS, POUT }
 #endif
-						};
+};
 
 const char stats_file_start[] = "stats_";
 const char stats_file_header[] = "head";
@@ -118,7 +103,7 @@ public:
 	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
 	void	Reset();						// Сбросить накопленные промежуточные значения
 	int8_t	SaveStats(uint8_t newday);		// Записать статистику на SD
-	int8_t 	SaveHistory();					// Записать буфер истории на SD
+	int8_t 	SaveHistory(uint8_t from_web);	// Записать буфер истории на SD
 	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
 	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
 	inline void	ReturnFileString(char *ret);// Строка со значениями за день
@@ -127,7 +112,7 @@ public:
 	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
 	boolean	FindEndPosition(uint8_t what);
 	void	CheckCreateNewFile();
-	boolean CreateOpenFile(uint8_t what);
+	int8_t	CreateOpenFile(uint8_t what);
 	void	History();						// Логирование параметров работы ТН, раз в 1 минуту
 private:
 	void	Error(const char *text, uint8_t what);
