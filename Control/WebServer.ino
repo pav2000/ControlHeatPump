@@ -53,9 +53,11 @@ static const char *noteRemarkTest[] = {"Тестирование отключе�
                                
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
 
-const char* pageUnauthorized     = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
+const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
+const char* HEADER_STATS_CSV      = {"DATA;minTOUT;avgTOUT;maxTOUT;avgTIN;avgTEVAING;avgTBOILER;sumPowerCO;sumPower220;maxPower200;minFullCOP;avgFulCOP;minVoltage;avgVoltage;maxVoltage;timeCOMP"};   // Шапка файла статистики, общая часть                                       
+
 
 const char *postRet[]            = {"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n",                           //  Ответы на пост запросы
 									"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n",
@@ -219,7 +221,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) {
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -228,7 +230,20 @@ void readFileSD(char *filename, uint8_t thread)
 		if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
 			Stats.ReturnFileHeader(Socket[thread].outBuf);
 			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-		} else {
+		} else { // Добавить заголовки столбцов
+			strcpy(Socket[thread].outBuf,HEADER_STATS_CSV);  // Общая часть
+            #ifdef USE_SUN_COLLECTOR
+     		strcat(Socket[thread].outBuf,";SanTime"); 			
+			#endif
+			#ifdef PGEO
+	    	strcat(Socket[thread].outBuf,";minPGEO"); 			
+			#endif
+			#ifdef POUT
+		    strcat(Socket[thread].outBuf,";minPOUT"); 			
+			#endif
+			strcat(Socket[thread].outBuf,"\r\n"); 
+	    	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	    	strcpy(Socket[thread].outBuf,"");		
 			Stats.SendFileData(thread, &webFile, filename);
 		}
 		return;
