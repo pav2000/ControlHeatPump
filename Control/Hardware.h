@@ -513,6 +513,7 @@ public:
   int16_t read_tempFC();                           // Tемпература радиатора
    
   int16_t get_freqFC() {return freqFC;}            // Получить текущую частоту в 0.01 герцах
+  int16_t get_frequency() { return freqFC; }       // Получить текущую частоту в Гц
   uint32_t get_startTime(){return startCompressor;}// Получить время старта компрессора
   int8_t get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
   int8_t start_FC();                               // Команда ход на инвертор (целевая частота выставляется)

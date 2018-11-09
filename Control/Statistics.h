@@ -90,7 +90,8 @@ Stats_Data Stats_data[] = {
 
 const char stats_file_start[] = "stats_";
 const char stats_file_header[] = "head";
-const char stats_file_ext[] = ".csv";
+const char stats_file_ext[] = ".dat";
+const char stats_csv_file_ext[] = ".csv";
 const char history_file_start[] = "hist_";
 uint8_t stats_buffer[SD_BLOCK];
 uint8_t history_buffer[SD_BLOCK];
@@ -99,25 +100,26 @@ class Statistics
 {
 public:
 	void	Init(uint8_t newyear = 0);
-	void	Update();						// Обновить статистику, раз в период
-	void	UpdateEnergy();					// Обновить энергию и COP, вызывается часто
-	void	Reset();						// Сбросить накопленные промежуточные значения
-	int8_t	SaveStats(uint8_t newday);		// Записать статистику на SD
-	int8_t 	SaveHistory(uint8_t from_web);	// Записать буфер истории на SD
-	void	ReturnFileHeader(char *buffer);	// Возвращает файл с заголовками полей
-	void	ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag);
-	inline void	ReturnFileString(char *ret);// Строка со значениями за день
-	void	ReturnFieldString(char **ret, uint8_t i);
-	void	ReturnWebTable(char *ret);
+	void	Update();										// Обновить статистику, раз в период
+	void	UpdateEnergy();									// Обновить энергию и COP, вызывается часто
+	void	Reset();										// Сбросить накопленные промежуточные значения
+	int8_t	SaveStats(uint8_t newday);						// Записать статистику на SD
+	int8_t 	SaveHistory(uint8_t from_web);					// Записать буфер истории на SD
+	void	StatsFileHeader(char *buffer, uint8_t flag);	// Возвращает файл с заголовками полей
+	void	StatsFieldHeader(char *ret, uint8_t i, uint8_t flag);
+	inline void	StatsFileString(char *ret);					// Строка со значениями за день
+	void	StatsFieldString(char **ret, uint8_t i);
+	void	StatsWebTable(char *ret);
+	void 	HistoryFileHeader(char *ret, uint8_t flag);		// Возвращает файл с заголовками полей
 	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
 	boolean	FindEndPosition(uint8_t what);
 	void	CheckCreateNewFile();
 	int8_t	CreateOpenFile(uint8_t what);
-	void	History();						// Логирование параметров работы ТН, раз в 1 минуту
+	void	History();										// Логирование параметров работы ТН, раз в 1 минуту
 private:
 	void	Error(const char *text, uint8_t what);
-	uint16_t counts;						// Кол-во уже совершенных обновлений
-	uint16_t counts_work;					// Кол-во уже совершенных обновлений во время работы компрессора
+	uint16_t counts;										// Кол-во уже совершенных обновлений
+	uint16_t counts_work;									// Кол-во уже совершенных обновлений во время работы компрессора
 	uint32_t compressor_on_timer;
 	uint32_t previous;
 	uint8_t	 day;

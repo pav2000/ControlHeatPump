@@ -96,8 +96,8 @@ h2 button{float:right;}
 body.const td, body.const th {padding: 5px 10px;}
 #const tr:nth-child(2n),  #const1 tr:nth-child(2n) { background: #e0e0e0; }
 #const tr:nth-child(2n-1),  #const1 tr:nth-child(2n-1) { background: #c0c0c0; }
-body.relay #get_listrelay input{display:none}
-body.test #get_listrelay span{display:none}
+body.relay #get_tblrelay input{display:none}
+body.test #get_tblrelay span{display:none}
 #get_uptime{text-transform:lowercase}
 .yellow{color:yellow;}
 .red{color:red;}

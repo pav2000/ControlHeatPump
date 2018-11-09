@@ -56,8 +56,6 @@ const char* file_types[] = {"text/html", "image/x-icon", "text/css", "applicatio
 const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
-const char* HEADER_STATS_CSV      = {"DATA;minTOUT;avgTOUT;maxTOUT;avgTIN;avgTEVAING;avgTBOILER;sumPowerCO;sumPower220;maxPower200;minFullCOP;avgFulCOP;minVoltage;avgVoltage;maxVoltage;timeCOMP"};   // Шапка файла статистики, общая часть                                       
-
 
 const char *postRet[]            = {"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n",                           //  Ответы на пост запросы
 									"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n",
@@ -227,23 +225,30 @@ void readFileSD(char *filename, uint8_t thread)
 	    strcat(Socket[thread].outBuf, filename);
 	    strcat(Socket[thread].outBuf, "\"");
 	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
-		if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
-			Stats.ReturnFileHeader(Socket[thread].outBuf);
+		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
+		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+			Stats.StatsFileHeader(Socket[thread].outBuf, n);
 			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-		} else { // Добавить заголовки столбцов
-	/*		strcpy(Socket[thread].outBuf,HEADER_STATS_CSV);  // Общая часть
-            #ifdef USE_SUN_COLLECTOR
-     		strcat(Socket[thread].outBuf,";SanTime"); 			
-			#endif
-			#ifdef PGEO
-	    	strcat(Socket[thread].outBuf,";minPGEO"); 			
-			#endif
-			#ifdef POUT
-		    strcat(Socket[thread].outBuf,";minPOUT"); 			
-			#endif
-			strcat(Socket[thread].outBuf,"\r\n"); 
-	    	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-	    	strcpy(Socket[thread].outBuf,"");		*/
+			strcpy(str, stats_file_ext);
+		}
+		if(!n) {
+			Stats.SendFileData(thread, &webFile, filename);
+		}
+		return;
+	}
+	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью (только для бакапа)
+	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
+	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
+	    strcat(Socket[thread].outBuf, filename);
+	    strcat(Socket[thread].outBuf, "\"");
+	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
+		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
+		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+			Stats.HistoryFileHeader(Socket[thread].outBuf, n);
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+			strcpy(str, stats_file_ext);
+		}
+		if(!n) {
 			Stats.SendFileData(thread, &webFile, filename);
 		}
 		return;
@@ -585,49 +590,53 @@ void parserGET(char *buf, char *strReturn, int8_t )
        _itoa(HP.socketRes(),strReturn);
        ADD_WEBDELIM(strReturn) ;
        continue;
-       }  
-    if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
-    {
-       HP.get_listChart(strReturn);  // строка добавляется
-       ADD_WEBDELIM(strReturn) ;
-       continue;
     }
-//     if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
-//       {
-//       #ifdef I2C_EEPROM_64KB
-//       HP.Stat.get_listStat(strReturn, true);  // строка добавляется
-//       #else
-//       strcat(strReturn,"absent:1;") ;
-//       #endif
-//       ADD_WEBDELIM(strReturn) ;
-//       continue;
-//       }
-    if (strncmp(str,"get_listProfile", 15)==0)  // Функция get_listProfile - получить список доступных профилей
+    if(strncmp(str, "get_list", 8) == 0) // get_list*
     {
-       HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
-       ADD_WEBDELIM(strReturn) ;
-       continue;
-    }
-    if (strcmp(str,"get_listStats")==0)  // получить список доступных файлов статистики
-    {
-		i = 1;
-		x = strReturn;
-		static SdFile File;
-		static fname_t fname;
-		for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
-			x += m_strlen(x);
-			m_snprintf(x, sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext), "%s%04d%s", stats_file_start, e, stats_file_ext);
-			if(!File.opens(x, O_READ, &fname)) {
-				*x = '\0';
-				break;
-			} else File.close();
-			if(i) {
-				strcat(x, ":1;");
-				i = 0;
-			} else strcat(x, ":0;");
-		}
-		ADD_WEBDELIM(strReturn) ;
-		continue;
+    	str += 8;
+    	if(strcmp(str,"Chart")==0)  // Функция get_listChart - получить список доступных графиков
+    	{
+    		HP.get_listChart(strReturn);  // строка добавляется
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	}
+    	if(strncmp(str,"Profile", 7)==0)  // Функция get_listProfile - получить список доступных профилей
+    	{
+    		HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	}
+    	if(strcmp(str,"Press")==0)     // Функция get_listPress
+    	{
+    		for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
+    		ADD_WEBDELIM(strReturn);
+    		continue;
+    	}
+    	i = 0;
+    	if(strcmp(str,"Stats")==0) i = 1;   // Функция get_listStats
+    	else if(strcmp(str,"Hist")==0) i = 2;   // Функция get_listHist
+    	if(i) { // получить список доступных файлов статистики/истории в формате csv
+    		str = (char*)(i == 1 ? stats_file_start : history_file_start);
+    		i = 1;
+    		x = strReturn;
+    		static SdFile File;
+    		static fname_t fname;
+    		for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
+    			x += m_strlen(x);
+    			m_snprintf(x, 8 + 4 + sizeof(stats_csv_file_ext), "%s%04d%s", str, e, stats_file_ext);
+    			if(!File.opens(x, O_READ, &fname)) {
+    				*x = '\0';
+    				break;
+    			} else File.close();
+    			if((y = strchr(x, '.'))) strcpy(y, stats_csv_file_ext);
+    			if(i) {
+    				strcat(x, ":1;");
+    				i = 0;
+    			} else strcat(x, ":0;");
+    		}
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	} else goto x_FunctionNotFound;
     }
     if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
     {
@@ -1195,7 +1204,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #endif
 
         strcat(strReturn,"<b> Статистика за день</b>|;");
-        Stats.ReturnWebTable(strReturn);
+        Stats.StatsWebTable(strReturn);
 
         ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo
@@ -1289,12 +1298,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
           #endif
         // -------------- СПИСКИ ДАТЧИКОВ и ИСПОЛНИТЕЛЬНЫХ УСТРОЙСТВ  -----------------------------------------------------
         // Список аналоговых датчиков выводятся только присутсвующие датчики список вида name:0;
-        if (strcmp(str,"get_listPress")==0)     // Функция get_listPress
-         {
-          for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
-          ADD_WEBDELIM(strReturn) ;    continue;
-         } 
-        if(strcmp(str, "get_listTemp") == 0) // Возвращает список датчиков через ";"
+        if(strcmp(str, "get_tblTempF") == 0) // Возвращает список датчиков через ";"
         {
         	for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
         	ADD_WEBDELIM(strReturn); continue;
@@ -1308,17 +1312,17 @@ void parserGET(char *buf, char *strReturn, int8_t )
         		}
         	ADD_WEBDELIM(strReturn); continue;
         }
-        if (strcmp(str,"get_listInput")==0)     // Функция get_listInput
+        if (strcmp(str,"get_tblInput")==0)     // Функция get_listInput
          {
           for(i=0;i<INUMBER;i++) if (HP.sInput[i].get_present()){strcat(strReturn,HP.sInput[i].get_name());strcat(strReturn,";");}
           ADD_WEBDELIM(strReturn) ;    continue;
          }         
-        if (strcmp(str,"get_listRelay")==0)     // Функция get_listRelay
+        if (strcmp(str,"get_tblRelay")==0)     // Функция get_listRelay
          {
           for(i=0;i<RNUMBER;i++) if (HP.dRelay[i].get_present()){strcat(strReturn,HP.dRelay[i].get_name());strcat(strReturn,";");}
           ADD_WEBDELIM(strReturn) ;    continue;
          }
-        if (strcmp(str,"get_listFlow")==0)     // Функция get_lisFlow
+        if (strcmp(str,"get_tblFlow")==0)     // Функция get_lisFlow
          {
           for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
           ADD_WEBDELIM(strReturn) ;    continue;
@@ -2658,8 +2662,3 @@ if (SerialFlash.create(nameFile,lenFile))
 else journal.jprintf(" %s: error create file %s\n",(char*)__FUNCTION__,nameFile);
 return 	loadLen;
 }
-
-
-
- 
-

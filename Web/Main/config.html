@@ -37,10 +37,9 @@
 				<input type="checkbox" id="get_optionhp-save_on" onChange="setParam('get_optionHP(SAVE_ON)');">
 			</td>
 		</tr>
-			<td>Число повторных попыток пуска при ошибке [0..10]<sup>1</sup></td>
+			<td>Число повторных попыток пуска при ошибке [0..255]<sup>1</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-attempt" type="number" min="0" max="9999" step="1" value="0">
-				<input id="get_optionhp-attempt2" type="submit" value=">"  onclick="setParam('get_optionHP(ATTEMPT)');">
+				<input id="get_optionhp-attempt" type="number" min="0" max="255" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_optionHP(ATTEMPT)');">
 			</td>
 		</tr>
 		<tr>
@@ -70,22 +69,19 @@
 		<tr>
 			<td>Температура для управления дополнительным ТЭНом °C [-30..30]</td>
 			<td nowrap>
-				<input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0">
-				<input id="get_optionhp-temp_rheat2" type="submit" value=">"  onclick="setParam('get_optionHP(TEMP_RHEAT)');">
+				<input id="get_optionhp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0"> <input type="submit" value=">" onclick="setParam('get_optionHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>5</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0">
-				<input id="get_optionhp-pump_work2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_WORK)');">
+				<input id="get_optionhp-pump_work" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_optionHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
 			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0">
-				<input id="get_optionhp-pump_pause2" type="submit" value=">"  onclick="setParam('get_optionHP(PUMP_PAUSE)');">
+				<input id="get_optionhp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_optionHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
 		<tr>
@@ -107,8 +103,7 @@
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
 			<td nowrap>
-				<input type="number" id="get_optionhp-delay_on_pump">
-				<input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');">
+				<input type="number" id="get_optionhp-delay_on_pump"> <input type="submit" value=">" onclick="setParam('get_optionHP(DELAY_ON_PUMP)');">
 			</td>
 		</tr>	
 		<tr>
@@ -185,15 +180,13 @@
 		<tr>
 			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>7</sup></td>
 			<td nowrap>
-				<input id="get_optionhp-nxts" type="number" min="0" step="1" value="0">
-				<input type="submit" value=">"  onclick="setParam('get_optionHP(NXTS)');">
+				<input id="get_optionhp-nxts" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_optionHP(NXTS)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Яркость дисплея Nextion в % [1..100]</td>
 			<td nowrap>
-				<input id="get_optionhp-nxtd" type="number" min="1" max="100" step="1" value="100">
-				<input type="submit" value=">"  onclick="setParam('get_optionHP(NXTD)');">
+				<input id="get_optionhp-nxtd" type="number" min="1" max="100" step="1" value="100"> <input type="submit" value=">" onclick="setParam('get_optionHP(NXTD)');">
 			</td>
 		</tr>
 		<tr>

@@ -9,7 +9,7 @@
 	window.onload = function() {
 		var arr = document.getElementById('links').getElementsByTagName('a'); 
 		for (i=0; i<arr.length; i++) fix_href(arr[i]);
-		loadParam("get_listStats");
+		loadParam("get_listStats,get_listHist");
 	}
 	function fix_href(el) {
 		el.href = el.href.replace(/^.+:\/+.*\//i, urlcontrol + '/');
@@ -26,13 +26,18 @@
 		}
 	}
 	function loadParam_after(paramid) {
-		if(paramid.indexOf("et_listStats")!=-1) {
-			fix_stats();
-		}
+		if(paramid.indexOf("_listStats")!=-1) fix_stats();
+		if(paramid.indexOf("_listHist")!=-1) fix_hist();
 	}
 	function fix_stats() {
 		var op = document.getElementById('get_liststats').options;
 		var el = document.getElementById("stats_name");
+		el.href = op[op.selectedIndex].innerHTML;
+		fix_href(el);
+	}
+	function fix_hist() {
+		var op = document.getElementById('get_listhist').options;
+		var el = document.getElementById("hist_name");
 		el.href = op[op.selectedIndex].innerHTML;
 		fix_href(el);
 	}
@@ -44,12 +49,8 @@
 	<h1>Файлы</h1>
 	<div class="row1" id="links">
 		<table>
-		<tbody>
-			<tr><td>Документация</td><td><a class="download" href="/manual.pdf" download><button>Загрузить</button></a></td></tr>
+			<tr><td width="45%">Документация</td><td><a class="download" href="/manual.pdf" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Текущее состояние ТН</td><td><a class="download" href="/state.txt" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Графики работы ТН из RAM</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Статистика работы ТН (файлы по годам): <select id="get_liststats" onchange='fix_stats()'></select></td><td><a id="stats_name" class="download" href="stats_2017.csv" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
@@ -64,7 +65,11 @@
 					<p><input type="submit" value="Загрузить" onclick="send_files('spi')"></p>
 				</td>
 			</tr>
-		</tbody>
+			<tr><td><b>Работа ТН</b></td></tr>
+			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Графики работы ТН из RAM</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Статистика работы ТН (файлы по годам)</td><td nowrap><select id="get_liststats" onchange='fix_stats()'></select> <a id="stats_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
+			<tr><td>История работы ТН (файлы по годам)</td><td nowrap><select id="get_listhist" onchange='fix_hist()'></select> <a id="hist_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
 		</table>
 		 1. Чип SPI Flash должен быть установлен и для активации его использования должна быть включена соответстующая опция (страница ОПЦИИ ТН).<br>
 		 2. SPI Flash будет отформатирована, и затем на нее будут записаны ВСЕ выбранные файлы (добавление файлов не возможно).<br>

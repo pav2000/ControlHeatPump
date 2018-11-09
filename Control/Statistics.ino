@@ -22,13 +22,14 @@
 
 #define temp_initbuf Socket[0].outBuf
 const char format_date[] = "%04d%02d%02d";
-const char format_datetime[] = "%04d%02d%02d%02d%02d%02d;";
+const char format_datetime[] = "%04d%02d%02d%02d%02d%02d";
 #define format_date_size 8
 char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
 
 // what: 0 - Stats, 1 - History, Return: OK or Error
 int8_t Statistics::CreateOpenFile(uint8_t what)
 {
+	if(!HP.get_fSD()) return ERR_SD_INIT;
 	if(what == ID_HISTORY) {
 		HistoryBlockStart = 0;
 		HistoryCurrentPos = 0;
@@ -91,7 +92,7 @@ xError:
 boolean Statistics::FindEndPosition(uint8_t what)
 {
 	uint8_t *buffer, *pos = NULL;
-	uint32_t bst, bend, cur = 0;
+	uint32_t bst, bend, cur;
 	if(what) {
 		bst = HistoryBlockStart;
 		bend = HistoryBlockEnd;
@@ -101,20 +102,23 @@ boolean Statistics::FindEndPosition(uint8_t what)
 		bend = BlockEnd;
 		buffer = stats_buffer;
 	}
-	while(cur != bst || cur != bend) {
+	while(bst <= bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
 		if(!card.card()->readBlock(cur, buffer)) {
-			Error("fndpos", what);
+			Error("FindPos", what);
 			break;
 		}
-		if(buffer[0] != 0) {
+		if(*buffer) {
 			if((pos = (uint8_t*)memchr(buffer, 0, SD_BLOCK))) break;
-			bst = cur;
+			bst = cur + 1;
+			if(bst > bend) {
+				if(bend < (what ? HistoryBlockEnd : BlockEnd)) bend++; else break; // file overflow
+			}
 		} else if(cur == bst) { // empty
 			pos = buffer;
 			break;
-		} else bend = cur;
+		} else bend = cur - 1;
 	}
 	if(pos == NULL) return false;
 	if(what) {
@@ -357,7 +361,7 @@ void Statistics::Update()
 //	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) journal.jprintf("%d=%d, ", i, Stats_data[i].value); journal.jprintf("\n");
 }
 
-void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
+void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 {
 	if(flag && Stats_data[i].type == STATS_TYPE_TIME) strcat(ret, "M"); // ось часы
 	switch(Stats_data[i].object) {
@@ -414,15 +418,17 @@ void Statistics::ReturnFieldHeader(char *ret, uint8_t i, uint8_t flag)
 }
 
 // Возвращает файл с заголовками полей
-void Statistics::ReturnFileHeader(char *ret)
+void Statistics::StatsFileHeader(char *ret, uint8_t flag)
 {
+	if(!flag) strcat(ret, "Дата;");
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		if(i > 0) strcat(ret, ";");
-		ReturnFieldHeader(ret, i, 1);
+		StatsFieldHeader(ret, i, flag);
 	}
+	strcat(ret, "\n");
 }
 
-void Statistics::ReturnFieldString(char **ret, uint8_t i)
+void Statistics::StatsFieldString(char **ret, uint8_t i)
 {
 	int32_t val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / (Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts) : Stats_data[i].value;
 	if(val == MIN_INT32_VALUE || val == MAX_INT32_VALUE) val = 0;
@@ -454,23 +460,23 @@ void Statistics::ReturnFieldString(char **ret, uint8_t i)
 }
 
 // Строка со значениями за день (разделитель ";"), при запуске не из Update() возможны неверные данные!
-inline void Statistics::ReturnFileString(char *ret)
+inline void Statistics::StatsFileString(char *ret)
 {
 	ret += m_snprintf(ret, 20, format_date, year, month, day);
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		*ret++ = ';';
-		ReturnFieldString(&ret, i);
+		StatsFieldString(&ret, i);
 	}
 	*ret = '\n'; *(ret+1) = '\0';
 }
 
-void Statistics::ReturnWebTable(char *ret)
+void Statistics::StatsWebTable(char *ret)
 {
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
-		ReturnFieldHeader(ret, i, 0);
+		StatsFieldHeader(ret, i, 0);
 		ret += m_strlen(ret);
 		*ret++ = '|';
-		ReturnFieldString(&ret, i);
+		StatsFieldString(&ret, i);
 		strcat(ret, ";");
 	}
 }
@@ -493,33 +499,25 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 		return;
 	}
 	File->close();
-	SPI_switchW5200();
-	uint32_t readed = m_strlen(Socket[thread].outBuf);
-	if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-		Error("send dh", ID_STATS);
-		return;
-	} else {
-		readed = 0;
-		for(uint32_t i = BStart; i <= BEnd; i++) {
-			SPI_switchSD();
-			if(i == CurrentBlock) {
-				memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
-			} else if(i == HistoryCurrentBlock) {
-				memcpy((uint8_t*)Socket[thread].outBuf + readed, history_buffer, SD_BLOCK);
-			} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
-				Error("read data", ID_STATS);
-				break;
-			}
-			if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
-				readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
-			} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
-			if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-				Error("send data", ID_STATS);
-				break;
-			}
-			readed = 0;
+	uint32_t readed = 0;
+	for(uint32_t i = BStart; i <= BEnd; i++) {
+		SPI_switchSD();
+		if(i == CurrentBlock) {
+			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+		} else if(i == HistoryCurrentBlock) {
+			memcpy((uint8_t*)Socket[thread].outBuf + readed, history_buffer, SD_BLOCK);
+		} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+			Error("read data", ID_STATS);
+			break;
 		}
-		SPI_switchW5200();
+		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
+			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
+		} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
+		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+			Error("send data", ID_STATS);
+			break;
+		}
+		readed = 0;
 	}
 }
 
@@ -537,17 +535,13 @@ int8_t Statistics::SaveStats(uint8_t newday)
 		return ERR_OUT_OF_MEMORY;
 	}
 	int8_t retval = OK;
-	ReturnFileString(rbuf);
+	StatsFileString(rbuf);
 	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
-
-
-	journal.printf("SaveStats(%d): %d, %d =>%s\n", newday, CurrentPos, lensav, rbuf);
-
 #ifdef STATS_USE_BUFFER_FOR_SAVING
 	if(newday < 2 || lensav != len) { // save when there is no space in buffer
 #endif
-		if(newday != 1 && SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) {
+		if(newday != 1 && SemaphoreTake(xWebThreadSemaphore, newday == 0 ? W5200_TIME_WAIT : 0) == pdFALSE) {
 			retval = ERR_CONFIG;
 			free(rbuf);
 			return retval;
@@ -572,7 +566,10 @@ int8_t Statistics::SaveStats(uint8_t newday)
 					Error("save 2", ID_STATS);
 					retval = ERR_SD_WRITE;
 				} else if(newday == 2) { // new day
-					CurrentBlock++;
+					if(CurrentBlock >= BlockEnd) {
+						Error("File Overflow", ID_STATS);
+						retval = ERR_CONFIG;
+					} else CurrentBlock++;
 					CurrentPos = len - lensav - 1;
 				} else { // reread current block
 					if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
@@ -597,7 +594,7 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 	return OK;
 #endif
 	if(!GETBIT(HP.Option.flags, fHistory) || !HP.get_fSD() || HistoryCurrentBlock == 0) return OK;
-	if(!from_web && SemaphoreTake(xWebThreadSemaphore, 0) == pdFALSE) return ERR_CONFIG;
+	if(!from_web && SemaphoreTake(xWebThreadSemaphore, W5200_TIME_WAIT) == pdFALSE) return ERR_CONFIG;
 	int8_t retval = OK;
 	SPI_switchSD();
 	if(!card.card()->writeBlock(HistoryCurrentBlock, (uint8_t*)history_buffer)) {
@@ -619,6 +616,7 @@ void Statistics::History()
 	char *buf = mbuf;
 	buf += m_snprintf(buf, 20, format_datetime, year, month, day, rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
+		*buf++ = ';';
 		switch(HistorySetup[i].object) {
 		case STATS_OBJ_Temp:		// C
 			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 100, &buf, 1);
@@ -629,14 +627,71 @@ void Statistics::History()
 		case STATS_OBJ_PressTemp:	// C
 			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 100, &buf, 1);
 			break;
+		case STATS_OBJ_Flow:		// m3h
+			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 1000, &buf, 1);
+			break;
+#ifdef EEV_DEF
+		case STATS_OBJ_EEV:
+			switch(HistorySetup[i].number) {
+			case STATS_EEV_Percent:
+				int_to_dec_str(HP.dEEV.get_EEV_percent(), 1, &buf, 0);
+				break;
+			case STATS_EEV_OverHeat:
+				int_to_dec_str(HP.dEEV.get_Overheat(), 100, &buf, 1);
+				break;
+			case STATS_EEV_OverCool:
+				int_to_dec_str(HP.get_overcool(), 100, &buf, 1);
+				break;
+			}
+			break;
+#endif
+		case STATS_OBJ_Compressor:
+//			switch(HistorySetup[i].number) {
+//			case OBJ_Freq:
+				int_to_dec_str(HP.dFC.get_frequency(), 100, &buf, 0);
+//				break;
+//			}
+			break;
+		case STATS_OBJ_Power:
+			switch(HistorySetup[i].number) {
+			case OBJ_power220:
+				int_to_dec_str(HP.power220, 1000, &buf, 3);
+				break;
+			case OBJ_powerCO:
+				int_to_dec_str(HP.powerCO, 1000, &buf, 1);
+				break;
+			}
+			break;
+		case STATS_OBJ_COP:
+			int_to_dec_str(HP.fullCOP, 1000, &buf, 3);
+			break;
 		}
-
-
-
+		if(buf > mbuf + HISTORY_MAX_RECORD_LEN - 8) {
+			journal.jprintf("%s memory overflow: %d, max: %d\n", "History", buf - mbuf, HISTORY_MAX_RECORD_LEN);
+			break;
+		}
 	}
-
-
-
-
+	*buf++ = '\n'; *buf = '\0';
+	uint16_t lensav, len = buf - mbuf + 1;
+	memcpy(history_buffer + HistoryCurrentPos, mbuf, lensav = SD_BLOCK - HistoryCurrentPos < len ? SD_BLOCK - HistoryCurrentPos : len);
+	if(lensav != len) { // save when there is no space in buffer
+		if(SaveHistory(0) == OK) {
+			if(HistoryCurrentBlock >= HistoryBlockEnd) {
+				Error("File Overflow", ID_HISTORY);
+			} else HistoryCurrentBlock++;
+			HistoryCurrentPos = len - lensav - 1;
+		}
+	} else HistoryCurrentPos += lensav - 1;
 	free(mbuf);
+}
+
+// Возвращает файл с заголовками полей
+void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
+{
+	if(!flag) strcat(ret, "Время;");
+	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		strcat(ret, HistorySetup[i].name);
+	}
+	strcat(ret, "\n");
 }

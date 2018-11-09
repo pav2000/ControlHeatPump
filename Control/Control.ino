@@ -1006,6 +1006,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
 				Stats.SaveStats(0);
+				Stats.SaveHistory(0);
 				journal.jprintf(pP_DATE, "Power lost!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
