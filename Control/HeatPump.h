@@ -202,7 +202,8 @@ class HeatPump
               { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
                  else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
       
-     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
+    uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
+    void     Reset_TempErrors();		// Сбросить счетчик ошибок всех датчиков
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН

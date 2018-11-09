@@ -853,7 +853,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!"); 											
 										else alert("Настройки сохранены, записано " + values[1] + " байт");
 									} else alert("Ошибка записи, код ошибки:" + values[1]);
-								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "reset_errorFC") {
+								} else if(values[0] == "RESET_DUE" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "RESET_ErrorFC") {
 									alert(values[1]);
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
 									break;

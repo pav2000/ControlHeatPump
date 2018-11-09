@@ -133,6 +133,7 @@ class sensorTemp
     int8_t   get_radio_received_idx();					// Индекс массива полученных данных
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
+    void     Reset_Errors() { sumErrorRead = 0; }		// Сброс счетчика ошибок
     char*    get_note(){return note;}                   // Получить оисание датчика
     char*    get_name(){return name;}                   // Получить имя датчика
     uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения

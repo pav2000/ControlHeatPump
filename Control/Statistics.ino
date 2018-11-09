@@ -512,7 +512,12 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 		}
 		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
 			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
-		} else if((readed += SD_BLOCK) < sizeof(Socket[thread].outBuf)) continue;
+			if(readed == 0) break;
+			BEnd = 0;
+		} else {
+			readed += SD_BLOCK;
+			if(readed <= sizeof(Socket[thread].outBuf) - SD_BLOCK) continue;
+		}
 		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
 			Error("send data", ID_STATS);
 			break;

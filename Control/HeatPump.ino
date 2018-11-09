@@ -85,13 +85,15 @@ void HeatPump::eraseError()
 // Получить число ошибок чтения ВСЕХ датчиков темпеартуры
 uint32_t HeatPump::get_errorReadDS18B20()
 {
-  uint8_t i;
-  static uint32_t sum;
-  sum=0;
-  for(i=0;i<TNUMBER;i++) sum=sum+sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
-return sum;    
+	uint32_t sum = 0;
+	for(uint8_t i=0; i<TNUMBER; i++) sum += sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
+	return sum;
 }
 
+void HeatPump::Reset_TempErrors()
+{
+	for(uint8_t i=0; i<TNUMBER; i++) sum += sTemp[i].Reset_Errors();
+}
 
 // Установить состояние ТН, при необходимости пишем состояние в ЕЕПРОМ
 // true - есть изменения false - нет изменений
