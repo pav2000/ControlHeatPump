@@ -231,7 +231,7 @@ void readFileSD(char *filename, uint8_t thread)
 			Stats.ReturnFileHeader(Socket[thread].outBuf);
 			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 		} else { // Добавить заголовки столбцов
-			strcpy(Socket[thread].outBuf,HEADER_STATS_CSV);  // Общая часть
+	/*		strcpy(Socket[thread].outBuf,HEADER_STATS_CSV);  // Общая часть
             #ifdef USE_SUN_COLLECTOR
      		strcat(Socket[thread].outBuf,";SanTime"); 			
 			#endif
@@ -243,7 +243,7 @@ void readFileSD(char *filename, uint8_t thread)
 			#endif
 			strcat(Socket[thread].outBuf,"\r\n"); 
 	    	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-	    	strcpy(Socket[thread].outBuf,"");		
+	    	strcpy(Socket[thread].outBuf,"");		*/
 			Stats.SendFileData(thread, &webFile, filename);
 		}
 		return;

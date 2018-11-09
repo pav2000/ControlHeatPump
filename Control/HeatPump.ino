@@ -78,7 +78,7 @@ void HeatPump::initHeatPump()
 void HeatPump::eraseError()
 {
  strcpy(note_error,"OK");          // Строка c описанием ошибки
- strcpy(source_error,""); 
+ strcpy(source_error,"");          // Источник ошибки   
  error=OK;                         // Код ошибки
 }
 
@@ -483,7 +483,7 @@ void HeatPump::updateDateTime(int32_t  dTime)
     if (startSallmonela>0) startSallmonela=startDefrost+dTime;                // время начала обеззараживания
     } 
 }
-
+      
 
 // -------------------------------------------------------------------------
 // НАСТРОЙКИ ТН ------------------------------------------------------------
@@ -2634,7 +2634,7 @@ void HeatPump::vUpdate()
 
 #ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
 	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
-		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                               // Выход по ошибке отсутствия протока
+		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
 	if((get_State() == pOFF_HP) || (get_State() == pSTARTING_HP) || (get_State() == pSTOPING_HP)) return; // ТН выключен или включается или выключается выходим  ничего не делаем!!!
