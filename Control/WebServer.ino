@@ -391,47 +391,48 @@ void parserGET(char *buf, char *strReturn, int8_t )
   urldecode(buf, buf, W5200_MAX_LEN);
   while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
   {
-     if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
-     {
-       strcat(strReturn,str); strcat(strReturn,"=");
-     } 
-     if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
-     {  
-         strcat(strReturn,"E07"); 
-         ADD_WEBDELIM(strReturn) ;
-         journal.jprintf("$ERROR - strReturn long, request circumcised . . . \n"); 
-         journal.jprintf("%s\n",strReturn);    
-          break;   // выход из обработки запроса
-     }
-    // 1. Функции без параметра
-     if (strcmp(str,"TEST")==0)   // Команда TEST
-     {
-    	 _itoa(random(-50,50),strReturn);
-    	 ADD_WEBDELIM(strReturn) ;
-    	 continue;
-     }
+	  if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
+	  {
+		  strcat(strReturn,str); strcat(strReturn,"=");
+	  }
+	  if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
+	  {
+		  strcat(strReturn,"E07");
+		  ADD_WEBDELIM(strReturn) ;
+		  journal.jprintf("$ERROR - strReturn long, request circumcised . . . \n");
+		  journal.jprintf("%s\n",strReturn);
+		  break;   // выход из обработки запроса
+	  }
+	  // 1. Функции без параметра
+	  if (strcmp(str,"TEST")==0)   // Команда TEST
+	  {
+		  _itoa(random(-50,50),strReturn);
+		  ADD_WEBDELIM(strReturn) ;
+		  continue;
+	  }
 
-     if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
-     {
+	  if (strncmp(str,"TASK_LIST", 9)==0)  // Функция получение списка задач и статистики
+	  {
+		  str += 9;
+		  if (strcmp(str,"_RST")==0)  // Функция сброс статистики по задачам
+		  {
 #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-    	 //strcat(strReturn,cStrEnd);
-    	 vTaskList(strReturn+strlen(strReturn));
+			  vTaskResetRunTimeCounters();
 #else
-    	 strcat(strReturn,NO_SUPPORT);
+			  strcat(strReturn,NO_SUPPORT);
 #endif
-    	 ADD_WEBDELIM(strReturn);  continue;
-     }
-     if (strcmp(str,"TASK_LIST_RST")==0)  // Функция сброс статистики по задачам
-     {
+		  } else {
 #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-    	 vTaskResetRunTimeCounters();
+			  //strcat(strReturn,cStrEnd);
+			  vTaskList(strReturn+strlen(strReturn));
 #else
-    	 strcat(strReturn,NO_SUPPORT);
+			  strcat(strReturn,NO_SUPPORT);
 #endif
-    	 ADD_WEBDELIM(strReturn);  continue;
-     }
+		  }
+		  ADD_WEBDELIM(strReturn);  continue;
+	  }
 
-     if(strcmp(str,"RESET_")==0) {
+     if(strncmp(str, "RESET_", 6)==0) {
     	 str += 6;
     	 if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
     		 HP.Reset_TempErrors();
@@ -1292,9 +1293,9 @@ void parserGET(char *buf, char *strReturn, int8_t )
         	if(strcmp(str, "TempF") == 0) // get_tblTempF, Возвращает список датчиков через ";"
         	{
         		for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
-        	} else if(strncmp(str, "Temp", 11) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
+        	} else if(strncmp(str, "Temp", 4) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
         	{
-        		uint8_t m = atoi(str + 11);
+        		uint8_t m = atoi(str + 4);
         		for(i = 0; i < TNUMBER; i++)
         			if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
         				strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");

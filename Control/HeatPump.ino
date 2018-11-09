@@ -92,7 +92,7 @@ uint32_t HeatPump::get_errorReadDS18B20()
 
 void HeatPump::Reset_TempErrors()
 {
-	for(uint8_t i=0; i<TNUMBER; i++) sum += sTemp[i].Reset_Errors();
+	for(uint8_t i=0; i<TNUMBER; i++) sTemp[i].Reset_Errors();
 }
 
 // Установить состояние ТН, при необходимости пишем состояние в ЕЕПРОМ
