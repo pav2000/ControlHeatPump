@@ -330,6 +330,9 @@ void Statistics::Update()
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
 				newval = HP.COP;
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
+#ifdef STATS_SKIP_COP_WHEN_RELAY_ON
+				if(HP.dRelay[STATS_SKIP_COP_WHEN_RELAY_ON].get_Relay()) continue;
+#endif
 				newval = HP.fullCOP;
 			}
 			if(newval == 0) continue;
@@ -684,7 +687,8 @@ void Statistics::History()
 			if(HistoryCurrentBlock >= HistoryBlockEnd) {
 				Error("File Overflow", ID_HISTORY);
 			} else HistoryCurrentBlock++;
-			HistoryCurrentPos = len - lensav - 1;
+			memset(history_buffer, 0, SD_BLOCK);
+			memcpy(history_buffer, mbuf + lensav, HistoryCurrentPos = len - lensav - 1);
 		}
 	} else HistoryCurrentPos += lensav - 1;
 	free(mbuf);

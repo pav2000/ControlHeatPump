@@ -2842,6 +2842,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef CORRECT_POWER220
     	const CORRECT_POWER220_STRUCT correct_power220[] = { {RPUMPFL, 45} };
 	#endif
+	#define STATS_SKIP_COP_WHEN_RELAY_ON 	RBOILER	// Пропускать логирование COP при включенном реле
 
    // Массив ног соглано индексов
    const uint8_t pinsRelay[RNUMBER] = { PIN_DEVICE_RCOMP,       // ++ Реле включения компрессора (через пускатель)
