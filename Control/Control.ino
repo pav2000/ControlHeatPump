@@ -434,7 +434,7 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
-  journal.jprintf(" Web interface download source: ");
+  journal.jprintf(" Web interface source: ");
         switch (HP.get_SourceWeb())
         {
         case pMIN_WEB:   journal.jprintf("internal\n"); break;
@@ -465,10 +465,10 @@ x_I2C_init_std_message:
     #endif 
 
   // 14. Инициалазация Statistics
-   journal.jprintf("11. Statistics: ");
+   journal.jprintf("11. Statistics ");
    if(HP.get_fSD()) {
+	   journal.jprintf("writing on SD card\n");
 	   Stats.Init();             // Инициализовать статистику
-	   journal.jprintf(" Writing on SD card\n");
    } else journal.jprintf("not available\n");
 
    int8_t _profile = HP.Schdlr.calc_active_profile();
@@ -1005,7 +1005,8 @@ void vReadSensor_delay8ms(int16_t ms8)
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
-				Stats.Save(0);
+				Stats.SaveStats(0);
+				Stats.SaveHistory(0);
 				journal.jprintf(pP_DATE, "Power lost!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
@@ -1362,10 +1363,11 @@ void vSericeHP(void *)
 					HP.updateChart();                                       // Обновить графики
 				}
 				uint8_t m = rtcSAM3X8.get_minutes();
-				if(m != task_updstat_countm) {
+				if(m != task_updstat_countm) { 								// Через 1 минуту
 					task_updstat_countm = m;
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+					Stats.History();
 				}
 			}
 			if(HP.PauseStart) {
@@ -1400,7 +1402,7 @@ xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включит�
 			Stats.CheckCreateNewFile();
 		}
 #ifdef NEXTION
-		myNextion.readCommand();                  // прочитать сообщения от дисплея
+		myNextion.readCommand();                 // прочитать сообщения от дисплея
 		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
 			myNextion.Update();                  // Обновление дисплея
 			NextionTick = xTaskGetTickCount();

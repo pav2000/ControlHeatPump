@@ -122,7 +122,7 @@ function loadParam(paramid, noretry, resultdiv) {
 							if(arr[i] != null && arr[i] != 0) {
 								var reerr = new RegExp('^E');
 								var rec = new RegExp('^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status');
-								var rei = new RegExp('listFlow|listTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
+								var rei = new RegExp('tblFlow|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_');
 								var reo = new RegExp('^scan_');
 								var rep = new RegExp('^get_present|^get_pT');
 								var ret = new RegExp('[(]SCHEDULER[)]');
@@ -686,7 +686,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 
-										} else if(values[0] == 'get_listTemp') {
+										} else if(values[0] == 'get_tblTemp') {
 											content = ""; upsens = ""; loadsens = ""; loadsens2 = "";
 											var tnum = 1;
 											element = document.getElementById(valueid);

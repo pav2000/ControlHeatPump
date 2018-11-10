@@ -74,7 +74,7 @@ int32_t motohour_OUT_work = 0; // рабочий для счетчиков, эн
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
 #define fBeep               1               // флаг Использование звука
 #define fNextion            2               // флаг Использование nextion дисплея
-#define fSD_card            3               // флаг записи статистики на карту памяти
+#define fHistory            3               // флаг записи истории на карту памяти
 #define fSaveON             4               // флаг записи в EEPROM включения ТН
 #define fTypeRHEAT          5               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
 #define fSDMLogErrors  		6               // флаг писать в лог нерегулярные ошибки счетчика SDM
@@ -202,7 +202,8 @@ class HeatPump
               { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
                  else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
       
-     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
+    uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
+    void     Reset_TempErrors();		// Сбросить счетчик ошибок всех датчиков
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -387,7 +388,7 @@ class HeatPump
     uint32_t startRAM;                                     // Свободная память при старте FREE Rtos - пытаемся определить свободную память при работе
        
     int16_t  lastEEV;                                      // + значение шагов ЭРВ перед выключением  -1 - первое включение
-    uint16_t num_repeat;                                   // + текущее число повторов пуска ТН
+    uint8_t num_repeat;                                   // + текущее число повторов пуска ТН
     uint16_t num_resW5200;                                 // + текущее число сброса сетевого чипа
     uint16_t num_resMutexSPI;                              // + текущее число сброса митекса SPI
     uint16_t num_resMutexI2C;                              // + текущее число сброса митекса I2C

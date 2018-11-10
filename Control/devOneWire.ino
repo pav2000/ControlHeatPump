@@ -104,8 +104,10 @@ x_Reset_bridge:
 	#endif
 		if(!OneWireDrv.reset_bridge()) {
 			Recover_I2C_bus();
-			err = ERR_DS2482_NOT_FOUND;
-			break;
+			if(!OneWireDrv.reset_bridge()) {
+				err = ERR_DS2482_NOT_FOUND;
+				break;
+			}
 		}
 	#if DS2482_CONFIG != 0
 		if(!OneWireDrv.configure(DS2482_CONFIG)) break;
@@ -324,10 +326,15 @@ int8_t  deviceOneWire::PrepareTemp()
 void Recover_I2C_bus(void)
 {
 	// https://forum.arduino.cc/index.php?topic=288573.0
-	//pinMode(PIN_WIRE_SCL, OUTPUT);
+	pinMode(PIN_WIRE_SCL, OUTPUT);
 	for(uint8_t i = 0; i < 8; i++) {
 		digitalWriteDirect(PIN_WIRE_SCL, HIGH); delayMicroseconds(3);
 		digitalWriteDirect(PIN_WIRE_SCL, LOW);  delayMicroseconds(3);
 	}
+	PIO_Configure(
+			g_APinDescription[PIN_WIRE_SCL].pPort,
+			g_APinDescription[PIN_WIRE_SCL].ulPinType,
+			g_APinDescription[PIN_WIRE_SCL].ulPin,
+			g_APinDescription[PIN_WIRE_SCL].ulPinConfiguration);
 	//pinMode(PIN_WIRE_SCL, INPUT);
 }

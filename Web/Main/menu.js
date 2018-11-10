@@ -50,6 +50,7 @@ document.write('\
             <li class="system"><a href="system.html">Система</a></li>\
             <li class="const"><a href="const.html"><i></i>Константы</a></li>\
             <li class="files"><a href="files.html">Файлы</a></li>\
+            <li class="history"><a href="history.html">История</a></li>\
         </ul>\
     </li>\
     <li class="charts test modbus log freertos has-children">\

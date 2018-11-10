@@ -1,4 +1,4 @@
-/* ver 0.970 beta */
+/* ver 0.971 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
@@ -121,9 +121,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
-								if(/^CONST|get_paramFC[(]INFO|get_sysInfo|get_socketInfo|get_status/.test(values[0])) type = "const"; 
-								else if(/PING_TIME|et_listPress|et_sensorListIP|EEV[(]FREON|EEV[(]RULE|et_testMode|et_listProfile|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
-								else if(/listFlow|listTemp|tblTemp|listInput|listRelay|sensorIP|get_numberIP|NUM_PROFILE|TASK_/.test(values[0])) type = "table"; 
+								if(/^get_status|get_paramFC[(]INFO|get_sysInfo|CONST|get_socketInfo/.test(values[0])) type = "const"; 
+								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(values[0].match(/^hide_/)) { // clear
@@ -585,7 +585,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
 											updateParam(upsens);
 											loadParam(loadsens);
-										} else if(values[0] == 'get_listRelay') {
+										} else if(values[0] == 'get_tblRelay') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
@@ -599,7 +599,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 
-										} else if(values[0] == 'get_listInput') {
+										} else if(values[0] == 'get_tblInput') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
@@ -612,21 +612,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											document.getElementById(valueid).innerHTML = content;
 											updateParam(upsens);
 											loadParam(loadsens);
-
-										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
-											var count = values[1].split(';');
-											var content = "", loadsens = "", upsens = "";
-											for(var j = 0; j < count.length - 1; j++) {
-												var T = count[j];
-												loadsens += "get_nTemp(" +T+ "),";
-												upsens += "get_fullTemp(" +T+ "),";
-												T = T.toLowerCase();
-												content += '<tr><td id="get_ntemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
-											}
-											document.getElementById(valueid).innerHTML = content;
-											loadParam(loadsens);
-											updateParam(upsens);
-										} else if(values[0] == 'get_listTemp') {
+										} else if(values[0] == 'get_tblTempF') {
 											var content = "", upsens = "", loadsens = "", loadsens2 = "", loadsens3 = "";
 											var tnum = 1;
 											element = document.getElementById(valueid);
@@ -678,7 +664,20 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadParam(loadsens2);
 											loadParam(loadsens3);
 											updateParam(upsens);
-										} else if(values[0] == 'get_listFlow') {
+										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
+											var count = values[1].split(';');
+											var content = "", loadsens = "", upsens = "";
+											for(var j = 0; j < count.length - 1; j++) {
+												var T = count[j];
+												loadsens += "get_nTemp(" +T+ "),";
+												upsens += "get_fullTemp(" +T+ "),";
+												T = T.toLowerCase();
+												content += '<tr><td id="get_ntemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											loadParam(loadsens);
+											updateParam(upsens);
+										} else if(values[0] == 'get_tblFlow') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
@@ -854,7 +853,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!"); 											
 										else alert("Настройки сохранены, записано " + values[1] + " байт");
 									} else alert("Ошибка записи, код ошибки:" + values[1]);
-								} else if(values[0] == "RESET" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "reset_errorFC") {
+								} else if(values[0] == "RESET_DUE" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "RESET_ErrorFC") {
 									alert(values[1]);
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
 									break;

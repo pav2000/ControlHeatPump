@@ -17,42 +17,6 @@
  */
 // ------------------------------------------------------------------------------------------
 // Цифровые датчики температуры -------------------------------------------------------------
-#ifndef OVERRIDE_TNUMBERS   // Если определено, берется из Config.h
-// Имена датчиков
-const char *nameTemp[] = {"TOUT",             // Температура улицы
-                          "TIN",              // Температура в доме
-                          "TEVAIN",           // Температура на входе испарителя по фреону
-                          "TEVAOUT",          // Температура на выходе испарителя по фреону
-                          "TCONIN",           // Температура на входе конденсатора по фреону
-                          "TCONOUT",          // Температура на выходе конденсатора по фреону
-                          "TBOILER",          // Температура в бойлере ГВС
-                          "TACCUM",           // Температура на выходе теплоаккмулятора
-                          "TRTOOUT",          // Температура на выходе RTO (по фреону)
-                          "TCOMP",            // Температура нагнетания компрессора
-                          "TEVAING",          // Температура на входе испарителя по гликолю
-                          "TEVAOUTG",         // Температура на выходе испарителя по гликолю
-                          "TCONING",          // Температура на входе конденсатора по гликолю
-                          "TCONOUTG"          // Температура на выходе конденсатора по гликолю
-                           };           
-
-// Описание датчиков
-const char *noteTemp[] = {"Температура улицы",
-                          "Температура в доме",
-                          "Температура на входе испарителя по фреону",
-                          "Температура на выходе испарителя по фреону",
-                          "Температура на входе конденсатора по фреону",
-                          "Температура на выходе конденсатора по фреону",
-                          "Температура в бойлере ГВС",
-                          "Температура на выходе теплоаккумулятора",
-                          "Температура на выходе РТО (по фреону)",
-                          "Температура нагнетания компрессора",
-                          "Температура на входе испарителя по гликолю",
-                          "Температура на выходе испарителя по гликолю",
-                          "Температура на входе конденсатора по гликолю",
-                          "Температура на выходе конденсатора по гликолю"
-                          };
-#endif
-                         
  // Инициализация на входе номер датчика
 void sensorTemp::initTemp(int sensor)
     { 
@@ -402,7 +366,7 @@ void check_radio_sensors(void)
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + (len = rs_serial_buf[rs_serial_full_header_size-1]) + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					journal.jprintf("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
 					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';

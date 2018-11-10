@@ -53,7 +53,7 @@ static const char *noteRemarkTest[] = {"Тестирование отключе�
                                
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
 
-const char* pageUnauthorized     = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
+const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
 const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
 
@@ -219,16 +219,36 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) {
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
 	    strcat(Socket[thread].outBuf, "\"");
 	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
-		if(strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0) {
-			Stats.ReturnFileHeader(Socket[thread].outBuf);
+		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
+		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+			Stats.StatsFileHeader(Socket[thread].outBuf, n);
 			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-		} else {
+			strcpy(str, stats_file_ext);
+		}
+		if(!n) {
+			Stats.SendFileData(thread, &webFile, filename);
+		}
+		return;
+	}
+	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью (только для бакапа)
+	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
+	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
+	    strcat(Socket[thread].outBuf, filename);
+	    strcat(Socket[thread].outBuf, "\"");
+	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
+		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
+		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+			Stats.HistoryFileHeader(Socket[thread].outBuf, n);
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+			strcpy(str, stats_file_ext);
+		}
+		if(!n) {
 			Stats.SendFileData(thread, &webFile, filename);
 		}
 		return;
@@ -272,100 +292,75 @@ void readFileSD(char *filename, uint8_t thread)
 #endif
 
 // загрузка файла -----------
-// Разбираемся откуда грузить надо (три варианта)
-switch (HP.get_SourceWeb())
-{
-	case pMIN_WEB: 	get_indexNoSD(thread); break;  // минимальная морда
+	// Разбираемся откуда грузить надо (три варианта)
+	switch(HP.get_SourceWeb()) {
+	case pMIN_WEB:
+		get_indexNoSD(thread);
+		break;  // минимальная морда
 	case pSD_WEB:
-	                { // Чтение с карты  файлов
-					SPI_switchSD();
-					if(!card.exists(filename))  // проверка на существование файла
-					{
-						if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
-							if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
-								if(card.exists(filename)) goto xFileFound;
-							} else {
-								journal.jprintf("Reinit SD card failed!\n");
-								//HP.set_fSD(false);
-							}
-						}
-						SPI_switchW5200();
-						sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-						journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
-						return;
-					} // файл не найден
+		{ // Чтение с карты  файлов
+			SPI_switchSD();
+			if(!webFile.open(filename, O_READ))
+			{
+				if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ
+						&& card.cardErrorData() == 255) { // reinit card
+					if(card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
+						if(webFile.open(filename, O_READ)) goto xFileFound;
+					} else {
+						journal.jprintf("Reinit SD card failed!\n");
+						//HP.set_fSD(false);
+					}
+				}
+				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+				journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
+				return;
+			} // файл не найден
 xFileFound:
-					for(uint8_t i = 0; i < SD_REPEAT; i++)   // Делаем SD_REPEAT попыток открытия файла
-					{
-						if(!webFile.open(filename, O_READ))    // Карта не читатаеся
-						{
-							if(i >= SD_REPEAT - 1)                   // Исчерпано число попыток
-							{
-								SPI_switchW5200();
-								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-								journal.jprintf("$ERROR - opening %s for read failed!\n", filename);
-								HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с SD карты", 0); // сформировать уведомление об ошибке чтения
-								HP.set_fSD(false);                                                      // Отказ карты, работаем без нее
-								return;
-							}                                                                 //if
-						} else break;  // Прочиталось
-						_delay(50);
-						journal.jprintf("Error opening file %s repeat open . . .\n", filename);
-				
-					}  // for
-				
-					SPI_switchW5200();         // переключение на сеть
-					// Файл открыт читаем данные и кидаем в сеть
-		  	     	#ifdef LOG
-					journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-			    	#endif
-					//   if (strstr(filename,".css")>0) sendConstRTOS(thread,HEADER_FILE_CSS);
-					if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
-					else sendConstRTOS(thread, HEADER_FILE_WEB);
-					SPI_switchSD();
-					while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
-						SPI_switchW5200();
-						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
-						SPI_switchSD();
-					} // while
-					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-					SPI_switchSD();
-					webFile.close();
-                  	} break;
-    case pFLASH_WEB: {
-					    if (!SerialFlash.exists(filename)) 
-						    {
-							sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-							journal.jprintf((char*) "$WARNING - Can't find %s file on flash disk!\n", filename);
-							return;					    	
-						    }
-					    SerialFlashFile ff=SerialFlash.open(filename);
-					      if (ff) {
-					 		#ifdef LOG
-					        journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
-				           #endif
-  							if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
-								else sendConstRTOS(thread, HEADER_FILE_WEB);
-							//	SPI_switchSD();
-								while((n = ff.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
-									//SPI_switchW5200();
-									if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
-								//	SPI_switchSD();
-								} // while
-		//						if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-//								SPI_switchSD();
-//								webFile.close();
-					            }
-					       else {
-						    	journal.jprintf("Error opening file %s, switching from flash disk to SD card.\n", filename);
-						    	HP.set_fSPIFlash(false);
-								sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-						    	HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка открытия файла с флеш диска", 0); // сформировать уведомление об ошибке чтения				    	
-						    	}        
-                    } break; 
-    default:        get_indexNoSD(thread);break;             	             	
-	             
-}
+			// Файл открыт читаем данные и кидаем в сеть
+	#ifdef LOG
+			journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+	#endif
+			if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+			else sendConstRTOS(thread, HEADER_FILE_WEB);
+			SPI_switchSD();
+			while((n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+				if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+				SPI_switchSD();
+			} // while
+			if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+			SPI_switchSD();
+			webFile.close();
+		}
+		break;
+	case pFLASH_WEB:
+		{
+			SerialFlashFile ff = SerialFlash.open(filename);
+			if(ff) {
+	#ifdef LOG
+				journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
+	#endif
+				if(strstr(filename, ".css") != NULL) sendConstRTOS(thread, HEADER_FILE_CSS); // разные заголовки
+				else sendConstRTOS(thread, HEADER_FILE_WEB);
+				//	SPI_switchSD();
+				while((n = ff.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf))) > 0) {
+					//SPI_switchW5200();
+					if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), n) == 0) break;
+					//	SPI_switchSD();
+				} // while
+				//if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+				//SPI_switchSD();
+				//webFile.close();
+			} else {
+				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
+				journal.jprintf((char*) "$WARNING - Can't find %s file on flash disk!\n", filename);
+				return;
+			}
+		}
+		break;
+	default:
+		get_indexNoSD(thread);
+		break;
+	}
 	SPI_switchW5200();
 }
 
@@ -396,113 +391,127 @@ void parserGET(char *buf, char *strReturn, int8_t )
   urldecode(buf, buf, W5200_MAX_LEN);
   while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
   {
-     if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
-     {
-       strcat(strReturn,str); strcat(strReturn,"=");
-     } 
-     if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
-     {  
-         strcat(strReturn,"E07"); 
-         ADD_WEBDELIM(strReturn) ;
-         journal.jprintf("$ERROR - strReturn long, request circumcised . . . \n"); 
-         journal.jprintf("%s\n",strReturn);    
-          break;   // выход из обработки запроса
-     }
-    // 1. Функции без параметра
-   if (strcmp(str,"TEST")==0)   // Команда TEST
-       {
-       _itoa(random(-50,50),strReturn);
-       ADD_WEBDELIM(strReturn) ;
-       continue;
-       }
+	  if ((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
+	  {
+		  strcat(strReturn,str); strcat(strReturn,"=");
+	  }
+	  if (strlen(strReturn)>sizeof(Socket[0].outBuf)-200)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку 200 байт на заголовок
+	  {
+		  strcat(strReturn,"E07");
+		  ADD_WEBDELIM(strReturn) ;
+		  journal.jprintf("$ERROR - strReturn long, request circumcised . . . \n");
+		  journal.jprintf("%s\n",strReturn);
+		  break;   // выход из обработки запроса
+	  }
+	  // 1. Функции без параметра
+	  if (strcmp(str,"TEST")==0)   // Команда TEST
+	  {
+		  _itoa(random(-50,50),strReturn);
+		  ADD_WEBDELIM(strReturn) ;
+		  continue;
+	  }
 
-  if (strcmp(str,"TASK_LIST")==0)  // Функция получение списка задач и статистики
-       {
-         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-         //strcat(strReturn,cStrEnd);
-         vTaskList(strReturn+strlen(strReturn));
-         #else
-         strcat(strReturn,NO_SUPPORT);
-       #endif
-         ADD_WEBDELIM(strReturn);  continue;
-       } 
-  if (strcmp(str,"TASK_LIST_RST")==0)  // Функция сброс статистики по задачам
-       {
-         #ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-	  	 vTaskResetRunTimeCounters();
-         #else
-         strcat(strReturn,NO_SUPPORT);
-       #endif
-         ADD_WEBDELIM(strReturn);  continue;
-       }
-   if (strcmp(str,"RESET_STAT")==0)   // Команда очистки статистики (в зависимости от типа)
-       {
-      
-       #ifndef I2C_EEPROM_64KB     // Статистика в памяти
-           strcat(strReturn,"Статистика не поддерживается в конфигурации . . .");
-           journal.jprintf("No support statistics (low I2C) . . .\n");
-       #else                      // Статистика в ЕЕПРОМ
-           if (HP.get_modWork()==pOFF)
-             {
-              strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .");
-              HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
-             }
-             else strcat(strReturn,"The heat pump must be switched OFF");
-       #endif
-           ADD_WEBDELIM(strReturn); continue;
-       }         
-        
-     if (strcmp(str,"RESET_JOURNAL")==0)   // Команда очистки журнала (в зависимости от типа)
-       {
-      
-       #ifndef I2C_EEPROM_64KB     // журнал в памяти
-           strcat(strReturn,"Сброс системного журнала в RAM . . .");
-           journal.Clear();       // Послать команду на очистку журнала в памяти
-           journal.jprintf("Reset system RAM journal . . .\n"); 
-       #else                      // Журнал в ЕЕПРОМ
-            journal.Format(strReturn);
-            //HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
-            strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
-            strcat(strReturn,"OK");
-       #endif
-            ADD_WEBDELIM(strReturn); continue;
-       }        
-    if (strcmp(str,"RESET")==0)   // Команда сброса контроллера
-    {
-       strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
-       ADD_WEBDELIM(strReturn);
-       HP.sendCommand(pRESET);        // Послать команду на сброс
-       continue;
-    }
-    if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
-       {
-       journal.jprintf("$RESET counter moto hour . . .\n"); 
-       strcat(strReturn,"Сброс счетчика моточасов за сезон");
-       ADD_WEBDELIM(strReturn) ;
-       HP.resetCount(false);
-       continue;
-       }
-   if (strcmp(str,"RESET_ALL_COUNT")==0) // Команда RESET_COUNT
-       {
-       journal.jprintf("$RESET All counter moto hour . . .\n"); 
-       strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
-       ADD_WEBDELIM(strReturn) ;
-       HP.resetCount(true);  // Полный сброс
-       continue;
-       }    
-   if (strcmp(str,"RESET_SETTINGS")==0) // Команда сброса настроек HP
-   {
-	   if(HP.get_State() == pOFF_HP) {
-	       journal.jprintf("$RESET All HP settings . . .\n");
-	       uint16_t d = 0;
-	   	   writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
-	       HP.sendCommand(pRESET);        // Послать команду на сброс
-	       //HP.resetSettingHP(); // не работает!!
-	       strcat(strReturn, "OK");
-	       ADD_WEBDELIM(strReturn); continue;
-	   }
-   }
-   if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
+	  if (strncmp(str,"TASK_LIST", 9)==0)  // Функция получение списка задач и статистики
+	  {
+		  str += 9;
+		  if (strcmp(str,"_RST")==0)  // Функция сброс статистики по задачам
+		  {
+#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+			  vTaskResetRunTimeCounters();
+#else
+			  strcat(strReturn,NO_SUPPORT);
+#endif
+		  } else {
+#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+			  //strcat(strReturn,cStrEnd);
+			  vTaskList(strReturn+strlen(strReturn));
+#else
+			  strcat(strReturn,NO_SUPPORT);
+#endif
+		  }
+		  ADD_WEBDELIM(strReturn);  continue;
+	  }
+
+     if(strncmp(str, "RESET_", 6)==0) {
+    	 str += 6;
+    	 if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
+    		 HP.Reset_TempErrors();
+    	 } else if (strcmp(str,"STAT")==0)   // RESET_STAT, Команда очистки статистики (в зависимости от типа)
+    	 {
+#ifndef I2C_EEPROM_64KB     // Статистика в памяти
+    		 strcat(strReturn,"Статистика не поддерживается в конфигурации . . .");
+    		 journal.jprintf("No support statistics (low I2C) . . .\n");
+#else                      // Статистика в ЕЕПРОМ
+    		 if (HP.get_modWork()==pOFF)
+    		 {
+    			 strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .");
+    			 HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
+    		 }
+    		 else strcat(strReturn,"The heat pump must be switched OFF");
+#endif
+    	 } else if (strcmp(str,"JOURNAL")==0)   // RESET_JOURNAL,  Команда очистки журнала (в зависимости от типа)
+    	 {
+#ifndef I2C_EEPROM_64KB     // журнал в памяти
+    		 strcat(strReturn,"Сброс системного журнала в RAM . . .");
+    		 journal.Clear();       // Послать команду на очистку журнала в памяти
+    		 journal.jprintf("Reset system RAM journal . . .\n");
+#else                      // Журнал в ЕЕПРОМ
+    		 journal.Format(strReturn);
+    		 //HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
+    		 strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
+    		 strcat(strReturn,"OK");
+#endif
+    	 } else if (strcmp(str,"DUE")==0)   // RESET_DUE, Команда сброса контроллера
+    	 {
+    		 strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
+    		 HP.sendCommand(pRESET);        // Послать команду на сброс
+    	 } else if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
+    	 {
+    		 journal.jprintf("$RESET counter moto hour . . .\n");
+    		 strcat(strReturn,"Сброс счетчика моточасов за сезон");
+    		 HP.resetCount(false);
+    	 } else if (strcmp(str,"ALL_COUNT")==0) // Команда RESET_ALL_COUNT
+    	 {
+    		 journal.jprintf("$RESET All counter moto hour . . .\n");
+    		 strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
+    		 HP.resetCount(true);  // Полный сброс
+    	 } else if (strcmp(str,"SETTINGS")==0) // RESET_SETTINGS, Команда сброса настроек HP
+    	 {
+    		 if(HP.get_State() == pOFF_HP) {
+    			 journal.jprintf("$RESET All HP settings . . .\n");
+    			 uint16_t d = 0;
+    			 writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
+    			 HP.sendCommand(pRESET);        // Послать команду на сброс
+    			 //HP.resetSettingHP(); // не работает!!
+    			 strcat(strReturn, "OK");
+    		 }
+    	 }
+    	 // FC запросы, те которые без параметра ------------------------------
+    	 else if (strcmp(str,"ErrorFC")==0)  // Функция RESET_ErrorFC
+    	 {
+    		 if (!HP.dFC.get_present()) {
+    			 strcat(strReturn,"Инвертор отсутствует");
+    		 }
+#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+    		 else {
+    			 HP.dFC.reset_errorFC();
+    			 strcat(strReturn,"Ошибки инвертора сброшены . . .");
+    		 }
+#endif
+    	 } else if (strcmp(str,"FC")==0)    // RESET_FC
+    	 {
+    		 if (!HP.dFC.get_present()) {
+    			 strcat(strReturn,"Инвертор отсутствует");
+    		 } else {
+    			 HP.dFC.reset_FC();                             // подать команду на сброс
+    			 strcat(strReturn,"Cброс преобразователя частоты . . .");
+    		 }
+
+    	 } else goto x_FunctionNotFound;
+		 ADD_WEBDELIM(strReturn); continue;
+     }
+
+     if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
        {
         HP.get_datetime((char*)time_TIME,strReturn);                     strcat(strReturn,"|");
         HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
@@ -595,49 +604,53 @@ void parserGET(char *buf, char *strReturn, int8_t )
        _itoa(HP.socketRes(),strReturn);
        ADD_WEBDELIM(strReturn) ;
        continue;
-       }  
-    if (strcmp(str,"get_listChart")==0)  // Функция get_listChart - получить список доступных графиков
-    {
-       HP.get_listChart(strReturn);  // строка добавляется
-       ADD_WEBDELIM(strReturn) ;
-       continue;
     }
-//     if (strcmp(str,"get_listStat")==0)  // Функция get_listChart - получить список доступных статистик
-//       {
-//       #ifdef I2C_EEPROM_64KB
-//       HP.Stat.get_listStat(strReturn, true);  // строка добавляется
-//       #else
-//       strcat(strReturn,"absent:1;") ;
-//       #endif
-//       ADD_WEBDELIM(strReturn) ;
-//       continue;
-//       }
-    if (strncmp(str,"get_listProfile", 15)==0)  // Функция get_listProfile - получить список доступных профилей
+    if(strncmp(str, "get_list", 8) == 0) // get_list*
     {
-       HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
-       ADD_WEBDELIM(strReturn) ;
-       continue;
-    }
-    if (strcmp(str,"get_listStats")==0)  // получить список доступных файлов статистики
-    {
-		i = 1;
-		x = strReturn;
-		static SdFile File;
-		static fname_t fname;
-		for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
-			x += m_strlen(x);
-			m_snprintf(x, sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext), "%s%04d%s", stats_file_start, e, stats_file_ext);
-			if(!File.opens(x, O_READ, &fname)) {
-				*x = '\0';
-				break;
-			} else File.close();
-			if(i) {
-				strcat(x, ":1;");
-				i = 0;
-			} else strcat(x, ":0;");
-		}
-		ADD_WEBDELIM(strReturn) ;
-		continue;
+    	str += 8;
+    	if(strcmp(str,"Chart")==0)  // Функция get_listChart - получить список доступных графиков
+    	{
+    		HP.get_listChart(strReturn);  // строка добавляется
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	}
+    	if(strncmp(str,"Profile", 7)==0)  // Функция get_listProfile - получить список доступных профилей
+    	{
+    		HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	}
+    	if(strcmp(str,"Press")==0)     // Функция get_listPress
+    	{
+    		for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
+    		ADD_WEBDELIM(strReturn);
+    		continue;
+    	}
+    	i = 0;
+    	if(strcmp(str,"Stats")==0) i = 1;   // Функция get_listStats
+    	else if(strcmp(str,"Hist")==0) i = 2;   // Функция get_listHist
+    	if(i) { // получить список доступных файлов статистики/истории в формате csv
+    		str = (char*)(i == 1 ? stats_file_start : history_file_start);
+    		i = 1;
+    		x = strReturn;
+    		static SdFile File;
+    		static fname_t fname;
+    		for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
+    			x += m_strlen(x);
+    			m_snprintf(x, 8 + 4 + sizeof(stats_csv_file_ext), "%s%04d%s", str, e, stats_file_ext);
+    			if(!File.opens(x, O_READ, &fname)) {
+    				*x = '\0';
+    				break;
+    			} else File.close();
+    			if((y = strchr(x, '.'))) strcpy(y, stats_csv_file_ext);
+    			if(i) {
+    				strcat(x, ":1;");
+    				i = 0;
+    			} else strcat(x, ":0;");
+    		}
+    		ADD_WEBDELIM(strReturn) ;
+    		continue;
+    	} else goto x_FunctionNotFound;
     }
     if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
     {
@@ -720,7 +733,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
 			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
 				if((i = HP.save_motoHour()) == OK)
-					i = Stats.Save(1);
+					if((i = Stats.SaveStats(1)) == OK)
+						i = Stats.SaveHistory(1);
 				_itoa(i, strReturn);
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
@@ -1204,7 +1218,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         #endif
 
         strcat(strReturn,"<b> Статистика за день</b>|;");
-        Stats.ReturnWebTable(strReturn);
+        Stats.StatsWebTable(strReturn);
 
         ADD_WEBDELIM(strReturn) ;    continue;
        } // sisInfo
@@ -1249,30 +1263,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
            ADD_WEBDELIM(strReturn) ; continue;
          }          
   
-        // FC запросы, те которые без параметра ------------------------------
-        if (strcmp(str,"reset_errorFC")==0)  // Функция get_dacFC
-         {
-          if (!HP.dFC.get_present()) {
-        	  strcat(strReturn,"Инвертор отсутствует");
-          }
-          #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-          else {
-              HP.dFC.reset_errorFC();
-              strcat(strReturn,"Ошибки инвертора сброшены . . .");
-          }
-          #endif
-          ADD_WEBDELIM(strReturn); continue;
-         } 
-        if (strcmp(str,"reset_FC")==0)    
-        {
-          if (!HP.dFC.get_present()) {
-        	  strcat(strReturn,"Инвертор отсутствует");
-          } else {
-        	  HP.dFC.reset_FC();                             // подать команду на сброс
-        	  strcat(strReturn,"Cброс преобразователя частоты . . .");
-          }
-          ADD_WEBDELIM(strReturn); continue;
-        }
          #ifdef USE_ELECTROMETER_SDM
         // SDM запросы которые без параметра
         if (strcmp(str,"settingSDM")==0)     // Функция settingSDM  Запрограммировать параметры связи счетчика
@@ -1298,40 +1288,31 @@ void parserGET(char *buf, char *strReturn, int8_t )
           #endif
         // -------------- СПИСКИ ДАТЧИКОВ и ИСПОЛНИТЕЛЬНЫХ УСТРОЙСТВ  -----------------------------------------------------
         // Список аналоговых датчиков выводятся только присутсвующие датчики список вида name:0;
-        if (strcmp(str,"get_listPress")==0)     // Функция get_listPress
-         {
-          for(i=0;i<ANUMBER;i++) if (HP.sADC[i].get_present()){strcat(strReturn,HP.sADC[i].get_name());strcat(strReturn,";");}
-          ADD_WEBDELIM(strReturn) ;    continue;
-         } 
-        if(strcmp(str, "get_listTemp") == 0) // Возвращает список датчиков через ";"
-        {
-        	for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
-        	ADD_WEBDELIM(strReturn); continue;
+        if(strncmp(str, "get_tbl", 7) == 0) {
+        	str += 7;
+        	if(strcmp(str, "TempF") == 0) // get_tblTempF, Возвращает список датчиков через ";"
+        	{
+        		for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
+        	} else if(strncmp(str, "Temp", 4) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
+        	{
+        		uint8_t m = atoi(str + 4);
+        		for(i = 0; i < TNUMBER; i++)
+        			if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
+        				strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
+        			}
+        	} else if (strcmp(str,"Input")==0)     // Функция get_tblInput
+        	{
+        		for(i=0;i<INUMBER;i++) if (HP.sInput[i].get_present()){strcat(strReturn,HP.sInput[i].get_name());strcat(strReturn,";");}
+        	} else if (strcmp(str,"Relay")==0)     // Функция get_tblRelay
+        	{
+        		for(i=0;i<RNUMBER;i++) if (HP.dRelay[i].get_present()){strcat(strReturn,HP.dRelay[i].get_name());strcat(strReturn,";");}
+        	} else if (strcmp(str,"Flow")==0)     // Функция get_tblFlow
+        	{
+        		for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
+        	} else goto x_FunctionNotFound;
+    		ADD_WEBDELIM(strReturn);
+    		continue;
         }
-        if(strncmp(str, "get_tblTemp", 11) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
-        {
-        	uint8_t m = atoi(str + 11);
-        	for(i = 0; i < TNUMBER; i++)
-        		if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
-        			strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
-        		}
-        	ADD_WEBDELIM(strReturn); continue;
-        }
-        if (strcmp(str,"get_listInput")==0)     // Функция get_listInput
-         {
-          for(i=0;i<INUMBER;i++) if (HP.sInput[i].get_present()){strcat(strReturn,HP.sInput[i].get_name());strcat(strReturn,";");}
-          ADD_WEBDELIM(strReturn) ;    continue;
-         }         
-        if (strcmp(str,"get_listRelay")==0)     // Функция get_listRelay
-         {
-          for(i=0;i<RNUMBER;i++) if (HP.dRelay[i].get_present()){strcat(strReturn,HP.dRelay[i].get_name());strcat(strReturn,";");}
-          ADD_WEBDELIM(strReturn) ;    continue;
-         }
-        if (strcmp(str,"get_listFlow")==0)     // Функция get_lisFlow
-         {
-          for(i=0;i<FNUMBER;i++) if (HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
-          ADD_WEBDELIM(strReturn) ;    continue;
-         }
 #ifdef RADIO_SENSORS
         if(strstr(str, "set_radio_cmd")) {
         	if((x = strchr(str, '='))) {
@@ -2667,8 +2648,3 @@ if (SerialFlash.create(nameFile,lenFile))
 else journal.jprintf(" %s: error create file %s\n",(char*)__FUNCTION__,nameFile);
 return 	loadLen;
 }
-
-
-
- 
-

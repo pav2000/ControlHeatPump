@@ -191,6 +191,7 @@ void Nextion::readCommand()
 					if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
 						if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART);
 						else HP.sendCommand(pSTOP);
+						return;
 					}
 				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
 					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
@@ -302,7 +303,7 @@ void Nextion::Update()
 		setComponentText("t4", ntemp);
 		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
 		setComponentText("t5", ntemp);
-		if(HP.IsWorkingNow()) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
+		if(HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 		else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{

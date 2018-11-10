@@ -299,7 +299,7 @@ size_t Journal::write (uint8_t c)
 // Записать строку в журнал
 void Journal::_write(char *dataPtr)
 {
-	uint16_t numBytes;
+	int32_t numBytes;
 	if(dataPtr == NULL || (numBytes = m_strlen(dataPtr)) == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
 	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа

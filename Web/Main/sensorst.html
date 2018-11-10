@@ -8,7 +8,7 @@
   <script type="text/javascript">
     window.onload = function() {
 	urlupdate = 2000;
-    loadParam("get_listTemp");
+    loadParam("get_tblTempF");
     loadParam("get_numberIP");};
   </script>
 </head>
@@ -16,9 +16,8 @@
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
   <h1>Датчики температуры<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
-  
 <div class="row1">
-    <h2>Температуные датчики, значения в &deg;C</h2>
+    <h2>Температуные датчики, &deg;C <input type="submit" value="Сброс ошибок" onclick='loadParam("RESET_TERR")' style="float:right"></h2>
     <table>
     <thead>
     <tr>
@@ -35,13 +34,13 @@
       <th>Код ошибки</th>
     </tr>
     </thead>
-    <tbody id="get_listtemp">
+    <tbody id="get_tbltempf">
     </tbody>
   </table>
   </div>
 
 <div id="get_numberIP" class="row1">  
-  <h2>Удалённые датчики, значения в &deg;C</h2>
+  <h2>Удалённые датчики, &deg;C</h2>
   <table>
     <tr>
       <td width="80" style="padding:0;vertical-align: top;">

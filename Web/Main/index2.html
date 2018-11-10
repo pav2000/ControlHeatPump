@@ -16,7 +16,7 @@ var elid = paramid.replace(/\(/g,"-").replace(/\)/g,"").toLowerCase();   //conso
 var rec = new RegExp('et_listChart');
 var res = new RegExp('et_freon|et_rule|et_testMode|et_FC|et_EEV|et_modeHP');
 var ret = new RegExp('[(]SCHEDULER[)]');
-var rer = new RegExp('MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|et_Relay|UPDATE_I2C|et_optionHP[(]SAVE_ON|Boiler[(]BOILER_ON|Boiler[(]SCH_ON|Boiler[(]ADD_HEATING|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEAT|RESET_HEAT|CIRCULATION|et_optionHP[(]SD_CARD|et_optionHP[(]BEEP|RTV_OFF|et_optionHP[(]NXT|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
+var rer = new RegExp('MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|et_Relay|UPDATE_I2C|et_optionHP[(]SAVE_ON|Boiler[(]BOILER_ON|Boiler[(]SCH_ON|Boiler[(]ADD_HEATING|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEAT|RESET_HEAT|CIRCULATION|et_optionHP[(]HIST|et_optionHP[(]BEEP|RTV_OFF|et_optionHP[(]NXT|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
 if (rer.test(paramid)) { swichid = document.getElementById(elid); if (swichid.checked) { elval =1; } else { elval = 0; } }
 else if (ret.test(paramid)) {console.log("sended sheduler");
 							var divscheduler = document.getElementById("get_boiler-scheduler");						
@@ -92,7 +92,7 @@ request.onreadystatechange = function()
 						var reerr = new RegExp('^E');
 						var rec = new RegExp('^CONST|get_sysInfo|get_socketInfo');
 						var reo = new RegExp('^scan_');
-						var rer = new RegExp('^get_Relay|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCH_ON|Boiler[(]ADD_HEATING|CIRCULATION|RESET_HEAT|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEA|et_optionHP[(]BEEP|RTV_OFF|get_optionHP[(]SAVE_ON|et_optionHP[(]NXT|et_optionHP[(]SD_CARD|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
+						var rer = new RegExp('^get_Relay|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCH_ON|Boiler[(]ADD_HEATING|CIRCULATION|RESET_HEAT|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_optionHP[(]ADD_HEA|et_optionHP[(]BEEP|RTV_OFF|get_optionHP[(]SAVE_ON|et_optionHP[(]NXT|et_optionHP[(]HIST|et_optionHP[(]EEV_CLOSE|get_datetime[(]UPDATE');
 						var rep = new RegExp('^get_present');
 						var ret = new RegExp('[(]SCHEDULER[)]');
 						var res = new RegExp('et_Network[(]SIZE_PACKET|et_freon|et_rule|et_testMode|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|W5200|et_modeHP|TIME_CHART|SMS_SERVICE');

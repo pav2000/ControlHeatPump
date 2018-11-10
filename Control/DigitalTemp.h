@@ -19,26 +19,6 @@
 
 #ifndef DigitalTemp_h
 #define DigitalTemp_h
-
-#ifndef OVERRIDE_TNUMBERS   // Если определено, берется из Config.h
-
-#define TOUT        0       // Температура улицы
-#define TIN         1       // Температура в доме
-#define TEVAIN      2       // Температура на входе испарителя (по фреону)
-#define TEVAOUT     3       // Температура на выходе испарителя (по фреону)
-#define TCONIN      4       // Температура на входе конденсатора (по фреону)
-#define TCONOUT     5       // Температура на выходе конденсатора (по фреону)
-#define TBOILER     6       // Температура в бойлере ГВС
-#define TACCUM      7       // Температура на выходе теплоаккмулятора
-#define TRTOOUT     8       // Температура на выходе RTO (по фреону)
-#define TCOMP       9       // Температура нагнетания компрессора
-#define TEVAING     10      // Температура на входе испарителя (по гликолю)
-#define TEVAOUTG    11      // Температура на выходе испарителя (по гликолю)
-#define TCONING     12      // Температура на входе конденсатора (по гликолю)
-#define TCONOUTG    13      // Температура на выходе конденсатора (по гликолю)
-
-#endif
-
 #define STARTTEMP   -27321  // Значение инициализации датчика температуры, по нему определяется первая итерация (сотые градуса)
 
 enum TEMP_SETUP_FLAGS { // bit #
@@ -153,6 +133,7 @@ class sensorTemp
     int8_t   get_radio_received_idx();					// Индекс массива полученных данных
     int8_t   get_lastErr(){return err;}                 // Получить последнюю ошибку
     uint32_t get_sumErrorRead(){return sumErrorRead;}   // Получить число ошибок чтения датчика с момента сброса НК
+    void     Reset_Errors() { sumErrorRead = 0; }		// Сброс счетчика ошибок
     char*    get_note(){return note;}                   // Получить оисание датчика
     char*    get_name(){return name;}                   // Получить имя датчика
     uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
