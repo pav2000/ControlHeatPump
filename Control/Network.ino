@@ -408,7 +408,7 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16
 	uint16_t freesize=0;
 
 	SPI_switchW5200();
-	if (len > W5100.SSIZE)  ret = W5100.SSIZE;  else ret = len;
+	if (len > W5200_MAX_LEN)  ret = W5200_MAX_LEN;  else ret = len;
 
 	if (pause==0) // Честно ждем ack
 	{

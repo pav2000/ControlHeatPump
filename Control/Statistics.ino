@@ -496,9 +496,8 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	}
 	uint32_t BStart, BEnd;
 	if(!File->contiguousRange(&BStart, &BEnd)) {
-		journal.jprintf(" Error get blocks!\n");
+		journal.jprintf(" Error get blocks %s\n", filename);
 		File->close();
-		SPI_switchW5200();
 		return;
 	}
 	File->close();
@@ -519,10 +518,10 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 			BEnd = 0;
 		} else {
 			readed += SD_BLOCK;
-			if(readed <= sizeof(Socket[thread].outBuf) - SD_BLOCK) continue;
+			if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
 		}
 		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
-			Error("send data", ID_STATS);
+			journal.jprintf(" Error send %s\n", filename);
 			break;
 		}
 		readed = 0;
