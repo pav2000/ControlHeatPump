@@ -591,6 +591,7 @@ int8_t Statistics::SaveStats(uint8_t newday)
 	} else CurrentPos += lensav - 1; // new day
 #endif
 	free(rbuf);
+	if (newday==2) journal.jprintf(" Stats: open new day\n"); else journal.jprintf("Stats: the current day is saved on the SD card\n");
 	return retval;
 }
 
