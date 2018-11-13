@@ -1357,18 +1357,20 @@ void vServiceHP(void *)
 		register uint32_t t = GetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
+			uint8_t m = rtcSAM3X8.get_minutes();
 			if(HP.IsWorkingNow()) {
 				if(++task_updstat_chars >= HP.get_tChart()) {
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
 				}
-				uint8_t m = rtcSAM3X8.get_minutes();
 				if(m != task_updstat_countm) { 								// Через 1 минуту
-					task_updstat_countm = m;
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
-					Stats.History();
 				}
+			}
+			if(m != task_updstat_countm) { 								// Через 1 минуту
+				task_updstat_countm = m;
+				Stats.History();
 			}
 			if(HP.PauseStart) {
 				if(HP.PauseStart == 1) {

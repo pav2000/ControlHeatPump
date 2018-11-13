@@ -185,7 +185,7 @@ void web_server(uint8_t thread)
 			Socket[thread].client.stop();   // close the connection
 			Socket[thread].sock = -1;
 		//	vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
-		taskYIELD();
+			taskYIELD();
 		} // end if (client)
 #ifdef FAST_LIB  // Переделка
 	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
@@ -221,7 +221,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики, stats_yyyy.dat, stats_yyyy.csv
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -238,21 +238,28 @@ void readFileSD(char *filename, uint8_t thread)
 		}
 		return;
 	}
-	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью (только для бакапа)
+	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью: только для бакапа - hist_yyyy.dat, hist_yyyy.csv, обрезанный по периоду - hist__yyyymmdd-yyyymmdd
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
 	    strcat(Socket[thread].outBuf, "\"");
 	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
-		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
-		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
-			Stats.HistoryFileHeader(Socket[thread].outBuf, n);
-			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-			strcpy(str, stats_file_ext);
-		}
-		if(!n) {
-			Stats.SendFileData(thread, &webFile, filename);
-		}
+	    str = strchr(filename, '-');
+	    if(str) { // Period format: "hist__yyyymmdd-yyyymmdd"
+	    	filename[sizeof(history_file_start)-1] = '\0';
+	    	*str = '\0';
+	    	Stats.SendFileDataByPeriod(thread, &webFile, filename, filename + sizeof(history_file_start), str + 1);
+	    } else {
+			n = strncmp(filename + sizeof(history_file_start)-1, stats_file_header, sizeof(history_file_start)-1) == 0;
+			if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+				Stats.HistoryFileHeader(Socket[thread].outBuf, n);
+				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+				strcpy(str, stats_file_ext);
+			}
+			if(!n) {
+				Stats.SendFileData(thread, &webFile, filename);
+			}
+	    }
 		return;
 	}
 	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
