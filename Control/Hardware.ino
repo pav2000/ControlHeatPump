@@ -92,7 +92,16 @@ void ADC_Handler(void)
 	for(uint8_t i = 0; i < ANUMBER; i++)    // по всем датчикам
 	{
 		sensorADC *adc = &HP.sADC[i];
+#ifdef ADC_SKIP_EXTREMUM
+		int32_t a = ADC->ADC_CDR[adc->get_pinA()]; // get conversion result
+		if(adc->adc_lastVal != 0xFFFF && abs(a - adc->adc_lastVal) > ADC_SKIP_EXTREMUM) {
+			adc->adc_lastVal = 0xFFFF;
+			continue;
+		}
+		adc->adc_lastVal = a;
+#else
 		adc->adc_lastVal = (uint32_t)ADC->ADC_CDR[adc->get_pinA()];  // get conversion result
+#endif
 		// Усреднение значений
 		adc->adc_sum = adc->adc_sum + adc->adc_lastVal - adc->adc_filter[adc->adc_last];   // Добавить новое значение, Убрать самое старое значение
 		adc->adc_filter[adc->adc_last] = adc->adc_lastVal;			                       // Запомнить новое значение
