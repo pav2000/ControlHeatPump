@@ -282,7 +282,7 @@ void Statistics::Reset()
 // Обновить статистику, вызывается часто, раз в TIME_READ_SENSOR
 void Statistics::Update()
 {
-	if(year == 0) return; // waiting to switch a next year
+	if(year == 0 || HP.get_testMode() != NORMAL) return; // waiting to switch a next year
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	if(rtcSAM3X8.get_days() != day) {
@@ -699,7 +699,7 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 // Логирование параметров работы ТН, раз в 1 минуту
 void Statistics::History()
 {
-	if(!GETBIT(HP.Option.flags, fHistory)) return;
+	if(!GETBIT(HP.Option.flags, fHistory) || HP.get_testMode() != NORMAL) return;
 	char *mbuf = (char*) malloc(HISTORY_MAX_RECORD_LEN);
 	if(mbuf == NULL) {
 		Error("memory low", ID_HISTORY);

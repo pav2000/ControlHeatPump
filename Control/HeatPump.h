@@ -191,7 +191,7 @@ class HeatPump
     __attribute__((always_inline)) inline int8_t get_errcode(){return error;} // Получить код последней ошибки
     char    *get_lastErr(){return note_error;} // Получить описание последней ошибки, которая вызвала останов ТН, при удачном запуске обнуляется
     void     scan_OneWire(char *result_str); // Сканирование шины OneWire на предмет датчиков
-    TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
+    inline TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
     void     set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
     boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
     boolean  get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
