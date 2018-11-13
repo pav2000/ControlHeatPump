@@ -542,7 +542,7 @@ vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу
 //HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
 //vTaskSuspend(HP.xHandleUpdatePump);
 
-if(xTaskCreate(vServiceHP, "ServiceHP", 200, NULL, 0, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if(xTaskCreate(vServiceHP, "ServiceHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
