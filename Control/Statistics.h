@@ -22,15 +22,15 @@
 #include "Constant.h"
 
 //#define STATS_DO_NOT_SAVE
-#define SD_BLOCK			512
-#define STATS_MAX_RECORD_LEN	(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
-#define STATS_MAX_FILE_SIZE		((STATS_MAX_RECORD_LEN * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define SD_BLOCK					512
+#define STATS_MAX_RECORD_LEN		(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
+#define STATS_MAX_FILE_SIZE(days)	((STATS_MAX_RECORD_LEN * days / SD_BLOCK + 1) * SD_BLOCK)
 
-#define HISTORY_MAX_RECORD_LEN	(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 5)
-#define HISTORY_MAX_FILE_SIZE	((HISTORY_MAX_RECORD_LEN * 1440 * 366 / SD_BLOCK + 1) * SD_BLOCK)
+#define HISTORY_MAX_RECORD_LEN		(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 5)
+#define HISTORY_MAX_FILE_SIZE(days)	((HISTORY_MAX_RECORD_LEN * 1440 * days / SD_BLOCK + 1) * SD_BLOCK)
 
-#define MAX_INT32_VALUE 2147483647
-#define MIN_INT32_VALUE -2147483647
+#define MAX_INT32_VALUE 			2147483647
+#define MIN_INT32_VALUE 			-2147483647
 
 // what:
 #define ID_STATS 	0
@@ -111,7 +111,8 @@ public:
 	void	StatsFieldString(char **ret, uint8_t i);
 	void	StatsWebTable(char *ret);
 	void 	HistoryFileHeader(char *ret, uint8_t flag);		// Возвращает файл с заголовками полей
-	void	SendFileData(uint8_t thread, SdFile *File, char *filename);
+	void	SendFileData(uint8_t thread, SdFile *File, char *filename); // Отправить в сокет данные файла
+	void	SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix, char *TimeStart, char *TimeEnd); // Отправить в сокет данные файла, обрезанные по датам
 	boolean	FindEndPosition(uint8_t what);
 	void	CheckCreateNewFile();
 	int8_t	CreateOpenFile(uint8_t what);

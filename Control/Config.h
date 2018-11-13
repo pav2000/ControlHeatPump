@@ -2931,16 +2931,16 @@ const char *noteTemp[] = {"Температура улицы",
 	#define TSUN		10   // Температура солнечного коллектора (улица)        - 28FF22F9551403AA
 	#define TSUNOUTG	11   // Температура на выходе из СК (гликоль)            - 28DE862E1713012C
     // Датчики для информации:
-	//#define TKITCHEN	12  // 101350B4020800CA
-    //#define TBR1		13  // 28C974DF050000CB
-	//#define TFLOOR2	14  // 10DA24AC02080095
+	#define TKITCHEN	12  // 101350B4020800CA
+    #define TFL1BEDR	13  // 28C974DF050000CB
+	#define TFL2BEDR	14  // 10DA24AC02080095
 	//#define TBASEMENT	15  // 106023B402080028
 	//#define TEOUT		16	// 102D74B302080055
     // Радиодатчики:
     //#define T65		17  // прихожая			(№65) 18136
     //#define T55		18  // Санузел			(№55) 18185
     //#define T38		19  // 1 этаж			(№38) 18130
-    //#define T45		20  // 2 этаж, ТВ		(№45) 18172
+    #define TFL2TV		20  // 2 этаж, ТВ		(№45) 18172
   	//#define T49		21  // Баня				(№49) 18143
 
         // Отсутствующие датчики:
@@ -2976,8 +2976,8 @@ const char *noteTemp[] = {"Температура улицы",
 		"TSUN",				// 10. Температура солнечного коллектора (улица)
 		"TSUNOUTG",			// 11. Температура на выходе из солнечного коллектора (гликоль)
         "TKITCHEN",			// 12.
-		"TBR1",				// 13.
-        "TFLOOR2",			// 14.
+		"TFL1BEDR",			// 13.
+        "TFL2BEDR",			// 14.
         "TBASEMENT",		// 15.
         "TEOUT",			// 16.
 		// Радиодатчики
@@ -3100,7 +3100,10 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
 		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
 		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "Выработка, кВт" }
+		{ STATS_OBJ_COP, OBJ_COP_Full, "КОП" },
+		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
+		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
+		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
 	};
 
   // ------------------- EEV -----------------------------------
