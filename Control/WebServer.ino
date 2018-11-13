@@ -181,9 +181,11 @@ void web_server(uint8_t thread)
 					break;   // Подготовить к следующей итерации
 				} // end if (client.available())
 			} // end while (client.connected())
-			taskYIELD();
+	//		taskYIELD();
 			Socket[thread].client.stop();   // close the connection
 			Socket[thread].sock = -1;
+		//	vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+		taskYIELD();
 		} // end if (client)
 #ifdef FAST_LIB  // Переделка
 	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)

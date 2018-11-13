@@ -29,8 +29,8 @@
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // Определения нужные в этом файле ====================================================================================
 //  Перечисляемый тип -ТИПЫ датчиков сухой контакт
@@ -2061,7 +2061,7 @@ const char *noteTemp[] = {"Температура улицы",
     uint8_t SPI_RATE 	 = 2;	                                              // делитель для SPI шины, (2=42MHz, 3=28MHz, 4=21MHz) единый для ВСЕХ устройств
 	#define SD_CLOCK     30	                                                  // частота SPI для SD карты в МГц (работало 28)
  //   #define DEFROST                                                         // нужна разморозка
-         #define ONEWIRE_DS2482                                               // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
+         #define ONEWIRE_DS2482                                               // Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
    //    #define ONEWIRE_DS2482_SECOND                                        // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
    //    #define ONEWIRE_DS2482_2WAY 		                                  // 2-х проводный OneWire второго мастера (паразитное питание)
    //	 #ifdef ONEWIRE_DS2482_2WAY
@@ -2421,12 +2421,14 @@ const char *noteTemp[] = {"Температура улицы",
       const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
       const uint16_t TESTPRESS[ANUMBER]={600,1200};      // Значения датчиков при тестировании  опция TEST
       // ------------------- ADC SENSOR ----------------------------------
-      #define P_NUMSAMLES       1              // Число значений для усреднения показаний давления
-      #define PRESS_FREQ        200            // Частота опроса аналоговых датчиков
-      #define FILTER_SIZE       128            // Длина фильтра для датчика давления
-      #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
+      #define ADC_PRESCAL		10             // [20]  = (42 / ADCClockMhz - 1)
+      #define ADC_SKIP_EXTREMUM 400            // [400] Отбрасывать максимумы/минимумы больше заданной дельты
+      #define P_NUMSAMLES       1              // [1]   Число значений для усреднения показаний давления
+      #define PRESS_FREQ        100            // [20]  Частота опроса аналоговых датчиков
+      #define FILTER_SIZE       128            // [40]  Длина фильтра для датчика давления
+      #define FILTER_SIZE_OTHER 8              // [8]   Длина фильтра для остальных датчиков
 
-      // История (графики)
+       // История (графики)
       const History_setup HistorySetup[] = {
       	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
       	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
