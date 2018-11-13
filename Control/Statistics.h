@@ -26,7 +26,7 @@
 #define STATS_MAX_RECORD_LEN		(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE(days)	((STATS_MAX_RECORD_LEN * days / SD_BLOCK + 1) * SD_BLOCK)
 
-#define HISTORY_MAX_RECORD_LEN		(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 5)
+#define HISTORY_MAX_RECORD_LEN		(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 8)
 #define HISTORY_MAX_FILE_SIZE(days)	((HISTORY_MAX_RECORD_LEN * 1440 * days / SD_BLOCK + 1) * SD_BLOCK)
 
 #define MAX_INT32_VALUE 			2147483647

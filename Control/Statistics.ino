@@ -548,22 +548,22 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	}
 	File->close();
 	bendfile = bend;
-	uint8_t* buffer = (uint8_t*)Socket[thread].outBuf;
-	uint8_t *pos = NULL;
+	char* buffer = Socket[thread].outBuf;
 	while(bst <= bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
-		if(!card.card()->readBlock(cur, buffer)) {
+		if(!card.card()->readBlock(cur, (uint8_t*)buffer)) {
 			Error("FindPos", ID_HISTORY);
 			break;
 		}
 		if(*buffer) {
-			if((pos = (uint8_t*)memchr(buffer, '\n', SD_BLOCK)) == NULL) {  // garbage
+			char *pos = (char*)memchr(buffer, '\n', SD_BLOCK);
+			if(pos == NULL) {  // garbage
 				bst = 0;
 				break;
 			}
 			if(*++pos == '\0') goto xGoDown;
-			int8_t cmp = strncmp((char*)pos, TimeStart, m_strlen(TimeStart));
+			int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
 			if(cmp == 0) break;
 			if(cmp > 0) goto xGoDown;
 			bst = cur + 1;
@@ -576,17 +576,12 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 			}
 		} else {
 xGoDown:	if(cur == bst) { // empty
-				pos = buffer;
 				break;
 			} else bend = cur - 1;
 		}
 	}
-
-
-
-
 	uint32_t readed = 0;
-	for(uint32_t i = bst; i <= bend; i++) {
+	for(uint32_t i = bst; i <= bendfile; i++) {
 		SPI_switchSD();
 		if(i == CurrentBlock) {
 			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
@@ -599,10 +594,14 @@ xGoDown:	if(cur == bst) { // empty
 		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
 			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
 			if(readed == 0) break;
-			bend = 0;
+			bendfile = 0;
 		} else {
+			char *pos = (char*)memchr(Socket[thread].outBuf + readed, '\n', SD_BLOCK);
 			readed += SD_BLOCK;
-			if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
+			if(pos) {
+				if(strncmp(pos + 1, TimeEnd, m_strlen(TimeEnd)) > 0) bendfile = 0; // stop
+				else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
+			} else bendfile = 0;
 		}
 		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
@@ -725,7 +724,7 @@ void Statistics::History()
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
 			case STATS_EEV_Percent:
-				int_to_dec_str(HP.dEEV.get_EEV_percent(), 1, &buf, 0);
+				int_to_dec_str(HP.dEEV.get_EEV_percent(), 100, &buf, 1);
 				break;
 			case STATS_EEV_OverHeat:
 				int_to_dec_str(HP.dEEV.get_Overheat(), 100, &buf, 1);
@@ -739,7 +738,7 @@ void Statistics::History()
 		case STATS_OBJ_Compressor:
 //			switch(HistorySetup[i].number) {
 //			case OBJ_Freq:
-				int_to_dec_str(HP.dFC.get_frequency(), 100, &buf, 0);
+				int_to_dec_str(HP.dFC.get_frequency(), 100, &buf, 1);
 //				break;
 //			}
 			break;
@@ -758,7 +757,7 @@ void Statistics::History()
 			break;
 		}
 		if(buf > mbuf + HISTORY_MAX_RECORD_LEN - 8) {
-			journal.jprintf("%s memory overflow: %d, max: %d\n", "History", buf - mbuf, HISTORY_MAX_RECORD_LEN);
+			journal.jprintf("%s memory overflow(%d): %d, max: %d\n", "History", i, buf - mbuf, HISTORY_MAX_RECORD_LEN);
 			break;
 		}
 	}

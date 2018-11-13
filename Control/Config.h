@@ -3065,7 +3065,7 @@ const char *noteTemp[] = {"Температура улицы",
   	  const uint16_t ANALOG_MODBUS_REG[ANUMBER]  = { 60, 59 };	// Регистр Модбас, по которому доступно значение датчика. Для Vacon=(AI2, AI1)
   #endif
   // ------------------- ADC SENSOR ----------------------------------
-  #define ADC_PRESCAL		20             // = (42 / ADCClockMhz - 1)
+  #define ADC_PRESCAL		20             // = (42 / ADCClockMhz - 1), - 2 MHz
   #define ADC_SKIP_EXTREMUM 400            // Отбрасывать максимумы/минимумы больше заданной дельты
   #define P_NUMSAMLES       1              // Число значений для усреднения показаний давления
   #define PRESS_FREQ        20             // период опроса аналоговых датчиков в секунду
