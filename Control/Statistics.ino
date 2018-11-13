@@ -548,7 +548,7 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	}
 	File->close();
 	bendfile = bend;
-	const uint8_t* buffer = (uint8_t*)Socket[thread].outBuf;
+	uint8_t* buffer = (uint8_t*)Socket[thread].outBuf;
 	uint8_t *pos = NULL;
 	while(bst <= bend) {
 		WDT_Restart(WDT);
@@ -581,13 +581,8 @@ xGoDown:	if(cur == bst) { // empty
 			} else bend = cur - 1;
 		}
 	}
-	if(pos == NULL) return false;
 
 
-
-	if(what) {
-		HistoryCurrentBlock = cur;
-		HistoryCurrentPos = pos - buffer;
 
 
 	uint32_t readed = 0;
