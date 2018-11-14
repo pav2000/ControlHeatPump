@@ -748,6 +748,9 @@ void Statistics::History()
 			case STATS_EEV_Percent:
 				int_to_dec_str(HP.dEEV.get_EEV_percent(), 100, &buf, 1);
 				break;
+			 case STATS_EEV_Steps:
+			    int_to_dec_str(HP.dEEV.get_EEV(), 1, &buf, 1);
+			    break;
 			case STATS_EEV_OverHeat:
 				int_to_dec_str(HP.dEEV.get_Overheat(), 100, &buf, 1);
 				break;
