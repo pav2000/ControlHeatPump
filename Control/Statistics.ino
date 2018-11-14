@@ -723,6 +723,9 @@ void Statistics::History()
 #ifdef EEV_DEF
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
+			case STATS_EEV_Steps:
+				int_to_dec_str(HP.dEEV.get_EEV(), 1, &buf, 0);
+				break;				
 			case STATS_EEV_Percent:
 				int_to_dec_str(HP.dEEV.get_EEV_percent(), 100, &buf, 1);
 				break;

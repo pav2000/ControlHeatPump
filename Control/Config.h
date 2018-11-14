@@ -29,8 +29,8 @@
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // Определения нужные в этом файле ====================================================================================
 //  Перечисляемый тип -ТИПЫ датчиков сухой контакт
@@ -2430,27 +2430,27 @@ const char *noteTemp[] = {"Температура улицы",
 
        // История (графики)
       const History_setup HistorySetup[] = {
-      	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
-      	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
-      	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
-      	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
-      	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
-      	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
-      	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
-      	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
-      	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
-      	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
-		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+      	{ STATS_OBJ_Temp, TOUT, nameTemp[TOUT] },
+      	{ STATS_OBJ_Temp, TIN, nameTemp[TIN] },
+      	{ STATS_OBJ_Temp, TBOILER, nameTemp[TBOILER] },
+      	{ STATS_OBJ_Temp, TCOMP, nameTemp[TCOMP] },
+      	{ STATS_OBJ_Temp, TEVAING, nameTemp[TEVAING] },
+      	{ STATS_OBJ_Temp, TEVAOUTG, nameTemp[TEVAOUTG] },
+      	{ STATS_OBJ_Temp, TCONING, nameTemp[TCONING] },
+      	{ STATS_OBJ_Temp, TCONOUTG, nameTemp[TCONOUTG] },
+      	{ STATS_OBJ_Temp, TEVAOUT, nameTemp[TEVAOUT] },
+//      	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
+//		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
 //		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
 //		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
-		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
-		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
+		{ STATS_OBJ_Flow, FLOWCON, nameFrequency[FLOWCON] },
+		{ STATS_OBJ_EEV, STATS_EEV_Steps, "EEV" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "OverHeat" },
 //		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
-		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
-		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "Полный COP" }      
+		{ STATS_OBJ_Compressor, OBJ_Freq, "Freq" },
+		{ STATS_OBJ_Power, OBJ_power220, "power220" },
+		{ STATS_OBJ_Power, OBJ_powerCO, "powerCO" },
+		{ STATS_OBJ_COP, OBJ_COP_Full, "fullCOP" }      
       };
       // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
