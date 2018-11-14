@@ -134,6 +134,7 @@ private:
 	uint32_t HistoryBlockEnd;
 	uint32_t HistoryCurrentBlock;
 	uint16_t HistoryCurrentPos;
+	uint32_t HistoryBlockCreating;
 	SdFile   StatsFile;
 };
 

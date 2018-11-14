@@ -1364,13 +1364,11 @@ void vServiceHP(void *)
 					HP.updateChart();                                       // Обновить графики
 				}
 				if(m != task_updstat_countm) { 								// Через 1 минуту
+					task_updstat_countm = m;
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
+					Stats.History();
 				}
-			}
-			if(m != task_updstat_countm) { 								// Через 1 минуту
-				task_updstat_countm = m;
-				Stats.History();
 			}
 			if(HP.PauseStart) {
 				if(HP.PauseStart == 1) {
