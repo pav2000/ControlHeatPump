@@ -886,11 +886,20 @@ int8_t devEEV::Update(void) //boolean fHeating)
     #endif   // EEV_INT_PID
 
         // Проверка управляющего воздействия, возможно отказ ЭРВ
-        if (newEEV<=_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
-        #ifdef EEV_MAX_CONTROL
-        if (newEEV>_data.maxSteps)  {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
+        #ifndef DEMO
+         if (newEEV<=_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
         #else
-        if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение
+         if (newEEV<_data.minSteps)   newEEV=_data.minSteps;                            // Просто ограничение DEMO
+        #endif
+        
+        #ifndef DEMO
+	        #ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
+	        if (newEEV>_data.maxSteps)  {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
+	        #else
+	        if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение
+	        #endif
+        #else
+           if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение DEMO
         #endif
   
   //      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
@@ -1526,6 +1535,7 @@ return err;
 // Команда стоп на инвертор Обратно код ошибки
 int8_t devOmronMX2::stop_FC()
 {
+uint8_t i;	
 err=OK;     
  #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
       #ifdef DEMO
@@ -1540,8 +1550,26 @@ err=OK;
           err=OK;   
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
-          #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
-              HP.dRelay[RCOMP].set_OFF();                    // ПЛОХО через глобальную переменную
+          #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп с проверкой выполнения
+              HP.dRelay[RCOMP].set_OFF();            // ПЛОХО через глобальную переменную
+               vTaskDelay(1000/ portTICK_PERIOD_MS); // задержка на прохождение команды
+               state=read_0x03_16(MX2_STATE);        // 0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током 7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]
+              if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
+              	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
+                  _delay(100);
+              	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
+              	 SETBIT1(flags,fErrFC);                  // Установить флаг блокировки
+              	 err=ERR_FC_RCOMP;
+                 set_Error(err,(char*)name);             // Подъем ошибки на верх и останов ТН
+              	 journal.jprintf("$ERROR: it is not possible to stop the inverter via RCOMP, the inverter is blocked\n"); 
+              	}
+               for(i=0;i<FC_NUM_READ;i++)  // установить целевую частоту в 0
+		            {
+		              err=write_0x10_32(MX2_TARGET_FR,0);
+		              if (err==OK) break;             // Команда выполнена
+		              _delay(100);
+		              journal.jprintf("%s: repeat set frequency 0.0 Hz\n",name);  // Выводим сообщение о повторной команде
+		            }
           #else                  // подать команду ход/стоп через модбас
               err=write_0x05_bit(MX2_START, false);   // Команда стоп
           #endif   

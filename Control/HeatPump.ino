@@ -1021,7 +1021,6 @@ void HeatPump::startChart()
 // powerCO=0;
 // powerGEO=0;
 // power220=0;
-//vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
 }
 
 
