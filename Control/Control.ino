@@ -445,7 +445,10 @@ x_I2C_init_std_message:
 
 // 10. Сетевые настройки
    journal.jprintf("7. Setting Network . . .\n");
-   initW5200(true);   // Инициализация сети с выводом инфы в консоль
+   if(initW5200(true)) {   // Инициализация сети с выводом инфы в консоль
+	   W5100.getMACAddress((uint8_t *)Socket[0].outBuf);
+   	   journal.jprintf(" MAC: %s\n", MAC2String((uint8_t *)Socket[0].outBuf));
+   }
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
 // 11. Разбираемся со всеми часами и синхронизацией

@@ -1688,12 +1688,12 @@ int8_t HeatPump::StartResume(boolean start)
 	if (start)  // Команда старт - Инициализация ЭРВ и очистка графиков при восстановлени не нужны
 	{
 #ifdef EEV_DEF
-		journal.jprintf(" EEV init\n");
+		//journal.jprintf(" EEV init\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
 #endif
 
-		journal.jprintf(" Charts clear and start\n");
+		//journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		//else  startChart();                                      // Запустить графики <- тут не запуск, тут очистка
 	}
@@ -3074,18 +3074,18 @@ int8_t HeatPump::runCommand()
 		case pREPEAT:
 			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
 			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
-			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat);
+			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\n",(char*)nameHeatPump,get_nStart()-num_repeat);
 			PauseStart = 1;
 			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pRESTART:
 			// Stop();                                          // пуск Тн после сброса - есть задержка
-			journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
+			journal.jprintf("Restart %s . . .\n",(char*)nameHeatPump);
 			PauseStart = 1;
 			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
 			break;
 		case pNETWORK:
-			journal.jprintf("Update network setting . . .\r\n");
+			journal.jprintf("Update network setting: ");
 			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
 			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль

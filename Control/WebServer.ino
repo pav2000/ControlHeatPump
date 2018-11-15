@@ -133,7 +133,7 @@ void web_server(uint8_t thread)
 					{
 						// Для обычного пользователя подменить файл меню, для сокращения функционала
 						if((GETBIT(Socket[thread].flags, fUser)) && (strcmp(Socket[thread].inPtr, "menu.js") == 0)) strcpy(Socket[thread].inPtr, "menu-user.js");
-						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len);
+						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len + 1);
 						readFileSD(Socket[thread].inPtr, thread);
 						break;
 					}
@@ -174,9 +174,9 @@ void web_server(uint8_t thread)
 
 					default:
 						journal.jprintf("$Unknow  %s\n", (char*) Socket[thread].inBuf);
-						break;
 					}
 
+					SPI_switchW5200();
 					Socket[thread].inBuf[0] = 0;
 					break;   // Подготовить к следующей итерации
 				} // end if (client.available())
@@ -230,11 +230,12 @@ void readFileSD(char *filename, uint8_t thread)
 		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
 		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
 			Stats.StatsFileHeader(Socket[thread].outBuf, n);
-			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 			strcpy(str, stats_file_ext);
 		}
 		if(!n) {
 			Stats.SendFileData(thread, &webFile, filename);
+		} else {
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 		}
 		return;
 	}
@@ -253,11 +254,12 @@ void readFileSD(char *filename, uint8_t thread)
 			n = strncmp(filename + sizeof(history_file_start)-1, stats_file_header, sizeof(history_file_start)-1) == 0;
 			if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
 				Stats.HistoryFileHeader(Socket[thread].outBuf, n);
-				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 				strcpy(str, stats_file_ext);
 			}
 			if(!n) {
 				Stats.SendFileData(thread, &webFile, filename);
+			} else {
+				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 			}
 	    }
 		return;
@@ -293,7 +295,6 @@ void readFileSD(char *filename, uint8_t thread)
 		} else {
 			journal.jprintf("not found (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 		}
-		SPI_switchW5200();
 		return;
 	}
 #ifdef I2C_EEPROM_64KB
@@ -321,7 +322,7 @@ void readFileSD(char *filename, uint8_t thread)
 					}
 				}
 				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
+				journal.jprintf((char*) "$WARNING - File not found: %s\n", filename);
 				return;
 			} // файл не найден
 xFileFound:
@@ -370,7 +371,6 @@ xFileFound:
 		get_indexNoSD(thread);
 		break;
 	}
-	SPI_switchW5200();
 }
 
 // ========================== P A R S E R  G E T =================================

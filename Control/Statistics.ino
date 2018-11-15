@@ -58,9 +58,9 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 	if(!StatsFile.contiguousRange(what ? &HistoryBlockStart : &BlockStart, what ? &HistoryBlockEnd : &BlockEnd)) {
 		journal.jprintf("Error get blocks %s!\n", filename);
 	} else {
-		journal.jprintf("[%u..%u]\n", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
+		journal.jprintf("[%u..%u] ", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
 		if(newfile) {
-			journal.jprintf(pP_TIME, " Create");
+			journal.jprintf(pP_TIME, "Create");
 			uint32_t b;
 			if(what) {
 xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating;
@@ -493,13 +493,14 @@ void Statistics::StatsWebTable(char *ret)
 	}
 }
 
+#define _buffer_ ((uint8_t*)Socket[thread].outBuf)
+
 // Return: OK, 1 - not found, >2 - error. Network is active
 void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 {
 	fname_t fname;
 	SPI_switchSD();
 	if(!File->opens(filename, O_READ, &fname)) {
-		SPI_switchW5200();
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
@@ -510,26 +511,31 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 		return;
 	}
 	File->close();
-	uint32_t readed = 0;
+	uint32_t readed = m_strlen((char*)_buffer_);
+	if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
+		journal.jprintf(" Error sendh %s\n", filename);
+		return;
+	}
+	readed = 0;
 	for(uint32_t i = bst; i <= bend; i++) {
 		SPI_switchSD();
 		if(i == CurrentBlock) {
-			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+			memcpy(_buffer_ + readed, stats_buffer, SD_BLOCK);
 		} else if(i == HistoryCurrentBlock) {
-			memcpy((uint8_t*)Socket[thread].outBuf + readed, history_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+			memcpy(_buffer_ + readed, history_buffer, SD_BLOCK);
+		} else if(!card.card()->readBlock(i, _buffer_ + readed)) {
 			Error("read data", ID_STATS);
 			break;
 		}
-		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
-			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
-			if(readed == 0) break;
+		if(_buffer_[readed + SD_BLOCK - 1] == 0) {  // end of data
+			if(_buffer_[readed] == 0) break;
+			readed = (uint8_t*)memchr(_buffer_ + readed, 0, SD_BLOCK) - _buffer_;
 			bend = 0;
 		} else {
 			readed += SD_BLOCK;
 			if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
 		}
-		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
 			break;
 		}
@@ -540,12 +546,17 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 // Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd;\0"
 void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix, char *TimeStart, char *TimeEnd)
 {
-	strncat(Prefix, TimeStart, 4); // year
-	strcat(Prefix, stats_file_ext);
+	uint32_t len = m_strlen((char*)_buffer_);
+	if(sendPacketRTOS(thread, _buffer_, len, 0) != len) {
+		journal.jprintf(" Error sendh %s\n", Prefix);
+		return;
+	}
+	strcpy((char*)_buffer_, Prefix);
+	strncat((char*)_buffer_, TimeStart, 4); // year
+	strcat((char*)_buffer_, stats_file_ext);
 	fname_t fname;
 	SPI_switchSD();
-	if(!File->opens(Prefix, O_READ, &fname)) {
-		SPI_switchW5200();
+	if(!File->opens((char*)_buffer_, O_READ, &fname)) {
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
@@ -557,36 +568,45 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	}
 	File->close();
 	bendfile = bend;
-	char* buffer = Socket[thread].outBuf;
 	uint8_t findst = 0;
 	while(bst <= bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
+xReadBlock:
+//		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
 		if(cur == CurrentBlock) {
-			memcpy((uint8_t*)buffer, stats_buffer, SD_BLOCK);
+			memcpy(_buffer_, stats_buffer, SD_BLOCK);
 		} else if(cur == HistoryCurrentBlock) {
-			memcpy((uint8_t*)buffer, history_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(cur, (uint8_t*)buffer)) {
+			memcpy(_buffer_, history_buffer, SD_BLOCK);
+		} else if(!card.card()->readBlock(cur, _buffer_)) {
 			Error("read f", ID_HISTORY);
 			return;
 		}
 		char *pos;
-		if(*buffer) {
-			pos = (char*)memchr(buffer, '\n', SD_BLOCK);
+		if(*_buffer_) {
+			pos = (char*)memchr(_buffer_, '\n', SD_BLOCK);
 			if(pos == NULL) return;  // garbage
 			if(*++pos == '\0') goto xGoDown;
-			if(strncmp(pos, TimeStart, m_strlen(TimeStart)) >= 0) {
-				findst = 1;
-				goto xGoDown;
+			{
+				int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
+				if(cmp >= 0) {
+//					journal.printf("found %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
+					if(cmp > 0) goto xGoDown;
+					findst = 1;
+					if(cur > bst) {
+						cur--;
+						goto xReadBlock;
+					}
+				}
 			}
+xSend:		bst = cur + 1;
 			if(findst) { // found
-xSend:			if(sendPacketRTOS(thread, (byte*)pos, SD_BLOCK - (pos - buffer), 0) == 0) {
+				if(sendPacketRTOS(thread, (uint8_t*)pos, SD_BLOCK - ((uint8_t*)pos - _buffer_), 0) == 0) {
 					journal.jprintf(" Error send %s\n", filename);
 					return;
 				}
 				break;
 			}
-			bst = cur + 1;
 			if(bst > bend) {
 				if(bend < bendfile) bend++;
 				else { // file overflow
@@ -595,42 +615,46 @@ xSend:			if(sendPacketRTOS(thread, (byte*)pos, SD_BLOCK - (pos - buffer), 0) == 
 			}
 		} else {
 xGoDown:	if(cur == bst) { // low limit
-				pos = buffer;
+				pos = (char*)_buffer_;
+				findst = 1;
 				goto xSend;
 			} else bend = cur - 1;
 		}
 	}
+//	journal.printf("ST: %d, END: %d\n", bst, bendfile);
 	uint32_t readed = 0;
 	for(uint32_t i = bst; i <= bendfile; i++) {
 		SPI_switchSD();
 		if(i == CurrentBlock) {
-			memcpy((uint8_t*)Socket[thread].outBuf + readed, stats_buffer, SD_BLOCK);
+			memcpy(_buffer_ + readed, stats_buffer, SD_BLOCK);
 		} else if(i == HistoryCurrentBlock) {
-			memcpy((uint8_t*)Socket[thread].outBuf + readed, history_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(i, (uint8_t*)Socket[thread].outBuf + readed)) {
+			memcpy(_buffer_ + readed, history_buffer, SD_BLOCK);
+		} else if(!card.card()->readBlock(i, _buffer_ + readed)) {
 			Error("read data", ID_HISTORY);
 			break;
 		}
-		if(Socket[thread].outBuf[readed + SD_BLOCK - 1] == 0) {  // end of data
-			readed = (uint8_t*)memchr((uint8_t*)Socket[thread].outBuf + readed, 0, SD_BLOCK) - (uint8_t*)Socket[thread].outBuf;
-			if(readed == 0) break;
+		if(_buffer_[readed + SD_BLOCK - 1] == 0) {  // end of data
+			if(_buffer_[readed] == 0) break;
+			readed = (uint8_t*)memchr(_buffer_ + readed, 0, SD_BLOCK) - _buffer_;
 			bendfile = 0;
 		} else {
-			char *pos = (char*)memchr(Socket[thread].outBuf + readed, '\n', SD_BLOCK);
+			char *pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
 			readed += SD_BLOCK;
 			if(pos) {
 				if(strncmp(pos + 1, TimeEnd, m_strlen(TimeEnd)) > 0) {
-					readed = pos - Socket[thread].outBuf + 1;
+//					journal.printf("end %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], pos[10], TimeEnd );
+					readed = (uint8_t*)pos - _buffer_ + 1;
 					bendfile = 0; // stop
 				} else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
 			} else bendfile = 0;
 		}
-		if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, readed, 0) != readed) {
+		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
 			break;
 		}
 		readed = 0;
 	}
+//	journal.printf("ok\n");
 }
 
 // Записать статистику на SD, 0 - только записать, 1 - только записать c веба, 2 - новый день

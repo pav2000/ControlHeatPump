@@ -166,6 +166,12 @@ int8_t devVaconFC::get_readState()
 		if(err) {
 			set_Error(err, name); // генерация ошибки
 		}
+	} else if(state & FC_S_RUN) { // Привод работает, а не должен - останавливаем через модбас
+		if(rtcSAM3X8.unixtime() - HP.get_stopCompressor() > FC_DEACCEL_TIME/100) {
+			journal.jprintf(pP_TIME, "Compressor running - stop via Modbus!\n");
+	        err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
+	        if(err) return err;
+		}
 	}
     // Состояние прочитали и оно правильное все остальное читаем
     uint32_t reg32 = read_0x03_32(FC_SPEED); // +FC_FREQ(low word). прочитать текущую скорость и частоту

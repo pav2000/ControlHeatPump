@@ -86,18 +86,22 @@ uint8_t W5200VERSIONR()
 boolean linkStatusWiznet(boolean show)
 {
 #if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
-  uint8_t st=W5100.readPHYCFGR();
-  if (show)
-   {
-   if (st&W5500_SPEED)   journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n"); 
-   if (st&W5500_DUPLEX)  journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");  
-   journal.jprintf(" Register PHYCFGR: 0x%02x\n",st); 
-   }
-  if (st&W5500_LINK) return true; else return false;
+	uint8_t st = W5100.readPHYCFGR();
+	if(show) {
+#ifdef W5500_LOG_FULL_INFO
+		if(st & W5500_SPEED) journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n");
+		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");
+		journal.jprintf(" Register PHYCFGR: 0x%02x\n", st);
+#else
+		journal.jprintf(" %s%c ", st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H');
+#endif
+	}
+	if(st & W5500_LINK) return true;
+	else return false;
 #elif defined(W5200_ETHERNET_SHIELD)
-  if (W5100.readPHYSTATUS()&W5200_LINK) return true; else return false;
+	if (W5100.readPHYSTATUS()&W5200_LINK) return true; else return false;
 #else // w5100
-  return true;
+	return true;
 #endif
 }
 
@@ -136,11 +140,17 @@ boolean initW5200(boolean flag)
 
 	if(!resetWiznet(false))  // 1. Сброс и проверка провода (молча)
 	{
+#ifdef W5500_LOG_FULL_INFO
 		journal.jprintf(" WARNING: %s no link, check ethernet cable\n", nameWiznet);
 		journal.jprintf((char*) NetworkError, nameWiznet);
 		return false; // дальше ехать бесполезно
 	} else if(flag) journal.jprintf(" SUCCESS: %s link OK\n", nameWiznet);
-	if(flag) linkStatusWiznet(true);  // вывести полученные настройки чипа
+#else
+		journal.jprintf(" WARNING: %s no link\n", nameWiznet);
+		return false;
+	}
+#endif
+	linkStatusWiznet(flag);  // вывести полученные настройки чипа
 
 	if(flag)  // 2. Печать настроек соответствия либы и чипа (правильная настройка либы)
 	{
@@ -148,8 +158,11 @@ boolean initW5200(boolean flag)
 		journal.jprintf(" DEMO mode!");
 #endif
 #if defined(W5500_ETHERNET_SHIELD) // Определение соответстивия библиотеки и чипа
-		if(W5200VERSIONR() == 0x04) journal.jprintf((char*) NetworkChipOK, nameWiznet, W5200VERSIONR());
-		else {
+		if(W5200VERSIONR() == 0x04) {
+#ifdef W5500_LOG_FULL_INFO
+			journal.jprintf((char*) NetworkChipOK, nameWiznet, W5200VERSIONR());
+#endif
+		} else {
 			journal.jprintf((char*) NetworkChipBad, nameWiznet, W5200VERSIONR());
 			journal.jprintf((char*) NetworkError, nameWiznet);
 			return false;
@@ -216,6 +229,7 @@ x_TryStaticIP:
 	W5100.writeRTR(W5200_RTR);   // установка таймаута
 	W5100.writeRCR(W5200_RCR);   // установка числа повторов
 
+#ifdef W5500_LOG_FULL_INFO
 	if(flag)  // 5. Печать сетевых настроек
 	{
 		if(EthernetOK) {
@@ -231,15 +245,30 @@ x_TryStaticIP:
 			journal.jprintf(" DNS: %s\n", IPAddress2String(dip));
 			dip = Ethernet.gatewayIP();
 			journal.jprintf(" Gateway: %s\n", IPAddress2String(dip));
-			uint8_t dmac[6];
-			W5100.getMACAddress(dmac);
-			journal.jprintf(" MAC: %s\n", MAC2String(dmac));
 		} else journal.jprintf((char*) NetworkError, nameWiznet);
 	} else   // Кратко выводим сообщение в журнал
 	{
-		if(EthernetOK) journal.jprintf("%s Reset %s . . . \n", NowTimeToStr(), nameWiznet);
+		if(EthernetOK) journal.jprintf(pP_TIME, "Reset %s . . . \n", nameWiznet);
 		else journal.jprintf((char*) NetworkError, nameWiznet);
 	}
+#else
+	if(flag)  // 5. Печать сетевых настроек
+	{
+		if(EthernetOK) {
+			IPAddress dip;
+			dip = Ethernet.localIP();
+			journal.jprintf("%s%s/%d %d ", HP.get_DHCP() ? "DHCP " : "", IPAddress2String(dip), (255^(uint8_t)Ethernet.subnetMask()[2]) * 256 + (255^(uint8_t)Ethernet.subnetMask()[3]));
+			dip = Ethernet.localIP();
+			journal.jprintf("G:%s ", IPAddress2String(dip));
+			dip = Ethernet.dnsServerIP();
+			journal.jprintf("DNS:%s\n", IPAddress2String(dip));
+		} else journal.jprintf(" ERROR: setting %s", nameWiznet);
+	} else   // Кратко выводим сообщение в журнал
+	{
+		if(EthernetOK) journal.jprintf(pP_TIME, "Reset %s Ok.\n", nameWiznet);
+		else journal.jprintf(" ERROR: setting %s", nameWiznet);
+	}
+#endif
 	return EthernetOK;
 }
 // DNS -------------------------------------------------------------------------------------------
@@ -562,12 +591,12 @@ boolean pingServer()
 		journal.jprintf("FAILED - ");                                 // Неудача, пинга нет
 		switch (echoReply.status)
 		{
-		case SEND_TIMEOUT: journal.jprintf( " send timed out");  break;
-		case NO_RESPONSE:  journal.jprintf( " no response");    break;
-		case BAD_RESPONSE: journal.jprintf( " bad reponse");        break;
-		default:           journal.jprintf( " error: %d", echoReply.status); break;
+		case SEND_TIMEOUT: journal.jprintf( "send timed out");  break;
+		case NO_RESPONSE:  journal.jprintf( "no response");    break;
+		case BAD_RESPONSE: journal.jprintf( "bad reponse");        break;
+		default:           journal.jprintf( "error: %d", echoReply.status); break;
 		}
-		journal.jprintf("\nResetting the chip %s . . .\n", nameWiznet);
+		journal.jprintf(", Resetting %s...\n", nameWiznet);
 		HP.num_resPing++;
 		HP.sendCommand(pNETWORK);                                                // Если связь потеряна то подать команду на сброс сетевого чипа
 		//     HP.num_resW5200++;                                                       // Добавить счетчик инициализаций
@@ -580,12 +609,21 @@ boolean pingServer()
 // true - пинг запрещен
 // false - пинг разрешен
 #define MR_BIT_PB 0x04  //MR (Mode Register) Ping Block Mode bit (0x04) If the bit is ‘1’, it blocks the response to a ping request.
-void  pingW5200(boolean f)
+void pingW5200(boolean f)
 {
-uint8_t x=W5100.readMR();
-if (f) {SETBIT1(x,MR_BIT_PB);journal.jprintf( " Enable Ping block\n");}
-else   {SETBIT0(x,MR_BIT_PB);journal.jprintf( " Disable Ping block\n");}
-W5100.writeMR(x);
+	uint8_t x = W5100.readMR();
+	if(f) {
+		SETBIT1(x, MR_BIT_PB);
+#ifdef W5500_LOG_FULL_INFO
+		journal.jprintf(" Enable Ping block\n");
+#endif
+	} else {
+		SETBIT0(x, MR_BIT_PB);
+#ifdef W5500_LOG_FULL_INFO
+		journal.jprintf(" Disable Ping block\n");
+#endif
+	}
+	W5100.writeMR(x);
 }
 
 // =============================== M Q T T ==================================================
