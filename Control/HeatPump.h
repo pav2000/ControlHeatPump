@@ -452,6 +452,7 @@ class HeatPump
     //TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
     SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
+    boolean Task_vUpdate_run;							// задача vUpdate работает
  
     void Pumps(boolean b, uint16_t d);    // Включение/выключение насосов, задержка после включения msec
     void Pump_HeatFloor(boolean On);	  // Включить/выключить насос ТП
