@@ -1557,7 +1557,7 @@ err=OK;
               if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
               	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
                   _delay(100);
-              	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
+              	 err=write_0x05_bit(MX2_START, false);   // дубль подать команду ход/стоп через модбас
               	 SETBIT1(flags,fErrFC);                  // Установить флаг блокировки
               	 err=ERR_FC_RCOMP;
                  set_Error(err,(char*)name);             // Подъем ошибки на верх и останов ТН

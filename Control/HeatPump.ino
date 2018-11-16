@@ -1606,7 +1606,6 @@ int8_t HeatPump::StartResume(boolean start)
 	{
 		if ((get_State()==pWORK_HP)||(get_State()==pSTOPING_HP)||(get_State()==pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf(pP_DATE,"  Start . . .\n");
-
 		eraseError();                                      // Обнулить ошибку
 		//lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 	}
@@ -1616,14 +1615,13 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(pP_DATE,"  Resume . . .\n");
 	}
 
-	setState(pSTARTING_HP);                              // Производится старт -  флаг
+	setState(pSTARTING_HP);                              // Производится старт -  устанавливаем соответсвующее состояние
 	Status.ret=pNone;                                    // Состояние алгоритма
 	lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 
 	if (startPump)                                       // Проверка задачи насос
 	{
 		startPump=false;                               // Поставить признак останова задачи насос
-		//vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
 		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 	}
 
@@ -1719,21 +1717,21 @@ int8_t HeatPump::StartResume(boolean start)
 	}
 
 	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
-	if(is_next_command_stop()) return error;							// следующая команда останов, выходим
+	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+	if(is_next_command_stop()) return error;			    // следующая команда останов, выходим
 	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) {
 #ifndef DEMO   // проверка блокировки инвертора
-		if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
+		if((dFC.get_present())&&(dFC.get_blockFC()))          // есть инвертор но он блокирован
 		{
 			journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
-			setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
-			set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);
+		//	setState(pOFF_HP);                              // Еще ничего не сделали по этому сразу ставим состоение выключено НЕ ВЕРНО !!! УЖЕ МНОГО ЧЕГО СДЕЛАЛИ, НУЖНО ПОДАВАТЬ КОМАНДУ НА СТОП!
+			set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);// ВОТ ЗДЕСЬ КОМАНДА СТОП И ПРОЙДЕТ
 			return error;
 		}
 #endif
 		if ((ResetFC())!=OK)                         // Сброс инвертора если нужно
 		{
-			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
+//			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
 			set_Error(ERR_RESET_FC,(char*)__FUNCTION__);
 			return error;
 		}
