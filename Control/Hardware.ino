@@ -887,7 +887,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
-         if (newEEV<=_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
+         if (newEEV<_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
         #else
          if (newEEV<_data.minSteps)   newEEV=_data.minSteps;                            // Просто ограничение DEMO
         #endif
