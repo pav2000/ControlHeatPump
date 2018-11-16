@@ -133,7 +133,7 @@ void web_server(uint8_t thread)
 					{
 						// Для обычного пользователя подменить файл меню, для сокращения функционала
 						if((GETBIT(Socket[thread].flags, fUser)) && (strcmp(Socket[thread].inPtr, "menu.js") == 0)) strcpy(Socket[thread].inPtr, "menu-user.js");
-						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len);
+						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len + 1);
 						readFileSD(Socket[thread].inPtr, thread);
 						break;
 					}
@@ -174,16 +174,18 @@ void web_server(uint8_t thread)
 
 					default:
 						journal.jprintf("$Unknow  %s\n", (char*) Socket[thread].inBuf);
-						break;
 					}
 
+					SPI_switchW5200();
 					Socket[thread].inBuf[0] = 0;
 					break;   // Подготовить к следующей итерации
 				} // end if (client.available())
 			} // end while (client.connected())
-			taskYIELD();
+	//		taskYIELD();
 			Socket[thread].client.stop();   // close the connection
 			Socket[thread].sock = -1;
+		//	vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+			taskYIELD();
 		} // end if (client)
 #ifdef FAST_LIB  // Переделка
 	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
@@ -219,7 +221,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
-	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики
+	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики, stats_yyyy.dat, stats_yyyy.csv
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -228,29 +230,38 @@ void readFileSD(char *filename, uint8_t thread)
 		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
 		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
 			Stats.StatsFileHeader(Socket[thread].outBuf, n);
-			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 			strcpy(str, stats_file_ext);
 		}
 		if(!n) {
 			Stats.SendFileData(thread, &webFile, filename);
+		} else {
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 		}
 		return;
 	}
-	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью (только для бакапа)
+	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью: только для бакапа - hist_yyyy.dat, hist_yyyy.csv, обрезанный по периоду - hist__yyyymmdd-yyyymmdd
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
 	    strcat(Socket[thread].outBuf, "\"");
 	    strcat(Socket[thread].outBuf, WEB_HEADER_END);
-		n = strncmp(filename + sizeof(stats_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
-		if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
-			Stats.HistoryFileHeader(Socket[thread].outBuf, n);
-			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
-			strcpy(str, stats_file_ext);
-		}
-		if(!n) {
-			Stats.SendFileData(thread, &webFile, filename);
-		}
+	    str = strchr(filename, '-');
+	    if(str) { // Period format: "hist__yyyymmdd-yyyymmdd"
+	    	filename[sizeof(history_file_start)-1] = '\0';
+	    	*str = '\0';
+	    	Stats.SendFileDataByPeriod(thread, &webFile, filename, filename + sizeof(history_file_start), str + 1);
+	    } else {
+			n = strncmp(filename + sizeof(history_file_start)-1, stats_file_header, sizeof(history_file_start)-1) == 0;
+			if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
+				Stats.HistoryFileHeader(Socket[thread].outBuf, n);
+				strcpy(str, stats_file_ext);
+			}
+			if(!n) {
+				Stats.SendFileData(thread, &webFile, filename);
+			} else {
+				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+			}
+	    }
 		return;
 	}
 	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
@@ -284,7 +295,6 @@ void readFileSD(char *filename, uint8_t thread)
 		} else {
 			journal.jprintf("not found (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 		}
-		SPI_switchW5200();
 		return;
 	}
 #ifdef I2C_EEPROM_64KB
@@ -312,7 +322,7 @@ void readFileSD(char *filename, uint8_t thread)
 					}
 				}
 				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf((char*) "$WARNING - Can't find %s file on SD card!\n", filename);
+				journal.jprintf((char*) "$WARNING - File not found: %s\n", filename);
 				return;
 			} // файл не найден
 xFileFound:
@@ -361,7 +371,6 @@ xFileFound:
 		get_indexNoSD(thread);
 		break;
 	}
-	SPI_switchW5200();
 }
 
 // ========================== P A R S E R  G E T =================================
@@ -1116,7 +1125,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 		#else
 		   m_snprintf(strReturn+m_strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
 		#endif
-        m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашиваеть пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
+        m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
         strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
  //       strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
       

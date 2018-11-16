@@ -74,7 +74,8 @@ void adc_setup()
 	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
 	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
 	// 12bit, 14MHz, trig source TIO from TC0
-	ADC->ADC_MR = ADC_MR_PRESCAL(2) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
+	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
+	adc_set_bias_current(ADC, 0);    // for sampling frequency: 0 - below 500 kHz, 1 - between 500 kHz and 1 MHz.
 }
 
 
@@ -91,7 +92,16 @@ void ADC_Handler(void)
 	for(uint8_t i = 0; i < ANUMBER; i++)    // по всем датчикам
 	{
 		sensorADC *adc = &HP.sADC[i];
+#ifdef ADC_SKIP_EXTREMUM
+		int32_t a = ADC->ADC_CDR[adc->get_pinA()]; // get conversion result
+		if(adc->adc_lastVal != 0xFFFF && abs(a - adc->adc_lastVal) > ADC_SKIP_EXTREMUM) {
+			adc->adc_lastVal = 0xFFFF;
+			continue;
+		}
+		adc->adc_lastVal = a;
+#else
 		adc->adc_lastVal = (uint32_t)ADC->ADC_CDR[adc->get_pinA()];  // get conversion result
+#endif
 		// Усреднение значений
 		adc->adc_sum = adc->adc_sum + adc->adc_lastVal - adc->adc_filter[adc->adc_last];   // Добавить новое значение, Убрать самое старое значение
 		adc->adc_filter[adc->adc_last] = adc->adc_lastVal;			                       // Запомнить новое значение
@@ -571,6 +581,8 @@ void devEEV::initEEV()
  _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
+ _data.maxSteps=EEV_STEPS ;                           // Максимальное число шагов ЭРВ (диапазон)
+
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
  _data.delayOn = DEFAULT_DELAY_ON;                    // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
@@ -588,7 +600,6 @@ void devEEV::initEEV()
   SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 
   Chart.init(get_present());                   // инициалазация статистики
-  maxEEV=EEV_STEPS ;                    // Максимальное число шагов ЭРВ (диапазон)
   name=(char*)nameEEV;                  // Присвоить имя
   note=(char*)noteEEV;                  // Присвоить описание
   
@@ -623,19 +634,19 @@ void devEEV::initEEV()
       // Инициализация библиотеки порядок указания фаз в функции initStepMotor +A +B -A -B
     
 #ifdef DEMO
-  stepperEEV.initStepMotor(maxEEV, PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27,PIN_EEV1_D24);          // для тестирования  на шаговике 5 вольт вроде работает
+  stepperEEV.initStepMotor(_data.maxSteps, PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27,PIN_EEV1_D24);          // для тестирования  на шаговике 5 вольт вроде работает
 #else  
     #ifdef DRV_EEV_L9333                                                                          // использование драйвера L9333
       #ifdef  EEV_INVERT                                                                          // Признак инвертирования движения ЭРВ
-         stepperEEV.initStepMotor(maxEEV,PIN_EEV4_D27,PIN_EEV2_D25,PIN_EEV3_D26,PIN_EEV1_D24);    // на 8 фазном работает 480 шагов обратное подключение
+         stepperEEV.initStepMotor(_data.maxSteps,PIN_EEV4_D27,PIN_EEV2_D25,PIN_EEV3_D26,PIN_EEV1_D24);    // на 8 фазном работает 480 шагов обратное подключение
       #else
-         stepperEEV.initStepMotor(maxEEV,PIN_EEV1_D24,PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27);    // на 8 фазном работает 480 шагов прямое подключение
+         stepperEEV.initStepMotor(_data.maxSteps,PIN_EEV1_D24,PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27);    // на 8 фазном работает 480 шагов прямое подключение
       #endif
     #else    
       #ifdef  EEV_INVERT                                                                          // Признак инвертирования движения ЭРВ
-         stepperEEV.initStepMotor(maxEEV,PIN_EEV4_D27,PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV1_D24);    // на 8 фазном работает 480 шагов обратное подключение
+         stepperEEV.initStepMotor(_data.maxSteps,PIN_EEV4_D27,PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV1_D24);    // на 8 фазном работает 480 шагов обратное подключение
       #else
-         stepperEEV.initStepMotor(maxEEV,PIN_EEV1_D24,PIN_EEV2_D25,PIN_EEV3_D26,PIN_EEV4_D27);    // на 8 фазном работает 480 шагов прямое подключение
+         stepperEEV.initStepMotor(_data.maxSteps,PIN_EEV1_D24,PIN_EEV2_D25,PIN_EEV3_D26,PIN_EEV4_D27);    // на 8 фазном работает 480 шагов прямое подключение
       #endif
     #endif  // DRV_EEV_L9333
 #endif // DEMO   
@@ -682,8 +693,8 @@ return OK;
 int8_t devEEV::set_EEV(int x)                  
 {
   err=OK;
-  if(x>EEV_STEPS)           { err=ERR_MAXERV; return err;   }    // Выход за верхнюю границу
-  if(x<0)                   { err=ERR_MINERV; return err;   }    // Выход за нижнюю границу
+  if(x>EEV_STEPS)           { err=ERR_MAX_EEV; return err;   }    // Выход за верхнюю границу
+  if(x<0)                   { err=ERR_MIN_EEV; return err;   }    // Выход за нижнюю границу
   if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
   if (testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
@@ -873,9 +884,24 @@ int8_t devEEV::Update(void) //boolean fHeating)
          newEEV=round(u)+EEV;                                        // Округление и добавление предудущего значения
          pre_errPID=errPID;                                          // запомнить предыдущую ошибку
     #endif   // EEV_INT_PID
-     
-        if (newEEV>=maxEEV)   newEEV=maxEEV;                         // ограничение диапазона
-        if (newEEV<=_data.minSteps)   newEEV=_data.minSteps;
+
+        // Проверка управляющего воздействия, возможно отказ ЭРВ
+        #ifndef DEMO
+         if (newEEV<_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
+        #else
+         if (newEEV<_data.minSteps)   newEEV=_data.minSteps;                            // Просто ограничение DEMO
+        #endif
+        
+        #ifndef DEMO
+	        #ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
+	        if (newEEV>_data.maxSteps)  {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
+	        #else
+	        if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение
+	        #endif
+        #else
+           if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение DEMO
+        #endif
+  
   //      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
     } break;
   case TABLE:
@@ -980,7 +1006,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_POSpp)==0){
 	  _itoa(EEV,ret);
 	  strcat(ret," (");
-	  _itoa((int32_t) EEV * 100 / maxEEV,ret); 
+	  _itoa((int32_t) EEV * 100 / _data.maxSteps,ret); 
 	  strcat(ret,"%)");	
 	  if (stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
@@ -990,7 +1016,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_MIN)==0){
 	   _itoa(_data.minSteps,ret); 
 	} else if(strcmp(var, eev_MAX)==0){
-	   _itoa(maxEEV,ret); 
+	   _itoa(_data.maxSteps,ret); 
 	} else if(strcmp(var, eev_TIME)==0){
 	   _itoa(_data.timeIn,ret); 
 	} else if(strcmp(var, eev_TARGET)==0){
@@ -1083,14 +1109,17 @@ boolean devEEV::set_paramEEV(char *var,float x)
 {
 float temp;	
     if(strcmp(var, eev_POS)==0) {
-	  if ((x>=_data.minSteps)&&(x<=maxEEV)){ set_EEV((int)x); return true;} else return false;
+	  if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ set_EEV((int)x); return true;} else return false;
 	} else if(strcmp(var, eev_POSp)==0){
-      temp = x * maxEEV / 100.0;
-       if ((temp>=_data.minSteps)&&(temp<=maxEEV)) { set_EEV((int)temp); return true;} else return false;
+      temp = x * _data.maxSteps / 100.0;
+       if ((temp>=_data.minSteps)&&(temp<=_data.maxSteps)) { set_EEV((int)temp); return true;} else return false;
 	} else if(strcmp(var, eev_POSpp)==0){
 	  return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_MIN)==0){
-      if ((x>=0)&&(x<=maxEEV)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
+      if ((x>=0)&&(x<_data.maxSteps)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
+	  return true;  
+	} else if(strcmp(var, eev_MAX)==0){
+      if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=(int)x; return true;} else return false;	// максимальное число шагов
 	  return true;  
 	} else if(strcmp(var, eev_TIME)==0){
 	  if ((x>=1)&&(x<=1000)) { if(_data.timeIn!=x) resetPID(); _data.timeIn=x; return true;} else return false;	// секунды
@@ -1105,7 +1134,7 @@ float temp;
 	} else if(strcmp(var, eev_CONST)==0){
 	   if ((x>=-5.0)&&(x<=5.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
-	   if ((x>=_data.minSteps)&&(x<=maxEEV)){ _data.manualStep=x; return true;} else return false;	// шаги
+	   if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
         if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
 	}   else if(strcmp(var, eev_RULE)==0){
@@ -1133,11 +1162,11 @@ float temp;
     } else if(strcmp(var, eev_ERR_KP)==0){
       if ((x>=0.0)&&(x<=10.0)) {_data.errKp=rd(x, 100); return true;}else return false;	// сотые
     } else if(strcmp(var, eev_SPEED)==0){
-      if ((x>=0)&&(x<=120)) { if(_data.speedEEV!=x) _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
+      if ((x>=5)&&(x<=120)) { if(_data.speedEEV!=x) _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
     } else if(strcmp(var, eev_PRE_START_POS)==0){
-      if ((x>=0)&&(x<=maxEEV)) { if(_data.preStartPos!=x) _data.preStartPos=(int)x; return true;} else return false;	// шаги
+      if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { if(_data.preStartPos!=x) _data.preStartPos=(int)x; return true;} else return false;	// шаги
     } else if(strcmp(var, eev_START_POS)==0){
-      if ((x>=0)&&(x<=maxEEV)) { if(_data.StartPos!=x) _data.StartPos=(int)x; return true;} else return false;	// шаги 
+      if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { if(_data.StartPos!=x) _data.StartPos=(int)x; return true;} else return false;	// шаги 
     } else if(strcmp(var, eev_DELAY_ON_PID)==0){
       if ((x>=0)&&(x<=255)) { if(_data.delayOnPid!=x) _data.delayOnPid=(int)x; return true;} else return false;	// секунды размер 1 байт
     } else if(strcmp(var, eev_DELAY_START_POS)==0){
@@ -1506,6 +1535,7 @@ return err;
 // Команда стоп на инвертор Обратно код ошибки
 int8_t devOmronMX2::stop_FC()
 {
+uint8_t i;	
 err=OK;     
  #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
       #ifdef DEMO
@@ -1520,8 +1550,26 @@ err=OK;
           err=OK;   
           if ((testMode==NORMAL)||(testMode==HARD_TEST))      // Режим работа и хард тест, все включаем,
           {  
-          #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп
-              HP.dRelay[RCOMP].set_OFF();                    // ПЛОХО через глобальную переменную
+          #ifdef FC_USE_RCOMP   // Использовать отдельный провод для команды ход/стоп с проверкой выполнения
+              HP.dRelay[RCOMP].set_OFF();            // ПЛОХО через глобальную переменную
+               vTaskDelay(1000/ portTICK_PERIOD_MS); // задержка на прохождение команды
+               state=read_0x03_16(MX2_STATE);        // 0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током 7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]
+              if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
+              	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
+                  _delay(100);
+              	 err=write_0x05_bit(MX2_START, false);   // дубль подать команду ход/стоп через модбас
+              	 SETBIT1(flags,fErrFC);                  // Установить флаг блокировки
+              	 err=ERR_FC_RCOMP;
+                 set_Error(err,(char*)name);             // Подъем ошибки на верх и останов ТН
+              	 journal.jprintf("$ERROR: it is not possible to stop the inverter via RCOMP, the inverter is blocked\n"); 
+              	}
+               for(i=0;i<FC_NUM_READ;i++)  // установить целевую частоту в 0
+		            {
+		              err=write_0x10_32(MX2_TARGET_FR,0);
+		              if (err==OK) break;             // Команда выполнена
+		              _delay(100);
+		              journal.jprintf("%s: repeat set frequency 0.0 Hz\n",name);  // Выводим сообщение о повторной команде
+		            }
           #else                  // подать команду ход/стоп через модбас
               err=write_0x05_bit(MX2_START, false);   // Команда стоп
           #endif   
@@ -1994,7 +2042,7 @@ boolean  devSDM::progConnect()
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
 }                           
 
-// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_TIME_READ
+// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
 {
 	static float tmp;
@@ -2005,7 +2053,6 @@ int8_t devSDM::get_readState(uint8_t group)
 	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 		// Читаем значения счетчика
-//		_delay(SDM_DELAY_READ);
 		if(group == 0) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE,&tmp);   // Напряжение
 			if(err==OK) { Voltage=tmp; group = 1; }
@@ -2183,7 +2230,6 @@ int8_t devModbus::initModbus()
 // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2191,7 +2237,7 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
+	uint8_t result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
@@ -2207,7 +2253,6 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 // Получить значение регистра (2 байта) в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2215,22 +2260,21 @@ int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
+	uint8_t result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = RS485.getResponseBuffer(0);
-		SemaphoreGive(xModbusSemaphore);
-		return err = OK;
+		err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive(xModbusSemaphore);
-		return err = translateErr(result);
+		err = translateErr(result);
 	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
 }
     
 // Получить значение 2-x регистров (4 байта) в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2238,47 +2282,52 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
+	uint8_t result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = (RS485.getResponseBuffer(0) << 16) | RS485.getResponseBuffer(1);
-		SemaphoreGive(xModbusSemaphore);
-		return err = OK;
+		err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive(xModbusSemaphore);
-		return err = translateErr(result);
+		err = translateErr(result);
 	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
 }
       
 // Получить значение 2-x регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
-int8_t devModbus::readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret)             
-    {
-    uint8_t result;
-    // Если шедулер запущен то захватываем семафор
-    if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
-    { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);return err = ERR_485_BUZY;}
-      RS485.set_slave(id);
-      result = RS485.readHoldingRegisters(cmd,2);                                             // послать запрос,
-      if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1)); }  
-      else                               {err=translateErr(result); *ret=0;}
-    SemaphoreGive(xModbusSemaphore);
-    return err;  
-    }   
+int8_t devModbus::readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
+{
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		return err = ERR_485_BUZY;
+	}
+	RS485.set_slave(id);
+	uint8_t result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
+	if(result == RS485.ku8MBSuccess) {
+		err = OK;
+		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+	} else {
+		err = translateErr(result);
+		*ret = 0;
+	}
+	SemaphoreGive (xModbusSemaphore);
+	return err;
+}
 
 
 // Получить значение N регистров c cmd (2*N байта) МХ2 в виде целого  числа (uint16_t *buf) при ошибке возвращает err
 int8_t devModbus::readHoldingRegistersNN(uint8_t id,uint16_t cmd, uint16_t num, uint16_t *buf) 
 {
-    uint8_t result;
-    int16_t i;
     // Если шедулер запущен то захватываем семафор
     if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)     // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);return err = ERR_485_BUZY;}
       RS485.set_slave(id);
-      result = RS485.readHoldingRegisters(cmd,num);                                           // послать запрос,
+      uint8_t result = RS485.readHoldingRegisters(cmd,num);                                           // послать запрос,
       if (result == RS485.ku8MBSuccess) 
       { 
-        for (i=0;i<num;i++)   buf[i]=RS485.getResponseBuffer(i);
+        for (int16_t i=0;i<num;i++)   buf[i]=RS485.getResponseBuffer(i);
         err=OK; 
         SemaphoreGive(xModbusSemaphore);
         return err; 
@@ -2321,13 +2370,12 @@ int8_t devModbus::writeSingleCoil(uint8_t id,uint16_t cmd, uint8_t u8State)
 // Установить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные data
 int8_t   devModbus::writeHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t data)
 {
-   uint8_t result;
     // Если шедулер запущен то захватываем семафор
     if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)            // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy); return err = ERR_485_BUZY;}
 
       RS485.set_slave(id);
-      result = RS485.writeSingleRegister(cmd,data);                                               // послать запрос,
+      uint8_t result = RS485.writeSingleRegister(cmd,data);                                               // послать запрос,
       SemaphoreGive(xModbusSemaphore);
       return err = translateErr(result);
   

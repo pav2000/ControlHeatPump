@@ -465,6 +465,7 @@ const char *noteTemp[] = {"Температура улицы",
           #define DelayStartPos   30             // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
           #define delayOff     10             // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
          */
+       // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)    
         	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
@@ -951,6 +952,7 @@ const char *noteTemp[] = {"Температура улицы",
     #define EEV_PHASE              PHASE_8s       // ЗАДАННАЯ (можно менять) последовательность (шагов) при движении ЭРВ
       //#define EEV_INVERT                        // Признак инвертирования движения ЭРВ  (меняем если крутит в обратную сторону)
       //#define EEV_INT_PID                       // использование ПИДА в целочисленной арифметике
+    // #define EEV_MAX_CONTROL                    // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)    
   
     // Значения по умолчанию (можно менять из морды)
     #define DEFAULT_RULE_EEV          TEVAOUT_PEVA    // Формула по умолчанию - TEVAOUT_PEVA
@@ -1455,7 +1457,8 @@ const char *noteTemp[] = {"Температура улицы",
 	  #define EEV_PHASE              PHASE_8s       // ЗАДАННАЯ (можно менять) последовательность (шагов) при движении ЭРВ
     //#define EEV_INVERT                      // Признак инвертирования движения ЭРВ  (меняем если крутит в обратную сторону)
     //#define EEV_INT_PID                     // использование ПИДА в целочисленной арифметике
-	
+   // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)    
+   
 	 	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TRTOOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
@@ -1926,6 +1929,7 @@ const char *noteTemp[] = {"Температура улицы",
           #define DelayStartPos   30             // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
           #define delayOff     10             // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
          */ 
+          // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)    
 	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
@@ -2050,7 +2054,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   5 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_5    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-    #define DEMO                                // Включение демо режима
+//    #define DEMO                                // Включение демо режима
     #define CONFIG_NAME   "pav2000inv"                                        // Имя конфигурации
     #define CONFIG_NOTE   "Инвертор с компрессором BLDC с шаговым ЭРВ и РТО"  // Описание конфигурации
     #define HP_SCHEME       2                                                 // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -2061,7 +2065,7 @@ const char *noteTemp[] = {"Температура улицы",
     uint8_t SPI_RATE 	 = 2;	                                              // делитель для SPI шины, (2=42MHz, 3=28MHz, 4=21MHz) единый для ВСЕХ устройств
 	#define SD_CLOCK     30	                                                  // частота SPI для SD карты в МГц (работало 28)
  //   #define DEFROST                                                         // нужна разморозка
-         #define ONEWIRE_DS2482                                               // + Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
+         #define ONEWIRE_DS2482                                               // Использование мастера i2c Onewire DS2482 (адрес AD0 = 0)
    //    #define ONEWIRE_DS2482_SECOND                                        // второй мастер i2 Onewire DS2482 (адрес AD0 = 1)
    //    #define ONEWIRE_DS2482_2WAY 		                                  // 2-х проводный OneWire второго мастера (паразитное питание)
    //	 #ifdef ONEWIRE_DS2482_2WAY
@@ -2421,34 +2425,36 @@ const char *noteTemp[] = {"Температура улицы",
       const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
       const uint16_t TESTPRESS[ANUMBER]={600,1200};      // Значения датчиков при тестировании  опция TEST
       // ------------------- ADC SENSOR ----------------------------------
-      #define P_NUMSAMLES       1              // Число значений для усреднения показаний давления
-      #define PRESS_FREQ        200            // Частота опроса аналоговых датчиков
-      #define FILTER_SIZE       128            // Длина фильтра для датчика давления
-      #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
+      #define ADC_PRESCAL		10             // [20]  = (42 / ADCClockMhz - 1)
+      #define ADC_SKIP_EXTREMUM 400            // [400] Отбрасывать максимумы/минимумы больше заданной дельты
+      #define P_NUMSAMLES       1              // [1]   Число значений для усреднения показаний давления
+      #define PRESS_FREQ        100            // [20]  Частота опроса аналоговых датчиков
+      #define FILTER_SIZE       128            // [40]  Длина фильтра для датчика давления
+      #define FILTER_SIZE_OTHER 8              // [8]   Длина фильтра для остальных датчиков
 
-      // История (графики)
+       // История (графики)
       const History_setup HistorySetup[] = {
-      	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
-      	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
-      	{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
-      	{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
-      	{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
-      	{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
-      	{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
-      	{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
-      	{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
-      	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
-		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+      	{ STATS_OBJ_Temp, TOUT, nameTemp[TOUT] },
+      	{ STATS_OBJ_Temp, TIN, nameTemp[TIN] },
+      	{ STATS_OBJ_Temp, TBOILER, nameTemp[TBOILER] },
+      	{ STATS_OBJ_Temp, TCOMP, nameTemp[TCOMP] },
+      	{ STATS_OBJ_Temp, TEVAING, nameTemp[TEVAING] },
+      	{ STATS_OBJ_Temp, TEVAOUTG, nameTemp[TEVAOUTG] },
+      	{ STATS_OBJ_Temp, TCONING, nameTemp[TCONING] },
+      	{ STATS_OBJ_Temp, TCONOUTG, nameTemp[TCONOUTG] },
+      	{ STATS_OBJ_Temp, TEVAOUT, nameTemp[TEVAOUT] },
+//      	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
+//		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
 //		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
 //		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
-		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
-		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
+		{ STATS_OBJ_Flow, FLOWCON, nameFrequency[FLOWCON] },
+		{ STATS_OBJ_EEV, STATS_EEV_Steps, "EEV" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "OverHeat" },
 //		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
-		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
-		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "Полный COP" }      
+		{ STATS_OBJ_Compressor, OBJ_Freq, "Freq" },
+		{ STATS_OBJ_Power, OBJ_power220, "power220" },
+		{ STATS_OBJ_Power, OBJ_powerCO, "powerCO" },
+		{ STATS_OBJ_COP, OBJ_COP_Full, "fullCOP" }      
       };
       // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
@@ -2460,7 +2466,8 @@ const char *noteTemp[] = {"Температура улицы",
 		#define EEV_PHASE              PHASE_8s       // ЗАДАННАЯ (можно менять) последовательность (шагов) при движении ЭРВ
 	    //#define EEV_INVERT                      // Признак инвертирования движения ЭРВ  (меняем если крутит в обратную сторону)
 	    //#define EEV_INT_PID                     // использование ПИДА в целочисленной арифметике
-	
+	    #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)   
+	     
 		// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
 		#define DEFAULT_FREON_TYPE     R410A 		  // Типа фрона по умолчанию - R134A
@@ -2547,7 +2554,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   6 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
 
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -2661,7 +2668,7 @@ const char *noteTemp[] = {"Температура улицы",
     #define MODBUS_PORT_NUM         Serial3     // Аппаратный порт куда прицеплен Modbus
     #define MODBUS_PORT_SPEED       9600        // Скорость порта куда прицеплен частотник и счетчик
     #define MODBUS_PORT_CONFIG      SERIAL_8N1  // Конфигурация порта куда прицеплен частотник и счетчик
-    #define MODBUS_TIME_WAIT        2000        // Время ожидания захвата мютекса для modbus мсек
+    #define MODBUS_TIME_WAIT        1000        // Время ожидания захвата мютекса для modbus мсек
     #define MODBUS_TIME_TRANSMISION 0           // Пауза (msec) между запросом и ответом по модбас было 4
     //#define PIN_MODBUS_RSE          22          // Не используется из-за платы UART-RS485! Управление направлением передачи 485 для связи с инвертором по Modbus (1-передача 0-прием)
 
@@ -2931,16 +2938,16 @@ const char *noteTemp[] = {"Температура улицы",
 	#define TSUN		10   // Температура солнечного коллектора (улица)        - 28FF22F9551403AA
 	#define TSUNOUTG	11   // Температура на выходе из СК (гликоль)            - 28DE862E1713012C
     // Датчики для информации:
-	//#define TKITCHEN	12  // 101350B4020800CA
-    //#define TBR1		13  // 28C974DF050000CB
-	//#define TFLOOR2	14  // 10DA24AC02080095
+	#define TKITCHEN	12  // 101350B4020800CA
+    #define TFL1BEDR	13  // 28C974DF050000CB
+	#define TFL2BEDR	14  // 10DA24AC02080095
 	//#define TBASEMENT	15  // 106023B402080028
 	//#define TEOUT		16	// 102D74B302080055
     // Радиодатчики:
     //#define T65		17  // прихожая			(№65) 18136
     //#define T55		18  // Санузел			(№55) 18185
     //#define T38		19  // 1 этаж			(№38) 18130
-    //#define T45		20  // 2 этаж, ТВ		(№45) 18172
+    #define TFL2TV		20  // 2 этаж, ТВ		(№45) 18172
   	//#define T49		21  // Баня				(№49) 18143
 
         // Отсутствующие датчики:
@@ -2976,8 +2983,8 @@ const char *noteTemp[] = {"Температура улицы",
 		"TSUN",				// 10. Температура солнечного коллектора (улица)
 		"TSUNOUTG",			// 11. Температура на выходе из солнечного коллектора (гликоль)
         "TKITCHEN",			// 12.
-		"TBR1",				// 13.
-        "TFLOOR2",			// 14.
+		"TFL1BEDR",			// 13.
+        "TFL2BEDR",			// 14.
         "TBASEMENT",		// 15.
         "TEOUT",			// 16.
 		// Радиодатчики
@@ -3065,10 +3072,12 @@ const char *noteTemp[] = {"Температура улицы",
   	  const uint16_t ANALOG_MODBUS_REG[ANUMBER]  = { 60, 59 };	// Регистр Модбас, по которому доступно значение датчика. Для Vacon=(AI2, AI1)
   #endif
   // ------------------- ADC SENSOR ----------------------------------
+  #define ADC_PRESCAL		20             // = (42 / ADCClockMhz - 1), - 2 MHz
+  #define ADC_SKIP_EXTREMUM 400            // Отбрасывать максимумы/минимумы больше заданной дельты
   #define P_NUMSAMLES       1              // Число значений для усреднения показаний давления
-  #define PRESS_FREQ        10             // период опроса аналоговых датчиков в секунду
-  #define FILTER_SIZE       25             // Длина фильтра для датчиков давления
-  #define FILTER_SIZE_OTHER 5              // Длина фильтра для остальных датчиков
+  #define PRESS_FREQ        20             // период опроса аналоговых датчиков в секунду
+  #define FILTER_SIZE       40             // Длина фильтра для датчиков давления
+  #define FILTER_SIZE_OTHER 4              // Длина фильтра для остальных датчиков
 
   // Конфигурация системы отопления --------------------------------------------------------------------------------
   // от куда брать температуру обратки и подачи системы отопления смотртеть кондесатор.
@@ -3100,7 +3109,10 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
 		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
 		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "Выработка, кВт" }
+		{ STATS_OBJ_COP, OBJ_COP_Full, "КОП" },
+		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
+		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
+		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
 	};
 
   // ------------------- EEV -----------------------------------
@@ -3113,7 +3125,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define EEV_PHASE              PHASE_8s       // ЗАДАННАЯ (можно менять) последовательность (шагов) при движении ЭРВ
     //#define EEV_INVERT                      // Признак инвертирования движения ЭРВ  (меняем если крутит в обратную сторону)
     //#define EEV_INT_PID                     // использование ПИДА в целочисленной арифметике
-
+    // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)  
+      
 	// Значения по умолчанию (можно менять из морды)
 	#define DEFAULT_RULE_EEV       TEVAOUT_PEVA	  // Формула по умолчанию - TEVAOUT_PEVA
 	#define DEFAULT_FREON_TYPE     R134A 		  // Типа фрона по умолчанию - R134A
@@ -3184,7 +3197,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FC_MAX_CURRENT       (10.0*100)     // Максимальный ток инвертора (см компрессор) в 0.01 А
 	#define FC_MAX_CURRENT_BOILER (10.0*100)     // Максимальный ток инвертора для ГВС в 0.01 А
 	#define FC_ACCEL_TIME        (4*100)      	// Время разгона компрессора в сотых сек
-	#define FC_DEACCEL_TIME      (1*100)   	  	// Время торможения компрессора в сотых сек
+	#define FC_DEACCEL_TIME      (2*100)   	  	// Время торможения компрессора в сотых сек
 
 	#define COP_ALL_CALC   // Проводить расчет КОП всегда, если дефайна нет то КОП считается ТОЛЬКО при работающем компрессоре, в паузах ставится 0
 

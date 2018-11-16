@@ -445,7 +445,10 @@ x_I2C_init_std_message:
 
 // 10. Сетевые настройки
    journal.jprintf("7. Setting Network . . .\n");
-   initW5200(true);   // Инициализация сети с выводом инфы в консоль
+   if(initW5200(true)) {   // Инициализация сети с выводом инфы в консоль
+	   W5100.getMACAddress((uint8_t *)Socket[0].outBuf);
+   	   journal.jprintf(" MAC: %s\n", MAC2String((uint8_t *)Socket[0].outBuf));
+   }
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
 // 11. Разбираемся со всеми часами и синхронизацией
@@ -542,7 +545,7 @@ vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу
 //HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
 //vTaskSuspend(HP.xHandleUpdatePump);
 
-if(xTaskCreate(vSericeHP, "SericeHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if(xTaskCreate(vServiceHP, "ServiceHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
@@ -552,6 +555,7 @@ if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
+HP.Task_vUpdate_run = false;
 
 #ifdef EEV_DEF
   if (xTaskCreate(vUpdateEEV,"UpdateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
@@ -903,8 +907,7 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if ((HP.dSDM.get_present())&&(millis()-readSDM>SDM_TIME_READ))
-			{
+			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
 				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров
 			}
@@ -1044,6 +1047,10 @@ void vReadSensor_delay8ms(int16_t ms8)
 	#endif
 	 for( ;; )
 	 {
+		 if(!HP.Task_vUpdate_run) {
+			 vTaskSuspend(NULL);				// Stop vUpdate
+			 continue;
+		 }
 		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
 			 // 1. Обновится, В это время команды управления не выполняются!!!!!
 			 if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен
@@ -1090,6 +1097,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 #endif // #ifdef RPUMPB
 		 } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
 
+		 if(!HP.Task_vUpdate_run) {
+			 vTaskSuspend(NULL);				// Stop vUpdate
+			 continue;
+		 }
+
 // 3. Расписание проверка всегда
 		 int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		 if(_profile != SCHDLR_NotActive) {                 // Расписание активно
@@ -1105,6 +1117,10 @@ void vReadSensor_delay8ms(int16_t ms8)
 						 if(frestart) {
 							 HP.sendCommand(pWAIT);
 							 uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
+							 if(!HP.Task_vUpdate_run) {
+								 vTaskSuspend(NULL);				// Stop vUpdate
+								 continue;
+							 }
 						 }
 						 vTaskSuspendAll();	// без проверки
 						 HP.Prof.load(_profile);
@@ -1125,7 +1141,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
 			 journal.jprintf((const char*)" Stop task update %s from vUpdate\n",(char*)nameHeatPump);
-			 vTaskSuspend(HP.xHandleUpdate);    //???????????????
+			 vTaskSuspend(NULL);    //??????????????? Stop vUpdate
 			 break;
 		 case  pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
 		 case  pWORK_HP:                           // 3 Работает   - анализ режима работы get_modWork()
@@ -1133,7 +1149,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			 {
 			 case  pOFF:                          // 0 Пауза
 				// journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-				// vTaskSuspend(HP.xHandleUpdate);
+				// vTaskSuspend(NULL);				Stop vUpdate
 				 vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
 				 break;
 			 case  pHEAT:                         // 1 Включить отопление
@@ -1167,7 +1183,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				 break;
 			 default:
 				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-				 vTaskSuspend(HP.xHandleUpdate);
+				 vTaskSuspend(NULL);		// Stop vUpdate
 				 break;
 			 }  // switch(HP.get_modeHouse() )
 			 break;
@@ -1175,11 +1191,15 @@ void vReadSensor_delay8ms(int16_t ms8)
 			 case  pERROR_HP:_delay(UPDATE_HP_WAIT_PERIOD); break;     // 5 Ошибка ТН
 			 case  pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
 			 default:            journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
-			 vTaskSuspend(HP.xHandleUpdate);
+			 vTaskSuspend(NULL);				// Stop vUpdate
 			 break;
 
 		 } //  switch (HP.get_State())
 
+		 if(!HP.Task_vUpdate_run) {
+			 vTaskSuspend(NULL);				// Stop vUpdate
+			 continue;
+		 }
 		 // Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
@@ -1232,7 +1252,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
 			 {
 				 journal.jprintf((const char*) " Stop task update EEV\n");
-				 vTaskSuspend(HP.xHandleUpdateEEV);
+				 vTaskSuspend(NULL);				// Stop vUpdateEEV
 				 continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
 			 } else    // штатная пауза (в зависимости от настроек)
 				 if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
@@ -1321,10 +1341,10 @@ void vUpdateStepperEEV(void *)
       // 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
       if (xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0)==errQUEUE_EMPTY)
       {
-   //     Serial.println("6. vTaskSuspend ");   
+   //     Serial.println("6. TaskSuspend ");
         HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
        if (!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
-        vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                      // Приостановить задучу
+        vTaskSuspend(NULL);               // Приостановить задучу vUpdateStepperEEV
       } 
    // Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
   //    Serial.println("5. new command ");  
@@ -1339,13 +1359,13 @@ void vUpdateCommand(void *)
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
 	for(;;) {
 		HP.runCommand();                          // Выполнение команд управления ТН
-		vTaskSuspend(HP.xHandleUpdateCommand);    // Команды выполнены, остановить задачу, пуск осуществляется при посылке команды
+		vTaskSuspend(NULL);    // Команды выполнены, остановить задачу vUpdateCommand, пуск осуществляется при посылке команды
 	}
 	vTaskDelete( NULL);
 }
 
 // Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
-void vSericeHP(void *)
+void vServiceHP(void *)
 {
 	static uint32_t NextionTick = 0;
 	static uint16_t task_updstat_chars = 0;
@@ -1357,12 +1377,12 @@ void vSericeHP(void *)
 		register uint32_t t = GetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
+			uint8_t m = rtcSAM3X8.get_minutes();
 			if(HP.IsWorkingNow()) {
 				if(++task_updstat_chars >= HP.get_tChart()) {
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
 				}
-				uint8_t m = rtcSAM3X8.get_minutes();
 				if(m != task_updstat_countm) { 								// Через 1 минуту
 					task_updstat_countm = m;
 					HP.updateCount();                                       // Обновить счетчики моточасов

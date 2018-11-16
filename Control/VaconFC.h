@@ -20,7 +20,7 @@
 #ifndef _VaconFC_h
 #define _VaconFC_h
 
-#include "Config.h"
+#include "Constant.h"
 
 #define FC_VACON_NAME "Vacon"
 #ifdef FC_VACON

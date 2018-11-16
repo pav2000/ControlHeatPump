@@ -1021,7 +1021,6 @@ void HeatPump::startChart()
 // powerCO=0;
 // powerGEO=0;
 // power220=0;
-//vTaskResume(xHandleUpdateStat); // Запустить задачу обновления статистики
 }
 
 
@@ -1177,11 +1176,9 @@ void HeatPump::updateNextion()
 	{
 		myNextion.init_display();
 		myNextion.set_need_refresh();
-		//vTaskResume(xHandleUpdateNextion);   // включить задачу обновления дисплея
 	} else                        // Дисплей выключен
 	{
 //		myNextion.sendCommand("sleep=1");
-		//vTaskSuspend(xHandleUpdateNextion);   // выключить задачу обновления дисплея
 	}
 #endif
 }
@@ -1591,6 +1588,7 @@ int8_t HeatPump::StartResume(boolean start)
 		{
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
+			Task_vUpdate_run = true;
 			vTaskResume(xHandleUpdate);
 			journal.jprintf(" Start task vUpdate\n");
 			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
@@ -1607,7 +1605,6 @@ int8_t HeatPump::StartResume(boolean start)
 	{
 		if ((get_State()==pWORK_HP)||(get_State()==pSTOPING_HP)||(get_State()==pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf(pP_DATE,"  Start . . .\n");
-
 		eraseError();                                      // Обнулить ошибку
 		//lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 	}
@@ -1617,14 +1614,13 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(pP_DATE,"  Resume . . .\n");
 	}
 
-	setState(pSTARTING_HP);                              // Производится старт -  флаг
+	setState(pSTARTING_HP);                              // Производится старт -  устанавливаем соответсвующее состояние
 	Status.ret=pNone;                                    // Состояние алгоритма
 	lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 
 	if (startPump)                                       // Проверка задачи насос
 	{
 		startPump=false;                               // Поставить признак останова задачи насос
-		//vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
 		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 	}
 
@@ -1688,12 +1684,12 @@ int8_t HeatPump::StartResume(boolean start)
 	if (start)  // Команда старт - Инициализация ЭРВ и очистка графиков при восстановлени не нужны
 	{
 #ifdef EEV_DEF
-		journal.jprintf(" EEV init\n");
+		//journal.jprintf(" EEV init\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
 #endif
 
-		journal.jprintf(" Charts clear and start\n");
+		//journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 		//else  startChart();                                      // Запустить графики <- тут не запуск, тут очистка
 	}
@@ -1713,28 +1709,31 @@ int8_t HeatPump::StartResume(boolean start)
 
 	// 7. Дополнительнеая проверка перед пуском компрессора ----------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;           // Могли нажать кнопку стоп, выход из процесса запуска
-	if (get_errcode()!=OK)                                 // ОШИБКА компрессор уже работает
+	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
+	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+	if(is_next_command_stop()) return error;			    // следующая команда останов, выходим
+#ifdef USE_ELECTROMETER_SDM
+	if(!dSDM.get_link()) dSDM.uplinkSDM();
+#endif
+	if (get_errcode()!=OK)                                 // ОШИБКА перед стартом
 	{
 		journal.jprintf(" Error before start compressor!\n");
-		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__); return error;
+		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);
+		return error;
 	}
-
-	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;                         // Могли нажать кнопку стоп, выход из процесса запуска
-	if(is_next_command_stop()) return error;							// следующая команда останов, выходим
 	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) {
 #ifndef DEMO   // проверка блокировки инвертора
-		if((dFC.get_present())&&(dFC.get_blockFC()))                         // есть инвертор но он блокирован
+		if((dFC.get_present())&&(dFC.get_blockFC()))          // есть инвертор но он блокирован
 		{
-			journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
-			setState(pOFF_HP);                                             // Еще ничего не сделали по этому сразу ставим состоение выключено
-			set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);
-			return error;
+			if(dFC.get_err() != ERR_485_BUZY) {
+				journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
+				set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);// ВОТ ЗДЕСЬ КОМАНДА СТОП И ПРОЙДЕТ
+				return error;
+			}
 		}
 #endif
 		if ((ResetFC())!=OK)                         // Сброс инвертора если нужно
 		{
-			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
 			set_Error(ERR_RESET_FC,(char*)__FUNCTION__);
 			return error;
 		}
@@ -1749,11 +1748,12 @@ int8_t HeatPump::StartResume(boolean start)
 	if(start)
 	{
 		journal.jprintf(" Start task vUpdate\n");
+		Task_vUpdate_run = true;
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
+		//_delay(1);
 	}
 
 	// 12. насос запущен -----------------------------------------------------------------------------------------
-	_delay(1);
 	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
 	
 	return error;
@@ -1788,7 +1788,7 @@ int8_t HeatPump::StopWait(boolean stop)
 
   if (stop) //Обновление ТН отключаем только при останове
   {
-    vTaskSuspend(xHandleUpdate);                           // Остановить задачу обновления ТН
+	Task_vUpdate_run = false;					        // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
     journal.jprintf(" Stop task vUpdate\n");
 	Sun_OFF();											// Выключить СК
 	time_Sun_OFF = 0;									// выключить задержку последующего включения
@@ -1797,8 +1797,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if(startPump)
   {
      startPump=false;                                    // Поставить признак что насос выключен
-     //vTaskSuspend(xHandleUpdatePump);                    // Остановить задачу насос
-     journal.jprintf(" %s: startPump OFF. . .\n",(char*)__FUNCTION__);
+     journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
   }
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
@@ -1838,7 +1837,6 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
    
  // ЭРВ само выключится по State
-//  vTaskSuspend(xHandleUpdateEEV);                       // Остановить задачу обновления ЭРВ
 //  #ifdef DEBUG 
 //      Serial.println(" Stop task update EEV"); 
 //  #endif
@@ -1847,8 +1845,7 @@ int8_t HeatPump::StopWait(boolean stop)
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
   {
-     //vTaskSuspend(xHandleUpdateStat);                    // Остановить задачу обновления статистики
-     journal.jprintf(" statChart stop\n");      
+     //journal.jprintf(" statChart stop\n");
      setState(pOFF_HP);
      journal.jprintf(pP_TIME,"%s OFF . . .\n",(char*)nameHeatPump);
   }
@@ -2678,8 +2675,7 @@ void HeatPump::vUpdate()
 			if(!startPump && get_modeHouse() != pOFF)  // Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
 			{
 				startPump = true;                                 // Поставить признак запуска задачи насос
-				//vTaskResume(xHandleUpdatePump);                 // Запустить задачу насос
-				journal.jprintf(" %s: startPump ON. . .\n", (char*) __FUNCTION__);     // Включить задачу насос кондесатора выключение в переключении насосов
+				journal.jprintf(" %s: Pumps in pause %s. . .\n", (char*) __FUNCTION__, "ON");     // Включить задачу насос кондесатора выключение в переключении насосов
 			}
 			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
@@ -2690,8 +2686,7 @@ void HeatPump::vUpdate()
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
-			//vTaskSuspend(xHandleUpdatePump);                     // Остановить задачу насос
-		    journal.jprintf(" %s: startPump OFF. . .\n",(char*)__FUNCTION__);
+		    journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
 		    command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
 		if(!check_compressor_pause(get_modWork())) {
@@ -2778,8 +2773,7 @@ dEEV.CorrectOverheatInit();
 		if (startPump)                                      // Проверка задачи насос - должен быть выключен
 		{
 			startPump=false;                               // Поставить признак останова задачи насос
-			//vTaskSuspend(xHandleUpdatePump);               // Остановить задачу насос
-			journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
+			journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
 	#ifdef DEFROST
 	  if(mod!=pDEFROST)  // При разморозке есть лишние проверки
@@ -3074,18 +3068,16 @@ int8_t HeatPump::runCommand()
 		case pREPEAT:
 			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
 			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
-			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\r\n",(char*)nameHeatPump,get_nStart()-num_repeat);
-			PauseStart = 1;
-			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\n",(char*)nameHeatPump,get_nStart()-num_repeat);
+			PauseStart = 1;   								// Запустить выполнение отложенного старта
 			break;
 		case pRESTART:
 			// Stop();                                          // пуск Тн после сброса - есть задержка
-			journal.jprintf("Restart %s . . .\r\n",(char*)nameHeatPump);
-			PauseStart = 1;
-			//vTaskResume(xHandlePauseStart);                    // Запустить выполнение отложенного старта
+			journal.jprintf("Restart %s . . .\n",(char*)nameHeatPump);
+			PauseStart = 1;									// Запустить выполнение отложенного старта
 			break;
 		case pNETWORK:
-			journal.jprintf("Update network setting . . .\r\n");
+			journal.jprintf("Update network setting: ");
 			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
 			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
@@ -3105,9 +3097,10 @@ int8_t HeatPump::runCommand()
 		case pWAIT:   // Перевод в состяние ожидания  - особенность возможна блокировка задач - используем семафор
 			if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
 			{
-				vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
+				Task_vUpdate_run = false;					      // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
 				StopWait(_wait);                                  // Ожидание
 				SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+				Task_vUpdate_run = true;
 				vTaskResume(xHandleUpdate);
 			}
 			else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);
@@ -3115,9 +3108,10 @@ int8_t HeatPump::runCommand()
 		case pRESUME:   // Восстановление работы после ожиданияя -особенность возможна блокировка задач - используем семафор
 			if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
 			{
-				vTaskSuspend(xHandleUpdate);                      // Перевод в состояние ожидания ТН
+				Task_vUpdate_run = false;					      // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
 				StartResume(_resume);                             // восстановление ТН
 				SemaphoreGive(xCommandSemaphore);                 // Семафор отдать
+				Task_vUpdate_run = true;
 				vTaskResume(xHandleUpdate);
 			}
 			else  journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexCommandBuzy);

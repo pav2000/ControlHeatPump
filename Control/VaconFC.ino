@@ -126,7 +126,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 			if(err == OK) break; // Прочитали удачно
 			check_blockFC(); // проверить необходимость блокировки
 			if(GETBIT(flags, fErrFC)) break; // превысили кол-во ошибок
-			_delay(FC_DELAY_READ);
+			_delay(FC_DELAY_REPEAT);
 		}
 		if(err != OK) state = ERR_LINK_FC;
     } else {
@@ -165,6 +165,12 @@ int8_t devVaconFC::get_readState()
 		}
 		if(err) {
 			set_Error(err, name); // генерация ошибки
+		}
+	} else if(state & FC_S_RUN) { // Привод работает, а не должен - останавливаем через модбас
+		if(rtcSAM3X8.unixtime() - HP.get_stopCompressor() > FC_DEACCEL_TIME/100) {
+			journal.jprintf(pP_TIME, "Compressor running - stop via Modbus!\n");
+	        err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
+	        if(err) return err;
 		}
 	}
     // Состояние прочитали и оно правильное все остальное читаем

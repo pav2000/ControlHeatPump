@@ -275,7 +275,7 @@ public:
 
   // Движение ЭРВ
   __attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
-  int16_t  get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / maxEEV : 0; } //  % открытия ЭРВ
+  int16_t  get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / _data.maxSteps : 0; } //  % открытия ЭРВ
   int8_t  set_EEV(int x);                                // Перейти на позицию абсолютную  возвращает код ошибки
   int8_t  set_zero();                                    // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
 
@@ -309,7 +309,7 @@ public:
   char*   get_note(){ return note;}                      // Прочитать описание ЭРВ
   char*   get_name(){ return name;}                      // Прочитать имя ЭРВ 
   int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
-  int16_t get_maxEEV(){return  maxEEV;}                  // Максимальное число шагов ЭРВ (диапазон)
+  int16_t get_maxEEV(){return  _data.maxSteps;}          // Максимальное число шагов ЭРВ (диапазон)
   int16_t get_minEEV(){return  _data.minSteps;}          // Число шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(_data.flags,fPresent);} // Наличие EEV в текущей конфигурации
   
@@ -352,7 +352,6 @@ private:
   int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации
   int16_t tmpTime;                                       // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ (она по алгоритму может быть меньше timeIn)
   TEST_MODE testMode;                                    // Значение режима тестирования
-  int16_t maxEEV;                                        // Максимальное число шагов ЭРВ (диапазон)
   int8_t  err;                                           // ошибка ЭРВ (работа) при ошибке останов ТН
   char *note;                                            // Описание
   char *name;                                            // Имя
@@ -388,8 +387,9 @@ private:
 		  uint8_t  delayOff;                                     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
 		  uint8_t  delayOn;                                      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 		  byte flags;                                            // флаги ЭРВ,
-		  int16_t OHCor_OverHeatStart;							 // Начальный перегрев (сотые градуса)
-  } _data;                                               // Конец структуры для сохранения настроек - последняя переменная => flags  
+	      int16_t OHCor_OverHeatStart;							 // Начальный перегрев (сотые градуса)
+		  int16_t  maxSteps;                                     // Максимальное число шагов ЭРВ (диапазон)
+  } _data;                                                       // Конец структуры для сохранения настроек 
 };
 
 // Частотный преобразователь ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------------------------------------------------------------------
@@ -684,6 +684,8 @@ class devSDM
    public:  
        int8_t initSDM();                               // Инициализация счетчика и проверка и если надо программирование
        __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fSDM);} // Наличие счетчика в текущей конфигурации
+       __attribute__((always_inline)) inline boolean get_link(){return GETBIT(flags,fSDMLink);} // Наличие соединения
+
       int8_t  get_readState(uint8_t group);            // Прочитать инфо с счетчика
       int8_t  get_lastErr(){return err;}               // Получить последнюю ошибку счетчика
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
@@ -694,7 +696,7 @@ class devSDM
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
        __attribute__((always_inline)) inline float get_Energy(){return AcEnergy;}          // Активная энергия
-         
+
       boolean uplinkSDM();                             // Проверить связь со счетчиком
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
       char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки

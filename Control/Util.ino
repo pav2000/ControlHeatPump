@@ -104,15 +104,14 @@ boolean parseIPAddress(const char* str, char sep, IPAddress &ip)
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Функции ниже использовать только в WebServer или с семафором xWebThreadSemaphore!
-char _buf[16+1];
+char _buf[18];
 // IP адрес в строку
 char *IPAddress2String(IPAddress & ip) 
 {
-  char * last = _buf;
-  for (int8_t i = 0; i < 4; i++) {
-    itoa(ip[i], last, 10);
-    last = last + strlen(last);
-    if (i == 3) *last = '\0'; else *last++ = '.';
+  *_buf = '\0';
+  for(uint8_t i = 0; i < 4; i++) {
+    _itoa(ip[i], _buf);
+    if(i < 3) strcat(_buf, ".");
   }
   return _buf;
 }
@@ -120,13 +119,7 @@ char *IPAddress2String(IPAddress & ip)
 // MAC  адрес в строку
 char *MAC2String(byte* mac) 
 {
-  char * last = _buf;
-  for (int8_t i = 0; i < 6; i++) {
-    if(mac[i]<10) { *last='0'; last++;}  // поставить 0 в переди если число меньше 10
-    itoa(mac[i], last, 16);
-    last = last + strlen(last);
-    if (i == 6-1) *last = '\0'; else *last++ = ':';
-  }
+  m_snprintf(_buf, sizeof(_buf), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return _buf;
 }
 
@@ -741,7 +734,7 @@ static uint16_t _crc16(uint16_t crc, uint8_t a)
 } 
 
 
-// Перевод строки в кодировке URL в UTF8, len - максимальная длина строки приемника
+// Перевод строки в кодировке URL в UTF8, len - максимальная длина строки приемника + '\0'
 void urldecode(char *dst, char *src, uint16_t len)
 {       char a, b;
         uint16_t i=0;
