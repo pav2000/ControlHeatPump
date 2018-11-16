@@ -58,7 +58,7 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 	if(!StatsFile.contiguousRange(what ? &HistoryBlockStart : &BlockStart, what ? &HistoryBlockEnd : &BlockEnd)) {
 		journal.jprintf("Error get blocks %s!\n", filename);
 	} else {
-		journal.jprintf("[%u..%u] ", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
+		journal.jprintf("[%u..%u]", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
 		if(newfile) {
 			journal.jprintf(pP_TIME, "Create");
 			uint32_t b;
@@ -114,6 +114,7 @@ boolean Statistics::FindEndPosition(uint8_t what)
 	while(bst <= bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
+//		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
 		if(!card.card()->readBlock(cur, buffer)) {
 			Error("FindPos", what);
 			break;
@@ -125,11 +126,27 @@ boolean Statistics::FindEndPosition(uint8_t what)
 				if(bend < (what ? HistoryBlockEnd : BlockEnd)) bend++; else break; // file overflow
 			}
 		} else if(cur == bst) { // empty
+//			journal.printf("Empty: %d, %d, %d\n", cur, bst, bend);
 			pos = buffer;
 			break;
 		} else bend = cur - 1;
 	}
 	if(pos == NULL) return false;
+	if(pos == buffer || *(pos-1) != '\n') { // Обрезанные данные - пропускаем
+		journal.jprintf(" CUT");
+		if(pos != buffer) {
+xCutSearch:	while(--pos >= buffer) if(*pos == '\n') break;
+			pos++;
+		}
+		if(pos == buffer && cur > (what ? HistoryBlockStart : BlockStart)) {
+			if(!card.card()->readBlock(--cur, buffer)) {
+				Error("FindPos", what);
+				return false;
+			}
+			pos = buffer + SD_BLOCK;
+			goto xCutSearch;
+		}
+	}
 	if(what) {
 		HistoryCurrentBlock = cur;
 		HistoryCurrentPos = pos - buffer;
@@ -495,12 +512,13 @@ void Statistics::StatsWebTable(char *ret)
 
 #define _buffer_ ((uint8_t*)Socket[thread].outBuf)
 
+static fname_t open_fname;
+
 // Return: OK, 1 - not found, >2 - error. Network is active
 void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 {
-	fname_t fname;
 	SPI_switchSD();
-	if(!File->opens(filename, O_READ, &fname)) {
+	if(!File->opens(filename, O_READ, &open_fname)) {
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
@@ -554,13 +572,12 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	strcpy((char*)_buffer_, Prefix);
 	strncat((char*)_buffer_, TimeStart, 4); // year
 	strcat((char*)_buffer_, stats_file_ext);
-	fname_t fname;
 	SPI_switchSD();
-	if(!File->opens((char*)_buffer_, O_READ, &fname)) {
+	if(!File->opens((char*)_buffer_, O_READ, &open_fname)) {
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
-	uint32_t cur, bst, bend, bendfile;
+	uint32_t bst, bend, bendfile;
 	if(!File->contiguousRange(&bst, &bend)) {
 		journal.jprintf(" Error get blocks %s\n", filename);
 		File->close();
@@ -571,7 +588,7 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	uint8_t findst = 0;
 	while(bst <= bend) {
 		WDT_Restart(WDT);
-		cur = bst + (bend - bst) / 2;
+		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
 //		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
 		if(cur == CurrentBlock) {
