@@ -126,7 +126,7 @@ int16_t devVaconFC::CheckLinkStatus(void)
 			if(err == OK) break; // Прочитали удачно
 			check_blockFC(); // проверить необходимость блокировки
 			if(GETBIT(flags, fErrFC)) break; // превысили кол-во ошибок
-			_delay(FC_DELAY_READ);
+			_delay(FC_DELAY_REPEAT);
 		}
 		if(err != OK) state = ERR_LINK_FC;
     } else {

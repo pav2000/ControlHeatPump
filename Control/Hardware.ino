@@ -2042,7 +2042,7 @@ boolean  devSDM::progConnect()
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
 }                           
 
-// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_TIME_READ
+// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
 {
 	static float tmp;
@@ -2053,7 +2053,6 @@ int8_t devSDM::get_readState(uint8_t group)
 	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 		// Читаем значения счетчика
-//		_delay(SDM_DELAY_READ);
 		if(group == 0) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE,&tmp);   // Напряжение
 			if(err==OK) { Voltage=tmp; group = 1; }
@@ -2231,7 +2230,6 @@ int8_t devModbus::initModbus()
 // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2239,7 +2237,7 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
+	uint8_t result = RS485.readInputRegisters(cmd, 2);                                               // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		err = OK;
 		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
@@ -2255,7 +2253,6 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 // Получить значение регистра (2 байта) в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2263,22 +2260,21 @@ int8_t devModbus::readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
+	uint8_t result = RS485.readHoldingRegisters(cmd, 1);                                                   // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = RS485.getResponseBuffer(0);
-		SemaphoreGive(xModbusSemaphore);
-		return err = OK;
+		err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive(xModbusSemaphore);
-		return err = translateErr(result);
+		err = translateErr(result);
 	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
 }
     
 // Получить значение 2-x регистров (4 байта) в виде целого  числа возвращает код ошибки данные кладутся в ret
 int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret)
 {
-	uint8_t result;
 	// Если шедулер запущен то захватываем семафор
 	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
 	{
@@ -2286,47 +2282,52 @@ int8_t devModbus::readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret
 		return err = ERR_485_BUZY;
 	}
 	RS485.set_slave(id);
-	result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
+	uint8_t result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
 	if(result == RS485.ku8MBSuccess) {
 		*ret = (RS485.getResponseBuffer(0) << 16) | RS485.getResponseBuffer(1);
-		SemaphoreGive(xModbusSemaphore);
-		return err = OK;
+		err = OK;
 	} else {
 		*ret = 0;
-		SemaphoreGive(xModbusSemaphore);
-		return err = translateErr(result);
+		err = translateErr(result);
 	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
 }
       
 // Получить значение 2-x регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
-int8_t devModbus::readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret)             
-    {
-    uint8_t result;
-    // Если шедулер запущен то захватываем семафор
-    if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
-    { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);return err = ERR_485_BUZY;}
-      RS485.set_slave(id);
-      result = RS485.readHoldingRegisters(cmd,2);                                             // послать запрос,
-      if (result == RS485.ku8MBSuccess)  {err=OK;*ret=fromInt16ToFloat(RS485.getResponseBuffer(0),RS485.getResponseBuffer(1)); }  
-      else                               {err=translateErr(result); *ret=0;}
-    SemaphoreGive(xModbusSemaphore);
-    return err;  
-    }   
+int8_t devModbus::readHoldingRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
+{
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)      // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		return err = ERR_485_BUZY;
+	}
+	RS485.set_slave(id);
+	uint8_t result = RS485.readHoldingRegisters(cmd, 2);                                             // послать запрос,
+	if(result == RS485.ku8MBSuccess) {
+		err = OK;
+		*ret = fromInt16ToFloat(RS485.getResponseBuffer(0), RS485.getResponseBuffer(1));
+	} else {
+		err = translateErr(result);
+		*ret = 0;
+	}
+	SemaphoreGive (xModbusSemaphore);
+	return err;
+}
 
 
 // Получить значение N регистров c cmd (2*N байта) МХ2 в виде целого  числа (uint16_t *buf) при ошибке возвращает err
 int8_t devModbus::readHoldingRegistersNN(uint8_t id,uint16_t cmd, uint16_t num, uint16_t *buf) 
 {
-    uint8_t result;
-    int16_t i;
     // Если шедулер запущен то захватываем семафор
     if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)     // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy);return err = ERR_485_BUZY;}
       RS485.set_slave(id);
-      result = RS485.readHoldingRegisters(cmd,num);                                           // послать запрос,
+      uint8_t result = RS485.readHoldingRegisters(cmd,num);                                           // послать запрос,
       if (result == RS485.ku8MBSuccess) 
       { 
-        for (i=0;i<num;i++)   buf[i]=RS485.getResponseBuffer(i);
+        for (int16_t i=0;i<num;i++)   buf[i]=RS485.getResponseBuffer(i);
         err=OK; 
         SemaphoreGive(xModbusSemaphore);
         return err; 
@@ -2369,13 +2370,12 @@ int8_t devModbus::writeSingleCoil(uint8_t id,uint16_t cmd, uint8_t u8State)
 // Установить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные data
 int8_t   devModbus::writeHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t data)
 {
-   uint8_t result;
     // Если шедулер запущен то захватываем семафор
     if(SemaphoreTake(xModbusSemaphore,(MODBUS_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)            // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
     { journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexModbusBuzy); return err = ERR_485_BUZY;}
 
       RS485.set_slave(id);
-      result = RS485.writeSingleRegister(cmd,data);                                               // послать запрос,
+      uint8_t result = RS485.writeSingleRegister(cmd,data);                                               // послать запрос,
       SemaphoreGive(xModbusSemaphore);
       return err = translateErr(result);
   

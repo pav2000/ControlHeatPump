@@ -907,8 +907,7 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if ((HP.dSDM.get_present())&&(millis()-readSDM>SDM_TIME_READ))
-			{
+			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
 				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров
 			}
@@ -1048,6 +1047,10 @@ void vReadSensor_delay8ms(int16_t ms8)
 	#endif
 	 for( ;; )
 	 {
+		 if(!HP.Task_vUpdate_run) {
+			 vTaskSuspend(NULL);				// Stop vUpdate
+			 continue;
+		 }
 		 if (HP.get_State()==pWORK_HP){ //Код обслуживания работы ТН выполняется только если состяние ТН - работа а вот расписание всегда выполняется
 			 // 1. Обновится, В это время команды управления не выполняются!!!!!
 			 if (SemaphoreTake(HP.xCommandSemaphore,0)==pdPASS)                                           // Cемафор  захвачен

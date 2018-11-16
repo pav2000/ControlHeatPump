@@ -1709,28 +1709,31 @@ int8_t HeatPump::StartResume(boolean start)
 
 	// 7. Дополнительнеая проверка перед пуском компрессора ----------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;           // Могли нажать кнопку стоп, выход из процесса запуска
-	if (get_errcode()!=OK)                                 // ОШИБКА компрессор уже работает
-	{
-		journal.jprintf(" Error before start compressor!\n");
-		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__); return error;
-	}
-
 	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 	if(is_next_command_stop()) return error;			    // следующая команда останов, выходим
+#ifdef USE_ELECTROMETER_SDM
+	if(!dSDM.get_link()) dSDM.uplinkSDM();
+#endif
+	if (get_errcode()!=OK)                                 // ОШИБКА перед стартом
+	{
+		journal.jprintf(" Error before start compressor!\n");
+		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);
+		return error;
+	}
 	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) {
 #ifndef DEMO   // проверка блокировки инвертора
 		if((dFC.get_present())&&(dFC.get_blockFC()))          // есть инвертор но он блокирован
 		{
-			journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
-		//	setState(pOFF_HP);                              // Еще ничего не сделали по этому сразу ставим состоение выключено НЕ ВЕРНО !!! УЖЕ МНОГО ЧЕГО СДЕЛАЛИ, НУЖНО ПОДАВАТЬ КОМАНДУ НА СТОП!
-			set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);// ВОТ ЗДЕСЬ КОМАНДА СТОП И ПРОЙДЕТ
-			return error;
+			if(dFC.get_err() != ERR_485_BUZY) {
+				journal.jprintf("%s: is blocked, ignore start\n",dFC.get_name());
+				set_Error(ERR_MODBUS_BLOCK,(char*)__FUNCTION__);// ВОТ ЗДЕСЬ КОМАНДА СТОП И ПРОЙДЕТ
+				return error;
+			}
 		}
 #endif
 		if ((ResetFC())!=OK)                         // Сброс инвертора если нужно
 		{
-//			setState(pOFF_HP);  // Еще ничего не сделали по этому сразу ставим состояние выключено
 			set_Error(ERR_RESET_FC,(char*)__FUNCTION__);
 			return error;
 		}
@@ -1747,10 +1750,10 @@ int8_t HeatPump::StartResume(boolean start)
 		journal.jprintf(" Start task vUpdate\n");
 		Task_vUpdate_run = true;
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
+		//_delay(1);
 	}
 
 	// 12. насос запущен -----------------------------------------------------------------------------------------
-	_delay(1);
 	journal.jprintf(pP_TIME,"%s ON . . .\n",(char*)nameHeatPump);
 	
 	return error;

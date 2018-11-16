@@ -684,6 +684,8 @@ class devSDM
    public:  
        int8_t initSDM();                               // Инициализация счетчика и проверка и если надо программирование
        __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fSDM);} // Наличие счетчика в текущей конфигурации
+       __attribute__((always_inline)) inline boolean get_link(){return GETBIT(flags,fSDMLink);} // Наличие соединения
+
       int8_t  get_readState(uint8_t group);            // Прочитать инфо с счетчика
       int8_t  get_lastErr(){return err;}               // Получить последнюю ошибку счетчика
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
@@ -694,7 +696,7 @@ class devSDM
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
        __attribute__((always_inline)) inline float get_Energy(){return AcEnergy;}          // Активная энергия
-         
+
       boolean uplinkSDM();                             // Проверить связь со счетчиком
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
       char* get_paramSDM(char *var, char *ret);        // Получить параметр SDM в виде строки
