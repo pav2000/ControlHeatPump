@@ -1234,7 +1234,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 	 static int16_t cmd = 0;
 	 for(;;) {
 		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-		 if((rtcSAM3X8.unixtime() - HP.get_startCompressor()) > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		 if(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
 		 {
 			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
 			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
@@ -1249,7 +1249,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
 			 HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 
-			 if((HP.get_State() == pOFF_HP) || (HP.get_State() == pSTOPING_HP)) // Если  насос не работает или идет останов насоса то остановить задачу Обновления ЭРВ
+			 if(!HP.is_compressor_on()) // Если компрессор не работает, то остановить задачу Обновления ЭРВ
 			 {
 				 journal.jprintf((const char*) " Stop task update EEV\n");
 				 vTaskSuspend(NULL);				// Stop vUpdateEEV
