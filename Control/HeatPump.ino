@@ -3067,10 +3067,11 @@ int8_t HeatPump::runCommand()
 			Software_Reset() ;      // Сброс
 			break;
 		case pREPEAT:
-			StopWait(_stop);                                // Попытка запустит ТН (по числу пусков)
-			num_repeat++;                                  // увеличить счетчик повторов пуска ТН
+			if(NO_Power) break;       		  			// Нет питания - нет рестарта
+			StopWait(_stop);                            // Попытка запустит ТН (по числу пусков)
+			num_repeat++;                               // увеличить счетчик повторов пуска ТН
 			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\n",(char*)nameHeatPump,get_nStart()-num_repeat);
-			PauseStart = 1;   								// Запустить выполнение отложенного старта
+			PauseStart = 1;   							// Запустить выполнение отложенного старта
 			break;
 		case pRESTART:
 			// Stop();                                          // пуск Тн после сброса - есть задержка
@@ -3147,21 +3148,21 @@ const char *strEngPause={"Pause"};
 // Получить строку состояния ТН в виде строки
 char *HeatPump::StateToStr()
 {
-	switch (get_State())  //TYPE_STATE_HP
+	switch ((int)get_State())  //TYPE_STATE_HP
 	{
 	case pOFF_HP:     return (char*)(HP.PauseStart == 0 ? "Выключен" : "Перезапуск...");  break;   // 0 ТН выключен или Перезапуск
 	case pSTARTING_HP:return (char*)"Пуск...";   break;         // 1 Стартует
 	case pSTOPING_HP: return (char*)"Останов...";break;         // 2 Останавливается
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
-			switch (get_modWork()) {                       // MODE_HP
+			switch ((int)get_modWork()) {                       // MODE_HP
 			case  pHEAT:   return (char*)"Пауза Нагр";          // 1 Включить отопление
 			case  pCOOL:   return (char*)"Пауза Охл.";          // 2 Включить охлаждение
 			case  pBOILER: return (char*)"Пауза ГВС";           // 3 Включить бойлер
-			return (char*)strRusPause;
 			}
+			return (char*)strRusPause;
 		} else {
-			switch (get_modWork()) {                       // MODE_HP
+			switch ((int)get_modWork()) {                       // MODE_HP
 			case  pOFF:    return (char*)strRusPause;   break;  // 0 Пауза
 			case  pHEAT:   return (char*)"Нагрев";      break;  // 1 Включить отопление
 			case  pCOOL:   return (char*)"Заморозка";   break;  // 2 Включить охлаждение
@@ -3170,14 +3171,13 @@ char *HeatPump::StateToStr()
 			case  pNONE_C: return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
 			case  pNONE_B: return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
 			case  pDEFROST:return (char*)"Разморозка";  break;  // 7 Разморозка
-			default: return (char*)"Ошибка Р.";            break;
 			}
+			return (char*)"Ошибка Р.";
 		}
-		break;
 	case pWAIT_HP:    return (char*)"Ожидание";  break;         // 4 Ожидание
 	case pERROR_HP:   return (char*)"Ошибка";    break;         // 5 Ошибка ТН
-	default:          return (char*)"Вн.Ошибка"; break;         // 6 - Эта ошибка возникать не должна!
 	}
+	return (char*)"Вн.Ошибка"; 							        // 6 - Эта ошибка возникать не должна!
 }
 
 // Получить строку состояния ТН в виде строки АНГЛИСКИЕ буквы

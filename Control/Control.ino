@@ -1229,41 +1229,42 @@ void vReadSensor_delay8ms(int16_t ms8)
 
 // Задача Управление ЭРВ
 #ifdef EEV_DEF
- void vUpdateEEV(void *)
- { //const char *pcTaskName = "HP_UpdateEEV\r\n";
-	 static int16_t cmd = 0;
-	 for(;;) {
-		 //  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
-		 if(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
-		 {
-			 // Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
-			 // Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
-			 if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY)
-					 && (HP.dEEV.stepperEEV.isBuzy())) {
-				 //     journal.jprintf("$WARNING! Loss of sync EEV\n");
-				 HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
-			 }
+void vUpdateEEV(void *)
+{ //const char *pcTaskName = "HP_UpdateEEV\r\n";
+	static int16_t cmd = 0;
+	for(;;) {
+		//  if ((rtcSAM3X8.unixtime()-HP.get_startTime())>DELAY_ON1_EEV)    // ЭРВ контролирует если прошла задержка после включения ТН (первый раз)
+		if(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+				{
+			// Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
+			// Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
+			if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) && (HP.dEEV.stepperEEV.isBuzy())) {
+				//     journal.jprintf("$WARNING! Loss of sync EEV\n");
+				HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
+			}
 
-			 HP.dEEV.CorrectOverheat();
+			if(!HP.is_compressor_on()) // Если компрессор не работает, то остановить задачу Обновления ЭРВ
+			{
+				journal.jprintf((const char*) " Stop task update EEV\n");
+				vTaskSuspend(NULL);				// Stop vUpdateEEV
+				continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
+			}
 
-			 // Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-			 HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
+			HP.dEEV.CorrectOverheat();
 
-			 if(!HP.is_compressor_on()) // Если компрессор не работает, то остановить задачу Обновления ЭРВ
-			 {
-				 journal.jprintf((const char*) " Stop task update EEV\n");
-				 vTaskSuspend(NULL);				// Stop vUpdateEEV
-				 continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
-			 } else    // штатная пауза (в зависимости от настроек)
-				 if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
-						 HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
-				 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
+			// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
+			HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
 
-		 } //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>delayOnPid)
-		 else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
-	 } // for
-	 vTaskDelete( NULL);
- }
+			// штатная пауза (в зависимости от настроек)
+			if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
+					HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
+			else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
+
+		} //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>delayOnPid)
+		else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
+	} // for
+	vTaskDelete( NULL);
+}
 #endif
 
 // Задача обеспечения движения шаговика EEV
