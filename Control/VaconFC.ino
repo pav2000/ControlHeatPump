@@ -203,12 +203,12 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
         FC = x;
-        if(show) journal.jprintf(" Set %s: %.2f\r\n", name, FC / 100.0);
+        if(show) journal.jprintf(" Set %s: %.2f\r\n", name, (float)FC / 100.0);
         return err;
     } // установка частоты OK  - вывод сообщения если надо
     else {
     	err = ERR_FC_ERROR;
-        journal.jprintf("%s: Wrong frequency %.2f\n", name, x / 100.0);
+        journal.jprintf("%s: Wrong frequency %.2f\n", name, (float)x / 100.0);
         return WARNING_VALUE;
     }
 #else // Боевой вариант
@@ -223,7 +223,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
         }
         if(err == OK) {
             FC = x;
-            if(show) journal.jprintf(" Set %s: %.2f %%\r\n", name, FC / 100.0);
+            if(show) journal.jprintf(" Set %s: %.2f %%\r\n", name, (float)FC / 100.0);
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {
@@ -248,12 +248,12 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
             break; //  Все включаем и компрессор тоже
         }
         if(show)
-            journal.jprintf(" Set %s: %.2f %%\r\n", name, FC / 100.0); // установка частоты OK  - вывод сообщения если надо
+            journal.jprintf(" Set %s: %.2f %%\r\n", name, (float)FC / 100.0); // установка частоты OK  - вывод сообщения если надо
 #endif
         return err;
     } // if((x>=_min)&&(x<=_max))
     else {
-        journal.jprintf("%s: Wrong speed %.2f\n", name, x / 100.0);
+        journal.jprintf("%s: Wrong speed %.2f\n", name, (float)x / 100.0);
         return WARNING_VALUE;
     }
 #endif // DEMO
@@ -556,7 +556,6 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
 		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
 
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<1000)){_data.PidFreqStep=x;return true; } } else // %
 		if(strcmp(var,fc_START_FREQ)==0)            { if((x>0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %
 		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>0)&&(x<=10000)){_data.startFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>0)&&(x<=10000)){_data.minFreq=x;return true; } } else // %
@@ -567,8 +566,9 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>0)&&(x<20000)){_data.maxFreqCool=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>0)&&(x<20000)){_data.maxFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>0)&&(x<20000)){_data.maxFreqUser=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.1)&&(x<1000)){_data.stepFreq=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.1)&&(x<1000)){_data.stepFreqBoiler=x;return true; } } // %
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<10000)){_data.PidFreqStep=x;return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0)&&(x<10000)){_data.stepFreq=x;return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0)&&(x<10000)){_data.stepFreqBoiler=x;return true; } } // %
  
     return false;
 }

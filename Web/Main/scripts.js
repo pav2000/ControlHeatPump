@@ -1,4 +1,4 @@
-/* ver 0.971 beta */
+/* ver 0.974 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 //var urlcontrol = 'http://192.168.0.199';
@@ -121,7 +121,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
-								if(/^get_status|get_paramFC[(]INFO|get_sysInfo|CONST|get_socketInfo/.test(values[0])) type = "const"; 
+								if(/get_status|get_paramFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
 								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
@@ -744,6 +744,9 @@ function loadParam(paramid, noretry, resultdiv) {
 										if(element) {
 											if(element.className == "charsw") {
 												element.innerHTML = element.title.substr(valuevar,1);
+											} else if(/^E/.test(values[1])) {
+												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
+												else element.placeholder = values[1];
 											} else if(element != document.activeElement) {
 												element.innerHTML = values[1];
 												element.value = element.type == "number" ? values[1].replace(/[^-0-9.,]/g, "") : values[1];
@@ -751,13 +754,6 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										if((element = document.getElementById(valueid + "-div1000"))) {
 											element.innerHTML = element.value = (Number(values[1])/1000).toFixed(3);
-										}
-										if(/^E/.test(values[1])) {
-											element = document.getElementById(valueid);
-											if(element) {
-												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
-												else element.placeholder = values[1];
-											}
 										}
 									}
 									if(/^get_mintemp/.test(valueid)) {

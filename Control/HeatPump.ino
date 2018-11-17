@@ -2762,7 +2762,7 @@ void HeatPump::compressorON(MODE_HP mod)
 		if (dEEV.get_LightStart()) { dEEV.set_EEV(dEEV.get_preStartPos());  journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }      // Выйти на пусковую позицию
 		else                                       { dEEV.set_EEV(dEEV.get_StartPos());   journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }      // Всегда начинать работу ЭРВ со стратовой позиции
 	}
-dEEV.CorrectOverheatInit();	
+	dEEV.CorrectOverheatInit();
 #endif
 	
 
@@ -3146,30 +3146,39 @@ const char *strEngPause={"Pause"};
 // Получить строку состояния ТН в виде строки
 char *HeatPump::StateToStr()
 {
-switch ((int)get_State())  //TYPE_STATE_HP  
-  {
-  case pOFF_HP:     return (char*)(HP.PauseStart == 0 ? "Выключен" : "Перезапуск...");  break;   // 0 ТН выключен или Перезапуск
-  case pSTARTING_HP:return (char*)"Пуск...";   break;                     // 1 Стартует
-  case pSTOPING_HP: return (char*)"Останов...";break;                     // 2 Останавливается
-  case pWORK_HP:                                                          // 3 Работает
-         switch ((int)get_modWork())                                      // MODE_HP
-         {
-         case  pOFF: return (char*)strRusPause;      break;                // 0 Пауза
-         case  pHEAT: return (char*)"Нагрев";        break;               // 1 Включить отопление
-         case  pCOOL: return (char*)"Заморозка";     break;               // 2 Включить охлаждение
-         case  pBOILER: return (char*)"Нагрев ГВС"; break;                // 3 Включить бойлер
-         case  pNONE_H: if (!is_compressor_on()) return (char*)strRusPause; else return (char*)"Отопление";   break;  // 4 Продолжаем греть отопление
-         case  pNONE_C: if (!is_compressor_on()) return (char*)strRusPause; else return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
-         case  pNONE_B: if (!is_compressor_on()) return (char*)strRusPause; else return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
-         case  pDEFROST: return (char*)"Разморозка"; break;                // 7 Разморозка     
-         default: return (char*)"Error state";          break; 
-         }
-        break;   
-  case pWAIT_HP:    return (char*)"Ожидание";  break;                     // 4 Ожидание
-  case pERROR_HP:   return (char*)"Ошибка";    break;                     // 5 Ошибка ТН
-  default:          return (char*)"Вн.Ошибка"; break;                     // 6 - Эта ошибка возникать не должна!
-  }
+	switch (get_State())  //TYPE_STATE_HP
+	{
+	case pOFF_HP:     return (char*)(HP.PauseStart == 0 ? "Выключен" : "Перезапуск...");  break;   // 0 ТН выключен или Перезапуск
+	case pSTARTING_HP:return (char*)"Пуск...";   break;         // 1 Стартует
+	case pSTOPING_HP: return (char*)"Останов...";break;         // 2 Останавливается
+	case pWORK_HP:                                              // 3 Работает
+		if(!is_compressor_on()) {
+			switch (get_modWork()) {                       // MODE_HP
+			case  pHEAT:   return (char*)"Пауза Нагр";          // 1 Включить отопление
+			case  pCOOL:   return (char*)"Пауза Охл.";          // 2 Включить охлаждение
+			case  pBOILER: return (char*)"Пауза ГВС";           // 3 Включить бойлер
+			return (char*)strRusPause;
+			}
+		} else {
+			switch (get_modWork()) {                       // MODE_HP
+			case  pOFF:    return (char*)strRusPause;   break;  // 0 Пауза
+			case  pHEAT:   return (char*)"Нагрев";      break;  // 1 Включить отопление
+			case  pCOOL:   return (char*)"Заморозка";   break;  // 2 Включить охлаждение
+			case  pBOILER: return (char*)"Нагрев ГВС";  break;  // 3 Включить бойлер
+			case  pNONE_H: return (char*)"Отопление";   break;  // 4 Продолжаем греть отопление
+			case  pNONE_C: return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
+			case  pNONE_B: return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
+			case  pDEFROST:return (char*)"Разморозка";  break;  // 7 Разморозка
+			default: return (char*)"Ошибка Р.";            break;
+			}
+		}
+		break;
+	case pWAIT_HP:    return (char*)"Ожидание";  break;         // 4 Ожидание
+	case pERROR_HP:   return (char*)"Ошибка";    break;         // 5 Ошибка ТН
+	default:          return (char*)"Вн.Ошибка"; break;         // 6 - Эта ошибка возникать не должна!
+	}
 }
+
 // Получить строку состояния ТН в виде строки АНГЛИСКИЕ буквы
 char *HeatPump::StateToStrEN()
 {
