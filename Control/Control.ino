@@ -1243,25 +1243,26 @@ void vUpdateEEV(void *)
 				HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
 			}
 
-			if(!HP.is_compressor_on()) // Если компрессор не работает, то остановить задачу Обновления ЭРВ
-			{
-				journal.jprintf((const char*) " Stop task update EEV\n");
-				vTaskSuspend(NULL);				// Stop vUpdateEEV
-				continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
+			if(!HP.is_compressor_on()) {
+				switch((uint8_t)HP.get_State()) {
+				case pOFF_HP:
+				case pSTOPING_HP:
+				case pWAIT_HP:
+					// Если компрессор не работает, то остановить задачу Обновления ЭРВ
+					journal.jprintf((const char*) " Stop task update EEV\n");
+					vTaskSuspend(NULL);				// Stop vUpdateEEV
+					continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
+				}
+			} else {
+				HP.dEEV.CorrectOverheat();
+				// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
+				HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
+				// штатная пауза (в зависимости от настроек)
+				if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA))
+					vTaskDelay(HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
+				else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
 			}
-
-			HP.dEEV.CorrectOverheat();
-
-			// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-			HP.dEEV.Update(); //HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
-
-			// штатная пауза (в зависимости от настроек)
-			if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TRTOOUT_PEVA)) vTaskDelay(
-					HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
-			else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Ожитать TIME_EEV  задержка в мсек.  для все остальных режимов
-
-		} //if ((rtcSAM3X8.unixtime()-HP.get_startCompressor())>delayOnPid)
-		else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
+		} else vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);        // Просто задержка ЭРВ не рабоатет
 	} // for
 	vTaskDelete( NULL);
 }
