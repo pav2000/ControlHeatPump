@@ -906,7 +906,7 @@ int16_t rd(float num, int16_t mul)
 void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 {
 	*ret += m_itoa(value / div, *ret, 10, 0);
-	if(div > 1) {
+	if(div > 1 && maxfract) {
 		value = abs(value) % div;
 		if(value == 0) return;
 		**ret = '.';
