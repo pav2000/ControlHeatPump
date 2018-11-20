@@ -43,6 +43,17 @@ IPAddress BytesToIPAddress(byte *ip)
   b[0]=ip[0]; b[1]=ip[1]; b[2]=ip[2]; b[3]=ip[3];
   return b; 
 }
+
+uint8_t calc_bits_in_mask(uint32_t mask)
+{
+	uint8_t bits = 0;
+	while(mask) {
+		bits += mask & 1;
+		mask >>= 1;
+	}
+	return mask;
+}
+
 // разбор строки побайтно ОШИБКИ ПЛОХО не ловит!
 //  для IP          const char* ipStr = "50.100.150.200"; byte ip[4]; parseBytes(ipStr, '.', ip, 4, 10);
 //  для mac address const char* macStr = "90-A2-AF-DA-14-11"; byte mac[6]; parseBytes(macStr, '-', mac, 6, 16);

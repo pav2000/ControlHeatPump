@@ -26,9 +26,17 @@ document.write('\
             <li class="scheduler"><a href="scheduler.html">Расписание</a></li>\
         </ul>\
     </li>\
-    <li class="setsensors sensorst sensorsp actuators eev relay invertor const has-children">\
+    <li class="stats history has-children">\
         <input type="checkbox" name="group-2" id="group-2">\
-        <label for="group-2"><i></i>Конфигурация ТН</label>\
+        <label for="group-2"><i></i>Статистика</label>\
+        <ul>\
+            <li class="stats"><a href="stats.html">По дням</a></li>\
+            <li class="history"><a href="history.html">Детально</a></li>\
+        </ul>\
+    </li>\
+    <li class="setsensors sensorst sensorsp eev relay invertor has-children">\
+        <input type="checkbox" name="group-3" id="group-3">\
+        <label for="group-3"><i></i>Конфигурация ТН</label>\
         <ul>\
             <li class="sensorsp"><a href="sensorsp.html">Датчики</a></li>\
             <li class="sensorst"><a href="sensorst.html">Датчики температуры</a></li>\
@@ -38,9 +46,9 @@ document.write('\
             <li class="invertor"><a href="invertor.html"><i></i>Инвертор</a></li>\
         </ul>\
     </li>\
-    <li class="lan config system files time notice mqtt  has-children">\
-        <input type="checkbox" name="group-3" id="group-3">\
-        <label for="group-3"><i></i>Сервис</label>\
+    <li class="lan config system files time notice mqtt const has-children">\
+        <input type="checkbox" name="group-4" id="group-4">\
+        <label for="group-4"><i></i>Сервис</label>\
         <ul>\
             <li class="config"><a href="config.html">Опции ТН</a></li>\
             <li class="lan"><a href="lan.html">Сеть</a></li>\
@@ -50,12 +58,11 @@ document.write('\
             <li class="system"><a href="system.html">Система</a></li>\
             <li class="const"><a href="const.html"><i></i>Константы</a></li>\
             <li class="files"><a href="files.html">Файлы</a></li>\
-            <li class="history"><a href="history.html">История</a></li>\
         </ul>\
     </li>\
     <li class="charts test modbus log freertos has-children">\
-        <input type="checkbox" name="group-4" id="group-4">\
-        <label for="group-4"><i></i>Отладка ТН</label>\
+        <input type="checkbox" name="group-5" id="group-5">\
+        <label for="group-5"><i></i>Отладка ТН</label>\
         <ul>\
             <li class="charts"><a href="charts.html">Графики</a></li>\
             <li class="test"><a href="test.html">Тестирование</a></li>\

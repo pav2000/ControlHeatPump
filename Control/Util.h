@@ -22,5 +22,6 @@
 
 uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc = 0xFFFF);
 void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract);
+uint8_t calc_bits_in_mask(uint32_t mask);
 
 #endif

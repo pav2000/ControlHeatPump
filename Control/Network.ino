@@ -257,7 +257,7 @@ x_TryStaticIP:
 		if(EthernetOK) {
 			IPAddress dip;
 			dip = Ethernet.localIP();
-			journal.jprintf("%s%s/%d %d ", HP.get_DHCP() ? "DHCP " : "", IPAddress2String(dip), (255^(uint8_t)Ethernet.subnetMask()[2]) * 256 + (255^(uint8_t)Ethernet.subnetMask()[3]));
+			journal.jprintf("%s%s/%d ", HP.get_DHCP() ? "DHCP " : "", IPAddress2String(dip), calc_bits_in_mask(Ethernet.subnetMask()));
 			dip = Ethernet.localIP();
 			journal.jprintf("G:%s ", IPAddress2String(dip));
 			dip = Ethernet.dnsServerIP();
