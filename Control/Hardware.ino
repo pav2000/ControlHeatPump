@@ -919,36 +919,14 @@ void devEEV::CorrectOverheatInit(void)
 	OHCor_tdelta = 0;
 }
 
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devEEV::save(int32_t adr)
+void devEEV::after_load(void)
 {
- 	if (writeEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) {set_Error(ERR_SAVE_EEPROM,(char*)name); return ERR_SAVE_EEPROM;}  adr=adr+sizeof(_data);   
-    return adr;   
+#ifdef EEV_DEF
+	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
+#else
+	SETBIT0(_data.flags,fPresent);                      // отсутствие ЭРВ в текушей конфигурации
+#endif
 }
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, если число меньше 0 это код ошибки
-int32_t devEEV::load(int32_t adr)
-{
-    if (readEEPROM_I2C(adr, (byte*)&_data, sizeof(_data))) { set_Error(ERR_LOAD_EEPROM,(char*)name); return ERR_LOAD_EEPROM;}  adr=adr+sizeof(_data);              
-	SETBIT1(_data.flags, fPresent); 									// ЭРВ всегда есть!!!
-	return adr;
-}
-
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devEEV::loadFromBuf(int32_t adr,byte *buf) 
-{
-memcpy((byte*)&_data,buf+adr,sizeof(_data)); adr=adr+sizeof(_data); 	
-SETBIT1(_data.flags, fPresent); // ЭРВ всегда есть!!!
-return adr;
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t devEEV::get_crc16(uint16_t crc) 
-{
- uint16_t i;
- for(i=0;i<sizeof(_data);i++) crc=_crc16(crc,*((byte*)&_data+i));   	
- return crc;
-}
-
 
 // Сброс пид регулятора
 void devEEV::resetPID()
@@ -2109,36 +2087,6 @@ boolean devSDM::set_paramSDM(char *var,char *c)
    if(strcmp(var,sdm_MAX_POWER)==0){     if ((x>=0)&&(x<=25000)){settingSDM.maxPower=(uint16_t)x;  return true;} else  return false;}else      // максимальаня мощность контроля мощности
    return false;
  }
-
-// Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devSDM::save(int32_t adr)
-{
-if (writeEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_SAVE_EEPROM,name); return ERR_SAVE_EEPROM; }
-adr=adr+sizeof(settingSDM);      // Вся структура настроек
-return adr;                                 
-}
-
-// Считать настройки из eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devSDM::load(int32_t adr)
-{
-if (readEEPROM_I2C(adr, (byte*)&settingSDM, sizeof(settingSDM)))       { set_Error(ERR_LOAD_EEPROM,name); return ERR_LOAD_EEPROM; }
-adr=adr+sizeof(settingSDM);      // вся струткра настроек
-return adr;                              
-}
-// Считать настройки из буфера на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
-int32_t devSDM::loadFromBuf(int32_t adr,byte *buf)
-{
-  memcpy((byte*)&settingSDM,buf+adr,sizeof(settingSDM));
-  adr=adr+sizeof(settingSDM);
-  return adr;  
-}
-// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
-uint16_t devSDM::get_crc16(uint16_t crc)
-{
-  uint8_t i;
-  for(i=0;i<sizeof(settingSDM);i++) crc=_crc16(crc,*((byte*)&settingSDM+i));  // CRC16 структуры  settingSDM
-  return crc;                      
-}
 
 // МОДБАС Устройство ----------------------------------------------------------
 // функции обратного вызова

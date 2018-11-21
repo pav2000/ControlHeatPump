@@ -350,7 +350,7 @@ x_Error:
 		// не массивы <size[1|2]><struct>
 #ifdef EEV_DEF
 		} else if(type == SAVE_TYPE_dEEV) {
-			load_struct(dEEV.get_save_addr(), &buffer, dEEV.get_save_size());
+			load_struct(dEEV.get_save_addr(), &buffer, dEEV.get_save_size()); dEEV.after_load();
 #endif
 #ifdef USE_ELECTROMETER_SDM
 		} else if(type == SAVE_TYPE_dSDM) {

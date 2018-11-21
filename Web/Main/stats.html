@@ -278,9 +278,9 @@ var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 $(document).ready(function() {
 	//Add Channel Load Menu
 	var dt = new Date();
-	document.getElementById("EndDate").value = dt.toISOString().substring(0, 10);
-	dt = new Date(dt.getTime()-365*24*60*60*1000);
-	document.getElementById("StartDate").value = dt.toISOString().substring(0, 10);
+	document.getElementById("EndDate").value = dt.toISOString().substring(0, 4);
+//	dt = new Date(dt.getTime()-365*24*60*60*1000);
+	document.getElementById("StartDate").value = dt.toISOString().substring(0, 4);
 	var menu = document.getElementById("GroupSelect");
 	for(var i = 0; i < ChartsGrp.length; i++) // iterate through each channel
 	{

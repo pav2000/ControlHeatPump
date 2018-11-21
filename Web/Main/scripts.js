@@ -1,4 +1,4 @@
-/* ver 0.974 beta */
+/* ver 0.975 beta */
 //var urlcontrol = 'http://77.50.254.24:25402'; // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 var urlcontrol = 'http://192.168.0.199';
@@ -122,7 +122,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_paramFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|TIME_CHART|SMS_SERVICE|et_optionHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|SMS_SERVICE|et_optionHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
@@ -450,10 +450,6 @@ function loadParam(paramid, noretry, resultdiv) {
 												cont2 = cont1[k].split(':');
 												if(cont2[1] == 1) {
 													selected = true;
-													if(idsel == "get_optionhp-time_chart") {
-														var time_chart = cont2[0];
-														window.time_chart = time_chart;
-													}
 													if(idsel == "get_parameev-rule") {
                											var s = "get_parameev-";
 														document.getElementById(s+"freon").disabled = false;
@@ -728,12 +724,13 @@ function loadParam(paramid, noretry, resultdiv) {
 												setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
 												console.log("wait response...");
 											} else alert(values[1]);
-										}
-										if(valueid == "get_message-mail_ret") {
+										} else if(valueid == "get_message-mail_ret") {
 											if(valuevar == "waitresponse") {
 												setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 												console.log("wait response...");
 											} else alert(values[1]);
+										} else if(valueid == "get_optionhp-time_chart") {
+											window.time_chart = valuevar;
 										}
 										element3 = document.getElementById(valueid + "3");
 										if(element3) {
