@@ -26,7 +26,9 @@
 #include "VaconFC.h" 
 #include "Scheduler.h"
 extern char *MAC2String(byte* mac);
- 
+
+int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
+
 /*/ Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
 {
@@ -529,23 +531,11 @@ class HeatPump
     uint32_t countResSocket;                // Число сбросов сокетов
   
     // Переменные пид регулятора Отопление
-     #ifdef INT_PID        // использование ПИДА в целочисленной арифметике (определяется в конфигурации)
-	int32_t   temp_int;    // Служебная переменная интегрирования в 1000 (тысячных)
-	int16_t   pre_errPID;  // Предыдущая ошибка ПИД регулятора в сотых градуса
-	#else                  // ПИД с плавающей точкой
-	float   temp_int;      // Служебная переменная интегрирования
-	float   pre_errPID;    // Предыдущая ошибка ПИД регулятора
-    #endif
+    PID_WORK_STRUCT pidw_heat;
     unsigned long updatePidTime;          // время обновления ПИДа отопления
     
     // Переменные пид регулятора ГВС
-    #ifdef INT_PID             // использование ПИДА в целочисленной арифметике (определяется в конфигурации)
-	int32_t temp_intBoiler;    // Служебная переменная интегрирования в 1000 (тысячных)
-	int16_t pre_errPIDBoiler;  // Предыдущая ошибка ПИД регулятора в сотых градуса
-	#else                      // ПИД с плавающей точкой
-	float   temp_intBoiler;    // Служебная переменная интегрирования
-	float   pre_errPIDBoiler;  // Предыдущая ошибка ПИД регулятора
-    #endif
+    PID_WORK_STRUCT pidw_boiler;
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)

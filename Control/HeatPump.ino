@@ -72,6 +72,8 @@ void HeatPump::initHeatPump()
   #ifdef MQTT
      clMQTT.initMQTT();                                      // Инициализация MQTT
   #endif
+  pidw_heat.maxStep = dFC.get_PidFreqStep();
+  pidw_boiler.maxStep = dFC.get_PidFreqStep();
   resetSettingHP();                                          // все переменные
 }
 // Стереть последнюю ошибку
@@ -844,19 +846,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_PUMP_WORK)==0)        {if ((x>=0)&&(x<=65535)) {Option.workPump=x; return true;} else return false;}else                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((x>=0)&&(x<=65535)) {Option.pausePump=x; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          { if ((x>=0)&&(x<=255)) {Option.nStart=x; return true;} else return false;  }else                // число попыток пуска
-   if(strcmp(var,option_TIME_CHART)==0)       { if (get_State()==pWORK_HP) startChart(); // Сбросить статистистику, начать отсчет заново
-						                           switch ((int)x)  // период обновления ститистики
-						                           {
-						                            case 0:  Option.tChart=10;    return true; break;
-						                            case 1:  Option.tChart=20;    return true; break;
-						                            case 2:  Option.tChart=30;    return true; break;
-						                            case 3:  Option.tChart=60;    return true; break;
-						                            case 4:  Option.tChart=3*60;  return true; break;
-						                            case 5:  Option.tChart=10*60; return true; break;
-						                            case 6:  Option.tChart=30*60; return true; break;
-						                            case 7:  Option.tChart=60*60; return true; break;
-						                            default: Option.tChart=60;    return true; break;    // Исправить по умолчанию
-						                           }   } else
+   if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) startChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          { Option.flags = (Option.flags & ~(1<<fNextion)) | ((x!=0)<<fNextion); updateNextion(); return true; } else            // использование дисплея nextion
    if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(); return true; } else            // использование дисплея nextion
@@ -900,17 +890,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_PUMP_WORK)==0)        {return _itoa(Option.workPump,ret);}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
-   if(strcmp(var,option_TIME_CHART)==0)       {
-	   	   	   	   	   	   	   	   	   	   	   return web_fill_tag_select(ret, "10 sec:0;20 sec:0;30 sec:0;1 min:0;3 min:0;10 min:0;30 min:0;60 min:0;",
-															Option.tChart == 10 ? 0 :
-															Option.tChart == 20 ? 1 :
-															Option.tChart == 30 ? 2 :
-															Option.tChart == 60 ? 3 :
-															Option.tChart == 3*60 ? 4 :
-															Option.tChart == 10*60 ? 5 :
-															Option.tChart == 30*60 ? 6 :
-															Option.tChart == 60*60 ? 7 : 8);
-						                      } else
+   if(strcmp(var,option_TIME_CHART)==0)       {return _itoa(Option.tChart,ret);} else
    if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          { return strcat(ret, (char*)(GETBIT(Option.flags,fNextion) ? cOne : cZero)); } else         // использование дисплея nextion
    if(strcmp(var,option_NEXTION_WORK)==0)     { return strcat(ret, (char*)(GETBIT(Option.flags,fNextionOnWhileWork) ? cOne : cZero)); } else         // использование дисплея nextion
@@ -1629,12 +1609,12 @@ int8_t HeatPump::StartResume(boolean start)
 	onSallmonela=false;                                  // Если true то идет Обеззараживание
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
 	// Сбросить переменные пид регулятора
-	temp_int = 0;                                        // Служебная переменная интегрирования
-	pre_errPID=0;                                        // Предыдущая ошибка ПИД регулятора
+	pidw_heat.pre_errPID = 0;
+	pidw_heat.temp_int = 0;
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
-	temp_intBoiler = 0;                                  // Служебная переменная интегрирования
-	pre_errPIDBoiler=0;                                  // Предыдущая ошибка ПИД регулятора
+	pidw_boiler.pre_errPID = 0;
+	pidw_boiler.temp_int = 0;
 	updatePidBoiler=0;                                   // время обновления ПИДа
 
 
@@ -1964,8 +1944,6 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	// -----------------------------------------------------------------------------------------------------
 	// Сброс излишней энергии в систему отопления
 	// Переключаем 3-х ходовой на отопление на ходу и ждем определенное число минут дальше перекидываем на бойлер
-	float u, u_dif, u_int, u_pro;
-	int16_t newFC;               //Новая частота инвертора
 
 	if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит требуемая опция - Сброс тепла в СО
 	{
@@ -2078,7 +2056,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #else
 		Status.ret=pBp12;
 //		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
-        newFC=updatePID(Prof.Boiler.pid.target-FEED,Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		int16_t newFC = dFC.get_freqFC() + updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw_boiler);  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 #endif	
 /*		
 		// Расчет отдельных компонент
@@ -2136,8 +2114,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 MODE_COMP HeatPump::UpdateHeat()
 {
 	int16_t target,t1,targetRealPID;
-//	float u, u_dif, u_int, u_pro;
-	int16_t newFC;               //Новая частота инвертора
+	int16_t newFC;
 
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
 
@@ -2227,7 +2204,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		updatePidTime=xTaskGetTickCount()/1000;
 		if(GETBIT(Prof.Heat.flags,fWeather))  // включена погодозависимость
 		{
-			targetRealPID=Prof.Heat.pid.target+(Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
+			targetRealPID = Prof.Heat.tempPID + (Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
 			//          journal.jprintf("targetRealPID=%d \n",targetRealPID);
 			//          journal.jprintf("Prof.Heat.tempPID=%d \n",Prof.Heat.tempPID);
 			//          journal.jprintf("Prof.Heat.kWeather=%d \n",Prof.Heat.kWeather);
@@ -2237,7 +2214,7 @@ MODE_COMP HeatPump::UpdateHeat()
 			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                 // 12 градусов
 			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                 // 42 градусов
 		}
-		else targetRealPID=Prof.Heat.pid.target;                                                        // отключена погодозависмость
+		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
 
 /*
 
@@ -2267,7 +2244,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 
 */
-        newFC=updatePID(targetRealPID-FEED,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		newFC = dFC.get_freqFC() + updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw_heat);         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 		 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
 		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
@@ -2305,8 +2282,7 @@ MODE_COMP HeatPump::UpdateHeat()
 MODE_COMP HeatPump::UpdateCool()
 {
 	int16_t target,t1,targetRealPID;
-	float u, u_dif, u_int, u_pro;
-	int16_t newFC;               //Новая частота инвертора
+	int16_t newFC;
 
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
 
@@ -2398,12 +2374,12 @@ MODE_COMP HeatPump::UpdateCool()
 
 		if(GETBIT(Prof.Cool.flags,fWeather))  // включена погодозависимость
 		{
-			targetRealPID=Prof.Cool.pid.target-(Prof.Cool.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость
+			targetRealPID = Prof.Cool.tempPID-(Prof.Cool.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость
 			if (targetRealPID<Prof.Cool.tempIn+50) targetRealPID=Prof.Cool.tempIn+50;                          // ограничение целевой подачи = минимальная подача + 0.5 градуса
 			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                                         // границы диапазона
 			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                                         //
 		}
-		else targetRealPID=Prof.Cool.pid.target;                                                             // отключена погодозависмость
+		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
 /*
 		errPID=((float)(FEED-targetRealPID))/100.0;                                                // Текущая ошибка, переводим в градусы ПОДАЧА Охлаждение - ошибка на оборот
 
@@ -2437,7 +2413,7 @@ MODE_COMP HeatPump::UpdateCool()
 		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 */
-        newFC=updatePID(FEED-targetRealPID,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		newFC = dFC.get_freqFC() + updatePID(FEED - targetRealPID, Prof.Cool.pid, pidw_heat);      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
@@ -3430,4 +3406,40 @@ void HeatPump::Sun_OFF(void)
 		time_Sun_OFF = millis();
 	}
 #endif
+}
+
+// Уравнение ПИД регулятора в конечных разностях.
+// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
+// u(t) = P (t) + I (t) + D (t);
+// P (t) = Kp * e (t);
+// I (t) = I (t — 1) + Ki * e (t);
+// D (t) = Kd * {e (t) — e (t — 1)};
+// T – период дискретизации(период, с которым вызывается ПИД регулятор).
+// errorPid - текущая ошибка ПИДа (может рассчитываться по разному по этому вынесена за функцию) в СОТЫХ
+// pid - настройки ПИДа
+// maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ
+// temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
+// Выход управляющее воздействие (СОТЫХ)
+int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
+{
+	int32_t newVal;              // Изменение ПИД регулятора
+
+	if (pid.Ki > 0)// Расчет интегральной составляющей
+	{
+		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+		// Ограничение диапзона изменения ПИД
+		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
+		if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
+	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
+	newVal = pidw.temp_int;
+
+	// Дифференцальная составляющая
+	newVal += (int32_t) pid.Kd * (errorPid - pidw.pre_errPID);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+
+	// Пропорциональная составляющая
+	if(abs(errorPid) < pid.errKp) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.errKp; // В близи уменьшить воздействие
+	else newVal += (int32_t) pid.Kp * errorPid;
+
+	return newVal / 100; // Учесть сотые коэффициента  выход в СОТЫХ
 }

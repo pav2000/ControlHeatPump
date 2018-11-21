@@ -312,23 +312,23 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Число попыток пуска компрессора: "); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
     
      strcat(Socket[thread].outBuf," - Настройка встроенных графиков -\r\n");
-     strcat(Socket[thread].outBuf,"Период накопления графиков (список): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Период накопления графиков (сек): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_History,Socket[thread].outBuf);STR_END;
 
      strcat(Socket[thread].outBuf," - Настройки контура отопления -\r\n");
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Температура для управления дополнительным ТЭНом (C°): ");HP.get_optionHP((char*)option_TEMP_RHEAT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре (сек.): "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре (сек.): "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре (сек): "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре (сек): "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
 
      strcat(Socket[thread].outBuf," - Времена и задержки -\r\n");
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка перед повторным включением ТН при ошибке (попытки пуска) (сек.): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка перед повторным включением ТН при ошибке (попытки пуска) (сек): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка после срабатывания датчика перед включением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_ON,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка перед выключением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_OFF,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка между переключением реверсивного клапана и включением компрессора (сек.): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка между переключением реверсивного клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_TRV,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
 

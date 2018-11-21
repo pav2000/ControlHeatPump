@@ -557,7 +557,7 @@ void devEEV::initEEV()
 	
 // Устновка настроек по умолчанию (структара данных _data)
  _data.pid.time = DEFAULT_EEV_TIME;                  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
- _data.pid.target = DEFAULT_OVERHEAT;                  // Перегрев ЦЕЛЬ (сотые градуса)
+ _data.tOverheat = DEFAULT_OVERHEAT;                  // Перегрев ЦЕЛЬ (сотые градуса)
  _data.pid.Kp =  DEFAULT_EEV_Kp;                       // ПИД Коэф пропорц.  В СОТЫХ!!!
  _data.pid.Ki =  DEFAULT_EEV_Ki;                       // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
  _data.pid.Kd =  DEFAULT_EEV_Kd;                       // ПИД Коэф дифф.   В СОТЫХ!!!
@@ -800,11 +800,6 @@ xTRTOOUT_PEVA: Overheat = HP.sTemp[TRTOOUT].get_Temp() - PressToTemp(press, _dat
 int8_t devEEV::Update(void) //boolean fHeating)
 {
   int16_t newEEV;               // Изменение положения ЭРВ
-//  #ifdef EEV_INT_PID            // использование ПИДА в целочисленной арифметике
-//   int32_t u,work_int, u_dif, u_int, u_pro; 
-//  #else
-//   float u, u_dif, u_int, u_pro; 
-//  #endif 
   
   if(!GETBIT(_data.flags,fPresent)) {return err;}  // если ЭРВ нет то ничего не делаем
   if (fPause)  return err;      // если пауза то выходим
@@ -824,41 +819,8 @@ int8_t devEEV::Update(void) //boolean fHeating)
      // I (t) = I (t — 1) + Ki * e (t);
      // D (t) = Kd * {e (t) — e (t — 1)};
      // T – период дискретизации(период, с которым вызывается ПИД регулятор).
-/*      #ifdef EEV_INT_PID                                            // использование ПИДА в целочисленной арифметике
-         #define EEV_PID_SCALE     (int32_t)(100*100)               // ДЕСЯТИТЫСЯЧНЫЕ Масштаб расчета пид ЭРВ = СОТЫЕ для градусов * СОТЫЕ коэффициенты
-         #define EEV_INT_MAX_STEP  (int32_t)(5*EEV_PID_SCALE)       // максимальное воздействие от интегральной составляющей в шагах
-         #define EEV_PID_MAX_STEP  (int32_t)(50*EEV_PID_SCALE)      // максимальное изменение на одной итерации ПИД
-         
-         _data.pid.errPID=Overheat-_data.pid.target;                // Текущая ошибка, в СОТЫХ градуса (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
-         if (_data.pid.Ki>0)                                                  // Расчет интегральной составляющей
-         {
-          _data.pid.temp_int=_data.pid.temp_int+_data.pid.Ki*_data.pid.errPID;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-          // Ограничение диапзона изменения EEV_INT_MAX_STEP шагов за одну итерацию ПИД
-          if (_data.pid.temp_int>EEV_INT_MAX_STEP)   _data.pid.temp_int=EEV_INT_MAX_STEP; 
-          if (_data.pid.temp_int<-EEV_INT_MAX_STEP)  _data.pid.temp_int=-EEV_INT_MAX_STEP; 
-         }
-         else _data.pid.temp_int=0;                                            // если Кi равен 0 то интегрирование не используем
-         u_int=_data.pid.temp_int;
-        
-         // Дифференцальная составляющая
-         u_dif=_data.pid.Kd*(_data.pid.errPID-_data.pid.pre_errPID);      // ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-         
-         // Пропорциональная составляющая
-         u_pro=_data.pid.Kp*_data.pid.errPID;                            // ДЕСЯТИТЫСЯЧНЫЕ
-         
-         // Общее воздействие
-         u=u_pro+u_int+u_dif;                                       // В  градусы 100 коэффициенты 100 ДЕСЯТИТЫСЯЧНЫЕ
-   //      Serial.print("u="); Serial.println(u);
-
-   //      if (abs(errPID)<errKp) u=((abs(errPID*100/errKp))*u)/100;       // В близи уменьшить воздействие
-   
-         if (u>EEV_PID_MAX_STEP)   u=EEV_PID_MAX_STEP;              // ограничение одной итерации 50 шагами
-         if (u<-EEV_PID_MAX_STEP)  u=-EEV_PID_MAX_STEP;
-         newEEV=round(u/EEV_PID_SCALE)+EEV;                         // Округление и добавление предудущего значения
-   //      Serial.print("newEEV="); Serial.println(newEEV);
-
-         _data.pid.pre_errPID=_data.pid.errPID;                                         // запомнить предыдущую ошибку
-    #else   // использование флоат, работатет
+/*
+    // использование флоат, работатет
          _data.pid.errPID=((float)(Overheat-_data.pid.target))/100.0;                // Текущая ошибка, переводим в градусы (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
          if (_data.pid.Ki>0)                                                  // Расчет интегральной составляющей
          {
@@ -883,10 +845,9 @@ int8_t devEEV::Update(void) //boolean fHeating)
 
          newEEV=round(u)+EEV;                             // Округление и добавление предудущего значения
          _data.pid.pre_errPID=_data.pid.errPID;           // запомнить предыдущую ошибку
-    #endif   // EEV_INT_PID
 */
        #define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
-       newEEV=round(updatePID(Overheat-_data.pid.target,_data.pid, EEV_MAX_STEP,temp_int,pre_errPID)/100)+EEV;     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+       newEEV = EEV + round_div_int16(updatePID(Overheat-_data.tOverheat, _data.pid, pidw), 100);     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
     
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
@@ -936,24 +897,24 @@ void devEEV::CorrectOverheat(void)
 		if(delta > (x = OHCor_tdelta + (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев большой - уменьшаем
 		else if(delta < (x = OHCor_tdelta)) { // - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
 			if(delta < x * 3 / 4) { // Слижком мало (меньше 3/4 от дельты) - устанавливаем перегрев принудительно
-				_data.pid.target = delta > x / 2 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
+				_data.tOverheat = delta > x / 2 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
 #ifdef DEBUG_MODWORK
 				journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)delta / 100.0, (float)_data.pid.target / 100.0);
 #endif
 				return;
 			}
 		} else return;
-		delta = _data.pid.target + (int32_t)(x - delta) * _data.OHCor_K / 1000;
+		delta = _data.tOverheat + (int32_t)(x - delta) * _data.OHCor_K / 1000;
 		if(delta > _data.OHCor_OverHeatMax) delta = _data.OHCor_OverHeatMax;
 		else if(delta < _data.OHCor_OverHeatMin) delta = _data.OHCor_OverHeatMin;
-		_data.pid.target = delta;
+		_data.tOverheat = delta;
 	}
 }
 
 void devEEV::CorrectOverheatInit(void)
 {
     if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
-	    _data.pid.target = _data.OHCor_OverHeatStart;
+	    _data.tOverheat = _data.OHCor_OverHeatStart;
     }
 	OHCor_tdelta = 0;
 }
@@ -993,8 +954,9 @@ uint16_t devEEV::get_crc16(uint16_t crc)
 void devEEV::resetPID()
 {
   // Очистить служебные перемнные
-  temp_int=0;
-  pre_errPID=0;
+  pidw.temp_int = 0;
+  pidw.pre_errPID = 0;
+  pidw.maxStep = EEV_MAX_STEP;
   tmpTime=_data.pid.time;        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                   // Признак работы пид с начала (пропуск первой итерации)
 }
@@ -1025,7 +987,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_TIME)==0){
 	   _itoa(_data.pid.time,ret); 
 	} else if(strcmp(var, eev_TARGET)==0){
-	   _ftoa(ret,(float)(_data.pid.target/100.0),2);
+	   _ftoa(ret,(float)(_data.tOverheat/100.0),2);
 	} else if(strcmp(var, eev_KP)==0){
 	   _ftoa(ret,(float)(_data.pid.Kp/100.0),2);
 	} else if(strcmp(var, eev_KI)==0){
@@ -1129,7 +1091,7 @@ float temp;
 	} else if(strcmp(var, eev_TIME)==0){
 	  if ((x>=1)&&(x<=1000)) { if(_data.pid.time!=x) resetPID(); _data.pid.time=x; return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
-	  if ((x>0.0)&&(x<=20.0)) { if(_data.pid.target!=x) resetPID(); _data.pid.target=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
+	  if ((x>0.0)&&(x<=20.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
 	   if ((x>=0)&&(x<=50.0)) { if(_data.pid.Kp!=x) resetPID(); _data.pid.Kp=rd(x, 100);return true;} else return false;	// сотые
 	} else if(strcmp(var, eev_KI)==0){
