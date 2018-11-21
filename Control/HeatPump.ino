@@ -1630,12 +1630,10 @@ int8_t HeatPump::StartResume(boolean start)
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
 	// Сбросить переменные пид регулятора
 	temp_int = 0;                                        // Служебная переменная интегрирования
-	errPID=0;                                            // Текущая ошибка ПИД регулятора
 	pre_errPID=0;                                        // Предыдущая ошибка ПИД регулятора
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
 	temp_intBoiler = 0;                                  // Служебная переменная интегрирования
-	errPIDBoiler=0;                                      // Текущая ошибка ПИД регулятора
 	pre_errPIDBoiler=0;                                  // Предыдущая ошибка ПИД регулятора
 	updatePidBoiler=0;                                   // время обновления ПИДа
 
@@ -2073,24 +2071,20 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
 		// Дошли до сюда - ПИД на подачу. Компресор работает
 		updatePidBoiler=xTaskGetTickCount()/1000;
-		// Уравнение ПИД регулятора в конечных разностях. ------------------------------------
-		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-		// u(t) = P (t) + I (t) + D (t);
-		// P (t) = Kp * e (t);
-		// I (t) = I (t — 1) + Ki * e (t);
-		// D (t) = Kd * {e (t) — e (t — 1)};
-		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
-		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
+//		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
+        newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();     // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 #else
 		Status.ret=pBp12;
-		errPIDBoiler=((float)(Prof.Boiler.tempPID-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
-#endif
+//		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
+        newFC=updatePID(Prof.Boiler.pid.target-FEED,Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+#endif	
+/*		
 		// Расчет отдельных компонент
-		if (Prof.Boiler.Ki>0)                                                                        // Расчет интегральной составляющей
+		if (Prof.Boiler.pid.Ki>0)                                                                        // Расчет интегральной составляющей
 		{
-			temp_int=temp_int+((float)Prof.Boiler.Ki*errPIDBoiler)/100.0;                               // Интегральная составляющая, с накоплением делить на 10
+			temp_int=temp_int+((float)Prof.Boiler.pid.Ki*errPIDBoiler)/100.0;                               // Интегральная составляющая, с накоплением делить на 10
 #define BOILER_MAX_STEP  2                                                                  // Ограничение диапзона изменения 2 герц за один шаг ПИД
 			if (temp_int>BOILER_MAX_STEP)  temp_int=BOILER_MAX_STEP;
 			if (temp_int<-1.0*BOILER_MAX_STEP)  temp_int=-1.0*BOILER_MAX_STEP;
@@ -2099,10 +2093,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		u_int=temp_int;
 
 		// Дифференцальная составляющая
-		u_dif=((float)Prof.Boiler.Kd*(errPIDBoiler-pre_errPIDBoiler))/10.0;                          // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+		u_dif=((float)Prof.Boiler.pid.Kd*(errPIDBoiler-pre_errPIDBoiler))/10.0;                          // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 
 		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Boiler.Kp*errPIDBoiler/10.0;
+		u_pro=(float)Prof.Boiler.pid.Kp*errPIDBoiler/10.0;
 
 		// Общее воздействие
 		u=u_pro+u_int+u_dif;
@@ -2110,6 +2104,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
 		pre_errPIDBoiler=errPIDBoiler;                                                               // Сохранние ошибки, теперь это прошлая ошибка                                                                           // запомнить предыдущую ошибку
+*/
 
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
@@ -2141,7 +2136,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 MODE_COMP HeatPump::UpdateHeat()
 {
 	int16_t target,t1,targetRealPID;
-	float u, u_dif, u_int, u_pro;
+//	float u, u_dif, u_int, u_pro;
 	int16_t newFC;               //Новая частота инвертора
 
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
@@ -2230,17 +2225,9 @@ MODE_COMP HeatPump::UpdateHeat()
 #endif
 
 		updatePidTime=xTaskGetTickCount()/1000;
-		// Уравнение ПИД регулятора в конечных разностях. ------------------------------------
-		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-		// u(t) = P (t) + I (t) + D (t);
-		// P (t) = Kp * e (t);
-		// I (t) = I (t — 1) + Ki * e (t);
-		// D (t) = Kd * {e (t) — e (t — 1)};
-		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-
 		if(GETBIT(Prof.Heat.flags,fWeather))  // включена погодозависимость
 		{
-			targetRealPID=Prof.Heat.tempPID+(Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
+			targetRealPID=Prof.Heat.pid.target+(Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
 			//          journal.jprintf("targetRealPID=%d \n",targetRealPID);
 			//          journal.jprintf("Prof.Heat.tempPID=%d \n",Prof.Heat.tempPID);
 			//          journal.jprintf("Prof.Heat.kWeather=%d \n",Prof.Heat.kWeather);
@@ -2250,13 +2237,15 @@ MODE_COMP HeatPump::UpdateHeat()
 			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                 // 12 градусов
 			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                 // 42 градусов
 		}
-		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
+		else targetRealPID=Prof.Heat.pid.target;                                                        // отключена погодозависмость
+
+/*
 
 		errPID=((float)(targetRealPID-FEED))/100.0;                                                  // Текущая ошибка, переводим в градусы
 		// Расчет отдельных компонент
-		if (Prof.Heat.Ki>0)                                                                           // Расчет интегральной составляющей
+		if (Prof.Heat.pid.Ki>0)                                                                           // Расчет интегральной составляющей
 		{
-			temp_int=temp_int+((float)Prof.Heat.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
+			temp_int=temp_int+((float)Prof.Heat.pid.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
 #define HEAT_MAX_STEP  5                                                                                 // Ограничение диапзона изменения 5 герц за один шаг ПИД
 			if (temp_int>HEAT_MAX_STEP)  temp_int=HEAT_MAX_STEP;
 			if (temp_int<-1.0*HEAT_MAX_STEP)  temp_int=-1.0*HEAT_MAX_STEP;
@@ -2265,10 +2254,10 @@ MODE_COMP HeatPump::UpdateHeat()
 		u_int=temp_int;
 
 		// Дифференцальная составляющая
-		u_dif=((float)Prof.Heat.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+		u_dif=((float)Prof.Heat.pid.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 
 		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Heat.Kp*errPID/10.0;
+		u_pro=(float)Prof.Heat.pid.Kp*errPID/10.0;
 
 		// Общее воздействие
 		u=u_pro+u_int+u_dif;
@@ -2277,16 +2266,9 @@ MODE_COMP HeatPump::UpdateHeat()
 		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 
-		/*
-           errPID=((float)(targetRealPID-FEED))/100.0;                                                   // Текущая ошибка, переводим в градусы
-           if (Prof.Heat.Ki>0) temp_int=temp_int+abs((1/(float)Prof.Heat.Ki)*errPID);                             // Интегральная составляющая, с накоплением
-           else temp_int=0;                                                                             // если Кi равен 0 то интегрирование не используем
-           if (errPID<0) work_int=-1.0*temp_int; else work_int=temp_int;                                // Определение знака (перегрев меньше цели знак минус)
-           // Корректировка Kp
-           u=100.0*(float)Prof.Heat.Kp*(errPID+work_int+((float)Prof.Heat.Kd*(errPID-pre_errPID)/1.0))/1.0;       // Сложение всех трех компонент
-           newFC=round(u)+dFC.get_targetFreq();                                                                  // Округление и добавление предудущего значения
-           pre_errPID=errPID;                                                                            // Сохранние ошибки, теперь это прошлая ошибка
-		 */
+*/
+        newFC=updatePID(targetRealPID-FEED,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
 		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
 
@@ -2413,22 +2395,16 @@ MODE_COMP HeatPump::UpdateCool()
 
 		updatePidTime=xTaskGetTickCount()/1000;
 	//	Serial.println("------ PID ------");
-		// Уравнение ПИД регулятора в конечных разностях. ------------------------------------
-		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-		// u(t) = P (t) + I (t) + D (t);
-		// P (t) = Kp * e (t);
-		// I (t) = I (t — 1) + Ki * e (t);
-		// D (t) = Kd * {e (t) — e (t — 1)};
-		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
+
 		if(GETBIT(Prof.Cool.flags,fWeather))  // включена погодозависимость
 		{
-			targetRealPID=Prof.Cool.tempPID-(Prof.Cool.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость
+			targetRealPID=Prof.Cool.pid.target-(Prof.Cool.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость
 			if (targetRealPID<Prof.Cool.tempIn+50) targetRealPID=Prof.Cool.tempIn+50;                          // ограничение целевой подачи = минимальная подача + 0.5 градуса
 			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                                         // границы диапазона
 			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                                         //
 		}
-		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
-
+		else targetRealPID=Prof.Cool.pid.target;                                                             // отключена погодозависмость
+/*
 		errPID=((float)(FEED-targetRealPID))/100.0;                                                // Текущая ошибка, переводим в градусы ПОДАЧА Охлаждение - ошибка на оборот
 
 		// Это охлаждение
@@ -2438,9 +2414,9 @@ MODE_COMP HeatPump::UpdateCool()
 		//     journal.jprintf("errPID=%.2f\n",errPID);
 
 		// Расчет отдельных компонент
-		if (Prof.Cool.Ki>0)                                                                           // Расчет интегральной составляющей
+		if (Prof.Cool.pid.Ki>0)                                                                           // Расчет интегральной составляющей
 		{
-			temp_int=temp_int+((float)Prof.Cool.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
+			temp_int=temp_int+((float)Prof.Cool.pid.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
 #define COOL_MAX_STEP  5                                                                     // Ограничение диапзона изменения 5 герц за один шаг ПИД
 			if (temp_int>COOL_MAX_STEP)  temp_int=COOL_MAX_STEP;
 			if (temp_int<-1.0*COOL_MAX_STEP)  temp_int=-1.0*COOL_MAX_STEP;
@@ -2449,10 +2425,10 @@ MODE_COMP HeatPump::UpdateCool()
 		u_int=temp_int;
 
 		// Дифференцальная составляющая
-		u_dif=((float)Prof.Cool.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+		u_dif=((float)Prof.Cool.pid.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 
 		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Cool.Kp*errPID/10.0;
+		u_pro=(float)Prof.Cool.pid.Kp*errPID/10.0;
 
 		// Общее воздействие
 		u=u_pro+u_int+u_dif;
@@ -2460,8 +2436,9 @@ MODE_COMP HeatPump::UpdateCool()
 
 		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
-
-
+*/
+        newFC=updatePID(FEED-targetRealPID,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+        
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
 

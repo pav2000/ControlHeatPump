@@ -308,9 +308,9 @@ class HeatPump
    RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}           // Получить алгоритм отопления
    boolean get_TargetCool(){return GETBIT(Prof.Cool.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
    boolean get_TargetHeat(){return GETBIT(Prof.Heat.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
-   uint16_t get_timeCool(){return Prof.Cool.time;}              // Получить время интегрирования охлаждения
-   uint16_t get_timeHeat(){return Prof.Heat.time;}              // Получить время интегрирования отопления
-   uint16_t get_timeBoiler(){return Prof.Boiler.time;}          // Получить время интегрирования ГВС
+   uint16_t get_timeCool(){return Prof.Cool.pid.time;}      // Получить время интегрирования охлаждения
+   uint16_t get_timeHeat(){return Prof.Heat.pid.time;}      // Получить время интегрирования отопления
+   uint16_t get_timeBoiler(){return Prof.Boiler.pid.time;}  // Получить время интегрирования ГВС
    
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления
@@ -527,24 +527,30 @@ class HeatPump
     // Сетевые настройки
     type_NetworkHP Network;                 // Структура для хранения сетевых настроек
     uint32_t countResSocket;                // Число сбросов сокетов
-
+  
     // Переменные пид регулятора Отопление
-    float temp_int;                       // Служебная переменная интегрирования
-    float errPID;                         // Текущая ошибка ПИД регулятора
-    float pre_errPID;                     // Предыдущая ошибка ПИД регулятора
+     #ifdef INT_PID        // использование ПИДА в целочисленной арифметике (определяется в конфигурации)
+	int32_t   temp_int;    // Служебная переменная интегрирования в 1000 (тысячных)
+	int16_t   pre_errPID;  // Предыдущая ошибка ПИД регулятора в сотых градуса
+	#else                  // ПИД с плавающей точкой
+	float   temp_int;      // Служебная переменная интегрирования
+	float   pre_errPID;    // Предыдущая ошибка ПИД регулятора
+    #endif
     unsigned long updatePidTime;          // время обновления ПИДа отопления
     
     // Переменные пид регулятора ГВС
-    float temp_intBoiler;                 // Служебная переменная интегрирования ГВС
-    float errPIDBoiler;                   // Текущая ошибка ПИД регулятора
-    float pre_errPIDBoiler;               // Предыдущая ошибка ПИД регулятора
+    #ifdef INT_PID             // использование ПИДА в целочисленной арифметике (определяется в конфигурации)
+	int32_t temp_intBoiler;    // Служебная переменная интегрирования в 1000 (тысячных)
+	int16_t pre_errPIDBoiler;  // Предыдущая ошибка ПИД регулятора в сотых градуса
+	#else                      // ПИД с плавающей точкой
+	float   temp_intBoiler;    // Служебная переменная интегрирования
+	float   pre_errPIDBoiler;  // Предыдущая ошибка ПИД регулятора
+    #endif
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
     boolean onSallmonela;                 // Если true то идет Обеззараживание
     
-    //SdFile  statFile;                       // файл для записи статистики
-
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };
 
