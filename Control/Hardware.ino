@@ -886,7 +886,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
     #endif   // EEV_INT_PID
 */
        #define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
-       newEEV=round(updatePID(Overheat-_data.pid.target,_data.pid, EEV_MAX_STEP))+EEV;     // Рассчитaть итерацию + Округление и добавление предудущего значения
+       newEEV=round(updatePID(Overheat-_data.pid.target,_data.pid, EEV_MAX_STEP,temp_int,pre_errPID)/100)+EEV;     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
     
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
@@ -992,9 +992,11 @@ uint16_t devEEV::get_crc16(uint16_t crc)
 // Сброс пид регулятора
 void devEEV::resetPID()
 {
-  clearPID(_data.pid);             // Очистить служебные перемнные
+  // Очистить служебные перемнные
+  temp_int=0;
+  pre_errPID=0;
   tmpTime=_data.pid.time;        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
-  fStart=true;                     // Признак работы пид с начала (пропуск первой итерации)
+  fStart=true;                   // Признак работы пид с начала (пропуск первой итерации)
 }
 
 

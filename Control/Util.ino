@@ -927,12 +927,7 @@ void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 	}
 }
 
-// Очистка служебных переменных ПИД регулятора
- __attribute__((always_inline)) inline void clearPID(PID_STRUCT pid)
-{
-  pid.temp_int = 0;  // Служебная переменная интегрирования
-  pid.pre_errPID=0;  // Предыдущая ошибка ПИД регулятора	
-}
+
 // Уравнение ПИД регулятора в конечных разностях.
 // Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
 // u(t) = P (t) + I (t) + D (t);
@@ -941,67 +936,66 @@ void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 // D (t) = Kd * {e (t) — e (t — 1)};
 // T – период дискретизации(период, с которым вызывается ПИД регулятор).
 // errorPid - текущая ошибка ПИДа (может рассчитываться по разному по этому вынесена за функцию) в СОТЫХ
+// pid - настройки ПИДа
 // maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ
-// Выход управляющее воздействие в СОТЫХ величинах
-int16_t updatePID(int16_t errorPid, PID_STRUCT pid, int16_t maxStep)
+// temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
+// Выход управляющее воздействие (СОТЫХ)
+#ifdef INT_PID            // использование ПИДА в целочисленной арифметике
+int16_t updatePID(int16_t errorPid, PID_STRUCT pid, int16_t maxStep, int32_t &temp_int,int16_t &pre_errPID )
 {
- #ifdef INT_PID            // использование ПИДА в целочисленной арифметике
-     #define PID_SCALE     (int32_t)(100*100)            // ДЕСЯТИТЫСЯЧНЫЕ Масштаб расчета пид ЭРВ = СОТЫЕ для градусов * СОТЫЕ коэффициенты
-     #define PID_MAX_STEP  (int32_t)(50*PID_SCALE)       // максимальное изменение на одной итерации ПИД
+     #define PID_SCALE   (int32_t)(100)            // СОТЫЕ Масштаб расчета пид  =  СОТЫЕ коэффициенты  - ВЫХОД в СОТЫХ!
      int32_t newVal;              // Изменение ПИД регулятора 
      
      
      if (pid.Ki>0)         // Расчет интегральной составляющей
      {
-      pid.temp_int=pid.temp_int+pid.Ki*errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+      temp_int=temp_int+pid.Ki*errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
       // Ограничение диапзона изменения ПИД
-      if (pid.temp_int>maxStep)   pid.temp_int=maxStep; 
-      if (pid.temp_int<-maxStep)  pid.temp_int=-maxStep; 
+      if (temp_int>maxStep)   temp_int=maxStep; 
+      if (temp_int<-maxStep)  temp_int=-maxStep; 
      }
-     else pid.temp_int=0;              // если Кi равен 0 то интегрирование не используем
-     newVal=pid.temp_int;
+     else temp_int=0;              // если Кi равен 0 то интегрирование не используем
+     newVal=temp_int;
     
      // Дифференцальная составляющая
-     newVal=newVal+pid.Kd*(errorPid-pid.pre_errPID);   // ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-     pid.pre_errPID=errorPid;                          // запомнить предыдущую ошибку
+     newVal=newVal+pid.Kd*(errorPid-pre_errPID);   // ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+     pre_errPID=errorPid;                          // запомнить предыдущую ошибку
       
      // Пропорциональная составляющая
      if (abs(errorPid)<pid.errKp)  newVal=newVal+ (abs(errorPid/(pid.errKp*100)))*(pid.Kp*errorPid);  // В близи уменьшить воздействие
      else                          newVal=newVal+ pid.Kp*errorPid;
+ 
+     newVal=newVal/PID_SCALE;              // Учесть сотые коэффициента  выход в СОТЫХ
     
- //    if (newVal>PID_MAX_STEP)   newVal=PID_MAX_STEP;    // ограничение одной итерации
- //    if (newVal<-PID_MAX_STEP)  newVal=-PID_MAX_STEP;
-
-     newVal=newVal/PID_SCALE;              // Учесть сотые коэффициента и сотые ошибки
-    
-     return newVal;                    
+     return newVal;  
+}
 #else   // использование FLOAT, работатет
+int16_t updatePID(int16_t errorPid, PID_STRUCT pid, int16_t maxStep, float &temp_int,float &pre_errPID )
+{                       
      float newVal;                        // Изменение ПИД регулятора
      float   errPID;                      // текущая ошибка ПИД регулятора
-     errPID=((float)errorPid)/100.0;      // Текущая ошибка, переводим в СОТЫЕ
+     errPID=((float)errorPid);            // Текущая ошибка в СОТЫХ
      
      if (pid.Ki>0)                                         // Расчет интегральной составляющей
      {
-      pid.temp_int=pid.temp_int+((float)pid.Ki*errPID)/100.0;  // Интегральная составляющая, с накоплением делить на 100
+      temp_int=temp_int+((float)pid.Ki*errPID)/100.0;  // Интегральная составляющая, с накоплением делить на 100
       // Ограничение диапзона изменения ПИД
-      if (pid.temp_int>maxStep)  pid.temp_int=maxStep; 
-      if (pid.temp_int<-1.0*maxStep)  pid.temp_int=-1.0*maxStep; 
+      if (temp_int>maxStep)  temp_int=maxStep; 
+      if (temp_int<-1.0*maxStep)  temp_int=-1.0*maxStep; 
      }
-     else pid.temp_int=0;                                           // если Кi равен 0 то интегрирование не используем
-     newVal=pid.temp_int;
+     else temp_int=0;                                           // если Кi равен 0 то интегрирование не используем
+     newVal=temp_int;
     
      // Дифференцальная составляющая
-     newVal=newVal+((float)pid.Kd*(errPID-pid.pre_errPID))/100.0;  // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-     pid.pre_errPID=errPID;                      // запомнить предыдущую ошибку
+     newVal=newVal+((float)pid.Kd*(errPID-pre_errPID))/100.0;  // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+     pre_errPID=errPID;                      // запомнить предыдущую ошибку
        
      // Пропорциональная составляющая
       if (abs(errPID)<(pid.errKp/100.0))  newVal=newVal+ (abs((errPID*100.0)/pid.errKp))*((float)pid.Kp*errPID/100.0);  // В близи уменьшить воздействие
       else                                                newVal=newVal+ (float)pid.Kp*errPID/100.0;
-   
      return round(newVal);                       // округлить
-#endif   
-	
-}
 
+}
+#endif
 
 

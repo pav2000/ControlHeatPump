@@ -1630,12 +1630,10 @@ int8_t HeatPump::StartResume(boolean start)
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
 	// Сбросить переменные пид регулятора
 	temp_int = 0;                                        // Служебная переменная интегрирования
-	errPID=0;                                            // Текущая ошибка ПИД регулятора
 	pre_errPID=0;                                        // Предыдущая ошибка ПИД регулятора
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
 	temp_intBoiler = 0;                                  // Служебная переменная интегрирования
-	errPIDBoiler=0;                                      // Текущая ошибка ПИД регулятора
 	pre_errPIDBoiler=0;                                  // Предыдущая ошибка ПИД регулятора
 	updatePidBoiler=0;                                   // время обновления ПИДа
 
@@ -2076,13 +2074,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
 //		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
-        newFC=100*updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Cool.pid,dFC.get_stepFreq())+dFC.get_FreqFC();      // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
+        newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();     // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 #else
 		Status.ret=pBp12;
 //		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
-        newFC=100*updatePID(Prof.Boiler.pid.target-FEED,Prof.Boiler.pid,dFC.get_stepFreqBoiler())+dFC.get_freqFC();  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах 
-#endif
-	
+        newFC=updatePID(Prof.Boiler.pid.target-FEED,Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+#endif	
 /*		
 		// Расчет отдельных компонент
 		if (Prof.Boiler.pid.Ki>0)                                                                        // Расчет интегральной составляющей
@@ -2270,7 +2267,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 
 */
-        newFC=100*updatePID(targetRealPID-FEED,Prof.Cool.pid,dFC.get_stepFreq())+dFC.get_freqFC();         // Округление не нужно плюс добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
+        newFC=updatePID(targetRealPID-FEED,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 		 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
 		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
@@ -2440,7 +2437,7 @@ MODE_COMP HeatPump::UpdateCool()
 		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
 		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
 */
-        newFC=100*updatePID(FEED-targetRealPID,Prof.Cool.pid,dFC.get_stepFreq())+dFC.get_freqFC();      // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
+        newFC=updatePID(FEED-targetRealPID,Prof.Cool.pid,dFC.get_stepFreq(),temp_int,pre_errPID)+dFC.get_freqFC();      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
