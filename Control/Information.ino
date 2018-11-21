@@ -590,9 +590,9 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Cool.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Cool.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
  if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Cool.dTemp=rd(x, 100); return true;} else return false;                                       }else             // гистерезис целевой температуры
  if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Cool.pid.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
- if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Cool.pid.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
- if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Cool.pid.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
- if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.pid.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Cool.pid.Kp=rd(x, 100); return true;} else return false;                                       }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Cool.pid.Ki=rd(x, 100); return true;} else return false;                                       }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.pid.Kd=rd(x, 100); return true;} else return false;                                       }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=rd(x, 100); return true;} else return false;                                       }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=rd(x, 100); return true;} else return false;                                      }else             // температура обратки (максимальная)
  if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                              }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
@@ -606,7 +606,7 @@ boolean Profile::set_paramCoolHP(char *var, float x)
 }
 
 //Охлаждение Получить параметр в виде строки  второй параметр - наличие частотника
-char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
+char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)  
 {
    if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
 	 								return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Cool.Rule);
@@ -617,9 +617,9 @@ char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
                                   else return strcat(ret,(char*)"Дом:0;Обратка:1;");           } else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
    if(strcmp(var,hp_DTEMP)==0)    {_ftoa(ret,(float)Cool.dTemp/100.0,1); return ret;               } else             // гистерезис целевой температуры
    if(strcmp(var,hp_HP_TIME)==0)  {return  _itoa(Cool.pid.time,ret);                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
-   if(strcmp(var,hp_HP_PRO)==0)   {return  _itoa(Cool.pid.Kp,ret);                                 } else             // Пропорциональная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_IN)==0)    {return  _itoa(Cool.pid.Ki,ret);                                 } else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {return  _itoa(Cool.pid.Kd,ret);                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {_ftoa(ret,(float)Cool.pid.Kp/100.0,2); return ret;              } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Cool.pid.Ki/100.0,2); return ret;              } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Cool.pid.Kd/100.0,2); return ret;              } else             // Дифференциальная составляющая ПИД ТН
    if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Cool.tempIn/100.0,1); return ret;              } else             // температура подачи (минимальная)
    if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Cool.tempOut/100.0,1); return ret;             } else             // температура обратки (максимальная)
    if(strcmp(var,hp_PAUSE)==0)    {return  _itoa(Cool.pause/60,ret);                               } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
@@ -650,9 +650,9 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
  if(strcmp(var,hp_TARGET)==0) {  if (x==0.0) {SETBIT0(Heat.flags,fTarget); return true;} else if (x==1.0) {SETBIT1(Heat.flags,fTarget); return true;} else return false; }else // что является целью значения  0 (температура в доме), 1 (температура обратки).
  if(strcmp(var,hp_DTEMP)==0) {   if ((x>=0.0)&&(x<=12.0))  {Heat.dTemp=rd(x, 100); return true;} else return false;                                       }else             // гистерезис целевой температуры
  if(strcmp(var,hp_HP_TIME)==0) { if ((x>=10)&&(x<=600))     {Heat.pid.time=x; return true;} else return false;                                             }else             // Постоянная интегрирования времени в секундах ПИД ТН !
- if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.pid.Kp=x; return true;} else return false;                                                }else             // Пропорциональная составляющая ПИД ТН
- if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.pid.Ki=x; return true;} else return false;                                                }else             // Интегральная составляющая ПИД ТН
- if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.pid.Kd=x; return true;} else return false;                                                }else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_PRO)==0) {  if ((x>=0.0)&&(x<=100.0)) {Heat.pid.Kp=rd(x, 100); return true;} else return false;                                       }else             // Пропорциональная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_IN)==0) {   if ((x>=0.0)&&(x<=20.0))  {Heat.pid.Ki=rd(x, 100); return true;} else return false;                                      }else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.pid.Kd=rd(x, 100); return true;} else return false;                                      }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=rd(x, 100); return true;} else return false;                                       }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=-10.0)&&(x<=70.0)) {Heat.tempOut=rd(x, 100); return true;} else return false;                                     }else             // температура обратки (максимальная)
  if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                              }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
@@ -679,10 +679,10 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Heat.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
                                   else return strcat(ret,(char*)"Дом:0;Обратка:1;");           } else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
    if(strcmp(var,hp_DTEMP)==0)    {_ftoa(ret,(float)Heat.dTemp/100.0,1); return ret;                } else             // гистерезис целевой температуры
-   if(strcmp(var,hp_HP_TIME)==0)  {return  _itoa(Heat.pid.time,ret);                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
-   if(strcmp(var,hp_HP_PRO)==0)   {return  _itoa(Heat.pid.Kp,ret);                                 } else             // Пропорциональная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_IN)==0)    {return  _itoa(Heat.pid.Ki,ret);                                 } else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {return  _itoa(Heat.pid.Kd,ret);                                 } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_TIME)==0)  {return  _itoa(Heat.pid.time,ret);                                } else             // Постоянная интегрирования времени в секундах ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {_ftoa(ret,(float)Heat.pid.Kp/100.0,2); return ret;               } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Heat.pid.Ki/100.0,2); return ret;               } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Heat.pid.Kd/100.0,2); return ret;               } else             // Дифференциальная составляющая ПИД ТН
    if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Heat.tempIn/100.0,1); return ret;               } else             // температура подачи (минимальная)
    if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Heat.tempOut/100.0,1); return ret;              } else             // температура обратки (максимальная)
    if(strcmp(var,hp_PAUSE)==0)    {return _itoa(Heat.pause/60,ret);                            } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
@@ -751,9 +751,9 @@ if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.fl
 if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=1)&&(x<=10000))   {Boiler.Reset_Time=x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
                        }else      
 if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.pid.time=x; return true;} else return false;  }else             // Постоянная интегрирования времени в секундах ПИД ГВС
-if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.pid.Kp=x; return true;} else return false;  }else               // Пропорциональная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.pid.Ki=x; return true;} else return false;  }else               // Интегральная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.pid.Kd=x; return true;} else return false;   }else              // Дифференциальная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.pid.Kp=rd(x, 100); return true;} else return false;  }else      // Пропорциональная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.pid.Ki=rd(x, 100); return true;} else return false;  }else      // Интегральная составляющая ПИД ГВС
+if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.pid.Kd=rd(x, 100); return true;} else return false;   }else    // Дифференциальная составляющая ПИД ГВС
 if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=70))   {Boiler.tempPID=rd(x, 100); return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
 if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.flags,fAddHeating); return true;}                   // флаг использования тена для догрева ГВС
                                      else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
@@ -786,9 +786,9 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_RESET_HEAT)==0){      if (GETBIT(Boiler.flags,fResetHeat))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else       // флаг Сброса лишнего тепла в СО
  if(strcmp(var,boil_RESET_TIME)==0){      return  _itoa(Boiler.Reset_Time,ret);                      }else                            // время сброса излишков тепла в секундах (fResetHeat)
  if(strcmp(var,boil_BOIL_TIME)==0){       return  _itoa(Boiler.pid.time,ret);                        }else                            // Постоянная интегрирования времени в секундах ПИД ГВС
- if(strcmp(var,boil_BOIL_PRO)==0){        return  _itoa(Boiler.pid.Kp,ret);                          }else                            // Пропорциональная составляющая ПИД ГВС
- if(strcmp(var,boil_BOIL_IN)==0){         return  _itoa(Boiler.pid.Ki,ret);                          }else                            // Интегральная составляющая ПИД ГВС
- if(strcmp(var,boil_BOIL_DIF)==0){        return  _itoa(Boiler.pid.Kd,ret);                          }else                            // Дифференциальная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_PRO)==0){        _ftoa(ret,(float)Boiler.pid.Kp/100.0,2); return ret;       }else                            // Пропорциональная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_IN)==0){         _ftoa(ret,(float)Boiler.pid.Ki/100.0,2); return ret;       }else                            // Интегральная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd/100.0,2); return ret;       }else                            // Дифференциальная составляющая ПИД ГВС
  if(strcmp(var,boil_BOIL_TEMP)==0){       _ftoa(ret,(float)Boiler.tempPID/100.0,1); return ret;   }else                            // Целевая темпеартура ПИД ГВС
  if(strcmp(var,boil_ADD_HEATING)==0){     if(GETBIT(Boiler.flags,fAddHeating)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else   // флаг использования тена для догрева ГВС
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _ftoa(ret,(float)Boiler.tempRBOILER/100.0,1); return ret;       }else                            // температура включения догрева бойлера
