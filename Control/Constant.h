@@ -273,7 +273,7 @@ const uint16_t  defaultPort=80;
 //----------------------- WEB ----------------------------
 const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nContent-Type: ";
 const char WEB_HEADER_TEXT_ATTACH[] 	= "text/plain\r\nContent-Disposition: attachment; filename=\"";
-const char WEB_HEADER_BIN_ATTACH[] 		= "application/x-binary\r\nContent-Disposition: attachment; filename=\"";
+const char WEB_HEADER_BIN_ATTACH[] 		= "application/x-binary\r\nContent-Disposition: attachment; Access-Control-Allow-Origin: *; filename=\"";
 const char WEB_HEADER_TXT_KEEP[] 		= "text/html\r\nConnection: keep-alive";
 const char WEB_HEADER_END[]				= "\r\n\r\n";
 const char* HEADER_FILE_NOT_FOUND = {"HTTP/1.1 404 Not Found\r\n\r\n<html>\r\n<head><title>404 NOT FOUND</title><meta charset=\"utf-8\" /></head>\r\n<body><h1>404 NOT FOUND</h1></body>\r\n</html>\r\n\r\n"};
