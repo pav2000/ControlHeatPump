@@ -27,7 +27,7 @@ void get_Header(uint8_t thread,char *name_file)
     strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
     strcat(Socket[thread].outBuf, WEB_HEADER_TEXT_ATTACH);
     strcat(Socket[thread].outBuf, name_file);
-    strcat(Socket[thread].outBuf, "\"\r\nAccess-Control-Allow-Origin: *");
+    strcat(Socket[thread].outBuf, "\"");
     strcat(Socket[thread].outBuf, WEB_HEADER_END);
 	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
 	sendPrintfRTOS(thread, " ------ Народный контроллер теплового насоса ver. %s  сборка %s %s ------\r\nКонфигурация: %s: %s\r\nСоздание файла: %s %s \r\n\r\n", VERSION,__DATE__,__TIME__,CONFIG_NAME,CONFIG_NOTE,NowTimeToStr(),NowDateToStr());

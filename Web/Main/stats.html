@@ -67,17 +67,21 @@ Highcharts.theme = {
 };
 // Apply the theme
 Highcharts.setOptions(Highcharts.theme);
+window.onload = function() {
+	loadParam("get_listStats");
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("_listStats")!=-1) {
+		var els = document.getElementById('get_liststats').options;
+		for(var i = 0; i < els.length; i++) els[i].text = els[i].text.replace(/[^\d]/g,''); 
+	}
+}
 var csv_line_delim = '\n';
 var csv_delim = ';';
 //fieldList shows which field you want to load, and which axis to display that field on, 
 //the 'T' Temperature left axis, or the 'O' Other right axis.
-var ChartsGrp = [];
-ChartsGrp.push({
-	name: 'Статистика',
-	key: 'stats',
-	fieldList: []
-});
-var StatID = 0;
+var fieldList = [];
+var file_head = 'stats';
 var dynamicChart;
 var GrpFinished = 0;
 // user's timezone offset
@@ -213,20 +217,15 @@ function createChart() {
 		series: []
 		//series: [{data:[[getChartDate("2013-06-16T00:32:40Z"),75]]}]      
 	};
-	// add all Channel data to the chart
-	for(var channelIndex = 0; channelIndex < ChartsGrp.length; channelIndex++) // iterate through each channel
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // add each field
 	{
-		if(!ChartsGrp[channelIndex].loaded) continue;
-		for(var fieldIndex = 0; fieldIndex < ChartsGrp[channelIndex].fieldList.length; fieldIndex++) // add each field
-		{
-			chartOptions.series.push({
-				data: ChartsGrp[channelIndex].fieldList[fieldIndex].data,
-				index: ChartsGrp[channelIndex].fieldList[fieldIndex].series,
-				yAxis: ChartsGrp[channelIndex].fieldList[fieldIndex].axis,
-				//visible:false,
-				name: ChartsGrp[channelIndex].fieldList[fieldIndex].name
-			});
-		}
+		chartOptions.series.push({
+			data: fieldList[fieldIndex].data,
+			index: fieldList[fieldIndex].series,
+			yAxis: fieldList[fieldIndex].axis,
+			//visible:false,
+			name: fieldList[fieldIndex].name
+		});
 	}
 	// set chart labels here so that decoding occurs properly
 	//chartOptions.title.text = data.channel.name;
@@ -234,16 +233,13 @@ function createChart() {
 	// draw the chart
 	dynamicChart = new Highcharts.StockChart(chartOptions);
 	// update series number to account for the navigator series (The historical series at the bottom) which is the first series.
-	for(var channelIndex = 0; channelIndex < ChartsGrp.length; channelIndex++) // iterate through each channel
+	if(!ChartsGrp[channelIndex].loaded) continue;
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // and each field
 	{
-		if(!ChartsGrp[channelIndex].loaded) continue;
-		for(var fieldIndex = 0; fieldIndex < ChartsGrp[channelIndex].fieldList.length; fieldIndex++) // and each field
+		for(var seriesIndex = 0; seriesIndex < dynamicChart.series.length; seriesIndex++) // compare each series name
 		{
-			for(var seriesIndex = 0; seriesIndex < dynamicChart.series.length; seriesIndex++) // compare each series name
-			{
-				if(dynamicChart.series[seriesIndex].name == ChartsGrp[channelIndex].fieldList[fieldIndex].name) {
-					ChartsGrp[channelIndex].fieldList[fieldIndex].series = seriesIndex;
-				}
+			if(dynamicChart.series[seriesIndex].name == fieldList[fieldIndex].name) {
+				fieldList[fieldIndex].series = seriesIndex;
 			}
 		}
 	}
@@ -277,46 +273,34 @@ var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 //  This is where the chart is generated.
 $(document).ready(function() {
 	//Add Channel Load Menu
-	var dt = new Date();
-	document.getElementById("EndDate").value = dt.toISOString().substring(0, 4);
-//	dt = new Date(dt.getTime()-365*24*60*60*1000);
-	document.getElementById("StartDate").value = dt.toISOString().substring(0, 4);
 	var menu = document.getElementById("GroupSelect");
-	for(var i = 0; i < ChartsGrp.length; i++) // iterate through each channel
-	{
-		var menuOption = new Option(ChartsGrp[i].name, i);
-		menu.options.add(menuOption, i);
-		var dh = $.get(urlhead + ChartsGrp[i].key + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... Axis = 'T' - temperature, 'P' - bar, 'W' - kWt
-			var arr = data.split(csv_delim);
-			for(var i = 0; i < arr.length; i++) {
-				ChartsGrp[StatID].fieldList.push({
-					field: i + 1,
-					axis: arr[i].substr(0, 1),
-					name: arr[i].substr(1),
-					data: []
-				});
-			}
-		}).fail(function() {
-			alert('Get ' + ChartsGrp[i].key + ' head failed!');
+	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... Axis = 'T' - temperature, 'P' - bar, 'W' - kWt
+		var arr = data.split(csv_delim);
+		for(var i = 0; i < arr.length; i++) {
+			fieldList.push({
+				field: i + 1,
+				axis: arr[i].substr(0, 1),
+				name: arr[i].substr(1),
+				data: []
+			});
+		}
+	}).fail(function() {
+		alert('Get header failed!');
+	});
+	$.when(dh).done(function() {
+		var seriesCounter = 0
+		for(var j = 0; j < fieldList.length; j++) fieldList[j].series = seriesCounter++;
+		$.when(loadChartsGroup()).done(function() {
+			createChart();
 		});
-		$.when(dh).done(function() {
-			var seriesCounter = 0
-			for(var i = 0; i < ChartsGrp.length; i++) {
-				for(var j = 0; j < ChartsGrp[i].fieldList.length; j++) ChartsGrp[i].fieldList[j].series = seriesCounter++;
-			}
-			for(var i = 0; i < ChartsGrp.length; i++) {
-				ChartsGrp[i].loaded = false;
-				$.when(loadChartsGroup(i)).done(function() {
-					if(++GrpFinished >= ChartsGrp.length) createChart(); 
-				});
-			}
-		});
-	}
+	});
 });
 
 // load chart with period: StartDate, EndDate
-function loadChartsGroup(ChartGroup) {
-	return $.get(urlhead + ChartsGrp[ChartGroup].key + "_" + document.getElementById("StartDate").value.replace(/-/g,'').substr(0, 4) + '.dat', function(data) {
+function loadChartsGroup() {
+	var els = document.getElementById("get_liststats").options;
+	if(els.length == 0) return;
+	return $.get(urlhead + file_head + "_" + els[els.selectedIndex].text + '.dat', function(data) {
 		var feeds = data.split(csv_line_delim);
 		for(var h = 0; h < feeds.length; h++) {
 			var arr = feeds[h].split(csv_delim);
@@ -324,10 +308,9 @@ function loadChartsGroup(ChartGroup) {
 			var dt = getChartDate(arr[0]);
 			for(var fi = 1; fi < arr.length; fi++) {
 				var p = [dt, parseFloat(arr[fi])];
-				if(!isNaN(p[1])) ChartsGrp[ChartGroup].fieldList[fi - 1].data.push(p);
+				if(!isNaN(p[1])) fieldList[fi - 1].data.push(p);
 			}
 		}
-		ChartsGrp[ChartGroup].loaded = true;
 	}).fail(function() {
 		alert('Get chart #' + ChartGroup + ' data failed!');
 	});
@@ -335,12 +318,12 @@ function loadChartsGroup(ChartGroup) {
 
 function loadSelected() {
 	ChartGroup = document.getElementById("GroupSelect").selectedIndex;
-	$.when(loadChartsGroup(ChartGroup)).done(function() {
-		for(var fieldIndex = 0; fieldIndex < ChartsGrp[ChartGroup].fieldList.length; fieldIndex++) {
-			ChartsGrp[ChartGroup].fieldList[fieldIndex].data.sort(function(a, b) {
+	$.when(loadChartsGroup()).done(function() {
+		for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
+			fieldList[fieldIndex].data.sort(function(a, b) {
 				return a[0] - b[0]
 			});
-			dynamicChart.series[ChartsGrp[ChartGroup].fieldList[fieldIndex].series].setData(ChartsGrp[ChartGroup].fieldList[fieldIndex].data, false);
+			dynamicChart.series[fieldList[fieldIndex].series].setData(fieldList[fieldIndex].data, false);
 		}
 		dynamicChart.redraw()
 	});
@@ -352,7 +335,7 @@ function loadSelected() {
  <div id="menu" class="menu"><script src="menu.js"></script></div>
  <div class="content">
 	<div id="BelowChart"> 
-		с <input id="StartDate" type="number" min="2018"> по <input id="EndDate" type="number" min="2018">  
+		Год: <select id="get_liststats"></select>
 		<button onclick="loadSelected();">Загрузить</button>
 		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>

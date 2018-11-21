@@ -98,7 +98,7 @@
 		<tr>
 			<td>Температура догрева бойлера (выкл. нагрев ТН и вкл. ТЭН бойлера) °C [0..60]</td>
 			<td nowrap>
-				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_RBOILER)');">
+				<input id="get_boiler-temp_rboiler" type="number" min="0" max="60" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_RBOILER)');">
 			</td>
 		</tr>
 		<tr>
@@ -107,23 +107,23 @@
 		</tr>                                                                                            
 		<tr>
 			<td>Целевая температура подачи °C [30..70]</td>
-			<td nowrap><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
+			<td nowrap><input id="get_boiler-boil_temp" type="number" min="30" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TEMP)');"></td>
 		</tr>
 		<tr>
-			<td>Постоянная интегрирования времени (сек.) [5..300]</td>
-			<td nowrap><input id="get_boiler-boil_time" type="number" min="5" max="300" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
+			<td>Постоянная интегрирования времени (сек.) [5..600]</td>
+			<td nowrap><input id="get_boiler-boil_time" type="number" min="5" max="600" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_TIME)');"></td>
 		</tr>
 		<tr>
-			<td>Пропорциональная составляющая [0..100]</td>
-			<td nowrap><input id="get_boiler-boil_pro" type="number" min="0" max="100" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_PRO)');"></td>
+			<td>Пропорциональная составляющая [0..50]</td>
+			<td nowrap><input id="get_boiler-boil_pro" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_PRO)');"></td>
 		</tr>
 		<tr>
-			<td>Интегральная составляющая [0..20]</td>
-			<td nowrap><input id="get_boiler-boil_in" type="number" min="0" max="20" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_IN)');"></td>
+			<td>Интегральная составляющая [0..50]</td>
+			<td nowrap><input id="get_boiler-boil_in" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_IN)');"></td>
 		</tr>
 		<tr>
-			<td>Дифференциальная составляющая [0..10]</td>
-			<td nowrap><input id="get_boiler-boil_dif" type="number" min="0" max="10" step="1" value="0"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_DIF)');"></td>
+			<td>Дифференциальная составляющая [0..50]</td>
+			<td nowrap><input id="get_boiler-boil_dif" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(BOIL_DIF)');"></td>
 		</tr>
 		<tr>
 			<td><b>Опции</b></td>
