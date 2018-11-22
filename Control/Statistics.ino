@@ -409,6 +409,49 @@ void Statistics::Update()
 //	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) journal.jprintf("%d=%d, ", i, Stats_data[i].value); journal.jprintf("\n");
 }
 
+// Возвращает файл с заголовками полей, flag: +Axis char
+void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
+{
+	strcat(ret, "Время;");
+	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		if(flag) {
+			switch(HistorySetup[i].object) {
+			case STATS_OBJ_Temp:
+			case STATS_OBJ_PressTemp:
+				strcat(ret, "T"); 			// ось температур
+				break;
+			case STATS_OBJ_Voltage:
+				strcat(ret, "V");	// ось напряжение
+				break;
+			case STATS_OBJ_Power:
+				strcat(ret, "W");	// ось мощность
+				break;
+			case STATS_OBJ_COP:
+				strcat(ret, "C");	// ось COP
+				break;
+			case STATS_OBJ_Compressor:
+				switch(HistorySetup[i].number) {
+				case OBJ_Freq:
+					strcat(ret, "H");
+					break;
+				}
+				break;
+			case STATS_OBJ_Flow:
+				strcat(ret, "F");	// ось частота
+				break;
+			case STATS_OBJ_EEV:
+				strcat(ret, "S");	// ось ЭРВ
+				break;
+			default: strcat(ret, "?");
+			}
+		}
+		strcat(ret, HistorySetup[i].name);
+	}
+	strcat(ret, "\n");
+}
+
+// Возвращает заголовок поля, flag: +Axis char
 void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 {
 	if(flag && Stats_data[i].type == STATS_TYPE_TIME) strcat(ret, "M"); // ось часы
@@ -453,22 +496,22 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 	}
 	switch(Stats_data[i].type) {
 	case STATS_TYPE_MIN:
-		strcat(ret, " - Мин");
+		strcat(ret, " (Мин)");
 		break;
 	case STATS_TYPE_MAX:
-		strcat(ret, " - Макс");
+		strcat(ret, " (Макс)");
 		break;
 	case STATS_TYPE_AVG:
-		strcat(ret, " - Сред");
+		strcat(ret, " (Сред)");
 		break;
 	}
 	if(Stats_data[i].when == STATS_WHEN_WORKD) strcat(ret, "(W)");
 }
 
-// Возвращает файл с заголовками полей
+// Возвращает файл с заголовками полей, flag: +Axis char
 void Statistics::StatsFileHeader(char *ret, uint8_t flag)
 {
-	if(!flag) strcat(ret, "Дата;");
+	strcat(ret, "Дата;");
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		if(i > 0) strcat(ret, ";");
 		StatsFieldHeader(ret, i, flag);
@@ -857,15 +900,4 @@ void Statistics::History()
 		}
 	} else HistoryCurrentPos += lensav - 1;
 	free(mbuf);
-}
-
-// Возвращает файл с заголовками полей
-void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
-{
-	if(!flag) strcat(ret, "Время;");
-	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
-		if(i > 0) strcat(ret, ";");
-		strcat(ret, HistorySetup[i].name);
-	}
-	strcat(ret, "\n");
 }
