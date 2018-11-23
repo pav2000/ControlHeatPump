@@ -1,20 +1,392 @@
-<html>
-<head>
-	<title>История. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
-	<script type="text/javascript">
-	</script>
+<!DOCTYPE html>
+<html><head>
+<meta content="text/html" charset="UTF-8" http-equiv="content-type">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script type="text/javascript" src="jquery.min.js"></script>
+<script src="highstock.js"></script>
+<script src="exporting.js"></script>
+<script src="export-csv.js"></script>
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+/**
+ * Grid-light theme for Highcharts JS
+ */
+Highcharts.theme = {
+	colors: ["#7cb5ec", "#f7a35c", "#90ee7e", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+	chart: {
+		backgroundColor: null,
+	},
+	title: {
+		style: {
+			fontSize: '16px',
+			fontWeight: 'bold',
+			textTransform: 'uppercase'
+		}
+	},
+	tooltip: {
+		borderWidth: 0,
+		backgroundColor: 'rgba(219,219,216,0.8)',
+		shadow: false
+	},
+	legend: {
+		itemStyle: {
+			fontWeight: 'bold',
+			fontSize: '13px'
+		}
+	},
+	xAxis: {
+		gridLineWidth: 1,
+		labels: {
+			style: {
+				fontSize: '10px'
+			}
+		}
+	},
+	yAxis: {
+		minorTickInterval: 'auto',
+		title: {
+			style: {
+				textTransform: 'uppercase'
+			}
+		},
+		labels: {
+			style: {
+				fontSize: '10px'
+			}
+		}
+	},
+	plotOptions: {
+		candlestick: {
+			lineColor: '#404048'
+		}
+	},
+	// General
+	background2: '#F0F0EA'
+};
+
+var file_head = 'hist';
+var preload_days = 14;
+var csv_line_delim = '\n';
+var csv_delim = ';';
+var fieldList = [];
+var dynamicChart;
+//var myOffset = new Date().getTimezoneOffset();
+var xAxisName;
+
+Highcharts.setOptions(Highcharts.theme);
+window.onload = function() {
+	init_chart();
+}
+
+function createChart() {
+	var chartOptions = {
+		chart: {
+			renderTo: 'chart-container',
+			zoomType: '',
+			events: {
+				load: function() {	}
+			}
+		},
+		rangeSelector: {
+			buttons: [{
+				count: 1,
+				type: 'hour',
+				text: '1ч'
+			}, {
+				count: 12,
+				type: 'hour',
+				text: '12ч'
+			}, {
+				count: 1,
+				type: 'day',
+				text: '1д'
+			}, {
+				count: 2,
+				type: 'day',
+				text: '2д'
+			}, {
+				count: 3,
+				type: 'day',
+				text: '3д'
+			}, {
+				count: 1,
+				type: 'week',
+				text: 'нед'
+			}, {
+				count: 2,
+				type: 'week',
+				text: '2нед'
+			}, {
+				count: 1,
+				type: 'month',
+				text: 'мес'
+			}, {
+				count: 1,
+				type: 'year',
+				text: 'год'
+			}, {
+				type: 'all',
+				text: 'все'
+			}],
+			inputEnabled: true,
+			selected: 1
+		},
+		title: {
+			text: ''
+		},
+		plotOptions: {
+			line: {
+				gapSize: 5
+				//color: '#d62020'
+				//  },
+				//  bar: {
+				//color: '#d52020'
+				//  },
+				//  column: {
+			},
+			series: {
+				marker: {
+					radius: 2
+				},
+				animation: true,
+				step: false,
+				turboThrehold: 1000,
+				borderWidth: 0
+			}
+		},
+		tooltip: {
+			valueDecimals: 1,
+			valueSuffix: '',
+			xDateFormat: '%d.%m.%Y<br/>%H:%M:%S'
+			// reformat the tooltips so that local times are displayed
+			//formatter: function() {
+			//var d = new Date(this.x + (myOffset*60000));
+			//var n = (this.point.name === undefined) ? '' : '<br/>' + this.point.name;
+			//return this.series.name + ':<b>' + this.y + '</b>' + n + '<br/>' + d.toDateString() + '<br/>' + d.toTimeString().replace(/\(.*\)/, "");
+			//}
+		},
+		xAxis: {
+			type: 'datetime',
+			ordinal: false,
+			dateTimeLabelFormats: {
+				hour: '%H',
+				minute: '%H:%M',
+			    day: '%e. %b',
+			    week: '%e. %b',
+			    month: '%b \'%y',
+			    year: '%Y'
+			},			
+			title: {
+				text: ''
+			}
+		},
+		yAxis: [{
+			title: {
+				text: '°C'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'T'
+		}, {
+			title: {
+				text: 'бар'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'P'
+		}, {
+			title: {
+				text: 'V'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'V'
+		}, {
+			title: {
+				text: 'кВт'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'W'
+		}, {
+			title: {
+				text: 'COP'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'C'
+		}, {
+			title: {
+				text: '%'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'R'
+		}, {
+			title: {
+				text: 'Гц'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'H'
+		}, {
+			title: {
+				text: 'Шаги'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'S'
+		}, {
+			title: {
+				text: 'м³ч'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'F'
+		}],
+		exporting: {
+			enabled: true,
+			csv: {
+//				decimalPoint: ',',
+				itemDelimiter: ';',
+				dateFormat: '%Y.%m.%d %H:%M:%S'
+			}
+		},
+		legend: {
+			enabled: true
+		},
+		navigator: {
+			baseSeries: 0, //select which series to show in history navigator, First series is 0
+			series: {
+				includeInCSVExport: false
+			}
+		},
+		series: []
+	};
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // add each field
+	{
+		chartOptions.series.push({
+			data: fieldList[fieldIndex].data,
+			index: fieldList[fieldIndex].series,
+			yAxis: fieldList[fieldIndex].axis,
+			//visible:false,
+			name: fieldList[fieldIndex].name
+		});
+	}
+	chartOptions.xAxis.title.text = xAxisName;
+	dynamicChart = new Highcharts.StockChart(chartOptions);
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // and each field
+	{
+		for(var seriesIndex = 0; seriesIndex < dynamicChart.series.length; seriesIndex++) // compare each series name
+		{
+			if(dynamicChart.series[seriesIndex].name == fieldList[fieldIndex].name) {
+				fieldList[fieldIndex].series = seriesIndex;
+			}
+		}
+	}
+}
+
+// converts date format from csv
+function getChartTime(d) {
+	// get the data using javascript's date object (year, month, day, hour, minute, second)
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), d.substring(8, 10), d.substring(10, 12), 0); //d.substring(12, 14)) - (myOffset * 60000);
+}
+function getChartDate(d) {
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), 0, 0, 0); // - (myOffset * 60000);
+}
+
+// Hide all series
+function HideAll() {
+	for(var index = 0; index < dynamicChart.series.length; index++)
+	{
+		if(dynamicChart.series[index].name == 'Navigator') continue;
+		dynamicChart.series[index].hide();
+	}
+}
+var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
+
+function get_period() {
+	return document.getElementById("StartDate").value.replace(/-/g,'') + '-' + document.getElementById("EndDate").value.replace(/-/g,'');
+}
+
+function init_chart() {
+	var dt = new Date();
+	document.getElementById("EndDate").value = dt.toISOString().substring(0, 10);
+	dt = new Date(dt.getTime()-preload_days*24*60*60*1000);
+	document.getElementById("StartDate").value = dt.toISOString().substring(0, 10);
+	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... 
+		var arr = data.split(csv_delim);
+		for(var i = 0; i < arr.length; i++) {
+			if(i == 0) {
+				xAxisName = arr[i];
+				continue;
+			}
+			fieldList.push({
+				field: i + 1,
+				axis: arr[i].substr(0, 1),
+				name: arr[i].substr(1),
+				data: []
+			});
+		}
+	}).fail(function() { alert('Get header failed!'); });
+	$.when(dh).done(function() {
+		var seriesCounter = 0
+		for(var j = 0; j < fieldList.length; j++) fieldList[j].series = seriesCounter++;
+		$.when(loadChartsGroup(get_period())).done(function() {	createChart(); });
+	});
+}
+
+// load chart with period
+function loadChartsGroup(period) {
+	return $.get(urlhead + file_head + '__' + period, function(data) {
+		var feeds = data.split(csv_line_delim);
+		for(var h = 0; h < feeds.length; h++) {
+			var arr = feeds[h].split(csv_delim);
+			if(arr.length == 0) continue;
+			var dt = getChartTime(arr[0]);
+			for(var fi = 1; fi < arr.length; fi++) {
+				var nf = Number(arr[fi]);
+				if(!isNaN(nf)) {
+					var ax = fieldList[fi - 1].axis;
+					if(ax == 'W') nf = nf / 1000; else nf = nf / 10;
+					fieldList[fi - 1].data.push([dt, nf]);
+				}
+			}
+		}
+	}).fail(function() {
+		alert('Get chart data ' + period + ' failed!');
+	});
+}
+
+function loadSelected() {
+	var dt = get_period();
+	if(dynamicChart.series.length && dynamicChart.series[0].xData.length && dt >= new Date(dynamicChart.series[0].xData[0]).getFullYear() && dt <= new Date(dynamicChart.series[0].xData[dynamicChart.series[0].xData.length-1]).getFullYear()) return;
+	$.when(loadChartsGroup(dt)).done(function() {
+		for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
+			fieldList[fieldIndex].data.sort(function(a, b) {
+				return a[0] - b[0];
+			});
+			dynamicChart.series[fieldList[fieldIndex].series].setData(fieldList[fieldIndex].data, false);
+		}
+		dynamicChart.redraw();
+	});
+}
+</script>
+<title>Статистика детально</title>
 </head>
-<body class="about">
-<div id="menu" class="menu"><script src="menu.js"></script></div>
-<div class="content">
-	<h1>История</h1>
-	<br>
-    <br>
-	В разработке...
-</div>
+<body style="background-color: white;">
+ <div>
+	<h2>Статистика детально</h2>
+	<div id="BelowChart"> 
+		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
+		<button onclick="loadSelected();">Загрузить</button>
+		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
+	</div>
+	<div id="chart-container" style="height: 600px"><br>
+	Идет загрузка...<br>
+	</div>
+	<div id="BelowChart" style="height: 500px"> 
+	</div>
+ </div>
 </body>
 </html>

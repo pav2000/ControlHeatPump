@@ -10,7 +10,6 @@
 <script type="text/javascript">
 /**
  * Grid-light theme for Highcharts JS
- * @author Torstein Honsi
  */
 Highcharts.theme = {
 	colors: ["#7cb5ec", "#f7a35c", "#90ee7e", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
@@ -64,7 +63,15 @@ Highcharts.theme = {
 	// General
 	background2: '#F0F0EA'
 };
-// Apply the theme
+
+var file_head = 'stats';
+var csv_line_delim = '\n';
+var csv_delim = ';';
+var fieldList = [];
+var dynamicChart;
+//var myOffset = new Date().getTimezoneOffset();
+var xAxisName;
+
 Highcharts.setOptions(Highcharts.theme);
 window.onload = function() {
 	loadParam("get_listStats");
@@ -76,21 +83,8 @@ function loadParam_after(paramid) {
 		init_chart();
 	}
 }
-var csv_line_delim = '\n';
-var csv_delim = ';';
-//fieldList shows which field you want to load, and which axis to display that field on, 
-//the 'T' Temperature left axis, or the 'O' Other right axis.
-var fieldList = [];
-var file_head = 'stats';
-var dynamicChart;
-var GrpFinished = 0;
-// user's timezone offset
-var myOffset = new Date().getTimezoneOffset();
-var xAxisName;
 
-// create the chart when all data is loaded
 function createChart() {
-	// specify the chart options
 	var chartOptions = {
 		chart: {
 			renderTo: 'chart-container',
@@ -103,23 +97,23 @@ function createChart() {
 			buttons: [{
 				count: 30,
 				type: 'minute',
-				text: '30M'
+				text: '30м'
 			}, {
 				count: 12,
 				type: 'hour',
-				text: '12Ч'
+				text: '12ч'
 			}, {
 				count: 1,
 				type: 'day',
-				text: '1Д'
+				text: '1д'
 			}, {
 				count: 2,
 				type: 'day',
-				text: '2Д'
+				text: '2д'
 			}, {
 				count: 3,
 				type: 'day',
-				text: '3Д'
+				text: '3д'
 			}, {
 				count: 1,
 				type: 'week',
@@ -134,7 +128,7 @@ function createChart() {
 				text: 'год'
 			}, {
 				type: 'all',
-				text: 'всё'
+				text: 'все'
 			}],
 			inputEnabled: true,
 			selected: 1
@@ -185,33 +179,33 @@ function createChart() {
 			    year: '%Y'
 			},			
 			title: {
-				text: 'Время'
+				text: ''
 			}
 		},
 		yAxis: [{
 			title: {
-				text: 'Температура, °C'
+				text: '°C'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'T'
 		}, {
 			title: {
-				text: 'Давление, бар.'
+				text: 'бар'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'P'
 		}, {
 			title: {
-				text: 'Напряжение, V'
+				text: 'V'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'Мощность, кВт'
+				text: 'кВт'
 			},
 			opposite: true,
 			showEmpty: false,
@@ -225,7 +219,7 @@ function createChart() {
 			id: 'C'
 		}, {
 			title: {
-				text: 'Моточасы, м'
+				text: 'минуты'
 			},
 			opposite: true,
 			showEmpty: false,
@@ -234,7 +228,9 @@ function createChart() {
 		exporting: {
 			enabled: true,
 			csv: {
-				dateFormat: '%Y-%m-%d %I:%M:%S %p'
+//				decimalPoint: ',',
+				itemDelimiter: ';',
+				dateFormat: '%Y.%m.%d %H:%M:%S'
 			}
 		},
 		legend: {
@@ -247,7 +243,6 @@ function createChart() {
 			}
 		},
 		series: []
-		//series: [{data:[[getChartDate("2013-06-16T00:32:40Z"),75]]}]      
 	};
 	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // add each field
 	{
@@ -259,12 +254,8 @@ function createChart() {
 			name: fieldList[fieldIndex].name
 		});
 	}
-	// set chart labels here so that decoding occurs properly
-	//chartOptions.title.text = data.channel.name;
 	chartOptions.xAxis.title.text = xAxisName;
-	// draw the chart
 	dynamicChart = new Highcharts.StockChart(chartOptions);
-	// update series number to account for the navigator series (The historical series at the bottom) which is the first series.
 	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // and each field
 	{
 		for(var seriesIndex = 0; seriesIndex < dynamicChart.series.length; seriesIndex++) // compare each series name
@@ -279,15 +270,15 @@ function createChart() {
 // converts date format from csv
 function getChartTime(d) {
 	// get the data using javascript's date object (year, month, day, hour, minute, second)
-	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), d.substring(8, 10), d.substring(10, 12), d.substring(12, 14)) - (myOffset * 60000);
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), d.substring(8, 10), d.substring(10, 12), 0); //d.substring(12, 14)) - (myOffset * 60000);
 }
 function getChartDate(d) {
-	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), 0, 0, 0) - (myOffset * 60000);
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), 0, 0, 0); // - (myOffset * 60000);
 }
 
-// Hide all series, via 'Hide All' button.  Then user can click on serries name in legent to show series of interest.      
+// Hide all series
 function HideAll() {
-	for(var index = 0; index < dynamicChart.series.length; index++) // iterate through each series
+	for(var index = 0; index < dynamicChart.series.length; index++)
 	{
 		if(dynamicChart.series[index].name == 'Navigator') continue;
 		dynamicChart.series[index].hide();
@@ -295,8 +286,13 @@ function HideAll() {
 }
 var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 
+function get_period() {
+	var els = document.getElementById("get_liststats").options;
+	return els.length ? els[els.selectedIndex].text : '';
+}
+
 function init_chart() {
-	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... Axis = 'T' - temperature, 'P' - bar, 'W' - kWt
+	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... 
 		var arr = data.split(csv_delim);
 		for(var i = 0; i < arr.length; i++) {
 			if(i == 0) {
@@ -314,8 +310,8 @@ function init_chart() {
 	$.when(dh).done(function() {
 		var seriesCounter = 0
 		for(var j = 0; j < fieldList.length; j++) fieldList[j].series = seriesCounter++;
-		var els = document.getElementById("get_liststats").options;
-		if(els.length) { $.when(loadChartsGroup(els[els.selectedIndex].text)).done(function() {	createChart(); });	}
+		var dt = get_period();
+		if(dt) { $.when(loadChartsGroup(dt)).done(function() {	createChart(); });	}
 	});
 }
 
@@ -338,8 +334,7 @@ function loadChartsGroup(period) {
 }
 
 function loadSelected() {
-	var els = document.getElementById("get_liststats").options;
-	var dt = Number(els[els.selectedIndex].text);
+	var dt = Number(get_period());
 	if(dynamicChart.series.length && dynamicChart.series[0].xData.length && dt >= new Date(dynamicChart.series[0].xData[0]).getFullYear() && dt <= new Date(dynamicChart.series[0].xData[dynamicChart.series[0].xData.length-1]).getFullYear()) return;
 	$.when(loadChartsGroup(dt)).done(function() {
 		for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {

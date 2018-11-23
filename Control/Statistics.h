@@ -38,6 +38,8 @@ const char format_datetime[] = "%04d%02d%02d%02d%02d";	// yyyymmddHHMM
 #define MAX_INT32_VALUE 			2147483647
 #define MIN_INT32_VALUE 			-2147483647
 
+#define WEB_SEND_FILE_PAUSE			10	// ms
+
 // what:
 #define ID_STATS 	0
 #define ID_HISTORY	1

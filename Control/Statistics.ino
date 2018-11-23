@@ -267,6 +267,7 @@ void Statistics::Init(uint8_t newyear)
 void Statistics::CheckCreateNewFile()
 {
 	uint8_t sem = 0;
+	if(!HP.get_fSD()) return;
 	if(NewYearFlag) {
 		if(!(sem = SemaphoreTake(xWebThreadSemaphore, 0))) return;
 		SaveHistory(1);
@@ -419,16 +420,19 @@ void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
 			switch(HistorySetup[i].object) {
 			case STATS_OBJ_Temp:
 			case STATS_OBJ_PressTemp:
-				strcat(ret, "T"); 			// ось температур
+				strcat(ret, "T"); 		// ось температур
+				break;
+			case STATS_OBJ_Press:
+				strcat(ret, "P"); 		// ось давлений
 				break;
 			case STATS_OBJ_Voltage:
-				strcat(ret, "V");	// ось напряжение
+				strcat(ret, "V");		// ось напряжение
 				break;
 			case STATS_OBJ_Power:
-				strcat(ret, "W");	// ось мощность
+				strcat(ret, "W");		// ось мощность
 				break;
 			case STATS_OBJ_COP:
-				strcat(ret, "C");	// ось COP
+				strcat(ret, "C");		// ось COP
 				break;
 			case STATS_OBJ_Compressor:
 				switch(HistorySetup[i].number) {
@@ -441,7 +445,18 @@ void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
 				strcat(ret, "F");	// ось частота
 				break;
 			case STATS_OBJ_EEV:
-				strcat(ret, "S");	// ось ЭРВ
+				switch(HistorySetup[i].number) {
+				case STATS_EEV_OverHeat:
+				case STATS_EEV_OverCool:
+					strcat(ret, "T"); 	// ось температур
+					break;
+				case STATS_EEV_Percent:
+					strcat(ret, "R");	// ось %
+					break;
+				case STATS_EEV_Steps:
+					strcat(ret, "S");	// ось шаги
+					break;
+				}
 				break;
 			default: strcat(ret, "?");
 			}
@@ -579,6 +594,7 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 {
 	SPI_switchSD();
 	if(!File->opens(filename, O_READ, &open_fname)) {
+		journal.jprintf("Error open %s\n", filename);
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
@@ -621,23 +637,24 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	}
 }
 
-// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd;\0"
+// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd\0"
 void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix, char *TimeStart, char *TimeEnd)
 {
-	uint32_t len = m_strlen((char*)_buffer_);
-	if(sendPacketRTOS(thread, _buffer_, len, 0) != len) {
-		journal.jprintf(" Error sendh %s\n", Prefix);
-		return;
-	}
-	strcpy((char*)_buffer_, Prefix);
-	strncat((char*)_buffer_, TimeStart, 4); // year
-	strcat((char*)_buffer_, stats_file_ext);
+	uint32_t bendfile = m_strlen((char*)_buffer_);
+	strcpy((char*)_buffer_ + bendfile + 1, Prefix);
+	strncat((char*)_buffer_+ bendfile + 1, TimeStart, 4); // year
+	strcat((char*)_buffer_ + bendfile + 1, stats_file_ext);
 	SPI_switchSD();
-	if(!File->opens((char*)_buffer_, O_READ, &open_fname)) {
+	if(!File->opens((char*)_buffer_ + bendfile + 1, O_READ, &open_fname)) {
+		journal.jprintf("Error open %s\n", _buffer_ + bendfile + 1);
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
-	uint32_t bst, bend, bendfile;
+	if(sendPacketRTOS(thread, _buffer_, bendfile, 0) != bendfile) {
+		journal.jprintf(" Error sendh %s\n", Prefix);
+		return;
+	}
+	uint32_t bst, bend;
 	if(!File->contiguousRange(&bst, &bend)) {
 		journal.jprintf(" Error get blocks %s\n", filename);
 		File->close();
@@ -647,7 +664,6 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	bendfile = bend;
 	uint8_t findst = 0;
 	while(bst <= bend) {
-		WDT_Restart(WDT);
 		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
 //		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
@@ -700,6 +716,7 @@ xGoDown:	if(cur == bst) { // low limit
 	}
 //	journal.printf("ST: %d, END: %d\n", bst, bendfile);
 	uint32_t readed = 0;
+	uint16_t packcnt = 0;
 	for(uint32_t i = bst; i <= bendfile; i++) {
 		SPI_switchSD();
 		if(i == CurrentBlock) {
@@ -728,6 +745,15 @@ xGoDown:	if(cur == bst) { // low limit
 		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
 			break;
+		}
+		if(++packcnt == 50) { // 100kb send
+			packcnt = 0;
+			SemaphoreGive(xWebThreadSemaphore);
+			_delay(WEB_SEND_FILE_PAUSE);
+			if(SemaphoreTake(xWebThreadSemaphore, W5200_TIME_WAIT) !=pdPASS) {
+				journal.jprintf("Cant take SEM while sending file!\n");
+				return;
+			}
 		}
 		readed = 0;
 	}
@@ -832,31 +858,31 @@ void Statistics::History()
 		*buf++ = ';';
 		switch(HistorySetup[i].object) {
 		case STATS_OBJ_Temp:		// C
-			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 10, &buf, 0);
+			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_Press:		// bar
-			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 10, &buf, 0);
+			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 10, &buf, 0); // P
 			break;
 		case STATS_OBJ_PressTemp:	// C
-			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0);
+			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_Flow:		// m3h
-			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 100, &buf, 0);
+			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 100, &buf, 0); // F
 			break;
 #ifdef EEV_DEF
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
 			case STATS_EEV_Percent:
-				int_to_dec_str(HP.dEEV.get_EEV_percent(), 10, &buf, 0);
+				int_to_dec_str(HP.dEEV.get_EEV_percent(), 10, &buf, 0); // R
 				break;
 			 case STATS_EEV_Steps:
-			    int_to_dec_str(HP.dEEV.get_EEV(), 1, &buf, 0);
+			    int_to_dec_str(HP.dEEV.get_EEV()*10, 1, &buf, 0); // S
 			    break;
 			case STATS_EEV_OverHeat:
-				int_to_dec_str(HP.dEEV.get_Overheat(), 10, &buf, 0);
+				int_to_dec_str(HP.dEEV.get_Overheat(), 10, &buf, 0); // T
 				break;
 			case STATS_EEV_OverCool:
-				int_to_dec_str(HP.get_overcool(), 10, &buf, 0);
+				int_to_dec_str(HP.get_overcool(), 10, &buf, 0); // T
 				break;
 			}
 			break;
@@ -864,7 +890,7 @@ void Statistics::History()
 		case STATS_OBJ_Compressor:
 //			switch(HistorySetup[i].number) {
 //			case OBJ_Freq:
-				int_to_dec_str(HP.dFC.get_frequency(), 10, &buf, 0);
+				int_to_dec_str(HP.dFC.get_frequency(), 10, &buf, 0); // H
 //				break;
 //			}
 			break;
@@ -879,7 +905,7 @@ void Statistics::History()
 			}
 			break;
 		case STATS_OBJ_COP:
-			int_to_dec_str(HP.fullCOP, 1, &buf, 0);
+			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C
 			break;
 		}
 		if(buf > mbuf + HISTORY_MAX_RECORD_LEN - HISTORY_MAX_FIELD_LEN) {

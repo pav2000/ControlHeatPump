@@ -275,7 +275,7 @@ public:
 
   // Движение ЭРВ
   __attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
-  int16_t  get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / _data.maxSteps : 0; } //  % открытия ЭРВ
+  int16_t get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / _data.maxSteps : 0; } //  % открытия ЭРВ, сотые
   int8_t  set_EEV(int x);                                // Перейти на позицию абсолютную  возвращает код ошибки
   int8_t  set_zero();                                    // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
 
