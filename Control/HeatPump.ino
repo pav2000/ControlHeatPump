@@ -1396,7 +1396,7 @@ boolean HeatPump::switchBoiler(boolean b)
     #ifdef RPUMPBH
 		dRelay[RPUMPBH].set_OFF();    // ГВС по любому надо выключить
 	#endif
-    if ((Status.modWork!=pOFF)&&(get_modeHouse()!=pOFF)) // Если не пауза И отопление/охлаждение дома НЕ выключено то надо включаться
+    if ((Status.modWork!=pOFF)&&(get_modeHouse()!=pOFF)&&(get_State()!=pSTOPING_HP)) // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
     {
 		dRelay[RPUMPO].set_ON();     // файнкойлы
 		Pump_HeatFloor(true);
@@ -1450,7 +1450,7 @@ void HeatPump::Pump_HeatFloor(boolean On)
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
 	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
-	if(b == old) return;                                                        // менять нечего выходим
+	if(b == old) return;                       // менять нечего выходим
 
 #ifdef DELAY_BEFORE_STOP_IN_PUMP                                // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if((!b) && (old)) {
