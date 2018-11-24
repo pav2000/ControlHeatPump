@@ -3441,6 +3441,6 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	if(abs(errorPid) < pid.errKp) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.errKp; // В близи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
-	if(newVal > 32767) newVal = 32767; else if(newVal < 32767) newVal = -32767; // фикс переполнения
+	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
 }
