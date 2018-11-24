@@ -68,18 +68,18 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating;
 				b = CurrentBlock = BlockStart;
 				memset(stats_buffer, 0, SD_BLOCK);
 			}
-			for(; b <= (what ? HistoryBlockEnd : BlockEnd); b++) {
+			for(; b <= (what ? HistoryBlockEnd : BlockEnd);) {
 				WDT_Restart(WDT);
-				if((b & 0x7FF) == 0) {
+				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
+					Error("empty", what);
+					goto xError;
+				}
+				if(((++b) & 0x7FF) == 0) {
 					journal.jprintf("."); // каждый 1Мб
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
 						return OK;
 					}
-				}
-				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
-					Error("empty", what);
-					goto xError;
 				}
 			}
 			if(what) HistoryBlockCreating = 0;

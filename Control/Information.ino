@@ -922,6 +922,10 @@ int32_t Profile::load(int8_t num)
   if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2f for salmonella\n",(float)(HP.sTemp[TBOILER].get_maxTemp()/100.0));} 
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
+  // Обнуляем ПИД errKp
+  Heat.pid.errKp = 0;
+  Cool.pid.errKp = 0;
+  Boiler.pid.errKp = 0;
   return adr;
  }
 

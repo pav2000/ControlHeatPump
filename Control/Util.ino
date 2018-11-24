@@ -51,7 +51,7 @@ uint8_t calc_bits_in_mask(uint32_t mask)
 		bits += mask & 1;
 		mask >>= 1;
 	}
-	return mask;
+	return bits;
 }
 
 // разбор строки побайтно ОШИБКИ ПЛОХО не ловит!
