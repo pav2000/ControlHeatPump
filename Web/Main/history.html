@@ -65,7 +65,7 @@ Highcharts.theme = {
 };
 
 var file_head = 'hist';
-var preload_days = 14;
+var preload_days = 3;
 var csv_line_delim = '\n';
 var csv_delim = ';';
 var fieldList = [];
@@ -348,7 +348,7 @@ function loadChartsGroup(period) {
 				var nf = Number(arr[fi]);
 				if(!isNaN(nf)) {
 					var ax = fieldList[fi - 1].axis;
-					if(ax == 'W') nf = nf / 1000; else nf = nf / 10;
+					if(ax == 'W') nf = nf / 1000; else if(ax == 'C') nf = nf / 100; else nf = nf / 10;
 					fieldList[fi - 1].data.push([dt, nf]);
 				}
 			}

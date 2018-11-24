@@ -900,7 +900,7 @@ void Statistics::History()
 				int_to_dec_str(HP.power220, 1, &buf, 0);  // W
 				break;
 			case OBJ_powerCO:
-				int_to_dec_str(HP.powerCO, 100, &buf, 0); // W*100
+				int_to_dec_str(HP.powerCO, 1, &buf, 0); // W
 				break;
 			}
 			break;
