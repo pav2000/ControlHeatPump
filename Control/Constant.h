@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.974 beta"        // Версия прошивки
+#define VERSION         "0.976 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -271,7 +271,7 @@ const uint16_t  defaultPort=80;
 #define HEAT_CAPACITY     4174           // теплоемкость жидкости в конутре по дефолту при 30 градусах [Cp, Дж/(кг·град)]
 
 //----------------------- WEB ----------------------------
-const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nContent-Type: ";
+const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: ";
 const char WEB_HEADER_TEXT_ATTACH[] 	= "text/plain\r\nContent-Disposition: attachment; filename=\"";
 const char WEB_HEADER_BIN_ATTACH[] 		= "application/x-binary\r\nContent-Disposition: attachment; filename=\"";
 const char WEB_HEADER_TXT_KEEP[] 		= "text/html\r\nConnection: keep-alive";
@@ -1244,6 +1244,20 @@ enum RULE_HP
     pPID,             // алгоритм использование ПИД регулятора
     pHYBRID,          // алгоритм смешаный алгоритм, предложил  Ljutik
     pEND1             // Обязательно должен быть последним, добавляем ПЕРЕД!!!
+};
+
+struct PID_STRUCT {   		// Настройки ПИД регулятора
+	  uint16_t time;        // Постоянная интегрирования времени в секундах (в функции не используется, но лучше хранить в одном месте все настройки ПИДа)
+	  int16_t Kp;           // ПИД Коэф пропорц.  В СОТЫХ!!!
+	  int16_t Ki;           // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+	  int16_t Kd;           // ПИД Коэф дифф.   В СОТЫХ!!!
+	  int16_t errKp;        // Разница (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, актулаьно для ЭРВ
+};
+
+struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
+	int32_t temp_int;		// сумма для интегрирования
+	int16_t pre_errPID;		// предыдущая ошибка для диференцирования
+	int16_t maxStep;		// максимальный шаг изменения интегральной составляющей в СОТЫХ
 };
 
 #endif

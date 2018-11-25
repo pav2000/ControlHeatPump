@@ -43,6 +43,17 @@ IPAddress BytesToIPAddress(byte *ip)
   b[0]=ip[0]; b[1]=ip[1]; b[2]=ip[2]; b[3]=ip[3];
   return b; 
 }
+
+uint8_t calc_bits_in_mask(uint32_t mask)
+{
+	uint8_t bits = 0;
+	while(mask) {
+		bits += mask & 1;
+		mask >>= 1;
+	}
+	return bits;
+}
+
 // разбор строки побайтно ОШИБКИ ПЛОХО не ловит!
 //  для IP          const char* ipStr = "50.100.150.200"; byte ip[4]; parseBytes(ipStr, '.', ip, 4, 10);
 //  для mac address const char* macStr = "90-A2-AF-DA-14-11"; byte mac[6]; parseBytes(macStr, '-', mac, 6, 16);
@@ -906,7 +917,7 @@ int16_t rd(float num, int16_t mul)
 void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 {
 	*ret += m_itoa(value / div, *ret, 10, 0);
-	if(div > 1) {
+	if(div > 1 && maxfract) {
 		value = abs(value) % div;
 		if(value == 0) return;
 		**ret = '.';
@@ -914,4 +925,15 @@ void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 		*ret += maxfract;
 		**ret = '\0'; // max after dot
 	}
+}
+
+// округление к ближайшему целому, div: 10 / 100 / 1000 / 10000
+int16_t round_div_int16(int16_t value, int16_t div)
+{
+	if(value >= 0) {
+		if(value % div >= div / 2) value += div / 2;
+	} else {
+		if(value % div <= -div / 2) value -= div / 2;
+	}
+	return value / div;
 }

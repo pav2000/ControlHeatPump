@@ -22,15 +22,23 @@
 #include "Constant.h"
 
 //#define STATS_DO_NOT_SAVE
+const char format_date[] = "%04d%02d%02d";  			// yyyymmdd
+#define format_date_size 8
+const char format_datetime[] = "%04d%02d%02d%02d%02d";	// yyyymmddHHMM
+#define format_datetime_size 12
+
 #define SD_BLOCK					512
-#define STATS_MAX_RECORD_LEN		(15 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
+#define STATS_MAX_RECORD_LEN		(format_date_size + 1 + sizeof(Stats_data) / sizeof(Stats_data[0]) * 8)
 #define STATS_MAX_FILE_SIZE(days)	((STATS_MAX_RECORD_LEN * days / SD_BLOCK + 1) * SD_BLOCK)
 
-#define HISTORY_MAX_RECORD_LEN		(15 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * 8)
+#define HISTORY_MAX_FIELD_LEN		6
+#define HISTORY_MAX_RECORD_LEN		(format_datetime_size + 1 + sizeof(HistorySetup) / sizeof(HistorySetup[0]) * HISTORY_MAX_FIELD_LEN)
 #define HISTORY_MAX_FILE_SIZE(days)	((HISTORY_MAX_RECORD_LEN * 1440 * days / SD_BLOCK + 1) * SD_BLOCK)
 
 #define MAX_INT32_VALUE 			2147483647
 #define MIN_INT32_VALUE 			-2147483647
+
+#define WEB_SEND_FILE_PAUSE			10	// ms
 
 // what:
 #define ID_STATS 	0
@@ -99,6 +107,7 @@ uint8_t history_buffer[SD_BLOCK];
 class Statistics
 {
 public:
+	Statistics() { NewYearFlag = 0; }
 	void	Init(uint8_t newyear = 0);
 	void	Update();										// Обновить статистику, раз в период
 	void	UpdateEnergy();									// Обновить энергию и COP, вызывается часто
@@ -126,6 +135,7 @@ private:
 	uint8_t	 day;
 	uint8_t	 month;
 	uint16_t year;
+	uint8_t  NewYearFlag;
 	uint32_t BlockStart;
 	uint32_t BlockEnd;
 	uint32_t CurrentBlock;

@@ -21,10 +21,8 @@
 #include "SdFat.h"
 
 #define temp_initbuf Socket[0].outBuf
-const char format_date[] = "%04d%02d%02d";
-const char format_datetime[] = "%04d%02d%02d%02d%02d%02d";
-#define format_date_size 8
 char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
+static fname_t open_fname;
 
 // what: 0 - Stats, 1 - History, Return: OK or Error
 int8_t Statistics::CreateOpenFile(uint8_t what)
@@ -45,7 +43,7 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 	strcat(filename, stats_file_ext);
 	journal.jprintf(" File: %s ", filename);
 	SPI_switchSD();
-	if(!StatsFile.open(filename, O_READ)) {
+	if(!StatsFile.opens(filename, O_READ, &open_fname)) {
 		uint16_t days = month == 1 ? 366 : (12 - month + 1) * 31;
 		if(!StatsFile.createContiguous(filename, what ? HISTORY_MAX_FILE_SIZE(days) : STATS_MAX_FILE_SIZE(days))) {
 			Error("create", what);
@@ -70,18 +68,18 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating;
 				b = CurrentBlock = BlockStart;
 				memset(stats_buffer, 0, SD_BLOCK);
 			}
-			for(; b <= (what ? HistoryBlockEnd : BlockEnd); b++) {
+			for(; b <= (what ? HistoryBlockEnd : BlockEnd);) {
 				WDT_Restart(WDT);
-				if((b & 0x7FF) == 0) {
+				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
+					Error("empty", what);
+					goto xError;
+				}
+				if(((++b) & 0x7FF) == 0) {
 					journal.jprintf("."); // каждый 1Мб
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
 						return OK;
 					}
-				}
-				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
-					Error("empty", what);
-					goto xError;
 				}
 			}
 			if(what) HistoryBlockCreating = 0;
@@ -269,9 +267,31 @@ void Statistics::Init(uint8_t newyear)
 void Statistics::CheckCreateNewFile()
 {
 	uint8_t sem = 0;
-	if(year == 0) {
+	if(!HP.get_fSD()) return;
+	if(NewYearFlag) {
 		if(!(sem = SemaphoreTake(xWebThreadSemaphore, 0))) return;
+		SaveHistory(1);
+		// Truncate stats
+		strcpy(filename, stats_file_start);
+		_itoa(year, filename);
+		strcat(filename, stats_file_ext);
+		SPI_switchSD();
+		if(!StatsFile.opens(filename, O_RDWR, &open_fname)) Error("open", ID_STATS);
+		else {
+			if(!StatsFile.truncate((CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos)) Error("truncate", ID_STATS);
+			StatsFile.close();
+		}
+		// Truncate history
+		strcpy(filename, history_file_start);
+		_itoa(year, filename);
+		strcat(filename, stats_file_ext);
+		if(!StatsFile.opens(filename, O_RDWR, &open_fname)) Error("open", ID_HISTORY);
+		else {
+			if(!StatsFile.truncate((HistoryCurrentBlock - HistoryBlockStart) * SD_BLOCK + HistoryCurrentPos)) Error("truncate", ID_HISTORY);
+			StatsFile.close();
+		}
 		Init(1);
+		NewYearFlag = 0;
 	}
 	if(GETBIT(HP.Option.flags, fHistory) && (HistoryCurrentBlock == 0 || HistoryBlockCreating != 0)) { // Init History
 		if(!sem && !(sem = SemaphoreTake(xWebThreadSemaphore, 0))) return;
@@ -308,13 +328,13 @@ void Statistics::Reset()
 // Обновить статистику, вызывается часто, раз в TIME_READ_SENSOR
 void Statistics::Update()
 {
-	if(year == 0 || HP.get_testMode() != NORMAL) return; // waiting to switch a next year
+	if(NewYearFlag || HP.get_testMode() != NORMAL) return; // waiting to switch a next year
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	if(rtcSAM3X8.get_days() != day) {
 		if(SaveStats(2) == OK) {
 			Reset();
-			if(year != rtcSAM3X8.get_years()) year = 0; // waiting to switch a next year
+			if(year != rtcSAM3X8.get_years()) NewYearFlag = 1; // waiting to switch a next year
 		}
 	}
 	int32_t newval = 0;
@@ -390,6 +410,63 @@ void Statistics::Update()
 //	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) journal.jprintf("%d=%d, ", i, Stats_data[i].value); journal.jprintf("\n");
 }
 
+// Возвращает файл с заголовками полей, flag: +Axis char
+void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
+{
+	strcat(ret, "Время;");
+	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
+		if(i > 0) strcat(ret, ";");
+		if(flag) {
+			switch(HistorySetup[i].object) {
+			case STATS_OBJ_Temp:
+			case STATS_OBJ_PressTemp:
+				strcat(ret, "T"); 		// ось температур
+				break;
+			case STATS_OBJ_Press:
+				strcat(ret, "P"); 		// ось давлений
+				break;
+			case STATS_OBJ_Voltage:
+				strcat(ret, "V");		// ось напряжение
+				break;
+			case STATS_OBJ_Power:
+				strcat(ret, "W");		// ось мощность
+				break;
+			case STATS_OBJ_COP:
+				strcat(ret, "C");		// ось COP
+				break;
+			case STATS_OBJ_Compressor:
+				switch(HistorySetup[i].number) {
+				case OBJ_Freq:
+					strcat(ret, "H");
+					break;
+				}
+				break;
+			case STATS_OBJ_Flow:
+				strcat(ret, "F");	// ось частота
+				break;
+			case STATS_OBJ_EEV:
+				switch(HistorySetup[i].number) {
+				case STATS_EEV_OverHeat:
+				case STATS_EEV_OverCool:
+					strcat(ret, "T"); 	// ось температур
+					break;
+				case STATS_EEV_Percent:
+					strcat(ret, "R");	// ось %
+					break;
+				case STATS_EEV_Steps:
+					strcat(ret, "S");	// ось шаги
+					break;
+				}
+				break;
+			default: strcat(ret, "?");
+			}
+		}
+		strcat(ret, HistorySetup[i].name);
+	}
+	strcat(ret, "\n");
+}
+
+// Возвращает заголовок поля, flag: +Axis char
 void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 {
 	if(flag && Stats_data[i].type == STATS_TYPE_TIME) strcat(ret, "M"); // ось часы
@@ -434,22 +511,22 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 	}
 	switch(Stats_data[i].type) {
 	case STATS_TYPE_MIN:
-		strcat(ret, " - Мин");
+		strcat(ret, " (Мин)");
 		break;
 	case STATS_TYPE_MAX:
-		strcat(ret, " - Макс");
+		strcat(ret, " (Макс)");
 		break;
 	case STATS_TYPE_AVG:
-		strcat(ret, " - Сред");
+		strcat(ret, " (Сред)");
 		break;
 	}
 	if(Stats_data[i].when == STATS_WHEN_WORKD) strcat(ret, "(W)");
 }
 
-// Возвращает файл с заголовками полей
+// Возвращает файл с заголовками полей, flag: +Axis char
 void Statistics::StatsFileHeader(char *ret, uint8_t flag)
 {
-	if(!flag) strcat(ret, "Дата;");
+	strcat(ret, "Дата;");
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		if(i > 0) strcat(ret, ";");
 		StatsFieldHeader(ret, i, flag);
@@ -512,13 +589,12 @@ void Statistics::StatsWebTable(char *ret)
 
 #define _buffer_ ((uint8_t*)Socket[thread].outBuf)
 
-static fname_t open_fname;
-
 // Return: OK, 1 - not found, >2 - error. Network is active
 void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 {
 	SPI_switchSD();
 	if(!File->opens(filename, O_READ, &open_fname)) {
+		journal.jprintf("Error open %s\n", filename);
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
@@ -561,23 +637,24 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	}
 }
 
-// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd;\0"
+// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd\0"
 void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix, char *TimeStart, char *TimeEnd)
 {
-	uint32_t len = m_strlen((char*)_buffer_);
-	if(sendPacketRTOS(thread, _buffer_, len, 0) != len) {
-		journal.jprintf(" Error sendh %s\n", Prefix);
-		return;
-	}
-	strcpy((char*)_buffer_, Prefix);
-	strncat((char*)_buffer_, TimeStart, 4); // year
-	strcat((char*)_buffer_, stats_file_ext);
+	uint32_t bendfile = m_strlen((char*)_buffer_);
+	strcpy((char*)_buffer_ + bendfile + 1, Prefix);
+	strncat((char*)_buffer_+ bendfile + 1, TimeStart, 4); // year
+	strcat((char*)_buffer_ + bendfile + 1, stats_file_ext);
 	SPI_switchSD();
-	if(!File->opens((char*)_buffer_, O_READ, &open_fname)) {
+	if(!File->opens((char*)_buffer_ + bendfile + 1, O_READ, &open_fname)) {
+		journal.jprintf("Error open %s\n", _buffer_ + bendfile + 1);
 		sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
 		return;
 	}
-	uint32_t bst, bend, bendfile;
+	if(sendPacketRTOS(thread, _buffer_, bendfile, 0) != bendfile) {
+		journal.jprintf(" Error sendh %s\n", Prefix);
+		return;
+	}
+	uint32_t bst, bend;
 	if(!File->contiguousRange(&bst, &bend)) {
 		journal.jprintf(" Error get blocks %s\n", filename);
 		File->close();
@@ -587,7 +664,6 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	bendfile = bend;
 	uint8_t findst = 0;
 	while(bst <= bend) {
-		WDT_Restart(WDT);
 		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
 //		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
@@ -640,6 +716,7 @@ xGoDown:	if(cur == bst) { // low limit
 	}
 //	journal.printf("ST: %d, END: %d\n", bst, bendfile);
 	uint32_t readed = 0;
+	uint16_t packcnt = 0;
 	for(uint32_t i = bst; i <= bendfile; i++) {
 		SPI_switchSD();
 		if(i == CurrentBlock) {
@@ -668,6 +745,15 @@ xGoDown:	if(cur == bst) { // low limit
 		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
 			break;
+		}
+		if(++packcnt == 50) { // 100kb send
+			packcnt = 0;
+			SemaphoreGive(xWebThreadSemaphore);
+			_delay(WEB_SEND_FILE_PAUSE);
+			if(SemaphoreTake(xWebThreadSemaphore, W5200_TIME_WAIT) !=pdPASS) {
+				journal.jprintf("Cant take SEM while sending file!\n");
+				return;
+			}
 		}
 		readed = 0;
 	}
@@ -772,31 +858,31 @@ void Statistics::History()
 		*buf++ = ';';
 		switch(HistorySetup[i].object) {
 		case STATS_OBJ_Temp:		// C
-			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 100, &buf, 1);
+			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_Press:		// bar
-			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 100, &buf, 1);
+			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 10, &buf, 0); // P
 			break;
 		case STATS_OBJ_PressTemp:	// C
-			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 100, &buf, 1);
+			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_Flow:		// m3h
-			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 1000, &buf, 1);
+			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 100, &buf, 0); // F
 			break;
 #ifdef EEV_DEF
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
 			case STATS_EEV_Percent:
-				int_to_dec_str(HP.dEEV.get_EEV_percent(), 100, &buf, 1);
+				int_to_dec_str(HP.dEEV.get_EEV_percent(), 10, &buf, 0); // R
 				break;
 			 case STATS_EEV_Steps:
-			    int_to_dec_str(HP.dEEV.get_EEV(), 1, &buf, 1);
+			    int_to_dec_str(HP.dEEV.get_EEV()*10, 1, &buf, 0); // S
 			    break;
 			case STATS_EEV_OverHeat:
-				int_to_dec_str(HP.dEEV.get_Overheat(), 100, &buf, 1);
+				int_to_dec_str(HP.dEEV.get_Overheat(), 10, &buf, 0); // T
 				break;
 			case STATS_EEV_OverCool:
-				int_to_dec_str(HP.get_overcool(), 100, &buf, 1);
+				int_to_dec_str(HP.get_overcool(), 10, &buf, 0); // T
 				break;
 			}
 			break;
@@ -804,25 +890,25 @@ void Statistics::History()
 		case STATS_OBJ_Compressor:
 //			switch(HistorySetup[i].number) {
 //			case OBJ_Freq:
-				int_to_dec_str(HP.dFC.get_frequency(), 100, &buf, 1);
+				int_to_dec_str(HP.dFC.get_frequency(), 10, &buf, 0); // H
 //				break;
 //			}
 			break;
 		case STATS_OBJ_Power:
 			switch(HistorySetup[i].number) {
 			case OBJ_power220:
-				int_to_dec_str(HP.power220, 1000, &buf, 3);
+				int_to_dec_str(HP.power220, 1, &buf, 0);  // W
 				break;
 			case OBJ_powerCO:
-				int_to_dec_str(HP.powerCO, 1000, &buf, 1);
+				int_to_dec_str(HP.powerCO, 1, &buf, 0); // W
 				break;
 			}
 			break;
 		case STATS_OBJ_COP:
-			int_to_dec_str(HP.fullCOP, 1000, &buf, 3);
+			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C
 			break;
 		}
-		if(buf > mbuf + HISTORY_MAX_RECORD_LEN - 8) {
+		if(buf > mbuf + HISTORY_MAX_RECORD_LEN - HISTORY_MAX_FIELD_LEN) {
 			journal.jprintf("%s memory overflow(%d): %d, max: %d\n", "History", i, buf - mbuf, HISTORY_MAX_RECORD_LEN);
 			break;
 		}
@@ -840,15 +926,4 @@ void Statistics::History()
 		}
 	} else HistoryCurrentPos += lensav - 1;
 	free(mbuf);
-}
-
-// Возвращает файл с заголовками полей
-void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
-{
-	if(!flag) strcat(ret, "Время;");
-	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
-		if(i > 0) strcat(ret, ";");
-		strcat(ret, HistorySetup[i].name);
-	}
-	strcat(ret, "\n");
 }

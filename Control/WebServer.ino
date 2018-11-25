@@ -251,7 +251,7 @@ void readFileSD(char *filename, uint8_t thread)
 	    	*str = '\0';
 	    	Stats.SendFileDataByPeriod(thread, &webFile, filename, filename + sizeof(history_file_start), str + 1);
 	    } else {
-			n = strncmp(filename + sizeof(history_file_start)-1, stats_file_header, sizeof(history_file_start)-1) == 0;
+			n = strncmp(filename + sizeof(history_file_start)-1, stats_file_header, sizeof(stats_file_header)-1) == 0;
 			if((str = strstr(filename, stats_csv_file_ext)) != NULL) { // формат csv - нужен заголовок
 				Stats.HistoryFileHeader(Socket[thread].outBuf, n);
 				strcpy(str, stats_file_ext);

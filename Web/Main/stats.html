@@ -64,8 +64,7 @@ Highcharts.theme = {
 	background2: '#F0F0EA'
 };
 
-var file_head = 'hist';
-var preload_days = 3;
+var file_head = 'stats';
 var csv_line_delim = '\n';
 var csv_delim = ';';
 var fieldList = [];
@@ -75,7 +74,14 @@ var xAxisName;
 
 Highcharts.setOptions(Highcharts.theme);
 window.onload = function() {
-	init_chart();
+	loadParam("get_listStats");
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("_listStats")!=-1) {
+		var els = document.getElementById('get_liststats').options;
+		for(var i = 0; i < els.length; i++) els[i].text = els[i].text.replace(/[^\d]/g,'');
+		init_chart();
+	}
 }
 
 function createChart() {
@@ -89,9 +95,9 @@ function createChart() {
 		},
 		rangeSelector: {
 			buttons: [{
-				count: 1,
-				type: 'hour',
-				text: '1ч'
+				count: 30,
+				type: 'minute',
+				text: '30м'
 			}, {
 				count: 12,
 				type: 'hour',
@@ -112,10 +118,6 @@ function createChart() {
 				count: 1,
 				type: 'week',
 				text: 'нед'
-			}, {
-				count: 2,
-				type: 'week',
-				text: '2нед'
 			}, {
 				count: 1,
 				type: 'month',
@@ -217,32 +219,11 @@ function createChart() {
 			id: 'C'
 		}, {
 			title: {
-				text: '%'
+				text: 'минуты'
 			},
 			opposite: true,
 			showEmpty: false,
-			id: 'R'
-		}, {
-			title: {
-				text: 'Гц'
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'H'
-		}, {
-			title: {
-				text: 'Шаги'
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'S'
-		}, {
-			title: {
-				text: 'м³ч'
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'F'
+			id: 'M'
 		}],
 		exporting: {
 			enabled: true,
@@ -306,14 +287,11 @@ function HideAll() {
 var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 
 function get_period() {
-	return document.getElementById("StartDate").value.replace(/-/g,'') + '-' + document.getElementById("EndDate").value.replace(/-/g,'');
+	var els = document.getElementById("get_liststats").options;
+	return els.length ? els[els.selectedIndex].text : '';
 }
 
 function init_chart() {
-	var dt = new Date();
-	document.getElementById("EndDate").value = dt.toISOString().substring(0, 10);
-	dt = new Date(dt.getTime()-preload_days*24*60*60*1000);
-	document.getElementById("StartDate").value = dt.toISOString().substring(0, 10);
 	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... 
 		var arr = data.split(csv_delim);
 		for(var i = 0; i < arr.length; i++) {
@@ -332,25 +310,22 @@ function init_chart() {
 	$.when(dh).done(function() {
 		var seriesCounter = 0
 		for(var j = 0; j < fieldList.length; j++) fieldList[j].series = seriesCounter++;
-		$.when(loadChartsGroup(get_period())).done(function() {	createChart(); });
+		var dt = get_period();
+		if(dt) { $.when(loadChartsGroup(dt)).done(function() {	createChart(); });	}
 	});
 }
 
 // load chart with period
 function loadChartsGroup(period) {
-	return $.get(urlhead + file_head + '__' + period, function(data) {
+	return $.get(urlhead + file_head + "_" + period + '.dat', function(data) {
 		var feeds = data.split(csv_line_delim);
 		for(var h = 0; h < feeds.length; h++) {
 			var arr = feeds[h].split(csv_delim);
 			if(arr.length == 0) continue;
-			var dt = getChartTime(arr[0]);
+			var dt = getChartDate(arr[0]);
 			for(var fi = 1; fi < arr.length; fi++) {
-				var nf = Number(arr[fi]);
-				if(!isNaN(nf)) {
-					var ax = fieldList[fi - 1].axis;
-					if(ax == 'W') nf = nf / 1000; else if(ax == 'C') nf = nf / 100; else nf = nf / 10;
-					fieldList[fi - 1].data.push([dt, nf]);
-				}
+				var p = [dt, parseFloat(arr[fi])];
+				if(!isNaN(p[1])) fieldList[fi - 1].data.push(p);
 			}
 		}
 	}).fail(function() {
@@ -359,7 +334,7 @@ function loadChartsGroup(period) {
 }
 
 function loadSelected() {
-	var dt = get_period();
+	var dt = Number(get_period());
 	if(dynamicChart.series.length && dynamicChart.series[0].xData.length && dt >= new Date(dynamicChart.series[0].xData[0]).getFullYear() && dt <= new Date(dynamicChart.series[0].xData[dynamicChart.series[0].xData.length-1]).getFullYear()) return;
 	$.when(loadChartsGroup(dt)).done(function() {
 		for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
@@ -372,13 +347,13 @@ function loadSelected() {
 	});
 }
 </script>
-<title>Статистика детально</title>
+<title>Статистика по дням</title>
 </head>
 <body style="background-color: white;">
  <div>
-	<h2>Статистика детально</h2>
+	<h2>Статистика по дням</h2>
 	<div id="BelowChart"> 
-		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
+		Год: <select id="get_liststats"></select>
 		<button onclick="loadSelected();">Загрузить</button>
 		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>
