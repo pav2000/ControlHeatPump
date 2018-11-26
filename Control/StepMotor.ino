@@ -206,8 +206,7 @@ void StepMotor::stepOne(int thisStep)
       break;
    }
 #else 
-       journal.jprintf(" $Error EVI_PHASE constant!\n"); 
-       
+      #error "Wrong EVI_PHASE constant!"
 #endif    
  // Serial.print("thisStep ");   Serial.println(thisStep);    
 }

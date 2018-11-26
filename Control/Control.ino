@@ -516,8 +516,8 @@ if (xTaskCreate(vReadSensor,"ReadSensor",200,NULL,4,&HP.xHandleReadSensor)==errC
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",70,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*70; // 100, 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
@@ -1269,10 +1269,11 @@ void vUpdateEEV(void *)
 }
 #endif
 
-// Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
+// Задача обеспечения движения шаговика EEV
 void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
+  // Размер стека не позволяет использовать внутри jprintf.* !!!
 	static int16_t cmd = 0;
 	static int16_t steps_left = 0, step_number = 0, start_pos = 0, pos = 0;
 	static boolean direction = true;
@@ -1323,7 +1324,10 @@ void vUpdateStepperEEV(void *)
 				HP.dEEV.EEV--;
 			}
 			steps_left--;                                                      // уменьшить счетчик шагов
-			if((step_number < 0) && (!HP.dEEV.setZero)) journal.jprintf(" EEV: step_number = %d\n", step_number);
+			if((step_number < 0) && (!HP.dEEV.setZero)) {
+				HP.dEEV.set_error(ERR_MIN_EEV);
+				break;
+			}
 #if EEV_PHASE==PHASE_4  // 4 фазы движения
 			HP.dEEV.stepperEEV.stepOne(abs(step_number % 4));                  // Сделать один шаг //
 #else                     // остальные варианты  8 фаз движения
