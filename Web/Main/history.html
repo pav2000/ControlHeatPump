@@ -371,6 +371,14 @@ function loadSelected() {
 		dynamicChart.redraw();
 	});
 }
+
+function clearChart() {
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
+		fieldList[fieldIndex].data.splice(0,fieldList[fieldIndex].data.length);
+		dynamicChart.series[fieldList[fieldIndex].series].setData(fieldList[fieldIndex].data, false);
+	}
+	dynamicChart.redraw();
+}
 </script>
 <title>Статистика детально</title>
 </head>
@@ -380,6 +388,7 @@ function loadSelected() {
 	<div id="BelowChart"> 
 		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
 		<button onclick="loadSelected();">Загрузить</button>
+		<button onclick="clearChart();">Очистить</button>
 		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>
 	<div id="chart-container" style="height: 600px"><br>

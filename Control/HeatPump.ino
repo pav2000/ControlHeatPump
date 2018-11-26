@@ -3110,9 +3110,9 @@ char *HeatPump::StateToStr()
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
 			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Пауза Нагр";          // 1 Включить отопление
-			case  pCOOL:   return (char*)"Пауза Охл.";          // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Пауза ГВС";           // 3 Включить бойлер
+			case  pHEAT:   return (char*)"Ожид. Нагр";          // 1 Включить отопление
+			case  pCOOL:   return (char*)"Ожид. Охл.";          // 2 Включить охлаждение
+			case  pBOILER: return (char*)"Ожид. ГВС";           // 3 Включить бойлер
 			}
 			return (char*)strRusPause;
 		} else {
@@ -3145,9 +3145,9 @@ char *HeatPump::StateToStrEN()
 	case pWORK_HP:                                               // 3 Работает
 		if(!is_compressor_on()) {
 			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Pause Heat";          // 1 Включить отопление
-			case  pCOOL:   return (char*)"Pause Cool";          // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Pause Boiler";        // 3 Включить бойлер
+			case  pHEAT:   return (char*)"Wait Heat";          // 1 Включить отопление
+			case  pCOOL:   return (char*)"Wait Cool";          // 2 Включить охлаждение
+			case  pBOILER: return (char*)"Wait Boiler";        // 3 Включить бойлер
 			}
 			return (char*)strRusPause;
 		} else {
