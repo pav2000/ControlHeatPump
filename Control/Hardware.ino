@@ -594,8 +594,8 @@ void devEEV::initEEV()
  #endif 
   if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
   SETBIT0(_data.flags,fCorrectOverHeat);              // Включен режим корректировки перегрева
-  SETBIT0(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
-  SETBIT1(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
+  SETBIT1(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+  SETBIT0(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
   SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
   SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 
@@ -664,28 +664,34 @@ void devEEV::Resume(uint16_t pos)
  
 // Запустить ЭРВ - возвращает ок или код ошибки
 // На стартовую позицию не выводит
- int8_t devEEV::Start()
- {
-   Resume(_data.StartPos);
- //  EEV=0;
-   err=OK;                               // Ошибок нет
-   if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
-   if ((!GETBIT(_data.flags,fOneSeekZero))||(GETBIT(_data.flags,fOneSeekZero)&&(EEV<0))) { // есть вариант однократного поиска "0" ЭРВ
-   journal.jprintf(" EEV set zero\n"); 
-   set_zero(); }                          // установить 0
-    
- //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
- //  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
-  return OK;                  
- }
- // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
-int8_t devEEV::set_zero()    
+int8_t devEEV::Start()
 {
-setZero=true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
-EEV=-1;   
-if (testMode!=SAFE_TEST) stepperEEV.step(-EEV_STEPS-40);  // не  SAFE_TEST - работаем
-else EEV=0;                                               // SAFE_TEST только координаты меняем
-return OK;
+	Resume(_data.StartPos);
+	//  EEV=0;
+	err = OK;                               // Ошибок нет
+	if(!GETBIT(_data.flags, fPresent)) {
+		journal.jprintf(" EEV is not available\n");
+		return err;
+	}  // если ЭРВ нет то ничего не делаем
+	if((!GETBIT(_data.flags, fOneSeekZero)) || (GETBIT(_data.flags,fOneSeekZero) && (EEV < 0))) { // есть вариант однократного поиска "0" ЭРВ
+		set_zero();
+	}                          // установить 0
+
+	//  journal.jprintf(" EEV set StartPos: %d\n",StartPos);
+	//  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
+	return OK;
+}
+// Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
+int8_t devEEV::set_zero()
+{
+	if(!setZero) {
+		journal.jprintf(" EEV: Set zero\n");
+		setZero = true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
+		EEV = -1;
+		if(testMode != SAFE_TEST) stepperEEV.step(-EEV_STEPS - 40);  // не  SAFE_TEST - работаем
+		else EEV = 0;                                               // SAFE_TEST только координаты меняем
+	}
+	return OK;
 }
 
  // Перейти на позицию абсолютную возвращает код ошибки

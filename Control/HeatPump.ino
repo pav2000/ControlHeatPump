@@ -1564,8 +1564,8 @@ int8_t HeatPump::StartResume(boolean start)
 	// Дана команда старт - но возможно надо переходить в ожидание
 	// Определяем что делать
 	int8_t profile = HP.Schdlr.calc_active_profile();
-	if((profile != SCHDLR_NotActive)&&(start))  // распиание активно и дана команда
-		if (profile == SCHDLR_Profile_off)
+	if((profile != SCHDLR_NotActive)&&(start)) { // расписание активно и дана команда
+		if(profile == SCHDLR_Profile_off)
 		{
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
@@ -1574,7 +1574,12 @@ int8_t HeatPump::StartResume(boolean start)
 			journal.jprintf(" Start task vUpdate\n");
 			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			return error;
+		} else if(profile != HP.Prof.get_idProfile()) {
+			HP.Prof.load(profile);
+			HP.set_profile();
+			journal.jprintf("Profile changed to #%d\n", profile);
 		}
+	}
 	if (startWait)
 	{
 		startWait=false;

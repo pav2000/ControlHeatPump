@@ -2596,7 +2596,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
 		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
 
-			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n",);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
+			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
 			journal.jprintf("Start upload, format SPI disk ");
 			SerialFlash.eraseAll();
