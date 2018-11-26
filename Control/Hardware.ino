@@ -1499,7 +1499,7 @@ err=OK;
               HP.dRelay[RCOMP].set_OFF();            // ПЛОХО через глобальную переменную
                vTaskDelay(1000/ portTICK_PERIOD_MS); // задержка на прохождение команды
                state=read_0x03_16(MX2_STATE);        // 0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током 7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]
-              if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
+ /*             if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
               	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
                   _delay(100);
               	 err=write_0x05_bit(MX2_START, false);   // дубль подать команду ход/стоп через модбас
@@ -1507,7 +1507,7 @@ err=OK;
               	 err=ERR_FC_RCOMP;
                  set_Error(err,(char*)name);             // Подъем ошибки на верх и останов ТН
               	 journal.jprintf("$ERROR: it is not possible to stop the inverter via RCOMP, the inverter is blocked\n"); 
-              	}
+              	} */
       /*         for(i=0;i<FC_NUM_READ;i++)  // установить целевую частоту в 0
 		            {
 		              err=write_0x10_32(MX2_TARGET_FR,0);

@@ -1381,7 +1381,11 @@ void vServiceHP(void *)
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
-				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+				#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
+ 				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+                #else
+ 				if(++task_updstat_chars >= HP.get_tChart() && HP.get_State()!=pOFF_HP) { // пришло время и ТН включен
+                #endif 					
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
 				}
