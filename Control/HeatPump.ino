@@ -1587,7 +1587,7 @@ int8_t HeatPump::StartResume(boolean start)
 		if ((get_State()==pWORK_HP)||(get_State()==pSTOPING_HP)||(get_State()==pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf(pP_DATE,"  Start . . .\n");
 		eraseError();                                      // Обнулить ошибку
-		//lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
+		//lastEEV=-1;                                      // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  не было)
 	}
 	else
 	{
@@ -1680,14 +1680,18 @@ int8_t HeatPump::StartResume(boolean start)
 	journal.jprintf(" Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
 	Status.modWork = mod;  // Установка режима!
 
+  //  set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке для проверки EEV
+
 	// 5. Конфигурируем ТН -----------------------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 
-	while(check_compressor_pause(Status.modWork)) _delay(10*1000);
-	configHP(Status.modWork);  // Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
+   	// 6. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
+	if (!start)  // Команда Resume
+	      while(check_compressor_pause(Status.modWork)) { _delay(100*1000); if (get_State()!=pSTARTING_HP) return error;    }    // Могли нажать кнопку стоп, выход из процесса запуска
+	
+	//  7. Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
+	configHP(Status.modWork);  
 
-	// 7. Дополнительнеая проверка перед пуском компрессора ----------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;           // Могли нажать кнопку стоп, выход из процесса запуска
 	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 	if(is_next_command_stop()) return error;			    // следующая команда останов, выходим

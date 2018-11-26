@@ -26,8 +26,8 @@ class StepMotor {
    void  initStepMotor(int number_of_steps, int motor_pin_1, int motor_pin_2,int motor_pin_3, int motor_pin_4); // Иницилизация
    void setSpeed(long whatSpeed);                                                                               // Установка скорости шагов в секунду
    void step(int number_of_steps);                                                                              // Движение 
-   boolean isBuzy()  {return buzy;}                                                                             // True если мотор шагает
-   void offBuzy()    {buzy=false;}                                                                              // Установка признака - мотор остановлен                                                                      
+   inline boolean isBuzy()  {return buzy;}                                                                      // True если мотор шагает
+   inline void offBuzy()    {buzy=false;}                                                                       // Установка признака - мотор остановлен                                                                      
    void off();                                                                                                  // выключить двигатель
    TaskHandle_t xHandleStepperEEV;                                                                              // Заголовок задачи шаговый двигатель двигается 
    QueueHandle_t xCommandQueue;                                                                                 // очередь комманд на управление двигателем
