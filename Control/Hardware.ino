@@ -549,7 +549,7 @@ const char *nameEEV = {"EEV"} ;  //  Имя
 void devEEV::initEEV()
 {
   EEV=-1;                               // шаговик в непонятном положении
-  setZero=true;                         // Признакнеобходимости обнуления счетчика шагов EEV
+  setZero=false;                        // Признак процесса обнуления (шаговик ищет 0)
   err=OK;                               // Ошибок нет
   Pid_start=_data.StartPos;             // Откуда стартует ПИД
   Resume(_data.StartPos);               // Обнулить рабочие переменные

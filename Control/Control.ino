@@ -1336,9 +1336,9 @@ void vUpdateStepperEEV(void *)
          vTaskDelay(HP.dEEV.stepperEEV.step_delay/portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
       }
          
-      vTaskDelay(500/portTICK_PERIOD_MS);               // -!            // пауза  0.5 секунда ОБЯЗАТЕЛЬНО, иначе не сбрасывается isBuzy() НЕПОНЯТНО
+  //    vTaskDelay(500/portTICK_PERIOD_MS);               // -!            // пауза  0.5 секунда ОБЯЗАТЕЛЬНО, иначе не сбрасывается isBuzy() НЕПОНЯТНО
       
-      if (HP.dEEV.setZero) {HP.dEEV.setZero=false; HP.dEEV.EEV=0; step_number=0;}  // если стоит признак установки нуля, обнулить и сбросить признак
+      if (HP.dEEV.setZero) { HP.dEEV.EEV=0; step_number=0;HP.dEEV.setZero=false;}  // если стоит признак установки нуля, обнулить и сбросить признак
    //   Serial.print("4. EEV=");   Serial.print(HP.dEEV.EEV); Serial.print("  step_number=");   Serial.println(step_number);  
         
       // 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
@@ -1361,7 +1361,7 @@ void vUpdateStepperEEV(void *)
 void vUpdateCommand(void *)
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
 	for(;;) {
-		HP.runCommand();                          // Выполнение команд управления ТН
+		HP.runCommand();       // Выполнение команд управления ТН
 		vTaskSuspend(NULL);    // Команды выполнены, остановить задачу vUpdateCommand, пуск осуществляется при посылке команды
 	}
 	vTaskDelete( NULL);

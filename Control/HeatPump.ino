@@ -1680,6 +1680,8 @@ int8_t HeatPump::StartResume(boolean start)
 	journal.jprintf(" Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
 	Status.modWork = mod;  // Установка режима!
 
+  //  set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке для проверки EEV
+
 	// 5. Конфигурируем ТН -----------------------------------------------------------------------
 	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 
