@@ -342,7 +342,7 @@ function loadChartsGroup(period) {
 		var feeds = data.split(csv_line_delim);
 		for(var h = 0; h < feeds.length; h++) {
 			var arr = feeds[h].split(csv_delim);
-			if(arr.length == 0) continue;
+			if(arr.length <= 1) continue;
 			var dt = getChartTime(arr[0]);
 			for(var fi = 1; fi < arr.length; fi++) {
 				var nf = Number(arr[fi]);

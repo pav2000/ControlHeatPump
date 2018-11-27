@@ -663,6 +663,7 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	File->close();
 	uint32_t bst = bstfile, bend = bendfile;
 	uint8_t findst = 0;
+	char *pos = NULL;
 	while(bst <= bend) {
 		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
@@ -675,7 +676,6 @@ xReadBlock:
 			Error("read f", ID_HISTORY);
 			return;
 		}
-		char *pos;
 		if(*_buffer_) {
 			pos = (char*)memchr(_buffer_, '\n', SD_BLOCK);
 			if(pos == NULL) return;  // garbage
@@ -683,12 +683,12 @@ xReadBlock:
 			{
 				int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
 				if(cmp >= 0) {
-					//journal.printf("found %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
+					//journal.printf("found %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
 					findst = 1;
 					if(cmp > 0) {
 						if(cur == bst) {
 							if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) return; // greater - not found
-							goto xSend;
+							goto xNext;
 						}
 						goto xGoDown;
 					}
@@ -698,15 +698,18 @@ xReadBlock:
 					}
 				}
 			}
-xSend:		bst = cur + 1;
-			if(findst) { // found
-				//journal.printf("Send %d, %d\n", cur, (uint8_t*)pos - _buffer_);
-				if(sendPacketRTOS(thread, (uint8_t*)pos, SD_BLOCK - ((uint8_t*)pos - _buffer_), 0) == 0) {
-					journal.jprintf(" Error send %s\n", filename);
-					return;
-				}
+			bst = cur;
+xNext:		if(findst) { // found
+				//journal.printf("Found at %d - %d\n", cur, (uint8_t*)pos - _buffer_);
+				memmove(_buffer_, pos, bend = SD_BLOCK - ((uint8_t*)pos - _buffer_));
 				break;
+//				if(sendPacketRTOS(thread, (uint8_t*)pos, SD_BLOCK - ((uint8_t*)pos - _buffer_), 0) == 0) {
+//					journal.jprintf(" Error send %s\n", filename);
+//					return;
+//				}
+//				break;
 			}
+			bst++;
 			if(bst > bend) {
 				if(bend < bendfile) bend++;
 				else { // file overflow
@@ -719,44 +722,55 @@ xGoDown:	if(cur == bst) { // low limit
 				//journal.printf("Low\n");
 				if(!findst) return; // not found
 				if(bst == bstfile) pos = (char*)_buffer_;
-				pos = (char*)memchr(_buffer_, '\n', SD_BLOCK-1);
-				if(pos == NULL) return;
-				pos++;
-				goto xSend;
+				else {
+					pos = (char*)memchr(_buffer_, '\n', SD_BLOCK-1);
+					if(pos == NULL) return;
+					pos++;
+				}
+				goto xNext;
 			} else bend = cur - 1;
 		}
 	}
 	//journal.printf("ST: %d, END: %d\n", bst, bendfile);
 	uint32_t readed = 0;
 	uint16_t packcnt = 0;
-	for(uint32_t i = bst; i <= bendfile; i++) {
+	if(pos) {
+		pos = (char*)memchr(_buffer_, 0, bend);
+		readed = pos ? pos - (char*)_buffer_ : bend;
+		pos = (char*)_buffer_;
+		goto xFoundStart;
+	}
+	for(; bst <= bendfile; bst++) {
 		SPI_switchSD();
-		if(i == CurrentBlock) {
+		if(bst == CurrentBlock) {
 			memcpy(_buffer_ + readed, stats_buffer, SD_BLOCK);
-		} else if(i == HistoryCurrentBlock) {
+		} else if(bst == HistoryCurrentBlock) {
 			memcpy(_buffer_ + readed, history_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(i, _buffer_ + readed)) {
+		} else if(!card.card()->readBlock(bst, _buffer_ + readed)) {
 			Error("read data", ID_HISTORY);
 			break;
 		}
 		if(_buffer_[readed + SD_BLOCK - 1] == 0) {  // end of data
 			if(_buffer_[readed] == 0) break;
-			readed = (uint8_t*)memchr(_buffer_ + readed, 0, SD_BLOCK) - _buffer_;
+			pos = (char*)memchr(_buffer_ + readed, 0, SD_BLOCK);
 			bendfile = 0;
+			pos = (char*)memchr(_buffer_ + readed, '\n', (uint8_t*)pos - _buffer_);
+			if(*(pos + 1) == '\0') pos = NULL; else readed = (uint8_t*)pos - _buffer_;
 		} else {
-			char *pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
-			readed += SD_BLOCK;
-			if(pos) {
-				if(strncmp(pos + 1, TimeEnd, m_strlen(TimeEnd)) > 0) {
-					//journal.printf("end %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], pos[10], TimeEnd );
-					readed = (uint8_t*)pos - _buffer_ + 1;
-					bendfile = 0; // stop
-				} else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
-			} else bendfile = 0;
+			pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
+			if(*(pos + 1) == '\0') pos = NULL; else readed += SD_BLOCK;
 		}
+		if(pos++) {
+xFoundStart:
+			if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) {
+				//journal.printf("end %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeEnd );
+				readed = (uint8_t*)pos - _buffer_;
+				bendfile = 0; // stop
+			} else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
+		} else bendfile = 0;
 		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
-			break;
+			return;
 		}
 		if(++packcnt == 50) { // 100kb send
 			packcnt = 0;
@@ -769,7 +783,11 @@ xGoDown:	if(cur == bst) { // low limit
 		}
 		readed = 0;
 	}
-	//journal.printf("ok\n");
+	if(readed) {
+		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
+			journal.jprintf(" Error send %s\n", filename);
+		}
+	}
 }
 
 // Записать статистику на SD, 0 - только записать, 1 - только записать c веба, 2 - новый день
@@ -865,7 +883,7 @@ void Statistics::History()
 		Error("memory low", ID_HISTORY);
 	}
 	char *buf = mbuf;
-	buf += m_snprintf(buf, 20, format_datetime, year, month, day, rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
+	buf += m_snprintf(buf, 20, format_datetime, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes());
 	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
 		*buf++ = ';';
 		switch(HistorySetup[i].object) {

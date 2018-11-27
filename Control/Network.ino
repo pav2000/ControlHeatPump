@@ -137,7 +137,7 @@ boolean initW5200(boolean flag)
 	boolean EthernetOK = true;   // флаг успешности инициализации
 	pinMode(PIN_ETH_INT, INPUT);
 	pinMode(PIN_ETH_RES, OUTPUT);
-
+	if(flag) journal.jprintf("Network setup:");
 	if(!resetWiznet(false))  // 1. Сброс и проверка провода (молча)
 	{
 #ifdef W5500_LOG_FULL_INFO
@@ -201,7 +201,7 @@ boolean initW5200(boolean flag)
 	} else {
 		if(HP.get_DHCP()) // Работаем по DHCP
 		{
-			journal.jprintf("Configure Ethernet using DHCP: ");
+			journal.jprintf(" Try DHCP: ");
 			WDT_Restart(WDT);
 			if(Ethernet.begin((uint8_t*) HP.get_mac()) == 0) {
 				journal.jprintf("Failed!\n");

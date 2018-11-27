@@ -2955,7 +2955,6 @@ int8_t HeatPump::runCommand()
 			PauseStart = 1;									// Запустить выполнение отложенного старта
 			break;
 		case pNETWORK:
-			journal.jprintf("Update network setting: ");
 			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
 			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
