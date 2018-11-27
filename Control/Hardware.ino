@@ -817,44 +817,9 @@ int8_t devEEV::Update(void) //boolean fHeating)
   case TRTOOUT_TEVAIN:
   case TEVAOUT_PEVA:
   case TRTOOUT_PEVA:
-    {// ПИД регулятор для двух режимов
-     // Уравнение ПИД регулятора в конечных разностях.
-     // Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-     // u(t) = P (t) + I (t) + D (t);
-     // P (t) = Kp * e (t);
-     // I (t) = I (t — 1) + Ki * e (t);
-     // D (t) = Kd * {e (t) — e (t — 1)};
-     // T – период дискретизации(период, с которым вызывается ПИД регулятор).
-/*
-    // использование флоат, работатет
-         _data.pid.errPID=((float)(Overheat-_data.pid.target))/100.0;                // Текущая ошибка, переводим в градусы (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
-         if (_data.pid.Ki>0)                                                  // Расчет интегральной составляющей
-         {
-          _data.pid.temp_int=_data.pid.temp_int+((float)_data.pid.Ki*_data.pid.errPID)/100.0;               // Интегральная составляющая, с накоплением делить на 100
-          // Ограничение диапзона изменения 20 шагов за один шаг ПИД
-          #define EEV_MAX_STEP  5
-          if (_data.pid.temp_int>EEV_MAX_STEP)  _data.pid.temp_int=EEV_MAX_STEP; 
-          if (_data.pid.temp_int<-1.0*EEV_MAX_STEP)  _data.pid.temp_int=-1.0*EEV_MAX_STEP; 
-         }
-         else _data.pid.temp_int=0;                                           // если Кi равен 0 то интегрирование не используем
-         u_int=_data.pid.temp_int;
-        
-         // Дифференцальная составляющая
-         u_dif=((float)_data.pid.Kd*(_data.pid.errPID-_data.pid.pre_errPID))/100.0;  // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-         
-         // Пропорциональная составляющая
-         u_pro=(float)_data.pid.Kp*_data.pid.errPID/100.0;
-         if (abs(_data.pid.errPID)<(_data.pid.errKp/100.0)) u_pro=(abs((_data.pid.errPID*100.0)/_data.pid.errKp))*u_pro;            // В близи уменьшить воздействие
-         
-         // Общее воздействие
-         u=u_pro+u_int+u_dif;
-
-         newEEV=round(u)+EEV;                             // Округление и добавление предудущего значения
-         _data.pid.pre_errPID=_data.pid.errPID;           // запомнить предыдущую ошибку
-*/
+    {
        #define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
        newEEV = EEV + round_div_int16(updatePID(Overheat-_data.tOverheat, _data.pid, pidw), 100);     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-    
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
          if (newEEV<_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ

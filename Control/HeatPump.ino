@@ -1923,7 +1923,7 @@ MODE_HP HeatPump::get_Work()
 }
 // Управление температурой в зависимости от режима
 #define STR_REDUCED "Reduced FC"   // Экономим место
-#define STR_FREQUENCY " FC> %.2f\n"            // Экономим место
+#define STR_FREQUENCY " FC> %.2f\n" // Экономим место
 // Итерация по управлению Бойлером
 // возврат что надо делать компрессору, функция НЕ управляет компрессором а только выдает необходимость включения компрессора
 MODE_COMP  HeatPump::UpdateBoiler()
@@ -1954,7 +1954,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	// Сброс излишней энергии в систему отопления
 	// Переключаем 3-х ходовой на отопление на ходу и ждем определенное число минут дальше перекидываем на бойлер
 
-	if(GETBIT(Prof.Boiler.flags,fResetHeat))                   // Стоит требуемая опция - Сброс тепла в СО
+	if(GETBIT(Prof.Boiler.flags,fResetHeat))    // Стоит требуемая опция - Сброс тепла в СО
 	{
 		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
 		if ((FEED>Prof.Boiler.tempIn-100)||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-500))
@@ -2067,31 +2067,6 @@ MODE_COMP  HeatPump::UpdateBoiler()
 //		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
 		int16_t newFC = dFC.get_freqFC() + updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw_boiler);  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 #endif	
-/*		
-		// Расчет отдельных компонент
-		if (Prof.Boiler.pid.Ki>0)                                                                        // Расчет интегральной составляющей
-		{
-			temp_int=temp_int+((float)Prof.Boiler.pid.Ki*errPIDBoiler)/100.0;                               // Интегральная составляющая, с накоплением делить на 10
-#define BOILER_MAX_STEP  2                                                                  // Ограничение диапзона изменения 2 герц за один шаг ПИД
-			if (temp_int>BOILER_MAX_STEP)  temp_int=BOILER_MAX_STEP;
-			if (temp_int<-1.0*BOILER_MAX_STEP)  temp_int=-1.0*BOILER_MAX_STEP;
-		}
-		else temp_int=0;                                                                             // если Кi равен 0 то интегрирование не используем
-		u_int=temp_int;
-
-		// Дифференцальная составляющая
-		u_dif=((float)Prof.Boiler.pid.Kd*(errPIDBoiler-pre_errPIDBoiler))/10.0;                          // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-
-		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Boiler.pid.Kp*errPIDBoiler/10.0;
-
-		// Общее воздействие
-		u=u_pro+u_int+u_dif;
-		if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
-
-		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
-		pre_errPIDBoiler=errPIDBoiler;                                                               // Сохранние ошибки, теперь это прошлая ошибка                                                                           // запомнить предыдущую ошибку
-*/
 
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
@@ -2099,7 +2074,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
 		if (dFC.get_targetFreq()<newFC)                                                                                     // Идет увеличение частоты проверяем подход к границам
 		{
-			if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempIn-dFC.get_dtTempBoiler())*dFC.get_PidStop()/100))                                                 {Status.ret=pBp17; return pCOMP_NONE;}   // Подача ограничение
+//			if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempIn-dFC.get_dtTempBoiler())*dFC.get_PidStop()/100))                                                 {Status.ret=pBp17; return pCOMP_NONE;}   // Подача ограничение
 			if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER_BOILER*dFC.get_PidStop()/100)))                                                            {Status.ret=pBp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT_BOILER*dFC.get_PidStop()/100)))                                                        {Status.ret=pBp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                      {Status.ret=pBp20; return pCOMP_NONE;}   // температура компрессора
@@ -2225,34 +2200,6 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
 
-/*
-
-		errPID=((float)(targetRealPID-FEED))/100.0;                                                  // Текущая ошибка, переводим в градусы
-		// Расчет отдельных компонент
-		if (Prof.Heat.pid.Ki>0)                                                                           // Расчет интегральной составляющей
-		{
-			temp_int=temp_int+((float)Prof.Heat.pid.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
-#define HEAT_MAX_STEP  5                                                                                 // Ограничение диапзона изменения 5 герц за один шаг ПИД
-			if (temp_int>HEAT_MAX_STEP)  temp_int=HEAT_MAX_STEP;
-			if (temp_int<-1.0*HEAT_MAX_STEP)  temp_int=-1.0*HEAT_MAX_STEP;
-		}
-		else temp_int=0;                                                                             // если Кi равен 0 то интегрирование не используем
-		u_int=temp_int;
-
-		// Дифференцальная составляющая
-		u_dif=((float)Prof.Heat.pid.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-
-		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Heat.pid.Kp*errPID/10.0;
-
-		// Общее воздействие
-		u=u_pro+u_int+u_dif;
-		if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
-
-		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
-		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
-
-*/
 		newFC = dFC.get_freqFC() + updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw_heat);         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
 		 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
@@ -2261,8 +2208,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		// Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
 		if (dFC.get_targetFreq()<newFC)                                                                        // Идет увеличение частоты проверяем подход к границами если пересекли границы то частоту не меняем
 		{
-//			if ((dFC.isfOnOff())&&(FEED>(Prof.Heat.tempIn-dFC.get_dtTemp())*dFC.get_PidStop()/100))                                                        {Status.ret=pHp17; return pCOMP_NONE;}   // Подача ограничение
-    		if ((dFC.isfOnOff())&&(FEED>(targetRealPID*dFC.get_PidStop()/100)))                                                                            {Status.ret=pHp17; return pCOMP_NONE;}   // Подача ограничение, с учетом погодозависимости Подход снизу
+//    		if ((dFC.isfOnOff())&&(FEED>(targetRealPID*dFC.get_PidStop()/100)))                                                                            {Status.ret=pHp17; return pCOMP_NONE;}   // Подача ограничение, с учетом погодозависимости Подход снизу
 			if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                  {Status.ret=pHp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                              {Status.ret=pHp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100))                       {Status.ret=pHp20; return pCOMP_NONE;}   // температура компрессора
@@ -2389,39 +2335,7 @@ MODE_COMP HeatPump::UpdateCool()
 			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                                         //
 		}
 		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
-/*
-		errPID=((float)(FEED-targetRealPID))/100.0;                                                // Текущая ошибка, переводим в градусы ПОДАЧА Охлаждение - ошибка на оборот
 
-		// Это охлаждение
-		//     errPID=((float)(targetRealPID-RET))/100.0;     // Обратка поменялась
-		//     journal.jprintf("RET=%.2f\n",RET/100.0);
-		//     journal.jprintf("FEED=%.2f\n",FEED/100.0);
-		//     journal.jprintf("errPID=%.2f\n",errPID);
-
-		// Расчет отдельных компонент
-		if (Prof.Cool.pid.Ki>0)                                                                           // Расчет интегральной составляющей
-		{
-			temp_int=temp_int+((float)Prof.Cool.pid.Ki*errPID)/100.0;                                        // Интегральная составляющая, с накоплением делить на 10
-#define COOL_MAX_STEP  5                                                                     // Ограничение диапзона изменения 5 герц за один шаг ПИД
-			if (temp_int>COOL_MAX_STEP)  temp_int=COOL_MAX_STEP;
-			if (temp_int<-1.0*COOL_MAX_STEP)  temp_int=-1.0*COOL_MAX_STEP;
-		}
-		else temp_int=0;                                                                             // если Кi равен 0 то интегрирование не используем
-		u_int=temp_int;
-
-		// Дифференцальная составляющая
-		u_dif=((float)Prof.Cool.pid.Kd*(errPID-pre_errPID))/10.0;                                        // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-
-		// Пропорциональная составляющая (десятые)
-		u_pro=(float)Prof.Cool.pid.Kp*errPID/10.0;
-
-		// Общее воздействие
-		u=u_pro+u_int+u_dif;
-		if (u>dFC.get_PidFreqStep()/100.0) u=dFC.get_PidFreqStep()/100.0;                                    // Ограничить увеличение частоты на PidFreqStep гц
-
-		newFC=100.0*u+dFC.get_targetFreq();                                                                  // Округление не нужно и добавление предудущего значения, умногжжение на 100 это перевод в 0.01 герцах
-		pre_errPID=errPID;                                                                           // Сохранние ошибки, теперь это прошлая ошибка
-*/
 		newFC = dFC.get_freqFC() + updatePID(FEED - targetRealPID, Prof.Cool.pid, pidw_heat);      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
@@ -2432,8 +2346,7 @@ MODE_COMP HeatPump::UpdateCool()
 		// Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
 		if (dFC.get_targetFreq()<newFC)                                                                                     // Идет увеличение частоты проверяем подход к границам
 		{
-//			if ((dFC.isfOnOff())&&(FEED<((Prof.Boiler.tempIn-dFC.get_dtTemp())*dFC.get_PidStop()/100)))                                                         {Status.ret=pCp17; return pCOMP_NONE;}   // Подача ограничение
-    		if ((dFC.isfOnOff())&&(FEED<(targetRealPID*(100+(100-dFC.get_PidStop()))/100)))                                                                     {Status.ret=pCp17; return pCOMP_NONE;}   // Подача ограничение, с учетом погодозависимости Подход сверху
+//    		if ((dFC.isfOnOff())&&(FEED<(targetRealPID*(100+(100-dFC.get_PidStop()))/100)))                                                                     {Status.ret=pCp17; return pCOMP_NONE;}   // Подача ограничение, с учетом погодозависимости Подход сверху
 			if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                       {Status.ret=pCp18; return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                                   {Status.ret=pCp19; return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp()>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                            {Status.ret=pCp20; return pCOMP_NONE;}   // температура компрессора
