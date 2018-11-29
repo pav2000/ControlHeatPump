@@ -3353,12 +3353,13 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	if (pid.Ki > 0)// Расчет интегральной составляющей
 	{
 		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-		// Ограничение диапзона изменения ПИД
-		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
-		if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
+		// Ограничение диапзона изменения ПИД, надо умножать на 100 т.к. произведение в ДЕСЯТИТЫСЯЧНЫХ 
+		if(pidw.temp_int > pidw.maxStep*100) pidw.temp_int = pidw.maxStep*100;
+		if(pidw.temp_int < -pidw.maxStep*100) pidw.temp_int = -pidw.maxStep*100;
+	//	Serial.print("errorPid=");Serial.print(errorPid);Serial.print(" pid.Ki=");Serial.print(pid.Ki); Serial.print(" pidw.temp_int=");Serial.println(pidw.temp_int);
+
 	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.temp_int;
-//	Serial.println(pidw.temp_int);
 
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (errorPid - pidw.pre_errPID);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
