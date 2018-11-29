@@ -2061,11 +2061,13 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
 //		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
-        newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC();     // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+        int16_t newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC(); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)  
+        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #else
 		Status.ret=pBp12;
 //		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
-		int16_t newFC = dFC.get_freqFC() + updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw_boiler);  // добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw_boiler);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif	
 
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
@@ -2200,8 +2202,9 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
 
-		newFC = dFC.get_freqFC() + updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw_heat);         // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
-		 
+		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw_heat);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+ 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
 		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
 
@@ -2336,7 +2339,9 @@ MODE_COMP HeatPump::UpdateCool()
 		}
 		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
 
-		newFC = dFC.get_freqFC() + updatePID(FEED - targetRealPID, Prof.Cool.pid, pidw_heat);      // Округление не нужно плюс добавление предудущего значения, умножение на 100 не нужно т.к хранится все в 0.01 герцах
+		newFC = updatePID(FEED - targetRealPID, Prof.Cool.pid, pidw_heat);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+//        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+>dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep() 
+        if (newFC<-1*dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()-dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep() 
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
@@ -3348,9 +3353,10 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	if (pid.Ki > 0)// Расчет интегральной составляющей
 	{
 		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-		// Ограничение диапзона изменения ПИД
-		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
-		if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
+		// Ограничение диапзона изменения ПИД, надо умножать на 100 т.к. произведение в ДЕСЯТИТЫСЯЧНЫХ 
+		if(pidw.temp_int > pidw.maxStep*100) pidw.temp_int = pidw.maxStep*100;
+		if(pidw.temp_int < -pidw.maxStep*100) pidw.temp_int = -pidw.maxStep*100;
+	//	Serial.print("errorPid=");Serial.print(errorPid);Serial.print(" pid.Ki=");Serial.print(pid.Ki); Serial.print(" pidw.temp_int=");Serial.println(pidw.temp_int);
 	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.temp_int;
 
