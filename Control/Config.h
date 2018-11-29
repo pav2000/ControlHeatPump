@@ -2617,6 +2617,7 @@ const char *noteTemp[] = {"Температура улицы",
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 //		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
+		#define DONT_LOG_SUCCESS_PING	// Не логировать в журнал успешные пинги
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
