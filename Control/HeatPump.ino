@@ -3357,7 +3357,6 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		if(pidw.temp_int > pidw.maxStep*100) pidw.temp_int = pidw.maxStep*100;
 		if(pidw.temp_int < -pidw.maxStep*100) pidw.temp_int = -pidw.maxStep*100;
 	//	Serial.print("errorPid=");Serial.print(errorPid);Serial.print(" pid.Ki=");Serial.print(pid.Ki); Serial.print(" pidw.temp_int=");Serial.println(pidw.temp_int);
-
 	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.temp_int;
 
