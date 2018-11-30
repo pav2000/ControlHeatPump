@@ -1024,9 +1024,9 @@ function calctpod(type) {
 	var kwheat = document.getElementById("get_paramheathp-k_weather").value;
 
 	if(type == "heat") { 
-		heattpod.innerHTML = tpidheat - kwheat * tout;
+		heattpod.innerHTML = (tpidheat - kwheat * tout).toFixed(2);
 	} else if(type == "cool") {
-		cooltpod.innerHTML = tpidcool - kwcool * tout;
+		cooltpod.innerHTML = (tpidcool - kwcool * tout).toFixed(2);
 	}
 }
 

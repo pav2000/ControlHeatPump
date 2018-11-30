@@ -818,7 +818,6 @@ int8_t devEEV::Update(void) //boolean fHeating)
   case TEVAOUT_PEVA:
   case TRTOOUT_PEVA:
     {
-       #define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
        newEEV = EEV + round_div_int16(updatePID(Overheat-_data.tOverheat, _data.pid, pidw), 100);     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
@@ -905,7 +904,7 @@ void devEEV::resetPID()
   // Очистить служебные перемнные
   pidw.temp_int = 0;
   pidw.pre_errPID = 0;
-  pidw.maxStep = EEV_MAX_STEP;
+  pidw.maxStep = EEV_MAX_STEP * 100;
   tmpTime=_data.pid.time;        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                   // Признак работы пид с начала (пропуск первой итерации)
 }
