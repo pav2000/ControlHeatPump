@@ -342,7 +342,7 @@ function loadChartsGroup(period) {
 		var feeds = data.split(csv_line_delim);
 		for(var h = 0; h < feeds.length; h++) {
 			var arr = feeds[h].split(csv_delim);
-			if(arr.length == 0) continue;
+			if(arr.length <= 1) continue;
 			var dt = getChartTime(arr[0]);
 			for(var fi = 1; fi < arr.length; fi++) {
 				var nf = Number(arr[fi]);
@@ -371,6 +371,14 @@ function loadSelected() {
 		dynamicChart.redraw();
 	});
 }
+
+function clearChart() {
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
+		fieldList[fieldIndex].data.splice(0,fieldList[fieldIndex].data.length);
+		dynamicChart.series[fieldList[fieldIndex].series].setData(fieldList[fieldIndex].data, false);
+	}
+	dynamicChart.redraw();
+}
 </script>
 <title>Статистика детально</title>
 </head>
@@ -380,6 +388,7 @@ function loadSelected() {
 	<div id="BelowChart"> 
 		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
 		<button onclick="loadSelected();">Загрузить</button>
+		<button onclick="clearChart();">Очистить</button>
 		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>
 	<div id="chart-container" style="height: 600px"><br>

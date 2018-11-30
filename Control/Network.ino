@@ -137,7 +137,7 @@ boolean initW5200(boolean flag)
 	boolean EthernetOK = true;   // флаг успешности инициализации
 	pinMode(PIN_ETH_INT, INPUT);
 	pinMode(PIN_ETH_RES, OUTPUT);
-
+	if(flag) journal.jprintf("Network setup:");
 	if(!resetWiznet(false))  // 1. Сброс и проверка провода (молча)
 	{
 #ifdef W5500_LOG_FULL_INFO
@@ -201,7 +201,7 @@ boolean initW5200(boolean flag)
 	} else {
 		if(HP.get_DHCP()) // Работаем по DHCP
 		{
-			journal.jprintf("Configure Ethernet using DHCP: ");
+			journal.jprintf(" Try DHCP: ");
 			WDT_Restart(WDT);
 			if(Ethernet.begin((uint8_t*) HP.get_mac()) == 0) {
 				journal.jprintf("Failed!\n");
@@ -580,14 +580,18 @@ boolean pingServer()
 	WDT_Restart(WDT);                                   // Сбросить вачдог
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
 	SemaphoreGive(xWebThreadSemaphore);                 // отдать семафор
+#ifndef DONT_LOG_SUCCESS_PING
 	journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
-	if (echoReply.status == SUCCESS)
-	{
+#endif
+	if (echoReply.status == SUCCESS) {
+#ifndef DONT_LOG_SUCCESS_PING
 		journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
+#endif
 		return true;
-	}
-	else
-	{
+	} else {
+#ifdef DONT_LOG_SUCCESS_PING
+		journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
+#endif
 		journal.jprintf("FAILED - ");                                 // Неудача, пинга нет
 		switch (echoReply.status)
 		{

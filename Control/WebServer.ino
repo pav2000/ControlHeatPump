@@ -2531,93 +2531,93 @@ boolean  settingNow=false;                // признак начала заг�
 TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 {
 	static byte *ptr,*pStart;
-    char *nameFile;      // указатель имя файла
- 	uint8_t  i=0;
+	char *nameFile;      // указатель имя файла
+	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
 
 	// Поиски во входном буфере: данных, имени файла и длинны файла
-    ptr = (byte*) strstr((char*)Socket[thread].inPtr,emptyStr)+strlen(emptyStr);                // поиск начала даных	
-	
-	if((nameFile=strstr((char*)Socket[thread].inPtr,Title)+strlen((char*)Title)) == 0) {journal.jprintf("%s: Name file not found.\n",(char*)__FUNCTION__);return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
-    for(i=0;i<MAX_FILE_LEN;i++) {     // поиск окончания имени файла 
-     	if (*(nameFile+i)==13) {*(nameFile+i)=0;break;} 
-    }
-    if (strlen(nameFile)>=MAX_FILE_LEN-1){ // проверка длины имени файла
- 		journal.jprintf("%s: File name %s is longer than %d bytes.\n",(char*)__FUNCTION__,nameFile,MAX_FILE_LEN-1); return pLOAD_ERR; }  	  
-    urldecode((char*)Socket[thread].outBuf,nameFile,128);
-    nameFile=(char*)Socket[thread].outBuf;
+	ptr = (byte*) strstr((char*)Socket[thread].inPtr,emptyStr)+strlen(emptyStr);                // поиск начала даных
+
+	if((nameFile=strstr((char*)Socket[thread].inPtr,Title)+strlen((char*)Title)) == 0) {journal.jprintf("Upload: Name file not found\n");return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
+	for(i=0;i<MAX_FILE_LEN;i++) {     // поиск окончания имени файла
+		if (*(nameFile+i)==13) {*(nameFile+i)=0;break;}
+	}
+	if (strlen(nameFile)>=MAX_FILE_LEN-1){ // проверка длины имени файла
+		journal.jprintf("Upload: file name %s is longer than %d bytes.\n",nameFile,MAX_FILE_LEN-1); return pLOAD_ERR; }
+	urldecode((char*)Socket[thread].outBuf,nameFile,128);
+	nameFile=(char*)Socket[thread].outBuf;
 
 
-	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)+strlen((char*)Length)) == 0) {journal.jprintf("%s: Size file %s not found.\n",(char*)__FUNCTION__,nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
-    lenFile=atoi((char*)pStart);	// получить длину
-    if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("%s:File %s length is zero.\n",(char*)__FUNCTION__,nameFile); return pLOAD_ERR; } 
+	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)+strlen((char*)Length)) == 0) {journal.jprintf("Upload: Size %s not found\n",nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
+	lenFile=atoi((char*)pStart);	// получить длину
+	if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("Upload: Length %s is zero\n",nameFile); return pLOAD_ERR; }
 
-    // все нашлось, можно обрабатывать
-//    if (lenFile>0) journal.jprintf("-POST- file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
-    
-    full_len=size-(ptr - (byte *)Socket[thread].inBuf);                                           // длина (остаток) данных (файла) в буфере
-    
-    // В зависимости от имени файла (Title)
-    if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
-			// Определение начала данных (поиск HEADER_BIN)
-		    if((strstr((char*) ptr,HEADER_BIN)) == NULL) {  // Заголовок не найден
-				journal.jprintf("%s: Wrong save file %s format.\n",(char*)__FUNCTION__,nameFile);
-				return pSETTINGS_ERR;
-			}
-			full_len=size-(ptr - (byte *)Socket[thread].inBuf); // определяем размер данных в пакете
-	    	memcpy(Socket[thread].outBuf,ptr,full_len);         // копируем начало данных в буфер
+	// все нашлось, можно обрабатывать
+	//    if (lenFile>0) journal.jprintf("-POST- file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
 
-	        while (full_len<lenFile)  // Чтение остальных данных по сети
-	        {
+	full_len=size-(ptr - (byte *)Socket[thread].inBuf);                                           // длина (остаток) данных (файла) в буфере
+
+	// В зависимости от имени файла (Title)
+	if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
+		// Определение начала данных (поиск HEADER_BIN)
+		if((strstr((char*) ptr,HEADER_BIN)) == NULL) {  // Заголовок не найден
+			journal.jprintf("Upload: Wrong save format: %s\n",nameFile);
+			return pSETTINGS_ERR;
+		}
+		full_len=size-(ptr - (byte *)Socket[thread].inBuf); // определяем размер данных в пакете
+		memcpy(Socket[thread].outBuf,ptr,full_len);         // копируем начало данных в буфер
+
+		while (full_len<lenFile)  // Чтение остальных данных по сети
+		{
 			_delay(10);
-		    len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-		    if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-		    Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-		    if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
+			len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+			if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
+			Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
+			if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
 			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
 			full_len=full_len+len;                                                     // определить размер данных
-	        }
-			ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);                     // отрезать заголовок в данных
-			journal.jprintf("Loading %s length  %d bytes:\n",SETTINGS, full_len);
-			// Чтение настроек из ptr
-		    len = HP.load(ptr, 1);
-			if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
-			boolean ret = true;
-			// Чтение профиля
-			ptr += len;
-			if(HP.Prof.loadFromBuf(0, ptr)!= OK) ret = false;   // чтение профиля
-			if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;  // чтения расписания
-			HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
-			if (ret) return pSETTINGS_OK; else return pSETTINGS_ERR;
-    } //if (strcmp(nameFile,"*SETTINGS*")==0)
-    
-    // загрузка вебморды
-   else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
-		   if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
-		   
-		   if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Download already in progress.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
-		   numFilesWeb=0;
-		   journal.jprintf("POST: %s start download, format SPI disk ",nameFile);
-		   SerialFlash.eraseAll();
-			    while (SerialFlash.ready() == false) {
-			      vTaskDelay(1000/ portTICK_PERIOD_MS);    
-			      journal.jprintf(".");
-			    }
-			    journal.jprintf(" OK\n");	
-			    return pNULL;
-		   }
-		    else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
-		    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("POST: %s end of download, total %d files downloads.\n",nameFile,numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
-		  	else {journal.jprintf("%s: Trying to end download without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-		    }
-		   else { // загрузка отдельных файлов веб морды
-		    if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
-		   	else {journal.jprintf("%s: Trying to download file without starting the download.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-		    }
-     }
-     else { journal.jprintf("%s: Flash disk not found.\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
-   return pPOST_ERR; // До сюда добегать не должны
+		}
+		ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);                     // отрезать заголовок в данных
+		journal.jprintf("Loading %s, length %d bytes:\n",SETTINGS, full_len);
+		// Чтение настроек из ptr
+		len = HP.load(ptr, 1);
+		if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
+		boolean ret = true;
+		// Чтение профиля
+		ptr += len;
+		if(HP.Prof.loadFromBuf(0, ptr)!= OK) ret = false;   // чтение профиля
+		if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;  // чтения расписания
+		HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
+		if (ret) return pSETTINGS_OK; else return pSETTINGS_ERR;
+	} //if (strcmp(nameFile,"*SETTINGS*")==0)
+
+	// загрузка вебморды
+	else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
+		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
+
+			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
+			numFilesWeb=0;
+			journal.jprintf("Start upload, format SPI disk ");
+			SerialFlash.eraseAll();
+			while (SerialFlash.ready() == false) {
+				vTaskDelay(1000/ portTICK_PERIOD_MS);
+				journal.jprintf(".");
+			}
+			journal.jprintf(" OK\n");
+			return pNULL;
+		}
+		else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("Ok. Total %d files uploaded\n",numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
+			else {journal.jprintf("Unable to finish upload\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+		}
+		else { // загрузка отдельных файлов веб морды
+			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
+			else {journal.jprintf("Unable to upload file\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+		}
+	}
+	else { journal.jprintf("Upload: No SPI flash\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
+	return pPOST_ERR; // До сюда добегать не должны
 }
 // Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
 // Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
@@ -2627,33 +2627,37 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 // thread - поток веб сервера,котрый обрабатывает post запрос
 // ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr. 
 // sizeBuf - размер данных в буфере ptr (по сети осталось принять lenFile-sizeBuf)
-uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf) 
+uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf)
 {
-uint16_t len,numPoint=0;       
-uint32_t loadLen=0; // Обработанная (загруженная) длина
+	uint16_t len, numPoint = 0;
+	uint32_t loadLen = 0; // Обработанная (загруженная) длина
 
-if (SerialFlash.create(nameFile,lenFile)) 
-  {   SerialFlashFile ff = SerialFlash.open(nameFile);
-      if (ff) {
-        journal.jprintf("File %s load ",nameFile); 
-        if (sizeBuf>0) loadLen=ff.write(ptr, sizeBuf);  // первый пакет упаковали если он не нулевой
-        while (loadLen<lenFile)  // Чтение остальных пакетов из сети
-        {
-        _delay(2);                                                                 // время на приход данных
-        len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-        if (len==0) continue;
-  //      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
-        Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер	
-        loadLen=loadLen+ff.write(Socket[thread].inBuf,len);                        // записать
-        numPoint++;
-        if (numPoint>=10) {numPoint=0;journal.jprintf(".");}                       // точка на 15 кб приема (10 пакетов по 1540)
-        }
-       ff.close();  
-      if (loadLen==lenFile)  journal.jprintf(" %d bytes OK\n",loadLen); 
-      else {journal.jprintf(" %d bytes, error length\n",loadLen);loadLen=0;}        // Длины не совпали   
-      }
-      else journal.jprintf(" %s: error open file %s\n",(char*)__FUNCTION__,nameFile);
-  } // if (SerialFlash.create(filename, length))   
-else journal.jprintf(" %s: error create file %s\n",(char*)__FUNCTION__,nameFile);
-return 	loadLen;
+	journal.jprintf("%s - ", nameFile);
+	if(SerialFlash.create(nameFile, lenFile)) {
+		SerialFlashFile ff = SerialFlash.open(nameFile);
+		if(ff) {
+			if(sizeBuf > 0) loadLen = ff.write(ptr, sizeBuf);  // первый пакет упаковали если он не нулевой
+			while(loadLen < lenFile)  // Чтение остальных пакетов из сети
+			{
+				_delay(2);                                                                 // время на приход данных
+				len = Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+				if(len == 0) continue;
+				//      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
+				Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+				loadLen = loadLen + ff.write(Socket[thread].inBuf, len);                        // записать
+				numPoint++;
+				if(numPoint >= 10) {
+					numPoint = 0;
+					journal.jprintf(".");
+				}                       // точка на 15 кб приема (10 пакетов по 1540)
+			}
+			ff.close();
+			if(loadLen == lenFile) journal.jprintf("%db\n", loadLen);
+			else { // Длины не совпали
+				journal.jprintf("%db, Error length!\n", loadLen);
+				loadLen = 0;
+			}
+		} else journal.jprintf("Error open!\n");
+	} else journal.jprintf("Error create!\n");
+	return loadLen;
 }

@@ -53,10 +53,10 @@ void StepMotor::step(int steps_to_move)
           return;
           }
      else  // В очердь команад попала
-     {
-      if (!buzy) vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
-      buzy=true;                                   // флаг начало движения
-     } 
+      if (!buzy) {
+         buzy=true;                        // флаг начало движения	
+         vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
+      }
 }
 
 // выставить один пин
@@ -206,8 +206,7 @@ void StepMotor::stepOne(int thisStep)
       break;
    }
 #else 
-       journal.jprintf(" $Error EVI_PHASE constant!\n"); 
-       
+      #error "Wrong EVI_PHASE constant!"
 #endif    
  // Serial.print("thisStep ");   Serial.println(thisStep);    
 }

@@ -28,6 +28,7 @@ static fname_t open_fname;
 int8_t Statistics::CreateOpenFile(uint8_t what)
 {
 	if(!HP.get_fSD()) return ERR_SD_INIT;
+	//journal.printf("CreateOpenFile(%d), %d\n", what, HistoryBlockCreating);
 	uint8_t newfile = 0;
 	if(what == ID_HISTORY) {
 		if(HistoryBlockCreating) goto xContinue;
@@ -56,34 +57,41 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 	if(!StatsFile.contiguousRange(what ? &HistoryBlockStart : &BlockStart, what ? &HistoryBlockEnd : &BlockEnd)) {
 		journal.jprintf("Error get blocks %s!\n", filename);
 	} else {
-		journal.jprintf("[%u..%u]", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
+		journal.jprintf("[%u..%u] ", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
 		if(newfile) {
-			journal.jprintf(pP_TIME, "Create");
+			journal.jprintf(pP_TIME, "Create ");
 			uint32_t b;
 			if(what) {
-xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating;
-				else b = HistoryCurrentBlock = HistoryBlockStart;
-				memset(history_buffer, 0, SD_BLOCK);
+xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryCurrentBlock = HistoryBlockStart;
 			} else {
 				b = CurrentBlock = BlockStart;
-				memset(stats_buffer, 0, SD_BLOCK);
 			}
+			uint8_t *temp_buf = (uint8_t*)malloc(SD_BLOCK);
+			if(temp_buf == NULL) {
+				Error("memory low", what);
+				StatsFile.remove();
+				return ERR_OUT_OF_MEMORY;
+			}
+			memset(temp_buf, 0, SD_BLOCK);
 			for(; b <= (what ? HistoryBlockEnd : BlockEnd);) {
 				WDT_Restart(WDT);
-				if(!card.card()->writeBlock(b, what ? (uint8_t*)history_buffer : (uint8_t*)stats_buffer)) {
+				if(!card.card()->writeBlock(b, temp_buf)) {
 					Error("empty", what);
+					free(temp_buf);
 					goto xError;
 				}
 				if(((++b) & 0x7FF) == 0) {
 					journal.jprintf("."); // каждый 1Мб
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
+						free(temp_buf);
 						return OK;
 					}
 				}
 			}
 			if(what) HistoryBlockCreating = 0;
 			journal.jprintf(pP_TIME, "\n Ok\n");
+			free(temp_buf);
 			return OK;
 		} else if(!FindEndPosition(what)) {
 			journal.jprintf(" Endpos not found!\n");
@@ -112,7 +120,7 @@ boolean Statistics::FindEndPosition(uint8_t what)
 	while(bst <= bend) {
 		WDT_Restart(WDT);
 		cur = bst + (bend - bst) / 2;
-//		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
+		//journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
 		if(!card.card()->readBlock(cur, buffer)) {
 			Error("FindPos", what);
 			break;
@@ -124,7 +132,7 @@ boolean Statistics::FindEndPosition(uint8_t what)
 				if(bend < (what ? HistoryBlockEnd : BlockEnd)) bend++; else break; // file overflow
 			}
 		} else if(cur == bst) { // empty
-//			journal.printf("Empty: %d, %d, %d\n", cur, bst, bend);
+			//journal.printf("Empty: %d, %d, %d\n", cur, bst, bend);
 			pos = buffer;
 			break;
 		} else bend = cur - 1;
@@ -200,7 +208,7 @@ void Statistics::Init(uint8_t newyear)
 						CurrentBlock = BlockStart + pos / SD_BLOCK;
 						CurrentPos = pos % SD_BLOCK;
 						temp_initbuf[format_date_size] = '\0';
-						journal.printf(" %s restored at %d\n", temp_initbuf, pos);
+						//journal.printf(" %s restored at %d\n", temp_initbuf, pos);
 						if(!card.card()->readBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
 							Error("readp", ID_STATS);
 						} else {
@@ -278,6 +286,7 @@ void Statistics::CheckCreateNewFile()
 		SPI_switchSD();
 		if(!StatsFile.opens(filename, O_RDWR, &open_fname)) Error("open", ID_STATS);
 		else {
+			journal.jprintf("Truncate %s to %d\n", filename, (CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos);
 			if(!StatsFile.truncate((CurrentBlock - BlockStart) * SD_BLOCK + CurrentPos)) Error("truncate", ID_STATS);
 			StatsFile.close();
 		}
@@ -287,6 +296,7 @@ void Statistics::CheckCreateNewFile()
 		strcat(filename, stats_file_ext);
 		if(!StatsFile.opens(filename, O_RDWR, &open_fname)) Error("open", ID_HISTORY);
 		else {
+			journal.jprintf("Truncate %s to %d\n", filename, (HistoryCurrentBlock - HistoryBlockStart) * SD_BLOCK + HistoryCurrentPos);
 			if(!StatsFile.truncate((HistoryCurrentBlock - HistoryBlockStart) * SD_BLOCK + HistoryCurrentPos)) Error("truncate", ID_HISTORY);
 			StatsFile.close();
 		}
@@ -654,19 +664,20 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 		journal.jprintf(" Error sendh %s\n", Prefix);
 		return;
 	}
-	uint32_t bst, bend;
-	if(!File->contiguousRange(&bst, &bend)) {
+	uint32_t bstfile;
+	if(!File->contiguousRange(&bstfile, &bendfile)) {
 		journal.jprintf(" Error get blocks %s\n", filename);
 		File->close();
 		return;
 	}
 	File->close();
-	bendfile = bend;
+	uint32_t bst = bstfile, bend = bendfile;
 	uint8_t findst = 0;
+	char *pos = NULL;
 	while(bst <= bend) {
 		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
-//		journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
+		//journal.printf("BS: %d, %d, %d\n", cur, bst, bend);
 		if(cur == CurrentBlock) {
 			memcpy(_buffer_, stats_buffer, SD_BLOCK);
 		} else if(cur == HistoryCurrentBlock) {
@@ -675,7 +686,6 @@ xReadBlock:
 			Error("read f", ID_HISTORY);
 			return;
 		}
-		char *pos;
 		if(*_buffer_) {
 			pos = (char*)memchr(_buffer_, '\n', SD_BLOCK);
 			if(pos == NULL) return;  // garbage
@@ -683,23 +693,28 @@ xReadBlock:
 			{
 				int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
 				if(cmp >= 0) {
-//					journal.printf("found %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
-					if(cmp > 0) goto xGoDown;
+					//journal.printf("found %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
 					findst = 1;
+					if(cmp > 0) {
+						if(cur == bst) {
+							if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) return; // greater - not found
+							goto xNext;
+						}
+						goto xGoDown;
+					}
 					if(cur > bst) {
 						cur--;
 						goto xReadBlock;
 					}
 				}
 			}
-xSend:		bst = cur + 1;
-			if(findst) { // found
-				if(sendPacketRTOS(thread, (uint8_t*)pos, SD_BLOCK - ((uint8_t*)pos - _buffer_), 0) == 0) {
-					journal.jprintf(" Error send %s\n", filename);
-					return;
-				}
+			bst = cur;
+xNext:		if(findst) { // found
+				//journal.printf("Found at %d - %d\n", cur, (uint8_t*)pos - _buffer_);
+				memmove(_buffer_, pos, bend = SD_BLOCK - ((uint8_t*)pos - _buffer_));
 				break;
 			}
+			bst++;
 			if(bst > bend) {
 				if(bend < bendfile) bend++;
 				else { // file overflow
@@ -707,44 +722,61 @@ xSend:		bst = cur + 1;
 				}
 			}
 		} else {
+			//journal.printf("Zero\n");
 xGoDown:	if(cur == bst) { // low limit
-				pos = (char*)_buffer_;
-				findst = 1;
-				goto xSend;
+				//journal.printf("Low\n");
+				if(bst == bstfile) {
+					pos = (char*)_buffer_;
+					if(*pos == '\0') return; // empty
+				} else {
+					pos = (char*)memchr(_buffer_, '\n', SD_BLOCK-1);
+					if(pos == NULL) return;
+					pos++;
+				}
+				goto xNext;
 			} else bend = cur - 1;
 		}
 	}
-//	journal.printf("ST: %d, END: %d\n", bst, bendfile);
+	//journal.printf("ST: %d (%d), END: %d\n", bst, bend, bendfile);
 	uint32_t readed = 0;
 	uint16_t packcnt = 0;
-	for(uint32_t i = bst; i <= bendfile; i++) {
+	if(pos) {
+		pos = (char*)memchr(_buffer_, 0, bend);
+		readed = pos ? pos - (char*)_buffer_ : bend;
+		pos = (char*)_buffer_;
+		goto xFoundStart;
+	}
+	for(; bst <= bendfile; bst++) {
 		SPI_switchSD();
-		if(i == CurrentBlock) {
+		if(bst == CurrentBlock) {
 			memcpy(_buffer_ + readed, stats_buffer, SD_BLOCK);
-		} else if(i == HistoryCurrentBlock) {
+		} else if(bst == HistoryCurrentBlock) {
 			memcpy(_buffer_ + readed, history_buffer, SD_BLOCK);
-		} else if(!card.card()->readBlock(i, _buffer_ + readed)) {
+		} else if(!card.card()->readBlock(bst, _buffer_ + readed)) {
 			Error("read data", ID_HISTORY);
 			break;
 		}
 		if(_buffer_[readed + SD_BLOCK - 1] == 0) {  // end of data
 			if(_buffer_[readed] == 0) break;
-			readed = (uint8_t*)memchr(_buffer_ + readed, 0, SD_BLOCK) - _buffer_;
+			pos = (char*)memchr(_buffer_ + readed, 0, SD_BLOCK);
 			bendfile = 0;
+			pos = (char*)memchr(_buffer_ + readed, '\n', (uint8_t*)pos - _buffer_);
+			if(*(pos + 1) == '\0') pos = NULL; else readed = (uint8_t*)pos - _buffer_;
 		} else {
-			char *pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
-			readed += SD_BLOCK;
-			if(pos) {
-				if(strncmp(pos + 1, TimeEnd, m_strlen(TimeEnd)) > 0) {
-//					journal.printf("end %c%c%c%c%c%c%c%c %c%c (%s)\n", pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], pos[10], TimeEnd );
-					readed = (uint8_t*)pos - _buffer_ + 1;
-					bendfile = 0; // stop
-				} else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
-			} else bendfile = 0;
+			pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
+			if(*(pos + 1) == '\0') pos = NULL; else readed += SD_BLOCK;
 		}
+		if(pos++) {
+xFoundStart:
+			if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) {
+				//journal.printf("end %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeEnd );
+				readed = (uint8_t*)pos - _buffer_;
+				bendfile = 0; // stop
+			} else if(readed <= W5200_MAX_LEN - SD_BLOCK) continue;
+		} else bendfile = 0;
 		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
 			journal.jprintf(" Error send %s\n", filename);
-			break;
+			return;
 		}
 		if(++packcnt == 50) { // 100kb send
 			packcnt = 0;
@@ -757,7 +789,11 @@ xGoDown:	if(cur == bst) { // low limit
 		}
 		readed = 0;
 	}
-//	journal.printf("ok\n");
+	if(readed) {
+		if(sendPacketRTOS(thread, _buffer_, readed, 0) != readed) {
+			journal.jprintf(" Error send %s\n", filename);
+		}
+	}
 }
 
 // Записать статистику на SD, 0 - только записать, 1 - только записать c веба, 2 - новый день
@@ -775,6 +811,7 @@ int8_t Statistics::SaveStats(uint8_t newday)
 	}
 	int8_t retval = OK;
 	StatsFileString(rbuf);
+	//journal.printf("SaveStats(%d):%s\n", newday, rbuf);
 	uint16_t lensav, len = m_strlen(rbuf) + 1;
 	memcpy(stats_buffer + CurrentPos, rbuf, lensav = SD_BLOCK - CurrentPos < len ? SD_BLOCK - CurrentPos : len);
 #ifdef STATS_USE_BUFFER_FOR_SAVING
@@ -833,6 +870,7 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 	return OK;
 #endif
 	if(!GETBIT(HP.Option.flags, fHistory) || !HP.get_fSD() || HistoryCurrentBlock == 0) return OK;
+	//journal.printf("SaveHistory(%d)\n", from_web);
 	if(!from_web && SemaphoreTake(xWebThreadSemaphore, W5200_TIME_WAIT) == pdFALSE) return ERR_CONFIG;
 	int8_t retval = OK;
 	SPI_switchSD();
@@ -848,12 +886,16 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 void Statistics::History()
 {
 	if(!GETBIT(HP.Option.flags, fHistory) || HP.get_testMode() != NORMAL) return;
+	uint16_t y = rtcSAM3X8.get_years();
+	if(y != year) return;
 	char *mbuf = (char*) malloc(HISTORY_MAX_RECORD_LEN);
 	if(mbuf == NULL) {
 		Error("memory low", ID_HISTORY);
+		return;
 	}
 	char *buf = mbuf;
-	buf += m_snprintf(buf, 20, format_datetime, year, month, day, rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
+	buf += m_snprintf(buf, 20, format_datetime, y, rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes());
+	//journal.printf("History:(%s)\n", mbuf);
 	for(uint8_t i = 0; i < sizeof(HistorySetup) / sizeof(HistorySetup[0]); i++) {
 		*buf++ = ';';
 		switch(HistorySetup[i].object) {

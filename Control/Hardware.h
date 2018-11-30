@@ -309,6 +309,7 @@ public:
   char*   get_note(){ return note;}                      // Прочитать описание ЭРВ
   char*   get_name(){ return name;}                      // Прочитать имя ЭРВ 
   int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
+  void    set_error(int8_t error) { err = error; }		// Установить ошибку
   int16_t get_maxEEV(){return  _data.maxSteps;}          // Максимальное число шагов ЭРВ (диапазон)
   int16_t get_minEEV(){return  _data.minSteps;}          // Число шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(_data.flags,fPresent);} // Наличие EEV в текущей конфигурации

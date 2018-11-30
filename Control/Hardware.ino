@@ -549,7 +549,7 @@ const char *nameEEV = {"EEV"} ;  //  Имя
 void devEEV::initEEV()
 {
   EEV=-1;                               // шаговик в непонятном положении
-  setZero=true;                         // Признакнеобходимости обнуления счетчика шагов EEV
+  setZero=false;                        // Признак процесса обнуления (шаговик ищет 0)
   err=OK;                               // Ошибок нет
   Pid_start=_data.StartPos;             // Откуда стартует ПИД
   Resume(_data.StartPos);               // Обнулить рабочие переменные
@@ -594,8 +594,8 @@ void devEEV::initEEV()
  #endif 
   if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
   SETBIT0(_data.flags,fCorrectOverHeat);              // Включен режим корректировки перегрева
-  SETBIT0(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
-  SETBIT1(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
+  SETBIT1(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+  SETBIT0(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
   SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
   SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 
@@ -664,28 +664,34 @@ void devEEV::Resume(uint16_t pos)
  
 // Запустить ЭРВ - возвращает ок или код ошибки
 // На стартовую позицию не выводит
- int8_t devEEV::Start()
- {
-   Resume(_data.StartPos);
- //  EEV=0;
-   err=OK;                               // Ошибок нет
-   if(!GETBIT(_data.flags,fPresent)) {journal.jprintf(" EEV not present, EEV disable\n"); return err;}  // если ЭРВ нет то ничего не делаем
-   if ((!GETBIT(_data.flags,fOneSeekZero))||(GETBIT(_data.flags,fOneSeekZero)&&(EEV<0))) { // есть вариант однократного поиска "0" ЭРВ
-   journal.jprintf(" EEV set zero\n"); 
-   set_zero(); }                          // установить 0
-    
- //  journal.jprintf(" EEV set StartPos: %d\n",StartPos); 
- //  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
-  return OK;                  
- }
- // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
-int8_t devEEV::set_zero()    
+int8_t devEEV::Start()
 {
-setZero=true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
-EEV=-1;   
-if (testMode!=SAFE_TEST) stepperEEV.step(-EEV_STEPS-40);  // не  SAFE_TEST - работаем
-else EEV=0;                                               // SAFE_TEST только координаты меняем
-return OK;
+	Resume(_data.StartPos);
+	//  EEV=0;
+	err = OK;                               // Ошибок нет
+	if(!GETBIT(_data.flags, fPresent)) {
+		journal.jprintf(" EEV is not available\n");
+		return err;
+	}  // если ЭРВ нет то ничего не делаем
+	if((!GETBIT(_data.flags, fOneSeekZero)) || (GETBIT(_data.flags,fOneSeekZero) && (EEV < 0))) { // есть вариант однократного поиска "0" ЭРВ
+		set_zero();
+	}                          // установить 0
+
+	//  journal.jprintf(" EEV set StartPos: %d\n",StartPos);
+	//  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
+	return OK;
+}
+// Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
+int8_t devEEV::set_zero()
+{
+	if(!setZero) {
+		journal.jprintf(" EEV: Set zero\n");
+		setZero = true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
+		EEV = -1;
+		if(testMode != SAFE_TEST) stepperEEV.step(-EEV_STEPS - 40);  // не  SAFE_TEST - работаем
+		else EEV = 0;                                               // SAFE_TEST только координаты меняем
+	}
+	return OK;
 }
 
  // Перейти на позицию абсолютную возвращает код ошибки
@@ -811,44 +817,8 @@ int8_t devEEV::Update(void) //boolean fHeating)
   case TRTOOUT_TEVAIN:
   case TEVAOUT_PEVA:
   case TRTOOUT_PEVA:
-    {// ПИД регулятор для двух режимов
-     // Уравнение ПИД регулятора в конечных разностях.
-     // Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-     // u(t) = P (t) + I (t) + D (t);
-     // P (t) = Kp * e (t);
-     // I (t) = I (t — 1) + Ki * e (t);
-     // D (t) = Kd * {e (t) — e (t — 1)};
-     // T – период дискретизации(период, с которым вызывается ПИД регулятор).
-/*
-    // использование флоат, работатет
-         _data.pid.errPID=((float)(Overheat-_data.pid.target))/100.0;                // Текущая ошибка, переводим в градусы (+ это привышение цели, перегрев больше и ЭРВ надо открывать для его уменьшения)
-         if (_data.pid.Ki>0)                                                  // Расчет интегральной составляющей
-         {
-          _data.pid.temp_int=_data.pid.temp_int+((float)_data.pid.Ki*_data.pid.errPID)/100.0;               // Интегральная составляющая, с накоплением делить на 100
-          // Ограничение диапзона изменения 20 шагов за один шаг ПИД
-          #define EEV_MAX_STEP  5
-          if (_data.pid.temp_int>EEV_MAX_STEP)  _data.pid.temp_int=EEV_MAX_STEP; 
-          if (_data.pid.temp_int<-1.0*EEV_MAX_STEP)  _data.pid.temp_int=-1.0*EEV_MAX_STEP; 
-         }
-         else _data.pid.temp_int=0;                                           // если Кi равен 0 то интегрирование не используем
-         u_int=_data.pid.temp_int;
-        
-         // Дифференцальная составляющая
-         u_dif=((float)_data.pid.Kd*(_data.pid.errPID-_data.pid.pre_errPID))/100.0;  // Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-         
-         // Пропорциональная составляющая
-         u_pro=(float)_data.pid.Kp*_data.pid.errPID/100.0;
-         if (abs(_data.pid.errPID)<(_data.pid.errKp/100.0)) u_pro=(abs((_data.pid.errPID*100.0)/_data.pid.errKp))*u_pro;            // В близи уменьшить воздействие
-         
-         // Общее воздействие
-         u=u_pro+u_int+u_dif;
-
-         newEEV=round(u)+EEV;                             // Округление и добавление предудущего значения
-         _data.pid.pre_errPID=_data.pid.errPID;           // запомнить предыдущую ошибку
-*/
-       #define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
+    {
        newEEV = EEV + round_div_int16(updatePID(Overheat-_data.tOverheat, _data.pid, pidw), 100);     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-    
         // Проверка управляющего воздействия, возможно отказ ЭРВ
         #ifndef DEMO
          if (newEEV<_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
@@ -934,7 +904,7 @@ void devEEV::resetPID()
   // Очистить служебные перемнные
   pidw.temp_int = 0;
   pidw.pre_errPID = 0;
-  pidw.maxStep = EEV_MAX_STEP;
+  pidw.maxStep = EEV_MAX_STEP * 100;
   tmpTime=_data.pid.time;        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
   fStart=true;                   // Признак работы пид с начала (пропуск первой итерации)
 }
@@ -1499,7 +1469,7 @@ err=OK;
               HP.dRelay[RCOMP].set_OFF();            // ПЛОХО через глобальную переменную
                vTaskDelay(1000/ portTICK_PERIOD_MS); // задержка на прохождение команды
                state=read_0x03_16(MX2_STATE);        // 0:Начальное состояние, 2:Остановка 3:Вращение 4:Остановка с выбегом 5:Толчковый ход 6:Торможение  постоянным током 7:Выполнение  повторной попытки 8:Аварийное  отключение 9:Пониженное напряжение -1:Блокировка]
-              if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
+ /*             if ((state!=4)||(state!=2)||(state!=7)) { // если не тормозим то плохо, надо по модбасу рулить
               	 err=write_0x05_bit(MX2_START, false);   // подать команду ход/стоп через модбас
                   _delay(100);
               	 err=write_0x05_bit(MX2_START, false);   // дубль подать команду ход/стоп через модбас
@@ -1507,7 +1477,7 @@ err=OK;
               	 err=ERR_FC_RCOMP;
                  set_Error(err,(char*)name);             // Подъем ошибки на верх и останов ТН
               	 journal.jprintf("$ERROR: it is not possible to stop the inverter via RCOMP, the inverter is blocked\n"); 
-              	}
+              	} */
       /*         for(i=0;i<FC_NUM_READ;i++)  // установить целевую частоту в 0
 		            {
 		              err=write_0x10_32(MX2_TARGET_FR,0);

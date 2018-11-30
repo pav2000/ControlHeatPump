@@ -516,8 +516,8 @@ if (xTaskCreate(vReadSensor,"ReadSensor",200,NULL,4,&HP.xHandleReadSensor)==errC
 HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",100,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*100; // 150, до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",50,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*50; // 100, 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
@@ -1269,90 +1269,96 @@ void vUpdateEEV(void *)
 }
 #endif
 
-// Задача обеспечения движения шаговика EEV
 #ifdef EEV_DEF
+// Задача обеспечения движения шаговика EEV
 void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
-  static int16_t  cmd=0;
-  volatile int16_t steps_left=0, step_number=0, start_pos=0, pos=0;
-  volatile boolean direction=true;
-  
-  for( ;; )
-  {
-    // Полный цикл движения шаговика с разгребанием очереди команд,
-    // В очереди лежат АБСОЛЮТНЫЕ координаты
-    // При этом если очередь содержит более одной команды - просто суммируем все команды и двигаемся по итоговой сумме
-    // Это значит что шаговик не успевает за темпом выдачи команд программой. Экономим время
-     
-    // 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
-     pos=0; // текущее суммарное движение - обнулится
-     start_pos=HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
-  //   step_number=HP.dEEV.EEV; 
-  //  Serial.print("1. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV); 
-      // 3. Движение
-     while (xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0)==pdPASS)    // Читаем очередь пока есть чего читать
-      {
-          pos=pos+(cmd-start_pos);                                            // Суммируем все приращения для получение итогового движения
-          start_pos=cmd;                                                      // итоговая абсолютная координата отдельной команды
-  //        Serial.print("2. Read Queu cmd: ");   Serial.println(cmd); 
-  //        if (HP.dEEV.setZero) { step_number=HP.dEEV.stepperEEV.number_of_steps;  break;}  // Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
-            // Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
-            if (HP.dEEV.setZero) { step_number=(HP.dEEV.stepperEEV.number_of_steps/8)*8+32;/*pos=-530;*/ break;} // Должно делится на 8 и 4 без остатка
-      }   
+  // Размер стека не позволяет использовать внутри jprintf.* !!!
+	static int16_t cmd = 0;
+	static int16_t steps_left = 0, step_number = 0, start_pos = 0, pos = 0;
+	static boolean direction = true;
 
-      // if (pos==0) continue; // двигать нечего
- //      Serial.print("3. Sum command=");   Serial.println(pos);  
-      // 2. Подготовка к движению
-      steps_left = abs(pos);                                    // Определить абсолютное число шагов движения он уменьшается до 0
-      // НАПРАВЛЕНИЕ determine direction based on whether steps_to_mode is + or -:
-      if (pos > 0)  direction = true; 
-      if (pos < 0)  direction = false; 
+	for(;;) {
+		// Полный цикл движения шаговика с разгребанием очереди команд,
+		// В очереди лежат АБСОЛЮТНЫЕ координаты
+		// При этом если очередь содержит более одной команды - просто суммируем все команды и двигаемся по итоговой сумме
+		// Это значит что шаговик не успевает за темпом выдачи команд программой. Экономим время
 
-      
-   //    Serial.print("3. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV); 
-      // 3. Движение
-      while (steps_left>0)
-      {
-         if (direction)  // направление в увеличение
-          {
-            step_number++;
-            HP.dEEV.EEV++;                        
-          }
-          else                      // направление в уменьшение
-          {
-            step_number--;
-            HP.dEEV.EEV--; 
-          }
-          steps_left--;                                                      // уменьшить счетчик шагов
-          if ((step_number<0)&&(!HP.dEEV.setZero)) journal.jprintf(" Warring step_number<0\n"); 
-          #if EEV_PHASE==PHASE_4  // 4 фазы движения
-              HP.dEEV.stepperEEV.stepOne(abs(step_number % 4));                  // Сделать один шаг //
-          #else                     // остальные варианты  8 фаз движения
-              HP.dEEV.stepperEEV.stepOne(abs(step_number % 8));                   // Сделать один шаг //
-       //     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
-          #endif
-             
-       //     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
-         vTaskDelay(HP.dEEV.stepperEEV.step_delay/portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
-      }
-         
-      vTaskDelay(500/portTICK_PERIOD_MS);               // -!            // пауза  0.5 секунда ОБЯЗАТЕЛЬНО, иначе не сбрасывается isBuzy() НЕПОНЯТНО
-      
-      if (HP.dEEV.setZero) {HP.dEEV.setZero=false; HP.dEEV.EEV=0; step_number=0;}  // если стоит признак установки нуля, обнулить и сбросить признак
-   //   Serial.print("4. EEV=");   Serial.print(HP.dEEV.EEV); Serial.print("  step_number=");   Serial.println(step_number);  
-        
-      // 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
-      if (xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0)==errQUEUE_EMPTY)
-      {
-   //     Serial.println("6. TaskSuspend ");
-        HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
-       if (!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
-        vTaskSuspend(NULL);               // Приостановить задучу vUpdateStepperEEV
-      } 
-   // Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
-  //    Serial.println("5. new command ");  
-  } // for
- vTaskDelete( NULL ); 
+		// 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
+		pos = 0; // текущее суммарное движение - обнулится
+		start_pos = HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
+		//   step_number=HP.dEEV.EEV;
+		//  Serial.print("1. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV);
+		// 3. Движение
+		while(xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == pdPASS)    // Читаем очередь пока есть чего читать
+		{
+			pos = pos + (cmd - start_pos);                                            // Суммируем все приращения для получение итогового движения
+			start_pos = cmd;                                                      // итоговая абсолютная координата отдельной команды
+			//        Serial.print("2. Read Queu cmd: ");   Serial.println(cmd);
+			//        if (HP.dEEV.setZero) { step_number=HP.dEEV.stepperEEV.number_of_steps;  break;}  // Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
+			// Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
+			if(HP.dEEV.setZero) {
+				step_number = (HP.dEEV.stepperEEV.number_of_steps / 8) * 8 + 32;/*pos=-530;*/
+				break;
+			} // Должно делится на 8 и 4 без остатка
+		}
+
+		// if (pos==0) continue; // двигать нечего
+		//      Serial.print("3. Sum command=");   Serial.println(pos);
+		// 2. Подготовка к движению
+		steps_left = abs(pos);                                    // Определить абсолютное число шагов движения он уменьшается до 0
+		// НАПРАВЛЕНИЕ determine direction based on whether steps_to_mode is + or -:
+		if(pos > 0) direction = true;
+		if(pos < 0) direction = false;
+
+		//    Serial.print("3. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV);
+		// 3. Движение
+		while(steps_left > 0) {
+			if(direction)  // направление в увеличение
+			{
+				step_number++;
+				HP.dEEV.EEV++;
+			} else                      // направление в уменьшение
+			{
+				step_number--;
+				HP.dEEV.EEV--;
+			}
+			steps_left--;                                                      // уменьшить счетчик шагов
+			if((step_number < 0) && (!HP.dEEV.setZero)) {
+				HP.dEEV.set_error(ERR_MIN_EEV);
+				break;
+			}
+#if EEV_PHASE==PHASE_4  // 4 фазы движения
+			HP.dEEV.stepperEEV.stepOne(abs(step_number % 4));                  // Сделать один шаг //
+#else                     // остальные варианты  8 фаз движения
+			HP.dEEV.stepperEEV.stepOne(abs(step_number % 8));                   // Сделать один шаг //
+			//     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
+#endif
+
+			//     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
+			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
+		}
+
+		//    vTaskDelay(500/portTICK_PERIOD_MS);               // -!            // пауза  0.5 секунда ОБЯЗАТЕЛЬНО, иначе не сбрасывается isBuzy() НЕПОНЯТНО
+
+		if(HP.dEEV.setZero) {
+			HP.dEEV.EEV = 0;
+			step_number = 0;
+			HP.dEEV.setZero = false;
+		}  // если стоит признак установки нуля, обнулить и сбросить признак
+		//   Serial.print("4. EEV=");   Serial.print(HP.dEEV.EEV); Serial.print("  step_number=");   Serial.println(step_number);
+
+		// 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
+		if(xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) {
+			//     Serial.println("6. TaskSuspend ");
+			HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
+			if(!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
+			vTaskSuspend(NULL);               // Приостановить задучу vUpdateStepperEEV
+		}
+		// Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
+		//    Serial.println("5. new command ");
+	} // for
+	vTaskDelete( NULL);
 }
 #endif
 
@@ -1361,7 +1367,7 @@ void vUpdateStepperEEV(void *)
 void vUpdateCommand(void *)
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
 	for(;;) {
-		HP.runCommand();                          // Выполнение команд управления ТН
+		HP.runCommand();       // Выполнение команд управления ТН
 		vTaskSuspend(NULL);    // Команды выполнены, остановить задачу vUpdateCommand, пуск осуществляется при посылке команды
 	}
 	vTaskDelete( NULL);
@@ -1381,7 +1387,11 @@ void vServiceHP(void *)
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
-				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+				#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
+ 				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+                #else
+ 				if(++task_updstat_chars >= HP.get_tChart() && HP.get_State()!=pOFF_HP) { // пришло время и ТН включен
+                #endif 					
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
 				}
