@@ -28,7 +28,7 @@
     <tr><td>Автоматический подбор частоты(ПИД регулирование)<sup>1</sup></td><td><input type="checkbox" id="get_paramfc-auto" onchange="setParam('get_paramFC(AUTO)');"></td></tr>
     <tr><td>Авто-сброс не критичного сбоя инвертора</td><td><input type="checkbox" id="get_paramfc-arstflt" onchange="setParam('get_paramFC(ARSTFLT)');"></td></tr>
     <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_paramfc-logw" onchange="setParam('get_paramFC(LOGW)');"></td></tr>
-    <tr><td>Время обновления алгоритма пид регулятора, сек.</td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
+    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>2</sup>, сек.</td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
     <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
@@ -60,6 +60,7 @@
    </tbody>
    </table>
    1. Если опция выбрана то используется ПИД регулирование, если нет то режим "Старт-Стоп"<br/>
+   2. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
   </div>
 
 <div name="hide_fcanalog" class="row1">

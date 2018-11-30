@@ -1,7 +1,7 @@
 html, body {font-size:12px;padding:0;margin:0; font-family: Arial,'Helvetica Neue', Helvetica, sans-serif;  }
 .content {-webkit-transition-property: margin; transition-property: margin; -webkit-transition-duration: 0.4s; transition-duration: 0.4s; -webkit-transition-timing-function: ease-out; transition-timing-function: ease-out;background: -webkit-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -o-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -ms-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: -moz-linear-gradient(top, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);background: linear-gradient(to bottom, rgb(87, 129, 158) 0%, rgb(166, 190, 200) 38%, rgb(215, 205, 177) 90%, rgb(176, 161, 150) 100%);}
 .menu{width:220px;margin-left:27px; position: absolute; z-index: 500; left: 0;background: -webkit-linear-gradient(85deg, rgba(25, 29, 35, 0.85) 0%, rgba(47, 44, 42, 0.85) 100%);background: -o-linear-gradient(85deg, rgba(25, 29, 35, 0.85) 0%, rgba(47, 44, 42, 0.85) 100%);background: -ms-linear-gradient(85deg, rgba(25, 29, 35, 0.85) 0%, rgba(47, 44, 42, 0.85) 100%);background: -moz-linear-gradient(85deg, rgba(25, 29, 35, 0.85) 0%, rgba(47, 44, 42, 0.85) 100%);background: linear-gradient(5deg, rgba25, 29, 35, 0.85) 0%, rgba(47, 44, 42, 0.85) 100%);}
-#chart-container {background: #ffffff90;}
+#chart-container {background: #ffffff;}
 g.highcharts-range-selector-buttons {background: #ffffff;}
 
 
