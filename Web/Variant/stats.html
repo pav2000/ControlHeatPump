@@ -215,28 +215,47 @@ function createChart() {
 			id: 'P'
 		}, {
 			title: {
-				text: 'Напряжение, V'
+				text: 'Напряжение, V',
+				align: 'high',
+            	offset: 20,
+				rotation: 90,
+            	y: 340
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'Мощность, кВт'
+				text: 'Мощность, кВт',
+				align: 'high',
+            	offset: 10,
+				rotation: 90,
+            	y: 340
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP'
+				text: 'COP',
+				align: 'high',
+            	offset: 9,
+				rotation: 90,
+            	y: 340,
+				x: 4,
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: 'Моточасы, м'
+				text: 'Моточасы, м',
+				align: 'high',
+            	offset: 9,
+				rotation: 90,
+            	y: 340,
+				x: 4,
+				reserveSpace: true
 			},
 			opposite: true,
 			showEmpty: false,
