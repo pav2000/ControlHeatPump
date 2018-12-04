@@ -557,15 +557,19 @@ void get_txtSettings(uint8_t thread)
                    }    
              strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");     _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
              strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");   _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Overheat()/100.0,2); STR_END;
-             strcat(Socket[thread].outBuf," Корректировка перегегрева:\r\n");
-             strcat(Socket[thread].outBuf,"Флаг включения корректировки перегерва от разности температур конденсатора и испраителя: ");  HP.dEEV.get_paramEEV((char*)eev_cCORRECT,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf," Корректировка перегрева:\r\n");
+             strcat(Socket[thread].outBuf,"Флаг включения корректировки перегрева от разности температур конденсатора и испарителя: ");  HP.dEEV.get_paramEEV((char*)eev_cCORRECT,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Задержка после старта компрессора (сек): ");  HP.dEEV.get_paramEEV((char*)eev_cDELAY,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Период в циклах ЭРВ, сколько пропустить (циклы): ");  HP.dEEV.get_paramEEV((char*)eev_cPERIOD,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Температура нагнетания - конденсации (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cDELTA,Socket[thread].outBuf);STR_END; 
-             strcat(Socket[thread].outBuf,"Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cDELTAT,Socket[thread].outBuf);STR_END; 
-             strcat(Socket[thread].outBuf,"Коэффициент: ");  HP.dEEV.get_paramEEV((char*)eev_cKF,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Стартовый перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_START,Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Минимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MIN,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Максимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MAX,Socket[thread].outBuf);STR_END; 
-             strcat(Socket[thread].outBuf,"Минимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MIN,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Пропорциональная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKp,Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Интегральная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKi,Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Дифференциальная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKd,Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Разница для мин. корректировки: "); HP.dEEV.get_paramEEV((char*)eev_cPidKpdm,Socket[thread].outBuf); STR_END;
+
              strcat(Socket[thread].outBuf," Глобальные настройки:\r\n");
              strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_ERR_KP,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Скорость шагового двигателя ЭРВ (импульсы в сек.): ");  HP.dEEV.get_paramEEV((char*)eev_SPEED,Socket[thread].outBuf);STR_END; 
@@ -718,11 +722,19 @@ uint16_t get_csvChart(uint8_t thread)
 	strcpy(Socket[thread].outBuf,"Point;");
 	//    strcpy(Socket[thread].outBuf,""); _itoa(HP.sTemp[TIN].Chart.get_num(),Socket[thread].outBuf);strcat(Socket[thread].outBuf,";");// вывести число точек
 	for(i=0;i<TNUMBER;i++) if(HP.sTemp[i].Chart.get_present())      {strcat(Socket[thread].outBuf,HP.sTemp[i].get_name()); strcat(Socket[thread].outBuf,";");}
-	for(i=0;i<ANUMBER;i++)if(HP.sADC[i].Chart.get_present())        { strcat(Socket[thread].outBuf,HP.sADC[i].get_name()); strcat(Socket[thread].outBuf,";");}
+#ifndef MIN_RAM_CHARTS
+	for(i=0;i<ANUMBER;i++)
+#else
+	for(i=PCON+1;i<ANUMBER;i++)
+#endif
+		if(HP.sADC[i].Chart.get_present())        { strcat(Socket[thread].outBuf,HP.sADC[i].get_name()); strcat(Socket[thread].outBuf,";");}
 	for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].Chart.get_present()) { strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); strcat(Socket[thread].outBuf,";");}
 #ifdef EEV_DEF
 	if(HP.dEEV.Chart.get_present())     strcat(Socket[thread].outBuf,"posEEV;");
-	if(HP.ChartOVERHEAT.get_present())  strcat(Socket[thread].outBuf,"OVERHEAT;");
+  #ifdef DEF_OHCor_OverHeatStart
+	if(HP.ChartOVERHEAT_TARGET.get_present())  strcat(Socket[thread].outBuf,"OverHeatTarget;");
+  #endif
+	if(HP.ChartOVERHEAT.get_present())  strcat(Socket[thread].outBuf,"OverHeat;");
 	if(HP.ChartTPEVA.get_present())     strcat(Socket[thread].outBuf,"T[PEVA];");
 	if(HP.ChartTPCON.get_present())     strcat(Socket[thread].outBuf,"T[PCON];");
 #endif
@@ -746,8 +758,10 @@ uint16_t get_csvChart(uint8_t thread)
 	if(HP.ChartCOP.get_present())       strcat(Socket[thread].outBuf,"COP;");
 
 #ifdef USE_ELECTROMETER_SDM
+  #ifndef MIN_RAM_CHARTS
 	if(HP.dSDM.ChartVoltage.get_present())    strcat(Socket[thread].outBuf,"VOLTAGE;");
 	if(HP.dSDM.ChartCurrent.get_present())    strcat(Socket[thread].outBuf,"CURRENT;");
+  #endif
 	//    if(HP.dSDM.sAcPower.get_present())    strcat(Socket[thread].outBuf,"acPOWER;");
 	//    if(HP.dSDM.sRePower.get_present())    strcat(Socket[thread].outBuf,"rePOWER;");
 	if(HP.dSDM.ChartPower.get_present())      strcat(Socket[thread].outBuf,"fullPOWER;");
@@ -769,6 +783,9 @@ uint16_t get_csvChart(uint8_t thread)
 		for(j=0;j<FNUMBER;j++)  if(HP.sFrequency[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[j].Chart.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
 #ifdef EEV_DEF
 		if(HP.dEEV.Chart.get_present())    { _itoa(HP.dEEV.Chart.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
+	#ifdef DEF_OHCor_OverHeatStart
+		if(HP.ChartOVERHEAT_TARGET.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT_TARGET.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
+	#endif
 		if(HP.ChartOVERHEAT.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 		if(HP.ChartTPEVA.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPEVA.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 		if(HP.ChartTPCON.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPCON.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
@@ -796,8 +813,10 @@ uint16_t get_csvChart(uint8_t thread)
 		if(HP.ChartCOP.get_present())   { _ftoa(Socket[thread].outBuf,(float)HP.ChartCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 
 #ifdef USE_ELECTROMETER_SDM
+	#ifndef MIN_RAM_CHARTS
 		if(HP.dSDM.ChartVoltage.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartVoltage.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 		if(HP.dSDM.ChartCurrent.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartCurrent.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
+	#endif
 		//   if(HP.dSDM.sAcPower.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dSDM.sAcPower.get_Point(i),2)); strcat(Socket[thread].outBuf,";"); }
 		//   if(HP.dSDM.sRePower.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dSDM.sRePower.get_Point(i),2)); strcat(Socket[thread].outBuf,";"); }
 		if(HP.dSDM.ChartPower.get_present())       { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartPower.get_Point(i),2); strcat(Socket[thread].outBuf,";"); }

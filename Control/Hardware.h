@@ -336,7 +336,8 @@ private:
   int8_t stepUp();                                       // 1 Шаг в плюс возвращает код ошибки
   void resetPID();                                       // Сброс пид регулятора
 
-  PID_WORK_STRUCT pidw;  // переменные пид регулятора
+  PID_WORK_STRUCT pidw;  								// переменные пид регулятора
+  PID_WORK_STRUCT OHCor_pidw;  							// переменные пид регулятора
   uint16_t Pid_start;                                    // откуда стартует ПИД регулятор обновление в функции Resume
   int16_t Overheat;                                      // Перегрев текущий (сотые градуса)
   int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации
@@ -352,13 +353,7 @@ private:
 		  int16_t manualStep;                                    // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 		  TYPEFREON typeFreon;                                   // Тип фреона
 		  RULE_EEV ruleEEV;                                      // правило работы ЭРВ
-
-		  uint16_t OHCor_Delay;									 // Задержка после старта компрессора, сек
-		  uint16_t OHCor_Period;								 // Период в циклах ЭРВ, сколько пропустить
-		  int16_t OHCor_TDIS_TCON;							     // Температура нагнетания - конденсации (/0.01) при конденсации 20 градусов
-		  uint8_t OHCor_TDIS_TCON_Thr;							 // Порог (/0.1), после превышения TDIS_TCON + TDIS_TCON_Thr начинаем менять перегрев
-		  uint8_t OHCor_TDIS_ADD;								 // Корректировка (/0.1) в + для TDIS_TCON на каждые 10 градусов выше 20.
-		  int16_t OHCor_K;										 // Коэффициент (/0.001): перегрев += дельта * K
+		  PID_STRUCT OHCor_pid;									// ПИД регулятор корретировки перегрева
 		  int16_t OHCor_OverHeatMin;							 // Минимальный перегрев (сотые градуса)
 		  int16_t OHCor_OverHeatMax;							 // Максимальный перегрев (сотые градуса)
 
@@ -375,6 +370,8 @@ private:
 		  byte flags;                                            // флаги ЭРВ,
 	      int16_t OHCor_OverHeatStart;							 // Начальный перегрев (сотые градуса)
 		  int16_t  maxSteps;                                     // Максимальное число шагов ЭРВ (диапазон)
+		  uint16_t OHCor_Delay;									 // Задержка корректировки пергрева после старта компрессора, сек
+		  int16_t OHCor_TDIS_TCON;							     // Температура нагнетания - конденсации (/0.01) при конденсации 30 градусов, 0 испарения, и OHCor_OverHeatStart
   } _data;                                                       // Конец структуры для сохранения настроек 
 };
 
@@ -691,8 +688,10 @@ class devSDM
       uint8_t  *get_save_addr(void) { return (uint8_t *)&settingSDM; } // Адрес структуры сохранения
       uint16_t  get_save_size(void) { return sizeof(settingSDM); } // Размер структуры сохранения
        // Графики из счетчика
+#ifndef MIN_RAM_CHARTS
       statChart ChartVoltage;                          // Статистика по напряжению
       statChart ChartCurrent;                          // Статистика по току
+#endif
       statChart ChartPower;                            // Статистика по Полная мощность
   private:
       int8_t  err;                                     // ошибка стесчика (работа)

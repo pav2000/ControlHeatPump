@@ -1,7 +1,7 @@
-/* ver 0.977 beta */
+/* ver 0.978 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 //var urlcontrol = 'http://77.50.254.24:25402'; 
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
@@ -10,7 +10,7 @@ var urlupdate = 4010; // время обновления параметров в
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "");
-	var rec = new RegExp('et_listChart');
+	var rec = new RegExp('et_listChart.?');
 	var rel = new RegExp('et_sensorListIP');
 	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
@@ -246,7 +246,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											window.poseev = poseev;
 											dataSeries1 = poseev;
 										}
-										if(title == 'OVERHEAT') {
+										if(title == 'OverHeat') {
 											dataSeries2 = window.poseev;
 											visible = true;
 										} else {

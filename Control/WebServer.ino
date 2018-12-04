@@ -1776,74 +1776,64 @@ void parserGET(char *buf, char *strReturn, int8_t )
 //		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"get_Stat")==0)
 //		            } //if ((strstr(str,"Stat")>0)
                   
-		          //11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
-		          if (strstr(str,"Chart"))          // Проверка для запросов содержащих Chart
-		             {
-		               if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
-		                  {
-		                  HP.get_Chart(x+1,strReturn);
-		                  ADD_WEBDELIM(strReturn) ; continue;
-		                  } else strcat(strReturn,"E03" WEBDELIM);  continue;  // (strcmp(str,"get_Chart")==0)
-		            } //if ((strstr(str,"Chart")>0)  
-         
-                  //12.  Частотный преобразователь -----------------------------------------------------------------
-		          if (strstr(str,"FC"))          // Проверка для запросов содержащих FC get_paramFC set_paramFC 
-		             {
-     	               if (strcmp(str,"get_paramFC")==0)           // Функция get_paramFC - получить значение параметра FC
-		                  {
-		                    HP.dFC.get_paramFC(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
-		                  } 
-		              else if (strcmp(str,"set_paramFC")==0)           // Функция set_paramFC - установить значение паремтра FC
-		                  {
-							if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
-                    		if (HP.dFC.set_paramFC(x+1,pm)) HP.dFC.get_paramFC(x+1,strReturn);
-                    		else  strcat(strReturn,"E27");  // выход за диапазон значений   
-                  			} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
-                           ADD_WEBDELIM(strReturn) ;
-   		                  } else strcat(strReturn,"E03" WEBDELIM);  continue; // (strcmp(str,"set_paramFC")==0)
-		            } //if ((strstr(str,"FC")>0)  
+	          //11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
+	          if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
+	          {
+	        	  HP.get_Chart(x+1,strReturn);
+	        	  ADD_WEBDELIM(strReturn); continue;
+	          }
 
-                  // 13 Опции теплового насоса
-         	     if (strstr(str,"optionHP"))          // Проверка для запросов содержащих optionHP
-		             {         
-                      if (strcmp(str,"get_optionHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
-		                  {
-		                   HP.get_optionHP(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
-		                  } 
-	                  else if (strcmp(str,"set_optionHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
-				          {
-				           if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
-				           if (HP.set_optionHP(x+1,pm))   HP.get_optionHP(x+1,strReturn);  // преобразование удачно, 
-				           else strcat(strReturn,"E17") ; // выход за диапазон значений
-				           } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
-				          ADD_WEBDELIM(strReturn) ; continue;
-				          } else strcat(strReturn,"E03" WEBDELIM);  continue;
-		             }
-		          //14.  Параметры  отопления и охлаждения ТН
-		          if (strstr(str,"HP"))          // Проверка для запросов содержащих HP
-		             {
-		               if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
-		                  { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
-		              else if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
-		                  {
-		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
-		                    if (HP.Prof.set_paramCoolHP(x+1,pm))  HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
-		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
-		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
-		                  ADD_WEBDELIM(strReturn) ; continue;
-		                  } // (strcmp(str,"paramCoolHP")==0) 
-		               else if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
-		                  { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
-		               else if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
-		                  {
-		                  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
-		                    if (HP.Prof.set_paramHeatHP(x+1,pm))  HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
-		                    else  strcat(strReturn,"E16") ; // ошибка преобразования строки
-		                    } else strcat(strReturn,"E11");   // ошибка преобразования во флоат 
-		                  ADD_WEBDELIM(strReturn) ; continue;
-		                  } 
-		             }
-                   
+	          //12.  Частотный преобразователь -----------------------------------------------------------------
+	          if (strcmp(str,"get_paramFC")==0)           // Функция get_paramFC - получить значение параметра FC
+	          {
+	        	  HP.dFC.get_paramFC(x+1,strReturn);
+	        	  ADD_WEBDELIM(strReturn);
+	        	  continue;
+	          } else if (strcmp(str,"set_paramFC")==0)           // Функция set_paramFC - установить значение паремтра FC
+	          {
+	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+	        		  if (HP.dFC.set_paramFC(x+1,pm)) HP.dFC.get_paramFC(x+1,strReturn);
+	        		  else  strcat(strReturn,"E27");  // выход за диапазон значений
+	        	  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+	        	  ADD_WEBDELIM(strReturn);
+	        	  continue;
+	          }
+
+	          // 13 Опции теплового насоса
+	          if (strcmp(str,"get_optionHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
+	          {
+	        	  HP.get_optionHP(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
+	          }
+	          else if (strcmp(str,"set_optionHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
+	          {
+	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+	        		  if (HP.set_optionHP(x+1,pm))   HP.get_optionHP(x+1,strReturn);  // преобразование удачно,
+	        		  else strcat(strReturn,"E17") ; // выход за диапазон значений
+	        	  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+	        	  ADD_WEBDELIM(strReturn); continue;
+	          }
+	          //14.  Параметры  отопления и охлаждения ТН
+	          if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
+	          { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
+	          else if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
+	          {
+	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+	        		  if (HP.Prof.set_paramCoolHP(x+1,pm))  HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
+	        		  else  strcat(strReturn,"E16") ; // ошибка преобразования строки
+	        	  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+	        	  ADD_WEBDELIM(strReturn) ; continue;
+	          } // (strcmp(str,"paramCoolHP")==0)
+	          else if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
+	          { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
+	          else if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
+	          {
+	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+	        		  if (HP.Prof.set_paramHeatHP(x+1,pm))  HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
+	        		  else  strcat(strReturn,"E16") ; // ошибка преобразования строки
+	        	  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+	        	  ADD_WEBDELIM(strReturn) ; continue;
+	          }
+
              
 		// str - полное имя запроса до (), x+1 - содержит строку что между (), z+1 - после =
 		// код обработки установки значений модбас
