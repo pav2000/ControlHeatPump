@@ -2662,7 +2662,7 @@ void HeatPump::compressorON(MODE_HP mod)
 {
 	if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
 
-	if (is_compressor_on()) return;                                  // Компрессор уже работает
+	if(is_compressor_on()) return;                                  // Компрессор уже работает
 	if(is_next_command_stop()) {
 		journal.jprintf(" Next command stop(%d), skip start", next_command);
 		return;
