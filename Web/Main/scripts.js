@@ -1,4 +1,4 @@
-/* ver 0.977 beta */
+/* ver 0.979 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -10,7 +10,7 @@ var urlupdate = 4010; // время обновления параметров в
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "");
-	var rec = new RegExp('et_listChart');
+	var rec = new RegExp('et_listChart.?');
 	var rel = new RegExp('et_sensorListIP');
 	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
@@ -205,167 +205,9 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 									}
 								} else if(type == 'chart') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
-										title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
-										var yizm = '';
-										var ytooltip = '';
-										var height = 300;
-										var visible = false;
-										var timeval = window.time_chart;
-										if(!timeval) { console.log("time_chart was not intialized!"); continue; }
-										timeval = Number(timeval.replace(/\D+/g, ""));
-										var today = new Date();
-										var regexpt = /^(T|O|d)/g;
-										var regexpp = /^PE/g;
-										var regexpe = /^pos/g;
-										var regexpr = /^R/g;
-										var regexpw = /^Pow|pow/g;
-										if(regexpt.test(title)) { yizm = "Температура, °C"; ytooltip = " °C"; }
-										if(regexpp.test(title)) { yizm = "Давление, BAR"; ytooltip = " BAR"; }
-										if(regexpr.test(title)) { yizm = "Состояние реле"; ytooltip = ""; }
-										if(regexpe.test(title)) { yizm = "Позиция"; ytooltip = ""; }
-										if(regexpw.test(title)) { yizm = "Мощность, кВт"; ytooltip = " kW"; }
-										data = values[1].split(';');
-
-										var dataSeries1 = [];
-										//dataSeries1.pointInterval = timeval; 
-										if(title == 'posEEV') {
-											var poseev = [];
-										}
-										//dataSeries.pointStart = parseInt(start); // its important to parseInt !!!!
-										for(var i = 0; i < data.length - 1; i++) {
-											//today.setSeconds(today.getSeconds() + 10);  console.log(today.toLocaleTimeString());
-											if(title == 'posEEV') {
-												poseev.push([i, Number(data[i])]);
-											} else {
-												dataSeries1.push([i, Number(data[i])]); //data: [{ x: 1880, y: -0.4 }, { x: 2014, y: 0.52 }]
-											}
-										}
-
-										if(title == 'posEEV') {
-											window.poseev = poseev;
-											dataSeries1 = poseev;
-										}
-										if(title == 'OVERHEAT') {
-											dataSeries2 = window.poseev;
-											visible = true;
-										} else {
-											var dataSeries2 = [];
-										}
-										//if (title == 'posEEV') {break;}
-
-										$('#' + resultdiv).highcharts({
-											title: {
-												text: title,
-												x: -15
-											},
-											chart: {
-												type: 'line',
-												zoomType: 'xy',
-												height: height,
-												animation: false,
-												resetZoomButton: {
-													position: {
-														align: undefined,
-														verticalAlign: "top",
-														x: 20,
-														y: -40
-													},
-													relativeTo: "plot"}
-											},
-											lang: {
-												contextButtonTitle: "Меню графика",
-												decimalPoint: ".",
-												downloadJPEG: "Скачать JPEG картинку",
-												downloadPDF: "Скачать PDF документ",
-												downloadPNG: "Скачать PNG картинку",
-												downloadSVG: "Скачать SVG векторную картинку",
-												drillUpText: "Вернуться к {series.name}",
-												loading: "Загрузка...",
-												noData: "Нет информации для отображения",
-												numericSymbolMagnitude: 1000,
-												numericSymbols: ["k", "M", "G", "T", "P", "E"],
-												printChart: "Распечатать график",
-												resetZoom: "Сброс увеличения",
-												resetZoomTitle: "Сброс увеличения к 1:1"
-											},
-											xAxis: {
-												title: {
-													text: "Время, позиция: x" + window.time_chart}},
-											/*yAxis: [{ title: { text: yizm },labels: {align: 'left', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
-							{ title: { text: 'Положение ЭРВ(шаги)' },labels: {align: 'right', x: 0, y: 0, format: '{value:.,0f}' }, plotLines: [{  value: 0,  width: 1,  color: '#808080'  }] },
-							opposite: true],*/
-											yAxis: [{ // Primary yAxis
-												allowDecimals: false,
-												labels: {
-													format: '{value}',
-													style: {
-														color: Highcharts.getOptions().colors[0]}},
-												title: {
-													text: yizm,
-													style: {
-														color: Highcharts.getOptions().colors[0]}}
-											}, { // Secondary yAxis
-												allowDecimals: false,
-												showEmpty: false,
-												visible: visible,
-												title: {
-													text: 'Положение ЭРВ',
-													style: {
-														color: Highcharts.getOptions().colors[1]}},
-												labels: {
-													format: '{value}',
-													style: {
-														color: Highcharts.getOptions().colors[1]}},
-												opposite: true
-											}],
-											tooltip: {
-												valueSuffix: ''
-											},
-											legend: {
-												layout: 'vertical',
-												align: 'right',
-												verticalAlign: 'middle',
-												borderWidth: 0
-											},
-											//plotOptions: { series: { dataGrouping: { enabled: false } } },
-											plotOptions: {
-												series: {
-													label: {
-														connectorAllowed: false},
-										            animation: false,
-													pointStart: 0
-												}
-											},
-											series: [{
-													yAxis: 0,
-													name: title,
-													tooltip: {
-														valueDecimals: 2},
-													states: {
-														hover: {
-															enabled: false}},
-													showInLegend: false,
-													turboThreshold: 0,
-													data: dataSeries1,
-													dashStyle: "Solid"
-												},
-												{
-													yAxis: 1,
-													name: 'Положение ЭРВ',
-													tooltip: {
-														valueDecimals: 2},
-													states: {
-														hover: {
-															enabled: false}},
-													showInLegend: false,
-													turboThreshold: 0,
-													data: dataSeries2,
-													dashStyle: "Solid"
-												}
-											]
-
-										});
+									if(values[0]) {
+										if(!window.time_chart) { console.log("Chart was not intialized!"); continue; }
+										createChart(values, resultdiv);
 									}
 								} else if(type == 'scan') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
@@ -742,7 +584,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										if(element) {
 											if(element.className == "charsw") {
 												element.innerHTML = element.title.substr(valuevar,1);
-											} else if(/^E/.test(values[1])) {
+											} else if(/^E\d+/.test(values[1])) {
 												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
 												else element.placeholder = values[1];
 											} else if(element != document.activeElement) {

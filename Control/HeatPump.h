@@ -419,6 +419,9 @@ class HeatPump
     
     #ifdef EEV_DEF
     statChart ChartOVERHEAT;                                // перегрев
+		#ifdef DEF_OHCor_OverHeatStart
+    statChart ChartOVERHEAT_TARGET;                         // перегрев цель
+		#endif
     statChart ChartTPEVA;                                   // температура расчитанная из давления испариения
     statChart ChartTPCON;                                   // температура расчитанная из давления Конденсации
     #endif

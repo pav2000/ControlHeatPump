@@ -435,7 +435,7 @@ boolean statChart::get_boolPoint(uint16_t x,uint16_t mask)
 void statChart::get_PointsStr(uint16_t m, char *b)
 { 
   if ((!present)||(num==0)) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);
@@ -448,7 +448,7 @@ void statChart::get_PointsStr(uint16_t m, char *b)
 void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
 {
   if (!present || num == 0 || !sChart->get_present() || sChart->get_num() == 0) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);
@@ -461,7 +461,7 @@ void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
 void statChart::get_PointsStrPower(uint16_t m, char *b, statChart *inChart,statChart *outChart, float kfCapacity)
 {
   if (!present || num == 0 || !inChart->get_present() || inChart->get_num()==0 || !outChart->get_present() || outChart->get_num()== 0) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);
@@ -508,7 +508,7 @@ void Profile::initProfile()
   Cool.pid.Ki=0;                       // Интегральная составляющая ПИД ТН
   Cool.pid.Kd=5;                       // Дифференциальная составляющая ПИД ТН
   Cool.tempPID=2200;                // Целевая температура ПИД
-  Cool.pid.errKp=0;                    // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
+  Cool.pid.Kp_dmin=0;                    // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
  
  // Защиты
   Cool.tempIn=1000;                    // Tемпература подачи (минимальная)
@@ -532,7 +532,7 @@ void Profile::initProfile()
   Heat.pid.Ki=0;                       // Интегральная составляющая ПИД ТН
   Heat.pid.Kd=5;                       // Дифференциальная составляющая ПИД ТН
   Heat.tempPID=3500;                // Целевая температура ПИД
-  Heat.pid.errKp=0;                    // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
+  Heat.pid.Kp_dmin=0;                    // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
   Heat.add_delta_temp = 150;	 	   // Добавка температуры к установке бойлера, в градусах
   Heat.add_delta_hour = 5;		   	   // Начальный Час добавки температуры к установке бойлера
   Heat.add_delta_end_hour = 6;         // Конечный Час добавки температуры к установке
@@ -567,7 +567,7 @@ void Profile::initProfile()
   Boiler.pid.Ki=1;                      // Интегральная составляющая ПИД ГВС
   Boiler.pid.Kd=0;                      // Дифференциальная составляющая ПИД ГВС
   Boiler.tempPID=3800;               // Целевая температура ПИД ГВС
-  Boiler.pid.errKp=0;                   // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
+  Boiler.pid.Kp_dmin=0;                   // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, не используется
   Boiler.tempRBOILER=3500;              // Темпеартура ГВС при котором включается бойлер и отключатся ТН
   Boiler.add_delta_temp = 1800;		    // Добавка температуры к установке бойлера, в градусах
   Boiler.add_delta_hour = 6;		    // Начальный Час добавки температуры к установке бойлера
@@ -923,9 +923,9 @@ int32_t Profile::load(int8_t num)
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
   // Обнуляем ПИД errKp
-  Heat.pid.errKp = 0;
-  Cool.pid.errKp = 0;
-  Boiler.pid.errKp = 0;
+  Heat.pid.Kp_dmin = 0;
+  Cool.pid.Kp_dmin = 0;
+  Boiler.pid.Kp_dmin = 0;
   return adr;
  }
 

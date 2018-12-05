@@ -94,15 +94,7 @@ function createChart() {
 			}
 		},
 		rangeSelector: {
-			buttons: [{
-				count: 30,
-				type: 'minute',
-				text: '30м'
-			}, {
-				count: 12,
-				type: 'hour',
-				text: '12ч'
-			}, {
+			buttons: [ {
 				count: 1,
 				type: 'day',
 				text: '1д'
@@ -119,9 +111,17 @@ function createChart() {
 				type: 'week',
 				text: 'нед'
 			}, {
+				count: 2,
+				type: 'week',
+				text: '2нед'
+			}, {
 				count: 1,
 				type: 'month',
 				text: 'мес'
+			}, {
+				count: 3,
+				type: 'month',
+				text: '3мес'
 			}, {
 				count: 1,
 				type: 'year',

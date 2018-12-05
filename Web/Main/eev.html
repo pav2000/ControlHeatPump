@@ -1,42 +1,186 @@
-﻿<html>
-<head> 
-  <title>ЭРВ. Народный контроллер ТН</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" type="text/css" href="style.css">
-  <script type="text/javascript" src="jquery.min.js"></script>
-  <script type="text/javascript" src="scripts.js"></script>
-  <script type="text/javascript" src="highcharts.js"></script>
-  <script type="text/javascript" src="exporting.js"></script>
-  <script type="text/javascript">
-    window.onload = function() {
+﻿<html><head> 
+<title>ЭРВ. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type="text/javascript">
+var dataSeries1 = [];
+var dataSeries2 = [];
+var dataSeries3 = [];
+var ReadyMask = 0;
+
+function createChart(values, resultdiv) {
+	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
+	var data = values[1].split(';');
+	if(ReadyMask == 0) {
+		dataSeries1.splice(0,dataSeries1.length); dataSeries2.splice(0,dataSeries2.length);	dataSeries3.splice(0,dataSeries3.length);
+	}
+	if(title == 'Overheat') {
+		for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+		ReadyMask |= 1;
+	} else if(title == 'posEEV') {
+		for(var i = 0; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
+		ReadyMask |= 2;
+	} else if(title = 'OverheatTarget') {
+		for(var i = 0; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
+		ReadyMask |= 4;
+	}
+	if(ReadyMask != 7) return;
+	ReadyMask = 0;
+	$('#chart1').highcharts({
+		title: {
+			text: "Перегрев",
+			x: -15
+		},
+		chart: {
+			type: 'line',
+			zoomType: 'xy',
+			height: 300,
+			animation: false,
+			resetZoomButton: {
+				position: {
+					align: undefined,
+					verticalAlign: "top",
+					x: 20,
+					y: -40
+				},
+				relativeTo: "plot"}
+		},
+		lang: {
+			contextButtonTitle: "Меню графика",
+			decimalPoint: ".",
+			downloadJPEG: "Скачать JPEG картинку",
+			downloadPDF: "Скачать PDF документ",
+			downloadPNG: "Скачать PNG картинку",
+			downloadSVG: "Скачать SVG векторную картинку",
+			drillUpText: "Вернуться к {series.name}",
+			loading: "Загрузка...",
+			noData: "Нет информации для отображения",
+			numericSymbolMagnitude: 1000,
+			numericSymbols: ["k", "M", "G", "T", "P", "E"],
+			printChart: "Распечатать график",
+			resetZoom: "Сброс увеличения",
+			resetZoomTitle: "Сброс увеличения к 1:1"
+		},
+		xAxis: {
+			title: {
+				text: "Время, позиция: x" + window.time_chart + " сек."}},
+		yAxis: [{ // Primary yAxis
+			allowDecimals: false,
+			labels: {
+				format: '{value}',
+				style: {
+					color: Highcharts.getOptions().colors[0]}},
+			title: {
+				text: 'Температура, °C',
+				style: {
+					color: Highcharts.getOptions().colors[0]}}
+		}, { // Secondary yAxis
+			allowDecimals: false,
+			title: {
+				text: 'Положение ЭРВ',
+				style: {
+					color: Highcharts.getOptions().colors[1]}},
+			labels: {
+				format: '{value}',
+				style: {
+					color: Highcharts.getOptions().colors[1]}},
+			opposite: true
+		}],
+		tooltip: {
+			valueSuffix: ''
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'middle',
+			borderWidth: 0
+		},
+		//plotOptions: { series: { dataGrouping: { enabled: false } } },
+		plotOptions: {
+			series: {
+				label: {
+					connectorAllowed: false},
+	            animation: false,
+				pointStart: 0
+			}
+		},
+		series: [{
+				yAxis: 0,
+				name: 'Перегрев',
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries1,
+				dashStyle: "Solid"
+			},
+			{
+				yAxis: 1,
+				name: 'Положение ЭРВ',
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries2,
+				dashStyle: "Solid"
+			},
+			{
+				yAxis: 1,
+				name: 'Цель',
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries3,
+				dashStyle: "Solid"
+			}
+		]
+	});
+}
+
+function GetChart() {
+	loadParam("get_Chart(posEEV)");	
+	loadParam("get_Chart(Overheat)"); 
+	loadParam("get_Chart(OverheatTarget)");
+}
+
+window.onload = function() {
 	urlupdate = 2000;
 	loadParam("get_optionHP(TIME_CHART),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(PINS),get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(CONST),get_paramEEV(RULE),get_paramEEV(MANUAL)");
-    loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cDELTAT),get_paramEEV(cDELTAC),get_paramEEV(cKF),get_paramEEV(cOH_MIN),get_paramEEV(cOH_MAX),get_paramEEV(cOH_START)");
-    updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_paramEEV(cTDELTA),get_Evapor");
-    loadParam("get_Chart(posEEV)");
-    setParam('get_listChart','chart1');
-   // setParam('get_listChart2','chart2')
-	/*Highcharts.setOptions({ global: { useUTC: false } }); */ 
-    $("#autoupdate").change(function(){
-    if(this.checked){
-      var timerId = setInterval(function() { loadParam("get_Chart(posEEV)"); setParam('get_listChart','chart1'); }, 4000)
-      window.timerId = timerId
-    }else{
-      timerId = window.timerId
-      clearInterval(timerId);
-    }
-});       
-  };
+	loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cPKp),get_paramEEV(cPKi),get_paramEEV(cPKd),get_paramEEV(cPKpdm)");
+	updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_paramEEV(cTDELTA),get_Evapor");
+	GetChart();
+	$("#autoupdate").change(function(){
+		if(this.checked) {
+			var timerId = setInterval(function() { GetChart(); }, urlupdate);
+			window.timerId = timerId;
+	   } else {
+			timerId = window.timerId;
+			clearInterval(timerId);
+	   }
+	});       
+};
   </script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
  <h1>ЭРВ <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'><input type="submit" value="Настройки ЭРВ" onclick='location.assign("eevset.html")' style="margin-right:10px;"></h1>
-
   <div class="row1">
-   <h2>Определение перегрева</h2>
    <table>
    <thead>
     <tr>
@@ -58,19 +202,18 @@
         <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
       </td>
       <td nowrap><input id="get_parameev-manual" type="number" step="1" value="0"><input id="get_parameev-manual2" type="submit" value=">"  onclick="setParam('get_paramEEV(MANUAL)');"></td>
-    </tr>         
+    </tr>
    </tbody>
-   </table>            
+   </table>
   </div>
  
  <div class="row1">
-  <h2>Состояние ЭРВ</h2>
   <table>
   <thead>
    <tr>
 	<th>Имя</th>
 	<th>Описание</th>
-	<th>Положение (шаги)</th>
+	<th>Положение, шаги</th>
 	<th>Текущий перегрев </th>
 	<th>Температура кипения</th>
 	<th>Разница: Нагнетание-Конденсация</th>
@@ -102,26 +245,20 @@
    <tr>
 	<th>Задержка после старта, сек</th>
 	<th>Период в циклах ЭРВ</th>
-	<th>Разница Нагнетание-Конденсации (при 30°)</th>
-	<th>Увеличение на каждые 10° конд.</th>
-	<th>Порог разницы, °C</th>
-	<th>Коэффициент</th>
-	<th>Мин. перегрев, °C</th>
-	<th>Макс. перегрев, °C</th>
-	<th>Начальный перегрев, °C</th>
+	<th>Пропорциональная составляющая</th>
+	<th><a data-tooltip="Для пропорциональной составляющей, вблизи уменьшает воздействие до предела этой разницы.">Разница для мин. корректировки</a></th>
+	<th>Интегральная составляющая</th>
+	<th>Дифференциальная составляющая</th>
    </tr>
    </thead>
    <tbody>
    <tr>
 	<td nowrap><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
 	<td nowrap><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
-	<td nowrap><input id="get_parameev-cdelta" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTA)')"></td>
-	<td nowrap><input id="get_parameev-cdeltac" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAC)')"></td>
-	<td nowrap><input id="get_parameev-cdeltat" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELTAT)')"></td>
-	<td nowrap><input id="get_parameev-ckf" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(cKF)')"></td>
-	<td nowrap><input id="get_parameev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MIN)')"></td>
-	<td nowrap><input id="get_parameev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MAX)')"></td>
-	<td nowrap><input id="get_parameev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_START)')"></td>
+	<td nowrap><input id="get_parameev-cpkp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKp)');"></td>
+	<td nowrap><input id="get_parameev-cpkpdm" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKpdm)');"></td>
+	<td nowrap><input id="get_parameev-cpki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKi)');"></td>
+	<td nowrap><input id="get_parameev-cpkd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKd)');"></td>
    </tr>
  </tbody>
  </table>            
@@ -141,22 +278,20 @@
    </thead>
    <tbody>
    <tr>
-	<td nowrap><input id="get_parameev-target" type="number" min="0" max="20" step="0.01"><input id="get_parameev-target2" type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
-	<td nowrap><input id="get_parameev-time" type="number" min="1" max="1000" step="1"><input id="get_parameev-time2" type="submit" value=">" onclick="setParam('get_paramEEV(TIME)');"></td>
-	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="50" step="0.01"><input id="get_parameev-kp2" type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
-	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="50" step="0.01"><input id="get_parameev-ki2" type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
-	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="50" step="0.01"><input id="get_parameev-kd2" type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
+	<td nowrap><input id="get_parameev-target" type="number" min="0" max="20" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
+	<td nowrap><input id="get_parameev-time" type="number" min="1" max="1000" step="1"><input type="submit" value=">" onclick="setParam('get_paramEEV(TIME)');"></td>
+	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
+	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
+	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
    </tr>
  </tbody>
  </table>            
  </div>
 
-<div>Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" >
-<input type="submit" value="Обновить графики"  onclick="setParam('get_listChart','chart1');">
+<div style="float:right;">Автообновление графика: <input id="autoupdate" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
 <select style="display:none" id="get_optionhp-time_chart" disabled></select>
-<select style="display:none" id="get_listchart" onchange="setParam('get_listChart','chart1')"><option value="OVERHEAT">OVERHEAT</option></select>
 </div>
-    <div id="chart1">График не выбран</div>
+<div id="chart1">График не выбран</div>
 </div>
 </body>
 </html>

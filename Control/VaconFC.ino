@@ -60,7 +60,6 @@ int8_t devVaconFC::initFC()
 	  flags=0x00;                                // флаги  0 - наличие FC
 	  _data.setup_flags = 0;
 	 
-    SETBIT0(_data.setup_flags, fAuto); // По умолчанию старт-стоп
     if(!Modbus.get_present()) // modbus отсутствует
     {
         SETBIT0(flags, fFC); // Инвертор не работает
@@ -486,7 +485,6 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_cPOWER)==0)                {  _itoa(get_power(), ret); } else
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_curr_freq/100.0,2);  strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
-    if(strcmp(var,fc_AUTO)==0)                  {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAuto) ? cOne : cZero)); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
@@ -534,7 +532,6 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 {
 	int16_t x = f;
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_AUTO)==0)                  { _data.setup_flags = (_data.setup_flags & ~(1<<fAuto)) | ((x!=0)<<fAuto); return true;  } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { _data.setup_flags = (_data.setup_flags & ~(1<<fAutoResetFault)) | ((x!=0)<<fAutoResetFault); return true;  } else
     if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | ((x!=0)<<fLogWork); return true;  } else
 	#ifdef FC_ANALOG_CONTROL
