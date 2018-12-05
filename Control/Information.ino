@@ -435,7 +435,7 @@ boolean statChart::get_boolPoint(uint16_t x,uint16_t mask)
 void statChart::get_PointsStr(uint16_t m, char *b)
 { 
   if ((!present)||(num==0)) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);
@@ -448,7 +448,7 @@ void statChart::get_PointsStr(uint16_t m, char *b)
 void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
 {
   if (!present || num == 0 || !sChart->get_present() || sChart->get_num() == 0) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);
@@ -461,7 +461,7 @@ void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
 void statChart::get_PointsStrPower(uint16_t m, char *b, statChart *inChart,statChart *outChart, float kfCapacity)
 {
   if (!present || num == 0 || !inChart->get_present() || inChart->get_num()==0 || !outChart->get_present() || outChart->get_num()== 0) {
-	  strcat(b, ";");
+	  //strcat(b, ";");
 	  return;
   }
   b += m_strlen(b);

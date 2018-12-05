@@ -1,33 +1,121 @@
-<html>
-<head>
-	<title>Графики работы. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type="text/javascript" src="jquery.min.js"></script>
-	<script type="text/javascript" src="scripts.js"></script>
-	<script type="text/javascript" src="highcharts.js"></script>
-	<script type="text/javascript" src="exporting.js"></script>
-		<script type='text/javascript'>
-		window.onload = function() {
-		loadParam("get_listChart,get_optionHP(TIME_CHART)");
-		/*google.charts.load('current', {packages: ['corechart', 'line']});*/
-Highcharts.setOptions({
-        global: {
-            useUTC: false
-        }
-    });		
-		$("#autoupdate").change(function(){
-		if(this.checked){
-			var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4') }, 10000)
-			window.timerId = timerId
-		}else{
-			timerId = window.timerId
-			clearInterval(timerId);
-		}
-});		
-		};			
-		</script>
+<html><head>
+<title>Графики работы. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript" src="highcharts.js"></script>
+<script type="text/javascript" src="exporting.js"></script>
+<script type='text/javascript'>
+function createChart(values, resultdiv) {
+	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
+	var yizm = '';
+	if(/^(T|O|d)/g.test(title)) { yizm = "Температура, °C"; }
+	if(/^PE/g.test(title)) { yizm = "Давление, BAR"; }
+	if(/^pos/g.test(title)) { yizm = "Состояние реле"; }
+	if(/^R/g.test(title)) { yizm = "Позиция"; ytooltip = ""; }
+	if(/^Pow|pow/g.test(title)) { yizm = "Мощность, кВт"; }
+	var data = values[1].split(';');
+	var dataSeries1 = [];
+	for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+	$('#' + resultdiv).highcharts({
+		title: {
+			text: title,
+			x: -15
+		},
+		chart: {
+			type: 'line',
+			zoomType: 'xy',
+			height: 300,
+			animation: false,
+			resetZoomButton: {
+				position: {
+					align: undefined,
+					verticalAlign: "top",
+					x: 20,
+					y: -40
+				},
+				relativeTo: "plot"}
+		},
+		lang: {
+			contextButtonTitle: "Меню графика",
+			decimalPoint: ".",
+			downloadJPEG: "Скачать JPEG картинку",
+			downloadPDF: "Скачать PDF документ",
+			downloadPNG: "Скачать PNG картинку",
+			downloadSVG: "Скачать SVG векторную картинку",
+			drillUpText: "Вернуться к {series.name}",
+			loading: "Загрузка...",
+			noData: "Нет информации для отображения",
+			numericSymbolMagnitude: 1000,
+			numericSymbols: ["k", "M", "G", "T", "P", "E"],
+			printChart: "Распечатать график",
+			resetZoom: "Сброс увеличения",
+			resetZoomTitle: "Сброс увеличения к 1:1"
+		},
+		xAxis: {
+			title: {
+				text: "Время, позиция: x" + window.time_chart + " сек."}},
+		yAxis: [{ // Primary yAxis
+			allowDecimals: false,
+			labels: {
+				format: '{value}',
+				style: {
+					color: Highcharts.getOptions().colors[0]}},
+			title: {
+				text: yizm,
+				style: {
+					color: Highcharts.getOptions().colors[0]}}
+		}],
+		tooltip: {
+			valueSuffix: ''
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'middle',
+			borderWidth: 0
+		},
+		//plotOptions: { series: { dataGrouping: { enabled: false } } },
+		plotOptions: {
+			series: {
+				label: {
+					connectorAllowed: false},
+	            animation: false,
+				pointStart: 0
+			}
+		},
+		series: [{
+				yAxis: 0,
+				name: title,
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries1,
+				dashStyle: "Solid"
+			}
+		]
+	});
+}
+window.onload = function() {
+	loadParam("get_listChart,get_optionHP(TIME_CHART)");
+	Highcharts.setOptions({ global: { useUTC: false } });
+	$("#autoupdate").change(function(){
+	if(this.checked){
+		var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4') }, 10000)
+		window.timerId = timerId
+	}else{
+		timerId = window.timerId
+		clearInterval(timerId);
+	}
+	});		
+}
+</script>
 </head>
 <body class="charts">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
@@ -45,5 +133,4 @@ Highcharts.setOptions({
 		<div id="chart4">График не выбран</div></div>
 	</div>
 </div>
-</body>
-</html>
+</body></html>
