@@ -3384,6 +3384,7 @@ void HeatPump::Sun_OFF(void)
 #endif
 }
 
+//#define DEBUG_PID		// Отладка ПИДа
 // Уравнение ПИД регулятора в конечных разностях.
 // Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
 // u(t) = P (t) + I (t) + D (t);
@@ -3398,25 +3399,32 @@ void HeatPump::Sun_OFF(void)
 // Выход управляющее воздействие (СОТЫХ)
 int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
-	int32_t newVal;              // Изменение ПИД регулятора
-
-	if (pid.Ki > 0)// Расчет интегральной составляющей
+#ifdef DEBUG_PID
+	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.temp_int, pidw.pre_errPID, pidw.maxStep);
+#endif
+	if(pid.Ki > 0)// Расчет интегральной составляющей
 	{
 		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-		// Ограничение диапзона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
+		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
 		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
 		else if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
-	//	Serial.print("errorPid=");Serial.print(errorPid);Serial.print(" pid.Ki=");Serial.print(pid.Ki); Serial.print(" pidw.temp_int=");Serial.println(pidw.temp_int);
 	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
-	newVal = pidw.temp_int;
-
+	int32_t newVal = pidw.temp_int;
+#ifdef DEBUG_PID
+	journal.printf("I=%d, ", newVal);
+#endif
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (errorPid - pidw.pre_errPID);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
-
+#ifdef DEBUG_PID
+	journal.printf("+D=%d, ", newVal);
+#endif
 	// Пропорциональная составляющая
 	if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
+#ifdef DEBUG_PID
+	journal.printf("+P=%d\n", newVal);
+#endif
 	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;

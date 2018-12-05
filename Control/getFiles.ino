@@ -605,7 +605,6 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Блокировка инвертора: ");  HP.dFC.get_paramFC((char*)fc_BLOCK,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Флаг автоматического сброса не критичной ошибки инвертора: ");  HP.dFC.get_paramFC((char*)fc_AUTO_RESET_FAULT,Socket[thread].outBuf);STR_END; 
           #endif
-	       strcat(Socket[thread].outBuf,"Автоматический подбор частоты (ПИД регулирование): ");  HP.dFC.get_paramFC((char*)fc_AUTO,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Время обновления алгоритма пид регулятора (сек): ");  HP.dFC.get_paramFC((char*)fc_UPTIME,Socket[thread].outBuf);STR_END; 
 	       strcat(Socket[thread].outBuf,"Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты (%): ");  HP.dFC.get_paramFC((char*)fc_PID_STOP,Socket[thread].outBuf);STR_END; 
 	       

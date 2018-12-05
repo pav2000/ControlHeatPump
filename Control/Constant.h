@@ -212,7 +212,7 @@ const uint16_t  defaultPort=80;
 		#define DEFAULT_FREON_TYPE 0 			  // Типа фрона по умолчанию
 		#define DEFAULT_OVERHEAT   400			  // Перегрев по умолчанию (сотые градуса)
 	#endif
-	#define EEV_MAX_STEP  300          // Максимальный вклад интегральной составляющей в СОТЫХ шага
+	#define EEV_MAX_STEP  300            // Максимальный вклад интегральной составляющей в СОТЫХ шага
 
 // ----------------------- EVI ------------------------------
 #define EVI_TEMP_CON      4000           // Температура кондесатора для включения EVI
@@ -728,7 +728,6 @@ const char *fc_cFC               = {"cFC"};               // Текущая ча
 const char *fc_cPOWER            = {"cPOWER"};            // Текущая мощность (чтение)
 const char *fc_INFO1             = {"INFO1"};             // Первая строка под картинкой инвертора на схеме
 const char *fc_cCURRENT          = {"cCURRENT"};          // Текущий ток (чтение)
-const char *fc_AUTO              = {"AUTO"};              // Флаг автоматического подбора частоты
 const char *fc_AUTO_RESET_FAULT  = {"ARSTFLT"};           // Флаг автоматического сброса не критичной ошибки инвертора
 const char *fc_LogWork		     = {"LOGW"};              // Флаг логировать во время работы
 const char *fc_ANALOG            = {"ANALOG"};            // Флаг аналогового управления

@@ -573,10 +573,10 @@ void devEEV::initEEV()
  _data.OHCor_OverHeatMax = DEF_OHCor_OverHeatMax;		// Максимальный перегрев (сотые градуса)
  _data.OHCor_OverHeatStart = DEF_OHCor_OverHeatStart; 	// Начальный перегрев (сотые градуса)
  _data.OHCor_pid.time = DEF_OHCor_Period;
- _data.OHCor_pid.Kp = 150;
+ _data.OHCor_pid.Kp = 010;
  _data.OHCor_pid.Ki = 0;
- _data.OHCor_pid.Kd = 200;
- _data.OHCor_pid.Kp_dmin = 0;
+ _data.OHCor_pid.Kd = 020;
+ _data.OHCor_pid.Kp_dmin = 100;
 #endif
  _data.pid.Kp_dmin=DEFAULT_ERR_KP;                          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
@@ -807,50 +807,56 @@ xTRTOOUT_PEVA: Overheat = HP.sTemp[TRTOOUT].get_Temp() - PressToTemp(press, _dat
 // на входе две температуры, используется для алгоритма table
 int8_t devEEV::Update(void) //boolean fHeating)
 {
-  int16_t newEEV;               // Изменение положения ЭРВ
-  
-  if(!GETBIT(_data.flags,fPresent)) {return err;}  // если ЭРВ нет то ничего не делаем
-  if (fPause)  return err;      // если пауза то выходим
-  newEEV=EEV;                   // в начале равно старому
-  
-  switch (_data.ruleEEV)     // В зависмости от правила вычисления перегрева
-  {
-  case TEVAOUT_TEVAIN:
-  case TRTOOUT_TEVAIN:
-  case TEVAOUT_PEVA:
-  case TRTOOUT_PEVA:
-    {
-       newEEV = EEV + round_div_int16(updatePID(Overheat-_data.tOverheat, _data.pid, pidw), 100);     // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-        // Проверка управляющего воздействия, возможно отказ ЭРВ
-        #ifndef DEMO
-         if (newEEV<_data.minSteps)  {err=ERR_MIN_EEV; set_Error(err,(char*)name); return err;}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
-        #else
-         if (newEEV<_data.minSteps)   newEEV=_data.minSteps;                            // Просто ограничение DEMO
-        #endif
-        
-        #ifndef DEMO
-	        #ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
-	        if (newEEV>_data.maxSteps)  {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
-	        #else
-	        if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение
-	        #endif
-        #else
-           if (newEEV>_data.maxSteps)   newEEV=_data.maxSteps;                            // Просто ограничение DEMO
-        #endif
-  
-  //      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
-    } break;
-  case TABLE:
-#ifdef TEVAIN
-	  newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2, (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2); break;
-#endif
-  case MANUAL: newEEV = _data.manualStep; break;
- }
+	int16_t newEEV;               // Изменение положения ЭРВ
 
- //  Передвинуть шаговик ЭРВ в позицию (абсолютную) EEV если есть изменения
-if (fStart)           {fStart=false;  journal.jprintf(" Included tracking PID EEV . . .\n");return err;}   // Первая итерация пида - пропуск движения и сброс флага первой итерации
-else if (newEEV!=EEV) { set_EEV(newEEV); return err;}                                                      // Не первая итерация - движение EEV
-return err;
+	if(!GETBIT(_data.flags, fPresent)) {
+		return err;
+	}  // если ЭРВ нет то ничего не делаем
+	if(fPause) return err;      // если пауза то выходим
+	newEEV = EEV;                   // в начале равно старому
+
+	switch(_data.ruleEEV)     // В зависмости от правила вычисления перегрева
+	{
+	case TEVAOUT_TEVAIN:
+	case TRTOOUT_TEVAIN:
+	case TEVAOUT_PEVA:
+	case TRTOOUT_PEVA: {
+		newEEV = EEV + round_div_int16(updatePID(Overheat - _data.tOverheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+		// Проверка управляющего воздействия, возможно отказ ЭРВ
+#ifndef DEMO
+		if(newEEV < _data.minSteps) {
+			err = ERR_MIN_EEV;
+			set_Error(err, (char*) name);
+			return err;
+		}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
+#else
+		if (newEEV<_data.minSteps) newEEV = _data.minSteps;                            // Просто ограничение DEMO
+#endif
+
+#ifndef DEMO
+#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
+		if (newEEV>_data.maxSteps) {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
+#else
+		if(newEEV > _data.maxSteps) newEEV = _data.maxSteps;                            // Просто ограничение
+#endif
+#else
+		if (newEEV>_data.maxSteps) newEEV=_data.maxSteps;                            // Просто ограничение DEMO
+#endif
+		//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
+	}
+	break;
+	case TABLE:
+#ifdef TEVAIN
+		newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2, (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2); break;
+#endif
+	case MANUAL:
+		newEEV = _data.manualStep;
+		break;
+	}
+
+	//  Передвинуть шаговик ЭРВ в позицию (абсолютную) EEV если есть изменения
+	if(newEEV != EEV) set_EEV(newEEV);
+	return err;
 }
 
 void devEEV::CorrectOverheat(void)
@@ -858,7 +864,7 @@ void devEEV::CorrectOverheat(void)
 #ifdef DEF_OHCor_OverHeatStart
 	static uint16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
 	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
-	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period > _data.OHCor_pid.time) {
+	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_pid.time) {
 		OverHeatCor_period = 0;
 		int16_t t = HP.get_temp_condensing();
 		OHCor_tdelta = (int32_t)DEF_OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)HP.get_temp_evaporating() * DEF_OHCor_EVAPORATING_0_MUL / 1000 + (Overheat - _data.OHCor_OverHeatStart);
@@ -896,15 +902,13 @@ void devEEV::resetPID()
   pidw.maxStep = EEV_MAX_STEP * 100;
   OHCor_pidw.temp_int = 0;
   OHCor_pidw.pre_errPID = 0;
-#ifdef DEF_OHCor_Period
-  OHCor_pidw.maxStep = DEF_OHCor_Period;
+#ifdef DEF_OHCor_MAX_STEP
+  OHCor_pidw.maxStep = DEF_OHCor_MAX_STEP * 100;
 #else
-  OHCor_pidw.maxStep = 1000;
+  OHCor_pidw.maxStep = 100 * 100;
 #endif
   tmpTime=_data.pid.time;        // ТЕКУЩАЯ постоянная интегрирования времени в секундах ЭРВ
-  fStart=true;                   // Признак работы пид с начала (пропуск первой итерации)
 }
-
 
  // Получить параметр ЭРВ в виде строки
  // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
@@ -1115,7 +1119,6 @@ int8_t devOmronMX2::initFC()
   #endif
   flags=0x00;                               		 // флаги  0 - наличие FC
   _data.setup_flags=0x00;                                // флаги
-  SETBIT0(_data.setup_flags,fAuto);                      // По умолчанию старт-стоп
   if(!Modbus.get_present())                        // modbus отсутствует
       {
        SETBIT0(flags,fFC);          // Инвертор не рабоатет
@@ -1497,7 +1500,6 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_cPOWER)==0)                {  _ftoa(ret,(float)power/10.0,1); } else
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)power/10.0,1); strcat(ret, " кВт"); } else
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
-    if(strcmp(var,fc_AUTO)==0)                  { if (GETBIT(_data.setup_flags,fAuto))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
@@ -1545,7 +1547,6 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
-    if(strcmp(var,fc_AUTO)==0)                  { if (x==0) SETBIT0(_data.setup_flags,fAuto);else SETBIT1(_data.setup_flags,fAuto);return true;  } else
   //  if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else // для Омрона код не написан
     #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 

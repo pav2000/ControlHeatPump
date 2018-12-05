@@ -3148,17 +3148,16 @@ const char *noteTemp[] = {"Температура улицы",
     #define DEFAULT_HOLD_MOTOR     false          // Режим "удержания" шагового двигателя ЭРВ
 	#define EEV_PREFER_PERCENT					  // Предпочтительно положение ЭРВ в %. (Для графиков и т.п.)
   	// Корректировки для фреона R134a
-	#define DEF_OHCor_OverHeatStart 	250		  	// Начальный перегрев (сотые градуса)
+	#define DEF_OHCor_OverHeatStart 	200		  	// Начальный перегрев (сотые градуса)
 	#define DEF_OHCor_OverHeatMin 		150    		// Минимальный перегрев (сотые градуса)
 	#define DEF_OHCor_OverHeatMax 		450    		// Максимальный перегрев (сотые градуса)
 	#define DEF_OHCor_TDIS_TCON			1450 //1350 // Разница температура нагнетания - конденсации(при 30С) и 0С кипении и перегреве OHCor_OverHeatStart (в сотых)
-	#define DEF_OHCor_TDIS_TCON_Thr 	300		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в сотых)
+	//#define DEF_OHCor_TDIS_TCON_Thr 	300		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в сотых)
   	#define DEF_OHCor_CONDENSING_30_MUL 220			// Корректировка разницы Нагнетание-Конденсация на кажлые 10 градусов конденсации от 30 (в сотых), зависит от фреона
 	#define DEF_OHCor_EVAPORATING_0_MUL 460			// Корректировка разницы Нагнетание-Конденсация на кажлые -10 градусов кипения от 0 (в сотых), зависит от фреона
 	#define DEF_OHCor_Delay 			300         // Задержка после старта компрессора, сек
-	#define DEF_OHCor_MAX_STEP			200			// Максимальное изменение перегрева за раз, в сотых градуса
 	#define DEF_OHCor_Period 			10		    // Период в циклах ЭРВ, сколько пропустить
-	#define DEF_OHCor_K 				050      	// Коэффициент (/0.001): перегрев += дельта * K
+	#define DEF_OHCor_MAX_STEP			200			// Максимальное изменение перегрева за раз, в сотых градуса
 
   	// ЭРВ Времена и задержки
     #define DEFAULT_DELAY_ON_PID    10            // Задержка начала регулирования от пуска компрессора, сек. Общее время =delayOnPid+DelayStartPos

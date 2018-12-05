@@ -584,7 +584,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										if(element) {
 											if(element.className == "charsw") {
 												element.innerHTML = element.title.substr(valuevar,1);
-											} else if(/^E/.test(values[1])) {
+											} else if(/^E\d+/.test(values[1])) {
 												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
 												else element.placeholder = values[1];
 											} else if(element != document.activeElement) {
