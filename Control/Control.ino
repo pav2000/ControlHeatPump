@@ -527,31 +527,14 @@ if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandl
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
 
-//#ifdef NEXTION
-//  if ( xTaskCreate(vNextion,"Nextion",120,NULL,1,&HP.xHandleUpdateNextion)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//  HP.mRTOS=HP.mRTOS+64+4*120; //120
-//  if(!GETBIT(HP.Option.flags, fNextion)) vTaskSuspend(HP.xHandleUpdateNextion);
-//#endif
-//// ПРИОРИТЕТ 0 низкий - накопление статистики и задача работа насоса кондесатора в простое компрессора
-//if (xTaskCreate(vUpdateStat,"upStat",STACK_vUpdateStat,NULL,0,&HP.xHandleUpdateStat)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateStat;  //150
-//vTaskSuspend(HP.xHandleUpdateStat);                              // Оставновить задачу обновление статистики
-// Создание задачи для отложенного пуска ТН
-//if (xTaskCreate(vPauseStart,"delayStart",90,NULL,3,&HP.xHandlePauseStart)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//HP.mRTOS=HP.mRTOS+64+4*90;  // 120, до обрезки стеков было 200
-//vTaskSuspend(HP.xHandlePauseStart);
-// Создание задачи по переодической работе насоса конденсатора
-//if (xTaskCreate(vUpdatePump,"UpdatePump",130,NULL,0,&HP.xHandleUpdatePump)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-//HP.mRTOS=HP.mRTOS+64+4*130; // 150, до обрезки стеков было 200
-//vTaskSuspend(HP.xHandleUpdatePump);
 
+// ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ, сервис
 if(xTaskCreate(vServiceHP, "ServiceHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
                     
-// ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ
 if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
 vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
@@ -1400,7 +1383,7 @@ void vServiceHP(void *)
 					task_updstat_countm = m;
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
-					Stats.History();
+					Stats.History();                                        // запись истории в файл
 				}
 			}
 			if(HP.PauseStart) {

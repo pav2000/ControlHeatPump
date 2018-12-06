@@ -2,7 +2,7 @@
 <html><head>
 <meta content="text/html" charset="UTF-8" http-equiv="content-type">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" type="text/css" href="style.css">
+ <link rel="stylesheet" type="text/css" href="style.css">
 	<script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript" src="jquery.min.js"></script>
 <script src="highstock.js"></script>
@@ -95,6 +95,10 @@ function createChart() {
 				type: 'hour',
 				text: '1ч'
 			}, {
+				count: 3,
+				type: 'hour',
+				text: '3ч'
+			}, {
 				count: 12,
 				type: 'hour',
 				text: '12ч'
@@ -115,17 +119,9 @@ function createChart() {
 				type: 'week',
 				text: 'нед'
 			}, {
-				count: 2,
-				type: 'week',
-				text: '2нед'
-			}, {
 				count: 1,
 				type: 'month',
 				text: 'мес'
-			}, {
-				count: 1,
-				type: 'year',
-				text: 'год'
 			}, {
 				type: 'all',
 				text: 'все'
@@ -182,130 +178,70 @@ function createChart() {
 				text: ''
 			}
 		},
-		yAxis: [
-		
-		{
+		yAxis: [{
 			title: {
 				text: '°C'
 			},
-			opposite: false,
+			opposite: true,
 			showEmpty: false,
 			id: 'T'
-		},
-		
-		 {
-		 labels: {
-                align: 'right',
-                x: -3
-            },
-			title: {
-				text: 'бар',
-				align: 'high',
-            	offset: 0,
-				rotation: 90,
-            	y: 360
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'P',
-			height: '60%',
-            lineWidth: 2,
-            resize: {
-                enabled: true
-            }
-		},
-		
-		 {
-		 labels: {
-                align: 'right',
-                x: -3
-            },
-			title: {
-				text: 'V',
-				align: 'high',
-            	offset: 10,
-				rotation: 90,
-            	y: 360
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'V',
-			top: '65%',
-            height: '35%',
-            offset: 0,
-            lineWidth: 2
 		}, {
 			title: {
-				text: 'кВт',
-				align: 'high',
-            	offset: 10,
-				rotation: 90,
-            	y: 360
+				text: 'бар'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'P'
+		}, {
+			title: {
+				text: 'V'
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'V'
+		}, {
+			title: {
+				text: 'кВт'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP',
-				align: 'high',
-            	offset: 10,
-				rotation: 90,
-            	y: 360
+				text: 'COP'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: '%',
-				align: 'high',
-            	offset: 20,
-				rotation: 90,
-            	y: 360
+				text: '%'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'R'
 		}, {
 			title: {
-				text: 'Гц',
-				align: 'high',
-            	offset: 10,
-				rotation: 90,
-            	y: 360
+				text: 'Гц'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'H'
 		}, {
 			title: {
-				text: 'Шаги',
-				align: 'high',
-            	offset: 20,
-				rotation: 90,
-            	y: 360
+				text: 'Шаги'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'S'
 		}, {
 			title: {
-				text: 'м³ч',
-				align: 'high',
-            	offset: 20,
-				rotation: 90,
-            	y: 360
+				text: 'м³ч'
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'F'
 		}],
-		
-		tooltip: {
-            split: true
-        },
-		
 		exporting: {
 			enabled: true,
 			csv: {
@@ -442,26 +378,23 @@ function clearChart() {
 	dynamicChart.redraw();
 }
 </script>
+<title>Статистика детально</title>
 </head>
 <body class="index">
 <div id="menu" style="min-height: 1238px;" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-
 	<h2>Статистика детально</h2>
-	<div id="BelowChart"> 
+	<div id="BelowChart">
 		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
 		<button onClick="loadSelected();">Загрузить</button>
 		<button onClick="clearChart();">Очистить</button>
 		<button value="Hide All" name="Hide All Button" onClick="HideAll();">Скрыть все</button>
 	</div>
-	
 	<div id="chart-container" style="height: 600px"><br>
 	Идет загрузка...<br>
 	</div>
-	
-	<div id="BelowChart" style="height: 500px"> 
+	<div id="BelowChart" style="height: 500px">
 	</div>
 </div>
-
 </body>
 </html>
