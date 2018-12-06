@@ -33,7 +33,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			loadParam("get_Boiler(RESET_HEAT),get_Boiler(RESET_TIME),get_Boiler(CIRCUL_PAUSE),get_Boiler(CIRCUL_WORK),get_Boiler(TEMP_MAX),get_Boiler(PAUSE1),get_Boiler(BOILER_ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADD_HEATING),get_Boiler(SALLMONELA),get_Boiler(CIRCULATION),get_Boiler(DTARGET_DAY),get_Boiler(DTARGET),get_Boiler(TEMP_TARGET),get_Boiler(BOIL_TEMP),get_Boiler(BOIL_DIF),get_Boiler(BOIL_IN),get_Boiler(BOIL_PRO),get_Boiler(BOIL_TIME),get_Boiler(TEMP_RBOILER),get_Boiler(ADD_BOILER),get_Boiler(TURBO_BOILER)");
+			loadParam("get_Boiler(RESET_HEAT),get_Boiler(RESET_TIME),get_Boiler(CIRCUL_PAUSE),get_Boiler(CIRCUL_WORK),get_Boiler(TEMP_MAX),get_Boiler(BOILER_ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADD_HEATING),get_Boiler(SALLMONELA),get_Boiler(CIRCULATION),get_Boiler(DTARGET_DAY),get_Boiler(DTARGET),get_Boiler(TEMP_TARGET),get_Boiler(BOIL_TEMP),get_Boiler(BOIL_DIF),get_Boiler(BOIL_IN),get_Boiler(BOIL_PRO),get_Boiler(BOIL_TIME),get_Boiler(TEMP_RBOILER),get_Boiler(ADD_BOILER),get_Boiler(TURBO_BOILER)");
 			loadParam("get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(SCHEDULER)");
 	};
 	</script>
@@ -168,10 +168,6 @@
 		<tr>
 			<td>Максимальная температура подачи °C [20..70]</td>
 			<td nowrap><input id="get_boiler-temp_max" type="number" min="20" max="70" step="0.1" value="20"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMP_MAX)');"></td>
-		</tr>
-		<tr>
-			<td>Минимальное время «простоя» компрессора ТН перед включением (мин.) [0..60]</td>
-			<td nowrap><input id="get_boiler-pause1" type="number" min="0" max="60" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(PAUSE1)');"></td>
 		</tr>
 	</tbody>
 	</table>

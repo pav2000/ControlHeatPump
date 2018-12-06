@@ -915,8 +915,8 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			#else
     			strcat(strReturn,"1");
 			#endif
-    	} else if(strcmp(str, "tro_ei") == 0) { // hide: TRTOOUT, TEVAIN
-			#ifdef TRTOOUT
+    	} else if(strcmp(str, "tro_ei") == 0) { // hide: TCOMPIN, TEVAIN
+			#ifdef TCOMPIN
     			strcat(strReturn,"0");
 			#else
     			strcat(strReturn,"1");

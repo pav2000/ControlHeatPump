@@ -596,19 +596,20 @@ void HeatPump::resetSettingHP()
   Option.delayBoilerSW	     = DEF_DELAY_BOILER_SW;          
   Option.delayBoilerOff	     = DEF_DELAY_BOILER_OFF;         
   Option.numProf=Prof.get_idProfile(); //  Профиль не загружен по дефолту 0 профиль
-  Option.nStart=3;                     //  Число попыток пуска компрессора
-  Option.tempRHEAT=1000;               //  Значение температуры для управления RHEAT (по умолчанию режим резерв - 10 градусов в доме)
-  Option.pausePump=600;                 //  Время паузы  насоса при выключенном компрессоре, сек
-  Option.workPump=15;                   //  Время работы  насоса при выключенном компрессоре, сек
-  Option.tChart=60;                    //  период накопления статистики по умолчанию 60 секунд
+  Option.nStart = 3;                   //  Число попыток пуска компрессора
+  Option.tempRHEAT = 1000;             //  Значение температуры для управления RHEAT (по умолчанию режим резерв - 10 градусов в доме)
+  Option.pausePump = 600;              //  Время паузы  насоса при выключенном компрессоре, сек
+  Option.workPump = 15;                //  Время работы  насоса при выключенном компрессоре, сек
+  Option.tChart = 60;                  //  период накопления статистики по умолчанию 60 секунд
   SETBIT0(Option.flags,fAddHeat);      //  Использование дополнительного тена при нагреве НЕ ИСПОЛЬЗОВАТЬ
   SETBIT0(Option.flags,fTypeRHEAT);    //  Использование дополнительного тена по умолчанию режим резерв
   SETBIT1(Option.flags,fBeep);         //  Звук
   SETBIT1(Option.flags,fNextion);      //  дисплей Nextion
   SETBIT0(Option.flags,fHistory);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
-  Option.sleep=5;                      //  Время засыпания минуты
-  Option.dim=80;                       //  Якрость %
+  Option.sleep = 5;                    //  Время засыпания минуты
+  Option.dim = 80;                     //  Якрость %
+  Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
 
  // инициализация статистика дополнительно помимо датчиков
   ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
@@ -871,6 +872,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    } else
    if(strcmp(var,option_SunRegGeo)==0)        { Option.flags = (Option.flags & ~(1<<fSunRegenerateGeo)) | ((x!=0)<<fSunRegenerateGeo); return true; }else
    if(strcmp(var,option_SunRegGeoTemp)==0)    { Option.SunRegGeoTemp = rd(x, 100); return true; }else
+   if(strcmp(var,option_PAUSE)==0) { if ((x>=0)&&(x<=60)) {Option.pause=x*60; return true;} else return false; }else                         // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -912,14 +914,15 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    } else
    if(strcmp(var,option_SunRegGeo)==0)    	  {return _itoa(GETBIT(Option.flags, fSunRegenerateGeo), ret);}else
    if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100.0,1); return ret; }else
-   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else     // Задержка включения компрессора после включения насосов (сек).
+   if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {return _itoa(Option.delayStartRes,ret);}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
-   if(strcmp(var,option_DELAY_REPEAD_START)==0){return _itoa(Option.delayRepeadStart,ret);}else  // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+   if(strcmp(var,option_DELAY_REPEAD_START)==0){return _itoa(Option.delayRepeadStart,ret);}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
    if(strcmp(var,option_DELAY_DEFROST_ON)==0) {return _itoa(Option.delayDefrostOn,ret);}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
    if(strcmp(var,option_DELAY_DEFROST_OFF)==0){return _itoa(Option.delayDefrostOff,ret);}else   // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-   if(strcmp(var,option_DELAY_TRV)==0)        {return _itoa(Option.delayTRV,ret);}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
-   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return _itoa(Option.delayBoilerSW,ret);}else    // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+   if(strcmp(var,option_DELAY_TRV)==0)        {return _itoa(Option.delayTRV,ret);}else          // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return _itoa(Option.delayBoilerSW,ret);}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);} // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    return  strcat(ret,(char*)cInvalid);                
 }
@@ -1342,7 +1345,7 @@ void HeatPump::getTargetTempStr(char *rstr)
 	 } else  if (onSallmonela)  { onSallmonela=false;  startSallmonela=0;  journal.jprintf(" Off salmonella\n");  } // если сальмонелу отключили на ходу выключаем и идем дальше по алгоритму
 #endif	 
 
-	 if(((scheduleBoiler())&&(GETBIT(Prof.SaveON.flags,fBoilerON)))) // Если разрешено греть бойлер согласно расписания И Бойлер включен
+	 if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
 	 {
 		 if(GETBIT(Prof.Boiler.flags,fTurboBoiler))  // Если турбо режим то повторяем за Тепловым насосом (грет или не греть)
 		 {
@@ -1376,16 +1379,15 @@ void HeatPump::getTargetTempStr(char *rstr)
 #endif   
 
 // Проверить расписание бойлера true - нужно греть false - греть не надо, если расписание выключено то возвращает true
-boolean HeatPump::scheduleBoiler()
-{
-boolean b;  
-if(GETBIT(Prof.Boiler.flags,fSchedule))         // Если используется расписание
- {  // Понедельник 0 воскресенье 6 это кодирование в расписании функция get_day_of_week возвращает 1-7
-  b=Prof.Boiler.Schedule[rtcSAM3X8.get_day_of_week()-1]&(0x01<<rtcSAM3X8.get_hours())?true:false; 
-  if(!b) return false;             // запрещено греть бойлер согласно расписания
+ boolean HeatPump::scheduleBoiler()
+ {
+	 if(GETBIT(Prof.Boiler.flags, fSchedule))         // Если используется расписание
+	 {  // Понедельник 0 воскресенье 6 это кодирование в расписании функция get_day_of_week возвращает 1-7
+		 boolean b = Prof.Boiler.Schedule[rtcSAM3X8.get_day_of_week() - 1] & (0x01 << rtcSAM3X8.get_hours()) ? true : false;
+		 if(!b) return false;             // запрещено греть бойлер согласно расписания
+	 }
+	 return true;
  }
-return true; 
-}
 // Все реле выключить
 void HeatPump::relayAllOFF()
 {
@@ -1735,7 +1737,7 @@ int8_t HeatPump::StartResume(boolean start)
 
    	// 6. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
 	if (!start)  // Команда Resume
-	      while(check_compressor_pause(Status.modWork)) { _delay(100*1000); if (get_State()!=pSTARTING_HP) return error;    }    // Могли нажать кнопку стоп, выход из процесса запуска
+	      while(check_compressor_pause()) { _delay(100*1000); if (get_State()!=pSTARTING_HP) return error;    }    // Могли нажать кнопку стоп, выход из процесса запуска
 	
 	//  7. Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
 	configHP(Status.modWork);  
@@ -1768,7 +1770,7 @@ int8_t HeatPump::StartResume(boolean start)
 			set_Error(ERR_RESET_FC,(char*)__FUNCTION__);
 			return error;
 		}
-		compressorON(mod); // Компрессор включить если нет ошибок и надо включаться
+		compressorON(); // Компрессор включить если нет ошибок и надо включаться
 	}
 
 	// 10. Сохранение состояния  -------------------------------------------------------------------------------
@@ -1984,7 +1986,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		return pCOMP_OFF;
 	}
 
-	if ((!scheduleBoiler() && !GETBIT(Prof.Boiler.flags,fScheduleAddHeat))||(!GETBIT(Prof.SaveON.flags,fBoilerON))) // Если запрещено греть бойлер согласно расписания ИЛИ  Бойлер выключен, выходим и можно смотреть отопление
+	if(!GETBIT(Prof.SaveON.flags,fBoilerON) || (!scheduleBoiler() && !GETBIT(Prof.Boiler.flags,fScheduleAddHeat))) // Если запрещено греть бойлер согласно расписания ИЛИ  Бойлер выключен, выходим и можно смотреть отопление
 	{
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
 		if(faddheat) {
@@ -2010,8 +2012,19 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		}
 	}
 
-	Status.ret=pNone;                // Сбросить состояние пида
 	int16_t T = sTemp[TBOILER].get_Temp();
+#ifdef RPUMPBH
+	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
+		if(T < HP.Prof.Boiler.tempRBOILER) {
+			dRelay[RPUMPBH].set_ON();    // ГВС - включить
+		} else {
+			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		}
+		return pCOMP_OFF;
+	}
+#endif
+
+	Status.ret=pNone;                // Сбросить состояние пида
 	// Алгоритм гистерезис для старт стоп
 	if(!dFC.get_present()) // Алгоритм гистерезис для старт стоп
 	{
@@ -2613,9 +2626,9 @@ void HeatPump::vUpdate()
 		    journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
 		    command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
-		if(!check_compressor_pause(get_modWork())) {
+		if(!check_compressor_pause()) {
 			configHP(get_modWork());                                 // Конфигурируем насосы
-			compressorON(get_modWork());                             // Включаем компрессор
+			compressorON();                             // Включаем компрессор
 		}
 		break;
 	case pNONE_H:
@@ -2629,14 +2642,14 @@ void HeatPump::vUpdate()
 }
 
 // проверка на паузу между включениями
-boolean HeatPump::check_compressor_pause(MODE_HP mod)
+boolean HeatPump::check_compressor_pause()
 {
 	if(stopCompressor) {
 		int32_t nTime = rtcSAM3X8.unixtime() - stopCompressor;
 #ifdef DEMO
 		if (nTime<10) {journal.jprintf("Compressor pause\n");return true;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
 #else
-		if((nTime = (mod == pHEAT ? Prof.Heat.pause : mod == pCOOL ? Prof.Cool.pause : mod == pBOILER ? Prof.Boiler.pause : 0) - nTime) > 0) {
+		if((nTime = Option.pause - nTime) > 0) {
 			#ifdef DEBUG_MODWORK
 				if(nTime <= UPDATE_HP_WAIT_PERIOD / 1000) journal.jprintf(" Compressor pause\n");
 			#endif
@@ -2651,7 +2664,7 @@ boolean HeatPump::check_compressor_pause(MODE_HP mod)
 // Вход режим работы ТН
 // Возможно компрессор уже включен и происходит только смена режима
 const char *EEV_go={" EEV go "};  // экономим место
-void HeatPump::compressorON(MODE_HP mod)
+void HeatPump::compressorON()
 {
 	if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
 
@@ -2665,7 +2678,7 @@ void HeatPump::compressorON(MODE_HP mod)
 	if (lastEEV!=-1)              // Не первое включение компрессора после старта ТН
 	{
 		// 1. Обеспечение минимальной паузы компрессора
-		if(check_compressor_pause(mod)) return;
+		if(check_compressor_pause()) return;
 		#ifdef DEBUG_MODWORK
 			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",mod,codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 		#endif
