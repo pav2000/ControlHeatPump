@@ -2104,7 +2104,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
 //		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
-        int16_t newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC(); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)  
+        int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw_boiler); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
         if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #else
 		Status.ret=pBp12;
