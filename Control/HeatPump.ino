@@ -1106,70 +1106,63 @@ char * HeatPump::get_Chart(char *var, char* str)
 	}
 	if(strcmp(var, chart_NONE) == 0) {
 		strcat(str, "");
-	} else {
 #ifdef EEV_DEF
-		if(strcmp(var, chart_posEEV) == 0) {
-#ifdef EEV_PREFER_PERCENT
-			dEEV.Chart.get_PointsStr(100, str);
-#else
-			dEEV.Chart.get_PointsStr(1, str);
+	} else if(strcmp(var, chart_posEEV) == 0) {
+  #ifdef EEV_PREFER_PERCENT
+		dEEV.Chart.get_PointsStr(100, str);
+  #else
+		dEEV.Chart.get_PointsStr(1, str);
+  #endif
+  #ifdef DEF_OHCor_OverHeatStart
+	} else if(strcmp(var, chart_OVERHEAT_TARGET) == 0) {
+		ChartOVERHEAT_TARGET.get_PointsStr(100, str);
+  #endif
+	} else if(strcmp(var, chart_OVERHEAT) == 0) {
+		ChartOVERHEAT.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_TPEVA) == 0) {
+		ChartTPEVA.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_TPCON) == 0) {
+		ChartTPCON.get_PointsStr(100, str);
 #endif
-#ifdef DEF_OHCor_OverHeatStart
-		} else if(strcmp(var, chart_OVERHEAT_TARGET) == 0) {
-			ChartOVERHEAT_TARGET.get_PointsStr(100, str);
-#endif
-		} else if(strcmp(var, chart_OVERHEAT) == 0) {
-			ChartOVERHEAT.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_TPEVA) == 0) {
-			ChartTPEVA.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_TPCON) == 0) {
-			ChartTPCON.get_PointsStr(100, str);
-		} else
-#endif
-		if(strcmp(var, chart_freqFC) == 0) {
-			dFC.ChartFC.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_powerFC) == 0) {
-			dFC.ChartPower.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_currentFC) == 0) {
-			dFC.ChartCurrent.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_RCOMP) == 0) {
-			ChartRCOMP.get_PointsStr(1, str);
-		} else if(strcmp(var, chart_dCO) == 0) {
-			sTemp[TCONOUTG].Chart.get_PointsStrSub(100, str, &sTemp[TCONING].Chart); // считаем график на лету экономим оперативку
-		} else if(strcmp(var, chart_dGEO) == 0) {
-			sTemp[TEVAING].Chart.get_PointsStrSub(100, str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
-		} else if(strcmp(var, chart_PowerCO) == 0) {
+	} else if(strcmp(var, chart_freqFC) == 0) {
+		dFC.ChartFC.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_powerFC) == 0) {
+		dFC.ChartPower.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_currentFC) == 0) {
+		dFC.ChartCurrent.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_RCOMP) == 0) {
+		ChartRCOMP.get_PointsStr(1, str);
+	} else if(strcmp(var, chart_dCO) == 0) {
+		sTemp[TCONOUTG].Chart.get_PointsStrSub(100, str, &sTemp[TCONING].Chart); // считаем график на лету экономим оперативку
+	} else if(strcmp(var, chart_dGEO) == 0) {
+		sTemp[TEVAING].Chart.get_PointsStrSub(100, str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
+	} else if(strcmp(var, chart_PowerCO) == 0) {
 #ifdef FLOWCON
-			sFrequency[FLOWCON].Chart.get_PointsStrPower(1000, str, &sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_kfCapacity()); // считаем график на лету экономим оперативку
+		sFrequency[FLOWCON].Chart.get_PointsStrPower(1000, str, &sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_kfCapacity()); // считаем график на лету экономим оперативку
 #else
-			strcat(str, ";");
+		strcat(str, ";");
 #endif
-		} else if(strcmp(var, chart_PowerGEO) == 0) {
+	} else if(strcmp(var, chart_PowerGEO) == 0) {
 #ifdef FLOWEVA
-			sFrequency[FLOWEVA].Chart.get_PointsStrPower(1000, str, &sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_kfCapacity()); // считаем график на лету экономим оперативку
+		sFrequency[FLOWEVA].Chart.get_PointsStrPower(1000, str, &sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_kfCapacity()); // считаем график на лету экономим оперативку
 #else
-			strcat(str, ";");
+		strcat(str, ";");
 #endif
-		} else if(strcmp(var, chart_COP) == 0) {
-			ChartCOP.get_PointsStr(100, str);
-		} else
+	} else if(strcmp(var, chart_COP) == 0) {
+		ChartCOP.get_PointsStr(100, str);
 #ifdef USE_ELECTROMETER_SDM
 #ifndef MIN_RAM_CHARTS
-		if(strcmp(var, chart_VOLTAGE) == 0) {
-			dSDM.ChartVoltage.get_PointsStr(100, str);
-		} else if(strcmp(var, chart_CURRENT) == 0) {
-			dSDM.ChartCurrent.get_PointsStr(100, str);
-		} else
+	} else if(strcmp(var, chart_VOLTAGE) == 0) {
+		dSDM.ChartVoltage.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_CURRENT) == 0) {
+		dSDM.ChartCurrent.get_PointsStr(100, str);
 #endif
-		//if(strcmp(var,chart_acPOWER)==0){ dSDM.sAcPower.get_PointsStr(1,str); } else
-		//if(strcmp(var,chart_rePOWER)==0){ dSDM.sRePower.get_PointsStr(1,str); } else
-		if(strcmp(var, chart_fullPOWER) == 0) {
-			dSDM.ChartPower.get_PointsStr(1, str);
-		} else if(strcmp(var, chart_fullCOP) == 0) {
-			ChartFullCOP.get_PointsStr(100, str);
-		}
+	} else if(strcmp(var, chart_fullPOWER) == 0) {
+		dSDM.ChartPower.get_PointsStr(1, str);
+	} else if(strcmp(var, chart_fullCOP) == 0) {
+		ChartFullCOP.get_PointsStr(100, str);
+#endif
 	}
-#endif
 	return str;
 }
 
@@ -2111,7 +2104,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
 //		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
-        int16_t newFC=updatePID((Prof.Boiler.pid.target-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())),Prof.Boiler.pid,dFC.get_stepFreqBoiler(),temp_intBoiler,pre_errPIDBoiler)+dFC.get_freqFC(); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)  
+        int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw_boiler); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
         if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #else
 		Status.ret=pBp12;
@@ -2662,7 +2655,7 @@ void HeatPump::compressorON(MODE_HP mod)
 {
 	if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
 
-	if (is_compressor_on()) return;                                  // Компрессор уже работает
+	if(is_compressor_on()) return;                                  // Компрессор уже работает
 	if(is_next_command_stop()) {
 		journal.jprintf(" Next command stop(%d), skip start", next_command);
 		return;

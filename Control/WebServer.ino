@@ -1183,7 +1183,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 
         strcat(strReturn,"<b> Времена</b>|;");  
         strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
-        strcat(strReturn,"Время завершения последней команды ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
+        strcat(strReturn,"Время текущего состояния ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
