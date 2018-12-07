@@ -11,7 +11,9 @@
 var dataSeries1 = [];
 var dataSeries2 = [];
 var dataSeries3 = [];
+var dataSeries4 = [];
 var ReadyMask = 0;
+var showdelta = false;
 
 function createChart(values, resultdiv) {
 	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
@@ -25,11 +27,14 @@ function createChart(values, resultdiv) {
 	} else if(title == 'posEEV') {
 		for(var i = 0; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
 		ReadyMask |= 2;
-	} else if(title = 'OverheatTarget') {
+	} else if(title == 'OverheatTarget') {
 		for(var i = 0; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
 		ReadyMask |= 4;
+	} else if(title == 'TCOMP-TCON' && showdelta) {
+		for(var i = 0; i < data.length - 1; i++) dataSeries4.push([i, Number(data[i])]);
+		ReadyMask |= 8;
 	}
-	if(ReadyMask != 7) return;
+	if(ReadyMask != (showdelta ? 15 : 7)) return;
 	ReadyMask = 0;
 	$('#chart1').highcharts({
 		title: {
@@ -90,6 +95,18 @@ function createChart(values, resultdiv) {
 				style: {
 					color: Highcharts.getOptions().colors[1]}},
 			opposite: true
+		}, { 
+			allowDecimals: false,
+			visible: showdelta,
+			title: {
+				text: '',
+				style: {
+					color: Highcharts.getOptions().colors[3]}},
+			labels: {
+				format: '{value}',
+				style: {
+					color: Highcharts.getOptions().colors[3]}},
+			opposite: false
 		}],
 		tooltip: {
 			valueSuffix: ''
@@ -100,7 +117,6 @@ function createChart(values, resultdiv) {
 			verticalAlign: 'middle',
 			borderWidth: 0
 		},
-		//plotOptions: { series: { dataGrouping: { enabled: false } } },
 		plotOptions: {
 			series: {
 				label: {
@@ -147,6 +163,19 @@ function createChart(values, resultdiv) {
 				turboThreshold: 0,
 				data: dataSeries3,
 				dashStyle: "Solid"
+			},
+			{
+				yAxis: 2,
+				name: 'Нагнетание-Конденсация',
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries4,
+				dashStyle: "Solid"
 			}
 		]
 	});
@@ -156,6 +185,8 @@ function GetChart() {
 	loadParam("get_Chart(posEEV)");	
 	loadParam("get_Chart(Overheat)"); 
 	loadParam("get_Chart(OverheatTarget)");
+	showdelta = document.getElementById("showdelta").checked;
+	if(showdelta) loadParam("get_Chart(TCOMP-TCON)");
 }
 
 window.onload = function() {
@@ -288,7 +319,7 @@ window.onload = function() {
  </table>            
  </div>
 
-<div style="float:right;">Автообновление графика: <input id="autoupdate" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
+<div style="float:right;">Автообновление графика:<input id="autoupdate" type="checkbox" onclick=""> Нагнетание-Конденсация:<input id="showdelta" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
 <select style="display:none" id="get_optionhp-time_chart" disabled></select>
 </div>
 <div id="chart1">График не выбран</div>

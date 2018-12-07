@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.980 beta"        // Версия прошивки
+#define VERSION         "0.981 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -605,27 +605,28 @@ const char *mess_MAIL_RET     = {"MAIL_RET"};            // Ответ на те
 const char *mess_SMS_RET      = {"SMS_RET"};             // Ответ на тестовую  sms
 
 // Описание имен параметров бойлера для функций set_Boiler get_Boiler
-const char *boil_BOILER_ON    = {"BOILER_ON"};           // флаг Включения бойлера
+const char *boil_BOILER_ON    = {"ON"};           // флаг Включения бойлера
 const char *boil_SCHEDULER_ON = {"SCH_ON"};        		// флаг Использование расписания
 const char *boil_SCHEDULER_ADDHEAT = {"SCH_AH"};        // флаг Использование расписания только для ТЭНа
-const char *boil_TURBO_BOILER = {"TURBO_BOILER"};        // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
-const char *boil_SALLMONELA   = {"SALLMONELA"};          // флаг Сальмонела раз в неделю греть бойлер
-const char *boil_CIRCULATION  = {"CIRCULATION"};         // флаг Управления циркуляционным насосом ГВС
-const char *boil_TEMP_TARGET  = {"TEMP_TARGET"};         // Целевая температура бойлера
-const char *boil_DTARGET      = {"DTARGET"};             // гистерезис целевой температуры
-const char *boil_TEMP_MAX     = {"TEMP_MAX"};            // Tемпература подачи максимальная
+const char *boil_TURBO_BOILER = {"TURBO"};             // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+const char *boil_SALLMONELA   = {"SLMN"};             // флаг Сальмонела раз в неделю греть бойлер
+const char *boil_CIRCULATION  = {"CIRC"};  		       // флаг Управления циркуляционным насосом ГВС
+const char *boil_TEMP_TARGET  = {"TRG"};                 // Целевая температура бойлера
+const char *boil_DTARGET      = {"DTRG"};             // гистерезис целевой температуры
+const char *boil_TEMP_MAX     = {"MAX"};                // Tемпература подачи максимальная
 const char *boil_SCHEDULER    = {"SCHEDULER"};           // Расписание
-const char *boil_CIRCUL_WORK  = {"CIRCUL_WORK"};         // Время  работы насоса ГВС секунды (fCirculation)
-const char *boil_CIRCUL_PAUSE = {"CIRCUL_PAUSE"};        // Пауза в работе насоса ГВС  секунды (fCirculation)
-const char *boil_RESET_HEAT   = {"RESET_HEAT"};          // флаг Сброса лишнего тепла в СО
-const char *boil_RESET_TIME   = {"RESET_TIME"};          // время сброса излишков тепла в СО в секундах (fResetHeat)
-const char *boil_BOIL_TIME    = {"BOIL_TIME"};           // Постоянная интегрирования времени в секундах ПИД ТН
-const char *boil_BOIL_PRO     = {"BOIL_PRO"};            // Пропорциональная составляющая ПИД ГВС
-const char *boil_BOIL_IN      = {"BOIL_IN"};             // Интегральная составляющая ПИД ГВС
-const char *boil_BOIL_DIF     = {"BOIL_DIF"};            // Дифференциальная составляющая ПИД ГВС
-const char *boil_BOIL_TEMP    = {"BOIL_TEMP"};           // Целевая температура ПИД ГВС
-const char *boil_ADD_HEATING  = {"ADD_HEATING"};         // флаг ДОГРЕВА ГВС ТЭНом
-const char *boil_TEMP_RBOILER = {"TEMP_RBOILER"};        // температура включения догрева бойлера
+const char *boil_CIRCUL_WORK  = {"CIRCW"};         // Время  работы насоса ГВС секунды (fCirculation)
+const char *boil_CIRCUL_PAUSE = {"CIRCP"};        // Пауза в работе насоса ГВС  секунды (fCirculation)
+const char *boil_RESET_HEAT   = {"RESH"};          // флаг Сброса лишнего тепла в СО
+const char *boil_RESET_TIME   = {"RESHT"};          // время сброса излишков тепла в СО в секундах (fResetHeat)
+const char *boil_BOIL_TIME    = {"PT"};           // Постоянная интегрирования времени в секундах ПИД ТН
+const char *boil_BOIL_PRO     = {"PP"};            // Пропорциональная составляющая ПИД ГВС
+const char *boil_BOIL_IN      = {"PI"};             // Интегральная составляющая ПИД ГВС
+const char *boil_BOIL_DIF     = {"PD"};            // Дифференциальная составляющая ПИД ГВС
+const char *boil_BOIL_TEMP    = {"TEMP"};           // Целевая температура ПИД ГВС
+const char *boil_ADD_HEATING  = {"ADDH"};         // флаг ДОГРЕВА ГВС ТЭНом
+const char *boil_TEMP_RBOILER = {"TEMPR"};        // температура включения догрева бойлера
+const char *boil_TOGETHER_HEAT= {"TGHEAT"};        // флаг Использование расписания только для ТЭНа
 
 // Дата время
 const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд
@@ -699,6 +700,7 @@ const char *chart_currentFC = {"currentFC"};                 // 23 Ток ком
 const char *chart_RCOMP     = {"RCOMP"};                     // 24 включение компрессора
 const char *chart_OVERHEAT_TARGET= {"OverheatTarget"};       //    перегрев цель
 const char *chart_OVERHEAT  = {"Overheat"};                  // 25 перегрев текущий
+const char *chart_TCOMP_TCON = {"TCOMP-TCON"};             // 26 дельта TCOMP-T[PCON]
 const char *chart_dCO       = {"dCO"};                       // 26 дельта СО
 const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
 const char *chart_TPEVA     = {"T[PEVA]"};                   // 28 температура расчитанная из давления Испариенифя
@@ -828,7 +830,7 @@ const char *ip_SENSOR          = {"SENSOR"};        // -------
 
 // Названия типы фреонов
 const char *noteFreon[]    =   {"R22","R410A","R600","R134A","R407C","R12","R290","R404A","R717"};
-// Названия правило работы ЭРВ
+// Названия правил работы ЭРВ для веба
 const char noteRuleEEV[]   =	"TEVAOUT-T[PEVA]:0;"
 	#ifdef TCOMPIN
 								"TCOMPIN-T[PEVA]:0;"

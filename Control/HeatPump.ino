@@ -1050,7 +1050,10 @@ uint8_t i;
 #endif
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
- if(ChartTPCON.get_present())      { strcat(str,chart_TPCON); strcat(str,":0;"); }
+ if(ChartTPCON.get_present())      {
+	 strcat(str,chart_TPCON); strcat(str,":0;");
+	 strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
+ }
  #endif
  if(dFC.ChartFC.get_present())     { strcat(str,chart_freqFC); strcat(str,":0;"); }
  if(dFC.ChartPower.get_present())  { strcat(str,chart_powerFC); strcat(str,":0;"); }
@@ -1126,6 +1129,8 @@ char * HeatPump::get_Chart(char *var, char* str)
 		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
 		ChartTPCON.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {
+		sTemp[TCOMP].Chart.get_PointsStrSub(100, str, &ChartTPCON); // считаем график на лету
 #endif
 	} else if(strcmp(var, chart_freqFC) == 0) {
 		dFC.ChartFC.get_PointsStr(100, str);
@@ -1349,23 +1354,25 @@ void HeatPump::getTargetTempStr(char *rstr)
 	 {
 		 if(GETBIT(Prof.Boiler.flags,fTurboBoiler))  // Если турбо режим то повторяем за Тепловым насосом (грет или не греть)
 		 {
-		  if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
+             if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
 //		  else false;                                                              // Турбо отключаем
 		 }
 //		 else // Нет турбо
 //		 {
 			 if(GETBIT(Prof.Boiler.flags,fAddHeating))  // Включен догрев
 			 {
-				 if((T < get_boilerTempTarget()-Prof.Boiler.dTemp)&&(!flagRBOILER)) {flagRBOILER=true; return false;} // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+				 if((T < get_boilerTempTarget()-Prof.Boiler.dTemp)&&(!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+					 flagRBOILER = true;
+					 return false;
+				 }
 				 if((!flagRBOILER)||(onBoiler))  return false; // флажка нет или работет бойлер но догрев не включаем
 				 else  //flagRBOILER==true and onBoiler==false
 				 {
-					 if(T < get_boilerTempTarget())                       // Бойлер ниже целевой темпеартуры надо греть
+					 if(T < get_boilerTempTarget())                       // Бойлер ниже целевой температуры надо греть
 					 {
-		//				 if(T > Prof.Boiler.tempRBOILER) return true;      // Включения тена если температура бойлера больше температуры догрева и темпеартура бойлера меньше целевой темпеартуры
-		//				 if(T < Prof.Boiler.tempRBOILER-HYSTERESIS_RBOILER) {flagRBOILER=false; return false;}   // температура ниже включения догрева выключаем и сбрасывам флаг необходимости
-		//				 else {return true;} // продолжаем греть бойлер
-            return true; // продолжаем греть бойлер
+						 //if(T < Prof.Boiler.tempRBOILER-HYSTERESIS_RBOILER) {flagRBOILER=false; return false;}   // температура ниже включения догрева выключаем и сбрасывам флаг необходимости
+						 //else
+						 return true; // продолжаем греть бойлер
 					 }
 					 else {flagRBOILER=false; return false;}               // бойлер выше целевой темпеартуы - цель достигнута - догрев выключаем
 				 }
@@ -1400,19 +1407,18 @@ void HeatPump::relayAllOFF()
 // функция сама определяет что делать в зависимости от режима
 // параметр задержка после включения мсек.
 #ifdef RTRV    // Если четырехходовой есть в конфигурации
-    void HeatPump::set_RTRV(uint16_t d)
-    {
- //      if (Prof.SaveON.mode==pHEAT)        // Реле переключения четырех ходового крана (переделано для инвертора). Для ОТОПЛЕНИЯ надо выключить,  на ОХЛАЖДЕНИЯ включить конечное устройство
-         if (get_modeHouse()==pHEAT)         // Реле переключения четырех ходового крана (переделано для инвертора). Для ОТОПЛЕНИЯ надо выключить,  на ОХЛАЖДЕНИЯ включить конечное устройство
-        { 
-          dRelay[RTRV].set_OFF();         // отопление
-        }
-        else   // во всех остальных случаях
-        {
-          dRelay[RTRV].set_ON();          // охлаждение
-        }  
-       _delay(d);                            // Задержка на 2 сек
-    }
+void HeatPump::set_RTRV(uint16_t d)
+{
+	//      if (Prof.SaveON.mode==pHEAT)        // Реле переключения четырех ходового крана (переделано для инвертора). Для ОТОПЛЕНИЯ надо выключить,  на ОХЛАЖДЕНИЯ включить конечное устройство
+	if(get_modeHouse() == pHEAT)         // Реле переключения четырех ходового крана (переделано для инвертора). Для ОТОПЛЕНИЯ надо выключить,  на ОХЛАЖДЕНИЯ включить конечное устройство
+	{
+		dRelay[RTRV].set_OFF();         // отопление
+	} else   // во всех остальных случаях
+	{
+		dRelay[RTRV].set_ON();          // охлаждение
+	}
+	_delay(d);                            // Задержка на 2 сек
+}
 #endif
 
 // Конфигурирование насосов ТН, вход желаемое состояние(true-бойлер false-отопление/охлаждение) возврат onBoiler
@@ -1429,31 +1435,26 @@ boolean HeatPump::switchBoiler(boolean b)
 #else // Нет трехходового - схема с двумя насосами
 	// ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
 	//journal.printf(" swBoiler(%d): old:%d, modeHouse:%d\n", b, get_modWork(), get_modeHouse());
-	if(onBoiler) // переключение на ГВС
-	{
-		#ifdef RPUMPBH
-	    dRelay[RPUMPBH].set_ON();    // ГВС - включить
-		#endif
+	if(onBoiler) { // переключение на ГВС
+#ifdef RPUMPBH
+		dRelay[RPUMPBH].set_ON();    // ГВС - включить
+#endif
 		Pump_HeatFloor(false);		 // выключить насос ТП
 		dRelay[RPUMPO].set_OFF();    // файнкойлы выключить
-	} else  // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
-	{
-    #ifdef RPUMPBH
-		dRelay[RPUMPBH].set_OFF();    // ГВС по любому надо выключить
-	#endif
-    if ((Status.modWork!=pOFF)&&(get_modeHouse()!=pOFF)&&(get_State()!=pSTOPING_HP)) // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
-    {
-		dRelay[RPUMPO].set_ON();     // файнкойлы
-		Pump_HeatFloor(true);
-    } else  // пауза ИЛИ рабата дома не задействована - все выключить
-    {
-      	Pump_HeatFloor(false);
-     	dRelay[RPUMPO].set_OFF();     // файнкойлы  	
-    }
+	} else { // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
+#ifdef RPUMPBH
+		if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
+#endif
+		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
+			dRelay[RPUMPO].set_ON();     // файнкойлы
+			Pump_HeatFloor(true);
+		} else { // пауза ИЛИ рабата дома не задействована - все выключить
+			Pump_HeatFloor(false);
+			dRelay[RPUMPO].set_OFF();     // файнкойлы
+		}
 	}
 #endif
-	if(old && get_State() == pWORK_HP) // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
-	{
+	if(old && get_State() == pWORK_HP) { // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
 		journal.jprintf(" Pause %d sec, Boiler->House . . .\n", HP.Option.delayBoilerSW);
 		_delay(HP.Option.delayBoilerSW * 1000); // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 	}
@@ -1907,7 +1908,7 @@ MODE_HP HeatPump::get_Work()
 
    // 2. Дополнительный нагреватель бойлера включение/выключение
    #ifdef RBOILER  // Управление дополнительным ТЭНом бойлера (функция boilerAddHeat() учитывает все режимы ТУРБО и ДОГРЕВ, сальмонелла)
-   if (boilerAddHeat()) dRelay[RBOILER].set_ON(); else dRelay[RBOILER].set_OFF(); 
+    if(boilerAddHeat()) dRelay[RBOILER].set_ON(); else dRelay[RBOILER].set_OFF();
    #endif
     
    if ((ret==pBOILER)||(ret==pNONE_B))  return ret; // работает бойлер больше ничего анализировать не надо выход
@@ -1989,8 +1990,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	if(!GETBIT(Prof.SaveON.flags,fBoilerON) || (!scheduleBoiler() && !GETBIT(Prof.Boiler.flags,fScheduleAddHeat))) // Если запрещено греть бойлер согласно расписания ИЛИ  Бойлер выключен, выходим и можно смотреть отопление
 	{
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-		if(faddheat) {
-			dRelay[RBOILER].set_OFF();flagRBOILER=false; // Выключение
+		if(GETBIT(Prof.Boiler.flags, fAddHeat)) {
+			dRelay[RBOILER].set_OFF();
+			flagRBOILER=false; // Выключение
 		}
 #endif
 		return pCOMP_OFF;             // запрещено греть бойлер согласно расписания
@@ -2012,6 +2014,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		}
 	}
 
+	Status.ret=pNone;                // Сбросить состояние пида
+
 	int16_t T = sTemp[TBOILER].get_Temp();
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
@@ -2024,7 +2028,6 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	}
 #endif
 
-	Status.ret=pNone;                // Сбросить состояние пида
 	// Алгоритм гистерезис для старт стоп
 	if(!dFC.get_present()) // Алгоритм гистерезис для старт стоп
 	{
