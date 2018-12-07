@@ -23,12 +23,12 @@ g.highcharts-range-selector-buttons {background: #ffffff;}
 .dateinfo #get_status > div:before{width:50%;float:left;text-align:right;clear:both;padding-right:5px;font-size:0.9em}
 .dateinfo #get_status > div:nth-child(1){width:100%;margin:0;padding:0;text-align: center;font-size: 2em;}
 .dateinfo #get_status > div:nth-child(2){width:100%;margin:0;padding: 0 0 5px 0;text-align: center;font-size: 1.5em;}
-.dateinfo #get_status > div:nth-child(3):before{content:"UPTIME"}
-.dateinfo #get_status > div:nth-child(4):before{content:"LAST CMD"}
-.dateinfo #get_status > div:nth-child(5):before{content:"CPU LOAD"}
-.dateinfo #get_status > div:nth-child(6):before{content:"OVERHEAT"}
-.dateinfo #get_status > div:nth-child(7):before{content:"FC"}
-.dateinfo #get_status > div:nth-child(8):before{content:"STATUS"}
+.dateinfo #get_status > div:nth-child(3):before{content:"ВРЕМЯ"}
+.dateinfo #get_status > div:nth-child(4):before{content:"КОМАНДА"}
+.dateinfo #get_status > div:nth-child(5):before{content:"ЗАГРУЗКА"}
+.dateinfo #get_status > div:nth-child(6):before{content:"ПЕРЕГРЕВ"}
+.dateinfo #get_status > div:nth-child(7):before{content:"ЧАСТОТА"}
+.dateinfo #get_status > div:nth-child(8):before{content:"СТАТУС"}
 .menu > ul {list-style:none;margin: 25px 0 ;padding:0;text-transform: uppercase;    clear: both;}
 .menu > ul > li > a, .menu > ul > li > label{height:44px;color: white; text-decoration:none;padding: 0;display:inline-block;line-height:44px; width:220px}
 .menu > ul > li > a > i, .menu > ul > li > label > i{ width: 44px; height: 44px; margin-right:8px;display: inline-block; float: left; background: #0A0D0E center center no-repeat}
@@ -127,7 +127,7 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_temp-tevaoutg	{margin-top: 335px;margin-left: 140px;}
 .visualization #get_temp-tevaing	{margin-top: 185px;margin-left: 140px;}
 .visualization #get_temp-tevaout	{margin-top: 230px;margin-left: 265px;}
-.visualization #get_temp-trtoout	{margin-top: 185px;margin-left: 425px;}
+.visualization #get_temp-tcompin	{margin-top: 185px;margin-left: 425px;}
 .visualization #get_temp-tconout	{margin-top: 335px;margin-left: 575px;}
 .visualization #get_temp-tconing	{margin-top: 335px;margin-left: 700px;}
 .visualization #get_temp-tconoutg	{margin-top: 185px;margin-left: 700px;}

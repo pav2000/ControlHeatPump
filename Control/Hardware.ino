@@ -735,7 +735,7 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 #else
 	switch(_data.ruleEEV)  // определение доступности элемента
 	{
-#ifdef TEVAIN
+#if defined(TEVAIN) && defined(TCONIN)
 	case TEVAOUT_TEVAIN:
 		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
 xTEVAOUT_TEVAIN: Overheat = out - in + _data.Correction;
@@ -745,10 +745,10 @@ xTEVAOUT_TEVAIN: Overheat = out - in + _data.Correction;
 		}
 		break;
 #endif
-#ifdef TRTOOUT
-	case TRTOOUT_TEVAIN:
-		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
-xTRTOOUT_TEVAIN: Overheat = HP.sTemp[TRTOOUT].get_Temp() - in + _data.Correction;
+#if defined(TEVAIN) && defined(TCONIN)
+	case TCOMPIN_TEVAIN:
+		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
+xTCOMPIN_TEVAIN: Overheat = HP.sTemp[TCOMPIN].get_Temp() - in + _data.Correction;
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
@@ -763,30 +763,32 @@ xTEVAOUT_PEVA: Overheat = out - PressToTemp(press, _data.typeFreon) + _data.Corr
 			set_Error(err, name);
 		}
 		break;
-#ifdef TRTOOUT
-	case TRTOOUT_PEVA:
-		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present())) {
-xTRTOOUT_PEVA: Overheat = HP.sTemp[TRTOOUT].get_Temp() - PressToTemp(press, _data.typeFreon) + _data.Correction;
+#ifdef TCOMPIN
+	case TCOMPIN_PEVA:
+		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sADC[PEVA].get_present())) {
+xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - PressToTemp(press, _data.typeFreon) + _data.Correction;
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
 		}
 		break;
 #endif
-	case TABLE:         // По умолчанию
+#if defined(TEVAIN) && defined(TCONIN)
+	case TABLE:
+#endif
 	case MANUAL:
 	default:
-#ifdef TRTOOUT
-		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sADC[PEVA].get_present())) goto xTRTOOUT_PEVA;
+#ifdef TCOMPIN
+		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sADC[PEVA].get_present())) goto xTCOMPIN_PEVA;
 		else
 #endif
 		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) goto xTEVAOUT_PEVA;
 		else
-#ifdef TRTOOUT
-		if((HP.sTemp[TRTOOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTRTOOUT_TEVAIN;
+#if defined(TCOMPIN) && defined(TEVAIN) && defined(TCONIN)
+		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTCOMPIN_TEVAIN;
 		else
 #endif
-#ifdef TEVAIN
+#if defined(TEVAIN) && defined(TCONIN)
 		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTEVAOUT_TEVAIN;
 		else
 #endif
@@ -817,10 +819,12 @@ int8_t devEEV::Update(void) //boolean fHeating)
 
 	switch(_data.ruleEEV)     // В зависмости от правила вычисления перегрева
 	{
+#if defined(TEVAIN) && defined(TCONIN)
 	case TEVAOUT_TEVAIN:
-	case TRTOOUT_TEVAIN:
+	case TCOMPIN_TEVAIN:
+#endif
 	case TEVAOUT_PEVA:
-	case TRTOOUT_PEVA: {
+	case TCOMPIN_PEVA: {
 		newEEV = EEV + round_div_int16(updatePID(Overheat - _data.tOverheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 #ifndef DEMO
@@ -845,8 +849,8 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
 	}
 	break;
+#if defined(TEVAIN) && defined(TCONIN)
 	case TABLE:
-#ifdef TEVAIN
 		newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2, (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2); break;
 #endif
 	case MANUAL:
@@ -940,8 +944,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
          for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
             { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	}   else if(strcmp(var, eev_RULE)==0){
-         for(uint8_t i=TEVAOUT_TEVAIN;i<=MANUAL;i++) // Формирование списка
-            { strcat(ret,noteRuleEEV[i]); strcat(ret,":"); if(i==get_ruleEEV()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+		web_fill_tag_select(ret, noteRuleEEV, get_ruleEEV());
 	} else if(strcmp(var, eev_NAME)==0){    strcat(ret,name);
 	} else if(strcmp(var, eev_NOTE)==0){    strcat(ret,note);
 	} else if(strcmp(var, eev_REMARK)==0){  strcat(ret,noteRemarkEEV[get_ruleEEV()]);
@@ -1015,7 +1018,7 @@ float temp;
 	} else if(strcmp(var, eev_FREON)==0){
         if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип  
 	}   else if(strcmp(var, eev_RULE)==0){
-		if ((x>=TEVAOUT_TEVAIN)&&(x<=MANUAL)){ _data.ruleEEV=(RULE_EEV)x; return true;} else return false;	// перечисляемый тип  
+		if (x<=MANUAL){ _data.ruleEEV=(RULE_EEV)x; return true;} else return false;	// перечисляемый тип
 	} else if(strcmp(var, eev_cCORRECT)==0){
     	if (x==0) SETBIT0(_data.flags, fCorrectOverHeat); else SETBIT1(_data.flags, fCorrectOverHeat); 
 	} else if(strcmp(var, eev_cDELAY)==0){

@@ -513,7 +513,6 @@ void Profile::initProfile()
  // Защиты
   Cool.tempIn=1000;                    // Tемпература подачи (минимальная)
   Cool.tempOut=3500;                   // Tемпература обратки (макс)
-  Cool.pause=5*60;                     // Минимальное время простоя компрессора минуты
   Cool.dt=1500;                        // Максимальная разность температур конденсатора.
   Cool.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
@@ -539,7 +538,6 @@ void Profile::initProfile()
  // Защиты
   Heat.tempIn=5000;                    // Tемпература подачи (макс)
   Heat.tempOut=0;                      // Tемпература обратки (минимальная)
-  Heat.pause=5*60;                     // Минимальное время простоя компрессора минуты
   Heat.dt=1500;                        // Максимальная разность температур конденсатора.
   Heat.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
@@ -556,9 +554,7 @@ void Profile::initProfile()
   Boiler.TempTarget=5000;               // !save! Целевая температура бойлера
   Boiler.dTemp=500;                     // !save! гистерезис целевой температуры
   Boiler.tempIn=5400;                   // !save! Tемпература подачи максимальная
-  Boiler.pause=5*60;                    // !save! Минимальное время простоя компрессора в секундах
-  for (uint8_t i=0;i<7; i++) 
-      Boiler.Schedule[i]=0;             // !save! Расписание бойлера
+  for (uint8_t i=0;i<7; i++) Boiler.Schedule[i]=0;             // !save! Расписание бойлера
   Boiler.Circul_Work=60*3;              // Время  работы насоса ГВС секунды (fCirculation)
   Boiler.Circul_Pause=60*10;            // Пауза в работе насоса ГВС  секунды (fCirculation)
   Boiler.Reset_Time=30;                 // время сброса излишков тепла в секундах (fResetHeat)
@@ -595,7 +591,6 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Cool.pid.Kd=rd(x, 100); return true;} else return false;                                       }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=30.0))  {Cool.tempIn=rd(x, 100); return true;} else return false;                                       }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=0.0)&&(x<=35.0))  {Cool.tempOut=rd(x, 100); return true;} else return false;                                      }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Cool.pause=x*60; return true;} else return false;                                              }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Cool.dt=rd(x, 100); return true;} else return false;                                           }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=0.0)&&(x<=30.0))  {Cool.tempPID=rd(x, 100); return true;} else return false;                                     }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { Cool.flags = (Cool.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
@@ -622,7 +617,6 @@ char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
    if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Cool.pid.Kd/100.0,2); return ret;              } else             // Дифференциальная составляющая ПИД ТН
    if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Cool.tempIn/100.0,1); return ret;              } else             // температура подачи (минимальная)
    if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Cool.tempOut/100.0,1); return ret;             } else             // температура обратки (максимальная)
-   if(strcmp(var,hp_PAUSE)==0)    {return  _itoa(Cool.pause/60,ret);                               } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,hp_D_TEMP)==0)   {_ftoa(ret,(float)Cool.dt/100.0,1); return ret;                  } else             // максимальная разность температур конденсатора.
    if(strcmp(var,hp_TEMP_PID)==0) {_ftoa(ret,(float)Cool.tempPID/100.0,1); return ret;          } else             // Целевая темпеартура ПИД
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Cool.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
@@ -655,7 +649,6 @@ if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
  if(strcmp(var,hp_HP_DIF)==0) {  if ((x>=0.0)&&(x<=10.0))  {Heat.pid.Kd=rd(x, 100); return true;} else return false;                                      }else             // Дифференциальная составляющая ПИД ТН
  if(strcmp(var,hp_TEMP_IN)==0) { if ((x>=0.0)&&(x<=70.0))  {Heat.tempIn=rd(x, 100); return true;} else return false;                                       }else             // температура подачи (минимальная)
  if(strcmp(var,hp_TEMP_OUT)==0){ if ((x>=-10.0)&&(x<=70.0)) {Heat.tempOut=rd(x, 100); return true;} else return false;                                     }else             // температура обратки (максимальная)
- if(strcmp(var,hp_PAUSE)==0) {   if ((x>=0)&&(x<=60))      {Heat.pause=x*60; return true;} else return false;                                              }else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
  if(strcmp(var,hp_D_TEMP)==0) {  if ((x>=0.0)&&(x<=40.0))  {Heat.dt=rd(x, 100); return true;} else return false;                                           }else             // максимальная разность температур конденсатора.
  if(strcmp(var,hp_TEMP_PID)==0){ if ((x>=10.0)&&(x<=50.0))  {Heat.tempPID=rd(x, 100); return true;} else return false;                                  }else             // Целевая темпеартура ПИД
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
@@ -685,7 +678,6 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Heat.pid.Kd/100.0,2); return ret;               } else             // Дифференциальная составляющая ПИД ТН
    if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Heat.tempIn/100.0,1); return ret;               } else             // температура подачи (минимальная)
    if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Heat.tempOut/100.0,1); return ret;              } else             // температура обратки (максимальная)
-   if(strcmp(var,hp_PAUSE)==0)    {return _itoa(Heat.pause/60,ret);                            } else             // минимальное время простоя компрессора спереводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,hp_D_TEMP)==0)   {_ftoa(ret,(float)Heat.dt/100.0,1); return ret;                   } else             // максимальная разность температур конденсатора.
    if(strcmp(var,hp_TEMP_PID)==0) {_ftoa(ret,(float)Heat.tempPID/100.0,1); return ret;              } else             // Целевая темпеартура ПИД
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Heat.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
@@ -699,69 +691,35 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 //Установить параметр из строки
 boolean Profile::set_boiler(char *var, char *c)
 { 
-float x=my_atof(c);
-if ((x==ATOF_ERROR)&&(strcmp(var,boil_SCHEDULER)!=0)) return false;   // Ошибка преобразования короме расписания - это не число
- 
-if(strcmp(var,boil_BOILER_ON)==0){ if (strcmp(c,cZero)==0){SETBIT0(SaveON.flags,fBoilerON); return true;}
-                                   else if (strcmp(c,cOne)==0){SETBIT1(SaveON.flags,fBoilerON);  return true;}
-                                   else return false;  
-                                  }else 
-if(strcmp(var,boil_SCHEDULER_ON)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSchedule); return true;}
-                                     else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fSchedule);  return true;}
-                                     else return false;  
-                                    }else 
-if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fScheduleAddHeat); return true;}
-									 else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fScheduleAddHeat);  return true;}
-									 else return false;
-									}else
-if(strcmp(var,boil_TURBO_BOILER)==0){ if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fTurboBoiler); return true;}
-				                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fTurboBoiler);  return true;}
-				                       else return false;  
-				                       }else 
-if(strcmp(var,boil_SALLMONELA)==0){if (strcmp(c,cZero)==0){SETBIT0(Boiler.flags,fSalmonella);HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]); return true;} // Изменение максимальной температуры при включенном режиме сальмонелла
-				                       else if (strcmp(c,cOne)==0){SETBIT1(Boiler.flags,fSalmonella);HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300); return true;}
-				                       else return false;  
-				                       }else 
-if(strcmp(var,boil_CIRCULATION)==0){ if (strcmp(c,cZero)==0){ SETBIT0(Boiler.flags,fCirculation); return true;}
-			                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fCirculation);  return true;}
-			                       else return false;  
-			                       }else 
-if(strcmp(var,boil_TEMP_TARGET)==0){ if ((x>=5)&&(x<=90))       {Boiler.TempTarget=rd(x, 100); return true;} else return false;       // Целевая температура бойлера
-                       }else             
-if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-50)&&(x<=50))  {Boiler.add_delta_temp=rd(x, 100); return true;}else return false; }else         // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
-if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Boiler.add_delta_hour=x; return true;} else return false; }else        // Начальный Час добавки температуры к установке бойлера
-if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; }else    // Конечный Час добавки температуры к установке
-if(strcmp(var,boil_DTARGET)==0){     if ((x>=1)&&(x<=20))       {Boiler.dTemp=rd(x, 100); return true;} else return false;            // гистерезис целевой температуры
-                       }else      
-if(strcmp(var,boil_TEMP_MAX)==0){    if ((x>=20)&&(x<=70))      {Boiler.tempIn=rd(x, 100); return true;} else return false;           // Tемпература подачи максимальная
-                       }else 
-if(strcmp(var,boil_PAUSE1)==0){      if ((x>=0)&&(x<=60))       {Boiler.pause=x*60; return true;} else return false;               // Минимальное время простоя компрессора в секундах
-                       }else  
-                                                                              
-if(strcmp(var,boil_SCHEDULER)==0){  return set_Schedule(c,Boiler.Schedule); }else                                                  // разбор строки расписания
-
-if(strcmp(var,boil_CIRCUL_WORK)==0) {if((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;}else            // Время  работы насоса ГВС секунды (fCirculation)
-                        
-if(strcmp(var,boil_CIRCUL_PAUSE)==0){if((x>=0)&&(x<=60)){Boiler.Circul_Pause=60*x; return true;} else return false;}else           // Пауза в работе насоса ГВС  секунды (fCirculation)
-                        
-if(strcmp(var,boil_RESET_HEAT)==0){ if (strcmp(c,cZero)==0)  { SETBIT0(Boiler.flags,fResetHeat); return true;}                      // флаг Сброса лишнего тепла в СО
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Boiler.flags,fResetHeat);  return true;}
-                       else return false;  
-                       }else 
-if(strcmp(var,boil_RESET_TIME)==0){ if ((x>=1)&&(x<=10000))   {Boiler.Reset_Time=x; return true;} else return false;               // время сброса излишков тепла в секундах (fResetHeat)
-                       }else      
-if(strcmp(var,boil_BOIL_TIME)==0){   if ((x>=5)&&(x<=300))     {Boiler.pid.time=x; return true;} else return false;  }else             // Постоянная интегрирования времени в секундах ПИД ГВС
-if(strcmp(var,boil_BOIL_PRO)==0){    if ((x>=0.0)&&(x<=100.0)) {Boiler.pid.Kp=rd(x, 100); return true;} else return false;  }else      // Пропорциональная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_IN)==0){     if ((x>=0.0)&&(x<=20.0))  {Boiler.pid.Ki=rd(x, 100); return true;} else return false;  }else      // Интегральная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_DIF)==0){    if ((x>=0.0)&&(x<=10.0))  {Boiler.pid.Kd=rd(x, 100); return true;} else return false;   }else    // Дифференциальная составляющая ПИД ГВС
-if(strcmp(var,boil_BOIL_TEMP)==0){   if ((x>=30.0)&&(x<=70))   {Boiler.tempPID=rd(x, 100); return true;} else return false;  }else    // Целевая темпеартура ПИД ГВС
-if(strcmp(var,boil_ADD_HEATING)==0){ if (strcmp(c,cZero)==0)   {SETBIT0(Boiler.flags,fAddHeating); return true;}                   // флаг использования тена для догрева ГВС
-                                     else if (strcmp(c,cOne)==0){ SETBIT1(Boiler.flags,fAddHeating);  return true;}
-                                     else return false;  
-                                    }else
-if(strcmp(var,boil_TEMP_RBOILER)==0){if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;}else // температура включения догрева бойлера
-return false;
-
+	if(strcmp(var,boil_SCHEDULER)==0)		{ return set_Schedule(c,Boiler.Schedule); }  // разбор строки расписания
+	float x=my_atof(c);
+	if(x == ATOF_ERROR) return false;   // Ошибка преобразования короме расписания - это не число
+	if(strcmp(var,boil_BOILER_ON)==0)		{ if(x) SETBIT1(SaveON.flags,fBoilerON); else SETBIT0(SaveON.flags,fBoilerON); return true;} else
+	if(strcmp(var,boil_SCHEDULER_ON)==0)	{ if(x) SETBIT1(Boiler.flags,fSchedule); else { SETBIT0(Boiler.flags,fSchedule); SETBIT0(Boiler.flags,fScheduleAddHeat); } return true;} else
+	if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){if(x) {SETBIT1(Boiler.flags,fScheduleAddHeat); SETBIT1(Boiler.flags,fSchedule); } else SETBIT0(Boiler.flags,fScheduleAddHeat); return true;} else
+	if(strcmp(var,boil_TOGETHER_HEAT)==0)	{ if(x) SETBIT1(Boiler.flags,fBoilerTogetherHeat); else SETBIT0(Boiler.flags,fBoilerTogetherHeat); return true;} else
+	if(strcmp(var,boil_TURBO_BOILER)==0)	{ if(x) SETBIT1(Boiler.flags,fTurboBoiler); else SETBIT0(Boiler.flags,fTurboBoiler); return true;} else
+	if(strcmp(var,boil_SALLMONELA)==0)		{ if(x) { SETBIT1(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300); }
+												else { SETBIT0(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]); } return true;} else // Изменение максимальной температуры при включенном режиме сальмонелла
+	if(strcmp(var,boil_CIRCULATION)==0)		{ if(x) SETBIT1(Boiler.flags,fCirculation); else SETBIT0(Boiler.flags,fCirculation); return true;} else
+	if(strcmp(var,boil_TEMP_TARGET)==0)		{ if((x>=5)&&(x<=90)) {Boiler.TempTarget=rd(x, 100); return true;} else return false; } else  // Целевая температура бойлера
+	if(strcmp(var,ADD_DELTA_TEMP)==0)		{ if((x>=-50)&&(x<=50)) {Boiler.add_delta_temp=rd(x, 100); return true;}else return false; } else  // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
+	if(strcmp(var,ADD_DELTA_HOUR)==0)		{ if((x>=0)&&(x<=23)) {Boiler.add_delta_hour=x; return true;} else return false; } else      // Начальный Час добавки температуры к установке бойлера
+	if(strcmp(var,ADD_DELTA_END_HOUR)==0)	{ if((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; } else   // Конечный Час добавки температуры к установке
+	if(strcmp(var,boil_DTARGET)==0)			{ if((x>=1)&&(x<=20)) {Boiler.dTemp=rd(x, 100); return true;} else return false; } else      // гистерезис целевой температуры
+	if(strcmp(var,boil_TEMP_MAX)==0)		{ if((x>=20)&&(x<=70)) {Boiler.tempIn=rd(x, 100); return true;} else return false; } else    // Tемпература подачи максимальная
+	if(strcmp(var,boil_CIRCUL_WORK)==0) 	{ if((x>=0)&&(x<=60)){Boiler.Circul_Work=60*x; return true;} else return false;} else         // Время  работы насоса ГВС секунды (fCirculation)
+	if(strcmp(var,boil_CIRCUL_PAUSE)==0)	{ if((x>=0)&&(x<=60)){Boiler.Circul_Pause=60*x; return true;} else return false;} else        // Пауза в работе насоса ГВС  секунды (fCirculation)
+	if(strcmp(var,boil_RESET_HEAT)==0)		{ if(x) SETBIT1(Boiler.flags,fResetHeat); else SETBIT0(Boiler.flags,fResetHeat); return true;} else // флаг Сброса лишнего тепла в СО
+	if(strcmp(var,boil_RESET_TIME)==0)		{ if((x>=1)&&(x<=10000)) {Boiler.Reset_Time=x; return true;} else return false; } else        // время сброса излишков тепла в секундах (fResetHeat)
+	if(strcmp(var,boil_BOIL_TIME)==0)		{ if((x>=5)&&(x<=300)) {Boiler.pid.time=x; return true;} else return false; } else             // Постоянная интегрирования времени в секундах ПИД ГВС
+	if(strcmp(var,boil_BOIL_PRO)==0)		{ if((x>=0.0)&&(x<=100.0)) {Boiler.pid.Kp=rd(x, 100); return true;} else return false; } else  // Пропорциональная составляющая ПИД ГВС
+	if(strcmp(var,boil_BOIL_IN)==0)			{ if((x>=0.0)&&(x<=20.0)) {Boiler.pid.Ki=rd(x, 100); return true;} else return false; } else   // Интегральная составляющая ПИД ГВС
+	if(strcmp(var,boil_BOIL_DIF)==0)		{ if((x>=0.0)&&(x<=10.0)) {Boiler.pid.Kd=rd(x, 100); return true;} else return false; } else   // Дифференциальная составляющая ПИД ГВС
+	if(strcmp(var,boil_BOIL_TEMP)==0)		{ if((x>=30.0)&&(x<=70)) {Boiler.tempPID=rd(x, 100); return true;} else return false; } else   // Целевая темпеартура ПИД ГВС
+	if(strcmp(var,boil_ADD_HEATING)==0)		{ if(x) SETBIT1(Boiler.flags,fAddHeating); else SETBIT0(Boiler.flags,fAddHeating); return true;} else  // флаг использования тена для догрева ГВС
+	if(strcmp(var,boil_TEMP_RBOILER)==0)	{if ((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
+	return false;
 }
 
 // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
@@ -770,6 +728,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_BOILER_ON)==0){       if (GETBIT(SaveON.flags,fBoilerON))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SCHEDULER_ON)==0){    if (GETBIT(Boiler.flags,fSchedule))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){ if (GETBIT(Boiler.flags,fScheduleAddHeat)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_TOGETHER_HEAT)==0){ if (GETBIT(Boiler.flags,fBoilerTogetherHeat)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_TURBO_BOILER)==0){    if (GETBIT(Boiler.flags,fTurboBoiler))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SALLMONELA)==0){      if (GETBIT(Boiler.flags,fSalmonella)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_CIRCULATION)==0){     if (GETBIT(Boiler.flags,fCirculation))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
@@ -779,7 +738,6 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,ADD_DELTA_END_HOUR)==0) 	{ _itoa(Boiler.add_delta_end_hour, ret); return ret;    	}else
  if(strcmp(var,boil_DTARGET)==0){         _ftoa(ret,(float)Boiler.dTemp/100.0,1); return ret;        }else
  if(strcmp(var,boil_TEMP_MAX)==0){        _ftoa(ret,(float)Boiler.tempIn/100.0,1); return ret;       }else
- if(strcmp(var,boil_PAUSE1)==0){          return _itoa(Boiler.pause/60,ret);                         }else                                                         
  if(strcmp(var,boil_SCHEDULER)==0){       return strcat(ret,get_Schedule(Boiler.Schedule));          }else  
  if(strcmp(var,boil_CIRCUL_WORK)==0){     return _itoa(Boiler.Circul_Work/60,ret);                   }else                            // Время  работы насоса ГВС секунды (fCirculation)
  if(strcmp(var,boil_CIRCUL_PAUSE)==0){    return _itoa(Boiler.Circul_Pause/60,ret);                  }else                            // Пауза в работе насоса ГВС  секунды (fCirculation)
