@@ -293,32 +293,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												cont2 = cont1[k].split(':');
 												if(cont2[1] == 1) {
 													selected = true;
-													if(idsel == "get_parameev-rule") {
-               											var s = "get_parameev-";
-														document.getElementById(s+"freon").disabled = false;
-														document.getElementById(s+"manual").disabled = false;
-														document.getElementById(s+"manual2").disabled = false;
-														document.getElementById(s+"const").disabled = false;
-														document.getElementById(s+"const2").disabled = false;
-														if(k == 0 || k == 1) {
-															document.getElementById(s+"freon").disabled = true;
-															document.getElementById(s+"manual").disabled = true;
-															document.getElementById(s+"manual2").disabled = true;
-														} else if(k == 2 || k == 3) {
-															document.getElementById(s+"manual").disabled = true;
-															document.getElementById(s+"manual2").disabled = true;
-														} else if(k == 4) {
-															document.getElementById(s+"freon").disabled = true;
-															document.getElementById(s+"const").disabled = true;
-															document.getElementById(s+"const2").disabled = true;
-															document.getElementById(s+"manual").disabled = true;
-															document.getElementById(s+"manual2").disabled = true;
-														} else if(k == 5) {
-															document.getElementById(s+"freon").disabled = true;
-															document.getElementById(s+"const").disabled = true;
-															document.getElementById(s+"const2").disabled = true;
-														}
-													} else if(idsel == "get_paramcoolhp-rule") {
+													if(idsel == "get_paramcoolhp-rule") {
 														document.getElementById("get_paramcoolhp-target").disabled = false;
 														document.getElementById("get_paramcoolhp-dtemp").disabled = false;
 														document.getElementById("get_paramcoolhp-hp_pro").disabled = false;

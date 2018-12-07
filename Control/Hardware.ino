@@ -944,16 +944,6 @@ char* devEEV::get_paramEEV(char *var, char *ret)
          for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
             { strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	}   else if(strcmp(var, eev_RULE)==0){
-//		char *p = ret + m_strlen(ret);
-//		strcat(p, "TEVAOUT-T[PEVA]:0;");
-//		#ifdef TCOMPIN
-//		strcat(p, "TCOMPIN-T[PEVA]:0;");
-//		#ifdef TCONIN
-//		strcat(p, "TEVAOUT_TEVAIN:0;");
-//		strcat(p, "TCOMPIN_TEVAIN:0;");
-//		#endif
-//		#endif
-//		strcat(p, "Table[EVA CON]:0;Manual:0;");
 		web_fill_tag_select(ret, noteRuleEEV, get_ruleEEV());
 	} else if(strcmp(var, eev_NAME)==0){    strcat(ret,name);
 	} else if(strcmp(var, eev_NOTE)==0){    strcat(ret,note);

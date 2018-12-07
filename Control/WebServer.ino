@@ -709,14 +709,19 @@ void parserGET(char *buf, char *strReturn, int8_t )
     		ADD_WEBDELIM(strReturn) ; continue;
         } // strcmp(str,"get_modeHP")==0)   
     if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
-       {
+    {
 		#ifdef RPUMPBH
-    	if(HP.dRelay[RPUMPBH].get_Relay()) strcat(strReturn, "Бойлер");
-    	else
+    	i = HP.dRelay[RPUMPBH].get_Relay();
+		#else
+    	i = 0;
 		#endif
-    		strcat(strReturn, HP.dRelay[PUMP_OUT].get_Relay() ? "Вкл" : "Выкл");
+    	if(HP.dRelay[PUMP_OUT].get_Relay()) {
+    		strcat(strReturn,  "Вкл");
+    		if(i) strcat(strReturn,  ", ");
+    	} else if(!i) strcat(strReturn,  "Выкл");
+   		if(i) strcat(strReturn, "ГВС");
     	ADD_WEBDELIM(strReturn) ;    continue;
-       }
+    }
     if (strcmp(str,"get_testMode")==0)  // Функция get_testMode
        {
        for(i=0;i<=HARD_TEST;i++) // Формирование списка
