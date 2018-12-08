@@ -19,7 +19,10 @@ function createChart(values, resultdiv) {
 	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
 	var data = values[1].split(';');
 	if(ReadyMask == 0) {
-		dataSeries1.splice(0,dataSeries1.length); dataSeries2.splice(0,dataSeries2.length);	dataSeries3.splice(0,dataSeries3.length);
+		dataSeries1.splice(0,dataSeries1.length); 
+		dataSeries2.splice(0,dataSeries2.length);	
+		dataSeries3.splice(0,dataSeries3.length);
+		dataSeries4.splice(0,dataSeries4.length);
 	}
 	if(title == 'Overheat') {
 		for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);

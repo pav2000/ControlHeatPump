@@ -872,7 +872,7 @@ void devEEV::CorrectOverheat(void)
 		OverHeatCor_period = 0;
 		int16_t t = HP.get_temp_condensing();
 		OHCor_tdelta = (int32_t)DEF_OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)HP.get_temp_evaporating() * DEF_OHCor_EVAPORATING_0_MUL / 1000 + (Overheat - _data.OHCor_OverHeatStart);
-		t = _data.tOverheat + updatePID(HP.sTemp[TCOMP].get_Temp() - t - OHCor_tdelta, _data.OHCor_pid, OHCor_pidw);
+		t = _data.tOverheat + updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
 		if(t > _data.OHCor_OverHeatMax) t = _data.OHCor_OverHeatMax;
 		else if(t < _data.OHCor_OverHeatMin) t = _data.OHCor_OverHeatMin;
 		_data.tOverheat = t;
