@@ -720,35 +720,32 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 		err = OK;
 		return Overheat;
 	} // ЭРВ в конфиге нет
-	int16_t out = HP.sTemp[fHeating ? TEVAOUT : TCONOUT].get_Temp();
-#if defined(TEVAIN) && defined(TCONIN)
-	int16_t	in = HP.sTemp[fHeating ? TEVAIN : TCONIN].get_Temp();
-#endif
-	int16_t press = HP.sADC[PEVA].get_Press();
 	// вычисляется в зависимости от алгоритма
 #ifdef DEMO
-	#if defined(TEVAIN) && defined(TCONIN)
-	Overheat=abs(out-in);              // вычислить перегрев для демки всегда больше 0
-	#else
 	Overheat = 400;
-	#endif
 #else
 	switch(_data.ruleEEV)  // определение доступности элемента
 	{
-#if defined(TEVAIN) && defined(TCONIN)
+#if defined(TEVAIN) && defined(TEVAOUT)
 	case TEVAOUT_TEVAIN:
 		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
-xTEVAOUT_TEVAIN: Overheat = out - in + _data.Correction;
+xTEVAOUT_TEVAIN:
+#if defined(TCONIN)
+			Overheat = (fHeating ? HP.sTemp[TEVAOUT].get_Temp() - HP.sTemp[TEVAIN].get_Temp() : HP.sTemp[TCONIN].get_Temp() - HP.sTemp[TCONOUT].get_Temp()) + _data.Correction;
+#elif defined(TCOMPIN)
+			Overheat = (fHeating ? HP.sTemp[TEVAOUT].get_Temp() - HP.sTemp[TEVAIN].get_Temp() : HP.sTemp[TCOMPIN].get_Temp() - HP.sTemp[TCONOUT].get_Temp()) + _data.Correction;
+#endif
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
 		}
 		break;
 #endif
-#if defined(TEVAIN) && defined(TCONIN)
+#if defined(TEVAIN) && defined(TCOMPIN)
 	case TCOMPIN_TEVAIN:
 		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
-xTCOMPIN_TEVAIN: Overheat = HP.sTemp[TCOMPIN].get_Temp() - in + _data.Correction;
+xTCOMPIN_TEVAIN:
+			Overheat = HP.sTemp[TCOMPIN].get_Temp() - (fHeating ? HP.sTemp[TEVAIN].get_Temp() : HP.sTemp[TCONOUT].get_Temp()) + _data.Correction;
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
@@ -757,7 +754,12 @@ xTCOMPIN_TEVAIN: Overheat = HP.sTemp[TCOMPIN].get_Temp() - in + _data.Correction
 #endif
 	case TEVAOUT_PEVA:
 		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) {
-xTEVAOUT_PEVA: Overheat = out - PressToTemp(press, _data.typeFreon) + _data.Correction;
+xTEVAOUT_PEVA:
+#if defined(TCONIN)
+			Overheat = (fHeating ? HP.sTemp[TEVAOUT].get_Temp() : HP.sTemp[TCONIN].get_Temp()) - PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) + _data.Correction;
+#elif defined(TCOMPIN)
+			Overheat = (fHeating ? HP.sTemp[TEVAOUT].get_Temp() : HP.sTemp[TCOMPIN].get_Temp()) - PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) + _data.Correction;
+#endif
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
@@ -766,29 +768,29 @@ xTEVAOUT_PEVA: Overheat = out - PressToTemp(press, _data.typeFreon) + _data.Corr
 #ifdef TCOMPIN
 	case TCOMPIN_PEVA:
 		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sADC[PEVA].get_present())) {
-xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - PressToTemp(press, _data.typeFreon) + _data.Correction;
+xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) + _data.Correction;
 		} else {
 			err = ERR_TYPE_OVERHEAT;
 			set_Error(err, name);
 		}
 		break;
 #endif
-#if defined(TEVAIN) && defined(TCONIN)
+#if defined(TEVAIN)
 	case TABLE:
 #endif
 	case MANUAL:
 	default:
+		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) goto xTEVAOUT_PEVA;
+		else
 #ifdef TCOMPIN
 		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sADC[PEVA].get_present())) goto xTCOMPIN_PEVA;
 		else
 #endif
-		if((HP.sTemp[TEVAOUT].get_present()) && (HP.sADC[PEVA].get_present())) goto xTEVAOUT_PEVA;
-		else
-#if defined(TCOMPIN) && defined(TEVAIN) && defined(TCONIN)
+#if defined(TCOMPIN) && defined(TEVAIN)
 		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTCOMPIN_TEVAIN;
 		else
 #endif
-#if defined(TEVAIN) && defined(TCONIN)
+#if defined(TEVAIN) && defined(TEVAOUT)
 		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) goto xTEVAOUT_TEVAIN;
 		else
 #endif
@@ -819,12 +821,15 @@ int8_t devEEV::Update(void) //boolean fHeating)
 
 	switch(_data.ruleEEV)     // В зависмости от правила вычисления перегрева
 	{
-#if defined(TEVAIN) && defined(TCONIN)
+#if defined(TEVAIN)
 	case TEVAOUT_TEVAIN:
+#endif
+#if defined(TCOMPIN)
 	case TCOMPIN_TEVAIN:
 #endif
 	case TEVAOUT_PEVA:
-	case TCOMPIN_PEVA: {
+#ifdef TCOMPIN
+	case TCOMPIN_PEVA:
 		newEEV = EEV + round_div_int16(updatePID(Overheat - _data.tOverheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 #ifndef DEMO
@@ -847,11 +852,17 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		if (newEEV>_data.maxSteps) newEEV=_data.maxSteps;                            // Просто ограничение DEMO
 #endif
 		//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
-	}
-	break;
-#if defined(TEVAIN) && defined(TCONIN)
+		break;
+#endif
+#if defined(TEVAIN)
 	case TABLE:
-		newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2, (HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2); break;
+		newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
+#if defined(TCONIN)
+				(HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
+#elif defined(TCOMPIN)
+				(HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCOMPIN].get_Temp()) / 2);
+#endif
+		break;
 #endif
 	case MANUAL:
 		newEEV = _data.manualStep;
@@ -871,7 +882,7 @@ void devEEV::CorrectOverheat(void)
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_pid.time) {
 		OverHeatCor_period = 0;
 		int16_t t = HP.get_temp_condensing();
-		OHCor_tdelta = (int32_t)DEF_OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)HP.get_temp_evaporating() * DEF_OHCor_EVAPORATING_0_MUL / 1000 + (Overheat - _data.OHCor_OverHeatStart);
+		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)HP.get_temp_evaporating() * DEF_OHCor_EVAPORATING_0_MUL / 1000 + (Overheat - _data.OHCor_OverHeatStart);
 		t = _data.tOverheat + updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
 		if(t > _data.OHCor_OverHeatMax) t = _data.OHCor_OverHeatMax;
 		else if(t < _data.OHCor_OverHeatMin) t = _data.OHCor_OverHeatMin;

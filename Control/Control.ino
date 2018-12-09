@@ -1232,7 +1232,11 @@ void vUpdateEEV(void *)
 				// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
 				HP.dEEV.Update();
 				// штатная пауза (в зависимости от настроек)
-				if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA) || (HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA)) {
+				if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA)
+#ifdef TCOMPIN
+					|| (HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA)
+#endif
+				) {
 					vTaskDelay(HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
 					continue;
 				}

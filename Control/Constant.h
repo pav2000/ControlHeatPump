@@ -813,7 +813,7 @@ const char *noteFreon[]    =   {"R22","R410A","R600","R134a","R407C","R12","R290
 const char noteRuleEEV[]   =	"TEVAOUT-T[PEVA]:0;"
 	#ifdef TCOMPIN
 								"TCOMPIN-T[PEVA]:0;"
-		#ifdef TCONIN
+		#ifdef TEVAIN
 								"TEVAOUT-TEVAIN:0;"
 								"TCOMPIN-TEVAIN:0;"
 								"TABLE[EVA,CON]:0;"
@@ -825,7 +825,7 @@ const char noteRuleEEV[]   =	"TEVAOUT-T[PEVA]:0;"
 const char *noteRemarkEEV[] = {	"Перегрев равен: температура на выходе испарителя - температура по давлению на выходе испарителя.",
 #ifdef TCOMPIN
 								"Перегрев равен: температура на входе компрессора - температура по давлению на выходе испарителя.",
-	#ifdef TCONIN
+	#ifdef TEVAIN
 								"Перегрев равен: температура на выходе испарителя - температура на входе испарителя.",
 								"Перегрев равен: температура на входе компрессора - температура на входе испарителя.",
 								"Перегрев не вычисляется. ЭРВ открывается по значению шага из таблицы температур испарителя и конденсатора.",
@@ -1209,7 +1209,7 @@ enum RULE_EEV
    TEVAOUT_PEVA,
 #ifdef TCOMPIN
    TCOMPIN_PEVA,
-#ifdef TCONIN
+#ifdef TEVAIN
    TEVAOUT_TEVAIN, 
    TCOMPIN_TEVAIN,
    TABLE,
