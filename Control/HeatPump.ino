@@ -3389,6 +3389,7 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("+P=%d\n", newVal);
 #endif
+    if(newVal>101*100)  pidw.temp_int = 0;  // Обнулить инегральную если воздействие больше 1 шага или герца
 	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
