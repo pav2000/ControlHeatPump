@@ -114,7 +114,7 @@ void get_txtState(uint8_t thread, boolean header)
               	  	  case TEVAOUT_PEVA:  strcat(Socket[thread].outBuf,"TEVAOUT-PEVA\n");      break;
 				   #ifdef TCOMPIN
                       case TCOMPIN_PEVA:  strcat(Socket[thread].outBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TCONIN
+				   #ifdef TEVAIN
                       case TEVAOUT_TEVAIN:    strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\n");    break;
                       case TCOMPIN_TEVAIN:    strcat(Socket[thread].outBuf,"TCOMPIN-TEVAIN\n");    break;
                       case TABLE:             strcat(Socket[thread].outBuf,"TABLE\n");             break;
@@ -529,7 +529,7 @@ void get_txtSettings(uint8_t thread)
               	  	  case TEVAOUT_PEVA:  strcat(Socket[thread].outBuf,"TEVAOUT-PEVA\n");      break;
 				   #ifdef TCOMPIN
                       case TCOMPIN_PEVA:  strcat(Socket[thread].outBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TCONIN
+				   #ifdef TEVAIN
                       case TEVAOUT_TEVAIN:    strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\n");    break;
                       case TCOMPIN_TEVAIN:    strcat(Socket[thread].outBuf,"TCOMPIN-TEVAIN\n");    break;
                       case TABLE:             strcat(Socket[thread].outBuf,"TABLE\n");             break;
@@ -1003,7 +1003,7 @@ int16_t x;
               	  	  case TEVAOUT_PEVA:  strcat(tempBuf,"TEVAOUT-PEVA\n");      break;
 				   #ifdef TCOMPIN
                       case TCOMPIN_PEVA:  strcat(tempBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TCONIN
+				   #ifdef TEVAIN
                       case TEVAOUT_TEVAIN:    strcat(tempBuf,"TEVAOUT-TEVAIN\n");    break;
                       case TCOMPIN_TEVAIN:    strcat(tempBuf,"TCOMPIN-TEVAIN\n");    break;
                       case TABLE:             strcat(tempBuf,"TABLE\n");             break;

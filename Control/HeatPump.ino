@@ -3279,7 +3279,19 @@ int16_t HeatPump::get_temp_condensing(void)
 // Переохлаждение
 int16_t HeatPump::get_overcool(void)
 {
-	return get_temp_condensing() - sTemp[get_modeHouse()  == pCOOL ? TEVAOUT : TCONOUT].get_Temp();
+	if(get_modeHouse() == pCOOL) {
+#ifdef TCONOUT
+		return get_temp_condensing() - sTemp[TEVAIN].get_Temp();
+#else
+	return 0;
+#endif
+	} else {
+#ifdef TCONOUT
+		return get_temp_condensing() - sTemp[TCONOUT].get_Temp();
+#else
+	return 0;
+#endif
+	}
 }
 
 // Кипение
