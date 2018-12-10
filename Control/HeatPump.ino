@@ -2683,7 +2683,7 @@ void HeatPump::compressorON()
 		// 1. Обеспечение минимальной паузы компрессора
 		if(check_compressor_pause()) return;
 		#ifdef DEBUG_MODWORK
-			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",mod,codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
+			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 		#endif
 
 		// 2. Разбираемся с ЭРВ
@@ -3174,36 +3174,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
   if(f)  // вывод в журнал
       {
         journal.jprintf(" modWork:%d[%s]",(int)get_modWork(),codeRet[Status.ret]); 
-        if(!(dFC.get_present())) journal.printf(" RCOMP:%d",dRelay[RCOMP].get_Relay());  
-        #ifdef RPUMPI
-        journal.jprintf(" RPUMPI:%d",dRelay[RPUMPI].get_Relay()); 
-        #endif
-        journal.jprintf(" RPUMPO:%d",dRelay[RPUMPO].get_Relay());
-        #ifdef RTRV  
-        if (dRelay[RTRV].get_present())     journal.jprintf(" RTRV:%d",dRelay[RTRV].get_Relay());  
-        #endif 
-        #ifdef R3WAY 
-        if (dRelay[R3WAY].get_present())    journal.jprintf(" R3WAY:%d",dRelay[R3WAY].get_Relay()); 
-        #endif
-        #ifdef RBOILER 
-        if (dRelay[RBOILER].get_present())  journal.jprintf(" RBOILER:%d",dRelay[RBOILER].get_Relay());
-        #endif
-        #ifdef RHEAT
-        if (HP.dRelay[RHEAT].get_present()) journal.jprintf(" RHEAT:%d",dRelay[RHEAT].get_Relay());  
-        #endif
-        #ifdef REVI
-        if (dRelay[REVI].get_present())     journal.jprintf(" REVI:%d",dRelay[REVI].get_Relay());   
-        #endif
-        #ifdef RPUMPB
-        if (dRelay[RPUMPB].get_present())   journal.jprintf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
-        #endif     
-        #ifdef RPUMPBH
-        if (dRelay[RPUMPBH].get_present())   journal.jprintf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
-        #endif     
-        #ifdef RPUMPFL
-        if (dRelay[RPUMPFL].get_present())   journal.jprintf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
-        #endif
-         
+        for(i = 0; i < RNUMBER; i++) journal.jprintf(" %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
         if(dFC.get_present())               journal.jprintf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
         if(dFC.get_present())               journal.jprintf(" Power:%.3f",dFC.get_power()/1000.0);
         #ifdef EEV_DEF
@@ -3220,35 +3191,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
    else
      {
         journal.printf(" modWork:%d[%s]",(int)get_modWork(),codeRet[Status.ret]); 
-        if(!(dFC.get_present())) journal.printf(" RCOMP:%d",dRelay[RCOMP].get_Relay());  
-        #ifdef RPUMPI
-        journal.printf(" RPUMPI:%d",dRelay[RPUMPI].get_Relay()); 
-        #endif
-        journal.printf(" RPUMPO:%d",dRelay[RPUMPO].get_Relay()); 
-        #ifdef RTRV 
-        if (dRelay[RTRV].get_present())           journal.printf(" RTRV:%d",dRelay[RTRV].get_Relay());  
-        #endif 
-        #ifdef R3WAY 
-        if (dRelay[R3WAY].get_present())          journal.printf(" R3WAY:%d",dRelay[R3WAY].get_Relay());  
-        #endif
-        #ifdef RBOILER 
-        if (dRelay[RBOILER].get_present())        journal.printf(" RBOILER:%d",dRelay[RBOILER].get_Relay());
-        #endif
-        #ifdef RHEAT
-        if (HP.dRelay[RHEAT].get_present())       journal.printf(" RHEAT:%d",dRelay[RHEAT].get_Relay());  
-        #endif
-        #ifdef REVI
-        if (dRelay[REVI].get_present())           journal.printf(" REVI:%d",dRelay[REVI].get_Relay());   
-        #endif
-        #ifdef RPUMPB
-        if (dRelay[RPUMPB].get_present())         journal.printf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
-        #endif
-        #ifdef RPUMPBH
-        if (dRelay[RPUMPBH].get_present())        journal.printf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
-        #endif 
-        #ifdef RPUMPFL
-        if (dRelay[RPUMPFL].get_present())        journal.printf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
-        #endif
+        for(i = 0; i < RNUMBER; i++) journal.printf(" %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
  //      Serial.print(" dEEV.stepperEEV.isBuzy():");  Serial.print(dEEV.stepperEEV.isBuzy());
  //      Serial.print(" dEEV.setZero: ");  Serial.print(dEEV.setZero);  
         if(dFC.get_present()) journal.printf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  

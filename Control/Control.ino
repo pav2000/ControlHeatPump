@@ -1080,10 +1080,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 #endif // #ifdef RPUMPB
 		 } // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
 
-		 if(!HP.Task_vUpdate_run) {
-			 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-			 continue;
-		 }
+		 if(!HP.Task_vUpdate_run) continue;
 
 // 3. Расписание проверка всегда
 		 int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
@@ -1100,10 +1097,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 						 if(frestart) {
 							 HP.sendCommand(pWAIT);
 							 uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
-							 if(!HP.Task_vUpdate_run) {
-								 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-								 continue;
-							 }
+							 if(!HP.Task_vUpdate_run) continue;
 						 }
 						 vTaskSuspendAll();	// без проверки
 						 HP.Prof.load(_profile);
@@ -1124,10 +1118,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
 			 journal.jprintf((const char*)" Stop task update %s from vUpdate\n",(char*)nameHeatPump);
-			 if(!HP.Task_vUpdate_run) {
-				 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-				 continue;
-			 }
+			 HP.Task_vUpdate_run = false;
 			 break;
 		 case pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
 		 case pWORK_HP:                           // 3 Работает   - анализ режима работы get_modWork()
@@ -1154,10 +1145,6 @@ void vReadSensor_delay8ms(int16_t ms8)
 				 break;
 			 default:
 				 journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-				 if(!HP.Task_vUpdate_run) {
-					 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-					 continue;
-				 }
 			 }  // switch(HP.get_modeHouse() )
 			 break;
 		 case pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
@@ -1165,16 +1152,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 		 case pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
 		 default:
 			 journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
-			 if(!HP.Task_vUpdate_run) {
-				 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-				 continue;
-			 }
 		 } //  switch (HP.get_State())
 
-		 if(!HP.Task_vUpdate_run) {
-			 vTaskSuspend(NULL);				// Stop vUpdate, HP.xHandleUpdate
-			 continue;
-		 }
+		 if(!HP.Task_vUpdate_run) continue;
 		 // Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();

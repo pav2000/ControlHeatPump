@@ -335,7 +335,7 @@ strcat(_tmp," ");
 return _tmp;       
 }
 
-// вывод Времи и даты  в формате 12:34 11/11/2016
+// вывод Времи и даты  в формате hh:mm:ss dd/mm/yyyy
 // Результат ДОБАВЛЯЕТСЯ в ret
 //http://stackoverflow.com/questions/21593692/convert-unix-timestamp-to-date-without-system-libs
 char*  DecodeTimeDate(uint32_t idt,char *ret)
