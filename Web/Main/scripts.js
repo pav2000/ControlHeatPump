@@ -1,7 +1,7 @@
-/* ver 0.981 beta */
+/* ver 0.982 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 //var urlcontrol = 'http://77.50.254.24:25402'; 
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
@@ -427,7 +427,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 										} else if(values[0] == 'get_tblTempF') {
-											var content = "", upsens = "", loadsens = "", loadsens2 = "", loadsens3 = "";
+											var content = "", upsens = "", loadsens = "";
 											var tnum = 1;
 											element = document.getElementById(valueid);
 											if(!element) {
@@ -440,14 +440,10 @@ function loadParam(paramid, noretry, resultdiv) {
 												loadsens += "get_eTemp(" +T+ "),";
 												upsens += "get_eTemp(" +T+ "),";
 												if(tnum == 1) {
-													loadsens += "get_maxTemp(" +T+ "),get_errTemp(" +T+ "),";
-													loadsens2 += "get_esTemp(" +T+ "),get_minTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),";
-													loadsens3 += "get_nTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
+													loadsens += "get_maxTemp(" +T+ "),get_errTemp(" +T+ "),get_esTemp(" +T+ "),get_minTemp(" +T+ "),get_fTemp4(" +T+ "),get_fTemp5(" +T+ "),get_nTemp(" +T+ "),get_testTemp(" +T+ "),get_bTemp(" +T+ "),";
 													upsens += "get_fullTemp(" +T+ "),get_esTemp(" +T+ "),";
 												} else if(tnum == 2) {
-													loadsens += "get_aTemp(" +T+ "),";
-													loadsens2 += "get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),";
-													loadsens3 += "get_nTemp2(" +T+ "),get_bTemp(" +T+ "),"; 
+													loadsens += "get_aTemp(" +T+ "),get_fTemp1(" +T+ "),get_fTemp2(" +T+ "),get_fTemp3(" +T+ "),get_nTemp2(" +T+ "),get_bTemp(" +T+ "),";
 													upsens += "get_rawTemp(" +T+ "),";
 												}
 												T = T.toLowerCase();
@@ -472,11 +468,13 @@ function loadParam(paramid, noretry, resultdiv) {
 												}
 												content += '<td id="get_etemp-' +T+ '">-</td>';
 												content += '</tr>';
+												if(loadsens.length >= 1200) {
+													loadParam(loadsens);
+													loadsens = "";
+												}
 											}
 											element.innerHTML = content;
-											loadParam(loadsens);
-											loadParam(loadsens2);
-											loadParam(loadsens3);
+											if(loadsens.length) loadParam(loadsens);
 											updateParam(upsens);
 										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
 											var count = values[1].split(';');

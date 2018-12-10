@@ -817,7 +817,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		return err;
 	}  // если ЭРВ нет то ничего не делаем
 	if(fPause) return err;      // если пауза то выходим
-	newEEV = EEV;                   // в начале равно старому
+	newEEV = EEV;               // в начале равно старому
 
 	switch(_data.ruleEEV)     // В зависмости от правила вычисления перегрева
 	{
@@ -830,38 +830,40 @@ int8_t devEEV::Update(void) //boolean fHeating)
 	case TEVAOUT_PEVA:
 #ifdef TCOMPIN
 	case TCOMPIN_PEVA:
+#endif
 		newEEV = EEV + round_div_int16(updatePID(Overheat - _data.tOverheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
-#ifndef DEMO
+	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
-			err = ERR_MIN_EEV;
-			set_Error(err, (char*) name);
-			return err;
-		}  // достигнута нижняя граница этого не должно быть - проблема с ЭРВ
-#else
+			newEEV = _data.minSteps;
+			if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - останавливаемся
+				err = ERR_MIN_EEV;
+				set_Error(err, (char*) name);
+				return err;
+			}
+		}
+	#else
 		if (newEEV<_data.minSteps) newEEV = _data.minSteps;                            // Просто ограничение DEMO
-#endif
-
-#ifndef DEMO
-#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
+	#endif
+	#ifndef DEMO
+		#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
 		if (newEEV>_data.maxSteps) {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
-#else
+		#else
 		if(newEEV > _data.maxSteps) newEEV = _data.maxSteps;                            // Просто ограничение
-#endif
-#else
+		#endif
+	#else
 		if (newEEV>_data.maxSteps) newEEV=_data.maxSteps;                            // Просто ограничение DEMO
-#endif
+	#endif
 		//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
 		break;
-#endif
 #if defined(TEVAIN)
 	case TABLE:
 		newEEV = TempToEEV((HP.sTemp[TEVAOUT].get_Temp() + HP.sTemp[TEVAIN].get_Temp()) / 2,
-#if defined(TCONIN)
+	#if defined(TCONIN)
 				(HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCONIN].get_Temp()) / 2);
-#elif defined(TCOMPIN)
+	#elif defined(TCOMPIN)
 				(HP.sTemp[TCONOUT].get_Temp() + HP.sTemp[TCOMPIN].get_Temp()) / 2);
-#endif
+	#endif
 		break;
 #endif
 	case MANUAL:
