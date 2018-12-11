@@ -1209,11 +1209,11 @@ enum RULE_EEV
    TEVAOUT_PEVA,
 #ifdef TCOMPIN
    TCOMPIN_PEVA,
+#endif
 #ifdef TEVAIN
    TEVAOUT_TEVAIN, 
    TCOMPIN_TEVAIN,
    TABLE,
-#endif
 #endif
    MANUAL           // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };

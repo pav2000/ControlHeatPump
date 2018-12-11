@@ -29,17 +29,15 @@ byte packetBuffer[NTP_PACKET_SIZE+1];       // буфер, в котором б�
 // Возвращает код ошибки
 int8_t set_time(void)
 {
-   unsigned long ttime;
+   journal.jprintf(" Init RTC Sam3x8e\n");
    //rtcI2C.begin(); // I2C уже инициализирована.// Запустить i2c часы 
    rtcSAM3X8.init();                             // Запуск внутренних часов
-   journal.jprintf(" Init internal RTC sam3x8e\n"); 
-   ttime=TimeToUnixTime(getTime_RtcI2C());   // Прочитать время из часов i2c
-   rtcSAM3X8.set_clock(ttime);                // Установить внутренние часы по i2c
-   _delay(200);         
+   rtcSAM3X8.set_clock(TimeToUnixTime(getTime_RtcI2C()));                // Установить внутренние часы по i2c
+//   _delay(200);
    journal.jprintf(" Set time internal RTC form i2c RTC DS3231: %s ",NowDateToStr());journal.jprintf("%s\n",NowTimeToStr());  // Одним оператором есть косяк
   
-   if (HP.get_updateNTP()) set_time_NTP() ;      // Обновить время по NTP
-   HP.set_uptime(ttime);                         // Запомнить время старта контроллера
+   if(HP.get_updateNTP()) set_time_NTP() ;      // Обновить время по NTP
+   HP.set_uptime(TimeToUnixTime(getTime_RtcI2C()));                         // Запомнить время старта контроллера
    return OK;
 }
 

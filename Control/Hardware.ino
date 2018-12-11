@@ -1086,6 +1086,37 @@ float temp;
   return true;  // для флагов
 }
 
+void devEEV::get_ruleEEVtext(char *strReturn)
+{
+	switch((int)HP.dEEV.get_ruleEEV()) {
+	case TEVAOUT_PEVA:
+		strcat(strReturn, "TEVAOUT-PEVA");
+		break;
+#ifdef TCOMPIN
+	case TCOMPIN_PEVA:
+		strcat(strReturn, "TCOMPIN-PEVA");
+		break;
+#endif
+#ifdef TEVAIN
+	case TEVAOUT_TEVAIN:
+		strcat(strReturn, "TEVAOUT-TEVAIN");
+		break;
+	case TCOMPIN_TEVAIN:
+		strcat(strReturn, "TCOMPIN-TEVAIN");
+		break;
+	case TABLE:
+		strcat(strReturn, "TABLE");
+		break;
+#endif
+	case MANUAL:
+		strcat(strReturn, "MANUAL");
+		break;
+	default:
+		strcat(strReturn, "*ERROR*");
+		break;
+	}
+}
+
 #endif
 
 #ifndef FC_VACON
