@@ -3330,6 +3330,10 @@ if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
 	if(COP>0) COP = (int16_t) (powerCO / COP * 100); else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
 	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре
+		if(COP>10*100) COP=10*100;  // КОП не более 10
+		if(fullCOP>8*100) COP=8*100;// полный КОП не более 8
+		#endif
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
 } else { COP=0; fullCOP=0; }  // компрессор не рабоатет
 #endif
