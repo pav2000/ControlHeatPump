@@ -835,12 +835,13 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
-			newEEV = _data.minSteps;
-			if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - останавливаемся
-				err = ERR_MIN_EEV;
-				set_Error(err, (char*) name);
-				return err;
+			if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - Сообщение
+		//		err = ERR_MIN_EEV;
+		//		set_Error(err, (char*) name);
+		//		return err;
+		      journal.jprintf("EEV is completely closed, possibly incorrect PID settings or failure of the EEV.\n");
 			}
+		newEEV = _data.minSteps;	
 		}
 	#else
 		if (newEEV<_data.minSteps) newEEV = _data.minSteps;                            // Просто ограничение DEMO

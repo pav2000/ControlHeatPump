@@ -2716,7 +2716,7 @@ void HeatPump::compressorON()
 			journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
 	#ifdef DEFROST
-	  if(mod!=pDEFROST)  // При разморозке есть лишние проверки
+	  if(get_modWork()!=pDEFROST)  // При разморозке есть лишние проверки
 	   {
 	#endif		
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
@@ -2796,7 +2796,7 @@ void HeatPump::compressorON()
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Resume task update EEV\n");
 		#ifdef DEFROST
-		 if(mod!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+		 if(get_modWork()!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
 		 else journal.jprintf(pP_TIME,"%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
 		#else
 		journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
@@ -2895,7 +2895,7 @@ void HeatPump::defrost()
          _delay(2*1000);                               // Задержка на 2 сек
        #endif
        
-       compressorON(pCOOL);                                                 // включить компрессор на холод
+       compressorON();                                                 // включить компрессор на холод
       
       while (sInput[SFROZEN].get_Input()!=SFROZEN_OFF)                     // ждем оттаивания
       {
