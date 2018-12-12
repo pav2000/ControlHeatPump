@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.981 beta"        // Версия прошивки
+#define VERSION         "0.982 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -1209,11 +1209,11 @@ enum RULE_EEV
    TEVAOUT_PEVA,
 #ifdef TCOMPIN
    TCOMPIN_PEVA,
+#endif
 #ifdef TEVAIN
    TEVAOUT_TEVAIN, 
    TCOMPIN_TEVAIN,
    TABLE,
-#endif
 #endif
    MANUAL           // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };

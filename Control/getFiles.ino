@@ -107,23 +107,11 @@ void get_txtState(uint8_t thread, boolean header)
         strcat(Socket[thread].outBuf,"\n  6. ЭРВ - ");  strcat(Socket[thread].outBuf,HP.dEEV.get_note()); STR_END;
         if (HP.dEEV.get_present()) 
          {
-              strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),Socket[thread].outBuf); STR_END;
-              strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf);STR_END;
-              strcat(Socket[thread].outBuf,"Правило управления ЭРВ: ");
-              switch ((int)HP.dEEV.get_ruleEEV()) {
-              	  	  case TEVAOUT_PEVA:  strcat(Socket[thread].outBuf,"TEVAOUT-PEVA\n");      break;
-				   #ifdef TCOMPIN
-                      case TCOMPIN_PEVA:  strcat(Socket[thread].outBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TEVAIN
-                      case TEVAOUT_TEVAIN:    strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\n");    break;
-                      case TCOMPIN_TEVAIN:    strcat(Socket[thread].outBuf,"TCOMPIN-TEVAIN\n");    break;
-                      case TABLE:             strcat(Socket[thread].outBuf,"TABLE\n");             break;
-				   #endif
-				   #endif
-                      case MANUAL:            strcat(Socket[thread].outBuf,"MANUAL\n");            break;
-                      default:                strcat(Socket[thread].outBuf,"error\n");             break;
-              }
-             strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Правило управления ЭРВ: ");
+             HP.dEEV.get_ruleEEVtext(Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"\nТекущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
        //      strcat(Socket[thread].outBuf,"Формула перегрева: ");
        //      if (HP.sADC[PEVA].get_present()) strcat(Socket[thread].outBuf,"TEVAOUT-T[PEVA]\r\n"); else strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\r\n"); 
              strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Overheat()/100.0,2); STR_END;
@@ -516,28 +504,16 @@ void get_txtSettings(uint8_t thread)
        strcat(Socket[thread].outBuf,"\n  3.2 ЭРВ - ");  strcat(Socket[thread].outBuf,HP.dEEV.get_note()); STR_END;
         if (HP.dEEV.get_present()) 
          {
-              strcat(Socket[thread].outBuf,"Ноги куда присоединен ЭРВ: ");
-              strcat(Socket[thread].outBuf,"D"); _itoa(PIN_EEV1_D24,Socket[thread].outBuf);
-              strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV2_D25,Socket[thread].outBuf);
-              strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV3_D26,Socket[thread].outBuf);
-              strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV4_D27,Socket[thread].outBuf);STR_END;
-                  
-              strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),Socket[thread].outBuf); STR_END;
-              strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf); STR_END;
-              strcat(Socket[thread].outBuf,"Формула перегрева: ");
-              switch ((int)HP.dEEV.get_ruleEEV()) {
-              	  	  case TEVAOUT_PEVA:  strcat(Socket[thread].outBuf,"TEVAOUT-PEVA\n");      break;
-				   #ifdef TCOMPIN
-                      case TCOMPIN_PEVA:  strcat(Socket[thread].outBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TEVAIN
-                      case TEVAOUT_TEVAIN:    strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\n");    break;
-                      case TCOMPIN_TEVAIN:    strcat(Socket[thread].outBuf,"TCOMPIN-TEVAIN\n");    break;
-                      case TABLE:             strcat(Socket[thread].outBuf,"TABLE\n");             break;
-				   #endif
-				   #endif
-                      case MANUAL:            strcat(Socket[thread].outBuf,"MANUAL\n");            break;
-                      default:                strcat(Socket[thread].outBuf,"error\n");             break;
-              }
+			 strcat(Socket[thread].outBuf,"Ноги куда присоединен ЭРВ: ");
+			 strcat(Socket[thread].outBuf,"D"); _itoa(PIN_EEV1_D24,Socket[thread].outBuf);
+			 strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV2_D25,Socket[thread].outBuf);
+			 strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV3_D26,Socket[thread].outBuf);
+			 strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV4_D27,Socket[thread].outBuf);STR_END;
+
+			 strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),Socket[thread].outBuf); STR_END;
+			 strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf); STR_END;
+			 strcat(Socket[thread].outBuf,"Формула перегрева: ");
+ 			 HP.dEEV.get_ruleEEVtext(Socket[thread].outBuf); STR_END;
              strcat(Socket[thread].outBuf,"Целевой перегрев (C°): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_tOverheat()/100.0,2);   STR_END;
              strcat(Socket[thread].outBuf,"Постоянная интегрирования времени (сек): ");  _itoa(HP.dEEV.get_timeIn(),Socket[thread].outBuf);  STR_END;
              strcat(Socket[thread].outBuf,"Пропорциональная составляющая: ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Kpro()/100.0,2);STR_END;
@@ -545,20 +521,8 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Дифференциальная составляющая: ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Kdif()/10.0,1); STR_END;
              strcat(Socket[thread].outBuf,"Ручное управление, открытие ЭРВ (шаги): ");  _itoa(HP.dEEV.get_manualStep(),Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Поправка (C°): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Correction()/100.0,1);  STR_END;
-             strcat(Socket[thread].outBuf,"Используемый фреон: ");
-             switch ((int)HP.dEEV.get_typeFreon())
-                   {
-                    case R22:               strcat(Socket[thread].outBuf,"R22\r\n");               break;
-                    case R410A:             strcat(Socket[thread].outBuf,"R410A\r\n");             break;
-                    case R600A:             strcat(Socket[thread].outBuf,"R600A\r\n");             break;
-                    case R134A:             strcat(Socket[thread].outBuf,"R134A\r\n");             break;
-                    case R407C:             strcat(Socket[thread].outBuf,"R407C\r\n");             break;
-                    case R12:               strcat(Socket[thread].outBuf,"R12\r\n");               break;
-                    case R290:              strcat(Socket[thread].outBuf,"R290\r\n");              break;
-                    case R404A:             strcat(Socket[thread].outBuf,"R404A\r\n");             break;
-                    case R717:              strcat(Socket[thread].outBuf,"R717\r\n");              break;
-                    default:                strcat(Socket[thread].outBuf,"error\r\n");             break;    
-                   }    
+             strcat(Socket[thread].outBuf,"Используемый фреон: "); STR_END;
+             strcat(Socket[thread].outBuf, noteFreon[HP.dEEV.get_typeFreon()]);
              strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");     _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
              strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");   _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Overheat()/100.0,2); STR_END;
              strcat(Socket[thread].outBuf," Корректировка перегрева:\r\n");
@@ -993,32 +957,20 @@ int16_t x;
            }
        
          #ifdef EEV_DEF
-              strcpy(tempBuf,"\n  6. ЭРВ - ");  strcat(tempBuf,HP.dEEV.get_note());  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-              strcpy(tempBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),tempBuf);
-              strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf)); 
-              strcpy(tempBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),tempBuf);
-              strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));    
-              strcpy(tempBuf,"Правило управления ЭРВ: ");
-              switch ((int)HP.dEEV.get_ruleEEV()) {
-              	  	  case TEVAOUT_PEVA:  strcat(tempBuf,"TEVAOUT-PEVA\n");      break;
-				   #ifdef TCOMPIN
-                      case TCOMPIN_PEVA:  strcat(tempBuf,"TCOMPIN-PEVA\n");      break;
-				   #ifdef TEVAIN
-                      case TEVAOUT_TEVAIN:    strcat(tempBuf,"TEVAOUT-TEVAIN\n");    break;
-                      case TCOMPIN_TEVAIN:    strcat(tempBuf,"TCOMPIN-TEVAIN\n");    break;
-                      case TABLE:             strcat(tempBuf,"TABLE\n");             break;
-				   #endif
-				   #endif
-                      case MANUAL:            strcat(tempBuf,"MANUAL\n");            break;
-                      default:                strcat(tempBuf,"error\n");             break;
-              }
-             strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));           
-             strcpy(tempBuf,"Текущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),tempBuf);
-             strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf)); 
-             strcpy(tempBuf,"Текущий перегрев (градусы): ");  _ftoa(tempBuf,(float)HP.dEEV.get_Overheat()/100.0,2);
-             strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf)); 
+			strcpy(tempBuf,"\n  6. ЭРВ - ");  strcat(tempBuf,HP.dEEV.get_note());  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			strcpy(tempBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),tempBuf);
+			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			strcpy(tempBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),tempBuf);
+			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			strcpy(tempBuf,"Правило управления ЭРВ: ");
+			HP.dEEV.get_ruleEEVtext(tempBuf);
+			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			strcpy(tempBuf,"Текущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),tempBuf);
+			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			strcpy(tempBuf,"Текущий перегрев (градусы): ");  _ftoa(tempBuf,(float)HP.dEEV.get_Overheat()/100.0,2);
+			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
         #else 
-             strcpy(tempBuf,"EEV absent");    strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf)); 
+            strcpy(tempBuf,"EEV absent");    strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
         #endif
          
        strcpy(tempBuf,"\n  7. Инвертор ");strcat(tempBuf,HP.dFC.get_name());

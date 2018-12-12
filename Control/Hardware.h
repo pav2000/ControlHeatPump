@@ -292,7 +292,8 @@ public:
   int16_t get_Correction(){return _data.Correction;}     // Получить поправку в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».  СОТЫЕ ГРАДУСА
   int16_t get_manualStep(){return _data.manualStep;}     // Получить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
   TYPEFREON get_typeFreon(){return _data.typeFreon;}     // Получить тип фреона
-  RULE_EEV get_ruleEEV(){return _data.ruleEEV;}          // Получить тип фреона
+  RULE_EEV get_ruleEEV(){return _data.ruleEEV;}          // Получить правило перегрева
+  void get_ruleEEVtext(char *strReturn);				 // Получить правило перегрева как строку
   boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}      // Получить флаг Удержания шагового двигателя
   boolean get_OneSeekZero(){return GETBIT(_data.flags,fOneSeekZero);}  // Получить флаг однократного поиска "0" ЭРВ 
   boolean get_EevClose(){return GETBIT(_data.flags,fEevClose);}        // Получить флаг закрытие ЭРВ при выключении компрессора

@@ -2683,7 +2683,7 @@ void HeatPump::compressorON()
 		// 1. Обеспечение минимальной паузы компрессора
 		if(check_compressor_pause()) return;
 		#ifdef DEBUG_MODWORK
-			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",mod,codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
+			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 		#endif
 
 		// 2. Разбираемся с ЭРВ
@@ -2716,7 +2716,7 @@ void HeatPump::compressorON()
 			journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
 	#ifdef DEFROST
-	  if(mod!=pDEFROST)  // При разморозке есть лишние проверки
+	  if(get_modWork()!=pDEFROST)  // При разморозке есть лишние проверки
 	   {
 	#endif		
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
@@ -2796,7 +2796,7 @@ void HeatPump::compressorON()
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Resume task update EEV\n");
 		#ifdef DEFROST
-		 if(mod!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+		 if(get_modWork()!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
 		 else journal.jprintf(pP_TIME,"%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
 		#else
 		journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
@@ -2895,7 +2895,7 @@ void HeatPump::defrost()
          _delay(2*1000);                               // Задержка на 2 сек
        #endif
        
-       compressorON(pCOOL);                                                 // включить компрессор на холод
+       compressorON();                                                 // включить компрессор на холод
       
       while (sInput[SFROZEN].get_Input()!=SFROZEN_OFF)                     // ждем оттаивания
       {
@@ -3174,36 +3174,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
   if(f)  // вывод в журнал
       {
         journal.jprintf(" modWork:%d[%s]",(int)get_modWork(),codeRet[Status.ret]); 
-        if(!(dFC.get_present())) journal.printf(" RCOMP:%d",dRelay[RCOMP].get_Relay());  
-        #ifdef RPUMPI
-        journal.jprintf(" RPUMPI:%d",dRelay[RPUMPI].get_Relay()); 
-        #endif
-        journal.jprintf(" RPUMPO:%d",dRelay[RPUMPO].get_Relay());
-        #ifdef RTRV  
-        if (dRelay[RTRV].get_present())     journal.jprintf(" RTRV:%d",dRelay[RTRV].get_Relay());  
-        #endif 
-        #ifdef R3WAY 
-        if (dRelay[R3WAY].get_present())    journal.jprintf(" R3WAY:%d",dRelay[R3WAY].get_Relay()); 
-        #endif
-        #ifdef RBOILER 
-        if (dRelay[RBOILER].get_present())  journal.jprintf(" RBOILER:%d",dRelay[RBOILER].get_Relay());
-        #endif
-        #ifdef RHEAT
-        if (HP.dRelay[RHEAT].get_present()) journal.jprintf(" RHEAT:%d",dRelay[RHEAT].get_Relay());  
-        #endif
-        #ifdef REVI
-        if (dRelay[REVI].get_present())     journal.jprintf(" REVI:%d",dRelay[REVI].get_Relay());   
-        #endif
-        #ifdef RPUMPB
-        if (dRelay[RPUMPB].get_present())   journal.jprintf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
-        #endif     
-        #ifdef RPUMPBH
-        if (dRelay[RPUMPBH].get_present())   journal.jprintf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
-        #endif     
-        #ifdef RPUMPFL
-        if (dRelay[RPUMPFL].get_present())   journal.jprintf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
-        #endif
-         
+        for(i = 0; i < RNUMBER; i++) journal.jprintf(" %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
         if(dFC.get_present())               journal.jprintf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
         if(dFC.get_present())               journal.jprintf(" Power:%.3f",dFC.get_power()/1000.0);
         #ifdef EEV_DEF
@@ -3220,35 +3191,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
    else
      {
         journal.printf(" modWork:%d[%s]",(int)get_modWork(),codeRet[Status.ret]); 
-        if(!(dFC.get_present())) journal.printf(" RCOMP:%d",dRelay[RCOMP].get_Relay());  
-        #ifdef RPUMPI
-        journal.printf(" RPUMPI:%d",dRelay[RPUMPI].get_Relay()); 
-        #endif
-        journal.printf(" RPUMPO:%d",dRelay[RPUMPO].get_Relay()); 
-        #ifdef RTRV 
-        if (dRelay[RTRV].get_present())           journal.printf(" RTRV:%d",dRelay[RTRV].get_Relay());  
-        #endif 
-        #ifdef R3WAY 
-        if (dRelay[R3WAY].get_present())          journal.printf(" R3WAY:%d",dRelay[R3WAY].get_Relay());  
-        #endif
-        #ifdef RBOILER 
-        if (dRelay[RBOILER].get_present())        journal.printf(" RBOILER:%d",dRelay[RBOILER].get_Relay());
-        #endif
-        #ifdef RHEAT
-        if (HP.dRelay[RHEAT].get_present())       journal.printf(" RHEAT:%d",dRelay[RHEAT].get_Relay());  
-        #endif
-        #ifdef REVI
-        if (dRelay[REVI].get_present())           journal.printf(" REVI:%d",dRelay[REVI].get_Relay());   
-        #endif
-        #ifdef RPUMPB
-        if (dRelay[RPUMPB].get_present())         journal.printf(" RPUMPB:%d",dRelay[RPUMPB].get_Relay());   
-        #endif
-        #ifdef RPUMPBH
-        if (dRelay[RPUMPBH].get_present())        journal.printf(" RPUMPBH:%d",dRelay[RPUMPBH].get_Relay());   
-        #endif 
-        #ifdef RPUMPFL
-        if (dRelay[RPUMPFL].get_present())        journal.printf(" RPUMPFL:%d",dRelay[RPUMPFL].get_Relay());   
-        #endif
+        for(i = 0; i < RNUMBER; i++) journal.printf(" %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
  //      Serial.print(" dEEV.stepperEEV.isBuzy():");  Serial.print(dEEV.stepperEEV.isBuzy());
  //      Serial.print(" dEEV.setZero: ");  Serial.print(dEEV.setZero);  
         if(dFC.get_present()) journal.printf(" freqFC:%.2f",dFC.get_freqFC()/100.0);  
@@ -3387,6 +3330,10 @@ if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
 	if(COP>0) COP = (int16_t) (powerCO / COP * 100); else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
 	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре
+		if(COP>10*100) COP=10*100;  // КОП не более 10
+		if(fullCOP>8*100) COP=8*100;// полный КОП не более 8
+		#endif
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
 } else { COP=0; fullCOP=0; }  // компрессор не рабоатет
 #endif
@@ -3446,6 +3393,7 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("+P=%d\n", newVal);
 #endif
+    if(newVal>101*100)  pidw.temp_int = 0;  // Обнулить инегральную если воздействие больше 1 шага или герца
 	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;

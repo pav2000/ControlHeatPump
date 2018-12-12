@@ -108,8 +108,15 @@ void web_server(uint8_t thread)
 				// Ставить вот сюда
 				if(Socket[thread].client.available()) {
 					len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
-					if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
-					Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+					if(len > W5200_MAX_LEN - 1) {
+						journal.jprintf("WEB:Big packet: %d\n", len);
+						len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
+					}
+					if(Socket[thread].client.read(Socket[thread].inBuf, len) != len) {
+						Socket[thread].inBuf[0] = 0;
+						SPI_switchW5200();
+						continue;
+					}
 					Socket[thread].inBuf[len] = 0;                                // обрезать строку
 					// Ищем в запросе полезную информацию (имя файла или запрос ajax)
 #ifdef LOG
@@ -117,14 +124,19 @@ void web_server(uint8_t thread)
 #endif
 					// пройти авторизацию и разобрать заголовок -  получить имя файла, тип, тип запроса, и признак меню пользователя
 					Socket[thread].http_req_type = GetRequestedHttpResource(thread);
+#ifdef DEBUG
+					if(len == W5200_MAX_LEN - 1) { // big packet
+						journal.jprintf("%s\n\n", Socket[thread].inBuf);
+					}
+#endif
 #ifdef LOG
 					journal.jprintf("\r\n$QUERY: %s\r\n",Socket[thread].inPtr);
 #endif
 					switch(Socket[thread].http_req_type)  // По типу запроса
 					{
 					case HTTP_invalid: {
-#ifndef DEBUG
-						journal.jprintf("WEB:Error GET request\n");
+#ifdef DEBUG
+						journal.jprintf("WEB:Error request(%d): %s\n", len, Socket[thread].inBuf);
 #endif
 						sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
 						break;
@@ -1153,40 +1165,13 @@ void parserGET(char *buf, char *strReturn, int8_t )
        
         // Вывод строки статуса
         strcat(strReturn,"Строка статуса ТН| modWork:");_itoa((int)HP.get_modWork(),strReturn);strcat(strReturn,"[");strcat(strReturn,codeRet[HP.get_ret()]);strcat(strReturn,"]");
-        if(!(HP.dFC.get_present())) { strcat(strReturn," RCOMP:");if (HP.dRelay[RCOMP].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); }
-        #ifdef RPUMPI
-        strcat(strReturn," RPUMPI:");                                         if (HP.dRelay[RPUMPI].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); 
-        #endif
-        strcat(strReturn," RPUMPO:");                                         if (HP.dRelay[RPUMPO].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
-        #ifdef  RTRV
-        if (HP.dRelay[RTRV].get_present())    { strcat(strReturn," RTRV:");   if (HP.dRelay[RTRV].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif
-        #ifdef R3WAY
-        if (HP.dRelay[R3WAY].get_present())   { strcat(strReturn," R3WAY:");  if (HP.dRelay[R3WAY].get_Relay()==true)   strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif
-        #ifdef RBOILER
-        if (HP.dRelay[RBOILER].get_present()) { strcat(strReturn," RBOILER:");if (HP.dRelay[RBOILER].get_Relay()==true) strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif
-        #ifdef RHEAT
-        if (HP.dRelay[RHEAT].get_present())   { strcat(strReturn," RHEAT:");  if (HP.dRelay[RHEAT].get_Relay()==true)   strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif
-        #ifdef REVI
-        if (HP.dRelay[REVI].get_present()) { strcat(strReturn," REVI:");      if (HP.dRelay[REVI].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif
-        #ifdef RPUMPB
-        if (HP.dRelay[RPUMPB].get_present()) { strcat(strReturn," RPUMPB:");      if (HP.dRelay[RPUMPB].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif     
-        #ifdef RPUMPBH
-        if (HP.dRelay[RPUMPBH].get_present()) { strcat(strReturn," RPUMPBH:");      if (HP.dRelay[RPUMPBH].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}
-        #endif     
-        #ifdef RPUMPFL
-        if (HP.dRelay[RPUMPFL].get_present()) { strcat(strReturn," RPUMPFL:");      if (HP.dRelay[RPUMPFL].get_Relay()==true)    strcat(strReturn,cOne); else  strcat(strReturn,cZero);}   
-        #endif
+        for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + m_strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
         if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
         if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
         strcat(strReturn,";");  
 
-        strcat(strReturn,"<b> Времена</b>|;");  
+        strcat(strReturn,"<b> Времена</b>|;");
+        strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
         strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время текущего состояния ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
@@ -2503,9 +2488,6 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 	}   //if (strcmp(str_token, "GET") == 0)
 	else if(strcmp(str_token, "POST") == 0) {Socket[thread].inPtr = (char*) (str_token +strlen("POST") + 1);  return HTTP_POST;}    // Запрос POST Socket[thread].inPtr - указывает на начало запроса (начало полезных данных)
 	else if(strcmp(str_token, "OPTIONS") == 0) return HTTP_POST_;
-	#ifdef DEBUG
-	journal.jprintf("WEB:Error request %s\n", Socket[thread].inBuf);
-	#endif
 	return HTTP_invalid;
 }
 

@@ -258,7 +258,7 @@ x_TryStaticIP:
 			IPAddress dip;
 			dip = Ethernet.localIP();
 			journal.jprintf("%s%s/%d ", HP.get_DHCP() ? "DHCP " : "", IPAddress2String(dip), calc_bits_in_mask(Ethernet.subnetMask()));
-			dip = Ethernet.localIP();
+			dip = Ethernet.gatewayIP();
 			journal.jprintf("G:%s ", IPAddress2String(dip));
 			dip = Ethernet.dnsServerIP();
 			journal.jprintf("DNS:%s\n", IPAddress2String(dip));
