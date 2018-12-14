@@ -607,6 +607,9 @@ void HeatPump::resetSettingHP()
   SETBIT1(Option.flags,fNextion);      //  дисплей Nextion
   SETBIT0(Option.flags,fHistory);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
+#ifdef PID_FORMULA2
+  SETBIT1(Option.flags,fPIDSecondAlg);
+#endif
   Option.sleep = 5;                    //  Время засыпания минуты
   Option.dim = 80;                     //  Якрость %
   Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
@@ -862,6 +865,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((x!=0)<<fWebStoreOnSPIFlash); return true; } else
    if(strcmp(var,option_LogWirelessSensors)==0){ Option.flags = (Option.flags & ~(1<<fLogWirelessSensors)) | ((x!=0)<<fLogWirelessSensors); return true; } else
+   if(strcmp(var,option_fPIDSecondAlg)==0)    { Option.flags = (Option.flags & ~(1<<fPIDSecondAlg)) | ((x!=0)<<fPIDSecondAlg); return true; } else
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
 	   uint8_t bit = var[sizeof(option_SGL1W)-1] - '0' - 2;
@@ -903,6 +907,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if(GETBIT(Option.flags,fSDMLogErrors)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { return strcat(ret, (char*)(GETBIT(Option.flags,fWebStoreOnSPIFlash) ? cOne : cZero)); } else
    if(strcmp(var,option_LogWirelessSensors)==0){ return strcat(ret, (char*)(GETBIT(Option.flags,fLogWirelessSensors) ? cOne : cZero)); } else
+   if(strcmp(var,option_fPIDSecondAlg)==0)    { return strcat(ret, (char*)(GETBIT(Option.flags,fPIDSecondAlg) ? cOne : cZero)); } else
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
@@ -1661,11 +1666,11 @@ int8_t HeatPump::StartResume(boolean start)
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
 	// Сбросить переменные пид регулятора
 	pidw_heat.pre_errPID = 0;
-	pidw_heat.temp_int = 0;
+	pidw_heat.sum = 0;
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
 	pidw_boiler.pre_errPID = 0;
-	pidw_boiler.temp_int = 0;
+	pidw_boiler.sum = 0;
 	updatePidBoiler=0;                                   // время обновления ПИДа
 
 
@@ -2021,7 +2026,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(T < HP.Prof.Boiler.tempRBOILER) {
 			dRelay[RPUMPBH].set_ON();    // ГВС - включить
-		} else {
+		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat) {
 			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
 		}
 		return pCOMP_OFF;
@@ -3354,46 +3359,52 @@ void HeatPump::Sun_OFF(void)
 
 //#define DEBUG_PID		// Отладка ПИДа
 // Уравнение ПИД регулятора в конечных разностях.
-// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-// u(t) = P (t) + I (t) + D (t);
-// P (t) = Kp * e (t);
-// I (t) = I (t — 1) + Ki * e (t);
-// D (t) = Kd * {e (t) — e (t — 1)};
-// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-// errorPid - текущая ошибка ПИДа (может рассчитываться по разному по этому вынесена за функцию) в СОТЫХ
+// errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ
 // pid - настройки ПИДа
 // maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
 // temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
 // Выход управляющее воздействие (СОТЫХ)
 int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
+	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.temp_int, pidw.pre_errPID, pidw.maxStep);
+	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pidw.maxStep);
 #endif
-	if(pid.Ki > 0)// Расчет интегральной составляющей
-	{
-		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
-		else if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
-	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
-	int32_t newVal = pidw.temp_int;
-#ifdef DEBUG_PID
-	journal.printf("I=%d, ", newVal);
-#endif
-	// Дифференцальная составляющая
-	newVal += (int32_t) pid.Kd * (errorPid - pidw.pre_errPID);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
-#ifdef DEBUG_PID
-	journal.printf("+D=%d, ", newVal);
-#endif
-	// Пропорциональная составляющая
-	if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
-	else newVal += (int32_t) pid.Kp * errorPid;
-#ifdef DEBUG_PID
-	journal.printf("+P=%d\n", newVal);
-#endif
-    if(newVal>101*100)  pidw.temp_int = 0;  // Обнулить инегральную если воздействие больше 1 шага или герца
+	if(GETBIT(HP.Option, fPIDSecondAlg)) {
+		....
+
+	} else {
+		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
+		// u(t) = P (t) + I (t) + D (t);
+		// P (t) = Kp * e (t);
+		// I (t) = I (t — 1) + Ki * e (t);
+		// D (t) = Kd * {e (t) — e (t — 1)};
+		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
+		if(pid.Ki > 0)// Расчет интегральной составляющей
+		{
+			pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+			// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
+			if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
+			else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
+		} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
+		newVal = pidw.sum;
+	#ifdef DEBUG_PID
+		journal.printf("I=%d, ", newVal);
+	#endif
+		// Пропорциональная составляющая
+		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+		else newVal += (int32_t) pid.Kp * errorPid;
+	#ifdef DEBUG_PID
+		journal.printf("+P=%d\n", newVal);
+	#endif
+		// Дифференцальная составляющая
+		newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+		pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+	#ifdef DEBUG_PID
+		journal.printf("+D=%d, ", newVal);
+	#endif
+	}
+
 	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;

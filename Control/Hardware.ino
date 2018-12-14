@@ -728,6 +728,12 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 	{
 #if defined(TEVAIN) && defined(TEVAOUT)
 	case TEVAOUT_TEVAIN:
+		/* [xpik_nsk]:
+		 * Перегрев = Т2 - (Т1 - Т (дельта P на испарителе), где
+		 * Т2 - температура на выходе испарителя,
+		 * Т1 - температура на входе испарителя,
+		 * Т (дельта Р) - потеря давления на испарителе переведенная в гр, это значение зависит в том числе и от массового расхода, поэтому при изменении производительности компрессора будет также изменяться.
+		 */
 		if((HP.sTemp[TEVAOUT].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
 xTEVAOUT_TEVAIN:
 #if defined(TCONIN)
@@ -831,7 +837,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 #ifdef TCOMPIN
 	case TCOMPIN_PEVA:
 #endif
-		newEEV = EEV + round_div_int16(updatePID(Overheat - _data.tOverheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+		newEEV = EEV - round_div_int16(updatePID(_data.tOverheat - Overheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
@@ -885,8 +891,15 @@ void devEEV::CorrectOverheat(void)
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_pid.time) {
 		OverHeatCor_period = 0;
 		int16_t t = HP.get_temp_condensing();
-		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)HP.get_temp_evaporating() * DEF_OHCor_EVAPORATING_0_MUL / 1000 + (Overheat - _data.OHCor_OverHeatStart);
-		t = _data.tOverheat + updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
+		int16_t evapor = HP.get_temp_evaporating();
+		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)evapor * DEF_OHCor_EVAPORATING_0_MUL / 1000
+#ifdef TCOMPIN
+						+ (HP.sTemp[TCOMPIN].get_Temp() - evapor
+#else
+						+ (Overheat
+#endif
+						- _data.OHCor_OverHeatStart);
+		t = _data.tOverheat - updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
 		if(t > _data.OHCor_OverHeatMax) t = _data.OHCor_OverHeatMax;
 		else if(t < _data.OHCor_OverHeatMin) t = _data.OHCor_OverHeatMin;
 		_data.tOverheat = t;
@@ -915,10 +928,10 @@ void devEEV::after_load(void)
 void devEEV::resetPID()
 {
   // Очистить служебные перемнные
-  pidw.temp_int = 0;
+  pidw.sum = 0;
   pidw.pre_errPID = 0;
   pidw.maxStep = EEV_MAX_STEP * 100;
-  OHCor_pidw.temp_int = 0;
+  OHCor_pidw.sum = 0;
   OHCor_pidw.pre_errPID = 0;
 #ifdef DEF_OHCor_MAX_STEP
   OHCor_pidw.maxStep = DEF_OHCor_MAX_STEP * 100;

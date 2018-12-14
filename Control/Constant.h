@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.982 beta"        // Версия прошивки
+#define VERSION         "0.983 beta"        // Версия прошивки
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -224,6 +224,7 @@ const uint16_t  defaultPort=80;
 #define MAX_WEATHER       (42*100)       // Максимальная температура подачи при погодозависимости
 #define HYSTERESIS_RHEAD  20             // Гистерезис работы дополнительного тена отопления (вычитается из целевой) в сотых градуса
 #define HYSTERESIS_RBOILER 30            // Гистерезис работы дополнительного тена ГВС догрева (вычитается из целевой) в сотых градуса
+#define HYSTERESIS_BoilerTogetherHeat 20 // Гистерезис совместного нагрева бойлера с отоплением в сотых градуса
 #define SALLMONELA_DAY    3              // День когда включается алгоритм обеззараживания воды (Понедельник 1 воскресенье 7)
 #define SALLMONELA_HOUR   1              // Час когда включается алгоритм обеззараживания воды (должно быть 0 минут)
 #define SALLMONELA_TEMP   (70*100)       // Температура которая поддерживается для обеззараживания (сотые градуса)
@@ -767,6 +768,7 @@ const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура на
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора
+const char *option_fPIDSecondAlg      = {"PID2"};               // Алгоритм PID vad711, иначе pav2000.
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы
@@ -1254,8 +1256,8 @@ struct PID_STRUCT {   		// Настройки ПИД регулятора
 };
 
 struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
-	int32_t temp_int;		// сумма для интегрирования
-	int16_t pre_errPID;		// предыдущая ошибка для диференцирования
+	int32_t sum;			// сумма для интегрирования
+	int16_t pre_errPID;		// предыдущая ошибка для дифференцирования
 	int32_t maxStep;		// максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
 };
 
