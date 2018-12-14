@@ -842,10 +842,13 @@ int8_t devEEV::Update(void) //boolean fHeating)
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
 			if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - Сообщение
-		//		err = ERR_MIN_EEV;
-		//		set_Error(err, (char*) name);
-		//		return err;
-		      journal.jprintf("EEV is completely closed, possibly incorrect PID settings or failure of the EEV.\n");
+	        #ifdef NO_MIN_EEV_CONTROL     // При работе ПИД ЭРВ не контролировать достижение минимального открытия, ошибка не генерится, генерится только сообщение в журнал  (акутально для воздушников)   
+			    journal.jprintf("EEV is completely closed, possibly incorrect PID settings or failure of the EEV.\n");
+			#else	                      // Есть контроль и остановка по ошибке
+				err = _data.minSteps;
+				set_Error(err, (char*) name);
+				return err;
+		    #endif  
 			}
 		newEEV = _data.minSteps;	
 		}

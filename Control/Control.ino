@@ -1321,7 +1321,7 @@ void vUpdateStepperEEV(void *)
 }
 #endif
 
-///////////////////////////////////////////////////////// ServiceHP
+// vUpdateCommand /////////////////////////////////////////////////////// 
 // Задача Разбор очереди команд
 void vUpdateCommand(void *)
 { //const char *pcTaskName = "HP_UpdateCommand\r\n";
@@ -1332,6 +1332,7 @@ void vUpdateCommand(void *)
 	vTaskDelete( NULL);
 }
 
+// ServiceHP ///////////////////////////////////////////////
 // Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
 void vServiceHP(void *)
 {
@@ -1372,7 +1373,7 @@ void vServiceHP(void *)
 					HP.sendCommand(pAUTOSTART);
 				}
 			}
-			if(HP.startPump) {
+			if(HP.startPump) {  // Если разрешена работа насоса( 0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
 				if(HP.startPump == 1 && HP.get_pausePump() == 0) { // Постоянно работают
 					goto xPumpsOn;
 				} else if(HP.get_workPump()) {
