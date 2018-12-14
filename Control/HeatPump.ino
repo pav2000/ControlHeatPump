@@ -1495,19 +1495,21 @@ void HeatPump::Pump_HeatFloor(boolean On)
 // Генерятся задержки для защиты компрессора, есть задержки между включенимями насосов для уменьшения помех
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
-	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
-	if(b == old) return;                       // менять нечего выходим
+//	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты) ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
+//	if(b == old) return;                       // менять нечего выходим ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP                                // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
-	if((!b) && (old)) {
+#ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
+	if((!b) && (b!=dRelay[PUMP_IN].get_Relay())) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
 	}
-	// переключение насосов если есть что переключать (проверка была выше)
+	
+	if(b != dRelay[PUMP_IN].get_Relay()) {// переключение насосов если есть что переключать 
 	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
-	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old) && (dRelay[RPUMPO].get_Relay()
+	}
+	
+	if((!b) &&  (dRelay[RPUMPO].get_Relay() // пауза перед выключением насосов контуров, если нужно
 #ifdef RPUMPBH
 						|| dRelay[RPUMPBH].get_Relay()
 #endif
@@ -1517,7 +1519,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	}
 #else
 	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
+	if(!b)  // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
@@ -1650,9 +1652,9 @@ int8_t HeatPump::StartResume(boolean start)
 	Status.ret=pNone;                                    // Состояние алгоритма
 	lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 
-	if (startPump)                                       // Проверка задачи насос
+	if (startPump)                                      // Если задача не остановлена то остановить (0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
 	{
-		startPump=false;                               // Поставить признак останова задачи насос
+		startPump=false;                                     // Поставить признак останова задачи насос
 		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 	}
 
@@ -2722,7 +2724,7 @@ void HeatPump::compressorON()
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
-			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
+			set_Error(ERR_COMP_NO_PUMP, (char*) dRelay[PUMP_IN].get_name());
 			return;
 		}
 #ifndef SUPERBOILER  // для супербойлера это лишнее
@@ -2731,8 +2733,8 @@ void HeatPump::compressorON()
 				|| dRelay[RPUMPBH].get_Relay()
 #endif
 		)) {
-			journal.jprintf(" WARNING! %s is off before start compressor!\n", "Out pump");
-			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
+			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_OUT].get_name());
+			set_Error(ERR_COMP_NO_PUMP, (char*) dRelay[PUMP_OUT].get_name());
 			return;
 		}
 #endif
