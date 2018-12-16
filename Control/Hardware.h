@@ -51,7 +51,7 @@ extern int8_t set_Error(int8_t err, char *nam);
 class sensorADC
 {
   public:
-    void initSensorADC(int sensor,int pinA);             // Инициализация датчика  порядковый номер датчика и нога он куда прикреплен
+    void initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size); // Инициализация датчика  порядковый номер датчика и нога он куда прикреплен
     int8_t  Read();                                      // чтение данных c аналогового датчика давления (АЦП) возвращает код ошибки, делает все преобразования
     //int16_t Test();                                      // полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
     __attribute__((always_inline)) inline int16_t get_minPress(){return cfg.minPress;}     // Минимальная давление датчика - нижняя граница диапазона, при выходе из него ошибка

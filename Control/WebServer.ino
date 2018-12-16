@@ -503,7 +503,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			 uint16_t d = 0;
     			 writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
     			 HP.sendCommand(pRESET);        // Послать команду на сброс
-    			 //HP.resetSettingHP(); // не работает!!
     			 strcat(strReturn, "OK");
     		 }
     	 }
@@ -1086,8 +1085,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (мсек)|");_itoa(TIME_I2C_UPDATE,strReturn);strcat(strReturn,";");
        // Датчики
        strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"PRESS_FREQ|Частота опроса датчика давления (Гц)|");_itoa(PRESS_FREQ,strReturn);strcat(strReturn,";");
-       strcat(strReturn,"FILTER_SIZE|Длина фильтра датчика давления (отсчеты)|");_itoa(FILTER_SIZE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
        strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_ftoa(strReturn,(float)GAP_TEMP_VAL/100.0,2);strcat(strReturn,";");
        strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn,(float)MAX_TEMP_ERR/100.0,2);strcat(strReturn,";");

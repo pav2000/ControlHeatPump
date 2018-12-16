@@ -26,26 +26,26 @@
 // --------------------------------------------------------------------------------
 // Старт считывания АЦП
 void start_ADC()
-{ 
-  adc_setup () ;                                       // setup ADC
-  pmc_enable_periph_clk (TC_INTERFACE_ID + 0*3+0) ;    // clock the TC0 channel 0
+{
+	adc_setup();                                       // setup ADC
+	pmc_enable_periph_clk(TC_INTERFACE_ID + 0 * 3 + 0);    // clock the TC0 channel 0
 
-  TcChannel * t = &(TC0->TC_CHANNEL)[0] ;              // pointer to TC0 registers for its channel 0
-  t->TC_CCR = TC_CCR_CLKDIS ;                          // disable internal clocking while setup regs
-  t->TC_IDR = 0xFFFFFFFF ;                             // disable interrupts
-  t->TC_SR ;                                           // read int status reg to clear pending
-  t->TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 |             // use TCLK1 (prescale by 2, = 42MHz)
-              TC_CMR_WAVE |                            // waveform mode
-              TC_CMR_WAVSEL_UP_RC |                    // count-up PWM using RC as threshold
-              TC_CMR_EEVT_XC0 |                        // Set external events from XC0 (this setup TIOB as output)
-              TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |    // set clear and set from RA and RC compares
-              TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
- 
-  t->TC_RC = SystemCoreClock/2/PRESS_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
-  t->TC_RA = SystemCoreClock/2/PRESS_FREQ/2 ;     // roughly square wave
-  t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG ;  // re-enable local clocking and switch to hardware trigger source.
+	TcChannel * t = &(TC0->TC_CHANNEL)[0];              // pointer to TC0 registers for its channel 0
+	t->TC_CCR = TC_CCR_CLKDIS;                          // disable internal clocking while setup regs
+	t->TC_IDR = 0xFFFFFFFF;                             // disable interrupts
+	t->TC_SR;                                           // read int status reg to clear pending
+	t->TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 |             // use TCLK1 (prescale by 2, = 42MHz)
+			TC_CMR_WAVE |                            // waveform mode
+			TC_CMR_WAVSEL_UP_RC |                    // count-up PWM using RC as threshold
+			TC_CMR_EEVT_XC0 |                        // Set external events from XC0 (this setup TIOB as output)
+			TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |    // set clear and set from RA and RC compares
+			TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
 
- }
+	t->TC_RC = SystemCoreClock / 2 / ADC_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
+	t->TC_RA = SystemCoreClock / 2 / ADC_FREQ / 2;     // roughly square wave
+	t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;  // re-enable local clocking and switch to hardware trigger source.
+
+}
 
 // Установка АЦП
 void adc_setup()
@@ -122,11 +122,10 @@ void ADC_Handler(void)
 // ------------------------------------------------------------------------------------------
 // Аналоговые датчики давления --------------------------------------------------------------
 // Давление хранится в СОТЫХ БАР
-void sensorADC::initSensorADC(int sensor, int pinA)
+void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size)
 {
 	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
-	if(SENSORPRESS[sensor])    // отводим память если используем датчик под сырые данные
-		adc_filter_max = sensor <= PCON ? FILTER_SIZE : FILTER_SIZE_OTHER;
+	if(SENSORPRESS[sensor]) adc_filter_max = filter_size;   // отводим память если используем датчик под сырые данные
 	else adc_filter_max = 1;
 	adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
 	if(adc_filter == NULL) {   // ОШИБКА если память не выделена
@@ -890,19 +889,19 @@ void devEEV::CorrectOverheat(void)
 {
 #ifdef DEF_OHCor_OverHeatStart
 	static uint16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
+	int16_t t = HP.get_temp_condensing();
+	int16_t evapor = HP.get_temp_evaporating();
+	OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)evapor * DEF_OHCor_EVAPORATING_0_MUL / 1000
+#ifdef TCOMPIN
+					+ (HP.sTemp[TCOMPIN].get_Temp() - evapor
+#else
+					+ (Overheat
+#endif
+					- _data.OHCor_OverHeatStart);
 	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_pid.time) {
 		OverHeatCor_period = 0;
-		int16_t t = HP.get_temp_condensing();
-		int16_t evapor = HP.get_temp_evaporating();
-		OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)evapor * DEF_OHCor_EVAPORATING_0_MUL / 1000
-#ifdef TCOMPIN
-						+ (HP.sTemp[TCOMPIN].get_Temp() - evapor
-#else
-						+ (Overheat
-#endif
-						- _data.OHCor_OverHeatStart);
-		t = _data.tOverheat - updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
+		t = _data.tOverheat + updatePID(OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t), _data.OHCor_pid, OHCor_pidw);
 		if(t > _data.OHCor_OverHeatMax) t = _data.OHCor_OverHeatMax;
 		else if(t < _data.OHCor_OverHeatMin) t = _data.OHCor_OverHeatMin;
 		_data.tOverheat = t;

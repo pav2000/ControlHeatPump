@@ -431,6 +431,10 @@ x_I2C_init_std_message:
 
   HP.Schdlr.load();							// Загрузка настроек расписания
 
+  start_ADC(); // после инициализации HP
+  journal.jprintf("7. Start read ADC sensors\n");
+  //journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
+
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
@@ -444,7 +448,7 @@ x_I2C_init_std_message:
         }
 
 // 10. Сетевые настройки
-   journal.jprintf("7. Setting Network . . .\n");
+   journal.jprintf("8. Setting Network . . .\n");
    if(initW5200(true)) {   // Инициализация сети с выводом инфы в консоль
 	   W5100.getMACAddress((uint8_t *)Socket[0].outBuf);
    	   journal.jprintf(" MAC: %s\n", MAC2String((uint8_t *)Socket[0].outBuf));
@@ -456,19 +460,19 @@ x_I2C_init_std_message:
    set_time();        
    
  // 12. Инициалазация уведомлений
-   journal.jprintf("9. Message update IP from DNS . . .\n");
+   journal.jprintf("10. Message update IP from DNS . . .\n");
    HP.message.dnsUpdateStart(); 
    
  // 13. Инициалазация MQTT
     #ifdef MQTT  
-      journal.jprintf("10. Client MQTT update IP from DNS . . .\n"); 
+      journal.jprintf("11. Client MQTT update IP from DNS . . .\n");
       HP.clMQTT.dnsUpdateStart();
     #else
-      journal.jprintf("10. Client MQTT disabled by config\n");
+      journal.jprintf("11. Client MQTT disabled by config\n");
     #endif 
 
   // 14. Инициалазация Statistics
-   journal.jprintf("11. Statistics ");
+   journal.jprintf("12. Statistics ");
    if(HP.get_fSD()) {
 	   journal.jprintf("writing on SD card\n");
 	   Stats.Init();             // Инициализовать статистику
@@ -482,12 +486,7 @@ x_I2C_init_std_message:
    }
 
   if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
-  journal.jprintf("12. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
-
-  start_ADC(); // после инициализации HP
-  journal.jprintf("13. Start read ADC sensors\n"); 
-  journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR); 
-  
+  journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
   #ifdef NEXTION   
     journal.jprintf("14. Nextion display - ");
@@ -974,13 +973,13 @@ void vReadSensor(void *)
 // Вызывается во время задержек в задаче чтения датчиков
 void vReadSensor_delay8ms(int16_t ms8)
 {
-	if(ms8 <= 0) ms8 = 1;
-	while(ms8--) {
-		vTaskDelay(8);
+	do {
+		if(ms8) vTaskDelay(8);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
 		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
-			vTaskDelay(100);
+			vTaskDelay(8*3);
+			ms8 -= 3;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
@@ -1018,7 +1017,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 #ifdef RADIO_SENSORS
 		check_radio_sensors();
 #endif
-	}
+	} while(--ms8 > 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1217,7 +1216,7 @@ void vUpdateEEV(void *)
 					|| (HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA)
 #endif
 				) {
-					vTaskDelay(HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // интегрирование ПИД
+					vTaskDelay(HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // ПИД
 					continue;
 				}
 			}

@@ -33,62 +33,63 @@ const boolean _resume = false;  // Команда возобновления р�
 
 void HeatPump::initHeatPump()
 {
-  uint8_t i;
-  eraseError();
+	uint8_t i;
+	eraseError();
 
-  for(i=0;i<TNUMBER;i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
+	for(i = 0; i < TNUMBER; i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
 
-  #ifdef SENSOR_IP
-   for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
-  #endif
-  
-  sADC[PEVA].initSensorADC(PEVA,ADC_SENSOR_PEVA);          // Инициализация аналогово датчика PEVA
-  sADC[PCON].initSensorADC(PCON,ADC_SENSOR_PCON);          // Инициализация аналогово датчика TCON
+#ifdef SENSOR_IP
+	for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
+#endif
+	sADC[PEVA].initSensorADC(PEVA, ADC_SENSOR_PEVA, FILTER_SIZE);          // Инициализация аналогово датчика PEVA
+	sADC[PCON].initSensorADC(PCON, ADC_SENSOR_PCON, FILTER_SIZE);          // Инициализация аналогово датчика TCON
 #ifdef PGEO
-  sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO);			// Инициализация аналогово датчика PGEO
+	sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика PGEO
 #endif
 #ifdef POUT
-  sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT);			// Инициализация аналогово датчика POUT
+	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика POUT
 #endif
 
-  for(i=0;i<INUMBER;i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
-  for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
-  for(i=0;i<RNUMBER;i++) dRelay[i].initRelay(i);           // Инициализация реле
+	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
+	for(i = 0; i < FNUMBER; i++) sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
+	for(i = 0; i < RNUMBER; i++) dRelay[i].initRelay(i);           // Инициализация реле
 
 #ifdef EEV_DEF
-  dEEV.initEEV();                                           // Инициализация ЭРВ
+	dEEV.initEEV();                                           // Инициализация ЭРВ
 #endif
 
-  // Инициалаизация модбаса  перед частотником и счетчиком
-  journal.jprintf("Init Modbus RTU via RS485:");  
-  if (Modbus.initModbus()==OK) journal.jprintf(" OK\r\n");//  выводим сообщение об установлении связи
-  else {journal.jprintf(" not present config\r\n");}         //  нет в конфигурации
+	// Инициалаизация модбаса  перед частотником и счетчиком
+	journal.jprintf("Init Modbus RTU via RS485:");
+	if(Modbus.initModbus() == OK) journal.jprintf(" OK\r\n");                //  выводим сообщение об установлении связи
+	else {
+		journal.jprintf(" not present config\r\n");
+	}         //  нет в конфигурации
 
-  dFC.initFC();                                              // Инициализация FC
-  #ifdef USE_ELECTROMETER_SDM
-   dSDM.initSDM();                                           // инициалаизация счетчика
-  #endif
-     message.initMessage();                                  // Инициализация Уведомлений
-  #ifdef MQTT
-     clMQTT.initMQTT();                                      // Инициализация MQTT
-  #endif
-  pidw_heat.maxStep = dFC.get_PidFreqStep() * 100;
-  pidw_boiler.maxStep = dFC.get_PidFreqStep() * 100;
-  resetSettingHP();                                          // все переменные
+	dFC.initFC();                                              // Инициализация FC
+#ifdef USE_ELECTROMETER_SDM
+	dSDM.initSDM();                                           // инициалаизация счетчика
+#endif
+	message.initMessage();                                  // Инициализация Уведомлений
+#ifdef MQTT
+	clMQTT.initMQTT();                                      // Инициализация MQTT
+#endif
+	pidw_heat.maxStep = dFC.get_PidFreqStep() * 100;
+	pidw_boiler.maxStep = dFC.get_PidFreqStep() * 100;
+	resetSettingHP();                                          // все переменные
 }
 // Стереть последнюю ошибку
 void HeatPump::eraseError()
 {
- strcpy(note_error,"OK");          // Строка c описанием ошибки
- strcpy(source_error,"");          // Источник ошибки   
- error=OK;                         // Код ошибки
+	strcpy(note_error, "OK");          // Строка c описанием ошибки
+	strcpy(source_error, "");          // Источник ошибки
+	error = OK;                         // Код ошибки
 }
 
 // Получить число ошибок чтения ВСЕХ датчиков темпеартуры
 uint32_t HeatPump::get_errorReadDS18B20()
 {
 	uint32_t sum = 0;
-	for(uint8_t i=0; i<TNUMBER; i++) sum += sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
+	for(uint8_t i = 0; i < TNUMBER; i++) sum += sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
 	return sum;
 }
 
@@ -2027,8 +2028,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(T < HP.Prof.Boiler.tempRBOILER) {
-			dRelay[RPUMPBH].set_ON();    // ГВС - включить
-		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat) {
+			if(FEED > T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_ON();    // ГВС - включить
+			else if(FEED <= T) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat || !is_compressor_on()) {
 			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
 		}
 		return pCOMP_OFF;
@@ -3372,8 +3374,9 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pidw.maxStep);
 #endif
-	if(GETBIT(HP.Option, fPIDSecondAlg)) {
-		....
+	if(GETBIT(HP.Option.flags, fPIDSecondAlg)) {
+
+
 
 	} else {
 		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
