@@ -951,7 +951,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         {
        strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
        strcat(strReturn,"__DATE__ __TIME__|Дата и время сборки прошивки|");strcat(strReturn,__DATE__);strcat(strReturn," ");strcat(strReturn,__TIME__) ;strcat(strReturn,";");
-       strcat(strReturn,"VER_SAVE|Версия формата данных, при чтении I2C памяти, если версии не совпадают, отказ от чтения|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
+       strcat(strReturn,"VER_SAVE|Версия формата сохраненных данных в I2C памяти|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"CONFIG_NAME|Имя конфигурации|");strcat(strReturn,CONFIG_NAME);strcat(strReturn,";");
        strcat(strReturn,"CONFIG_NOTE|");strcat(strReturn,CONFIG_NOTE);strcat(strReturn,"|-");strcat(strReturn,";");  
        strcat(strReturn,"UART_SPEED|Скорость отладочного порта (бод)|");_itoa(UART_SPEED,strReturn);strcat(strReturn,";");

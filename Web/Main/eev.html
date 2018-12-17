@@ -231,7 +231,7 @@ window.onload = function() {
         <select id="get_parameev-rule" onchange="setParam('get_paramEEV(RULE)');loadParam('get_paramEEV(REMARK)')"></select>
       </td>
       <td id="get_parameev-remark"></td>
-      <td nowrap><input id="get_parameev-const" type="number"  min="-5" max="5" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">" onclick="setParam('get_paramEEV(CONST)');"></td>
+      <td nowrap><input id="get_parameev-const" type="number"  min="-10" max="10" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">" onclick="setParam('get_paramEEV(CONST)');"></td>
       <td>
         <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
       </td>
@@ -289,10 +289,10 @@ window.onload = function() {
    <tr>
 	<td nowrap><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
 	<td nowrap><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
-	<td nowrap><input id="get_parameev-cpkp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKp)');"></td>
-	<td nowrap><input id="get_parameev-cpkpdm" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKpdm)');"></td>
-	<td nowrap><input id="get_parameev-cpki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKi)');"></td>
-	<td nowrap><input id="get_parameev-cpkd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKd)');"></td>
+	<td nowrap><input id="get_parameev-cpkp" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKp)');"></td>
+	<td nowrap><input id="get_parameev-cpkpdm" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKpdm)');"></td>
+	<td nowrap><input id="get_parameev-cpki" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKi)');"></td>
+	<td nowrap><input id="get_parameev-cpkd" type="number" min="0" max="32 step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKd)');"></td>
    </tr>
  </tbody>
  </table>            
@@ -312,11 +312,11 @@ window.onload = function() {
    </thead>
    <tbody>
    <tr>
-	<td nowrap><input id="get_parameev-target" type="number" min="0" max="20" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
+	<td nowrap><input id="get_parameev-target" type="number" min="0" max="50" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
 	<td nowrap><input id="get_parameev-time" type="number" min="1" max="1000" step="1"><input type="submit" value=">" onclick="setParam('get_paramEEV(TIME)');"></td>
-	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
-	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
-	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
+	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
+	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
+	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="32" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
    </tr>
  </tbody>
  </table>            

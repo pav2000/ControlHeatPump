@@ -87,7 +87,7 @@ int32_t motohour_OUT_work = 0; // рабочий для счетчиков, эн
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
 #define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 #define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
-#define fPIDSecondAlg		14				// Алгоритм PID vad711, иначе pav2000.
+#define fPIDAlg2			14				// Алгоритм PID vad711, иначе pav2000.
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP

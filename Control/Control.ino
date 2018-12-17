@@ -1216,7 +1216,7 @@ void vUpdateEEV(void *)
 					|| (HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA)
 #endif
 				) {
-					vTaskDelay(HP.dEEV.get_timeIn() * 1000 / portTICK_PERIOD_MS);  // ПИД
+					vTaskDelay(HP.dEEV. get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
 					continue;
 				}
 			}

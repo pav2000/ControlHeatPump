@@ -229,6 +229,7 @@ int32_t HeatPump::save(void)
 	DateTime.saveTime = rtcSAM3X8.unixtime();   // запомнить время сохранения настроек
 	while(1) {
 		// Сохранить параметры и опции отопления и бойлер, уведомления
+		Option.ver = VER_SAVE;
 		if(save_struct(addr, (uint8_t *) &Option, sizeof(Option), crc)) break;
 		if(save_struct(addr, (uint8_t *) &DateTime, sizeof(DateTime), crc)) break;
 		if(save_struct(addr, (uint8_t *) &Network, sizeof(Network), crc)) break;
@@ -609,7 +610,7 @@ void HeatPump::resetSettingHP()
   SETBIT0(Option.flags,fHistory);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
 #ifdef PID_FORMULA2
-  SETBIT1(Option.flags,fPIDSecondAlg);
+  SETBIT1(Option.flags,fPIDAlg2);
 #endif
   Option.sleep = 5;                    //  Время засыпания минуты
   Option.dim = 80;                     //  Якрость %
@@ -866,7 +867,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((x!=0)<<fWebStoreOnSPIFlash); return true; } else
    if(strcmp(var,option_LogWirelessSensors)==0){ Option.flags = (Option.flags & ~(1<<fLogWirelessSensors)) | ((x!=0)<<fLogWirelessSensors); return true; } else
-   if(strcmp(var,option_fPIDSecondAlg)==0)    { Option.flags = (Option.flags & ~(1<<fPIDSecondAlg)) | ((x!=0)<<fPIDSecondAlg); return true; } else
+   if(strcmp(var,option_fPIDAlg2)==0)         { Option.flags = (Option.flags & ~(1<<fPIDAlg2)) | ((x!=0)<<fPIDAlg2); return true; } else
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
 	   uint8_t bit = var[sizeof(option_SGL1W)-1] - '0' - 2;
@@ -908,7 +909,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if(GETBIT(Option.flags,fSDMLogErrors)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { return strcat(ret, (char*)(GETBIT(Option.flags,fWebStoreOnSPIFlash) ? cOne : cZero)); } else
    if(strcmp(var,option_LogWirelessSensors)==0){ return strcat(ret, (char*)(GETBIT(Option.flags,fLogWirelessSensors) ? cOne : cZero)); } else
-   if(strcmp(var,option_fPIDSecondAlg)==0)    { return strcat(ret, (char*)(GETBIT(Option.flags,fPIDSecondAlg) ? cOne : cZero)); } else
+   if(strcmp(var,option_fPIDAlg2)==0)         { return strcat(ret, (char*)(GETBIT(Option.flags,fPIDAlg2) ? cOne : cZero)); } else
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
@@ -3374,7 +3375,7 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pidw.maxStep);
 #endif
-	if(GETBIT(HP.Option.flags, fPIDSecondAlg)) {
+	if(GETBIT(HP.Option.flags, fPIDAlg2)) {
 
 
 
@@ -3387,7 +3388,7 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
 		if(pid.Ki > 0)// Расчет интегральной составляющей
 		{
-			pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+			pidw.sum += (int32_t) pid.Ki/10 * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
 			// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
 			if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
 			else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
@@ -3397,13 +3398,13 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		journal.printf("I=%d, ", newVal);
 	#endif
 		// Пропорциональная составляющая
-		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
-		else newVal += (int32_t) pid.Kp * errorPid;
+		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp/10 * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+		else newVal += (int32_t) pid.Kp/10 * errorPid;
 	#ifdef DEBUG_PID
 		journal.printf("+P=%d\n", newVal);
 	#endif
 		// Дифференцальная составляющая
-		newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+		newVal += (int32_t) pid.Kd/10 * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 		pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
 	#ifdef DEBUG_PID
 		journal.printf("+D=%d, ", newVal);

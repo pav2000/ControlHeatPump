@@ -910,7 +910,7 @@ void load_struct(void *to, uint8_t **from, uint16_t to_size)
 // Round float * mul, mul: 10, 100, 1000
 int16_t rd(float num, int16_t mul)
 {
-	return num * mul + (mul == 100 ? 0.005 : mul == 10 ? 0.05 : 0.0005) * (num < 0 ? -1 : 1);
+	return num * mul + (mul == 1000 ? 0.0005 : mul == 100 ? 0.005 : mul == 10 ? 0.05 : 0.0005) * (num < 0 ? -1 : 1);
 }
 
 // format int/div value to string with decimal point
