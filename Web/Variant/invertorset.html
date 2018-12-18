@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcanalog,get_paramFC(AUTO),get_paramFC(ARSTFLT),get_paramFC(UPTIME),get_paramFC(PID_STEP),get_paramFC(PID_STOP),get_paramFC(DT_COMP_TEMP),get_paramFC(START),get_paramFC(START_BOILER),get_paramFC(MIN),get_paramFC(MIN_COOL),get_paramFC(MIN_BOILER),get_paramFC(MIN_USER),get_paramFC(MAX),get_paramFC(MAX_COOL),get_paramFC(MAX_BOILER),get_paramFC(MAX_USER),get_paramFC(STEP),get_paramFC(STEP_BOILER),get_paramFC(DT_TEMP),get_paramFC(DT_TEMP_BOILER)");
+		loadParam("hide_fcanalog,get_paramFC(ARSTFLT),get_paramFC(LOGW),get_paramFC(UPTIME),get_paramFC(PID_STEP),get_paramFC(PID_STOP),get_paramFC(DT_COMP_TEMP),get_paramFC(START),get_paramFC(START_BOILER),get_paramFC(MIN),get_paramFC(MIN_COOL),get_paramFC(MIN_BOILER),get_paramFC(MIN_USER),get_paramFC(MAX),get_paramFC(MAX_COOL),get_paramFC(MAX_BOILER),get_paramFC(MAX_USER),get_paramFC(STEP),get_paramFC(STEP_BOILER),get_paramFC(DT_TEMP),get_paramFC(DT_TEMP_BOILER)");
 		};
 	</script>
 </head>
@@ -25,12 +25,9 @@
     </tr>
    </thead>
    <tbody>
-    <tr><td>Автоматический подбор частоты (ПИД регулирование)<sup>1</sup></td><td><input type="checkbox" id="get_paramfc-auto" onchange="setParam('get_paramFC(AUTO)');"></td></tr>
-<!--
-    <tr><td>Авто-сброс не критичного сбоя инвертора</td><td><input type="checkbox" id="get_paramfc-arstflt" onchange="setParam('get_paramFC(ARSTFLT)');"></td></tr>
--->
-    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>2</sup></td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
-    <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты [50...100]</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
+    <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_paramfc-logw" onchange="setParam('get_paramFC(LOGW)');"></td></tr>
+    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>1</sup></td><td><input type="number" id="get_paramfc-uptime"> <input type="submit" value=">" onclick="setParam('get_paramFC(UPTIME)');"></td></tr>
+    <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_paramfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_paramFC(PID_STOP)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
     <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_paramfc-dt_comp_temp"> <input type="submit" value=">" onclick="setParam('get_paramFC(DT_COMP_TEMP)');"></td></tr>
@@ -60,8 +57,7 @@
 
    </tbody>
    </table>
-   1. Если опция выбрана то используется ПИД регулирование, если нет то режим "Старт-Стоп"<br/>
-   2. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
+   1. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
   </div>
 
 <div name="hide_fcanalog" class="row1">
