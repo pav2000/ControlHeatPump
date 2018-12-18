@@ -2777,7 +2777,8 @@ void HeatPump::compressorON()
 #ifdef DEFROST
    }  // if(mod!=pDEFROST)
 #endif	
-		COMPRESSOR_ON;                                        // Включить компрессор
+	  	command_completed = rtcSAM3X8.unixtime();
+	  	COMPRESSOR_ON;                                        // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
 		startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
 	} else { // if (get_errcode()==OK)
@@ -2844,14 +2845,14 @@ void HeatPump::compressorOFF()
   #else
     if (rtcSAM3X8.unixtime()-startCompressor<2*60) {return;journal.jprintf(MinPauseOnCompressor);}     // Обеспечение минимального времени работы компрессора 2 минуты
   #endif
-  
+
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
   dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ
   journal.jprintf(" Pause task update EEV\n"); 
   #endif
   
-  
+  command_completed = rtcSAM3X8.unixtime();
   COMPRESSOR_OFF;                                                     // Компрессор выключить
   stopCompressor=rtcSAM3X8.unixtime();                                // Запомнить время выключения компрессора
   
@@ -3105,7 +3106,7 @@ char *HeatPump::StateToStr()
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
 			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Ожид. Нагр";          // 1 Включить отопление
+			case  pHEAT:   return (char*)"Ожид. Нагр.";         // 1 Включить отопление
 			case  pCOOL:   return (char*)"Ожид. Охл.";          // 2 Включить охлаждение
 			case  pBOILER: return (char*)"Ожид. ГВС";           // 3 Включить бойлер
 			}
@@ -3362,23 +3363,30 @@ void HeatPump::Sun_OFF(void)
 #endif
 }
 
-//#define DEBUG_PID		// Отладка ПИДа
 // Уравнение ПИД регулятора в конечных разностях.
 // errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ
 // pid - настройки ПИДа
 // maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
 // temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
 // Выход управляющее воздействие (СОТЫХ)
-int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
+int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
 	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pidw.maxStep);
 #endif
 	if(GETBIT(HP.Option.flags, fPIDAlg2)) {
-
-
-
+		pidw.sum += pid.Ki * errorPid;
+		if(pidw.PropOnMeasure) {
+			pidw.sum -= pid.Kp * (pidw.pre_errPID - errorPid);
+			newVal = 0;
+		} else {
+			newVal = pid.Kp * errorPid;
+		}
+		newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
+#ifdef DEBUG_PID
+		journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
+#endif
 	} else {
 		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
 		// u(t) = P (t) + I (t) + D (t);
@@ -3388,7 +3396,7 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
 		if(pid.Ki > 0)// Расчет интегральной составляющей
 		{
-			pidw.sum += (int32_t) pid.Ki/10 * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+			pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
 			// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
 			if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
 			else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
@@ -3398,20 +3406,27 @@ int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		journal.printf("I=%d, ", newVal);
 	#endif
 		// Пропорциональная составляющая
-		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp/10 * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
-		else newVal += (int32_t) pid.Kp/10 * errorPid;
+		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+		else newVal += (int32_t) pid.Kp * errorPid;
 	#ifdef DEBUG_PID
 		journal.printf("+P=%d\n", newVal);
 	#endif
 		// Дифференцальная составляющая
-		newVal += (int32_t) pid.Kd/10 * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-		pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+		newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 	#ifdef DEBUG_PID
 		journal.printf("+D=%d, ", newVal);
 	#endif
 	}
-
-	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
+	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+	newVal /= 1000; // Учесть разрядность коэффициентов, выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
+}
+
+void SetTimePID(int16_t new_time, PID_STRUCT &pid)
+{
+
+
+
+	pid.time = new_time;
 }

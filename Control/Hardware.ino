@@ -840,26 +840,24 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
+#ifdef EEV_MIN_CONTROL     // Контролировать достижение минимального открытия, ошибка генерится
 			if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - Сообщение
-	        #ifdef NO_MIN_EEV_CONTROL     // При работе ПИД ЭРВ не контролировать достижение минимального открытия, ошибка не генерится, генерится только сообщение в журнал  (акутально для воздушников)   
-			    journal.jprintf("EEV is completely closed, possibly incorrect PID settings or failure of the EEV.\n");
-			#else	                      // Есть контроль и остановка по ошибке
 				err = _data.minSteps;
 				set_Error(err, (char*) name);
 				return err;
-		    #endif  
 			}
-		newEEV = _data.minSteps;	
+#endif
+			newEEV = _data.minSteps;
 		}
 	#else
 		if (newEEV<_data.minSteps) newEEV = _data.minSteps;                            // Просто ограничение DEMO
 	#endif
 	#ifndef DEMO
-		#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапзона
+#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапазона
 		if (newEEV>_data.maxSteps) {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
-		#else
+#else
 		if(newEEV > _data.maxSteps) newEEV = _data.maxSteps;                            // Просто ограничение
-		#endif
+#endif
 	#else
 		if (newEEV>_data.maxSteps) newEEV=_data.maxSteps;                            // Просто ограничение DEMO
 	#endif
@@ -936,6 +934,7 @@ void devEEV::resetPID()
   pidw.sum = 0;
   pidw.pre_errPID = 0;
   pidw.maxStep = EEV_MAX_STEP * 100;
+  pidw.PropOnMeasure = GETBIT(_data.flags, fPID_PropOnMeasure);
   OHCor_pidw.sum = 0;
   OHCor_pidw.pre_errPID = 0;
 #ifdef DEF_OHCor_MAX_STEP
@@ -943,6 +942,7 @@ void devEEV::resetPID()
 #else
   OHCor_pidw.maxStep = 100 * 100;
 #endif
+  OHCor_pidw.PropOnMeasure = false;
 }
 
  // Получить параметр ЭРВ в виде строки
@@ -967,8 +967,8 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_TIME)==0){   _itoa(_data.pid.time,ret);
 	} else if(strcmp(var, eev_TARGET)==0){ _ftoa(ret,(float)_data.tOverheat/100,2);
 	} else if(strcmp(var, eev_KP)==0){     _ftoa(ret,(float)_data.pid.Kp / 1000,3);
-	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)_data.pid.Ki / _data.pid.time / 1000,3);
-	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)_data.pid.Kd * _data.pid.time / 1000,3);
+	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)_data.pid.Ki / (GETBIT(HP.Option.flags, fPIDAlg2) ? _data.pid.time : 1) / 1000,3);
+	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)_data.pid.Kd * (GETBIT(HP.Option.flags, fPIDAlg2) ? _data.pid.time : 1) / 1000,3);
 	} else if(strcmp(var, eev_CONST)==0){  _ftoa(ret,(float)_data.Correction/100,2);
 	} else if(strcmp(var, eev_MANUAL)==0){ _itoa(_data.manualStep,ret);
 	} else if(strcmp(var, eev_FREON)==0){
@@ -989,8 +989,8 @@ char* devEEV::get_paramEEV(char *var, char *ret)
     } else if(strcmp(var, eev_cPERIOD)==0){	_itoa(_data.OHCor_pid.time, ret);
     } else if(strcmp(var, eev_cDELTA)==0){ 	_ftoa(ret, (float)_data.OHCor_TDIS_TCON/100, 2);
     } else if(strcmp(var, eev_cPidKp)==0){ 	_ftoa(ret, (float)_data.OHCor_pid.Kp / 1000, 3);
-    } else if(strcmp(var, eev_cPidKi)==0){ 	_ftoa(ret, (float)_data.OHCor_pid.Ki / (_data.pid.time * _data.OHCor_pid.time) / 1000, 3);
-    } else if(strcmp(var, eev_cPidKd)==0){ 	_ftoa(ret, (float)_data.OHCor_pid.Kd * (_data.pid.time * _data.OHCor_pid.time) / 1000, 3);
+    } else if(strcmp(var, eev_cPidKi)==0){ 	_ftoa(ret, (float)_data.OHCor_pid.Ki / (GETBIT(HP.Option.flags, fPIDAlg2) ? _data.pid.time * _data.OHCor_pid.time : 1) / 1000, 3);
+    } else if(strcmp(var, eev_cPidKd)==0){ 	_ftoa(ret, (float)_data.OHCor_pid.Kd * (GETBIT(HP.Option.flags, fPIDAlg2) ? _data.pid.time * _data.OHCor_pid.time : 1) / 1000, 3);
     } else if(strcmp(var, eev_cPidKpdm)==0){ _ftoa(ret, (float)_data.OHCor_pid.Kp_dmin/100, 2);
     } else if(strcmp(var, eev_cOH_MIN)==0){	_ftoa(ret, (float)_data.OHCor_OverHeatMin/100, 2);
     } else if(strcmp(var, eev_cOH_MAX)==0){	_ftoa(ret, (float)_data.OHCor_OverHeatMax/100, 2);
@@ -1010,9 +1010,10 @@ char* devEEV::get_paramEEV(char *var, char *ret)
     } else if(strcmp(var, eev_CLOSE)==0){           _itoa((_data.flags & (1<<fEevClose))!=0, ret);
     } else if(strcmp(var, eev_LIGHT_START)==0){    	_itoa((_data.flags & (1<<fLightStart))!=0, ret);
     } else if(strcmp(var, eev_START )==0){          _itoa((_data.flags & (1<<fStartFlagPos))!=0, ret);
+    } else if(strcmp(var, eev_PID_P_ON_M )==0){     _itoa((_data.flags & (1<<fPID_PropOnMeasure))!=0, ret);
     } else strcat(ret,"E10");
   return ret;              
-} 
+}
 
 // Установить параметр ЭРВ из флоат параметр var
 // в случае успеха возврщает true
@@ -1032,7 +1033,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=(int)x; return true;} else return false;	// максимальное число шагов
 		return true;
 	} else if(strcmp(var, eev_TIME)==0){
-		if ((x>=1)&&(x<=1000)) { if(_data.pid.time!=x) resetPID(); _data.pid.time=x; return true;} else return false;	// секунды
+		if ((x>=1)&&(x<=1000)) { if(_data.pid.time!=x) resetPID(); SetTimePID(x, _data.pid); return true;} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
 		if ((x>0.0)&&(x<=50.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
@@ -1113,6 +1114,8 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if (x==0) SETBIT0(_data.flags, fLightStart); else SETBIT1(_data.flags, fLightStart);
 	} else if(strcmp(var, eev_START)==0){
 		if (x==0) SETBIT0(_data.flags, fStartFlagPos); else SETBIT1(_data.flags, fStartFlagPos);
+	} else if(strcmp(var, eev_PID_P_ON_M)==0){
+		if (x==0) SETBIT0(_data.flags, fPID_PropOnMeasure); else SETBIT1(_data.flags, fPID_PropOnMeasure);
 	} else return false; // ошибочное имя параметра
 
 	return true;  // для флагов
