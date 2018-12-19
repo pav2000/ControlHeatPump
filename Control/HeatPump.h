@@ -28,7 +28,7 @@
 extern char *MAC2String(byte* mac);
 
 int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
-void SetTimePID(int16_t new_time, PID_STRUCT &pid);
+void SetTimePID(int16_t new_time, uint16_t *curr_time, PID_STRUCT &pid);
 
 /*/ Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
@@ -88,7 +88,6 @@ int32_t motohour_OUT_work = 0; // рабочий для счетчиков, эн
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
 #define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 #define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
-#define fPIDAlg2			14				// Алгоритм PID vad711, иначе pav2000.
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -313,9 +312,9 @@ class HeatPump
    RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}           // Получить алгоритм отопления
    boolean get_TargetCool(){return GETBIT(Prof.Cool.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
    boolean get_TargetHeat(){return GETBIT(Prof.Heat.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
-   uint16_t get_timeCool(){return Prof.Cool.pid.time;}      // Получить время интегрирования охлаждения
-   uint16_t get_timeHeat(){return Prof.Heat.pid.time;}      // Получить время интегрирования отопления
-   uint16_t get_timeBoiler(){return Prof.Boiler.pid.time;}  // Получить время интегрирования ГВС
+   uint16_t get_timeCool(){return Prof.Cool.pid_time;}      // Получить время интегрирования охлаждения
+   uint16_t get_timeHeat(){return Prof.Heat.pid_time;}      // Получить время интегрирования отопления
+   uint16_t get_timeBoiler(){return Prof.Boiler.pid_time;}  // Получить время интегрирования ГВС
    
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления

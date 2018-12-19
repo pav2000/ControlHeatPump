@@ -533,13 +533,9 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Стартовый перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_START,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Минимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MIN,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Максимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MAX,Socket[thread].outBuf);STR_END; 
-             strcat(Socket[thread].outBuf,"Пропорциональная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKp,Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Интегральная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKi,Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Дифференциальная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKd,Socket[thread].outBuf); STR_END;
-             strcat(Socket[thread].outBuf,"Разница для мин. корректировки: "); HP.dEEV.get_paramEEV((char*)eev_cPidKpdm,Socket[thread].outBuf); STR_END;
 
              strcat(Socket[thread].outBuf," Глобальные настройки:\r\n");
-             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_ERR_KP,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_PID_dconserv,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Скорость шагового двигателя ЭРВ (импульсы в сек.): ");  HP.dEEV.get_paramEEV((char*)eev_SPEED,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"ПУСКОВАЯ позиция ЭРВ - то что при старте компрессора, при раскрутке (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_PRE_START_POS,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. позиция скоторой начинается работа ПИД (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_START_POS,Socket[thread].outBuf);STR_END; 

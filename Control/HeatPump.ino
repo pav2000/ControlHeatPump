@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav, by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -73,8 +73,6 @@ void HeatPump::initHeatPump()
 #ifdef MQTT
 	clMQTT.initMQTT();                                      // Инициализация MQTT
 #endif
-	pidw_heat.maxStep = dFC.get_PidFreqStep() * 100;
-	pidw_boiler.maxStep = dFC.get_PidFreqStep() * 100;
 	resetSettingHP();                                          // все переменные
 }
 // Стереть последнюю ошибку
@@ -609,9 +607,6 @@ void HeatPump::resetSettingHP()
   SETBIT1(Option.flags,fNextion);      //  дисплей Nextion
   SETBIT0(Option.flags,fHistory);      //  Сброс статистика на карту
   SETBIT0(Option.flags,fSaveON);       //  флаг записи в EEPROM включения ТН
-#ifdef PID_FORMULA2
-  SETBIT1(Option.flags,fPIDAlg2);
-#endif
   Option.sleep = 5;                    //  Время засыпания минуты
   Option.dim = 80;                     //  Якрость %
   Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
@@ -867,7 +862,6 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((x!=0)<<fWebStoreOnSPIFlash); return true; } else
    if(strcmp(var,option_LogWirelessSensors)==0){ Option.flags = (Option.flags & ~(1<<fLogWirelessSensors)) | ((x!=0)<<fLogWirelessSensors); return true; } else
-   if(strcmp(var,option_fPIDAlg2)==0)         { Option.flags = (Option.flags & ~(1<<fPIDAlg2)) | ((x!=0)<<fPIDAlg2); return true; } else
    if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
 	   uint8_t bit = var[sizeof(option_SGL1W)-1] - '0' - 2;
@@ -909,7 +903,6 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if(GETBIT(Option.flags,fSDMLogErrors)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);   }else
    if(strcmp(var,option_WebOnSPIFlash)==0)    { return strcat(ret, (char*)(GETBIT(Option.flags,fWebStoreOnSPIFlash) ? cOne : cZero)); } else
    if(strcmp(var,option_LogWirelessSensors)==0){ return strcat(ret, (char*)(GETBIT(Option.flags,fLogWirelessSensors) ? cOne : cZero)); } else
-   if(strcmp(var,option_fPIDAlg2)==0)         { return strcat(ret, (char*)(GETBIT(Option.flags,fPIDAlg2) ? cOne : cZero)); } else
    if(strcmp(var,option_SAVE_ON)==0)          {if(GETBIT(Option.flags,fSaveON)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);    }else           // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
    if(strcmp(var,option_NEXT_SLEEP)==0)       {return _itoa(Option.sleep,ret);                                                     }else            // Время засыпания секунды NEXTION минуты
    if(strcmp(var,option_NEXT_DIM)==0)         {return _itoa(Option.dim,ret);                                                       }else            // Якрость % NEXTION
@@ -3373,60 +3366,61 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pidw.maxStep);
+	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID);
 #endif
-	if(GETBIT(HP.Option.flags, fPIDAlg2)) {
-		pidw.sum += pid.Ki * errorPid;
-		if(pidw.PropOnMeasure) {
-			pidw.sum -= pid.Kp * (pidw.pre_errPID - errorPid);
-			newVal = 0;
-		} else {
-			newVal = pid.Kp * errorPid;
-		}
-		newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
-#ifdef DEBUG_PID
-		journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
-#endif
+#ifdef PID_FORMULA2
+	pidw.sum += pid.Ki * errorPid;
+	if(pidw.PropOnMeasure) {
+		pidw.sum -= pid.Kp * (pidw.pre_errPID - errorPid);
+		newVal = 0;
 	} else {
-		// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-		// u(t) = P (t) + I (t) + D (t);
-		// P (t) = Kp * e (t);
-		// I (t) = I (t — 1) + Ki * e (t);
-		// D (t) = Kd * {e (t) — e (t — 1)};
-		// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-		if(pid.Ki > 0)// Расчет интегральной составляющей
-		{
-			pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-			// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-			if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
-			else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
-		} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
-		newVal = pidw.sum;
-	#ifdef DEBUG_PID
-		journal.printf("I=%d, ", newVal);
-	#endif
-		// Пропорциональная составляющая
-		if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
-		else newVal += (int32_t) pid.Kp * errorPid;
-	#ifdef DEBUG_PID
-		journal.printf("+P=%d\n", newVal);
-	#endif
-		// Дифференцальная составляющая
-		newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	#ifdef DEBUG_PID
-		journal.printf("+D=%d, ", newVal);
-	#endif
+		newVal = pid.Kp * errorPid;
 	}
+	newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
+#ifdef DEBUG_PID
+	journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
+#endif
+#else
+	// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
+	// u(t) = P (t) + I (t) + D (t);
+	// P (t) = Kp * e (t);
+	// I (t) = I (t — 1) + Ki * e (t);
+	// D (t) = Kd * {e (t) — e (t — 1)};
+	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
+	if(pid.Ki > 0)// Расчет интегральной составляющей
+	{
+		pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
+		if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
+		else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
+	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
+	newVal = pidw.sum;
+#ifdef DEBUG_PID
+	journal.printf("I=%d, ", newVal);
+#endif
+	// Пропорциональная составляющая
+	if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+	else newVal += (int32_t) pid.Kp * errorPid;
+#ifdef DEBUG_PID
+	journal.printf("+P=%d, ", newVal);
+#endif
+	// Дифференцальная составляющая
+	newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+#ifdef DEBUG_PID
+	journal.printf("+D=%d\n", newVal);
+#endif
+#endif
 	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
-	newVal /= 1000; // Учесть разрядность коэффициентов, выход в СОТЫХ
+	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов, выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
 }
 
-void SetTimePID(int16_t new_time, PID_STRUCT &pid)
+void SetTimePID(int16_t new_time, uint16_t *curr_time, PID_STRUCT &pid)
 {
-
-
-
-	pid.time = new_time;
+	if(new_time) {
+		pid.Ki = (int32_t) pid.Ki * new_time / (*curr_time);
+		pid.Kd = (int32_t) pid.Kd * (*curr_time) / new_time;
+		*curr_time = new_time;
+	}
 }

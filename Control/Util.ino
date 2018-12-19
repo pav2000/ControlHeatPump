@@ -937,3 +937,13 @@ int16_t round_div_int16(int16_t value, int16_t div)
 	}
 	return value / div;
 }
+
+int32_t round_div_int32(int32_t value, int16_t div)
+{
+	if(value >= 0) {
+		if(value % div >= div / 2) value += div / 2;
+	} else {
+		if(value % div <= -div / 2) value -= div / 2;
+	}
+	return value / div;
+}

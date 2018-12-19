@@ -285,7 +285,7 @@ public:
 
 	// Функции чтения настроек ЭРВ в бинарном виде
 	int16_t get_tOverheat(){return  _data.tOverheat;}     // Получить целевой перегрев
-	inline int16_t get_PID_time() { return  _data.pid.time; } // Получить ЗАДАННУЮ постоянную времени в секундах ЭРВ
+	inline int16_t get_PID_time() { return  _data.pid_time; } // Получить ЗАДАННУЮ постоянную времени в секундах ЭРВ
 	int16_t get_Correction(){return _data.Correction;}     // Получить поправку в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».  СОТЫЕ ГРАДУСА
 	int16_t get_manualStep(){return _data.manualStep;}     // Получить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 	TYPEFREON get_typeFreon(){return _data.typeFreon;}     // Получить тип фреона
@@ -333,7 +333,6 @@ private:
 	void resetPID();                                       // Сброс пид регулятора
 
 	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
-	PID_WORK_STRUCT OHCor_pidw;  							// переменные пид регулятора
 	uint16_t Pid_start;                                    // откуда стартует ПИД регулятор обновление в функции Resume
 	int16_t Overheat;                                      // Перегрев текущий (сотые градуса)
 	int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации
@@ -343,14 +342,18 @@ private:
 	char *name;                                            // Имя
 
 	struct {                                    // Структура для сохранения настроек! Первая переменная => timeIn
+		uint16_t pid_time;        				// Период расчета ПИД в секундах
 		PID_STRUCT pid;                         // Настройки и переменные ПИД регулятора
+		int16_t pid_delta_coserv;				// Дельта для консервативных вычислений ПИДа
 		int16_t	Correction;                     // Величина корректироровки перегрева (систематическая ошибка расчета перегерва)
 		int16_t	manualStep;                     // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 		TYPEFREON typeFreon;                    // Тип фреона
 		RULE_EEV ruleEEV;                       // правило работы ЭРВ
-		PID_STRUCT OHCor_pid;					// ПИД регулятор корретировки перегрева
-		int16_t	OHCor_OverHeatMin;				// Минимальный перегрев (сотые градуса)
-		int16_t	OHCor_OverHeatMax;				// Максимальный перегрев (сотые градуса)
+		PID_STRUCT pid_conserv;					// Консервативный ПИД
+		uint16_t OHCor_Period;					// Период расчета корректировки перегрева в циклах ЭРВ
+		int16_t OHCor_TDIS_TCON_Thr;			 // Порог, после превышения которого начинаем менять перегрев, в сотых градуса
+		int16_t	OverheatMin;					// Минимальный перегрев (сотые градуса)
+		int16_t	OverheatMax;					// Максимальный перегрев (сотые градуса)
 		int16_t	tOverheat;                      // Перегрев ЦЕЛЬ (сотые градуса)
 		uint8_t	speedEEV;                       // Скорость шагового двигателя ЭРВ (импульсы в сек.)
 		uint8_t	minSteps;                       // Минимальное число шагов открытия ЭРВ

@@ -3122,7 +3122,7 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
 	};
 
-  #define PID_FORMULA2				// Алгоритм ПИД из ардуино (http://playground.arduino.cc/Code/PIDLibrary, https://github.com/br3ttb/Arduino-PID-Library/)
+  #define PID_FORMULA2							// Адаптированный алгоритм ПИД Arduino-PID-Library
   // ------------------- EEV -----------------------------------
   // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
   #define EEV_DEF                     // Наличие ЭРВ в конфигурации
