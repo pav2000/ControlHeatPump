@@ -477,7 +477,6 @@ const char *eev_POS           =  {"POS"};           // Положение ЭРВ
 const char *eev_POSp          =  {"POSp"};          // Положение ЭРВ %
 const char *eev_POSpp         =  {"POSpp"};         // Положение ЭРВ шаги+%
 const char *eev_OVERHEAT      =  {"OVERHEAT"};      // Текущий перегрев ЭРВ
-//const char *eev_OVERCOOL =  {"OVERCOOL"};    // Переохлаждение
 const char *eev_ERROR         =  {"ERROR"};         // Ошибка ЭРВ
 const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
 const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
@@ -486,7 +485,11 @@ const char *eev_TARGET        =  {"TARGET"};        // Перегрев ЦЕЛЬ
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.  В СОТЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
 const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.   В СОТЫХ!!!
-const char *eev_PID_dconserv  =  {"PDC"};			// Дельта для консервативных вычислений ПИДа
+const char *eev_KP2           =  {"KP2"};           // ПИД Коэф пропорц.  В СОТЫХ!!!
+const char *eev_KI2           =  {"KI2"};           // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+const char *eev_KD2           =  {"KD2"};           // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_PID2_delta	  =  {"P2D"};           // Дельта для консервативных вычислений ПИДа
+const char *eev_PID_MAX       =  {"PMAX"};          // ограничение ПИД в шагах ЭРВ
 const char *eev_CONST         =  {"CONST"};         // Корректировка перегрева (постоянная ошибка)
 const char *eev_MANUAL        =  {"MANUAL"};        // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 const char *eev_FREON         =  {"FREON"};         // Тип фреона
@@ -498,10 +501,12 @@ const char *eev_PINS          =  {"PINS"};          // Перечисление 
 const char *eev_cCORRECT      =  {"cCORRECT"};      // Флаг включения корректировки перегерва от разности температур конденсатора и испраителя
 const char *eev_cDELAY        =  {"cDELAY"};        // Задержка после старта компрессора, сек
 const char *eev_cPERIOD       =  {"cPERIOD"};       // Период в циклах ЭРВ, сколько пропустить
-const char *eev_cDELTA        =  {"cDELTA"};        // TDIS_TCON: Температура нагнетания - конденсации (сотые градуса)
-const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
+const char *eev_cDELTA        =  {"cD"};            // TDIS_TCON: Температура нагнетания - конденсации (сотые градуса)
+const char *eev_cDELTA_Thr    =  {"cDT"};           // Порог, после превышения которого начинаем менять перегрев, в сотых градуса
+const char *eev_cOH_cDELTA_MAX =  {"cDM"};     	    // верхняя граница для пропорционального увеличения перегрева, % от OHCor_TDIS_TCON
 const char *eev_cOH_MIN       =  {"cOH_MIN"};       // Минимальный перегрев (сотые градуса)
 const char *eev_cOH_START     =  {"cOH_START"};     // Стартовый перегрев (сотые градуса)
+const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
 const char *eev_cOH_TDELTA    =  {"cTDELTA"};     	// Расчитанная целевая дельта Нагнетание-Конденсации
 #ifdef PID_FORMULA2
 
@@ -1259,7 +1264,6 @@ struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
 	int32_t sum;			// сумма
 	int16_t pre_errPID;		// предыдущая ошибка для дифференцирования
 	boolean PropOnMeasure;  // ПИД пропорционально измерению, иначе пропорционально ошибке
-	int32_t min;
 	int32_t max;
 };
 #else

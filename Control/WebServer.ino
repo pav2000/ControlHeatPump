@@ -943,6 +943,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			#else
     			strcat(strReturn,"1");
 			#endif
+    	} else if(strcmp(str, "pid") == 0) { // hide: PID2
+			#ifdef PID_FORMULA2
+    			strcat(strReturn,"0");
+			#else
+    			strcat(strReturn,"1");
+			#endif
     	}
     	ADD_WEBDELIM(strReturn); continue;
      }

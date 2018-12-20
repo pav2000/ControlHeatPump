@@ -1664,10 +1664,22 @@ int8_t HeatPump::StartResume(boolean start)
 	// Сбросить переменные пид регулятора
 	pidw_heat.pre_errPID = 0;
 	pidw_heat.sum = 0;
+#ifdef PID_FORMULA2
+	pidw_heat.PropOnMeasure = false;
+	pidw_heat.max = (int32_t) dFC.get_maxFreq() * 1000 * 100;
+#else
+	pidw_heat.maxStep = 0;
+#endif
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
 	pidw_boiler.pre_errPID = 0;
 	pidw_boiler.sum = 0;
+#ifdef PID_FORMULA2
+	pidw_boiler.PropOnMeasure = false;
+	pidw_boiler.max = (int32_t) dFC.get_maxFreqBoiler() * 1000 * 100;
+#else
+	pidw_boiler.maxStep = 0;
+#endif
 	updatePidBoiler=0;                                   // время обновления ПИДа
 
 
@@ -3359,9 +3371,8 @@ void HeatPump::Sun_OFF(void)
 // Уравнение ПИД регулятора в конечных разностях.
 // errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ
 // pid - настройки ПИДа
-// maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
-// temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
-// Выход управляющее воздействие (СОТЫХ)
+// sum, pre_errPID - сумма для расчета и предыдущая ошибка
+// Выход управляющее воздействие (в СОТЫХ)
 int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
@@ -3376,7 +3387,11 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	} else {
 		newVal = pid.Kp * errorPid;
 	}
+	if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+	else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
+	if(newVal > pidw.max) newVal = pidw.max;
+	else if(newVal < -pidw.max) newVal = -pidw.max;
 #ifdef DEBUG_PID
 	journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
 #endif
@@ -3399,7 +3414,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	journal.printf("I=%d, ", newVal);
 #endif
 	// Пропорциональная составляющая
-	if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+	if(abs(errorPid) < pidw.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pidw.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 #ifdef DEBUG_PID
 	journal.printf("+P=%d, ", newVal);
@@ -3416,11 +3431,10 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	return newVal;
 }
 
-void SetTimePID(int16_t new_time, uint16_t *curr_time, PID_STRUCT &pid)
+void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid)
 {
 	if(new_time) {
-		pid.Ki = (int32_t) pid.Ki * new_time / (*curr_time);
-		pid.Kd = (int32_t) pid.Kd * (*curr_time) / new_time;
-		*curr_time = new_time;
+		pid.Ki = (int32_t) pid.Ki * new_time / curr_time;
+		pid.Kd = (int32_t) pid.Kd * curr_time / new_time;
 	}
 }

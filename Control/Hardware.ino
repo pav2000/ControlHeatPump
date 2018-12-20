@@ -569,7 +569,7 @@ void devEEV::initEEV()
  _data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		    // Температура нагнетания - конденсации при 30С и 0 конденсации
  _data.OverheatMin = DEF_OHCor_OverHeatMin;		// Минимальный перегрев (сотые градуса)
  _data.OverheatMax = DEF_OHCor_OverHeatMax;		// Максимальный перегрев (сотые градуса)
- _data.OHCor_OverHeatStart = DEF_OHCor_OverHeatStart; 	// Начальный перегрев (сотые градуса)
+ _data.OverHeatStart = DEF_OHCor_OverHeatStart; 	// Начальный перегрев (сотые градуса)
  _data.OHCor_Period = DEF_OHCor_Period;
 #endif
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
@@ -671,7 +671,6 @@ int8_t devEEV::Start()
 	if((!GETBIT(_data.flags, fOneSeekZero)) || (GETBIT(_data.flags,fOneSeekZero) && (EEV < 0))) { // есть вариант однократного поиска "0" ЭРВ
 		set_zero();
 	}                          // установить 0
-
 	//  journal.jprintf(" EEV set StartPos: %d\n",StartPos);
 	//  set_EEV(StartPos);      // Выставить положение ЭРВ - StartPos
 	return OK;
@@ -830,7 +829,9 @@ int8_t devEEV::Update(void) //boolean fHeating)
 #ifdef TCOMPIN
 	case TCOMPIN_PEVA:
 #endif
-		newEEV = EEV - round_div_int16(updatePID(_data.tOverheat - Overheat, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+		newEEV = _data.tOverheat - Overheat;
+		pid2_work = abs(newEEV) < _data.pid2_delta;
+		newEEV = EEV - round_div_int16(updatePID(newEEV, pid2_work ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
@@ -882,32 +883,32 @@ void devEEV::CorrectOverheat(void)
 #ifdef DEF_OHCor_OverHeatStart
 	static uint16_t OverHeatCor_period = 0; // Только для одного ЭРВ.
 	int16_t t = HP.get_temp_condensing();
-	int16_t evapor = HP.get_temp_evaporating();
-	OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)evapor * DEF_OHCor_EVAPORATING_0_MUL / 1000
+	int16_t t2 = HP.get_temp_evaporating();
+	OHCor_tdelta = (int32_t)_data.OHCor_TDIS_TCON + (t - 3000) * DEF_OHCor_CONDENSING_30_MUL / 1000 - (int32_t)t2 * DEF_OHCor_EVAPORATING_0_MUL / 1000
 #ifdef TCOMPIN
-					+ (HP.sTemp[TCOMPIN].get_Temp() - evapor
+					+ (HP.sTemp[TCOMPIN].get_Temp() - t2
 #else
 					+ (Overheat
 #endif
-					- _data.OHCor_OverHeatStart);
+					- _data.OverHeatStart);
 	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_Period) {
 		OverHeatCor_period = 0;
-		t = OHCor_tdelta - (HP.sTemp[TCOMP].get_Temp() - t);
-/*		if(t > (x = OHCor_tdelta + _data.OHCor_TDIS_TCON_Thr)); // Перегрев большой - уменьшаем
-		else if(delta < (x = OHCor_tdelta)) { // - (int16_t)_data.OHCor_TDIS_TCON_Thr * 10)); // Перегрев маленький - увеличиваем
-			if(delta < x * 3 / 4) { // Слижком мало (меньше 3/4 от дельты) - устанавливаем перегрев принудительно
-				_data.tOverheat = delta > x / 2 ? _data.OHCor_OverHeatStart : _data.OHCor_OverHeatMax;
+		t = (HP.sTemp[TCOMP].get_Temp() - t) - OHCor_tdelta;
+		if(t > _data.OHCor_TDIS_TCON_Thr) { // Разница большая - уменьшаем перегрев. o = omin + d_curr * (ost - omin) / d_max
+			_data.tOverheat = (int32_t) _data.OverheatMin + t * (_data.OverHeatStart - _data.OverheatMin) / (OHCor_tdelta + OHCor_tdelta * _data.OHCor_TDIS_TCON_MAX / 100);
+		} else if(t < -_data.OHCor_TDIS_TCON_Thr) { // Разница маленькая - увеличиваем перегрев
+			if(_data.tOverheat > _data.OverHeatStart) _data.tOverheat = _data.OverHeatStart;
+			else _data.tOverheat = _data.OverheatMax;
 #ifdef DEBUG_MODWORK
-				journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)delta / 100.0, (float)_data.tOverheat / 100.0);
+			journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)OHCor_tdelta / 100.0, (float)_data.tOverheat / 100.0);
 #endif
-				return;
-			}
-		} else return;
-		if(t > _data.OverheatMax) t = _data.OverheatMax;
-		else if(t < _data.OverheatMin) t = _data.OverheatMin;
-		_data.tOverheat = t;
-*/
+		} else {
+			_data.tOverheat = _data.OverHeatStart;
+		}
+//		if(t > _data.OverheatMax) t = _data.OverheatMax;
+//		else if(t < _data.OverheatMin) t = _data.OverheatMin;
+//		_data.tOverheat = t;
 	}
 #endif
 }
@@ -915,16 +916,16 @@ void devEEV::CorrectOverheat(void)
 void devEEV::CorrectOverheatInit(void)
 {
     if(GETBIT(_data.flags, fCorrectOverHeat)) {    // Установка начального перегрева
-	    _data.tOverheat = _data.OHCor_OverHeatStart;
+	    _data.tOverheat = _data.OverHeatStart;
     }
 	OHCor_tdelta = 0;
 }
 
 void devEEV::after_load(void)
 {
-	if(HP.Option.ver == 128) { // Конвертация флагов
-		_data.flags = _data.reserved1;
-	}
+//	if(HP.Option.ver == 128) { // Конвертация флагов
+//		_data.flags = _data.reserved1;
+//	}
 #ifdef EEV_DEF
 	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
 #else
@@ -940,6 +941,7 @@ void devEEV::resetPID()
   pidw.pre_errPID = 0;
 #ifdef PID_FORMULA2
   pidw.PropOnMeasure = GETBIT(_data.flags, fPID_PropOnMeasure);
+  pidw.max = (int32_t) _data.pid_max * 1000 * 100;
 #else
   pidw.maxStep = EEV_MAX_STEP * 100;
 #endif
@@ -967,14 +969,17 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_TIME)==0){   _itoa(_data.pid_time,ret);
 	} else if(strcmp(var, eev_TARGET)==0){ _ftoa(ret,(float)_data.tOverheat/100,2);
 	} else if(strcmp(var, eev_KP)==0){     _ftoa(ret,(float)_data.pid.Kp / 1000,3);
+	} else if(strcmp(var, eev_PID2_delta)==0){ _ftoa(ret, (float)_data.pid2_delta/100, 2);
+	} else if(strcmp(var, eev_KP2)==0){    _ftoa(ret,(float)_data.pid2.Kp / 1000,3);
+	} else if(strcmp(var, eev_KI2)==0){	   _ftoa(ret,(float)_data.pid2.Ki / _data.pid_time / 1000,3);
+	} else if(strcmp(var, eev_KD2)==0){	   _ftoa(ret,(float)_data.pid2.Kd * _data.pid_time / 1000,3);
 #ifdef PID_FORMULA2
 	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)_data.pid.Ki / _data.pid_time / 1000,3);
 	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)_data.pid.Kd * _data.pid_time / 1000,3);
-	} else if(strcmp(var, eev_PID_dconserv)==0){ _ftoa(ret, (float)_data.pid_delta_coserv/100, 2);
 #else
 	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)_data.pid.Ki / 1000,3);
 	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)_data.pid.Kd / 1000,3);
-	} else if(strcmp(var, eev_ERR_KP)==0){ 	_ftoa(ret, (float)_data.pid_delta_coserv/100, 2);
+	} else if(strcmp(var, eev_ERR_KP)==0){ 	_ftoa(ret, (float)_data.pid2_delta/100, 2);
 #endif
 	} else if(strcmp(var, eev_CONST)==0){  _ftoa(ret,(float)_data.Correction/100,2);
 	} else if(strcmp(var, eev_MANUAL)==0){ _itoa(_data.manualStep,ret);
@@ -997,8 +1002,12 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_cDELTA)==0){ 	_ftoa(ret, (float)_data.OHCor_TDIS_TCON/100, 2);
 	} else if(strcmp(var, eev_cOH_MIN)==0){	_ftoa(ret, (float)_data.OverheatMin/100, 2);
 	} else if(strcmp(var, eev_cOH_MAX)==0){	_ftoa(ret, (float)_data.OverheatMax/100, 2);
-	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OHCor_OverHeatStart/100, 2);
+	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OverHeatStart/100, 2);
 	} else if(strcmp(var, eev_cOH_TDELTA)==0){if(OHCor_tdelta) _ftoa(ret, (float)OHCor_tdelta/100, 2); else strcat(ret, "-");
+	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OverHeatStart/100, 2);
+    } else if(strcmp(var, eev_cDELTA_Thr)==0){	_ftoa(ret, (float)(_data.OHCor_TDIS_TCON_Thr/100), 1);
+    } else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){	_itoa(_data.OHCor_TDIS_TCON_MAX, ret);
+    } else if(strcmp(var, eev_PID_MAX)==0){	_itoa(_data.pid_max, ret);
 	} else if(strcmp(var, eev_SPEED)==0){  	_itoa(_data.speedEEV, ret);
 	} else if(strcmp(var, eev_PRE_START_POS)==0){	_itoa(_data.preStartPos, ret);
 	} else if(strcmp(var, eev_START_POS)==0){    	_itoa(_data.StartPos, ret);
@@ -1035,31 +1044,45 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=(int)x; return true;} else return false;	// максимальное число шагов
 		return true;
 	} else if(strcmp(var, eev_TIME)==0){
-		if ((x>=1)&&(x<=1000)) { if(_data.pid_time!=x) resetPID(); SetTimePID(x, &_data.pid_time, _data.pid); return true;} else return false;	// секунды
+		if((x >= 1) && (x <= 1000)) {
+			if(_data.pid_time != x) {
+				UpdatePIDbyTime(x, _data.pid_time, _data.pid);
+				UpdatePIDbyTime(x, _data.pid_time, _data.pid2);
+				_data.pid_time = x;
+				resetPID();
+			}
+			return true;
+		} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
 		if ((x>0.0)&&(x<=50.0)) { if(_data.tOverheat!=x) resetPID(); _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
 	} else if(strcmp(var, eev_KP)==0){
-		if ((x>=0)&&(x<=32.7)) { if(_data.pid.Kp!=x) resetPID(); _data.pid.Kp=rd(x, 1000);return true;} else return false;	// сотые
+		_data.pid.Kp = rd(x, 1000); resetPID(); return true;
 	} else if(strcmp(var, eev_KI)==0){
-		if((x >= 0) && (x <= 32.7)) {
 #ifdef PID_FORMULA2
-			_data.pid.Ki = rd(x * _data.pid_time, 1000);
+		_data.pid.Ki = rd(x * _data.pid_time, 1000);
 #else
-			_data.pid.Ki = rd(x, 1000);
+		_data.pid.Ki = rd(x, 1000);
 #endif
-			resetPID();
-			return true;
-		} else return false; // сотые
+		resetPID();
+		return true;
 	} else if(strcmp(var, eev_KD) == 0) {
-		if((x >= 0) && (x <= 32.7)) {
 #ifdef PID_FORMULA2
-			_data.pid.Kd = rd(x / _data.pid_time, 1000);
+		_data.pid.Kd = rd(x / _data.pid_time, 1000);
 #else
-			_data.pid.Kd = rd(x, 1000);
+		_data.pid.Kd = rd(x, 1000);
 #endif
-			resetPID();
-			return true;
-		} else return false;	// сотые
+		resetPID();
+		return true;
+	} else if(strcmp(var, eev_KP2)==0){
+		_data.pid2.Kp = rd(x, 1000); resetPID(); return true;
+	} else if(strcmp(var, eev_KI2)==0){
+		_data.pid2.Ki = rd(x * _data.pid_time, 1000);
+		resetPID();
+		return true;
+	} else if(strcmp(var, eev_KD2) == 0) {
+		_data.pid2.Kd = rd(x / _data.pid_time, 1000);
+		resetPID();
+		return true;
 	} else if(strcmp(var, eev_CONST)==0){
 		if ((x>=-10.0)&&(x<=10.0)) { if(_data.Correction!=x) resetPID(); _data.Correction=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
@@ -1076,14 +1099,20 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if ((x>=0)&&(x<=10000)) { if(_data.OHCor_Period!=x) resetPID(); _data.OHCor_Period=x; return true;} else return false;	// циклы ЭРВ
 	} else if(strcmp(var, eev_cDELTA)==0){
 		if ((x>=-10.0)&&(x<=50.0)) {_data.OHCor_TDIS_TCON=rd(x, 100); return true;}else return false;	// сотые градуса
+	} else if(strcmp(var, eev_cDELTA_Thr)==0){
+		_data.OHCor_TDIS_TCON_Thr = rd(x, 100); return true; // сотые градуса
+	} else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){
+		_data.OHCor_TDIS_TCON_MAX = x; return true;
+	} else if(strcmp(var, eev_PID_MAX)==0){
+		_data.pid_max = x; return true;
 	} else if(strcmp(var, eev_cOH_MIN)==0){
 		if ((x>=0.0)&&(x<=50.0)) {_data.OverheatMin=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cOH_MAX)==0){
 		if ((x>=0.0)&&(x<=50.0)) {_data.OverheatMax=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cOH_START)==0){
-		if ((x>=0.0)&&(x<=50.0)) {_data.OHCor_OverHeatStart=rd(x, 100); return true;}else return false;	// сотые градуса
-	} else if(strcmp(var, eev_PID_dconserv)==0){
-		if ((x>=0.0)&&(x<=10.0)) {_data.pid_delta_coserv=rd(x, 100); return true;}else return false;	// сотые
+		if ((x>=0.0)&&(x<=50.0)) {_data.OverHeatStart=rd(x, 100); return true;}else return false;	// сотые градуса
+	} else if(strcmp(var, eev_PID2_delta)==0){
+		_data.pid2_delta=rd(x, 100); return true; // сотые
 	} else if(strcmp(var, eev_SPEED)==0){
 		if ((x>=5)&&(x<=120)) { if(_data.speedEEV!=x) _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
 	} else if(strcmp(var, eev_PRE_START_POS)==0){

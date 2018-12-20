@@ -535,7 +535,7 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Максимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MAX,Socket[thread].outBuf);STR_END; 
 
              strcat(Socket[thread].outBuf," Глобальные настройки:\r\n");
-             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_PID_dconserv,Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_PID2_delta,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Скорость шагового двигателя ЭРВ (импульсы в сек.): ");  HP.dEEV.get_paramEEV((char*)eev_SPEED,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"ПУСКОВАЯ позиция ЭРВ - то что при старте компрессора, при раскрутке (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_PRE_START_POS,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. позиция скоторой начинается работа ПИД (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_START_POS,Socket[thread].outBuf);STR_END; 
@@ -547,8 +547,6 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.dEEV.get_paramEEV((char*)eev_CLOSE,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.dEEV.get_paramEEV((char*)eev_START,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.dEEV.get_paramEEV((char*)eev_LIGHT_START,Socket[thread].outBuf);STR_END;
-
-             
          }
         #else 
             strcat(Socket[thread].outBuf,"\n  3.2 EEV absent \r\n");    
