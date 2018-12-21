@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav, by vad711 (vad7@yahoo.com)
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -33,62 +33,61 @@ const boolean _resume = false;  // Команда возобновления р�
 
 void HeatPump::initHeatPump()
 {
-  uint8_t i;
-  eraseError();
+	uint8_t i;
+	eraseError();
 
-  for(i=0;i<TNUMBER;i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
+	for(i = 0; i < TNUMBER; i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
 
-  #ifdef SENSOR_IP
-   for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
-  #endif
-  
-  sADC[PEVA].initSensorADC(PEVA,ADC_SENSOR_PEVA);          // Инициализация аналогово датчика PEVA
-  sADC[PCON].initSensorADC(PCON,ADC_SENSOR_PCON);          // Инициализация аналогово датчика TCON
+#ifdef SENSOR_IP
+	for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
+#endif
+	sADC[PEVA].initSensorADC(PEVA, ADC_SENSOR_PEVA, FILTER_SIZE);          // Инициализация аналогово датчика PEVA
+	sADC[PCON].initSensorADC(PCON, ADC_SENSOR_PCON, FILTER_SIZE);          // Инициализация аналогово датчика TCON
 #ifdef PGEO
-  sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO);			// Инициализация аналогово датчика PGEO
+	sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика PGEO
 #endif
 #ifdef POUT
-  sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT);			// Инициализация аналогово датчика POUT
+	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика POUT
 #endif
 
-  for(i=0;i<INUMBER;i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
-  for(i=0;i<FNUMBER;i++)  sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
-  for(i=0;i<RNUMBER;i++) dRelay[i].initRelay(i);           // Инициализация реле
+	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
+	for(i = 0; i < FNUMBER; i++) sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
+	for(i = 0; i < RNUMBER; i++) dRelay[i].initRelay(i);           // Инициализация реле
 
 #ifdef EEV_DEF
-  dEEV.initEEV();                                           // Инициализация ЭРВ
+	dEEV.initEEV();                                           // Инициализация ЭРВ
 #endif
 
-  // Инициалаизация модбаса  перед частотником и счетчиком
-  journal.jprintf("Init Modbus RTU via RS485:");  
-  if (Modbus.initModbus()==OK) journal.jprintf(" OK\r\n");//  выводим сообщение об установлении связи
-  else {journal.jprintf(" not present config\r\n");}         //  нет в конфигурации
+	// Инициалаизация модбаса  перед частотником и счетчиком
+	journal.jprintf("Init Modbus RTU via RS485:");
+	if(Modbus.initModbus() == OK) journal.jprintf(" OK\r\n");                //  выводим сообщение об установлении связи
+	else {
+		journal.jprintf(" not present config\r\n");
+	}         //  нет в конфигурации
 
-  dFC.initFC();                                              // Инициализация FC
-  #ifdef USE_ELECTROMETER_SDM
-   dSDM.initSDM();                                           // инициалаизация счетчика
-  #endif
-     message.initMessage();                                  // Инициализация Уведомлений
-  #ifdef MQTT
-     clMQTT.initMQTT();                                      // Инициализация MQTT
-  #endif
-  pidw_heat.maxStep = dFC.get_PidFreqStep() * 100;
-  pidw_boiler.maxStep = dFC.get_PidFreqStep() * 100;
-  resetSettingHP();                                          // все переменные
+	dFC.initFC();                                              // Инициализация FC
+#ifdef USE_ELECTROMETER_SDM
+	dSDM.initSDM();                                           // инициалаизация счетчика
+#endif
+	message.initMessage();                                  // Инициализация Уведомлений
+#ifdef MQTT
+	clMQTT.initMQTT();                                      // Инициализация MQTT
+#endif
+	resetSettingHP();                                          // все переменные
 }
 // Стереть последнюю ошибку
 void HeatPump::eraseError()
 {
- strcpy(note_error,"OK");          // Строка c описанием ошибки
- strcpy(source_error,"");          // Источник ошибки   
- error=OK;                         // Код ошибки
+	strcpy(note_error, "OK");          // Строка c описанием ошибки
+	strcpy(source_error, "");          // Источник ошибки
+	error = OK;                         // Код ошибки
 }
 
 // Получить число ошибок чтения ВСЕХ датчиков темпеартуры
 uint32_t HeatPump::get_errorReadDS18B20()
 {
 	uint32_t sum = 0;
-	for(uint8_t i=0; i<TNUMBER; i++) sum += sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
+	for(uint8_t i = 0; i < TNUMBER; i++) sum += sTemp[i].get_sumErrorRead();     // Суммирование ошибок по всем датчикам
 	return sum;
 }
 
@@ -228,6 +227,7 @@ int32_t HeatPump::save(void)
 	DateTime.saveTime = rtcSAM3X8.unixtime();   // запомнить время сохранения настроек
 	while(1) {
 		// Сохранить параметры и опции отопления и бойлер, уведомления
+		Option.ver = VER_SAVE;
 		if(save_struct(addr, (uint8_t *) &Option, sizeof(Option), crc)) break;
 		if(save_struct(addr, (uint8_t *) &DateTime, sizeof(DateTime), crc)) break;
 		if(save_struct(addr, (uint8_t *) &Network, sizeof(Network), crc)) break;
@@ -1495,19 +1495,21 @@ void HeatPump::Pump_HeatFloor(boolean On)
 // Генерятся задержки для защиты компрессора, есть задержки между включенимями насосов для уменьшения помех
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
-	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты)
-	if(b == old) return;                       // менять нечего выходим
+//	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты) ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
+//	if(b == old) return;                       // менять нечего выходим ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP                                // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
-	if((!b) && (old)) {
+#ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
+	if((!b) && (b!=dRelay[PUMP_IN].get_Relay())) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
 	}
-	// переключение насосов если есть что переключать (проверка была выше)
+	
+	if(b != dRelay[PUMP_IN].get_Relay()) {// переключение насосов если есть что переключать 
 	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                      // Задержка на d мсек
-	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old) && (dRelay[RPUMPO].get_Relay()
+	}
+	
+	if((!b) &&  (dRelay[RPUMPO].get_Relay() // пауза перед выключением насосов контуров, если нужно
 #ifdef RPUMPBH
 						|| dRelay[RPUMPBH].get_Relay()
 #endif
@@ -1517,7 +1519,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	}
 #else
 	// пауза перед выключением насосов контуров, если нужно
-	if((!b) && (old)) // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
+	if(!b)  // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 	{
 		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
@@ -1650,9 +1652,9 @@ int8_t HeatPump::StartResume(boolean start)
 	Status.ret=pNone;                                    // Состояние алгоритма
 	lastEEV=-1;                                          // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  небыло)
 
-	if (startPump)                                       // Проверка задачи насос
+	if (startPump)                                      // Если задача не остановлена то остановить (0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
 	{
-		startPump=false;                               // Поставить признак останова задачи насос
+		startPump=false;                                     // Поставить признак останова задачи насос
 		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n",(char*)__FUNCTION__);
 	}
 
@@ -1661,13 +1663,24 @@ int8_t HeatPump::StartResume(boolean start)
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
 	// Сбросить переменные пид регулятора
 	pidw_heat.pre_errPID = 0;
-	pidw_heat.temp_int = 0;
+	pidw_heat.sum = 0;
+#ifdef PID_FORMULA2
+	pidw_heat.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw_heat.max = (int32_t) dFC.get_PidFreqStep() * 1000;
+#else
+	pidw_heat.maxStep = 0;
+#endif
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
 	pidw_boiler.pre_errPID = 0;
-	pidw_boiler.temp_int = 0;
+	pidw_boiler.sum = 0;
+#ifdef PID_FORMULA2
+	pidw_boiler.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw_boiler.max = (int32_t) dFC.get_PidFreqStep() * 1000;
+#else
+	pidw_boiler.maxStep = 0;
+#endif
 	updatePidBoiler=0;                                   // время обновления ПИДа
-
 
 	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
 	if(!CheckAvailableWork())   // Нет работы для ТН - ничего не включено
@@ -2020,8 +2033,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(T < HP.Prof.Boiler.tempRBOILER) {
-			dRelay[RPUMPBH].set_ON();    // ГВС - включить
-		} else {
+			if(FEED > T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_ON();    // ГВС - включить
+			else if(FEED <= T) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat || !is_compressor_on()) {
 			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
 		}
 		return pCOMP_OFF;
@@ -2722,7 +2736,7 @@ void HeatPump::compressorON()
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
-			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
+			set_Error(ERR_COMP_NO_PUMP, (char*) dRelay[PUMP_IN].get_name());
 			return;
 		}
 #ifndef SUPERBOILER  // для супербойлера это лишнее
@@ -2731,8 +2745,8 @@ void HeatPump::compressorON()
 				|| dRelay[RPUMPBH].get_Relay()
 #endif
 		)) {
-			journal.jprintf(" WARNING! %s is off before start compressor!\n", "Out pump");
-			set_Error(ERR_COMP_NO_PUMP, (char*)__FUNCTION__);
+			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_OUT].get_name());
+			set_Error(ERR_COMP_NO_PUMP, (char*) dRelay[PUMP_OUT].get_name());
 			return;
 		}
 #endif
@@ -2767,7 +2781,8 @@ void HeatPump::compressorON()
 #ifdef DEFROST
    }  // if(mod!=pDEFROST)
 #endif	
-		COMPRESSOR_ON;                                        // Включить компрессор
+	  	command_completed = rtcSAM3X8.unixtime();
+	  	COMPRESSOR_ON;                                        // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
 		startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
 	} else { // if (get_errcode()==OK)
@@ -2834,14 +2849,14 @@ void HeatPump::compressorOFF()
   #else
     if (rtcSAM3X8.unixtime()-startCompressor<2*60) {return;journal.jprintf(MinPauseOnCompressor);}     // Обеспечение минимального времени работы компрессора 2 минуты
   #endif
-  
+
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
   dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ
   journal.jprintf(" Pause task update EEV\n"); 
   #endif
   
-  
+  command_completed = rtcSAM3X8.unixtime();
   COMPRESSOR_OFF;                                                     // Компрессор выключить
   stopCompressor=rtcSAM3X8.unixtime();                                // Запомнить время выключения компрессора
   
@@ -3095,7 +3110,7 @@ char *HeatPump::StateToStr()
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
 			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Ожид. Нагр";          // 1 Включить отопление
+			case  pHEAT:   return (char*)"Ожид. Нагр.";         // 1 Включить отопление
 			case  pCOOL:   return (char*)"Ожид. Охл.";          // 2 Включить охлаждение
 			case  pBOILER: return (char*)"Ожид. ГВС";           // 3 Включить бойлер
 			}
@@ -3352,49 +3367,73 @@ void HeatPump::Sun_OFF(void)
 #endif
 }
 
-//#define DEBUG_PID		// Отладка ПИДа
 // Уравнение ПИД регулятора в конечных разностях.
-// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
-// u(t) = P (t) + I (t) + D (t);
-// P (t) = Kp * e (t);
-// I (t) = I (t — 1) + Ki * e (t);
-// D (t) = Kd * {e (t) — e (t — 1)};
-// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-// errorPid - текущая ошибка ПИДа (может рассчитываться по разному по этому вынесена за функцию) в СОТЫХ
+// errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ
 // pid - настройки ПИДа
-// maxStep - максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
-// temp_int, pre_errPID - сумма для интегрирования и предыдущая ошибка для диференцирования
-// Выход управляющее воздействие (СОТЫХ)
-int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
+// sum, pre_errPID - сумма для расчета и предыдущая ошибка
+// Выход управляющее воздействие (в СОТЫХ)
+int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
+	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.temp_int, pidw.pre_errPID, pidw.maxStep);
+	journal.printf("PID(%x): %d, %d, %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pid.Kp, pid.Ki, pid.Kd);
 #endif
+#ifdef PID_FORMULA2
+	pidw.sum += pid.Ki * errorPid;
+	if(pidw.PropOnMeasure) {
+		pidw.sum -= pid.Kp * (pidw.pre_errPID - errorPid);
+		newVal = 0;
+	} else {
+		newVal = pid.Kp * errorPid;
+	}
+	if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+	else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
+	newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
+	if(newVal > pidw.max) newVal = pidw.max;
+	else if(newVal < -pidw.max) newVal = -pidw.max;
+#ifdef DEBUG_PID
+	journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
+#endif
+#else
+	// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
+	// u(t) = P (t) + I (t) + D (t);
+	// P (t) = Kp * e (t);
+	// I (t) = I (t — 1) + Ki * e (t);
+	// D (t) = Kd * {e (t) — e (t — 1)};
+	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
 	if(pid.Ki > 0)// Расчет интегральной составляющей
 	{
-		pidw.temp_int += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
+		pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
 		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-		if(pidw.temp_int > pidw.maxStep) pidw.temp_int = pidw.maxStep;
-		else if(pidw.temp_int < -pidw.maxStep) pidw.temp_int = -pidw.maxStep;
-	} else pidw.temp_int = 0;              // если Кi равен 0 то интегрирование не используем
-	int32_t newVal = pidw.temp_int;
+		if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
+		else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
+	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
+	newVal = pidw.sum;
 #ifdef DEBUG_PID
 	journal.printf("I=%d, ", newVal);
 #endif
-	// Дифференцальная составляющая
-	newVal += (int32_t) pid.Kd * (errorPid - pidw.pre_errPID);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
-#ifdef DEBUG_PID
-	journal.printf("+D=%d, ", newVal);
-#endif
 	// Пропорциональная составляющая
-	if(abs(errorPid) < pid.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pid.Kp_dmin; // Вблизи уменьшить воздействие
+	if(abs(errorPid) < pidw.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pidw.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 #ifdef DEBUG_PID
-	journal.printf("+P=%d\n", newVal);
+	journal.printf("+P=%d, ", newVal);
 #endif
-    if(newVal>101*100)  pidw.temp_int = 0;  // Обнулить инегральную если воздействие больше 1 шага или герца
-	newVal /= 100; // Учесть сотые коэффициента  выход в СОТЫХ
+	// Дифференцальная составляющая
+	newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+#ifdef DEBUG_PID
+	journal.printf("+D=%d\n", newVal);
+#endif
+#endif
+	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов, выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
+}
+
+void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid)
+{
+	if(new_time) {
+		pid.Ki = (int32_t) pid.Ki * new_time / curr_time;
+		pid.Kd = (int32_t) pid.Kd * curr_time / new_time;
+	}
 }

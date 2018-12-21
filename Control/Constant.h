@@ -35,7 +35,8 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.982 beta"        // Версия прошивки
+#define VERSION         "0.985 beta"        // Версия прошивки
+#define VER_SAVE		130					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -124,11 +125,11 @@ const uint16_t  defaultPort=80;
 // Времена и задержки
 #define cDELAY_DS1820      750             // мсек. Задержка для чтения DS1820 (время преобразования)
 #ifndef TIME_READ_SENSOR 
-#define TIME_READ_SENSOR  4000		      	 // мсек. Период опроса датчиков, к нему добавляется время DELAY_DS1820 и 1мсек * TNUMBER
+#define TIME_READ_SENSOR  4000		       // мсек. Период опроса датчиков
 #endif
 #define TIME_WEB_SERVER   5                // мсек. Период опроса web servera было 5
 #define TIME_CONTROL      (10*1000)        // мсек. Период управления тепловым насосом (цикл управления в режиме Гистерезис)
-#define TIME_EEV          (4*1000)         // мсек. Период управления ЭРВ (цикл управления)
+#define TIME_EEV          (4*1000)         // мсек. Период задачи vUpdateEEV в переходных состояниях ТН
 #define TIME_COMMAND      500              // мсек. Период разбора команд управления ТН (скорее пауза перед обработкой команды)
 #define TIME_I2C_UPDATE   (60*60)*1000     // мсек. Время обновления внутренних часов по I2С часам (если конечно нужно)
 #define TIME_MESSAGE_TEMP 300			   // 1/10 секунды, Проверка граничных температур для уведомлений
@@ -150,7 +151,6 @@ const uint16_t  defaultPort=80;
 #define I2C_ADR_DS2482_4     0x1B        // Адрес чипа OneWire на 4-ой шине I2C
 
 // --------------------------------------------------------------------------------------------------------------------------
-#define VER_SAVE					128			// Версия формата сохраняемых данных
 #ifdef  I2C_EEPROM_64KB
 // Стартовые адреса -----------------------------------------------------
 // КАРТА ПАМЯТИ в чипе i2c объемом 64 кбайта
@@ -224,6 +224,7 @@ const uint16_t  defaultPort=80;
 #define MAX_WEATHER       (42*100)       // Максимальная температура подачи при погодозависимости
 #define HYSTERESIS_RHEAD  20             // Гистерезис работы дополнительного тена отопления (вычитается из целевой) в сотых градуса
 #define HYSTERESIS_RBOILER 30            // Гистерезис работы дополнительного тена ГВС догрева (вычитается из целевой) в сотых градуса
+#define HYSTERESIS_BoilerTogetherHeat 20 // Гистерезис совместного нагрева бойлера с отоплением в сотых градуса
 #define SALLMONELA_DAY    3              // День когда включается алгоритм обеззараживания воды (Понедельник 1 воскресенье 7)
 #define SALLMONELA_HOUR   1              // Час когда включается алгоритм обеззараживания воды (должно быть 0 минут)
 #define SALLMONELA_TEMP   (70*100)       // Температура которая поддерживается для обеззараживания (сотые градуса)
@@ -476,15 +477,19 @@ const char *eev_POS           =  {"POS"};           // Положение ЭРВ
 const char *eev_POSp          =  {"POSp"};          // Положение ЭРВ %
 const char *eev_POSpp         =  {"POSpp"};         // Положение ЭРВ шаги+%
 const char *eev_OVERHEAT      =  {"OVERHEAT"};      // Текущий перегрев ЭРВ
-//const char *eev_OVERCOOL =  {"OVERCOOL"};    // Переохлаждение
 const char *eev_ERROR         =  {"ERROR"};         // Ошибка ЭРВ
 const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
 const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
-const char *eev_TIME          =  {"TIME"};          // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+const char *eev_TIME          =  {"TIME"};          // ПИД время в секундах ЭРВ СЕКУНДЫ
 const char *eev_TARGET        =  {"TARGET"};        // Перегрев ЦЕЛЬ (сотые градуса)
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.  В СОТЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
 const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_KP2           =  {"KP2"};           // ПИД Коэф пропорц.  В СОТЫХ!!!
+const char *eev_KI2           =  {"KI2"};           // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
+const char *eev_KD2           =  {"KD2"};           // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_PID2_delta	  =  {"P2D"};           // Дельта для консервативных вычислений ПИДа
+const char *eev_PID_MAX       =  {"PMAX"};          // ограничение ПИД в шагах ЭРВ
 const char *eev_CONST         =  {"CONST"};         // Корректировка перегрева (постоянная ошибка)
 const char *eev_MANUAL        =  {"MANUAL"};        // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 const char *eev_FREON         =  {"FREON"};         // Тип фреона
@@ -496,16 +501,18 @@ const char *eev_PINS          =  {"PINS"};          // Перечисление 
 const char *eev_cCORRECT      =  {"cCORRECT"};      // Флаг включения корректировки перегерва от разности температур конденсатора и испраителя
 const char *eev_cDELAY        =  {"cDELAY"};        // Задержка после старта компрессора, сек
 const char *eev_cPERIOD       =  {"cPERIOD"};       // Период в циклах ЭРВ, сколько пропустить
-const char *eev_cDELTA        =  {"cDELTA"};        // TDIS_TCON: Температура нагнетания - конденсации (сотые градуса)
-const char *eev_cPidKp        =  {"cPKp"};
-const char *eev_cPidKi        =  {"cPKi"};
-const char *eev_cPidKd        =  {"cPKd"};
-const char *eev_cPidKpdm      =  {"cPKpdm"};
-const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
+const char *eev_cDELTA        =  {"cD"};            // TDIS_TCON: Температура нагнетания - конденсации (сотые градуса)
+const char *eev_cDELTA_Thr    =  {"cDT"};           // Порог, после превышения которого начинаем менять перегрев, в сотых градуса
+const char *eev_cOH_cDELTA_MAX =  {"cDM"};     	    // верхняя граница для пропорционального увеличения перегрева, % от OHCor_TDIS_TCON
 const char *eev_cOH_MIN       =  {"cOH_MIN"};       // Минимальный перегрев (сотые градуса)
 const char *eev_cOH_START     =  {"cOH_START"};     // Стартовый перегрев (сотые градуса)
+const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
 const char *eev_cOH_TDELTA    =  {"cTDELTA"};     	// Расчитанная целевая дельта Нагнетание-Конденсации
+#ifdef PID_FORMULA2
+
+#else
 const char *eev_ERR_KP        =  {"ERR_KP"};        // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
+#endif
 const char *eev_SPEED         =  {"SPEED"};         // Скорость шагового двигателя ЭРВ (импульсы в сек.)
 const char *eev_PRE_START_POS =  {"PRE_START_POS"}; // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
 const char *eev_START_POS     =  {"START_POS"};     // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
@@ -513,13 +520,13 @@ const char *eev_DELAY_ON_PID  =  {"DELAY_ON_PID"};  // Задержка вклю
 const char *eev_DELAY_START_POS= {"DELAY_START_POS"};// Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
 const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
 const char *eev_DELAY_ON      =  {"DELAY_ON"};      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
-const char *eev_HOLD_MOTOR    =  {"HOLD_MOTOR"};    // Флаг удержания мотора
+const char *eev_HOLD_MOTOR    =  {"HM"};    		// Флаг удержания мотора
 const char *eev_PRESENT       =  {"PRESENT"};       // Флаг наличия ЭРВ в ТН
 const char *eev_SEEK_ZERO     =  {"ZERO"};          // Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
 const char *eev_CLOSE         =  {"CLOSE"};         // Флаг закрытие ЭРВ при выключении компрессора
 const char *eev_LIGHT_START   =  {"LIGHT_START"};   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
 const char *eev_START         =  {"START"};         // флаг Всегда начинать работу ЭРВ со стратовой позици
-
+const char *eev_PID_P_ON_M    =  {"POM"};           // флаг ПИД пропорционально измерению
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
@@ -767,6 +774,7 @@ const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура на
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора
+const char *option_fPIDAlg2           = {"PID2"};               // Алгоритм PID vad711, иначе pav2000.
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы
@@ -1246,18 +1254,26 @@ enum RULE_HP
 };
 
 struct PID_STRUCT {   		// Настройки ПИД регулятора
-	  uint16_t time;        // Постоянная интегрирования времени в секундах (в функции не используется, но лучше хранить в одном месте все настройки ПИДа)
-	  int16_t Kp;           // ПИД Коэф пропорц.  В СОТЫХ!!!
-	  int16_t Ki;           // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
-	  int16_t Kd;           // ПИД Коэф дифф.   В СОТЫХ!!!
-	  int16_t Kp_dmin;      // Разница (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ, актулаьно для ЭРВ
-};
+	  int16_t Kp;           // ПИД Коэф. пропорц, в тысячных
+	  int16_t Ki;           // ПИД Коэф. интегральный, в тысячных
+	  int16_t Kd;           // ПИД Коэф. дифференциальный,в тысячных
+} __attribute__((packed));
 
+#ifdef PID_FORMULA2
 struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
-	int32_t temp_int;		// сумма для интегрирования
-	int16_t pre_errPID;		// предыдущая ошибка для диференцирования
-	int32_t maxStep;		// максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
+	int32_t sum;			// сумма
+	int16_t pre_errPID;		// предыдущая ошибка для дифференцирования
+	boolean PropOnMeasure;  // ПИД пропорционально измерению, иначе пропорционально ошибке
+	int32_t max;
 };
+#else
+struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
+	int32_t sum;			// сумма
+	int16_t pre_errPID;		// предыдущая ошибка для дифференцирования
+	int32_t maxStep;		// максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
+    int16_t Kp_dmin;        // Разница (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
+};
+#endif
 
 #endif
 

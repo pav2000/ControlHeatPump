@@ -194,8 +194,8 @@ function GetChart() {
 
 window.onload = function() {
 	urlupdate = 2000;
-	loadParam("get_optionHP(TIME_CHART),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(PINS),get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(CONST),get_paramEEV(RULE),get_paramEEV(MANUAL)");
-	loadParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(TIME),get_paramEEV(TARGET),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cDELTA),get_paramEEV(cPKp),get_paramEEV(cPKi),get_paramEEV(cPKd),get_paramEEV(cPKpdm)");
+	loadParam("hide_pid,get_optionHP(TIME_CHART),get_paramEEV(NAME),get_paramEEV(NOTE),get_paramEEV(PINS),get_paramEEV(REMARK),get_paramEEV(FREON),get_paramEEV(CONST),get_paramEEV(RULE),get_paramEEV(MANUAL)");
+	loadParam("get_paramEEV(TIME),get_paramEEV(KP),get_paramEEV(KI),get_paramEEV(KD),get_paramEEV(cCORRECT),get_paramEEV(cDELAY),get_paramEEV(cPERIOD),get_paramEEV(cD),get_paramEEV(cDT),get_paramEEV(P2D),get_paramEEV(cDM),get_paramEEV(KP2),get_paramEEV(KI2),get_paramEEV(KD2),get_paramEEV(cOH_MIN),get_paramEEV(cOH_START),get_paramEEV(cOH_MAX)");
 	updateParam("get_paramEEV(POSpp),get_paramEEV(OVERHEAT),get_paramEEV(ERROR),get_paramEEV(TARGET),get_TCOMP_TCON,get_paramEEV(cTDELTA),get_Evapor");
 	GetChart();
 	$("#autoupdate").change(function(){
@@ -231,7 +231,7 @@ window.onload = function() {
         <select id="get_parameev-rule" onchange="setParam('get_paramEEV(RULE)');loadParam('get_paramEEV(REMARK)')"></select>
       </td>
       <td id="get_parameev-remark"></td>
-      <td nowrap><input id="get_parameev-const" type="number"  min="-5" max="5" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">" onclick="setParam('get_paramEEV(CONST)');"></td>
+      <td nowrap><input id="get_parameev-const" type="number"  min="-10" max="10" step="0.1" value="0"><input id="get_parameev-const2" type="submit" value=">" onclick="setParam('get_paramEEV(CONST)');"></td>
       <td>
         <select id="get_parameev-freon" onchange="setParam('get_paramEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
       </td>
@@ -279,20 +279,24 @@ window.onload = function() {
    <tr>
 	<th>Задержка после старта, сек</th>
 	<th>Период в циклах ЭРВ</th>
-	<th>Пропорциональная составляющая</th>
-	<th><a data-tooltip="Для пропорциональной составляющей, вблизи уменьшает воздействие до предела этой разницы.">Разница для мин. корректировки</a></th>
-	<th>Интегральная составляющая</th>
-	<th>Дифференциальная составляющая</th>
+	<th><a data-tooltip="При 30° конденсации, при 0° кипения и начальном перегреве">Разница Нагнетание - Конденсации</a></th>
+	<th>Порог разницы</th>
+	<th><a data-tooltip="Порог разницы Нагнетание - Конденсация для пропорционального изменения перегрева в %. Перегрев устанавливаетя пропорционально между мин. и нач. перегревом. Если разница меньше, то устанавливается нач. или макс. перегрев.">Макс. разница, %</a></th>
+	<th>Мин. перегрев, °C</th>
+	<th>Нач. (оптим.) перегрев, °C</th>
+	<th>Макс. перегрев, °C</th>
    </tr>
    </thead>
    <tbody>
    <tr>
 	<td nowrap><input id="get_parameev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDELAY)')"></td>
 	<td nowrap><input id="get_parameev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPERIOD)')"></td>
-	<td nowrap><input id="get_parameev-cpkp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKp)');"></td>
-	<td nowrap><input id="get_parameev-cpkpdm" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKpdm)');"></td>
-	<td nowrap><input id="get_parameev-cpki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKi)');"></td>
-	<td nowrap><input id="get_parameev-cpkd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cPKd)');"></td>
+	<td nowrap><input id="get_parameev-cd" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cD)')"></td>
+	<td nowrap><input id="get_parameev-cdt" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDT)')"></td>
+	<td nowrap><input id="get_parameev-cdm" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_paramEEV(cDM)')"></td>
+	<td nowrap><input id="get_parameev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MIN)')"></td>
+	<td nowrap><input id="get_parameev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_START)')"></td>
+	<td nowrap><input id="get_parameev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(cOH_MAX)')"></td>
    </tr>
  </tbody>
  </table>            
@@ -303,20 +307,25 @@ window.onload = function() {
    <table>
    <thead>
    <tr>
+	<th>Период расчета<br>[1...1000] сек.</th>
 	<th>Целевой перегрев</th>
-	<th>Время интегрирования<br>[1...1000] сек.</th>
-	<th><a data-tooltip="Представляет собой коэффициент усиления. Он определяет действие, прямо пропорциональное разнице между заданной температурой и фактической температурой перегрева. Данный параметр регулирует скорость работы вентиля в следующих единицах измерения: шаг/°C. Вентиль поворачивается на количество шагов, заданное параметром P4, при изменении температуры перегрева на сотую долю градуса: открывается или закрывается в зависимости от увеличения или уменьшения температуры перегрева. Кроме этого, данный параметр влияет на другие факторы регулирования и действителен как в условиях нормального регулирования, так и аварийных условиях. Чем больше значение параметра, тем быстрее и оперативнее изменяется положение вентиля (например, для систем с циклом CO2  значение параметра составляет 20). Чем меньше значение параметра, тем медленнее реагирует вентиль.">Пропорциональная <br>составляющая [0..50] шаг/°C</a></th>
-	<th><a data-tooltip="Представляет собой время, необходимое контроллеру для компенсации  разницы между заданной температурой и фактической температурой перегрева. На практике данный параметр ограничивает количество шагов, которое вентиль совершает каждую секунду. Данный параметр действителен только в условиях нормального регулирования, потому что специальные функции регулирования используют собственную интегральную составляющую. Чем больше значения параметра, тем медленней изменяется положение вентиля (например, для систем с циклом CO2  значение параметра составляет 400). Чем ниже значения параметра, тем быстрее и оперативнее изменяется положение вентиля. 0 ==> интегральная составляющая выключена">Интегральная <br>составляющая [0..50] шаг/°C</a></th>
-	<th><a data-tooltip="Оперативность реагирования вентиля на изменения температуры перегрева. Усиливает или уменьшает изменения температуры перегрева. Чем больше значения, тем больше изменения Чем ниже значения, тем меньше изменения. 0 ==> дифференциальное действие выключено">Дифференциальная <br>составляющая [0..50] шаг/°C</a></th>  
+	<th><a data-tooltip="Представляет собой коэффициент усиления. Чем больше значение параметра, тем быстрее и оперативнее изменяется положение вентиля. Чем меньше значение параметра, тем медленнее реагирует вентиль.">Пропорциональная <br>составляющая [0..32]</a></th>
+	<th><a data-tooltip="Интегрирующая составляющая пропорциональна интегралу по времени от отклонения регулируемой величины. Её используют для устранения статической ошибки. Она позволяет регулятору со временем учесть статическую ошибку.">Интегральная <br>составляющая [0..32]</a></th>
+	<th><a data-tooltip="Дифференцирующая составляющая пропорциональна темпу изменения отклонения регулируемой величины и предназначена для противодействия отклонениям от целевого значения, которые прогнозируются в будущем. Отклонения могут быть вызваны внешними возмущениями или запаздыванием воздействия регулятора на систему.">Дифференциальная <br>составляющая [0..32]</a></th>  
    </tr>
    </thead>
    <tbody>
    <tr>
-	<td nowrap><input id="get_parameev-target" type="number" min="0" max="20" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
 	<td nowrap><input id="get_parameev-time" type="number" min="1" max="1000" step="1"><input type="submit" value=">" onclick="setParam('get_paramEEV(TIME)');"></td>
-	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
-	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
-	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
+	<td nowrap><input id="get_parameev-target" type="number" min="0" max="50" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(TARGET)');"></td>
+	<td nowrap><input id="get_parameev-kp" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP)');"></td>
+	<td nowrap><input id="get_parameev-ki" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI)');"></td>
+	<td nowrap><input id="get_parameev-kd" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD)');"></td>
+   </tr>
+   <tr name="hide_pid"><td nowrap>Δ меньше:</td><td nowrap><input type="number" id="get_parameev-p2d" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramEEV(P2D)');"></td>
+	<td nowrap><input id="get_parameev-kp2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KP2)');"></td>
+	<td nowrap><input id="get_parameev-ki2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KI2)');"></td>
+	<td nowrap><input id="get_parameev-kd2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramEEV(KD2)');"></td>
    </tr>
  </tbody>
  </table>            

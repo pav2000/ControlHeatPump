@@ -510,17 +510,17 @@ void get_txtSettings(uint8_t thread)
 			 strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV3_D26,Socket[thread].outBuf);
 			 strcat(Socket[thread].outBuf," D");_itoa(PIN_EEV4_D27,Socket[thread].outBuf);STR_END;
 
-			 strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),Socket[thread].outBuf); STR_END;
-			 strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf); STR_END;
+			 strcat(Socket[thread].outBuf,"Минимальное положение (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_MIN, Socket[thread].outBuf);  STR_END;
+			 strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  HP.dEEV.get_paramEEV((char*)eev_MAX, Socket[thread].outBuf);  STR_END;
 			 strcat(Socket[thread].outBuf,"Формула перегрева: ");
  			 HP.dEEV.get_ruleEEVtext(Socket[thread].outBuf); STR_END;
-             strcat(Socket[thread].outBuf,"Целевой перегрев (C°): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_tOverheat()/100.0,2);   STR_END;
-             strcat(Socket[thread].outBuf,"Постоянная интегрирования времени (сек): ");  _itoa(HP.dEEV.get_timeIn(),Socket[thread].outBuf);  STR_END;
-             strcat(Socket[thread].outBuf,"Пропорциональная составляющая: ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Kpro()/100.0,2);STR_END;
-             strcat(Socket[thread].outBuf,"Интегральная составляющая: ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Kint()/10.0,1); STR_END;
-             strcat(Socket[thread].outBuf,"Дифференциальная составляющая: ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Kdif()/10.0,1); STR_END;
-             strcat(Socket[thread].outBuf,"Ручное управление, открытие ЭРВ (шаги): ");  _itoa(HP.dEEV.get_manualStep(),Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Поправка (C°): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Correction()/100.0,1);  STR_END;
+             strcat(Socket[thread].outBuf,"Целевой перегрев (C°): "); HP.dEEV.get_paramEEV((char*)eev_TARGET, Socket[thread].outBuf);  STR_END;
+             strcat(Socket[thread].outBuf,"ПИД, период (сек): ");  HP.dEEV.get_paramEEV((char*)eev_TIME, Socket[thread].outBuf);  STR_END;
+             strcat(Socket[thread].outBuf,"Пропорциональная составляющая: ");  HP.dEEV.get_paramEEV((char*)eev_KP, Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Интегральная составляющая: ");  HP.dEEV.get_paramEEV((char*)eev_KI, Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Дифференциальная составляющая: ");  HP.dEEV.get_paramEEV((char*)eev_KD, Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Ручное управление, открытие ЭРВ (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_MANUAL, Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Поправка (C°): ");  HP.dEEV.get_paramEEV((char*)eev_CONST, Socket[thread].outBuf); STR_END;
              strcat(Socket[thread].outBuf,"Используемый фреон: "); STR_END;
              strcat(Socket[thread].outBuf, noteFreon[HP.dEEV.get_typeFreon()]);
              strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");     _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
@@ -533,13 +533,9 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Стартовый перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_START,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Минимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MIN,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Максимальный перегрев (C°): ");  HP.dEEV.get_paramEEV((char*)eev_cOH_MAX,Socket[thread].outBuf);STR_END; 
-             strcat(Socket[thread].outBuf,"Пропорциональная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKp,Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Интегральная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKi,Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Дифференциальная составляющая: "); HP.dEEV.get_paramEEV((char*)eev_cPidKd,Socket[thread].outBuf); STR_END;
-             strcat(Socket[thread].outBuf,"Разница для мин. корректировки: "); HP.dEEV.get_paramEEV((char*)eev_cPidKpdm,Socket[thread].outBuf); STR_END;
 
              strcat(Socket[thread].outBuf," Глобальные настройки:\r\n");
-             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_ERR_KP,Socket[thread].outBuf);STR_END; 
+             strcat(Socket[thread].outBuf,"Ошибка при которой происходит уменьшение ПИД ЭРВ (C°): ");  HP.dEEV.get_paramEEV((char*)eev_PID2_delta,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Скорость шагового двигателя ЭРВ (импульсы в сек.): ");  HP.dEEV.get_paramEEV((char*)eev_SPEED,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"ПУСКОВАЯ позиция ЭРВ - то что при старте компрессора, при раскрутке (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_PRE_START_POS,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. позиция скоторой начинается работа ПИД (шаги): ");  HP.dEEV.get_paramEEV((char*)eev_START_POS,Socket[thread].outBuf);STR_END; 
@@ -551,8 +547,6 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.dEEV.get_paramEEV((char*)eev_CLOSE,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.dEEV.get_paramEEV((char*)eev_START,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.dEEV.get_paramEEV((char*)eev_LIGHT_START,Socket[thread].outBuf);STR_END;
-
-             
          }
         #else 
             strcat(Socket[thread].outBuf,"\n  3.2 EEV absent \r\n");    

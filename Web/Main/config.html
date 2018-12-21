@@ -7,8 +7,9 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_optionHP(ADD_HEAT),get_optionHP(HIST),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF),get_optionHP(LOGWS),get_optionHP(PAUSE)");
-		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI),get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4)");
+		loadParam("get_optionHP(ADD_HEAT),get_optionHP(HIST),get_presentRelay(RHEAT),get_optionHP(TEMP_RHEAT),get_optionHP(PUMP_WORK),get_optionHP(PUMP_PAUSE),get_optionHP(ATTEMPT),get_optionHP(ADD_HEAT),get_optionHP(BEEP),get_optionHP(NXT),get_optionHP(NXTS),get_optionHP(NXTD),get_optionHP(NXTW)");
+		loadParam("get_optionHP(DELAY_ON_PUMP),get_optionHP(DELAY_OFF_PUMP),get_optionHP(DELAY_START_RES),get_optionHP(DELAY_REPEAD_START),get_optionHP(DELAY_TRV),get_optionHP(),get_optionHP(DELAY_BOILER_SW),get_optionHP(DELAY_BOILER_OFF),get_optionHP(SDM_LOGER),get_optionHP(TEMP_EVI)");
+		loadParam("get_optionHP(TIME_CHART),get_optionHP(SAVE_ON),get_optionHP(SGL1W_2),get_optionHP(SGL1W_3),get_optionHP(SGL1W_4),get_optionHP(PID2),get_optionHP(SCG),get_optionHP(SCGT),get_optionHP(WSPIF),get_optionHP(LOGWS),get_optionHP(PAUSE)");
 	}; 
 	</script>
 </head>
@@ -52,6 +53,12 @@
 			<td>Запись истории на SD карту (раз в минуту) <sup>3</sup></td>
 			<td>
 				<input type="checkbox" id="get_optionhp-hist" onChange="setParam('get_optionHP(HIST)');">
+			</td>
+		</tr>
+		<tr>
+			<td>Другой алгоритм ПИД (vad7), иначе алгоритм pav2000</td>
+			<td>
+				<input type="checkbox" id="get_optionhp-pid2" onChange="setParam('get_optionHP(PID2)');">
 			</td>
 		</tr>
 		<tr>

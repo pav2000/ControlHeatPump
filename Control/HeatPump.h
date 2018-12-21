@@ -27,7 +27,8 @@
 #include "Scheduler.h"
 extern char *MAC2String(byte* mac);
 
-int16_t updatePID(int16_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
+int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
+void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid);
 
 /*/ Структура для хранения заголовка при сохранении настроек EEPROM
 struct type_headerEEPROM    // РАЗМЕР 1+1+2+2=6 байт
@@ -311,9 +312,9 @@ class HeatPump
    RULE_HP get_ruleHeat(){return Prof.Heat.Rule;}           // Получить алгоритм отопления
    boolean get_TargetCool(){return GETBIT(Prof.Cool.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
    boolean get_TargetHeat(){return GETBIT(Prof.Heat.flags,fTarget);}  // Получить цель 0 - Дом 1 - Обратка
-   uint16_t get_timeCool(){return Prof.Cool.pid.time;}      // Получить время интегрирования охлаждения
-   uint16_t get_timeHeat(){return Prof.Heat.pid.time;}      // Получить время интегрирования отопления
-   uint16_t get_timeBoiler(){return Prof.Boiler.pid.time;}  // Получить время интегрирования ГВС
+   uint16_t get_timeCool(){return Prof.Cool.pid_time;}      // Получить время интегрирования охлаждения
+   uint16_t get_timeHeat(){return Prof.Heat.pid_time;}      // Получить время интегрирования отопления
+   uint16_t get_timeBoiler(){return Prof.Boiler.pid_time;}  // Получить время интегрирования ГВС
    
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления
