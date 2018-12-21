@@ -333,7 +333,6 @@ private:
 	void resetPID();                                       // Сброс пид регулятора
 
 	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
-	uint8_t pid2_work;
 	uint16_t Pid_start;                                    // откуда стартует ПИД регулятор обновление в функции Resume
 	int16_t Overheat;                                      // Перегрев текущий (сотые градуса)
 	int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации

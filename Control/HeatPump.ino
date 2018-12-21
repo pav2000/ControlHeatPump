@@ -1665,8 +1665,8 @@ int8_t HeatPump::StartResume(boolean start)
 	pidw_heat.pre_errPID = 0;
 	pidw_heat.sum = 0;
 #ifdef PID_FORMULA2
-	pidw_heat.PropOnMeasure = false;
-	pidw_heat.max = (int32_t) dFC.get_maxFreq() * 1000 * 100;
+	pidw_heat.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw_heat.max = (int32_t) dFC.get_PidFreqStep() * 1000;
 #else
 	pidw_heat.maxStep = 0;
 #endif
@@ -1675,13 +1675,12 @@ int8_t HeatPump::StartResume(boolean start)
 	pidw_boiler.pre_errPID = 0;
 	pidw_boiler.sum = 0;
 #ifdef PID_FORMULA2
-	pidw_boiler.PropOnMeasure = false;
-	pidw_boiler.max = (int32_t) dFC.get_maxFreqBoiler() * 1000 * 100;
+	pidw_boiler.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw_boiler.max = (int32_t) dFC.get_PidFreqStep() * 1000;
 #else
 	pidw_boiler.maxStep = 0;
 #endif
 	updatePidBoiler=0;                                   // время обновления ПИДа
-
 
 	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
 	if(!CheckAvailableWork())   // Нет работы для ТН - ничего не включено
@@ -3377,7 +3376,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID);
+	journal.printf("PID(%x): %d, %d, %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pid.Kp, pid.Ki, pid.Kd);
 #endif
 #ifdef PID_FORMULA2
 	pidw.sum += pid.Ki * errorPid;

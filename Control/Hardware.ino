@@ -830,8 +830,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 	case TCOMPIN_PEVA:
 #endif
 		newEEV = _data.tOverheat - Overheat;
-		pid2_work = abs(newEEV) < _data.pid2_delta;
-		newEEV = EEV - round_div_int16(updatePID(newEEV, pid2_work ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+		newEEV = EEV - round_div_int16(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 		// Проверка управляющего воздействия, возможно отказ ЭРВ
 	#ifndef DEMO
 		if(newEEV < _data.minSteps) {
@@ -896,10 +895,12 @@ void devEEV::CorrectOverheat(void)
 		OverHeatCor_period = 0;
 		t = (HP.sTemp[TCOMP].get_Temp() - t) - OHCor_tdelta;
 		if(t > _data.OHCor_TDIS_TCON_Thr) { // Разница большая - уменьшаем перегрев. o = omin + d_curr * (ost - omin) / d_max
-			_data.tOverheat = (int32_t) _data.OverheatMin + t * (_data.OverHeatStart - _data.OverheatMin) / (OHCor_tdelta + OHCor_tdelta * _data.OHCor_TDIS_TCON_MAX / 100);
+			t2 = (int32_t) OHCor_tdelta + OHCor_tdelta * _data.OHCor_TDIS_TCON_MAX / 100;
+			if(t >= t2) _data.tOverheat = _data.OverHeatStart;
+			else _data.tOverheat = (int32_t) _data.OverheatMin + t * (_data.OverHeatStart - _data.OverheatMin) / t2;
 		} else if(t < -_data.OHCor_TDIS_TCON_Thr) { // Разница маленькая - увеличиваем перегрев
-			if(_data.tOverheat > _data.OverHeatStart) _data.tOverheat = _data.OverHeatStart;
-			else _data.tOverheat = _data.OverheatMax;
+			if(_data.tOverheat >= _data.OverHeatStart) _data.tOverheat = _data.OverheatMax;
+			else _data.tOverheat = _data.OverHeatStart;
 #ifdef DEBUG_MODWORK
 			journal.jprintf("OHCor: delta too low: %.2f, set ОН: %.2f\n", (float)OHCor_tdelta / 100.0, (float)_data.tOverheat / 100.0);
 #endif
@@ -923,9 +924,10 @@ void devEEV::CorrectOverheatInit(void)
 
 void devEEV::after_load(void)
 {
-//	if(HP.Option.ver == 128) { // Конвертация флагов
-//		_data.flags = _data.reserved1;
-//	}
+	if(HP.Option.ver == 128) { // Конвертация флагов
+		_data.flags = _data.OHCor_TDIS_TCON_MAX;
+		_data.OHCor_TDIS_TCON_MAX = 50;
+	}
 #ifdef EEV_DEF
 	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
 #else
