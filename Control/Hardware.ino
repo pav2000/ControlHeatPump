@@ -895,9 +895,14 @@ void devEEV::CorrectOverheat(void)
 		OverHeatCor_period = 0;
 		t = (HP.sTemp[TCOMP].get_Temp() - t) - OHCor_tdelta;
 		if(t > _data.OHCor_TDIS_TCON_Thr) { // Разница большая - уменьшаем перегрев. o = omin + d_curr * (ost - omin) / d_max
-			t2 = (int32_t) OHCor_tdelta + OHCor_tdelta * _data.OHCor_TDIS_TCON_MAX / 100;
-			if(t >= t2) _data.tOverheat = _data.OverHeatStart;
-			else _data.tOverheat = (int32_t) _data.OverheatMin + t * (_data.OverHeatStart - _data.OverheatMin) / t2;
+			if(OHCor_tdelta_prev <= OHCor_tdelta) { // дельта не изменилась или растет
+				t2 = (int32_t) OHCor_tdelta + OHCor_tdelta * _data.OHCor_TDIS_TCON_MAX / 100;
+				if(t >= t2) {
+					_data.tOverheat = _data.OverHeatStart;
+				} else {
+					_data.tOverheat = (int32_t) _data.OverheatMin + t * (_data.OverHeatStart - _data.OverheatMin) / t2;
+				}
+			}
 		} else if(t < -_data.OHCor_TDIS_TCON_Thr) { // Разница маленькая - увеличиваем перегрев
 			if(_data.tOverheat >= _data.OverHeatStart) _data.tOverheat = _data.OverheatMax;
 			else _data.tOverheat = _data.OverHeatStart;
@@ -907,6 +912,7 @@ void devEEV::CorrectOverheat(void)
 		} else {
 			_data.tOverheat = _data.OverHeatStart;
 		}
+		OHCor_tdelta_prev = OHCor_tdelta;
 //		if(t > _data.OverheatMax) t = _data.OverheatMax;
 //		else if(t < _data.OverheatMin) t = _data.OverheatMin;
 //		_data.tOverheat = t;
