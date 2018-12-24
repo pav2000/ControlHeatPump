@@ -863,30 +863,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
          strcat(strReturn,"0" WEBDELIM);continue;
         #endif 
        }   
-//      if (strcmp(str,"set_testStat")==0)  // сгенерить тестовые данные статистики ОЧИСТКА СТАРЫХ ДАННЫХ!!!!!
-//       {
-//       #ifdef I2C_EEPROM_64KB  // рабоатет на выключенном ТН
-//       if (HP.get_modWork()==pOFF)
-//       {
-//         HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-//         strcat(strReturn,"Generation of test data - OK" WEBDELIM);
-//       }
-//       else strcat(strReturn,"The heat pump must be switched OFF" WEBDELIM);
-//       #else
-//       strcat(strReturn,NO_STAT);
-//       #endif
-//       continue;
-//       }
-//     if (strcmp(str,"get_infoStat")==0)  // Получить информацию о статистике
-//       {
-//       #ifdef I2C_EEPROM_64KB
-//       HP.Stat.get_Info(strReturn,true);
-//       #else
-//       strcat(strReturn,NO_STAT) ;
-//       #endif
-//       ADD_WEBDELIM(strReturn) ;
-//       continue;
-//       }
 
      if(strcmp(str, "get_TrgT") == 0) { // целевая температура
     	 HP.getTargetTempStr(strReturn + m_strlen(strReturn));
@@ -943,12 +919,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			#else
     			strcat(strReturn,"1");
 			#endif
-    	} else if(strcmp(str, "pid") == 0) { // hide: PID2
+    	} else if(strcmp(str, "pid2") == 0) { // hide: PID2
 			#ifdef PID_FORMULA2
     			strcat(strReturn,"0");
 			#else
     			strcat(strReturn,"1");
 			#endif
+    	} else if(strcmp(str, "EEVpid") == 0) { //  hide_EEVpid
+			strcat(strReturn, GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? "1" : "0");
     	}
     	ADD_WEBDELIM(strReturn); continue;
      }
@@ -1242,6 +1220,14 @@ void parserGET(char *buf, char *strReturn, int8_t )
        if(strcmp(str, "get_OverCool") == 0) {
            _ftoa(strReturn, HP.get_overcool() / 100.0, 2);
            ADD_WEBDELIM(strReturn);
+           continue;
+       }
+       if(strcmp(str, "get_OverHeat") == 0) { // Выводит 2 перегрева сразу
+#ifdef TCOMPIN
+    	   m_snprintf(strReturn + m_strlen(strReturn), 32, "%.2f (%.2f)" WEBDELIM, (float)(HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat()) / 100, (float)(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat()) / 100);
+#else
+    	   m_snprintf(strReturn + m_strlen(strReturn), 32, "%.2f" WEBDELIM, (float)HP.dEEV.get_Overheat() / 100);
+#endif
            continue;
        }
        if(strcmp(str, "get_Evapor") == 0) {
@@ -1605,12 +1591,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
        if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
-              if (strcmp(str,"get_paramEEV")==0)           // Функция get_paramEEV - получить значение параметра ЭРВ
+              if (strcmp(str,"get_pEEV")==0)           // Функция get_pEEV - получить значение параметра ЭРВ
                   {
                   HP.dEEV.get_paramEEV(x+1,strReturn);	
                   ADD_WEBDELIM(strReturn); continue;
                   }
-               else if (strcmp(str,"set_paramEEV")==0)    // Функция set_paramEEV - установить значение паремтра ЭРВ 
+               else if (strcmp(str,"set_pEEV")==0)    // Функция set_pEEV - установить значение паремтра ЭРВ
                   {
                   if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
                     if (HP.dEEV.set_paramEEV(x+1,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);

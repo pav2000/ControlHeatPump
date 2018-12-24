@@ -35,8 +35,8 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.985 beta"        // Версия прошивки
-#define VER_SAVE		130					// Версия формата сохраняемых данных в I2C память
+#define VERSION         "0.986 beta"        // Версия прошивки
+#define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
 #endif
@@ -203,16 +203,20 @@ const uint16_t  defaultPort=80;
 
 // ------------------- EEV ----------------------------------
 // Константы фаз движения ЭРВ, три варианта (константы вариантов не менять!)
-    #define PHASE_4       0              // 4 фазы, шаг
-    #define PHASE_8       1              // 8 фаз,  шаг
-    #define PHASE_8s      2              // 8 фаз, полушаг основной вариант (pav2000)
+#define PHASE_4       0              // 4 фазы, шаг
+#define PHASE_8       1              // 8 фаз,  шаг
+#define PHASE_8s      2              // 8 фаз, полушаг основной вариант (pav2000)
 
-	#ifndef DEFAULT_RULE_EEV
-		#define DEFAULT_RULE_EEV   0			  // Формула по умолчанию
-		#define DEFAULT_FREON_TYPE 0 			  // Типа фрона по умолчанию
-		#define DEFAULT_OVERHEAT   400			  // Перегрев по умолчанию (сотые градуса)
-	#endif
-	#define EEV_MAX_STEP  300            // Максимальный вклад интегральной составляющей в СОТЫХ шага
+#ifndef DEFAULT_RULE_EEV
+	#define DEFAULT_RULE_EEV   0			  // Формула по умолчанию
+	#define DEFAULT_FREON_TYPE 0 			  // Типа фрона по умолчанию
+	#define DEFAULT_OVERHEAT   400			  // Перегрев по умолчанию (сотые градуса)
+#endif
+#define EEV_MAX_STEP			300         // Максимальный вклад интегральной составляющей в СОТЫХ шага
+
+#define EEV_START_POS_LOW_TEMP	1000		// Нижняя граница температура для установки позиции при старте, в стотых
+#define EEV_START_POS_HIGH_TEMP	4500		// Верхняя граница температура для установки позиции при старте, в стотых
+#define EEV_STAT_ARRAY_SIZE		4
 
 // ----------------------- EVI ------------------------------
 #define EVI_TEMP_CON      4000           // Температура кондесатора для включения EVI
@@ -472,7 +476,7 @@ const char *MutexWebThreadBuzy={"WebThread"};
 const char *MutexSPIBuzy=      {"SPI"}; 
 const char *MutexCommandBuzy = {"Command"}; 
 
-// Описание имен параметров ЭРВ для функций get_paramEEV set_paramEEV
+// Описание имен параметров ЭРВ для функций get_pEEV set_pEEV
 const char *eev_POS           =  {"POS"};           // Положение ЭРВ шаги
 const char *eev_POSp          =  {"POSp"};          // Положение ЭРВ %
 const char *eev_POSpp         =  {"POSpp"};         // Положение ЭРВ шаги+%
@@ -482,6 +486,8 @@ const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
 const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
 const char *eev_TIME          =  {"TIME"};          // ПИД время в секундах ЭРВ СЕКУНДЫ
 const char *eev_TARGET        =  {"TARGET"};        // Перегрев ЦЕЛЬ (сотые градуса)
+const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев цуль (сотые градуса)
+const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев цуль (сотые градуса)
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.  В СОТЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
 const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.   В СОТЫХ!!!
@@ -508,25 +514,26 @@ const char *eev_cOH_MIN       =  {"cOH_MIN"};       // Минимальный п
 const char *eev_cOH_START     =  {"cOH_START"};     // Стартовый перегрев (сотые градуса)
 const char *eev_cOH_MAX       =  {"cOH_MAX"};       // Максимальный перегрев (сотые градуса)
 const char *eev_cOH_TDELTA    =  {"cTDELTA"};     	// Расчитанная целевая дельта Нагнетание-Конденсации
-#ifdef PID_FORMULA2
-
-#else
+#ifndef PID_FORMULA2
 const char *eev_ERR_KP        =  {"ERR_KP"};        // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
 #endif
 const char *eev_SPEED         =  {"SPEED"};         // Скорость шагового двигателя ЭРВ (импульсы в сек.)
-const char *eev_PRE_START_POS =  {"PRE_START_POS"}; // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
-const char *eev_START_POS     =  {"START_POS"};     // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
-const char *eev_DELAY_ON_PID  =  {"DELAY_ON_PID"};  // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
-const char *eev_DELAY_START_POS= {"DELAY_START_POS"};// Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
-const char *eev_DELAY_OFF     =  {"DELAY_OFF"};     // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
-const char *eev_DELAY_ON      =  {"DELAY_ON"};      // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
+const char *eev_PRE_START_POS =  {"PSP"};           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
+const char *eev_START_POS     =  {"SP"};            // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+const char *eev_DELAY_ON_PID  =  {"DOP"};           // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
+const char *eev_DELAY_START_POS= {"DSP"};           // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
+const char *eev_DELAY_OFF     =  {"DOFF"};          // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
+const char *eev_DELAY_ON      =  {"DON"};           // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
 const char *eev_HOLD_MOTOR    =  {"HM"};    		// Флаг удержания мотора
 const char *eev_PRESENT       =  {"PRESENT"};       // Флаг наличия ЭРВ в ТН
 const char *eev_SEEK_ZERO     =  {"ZERO"};          // Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
 const char *eev_CLOSE         =  {"CLOSE"};         // Флаг закрытие ЭРВ при выключении компрессора
-const char *eev_LIGHT_START   =  {"LIGHT_START"};   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+const char *eev_LIGHT_START   =  {"LST"};           // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
 const char *eev_START         =  {"START"};         // флаг Всегда начинать работу ЭРВ со стратовой позици
 const char *eev_PID_P_ON_M    =  {"POM"};           // флаг ПИД пропорционально измерению
+const char *eev_fEEVStartPosByTemp = {"SPT"};		// флаг fEEVStartPosByTemp
+const char *eev_PosAtHighTemp  = {"PHT"};			// PosAtHighTemp
+const char *eev_fEEV_DirectAlgorithm = {"DIR"};		// флаг fEEV_DirectAlgorithm
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента

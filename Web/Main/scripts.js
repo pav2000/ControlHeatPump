@@ -1,4 +1,4 @@
-/* ver 0.985 beta */
+/* ver 0.986 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -137,8 +137,8 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(/[(]SCHEDULER[)]/.test(values[0])) type = "scheduler"; // расписание бойлера
 								else if(/Calendar/.test(values[0])) type = "calendar"; // расписание
 								else if(/et_modbus_/.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/^set_paramEEV[(]POS/)) {
-									var s = "get_parameev-pos";
+								else if(values[0].match(/^set_pEEV[(]POS/)) {
+									var s = "get_peev-pos";
 									if(values[0].substr(-1) == 'p') s += "p";  
 									if((element = document.getElementById(s))) element.value = values[1];
 									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
@@ -160,6 +160,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											toggleclass('thingspeakon', onoff);
 											toggleclass('thingspeakoff', !onoff);
 										} 
+										element = document.getElementById(valueid + "-hide");
+										if(element) element.style = "display:" + (onoff ? "inline" : "none");
 										continue;
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
@@ -639,8 +641,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									for(var j = 0; j < elements.length; j++) elements[j].disabled = onoff;
 									var elements = document.getElementsByName('relay');
 									for(var j = 0; j < elements.length; j++) elements[j].disabled = onoff;
-									if((element=document.getElementById('get_parameev-pos'))) element.disabled = onoff;
-									if((element=document.getElementById('get_parameev-posp'))) element.disabled = onoff;
+									if((element=document.getElementById('get_peev-pos'))) element.disabled = onoff;
+									if((element=document.getElementById('get_peev-posp'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eev'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eevp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;

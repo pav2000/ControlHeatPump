@@ -947,3 +947,4 @@ int32_t round_div_int32(int32_t value, int16_t div)
 	}
 	return value / div;
 }
+
