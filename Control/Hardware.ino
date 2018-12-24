@@ -847,7 +847,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			if(trend == 0) newEEV = 1;
 			else {
 				if(trend == 1) {
-					newEEV = -(int32_t)newEEV * _data.pid.Kp / (100*1000);
+					newEEV = -(int32_t)Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] * _data.pid.Kp / (100*1000);
 					StatInit -= 2; // Считаем 2 итерации
 				}
 			}
@@ -855,7 +855,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			if(trend == 0) newEEV = -1;
 			else {
 				if(trend == -1) {
-					newEEV = -(int32_t)newEEV * _data.pid.Kp / (100*1000);
+					newEEV = -(int32_t)Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] * _data.pid.Kp / (100*1000);
 					StatInit -= 2; // Считаем 2 итерации
 				}
 			}
@@ -870,12 +870,12 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			if(OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1] < -_data.tOverheatTCOMP_delta) {
 				if(trend >= 0) {
 					newEEV = 1;
-					StatInit -= 2; // Считаем 2 итерации
+					StatInit2 -= 2; // Считаем 2 итерации
 				}
 			} else if(OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1] > _data.tOverheatTCOMP_delta) {
 				if(trend <= 0) {
 					newEEV = -1;
-					StatInit -= 2; // Считаем 2 итерации
+					StatInit2 -= 2; // Считаем 2 итерации
 				}
 			}
 		}
