@@ -1159,7 +1159,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
 
-        strcat(strReturn,"<b> Счетчики ошибок</b>|;");     
+        strcat(strReturn,"<b> Счетчики ошибок</b>|;");
         strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
             if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
         strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>3</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
@@ -1175,7 +1175,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
    
-        strcat(strReturn,"<b> Глобальные счетчики (с момента монтажа ТН)</b>|;");   
+        strcat(strReturn,"<b> Глобальные счетчики (с момента монтажа ТН)</b>|;");
         strcat(strReturn,"Время сброса счетчиков с момента монтажа|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
@@ -1186,7 +1186,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
         if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента монтажа (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
         #endif
 
-        strcat(strReturn,"<b> Сезонные счетчики</b>|;");  
+        strcat(strReturn,"<b> Сезонные счетчики</b>|;");
         strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
         strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
         strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
@@ -1223,10 +1223,15 @@ void parserGET(char *buf, char *strReturn, int8_t )
            continue;
        }
        if(strcmp(str, "get_OverHeat") == 0) { // Выводит 2 перегрева сразу
+    	   _ftoa(strReturn, (float)HP.dEEV.get_Overheat() / 100, 2);
 #ifdef TCOMPIN
-    	   m_snprintf(strReturn + m_strlen(strReturn), 32, "%.2f (%.2f)" WEBDELIM, (float)(HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat()) / 100, (float)(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat()) / 100);
+    	   if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA) {
+    		   strcat(strReturn," (");
+    		   _ftoa(strReturn, (float)HP.dEEV.OverheatTCOMP / 100, 2);
+    		   strcat(strReturn,")" WEBDELIM);
+    	   }
 #else
-    	   m_snprintf(strReturn + m_strlen(strReturn), 32, "%.2f" WEBDELIM, (float)HP.dEEV.get_Overheat() / 100);
+           ADD_WEBDELIM(strReturn);
 #endif
            continue;
        }
@@ -1581,13 +1586,13 @@ void parserGET(char *buf, char *strReturn, int8_t )
    //       { strcat(strReturn,"E04");ADD_WEBDELIM(strReturn);  continue;  }
          } else z=NULL; // "=" - не обнаружено, значит значение пустая строка
          
-        // --------------------------------НОВЫЙ ПАРСЕР ------------------------------------------------------------------- 
+        // --------------------------------НОВЫЙ ПАРСЕР -------------------------------------------------------------------
         // Вот сюда будет вставлятся код нового парсера (который не будет кодировать параметры в целые числа)
         // ВХОД str - полное имя запроса до (), x+1 - содержит строку (имя параметра), z+1 - после = (значение), pm - флоат z+1
         // ВЫХОД strReturn  надо Добавлять + в конце &
         x[0]=0;   // Стираем скобку "("  строка х+1 содержит параметр а str содержит имя запроса
 
-       // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------    
+       // 1. Проверка для запросов содержащих EEV  ----------------------------------------------------
        if (strstr(str,"EEV"))          
               {
               #ifdef EEV_DEF 
@@ -1600,7 +1605,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
                   {
                   if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
                     if (HP.dEEV.set_paramEEV(x+1,pm)) HP.dEEV.get_paramEEV(x+1,strReturn);
-                    else  strcat(strReturn,"E11");  // выход за диапазон значений   
+                    else  strcat(strReturn,"E11");  // выход за диапазон значений
                   } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
                   ADD_WEBDELIM(strReturn) ;
                   continue;	 
@@ -1610,7 +1615,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
                strcat(strReturn,"no support EEV" WEBDELIM);  continue;
               #endif   
               }  //  if (strstr(str,"EEV"))    
-          // 2. Проверка для запросов содержащих MQTT --------------------------------------------- 
+          // 2. Проверка для запросов содержащих MQTT ---------------------------------------------
               if (strstr(str,"MQTT"))          // Проверка для запросов содержащих MQTT
               {
 			   #ifdef MQTT
@@ -1627,7 +1632,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				#endif
                } //if ((strstr(str,"MQTT")>0)
           
-           // 3. Расписание -------------------------------------------------------- 
+           // 3. Расписание --------------------------------------------------------
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
 			if(strstr(str,"SCHDLR")) { // Класс Scheduler
 				x++;
@@ -1662,7 +1667,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
 				ADD_WEBDELIM(strReturn); continue;
 			}
 
-            // 5.  Настройки профилей ---------------------------------------------------------         
+            // 5.  Настройки профилей ---------------------------------------------------------
 			if(strstr(str, "Profile"))          // Проверка для запросов содержащих Profile
 			{
 				if(strcmp(str, "get_Profile") == 0)           // Функция получить настройки профиля
@@ -2484,7 +2489,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 #define emptyStr			WEB_HEADER_END  		 // пустая строка после которой начинаются данные
 #define MAX_FILE_LEN		64  	                 // максимальная длина имени файла
 const char Title[]          = {"Title: "};           // где лежит имя файла
-const char Length[]         = {"Content-Length: "};  // где лежит длина файла 
+const char Length[]         = {"Content-Length: "};  // где лежит длина файла
 const char SETTINGS[]       = {"*SETTINGS*"};        // Идентификатор передачи настроек (лежит в Title:)
 const char LOAD_START[]     = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды (лежит в Title:)
 const char LOAD_END[]       = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды (лежит в Title:)
@@ -2588,10 +2593,10 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 // Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
 // Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
 // Входные параметры:
-// nameFile - имя файла 
+// nameFile - имя файла
 // lenFile - общая длина файла
 // thread - поток веб сервера,котрый обрабатывает post запрос
-// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr. 
+// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr.
 // sizeBuf - размер данных в буфере ptr (по сети осталось принять lenFile-sizeBuf)
 uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf)
 {
