@@ -825,12 +825,11 @@ int8_t devEEV::Update(void) //boolean fHeating)
 
 	if(!GETBIT(_data.flags, fPresent)) return err;  // если ЭРВ нет то ничего не делаем
 	if(fPause) return err;    // если пауза то выходим
-
-	int16_t newEEV;           // Изменение положения ЭРВ
+	int16_t newEEV = 0;
 	if(GETBIT(_data.flags, fEEV_DirectAlgorithm)) {
 #if defined(TCOMPIN)
 		Overheat_Stat[0] = Overheat_Stat[1]; Overheat_Stat[1] = Overheat_Stat[2]; Overheat_Stat[2] = Overheat_Stat[3];
-		Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] = newEEV = _data.tOverheat - Overheat;
+		Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] = _data.tOverheat - Overheat;
 		OverheatTCOMP_Stat[0] = OverheatTCOMP_Stat[1]; OverheatTCOMP_Stat[1] = OverheatTCOMP_Stat[2]; OverheatTCOMP_Stat[2] = OverheatTCOMP_Stat[3];
 		OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1] = _data.tOverheatTCOMP - OverheatTCOMP;
 		if(StatInit2 < EEV_STAT_ARRAY_SIZE - 1) StatInit2++;
@@ -844,21 +843,19 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		} else if((Overheat_Stat[0] + Overheat_Stat[1]) / 2 < (Overheat_Stat[2] + Overheat_Stat[3]) / 2) {
 			trend = -1;  // падает
 		}
-		if(newEEV < -_data.pid2_delta) { // Больше порога - открыть ЭРВ
-			newEEV = EEV;
-			if(trend == 0) newEEV += 1;
+		if(Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] < -_data.pid2_delta) { // Больше порога - открыть ЭРВ
+			if(trend == 0) newEEV = 1;
 			else {
 				if(trend == 1) {
-					newEEV -= newEEV * _data.pid.Kp;
+					newEEV = -(int32_t)newEEV * _data.pid.Kp / (100*1000);
 					StatInit -= 2; // Считаем 2 итерации
 				}
 			}
-		} else if(newEEV > _data.pid2_delta) { // Больше порога - закрыть ЭРВ
-			newEEV = EEV;
-			if(trend == 0) newEEV -= 1;
+		} else if(Overheat_Stat[EEV_STAT_ARRAY_SIZE - 1] > _data.pid2_delta) { // Больше порога - закрыть ЭРВ
+			if(trend == 0) newEEV = -1;
 			else {
 				if(trend == -1) {
-					newEEV = EEV - newEEV * _data.pid.Kp;
+					newEEV = -(int32_t)newEEV * _data.pid.Kp / (100*1000);
 					StatInit -= 2; // Считаем 2 итерации
 				}
 			}
@@ -870,19 +867,21 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			} else if((OverheatTCOMP_Stat[0] + OverheatTCOMP_Stat[1]) / 2 < (OverheatTCOMP_Stat[2] + OverheatTCOMP_Stat[3]) / 2) {
 				trend = -1;  // падает
 			}
-			newEEV = OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1];
-			if(newEEV < -_data.tOverheatTCOMP_delta) {
+			if(OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1] < -_data.tOverheatTCOMP_delta) {
 				if(trend >= 0) {
-					newEEV = EEV + 1;
+					newEEV = 1;
 					StatInit -= 2; // Считаем 2 итерации
 				}
-			} else if(newEEV > _data.tOverheatTCOMP_delta) {
+			} else if(OverheatTCOMP_Stat[EEV_STAT_ARRAY_SIZE - 1] > _data.tOverheatTCOMP_delta) {
 				if(trend <= 0) {
-					newEEV = EEV - 1;
+					newEEV = -1;
 					StatInit -= 2; // Считаем 2 итерации
 				}
-			} else newEEV = EEV;
+			}
 		}
+		if(newEEV > _data.pid_max) newEEV = _data.pid_max;
+		else if(newEEV < -_data.pid_max) newEEV = -_data.pid_max;
+		newEEV += EEV;
 #endif
 	} else {
 		switch(_data.ruleEEV)     // В зависмости от правила вычисления перегрева
@@ -900,29 +899,6 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			newEEV = _data.tOverheat - Overheat;
 			newEEV = EEV - round_div_int16(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
-#ifndef DEMO
-			if(newEEV < _data.minSteps) {
-#ifdef EEV_MIN_CONTROL     // Контролировать достижение минимального открытия, ошибка генерится
-				if(HP.is_compressor_on()) {   // достигнута нижняя граница во время работы - Сообщение
-					err = _data.minSteps;
-					set_Error(err, (char*) name);
-					return err;
-				}
-#endif
-				newEEV = _data.minSteps;
-			}
-#else
-			if (newEEV<_data.minSteps) newEEV = _data.minSteps;                            // Просто ограничение DEMO
-#endif
-#ifndef DEMO
-#ifdef EEV_MAX_CONTROL   // если задан контроль верхнего диапазона
-			if (newEEV>_data.maxSteps) {err=ERR_MAX_EEV; set_Error(err,(char*)name); return err;}  // достигнута верхняя граница этого не должно быть - проблема с ЭРВ
-#else
-			if(newEEV > _data.maxSteps) newEEV = _data.maxSteps;                            // Просто ограничение
-#endif
-#else
-			if (newEEV>_data.maxSteps) newEEV=_data.maxSteps;                            // Просто ограничение DEMO
-#endif
 			//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
 			break;
 #if defined(TEVAIN)
@@ -941,6 +917,26 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		default:
 			return err;
 		}
+	}
+	if(newEEV < _data.minSteps) {
+#if defined(DEMO) && defined(EEV_MIN_CONTROL) // Контролировать достижение минимального открытия, ошибка генерится
+		if(HP.is_compressor_on()) {   // во время работы - Сообщение
+			err = _data.minSteps;
+			set_Error(err, (char*) name);
+			return err;
+		}
+#endif
+		newEEV = _data.minSteps;            // ограничение
+	}
+	if(newEEV > _data.maxSteps) {
+#if defined(DEMO) && defined(EEV_MAX_CONTROL)   // если задан контроль верхнего диапазона
+		if(HP.is_compressor_on()) {   // во время работы - Сообщение
+			err = ERR_MAX_EEV;
+			set_Error(err, (char*) name);
+			return err;
+		}
+#endif
+		newEEV = _data.maxSteps;            // ограничение
 	}
 	//  Передвинуть шаговик ЭРВ в позицию (абсолютную) EEV если есть изменения
 	if(newEEV != EEV) set_EEV(newEEV);
@@ -1299,17 +1295,17 @@ int8_t devOmronMX2::initFC()
   _data.PidFreqStep=DEF_FC_PID_FREQ_STEP;          // Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании в 0.01 Гц Необходимо что бы ЭРВ успевал
   _data.PidStop=DEF_FC_PID_STOP;				   // Проценты от уровня защит (мощность, ток, давление, темпеартура) при которой происходит блокировка роста частоты пидом
   _data.dtCompTemp=DEF_FC_DT_COMP_TEMP;    		   // Защита по температуре компрессора - сколько градусов не доходит до максимальной (TCOMP) и при этом происходит уменьшение частоты
-  _data.startFreq=DEF_FC_START_FREQ;               // Стартовая скорость инвертора (см компрессор) в 0.01 
+  _data.startFreq=DEF_FC_START_FREQ;               // Стартовая скорость инвертора (см компрессор) в 0.01
   _data.startFreqBoiler=DEF_FC_START_FREQ_BOILER;  // Стартовая скорость инвертора (см компрессор) в 0.01 ГВС
-  _data.minFreq=DEF_FC_MIN_FREQ;                   // Минимальная  скорость инвертора (см компрессор) в 0.01 
-  _data.minFreqCool=DEF_FC_MIN_FREQ_COOL;          // Минимальная  скорость инвертора при охлаждении в 0.01 
+  _data.minFreq=DEF_FC_MIN_FREQ;                   // Минимальная  скорость инвертора (см компрессор) в 0.01
+  _data.minFreqCool=DEF_FC_MIN_FREQ_COOL;          // Минимальная  скорость инвертора при охлаждении в 0.01
   _data.minFreqBoiler=DEF_FC_MIN_FREQ_BOILER;      // Минимальная  скорость инвертора при нагреве ГВС в 0.01
   _data.minFreqUser=DEF_FC_MIN_FREQ_USER;          // Минимальная  скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01
-  _data.maxFreq=DEF_FC_MAX_FREQ;                   // Максимальная скорость инвертора (см компрессор) в 0.01 
-  _data.maxFreqCool=DEF_FC_MAX_FREQ_COOL;          // Максимальная скорость инвертора в режиме охлаждения  в 0.01 
+  _data.maxFreq=DEF_FC_MAX_FREQ;                   // Максимальная скорость инвертора (см компрессор) в 0.01
+  _data.maxFreqCool=DEF_FC_MAX_FREQ_COOL;          // Максимальная скорость инвертора в режиме охлаждения  в 0.01
   _data.maxFreqBoiler=DEF_FC_MAX_FREQ_BOILER;      // Максимальная скорость инвертора в режиме ГВС в 0.01 Гц поглощение бойлера обычно меньше чем СО
-  _data.maxFreqUser=DEF_FC_MAX_FREQ_USER;          // Максимальная скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01 
-  _data.stepFreq=DEF_FC_STEP_FREQ ;                // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока (см компрессор) в 0.01 
+  _data.maxFreqUser=DEF_FC_MAX_FREQ_USER;          // Максимальная скорость инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01
+  _data.stepFreq=DEF_FC_STEP_FREQ ;                // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока (см компрессор) в 0.01
   _data.stepFreqBoiler=DEF_FC_STEP_FREQ_BOILER;    // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01
   _data.dtTemp=DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
   _data.dtTempBoiler=DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
@@ -1758,7 +1754,7 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
     if(strcmp(var,fc_LEVEL100)==0)              { if ((x>=0)&&(x<=4096)) { level100=x; return true;} else return false;    } else 
     if(strcmp(var,fc_LEVELOFF)==0)              { if ((x>=0)&&(x<=4096)) { levelOff=x; return true;} else return false;    } else 
     #endif
-    if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА  
+    if(strcmp(var,fc_BLOCK)==0)                 { SemaphoreGive(xModbusSemaphore); // отдать семафор ВСЕГДА
                                                 if (x==0) { SETBIT0(flags,fErrFC); note=(char*)noteFC_OK; }
                                                 else      { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
