@@ -724,6 +724,7 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 	// вычисляется в зависимости от алгоритма
 #ifdef DEMO
 	Overheat = 400;
+	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
 #else
 	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
 	switch(_data.ruleEEV)  // определение доступности элемента
