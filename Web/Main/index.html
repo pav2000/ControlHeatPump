@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			updateParam("get_MODE,get_Boiler(BOILER_ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TEMP_TARGET),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO)");
+			updateParam("get_MODE,get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO)");
 	};
 	</script>	
 </head>
@@ -57,8 +57,8 @@
 			<dt>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
 		</dl>
 		<dl>
-			<dt>Работа бойлера</dt><dd><input type="checkbox" name="get_boiler-boiler_on" id="get_boiler-boiler_on" onchange="setParam('get_Boiler(BOILER_ON)');" ></dd>
-			<dt>Целевая температура</dt><dd><input id="get_boiler-temp_target" type="number" min="5" max="90" step="1" value="40"><input id="get_boiler-temp_target2" type="submit" value=">"  onclick="setParam('get_Boiler(TEMP_TARGET)');"></dd>
+			<dt>Работа бойлера</dt><dd><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');" ></dd>
+			<dt>Целевая температура</dt><dd><input id="get_boiler-trg" type="number" min="5" max="90" step="1" value="40"><input type="submit" value=">"  onclick="setParam('get_Boiler(TRG)');"></dd>
 			<dt>Температура</dt><dd><span id="get_temp-tboiler">-</span> &deg;C</dd>
 		</dl>									
 	</div>

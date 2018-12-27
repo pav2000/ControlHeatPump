@@ -504,6 +504,7 @@ class HeatPump
     boolean check_compressor_pause();     // проверка на паузу между включениями
     int8_t check_crc16_eeprom(int32_t addr, uint16_t size);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
+    void resetPID();
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
@@ -536,11 +537,10 @@ class HeatPump
     uint32_t countResSocket;                // Число сбросов сокетов
   
     // Переменные пид регулятора Отопление
-    PID_WORK_STRUCT pidw_heat;
+    PID_WORK_STRUCT pidw;
     unsigned long updatePidTime;          // время обновления ПИДа отопления
     
     // Переменные пид регулятора ГВС
-    PID_WORK_STRUCT pidw_boiler;
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)

@@ -136,7 +136,9 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						journal.jprintf("WEB:Error request(%d): %s\n", len, Socket[thread].inBuf);
+						journal.jprintf("WEB:Error request(%d): ", len);
+						for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
+						journal.jprintf("\n");
 #endif
 						sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
 						break;
