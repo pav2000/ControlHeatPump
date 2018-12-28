@@ -1187,7 +1187,7 @@ void vUpdateEEV(void *)
 { //const char *pcTaskName = "HP_UpdateEEV\r\n";
 	static int16_t cmd = 0;
 	for(;;) {
-		while(!(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid())) { // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
+		while(!(HP.get_startCompressor() && (rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid() && HP.dEEV.get_delayOnPid() != 255))) { // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД) и задержка != 255
 			vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
 			if(GETBIT(HP.dEEV.get_flags(), fEEV_StartPosByTemp)) { // Скорректировать ЭРВ по температуре подачи
 				HP.dEEV.set_EEV(HP.dEEV.get_StartPos());

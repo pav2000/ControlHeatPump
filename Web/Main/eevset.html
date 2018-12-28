@@ -15,8 +15,7 @@
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-  <h1>Настройки ЭРВ <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'></h1>
-
+  <h1>Настройки ЭРВ <input style="float:none;" type="submit" value="Назад" onclick="location.href='eev.html'"> <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'></h1>
   <div class="row1">
    <h2>Определение перегрева</h2>
    <table>
@@ -58,8 +57,8 @@
     <tr><td>Скорость, импульсы в сек [5..120]</td><td nowrap><input type="number" id="get_peev-speed"> <input type="submit" value=">" onclick="setParam('get_pEEV(SPEED)');"></td></tr>
     <tr><td><b>Управление ЭРВ</b></td><td></td></tr>
     <tr><td>Прямой алгоритм управления ЭРВ без ПИД<sup>6</sup></td><td nowrap><input type="checkbox" id="get_peev-dir" onchange="setParam('get_pEEV(DIR)');"></td></tr>
-    <tr><td>ПИД Алгоритм 2 - пропорционально измерению, иначе пропорционально ошибке</td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
-    <tr><td>Ограничение за одну итерацию в шагах ЭРВ</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
+    <tr><td>ПИД пропорционально измерению, иначе пропорционально ошибке (только для Алгоритма 2)</td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
+    <tr><td>Ограничение за одну итерацию в шагах ЭРВ (только для Алгоритма 1)</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
     <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
     <tr><td>Порог детектирования тренда в прямом алгоритме</td><td><input type="number" id="get_peev-tth" step="1"> <input type="submit" value=">" onclick="setParam('get_pEEV(TTH)');"></td></tr>
 
@@ -70,9 +69,9 @@
     <tr><td>Начинать работу ЭРВ со стартовой позиции<sup>3</sup></td><td nowrap><input type="checkbox" id="get_peev-start" onchange="setParam('get_pEEV(START)');"></td></tr>
     <tr><td>Стартовая позиция начала работы ЭРВ (шаги) [min..max]</td><td nowrap><input type="number" id="get_peev-sp"> <input type="submit" value=">" onclick="setParam('get_pEEV(SP)');"></td></tr>
     <tr><td>Стартовая позиция ЭРВ определяется по температуре подачи (10..45°)</td><td><input type="checkbox" id="get_peev-spt" onchange="setParam('get_pEEV(SPT)');"></td></tr>
-    <tr><td>Положение при подаче в 10° (шаги)</td><td id="get_peev-sp3"></td></tr>
-    <tr><td>Положение при подаче в 45° (шаги) [min..при 10°]</td><td nowrap><input type="number" id="get_peev-pht"> <input type="submit" value=">" onclick="setParam('get_pEEV(PHT)');"></td></tr>
-    <tr><td>Задержка начала регулирования от пуска компрессора (сек.) [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
+    <tr><td>Положение при подаче 10° (шаги)</td><td id="get_peev-sp3"></td></tr>
+    <tr><td>Положение при подаче 45° (шаги) [min..при 10°]</td><td nowrap><input type="number" id="get_peev-pht"> <input type="submit" value=">" onclick="setParam('get_pEEV(PHT)');"></td></tr>
+    <tr><td>Задержка (сек.) начала регулирования от пуска компрессора, 255 - навсегда [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
 
     <tr><td><b>Останов компрессора</b></td><td></td></tr>
     <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_peev-close" onchange="setParam('get_pEEV(CLOSE)');"></td></tr>
@@ -95,7 +94,7 @@
    1. Позиция ЭРВ с которой начинается раскрутка компрессора<br/>
    2. Время после которого специальная позиция ЭРВ меняется на стартовую<br/>
    3. Если эта опция не выбрана, то работа ЭРВ начинается с позции которая была при остановке компрессора<br/>
-   4. Время от начала раскрутки компрессора до момента начала работы ПИД ЭРВ, должно быть больше 2*<br/>
+   4. Время от начала раскрутки компрессора до момента начала работы ПИД ЭРВ, должно быть больше 2*. Если 255, то будет использована всегда либо фиксированная позиция либо расчитанная по подаче.<br/>
    5. Если выбрана эта опция, то поиск нуля производится только один раз при первом включении ТН<br/>
   </div>
 </div>

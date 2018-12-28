@@ -3403,10 +3403,11 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	journal.printf("I:%d,", pid.Ki * errorPid);
 #endif
 	if(pidw.sum > pidw.max) pidw.sum = pidw.max;
-	else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
+	else if(pidw.sum < pidw.min) pidw.sum = pidw.min;
 	newVal += pidw.sum - pid.Kd * (pidw.pre_err - errorPid);
-	if(newVal > pidw.max) newVal = pidw.max;
-	else if(newVal < -pidw.max) newVal = -pidw.max;
+	//проверка на ограничения не здесь
+	//if(newVal > pidw.max) newVal = pidw.max;
+	//else if(newVal < pidw.min) newVal = pidw.min;
 #ifdef DEBUG_PID
 	journal.printf("D=%d,Sum(%d)=%d\n", -pid.Kd * (pidw.pre_err - errorPid), pidw.sum, newVal);
 #endif

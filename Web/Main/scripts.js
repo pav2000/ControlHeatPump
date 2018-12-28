@@ -145,9 +145,6 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
-									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
-										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
-									}
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
@@ -159,10 +156,14 @@ function loadParam(paramid, noretry, resultdiv) {
 											if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
 											toggleclass('thingspeakon', onoff);
 											toggleclass('thingspeakoff', !onoff);
-										} 
-										element = document.getElementById(valueid + "-hide");
-										if(element) element.style = "display:" + (onoff ? "inline" : "none");
+										}
+										var elements = document.getElementsByName(valueid + "-hide");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] == 1 ? "inline" : "none");
+										var elements = document.getElementsByName(valueid + "-unhide");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] != 1 ? "inline" : "none");
 										continue;
+									} else if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
+										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
 								}

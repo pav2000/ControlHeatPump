@@ -195,7 +195,7 @@ function GetChart() {
 window.onload = function() {
 	urlupdate = 2000;
 	loadParam("hide_EEVpid,hide_pid2,get_optionHP(TIME_CHART),get_pEEV(NAME),get_pEEV(NOTE),get_pEEV(PINS),get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(CONST),get_pEEV(RULE),get_pEEV(MANUAL)");
-	loadParam("get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cPERIOD),get_pEEV(cD),get_pEEV(cDT),get_pEEV(P2D),get_pEEV(cDM),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(cOH_MIN),get_pEEV(cOH_START),get_pEEV(cOH_MAX)");
+	loadParam("get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cPERIOD),get_pEEV(cD),get_pEEV(cDT),get_pEEV(P2D),get_pEEV(cDM),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(cOH_MIN),get_pEEV(cOH_START),get_pEEV(cOH_MAX),get_pEEV(DIR)");
 	updateParam("get_pEEV(POSpp),get_OverHeat,get_pEEV(ERROR),get_pEEV(TARGET),get_TCOMP_TCON,get_pEEV(cTDELTA),get_Evapor");
 	GetChart();
 	$("#autoupdate").change(function(){
@@ -214,7 +214,6 @@ window.onload = function() {
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
  <h1>ЭРВ <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'><input type="submit" value="Настройки ЭРВ" onclick='location.assign("eevset.html")' style="margin-right:10px;"></h1>
-  <div class="row1">
    <table>
    <thead>
     <tr>
@@ -239,9 +238,7 @@ window.onload = function() {
     </tr>
    </tbody>
    </table>
-  </div>
  
- <div class="row1">
   <table>
   <thead>
    <tr>
@@ -270,11 +267,10 @@ window.onload = function() {
    </tr>
   </tbody>
   </table>            
- </div>
- 
- <div class="row1">
-   <h2>Корректировка перегрева <input id="get_peev-ccorrect" type="checkbox" onclick="setParam('get_pEEV(cCORRECT)');"></h2>
-   <table id="get_peev-ccorrect-hide">
+
+ <div>
+  <h2>Корректировка перегрева <input id="get_peev-ccorrect" type="checkbox" onclick="setParam('get_pEEV(cCORRECT)');"></h2>
+  <table name="get_peev-ccorrect-hide">
    <thead>
    <tr>
 	<th>Задержка после старта, сек</th>
@@ -287,7 +283,7 @@ window.onload = function() {
 	<th>Макс. перегрев, °C</th>
    </tr>
    </thead>
-   <tbody>
+  <tbody>
    <tr>
 	<td nowrap><input id="get_peev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cDELAY)')"></td>
 	<td nowrap><input id="get_peev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cPERIOD)')"></td>
@@ -298,20 +294,20 @@ window.onload = function() {
 	<td nowrap><input id="get_peev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cOH_START)')"></td>
 	<td nowrap><input id="get_peev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cOH_MAX)')"></td>
    </tr>
- </tbody>
- </table>            
+  </tbody></table>
  </div>
- 
- <div class="row1">
-   <h2>Параметры ПИД ЭРВ</h2>
+
+  <h2 name="get_peev-dir-unhide">Параметры ПИД ЭРВ</h2>
+  <h2 name="get_peev-dir-hide">Прямое управление ЭРВ</h2>
+	<input id="get_peev-dir" type="checkbox" hidden>
    <table>
    <thead>
    <tr>
 	<th>Период расчета<br>[1...1000] сек.</th>
 	<th>Целевой перегрев</th>
 	<th><a data-tooltip="Представляет собой коэффициент усиления. Чем больше значение параметра, тем быстрее и оперативнее изменяется положение вентиля. Чем меньше значение параметра, тем медленнее реагирует вентиль.">Пропорциональная <br>составляющая [0..32]</a></th>
-	<th><a data-tooltip="Интегрирующая составляющая пропорциональна интегралу по времени от отклонения регулируемой величины. Её используют для устранения статической ошибки. Она позволяет регулятору со временем учесть статическую ошибку.">Интегральная <br>составляющая [0..32]</a></th>
-	<th><a data-tooltip="Дифференцирующая составляющая пропорциональна темпу изменения отклонения регулируемой величины и предназначена для противодействия отклонениям от целевого значения, которые прогнозируются в будущем. Отклонения могут быть вызваны внешними возмущениями или запаздыванием воздействия регулятора на систему.">Дифференциальная <br>составляющая [0..32]</a></th>  
+	<th><a name="get_peev-dir-unhide" data-tooltip="Интегрирующая составляющая пропорциональна интегралу по времени от отклонения регулируемой величины. Её используют для устранения статической ошибки. Она позволяет регулятору со временем учесть статическую ошибку.">Интегральная <br>составляющая [0..32]</a></th>
+	<th><a name="get_peev-dir-unhide" data-tooltip="Дифференцирующая составляющая пропорциональна темпу изменения отклонения регулируемой величины и предназначена для противодействия отклонениям от целевого значения, которые прогнозируются в будущем. Отклонения могут быть вызваны внешними возмущениями или запаздыванием воздействия регулятора на систему.">Дифференциальная <br>составляющая [0..32]</a></th>  
    </tr>
    </thead>
    <tbody>
@@ -319,17 +315,16 @@ window.onload = function() {
 	<td nowrap><input id="get_peev-time" type="number" min="1" max="1000" step="1"><input type="submit" value=">" onclick="setParam('get_pEEV(TIME)');"></td>
 	<td nowrap><input id="get_peev-target" type="number" min="0" max="50" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(TARGET)');"></td>
 	<td nowrap><input id="get_peev-kp" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KP)');"></td>
-	<td nowrap><input id="get_peev-ki" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KI)');"></td>
-	<td nowrap><input id="get_peev-kd" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KD)');"></td>
+	<td nowrap><div name="get_peev-dir-unhide"><input id="get_peev-ki" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KI)');"></div></td>
+	<td nowrap><div name="get_peev-dir-unhide"><input id="get_peev-kd" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KD)');"></div></td>
    </tr>
    <tr name="hide_pid2"><td nowrap>Δ меньше:</td><td nowrap><input type="number" id="get_peev-p2d" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td>
-	<td nowrap><input id="get_peev-kp2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KP2)');"></td>
-	<td nowrap><input id="get_peev-ki2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KI2)');"></td>
-	<td nowrap><input id="get_peev-kd2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KD2)');"></td>
+	<td nowrap><div name="get_peev-dir-unhide"><input id="get_peev-kp2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KP2)');"></div></td>
+	<td nowrap><div name="get_peev-dir-unhide"><input id="get_peev-ki2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KI2)');"></div></td>
+	<td nowrap><div name="get_peev-dir-unhide"><input id="get_peev-kd2" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_pEEV(KD2)');"></div></td>
    </tr>
  </tbody>
  </table>            
- </div>
 
 <div style="float:right;">Автообновление графика:<input id="autoupdate" type="checkbox" onclick=""> Нагнетание-Конденсация:<input id="showdelta" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
 <select style="display:none" id="get_optionhp-time_chart" disabled></select>
