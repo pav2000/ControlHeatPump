@@ -1272,7 +1272,6 @@ struct PID_STRUCT {   		// Настройки ПИД регулятора
 #define trOH_default	2
 #define trOH_TCOMP		3
 
-#ifdef PID_FORMULA2
 struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
 	union {
 		int32_t sum;		// сумма
@@ -1280,22 +1279,14 @@ struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
 		int8_t  trend[4];	// i=trOH_*
 	};
 	int16_t pre_err;		// предыдущая ошибка для дифференцирования
-	boolean PropOnMeasure;  // ПИД пропорционально измерению, иначе пропорционально ошибке
-	int32_t min;
 	int32_t max;
-};
+#ifdef PID_FORMULA2
+	int32_t min;
+	boolean PropOnMeasure;  // ПИД пропорционально измерению, иначе пропорционально ошибке
 #else
-struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
-	union {
-		int32_t sum;		// сумма
-		int16_t pre_err2[2];// i=0
-		int8_t  trend[4];	// i=2,3
-	};
-	int16_t pre_err;		// предыдущая ошибка для дифференцирования
-	int32_t max;			// максимальный шаг изменения интегральной составляющей в СОТЫХ*СОТЫХ
     int16_t Kp_dmin;        // Разница (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
-};
 #endif
+};
 
 #endif
 
