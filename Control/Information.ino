@@ -576,7 +576,8 @@ boolean Profile::set_paramCoolHP(char *var, float x)
 				                    case 1: Cool.Rule=pPID;        return true; break;
 				                    case 2: Cool.Rule=pHYBRID;     return true; break;
 				                    default:Cool.Rule=pHYSTERESIS; return true; break;  
-				                    }  }      else                                                                                                                    
+				                    }
+ 	 	 	 	 	 	 	 	 HP.resetPID(); } else
  if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))  {Cool.Temp1=rd(x, 100); return true;} else return false;                                       }else             // целевая температура в доме
 
  if(strcmp(var,hp_TEMP2)==0) {   if ((x>=10.0)&&(x<=50.0))  {Cool.Temp2=rd(x, 100); return true;} else return false;                                      }else             // целевая температура обратки
@@ -626,13 +627,14 @@ char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
 // Отопление Установить параметры ТН из числа (float)
 boolean Profile::set_paramHeatHP(char *var, float x)
 { 
-if(strcmp(var,hp_RULE)==0)  {  switch ((int)x)
-				                   {
-				                    case 0: Heat.Rule=pHYSTERESIS; return true; break;
-				                    case 1: Heat.Rule=pPID;        return true; break;
-				                    case 2: Heat.Rule=pHYBRID;     return true; break;
-				                    default:Heat.Rule=pHYSTERESIS; return true; break;  
-				                    }  }      else                                                                                                                    
+if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
+				              {
+				                 case 0: Heat.Rule=pHYSTERESIS; break;
+				                 case 1: Heat.Rule=pPID;        break;
+				                 case 2: Heat.Rule=pHYBRID;     break;
+				                 default:Heat.Rule=pHYSTERESIS; break;
+				              }
+							  HP.resetPID(); } else
  if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))   {Heat.Temp1=rd(x, 100); return true;} else return false;                                       }else             // целевая температура в доме
  if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-30)&&(x<=50))  {Heat.add_delta_temp=rd(x, 100); return true;}else return false; }else                                                      // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
  if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Heat.add_delta_hour=x; return true;} else return false; }else
@@ -695,6 +697,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_SCHEDULER_ON)==0)	{ if(x) SETBIT1(Boiler.flags,fSchedule); else { SETBIT0(Boiler.flags,fSchedule); SETBIT0(Boiler.flags,fScheduleAddHeat); } return true;} else
 	if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){if(x) {SETBIT1(Boiler.flags,fScheduleAddHeat); SETBIT1(Boiler.flags,fSchedule); } else SETBIT0(Boiler.flags,fScheduleAddHeat); return true;} else
 	if(strcmp(var,boil_TOGETHER_HEAT)==0)	{ if(x) SETBIT1(Boiler.flags,fBoilerTogetherHeat); else SETBIT0(Boiler.flags,fBoilerTogetherHeat); return true;} else
+	if(strcmp(var,boil_fBoilerPID)==0)	    { if(x) SETBIT1(Boiler.flags,fBoilerPID); else SETBIT0(Boiler.flags,fBoilerPID); return true;} else
 	if(strcmp(var,boil_TURBO_BOILER)==0)	{ if(x) SETBIT1(Boiler.flags,fTurboBoiler); else SETBIT0(Boiler.flags,fTurboBoiler); return true;} else
 	if(strcmp(var,boil_SALLMONELA)==0)		{ if(x) { SETBIT1(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300); }
 												else { SETBIT0(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]); } return true;} else // Изменение максимальной температуры при включенном режиме сальмонелла
@@ -726,6 +729,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_SCHEDULER_ON)==0){    if (GETBIT(Boiler.flags,fSchedule))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SCHEDULER_ADDHEAT)==0){ if (GETBIT(Boiler.flags,fScheduleAddHeat)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_TOGETHER_HEAT)==0){ if (GETBIT(Boiler.flags,fBoilerTogetherHeat)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_fBoilerPID)==0){ if (GETBIT(Boiler.flags,fBoilerPID)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_TURBO_BOILER)==0){    if (GETBIT(Boiler.flags,fTurboBoiler))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_SALLMONELA)==0){      if (GETBIT(Boiler.flags,fSalmonella)) return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_CIRCULATION)==0){     if (GETBIT(Boiler.flags,fCirculation))return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else

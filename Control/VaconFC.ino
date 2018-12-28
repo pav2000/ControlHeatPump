@@ -202,7 +202,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
         FC = x;
-        if(show) journal.jprintf(" Set %s: %.2f\r\n", name, (float)FC / 100);
+        if(show) journal.jprintf(" Set %s: %.2f\n", name, (float)FC / 100);
         return err;
     } // установка частоты OK  - вывод сообщения если надо
     else {
@@ -222,7 +222,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
         }
         if(err == OK) {
             FC = x;
-            if(show) journal.jprintf(" Set %s: %.2f %%\r\n", name, (float)FC / 100);
+            if(show) journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC / 100);
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {
@@ -247,7 +247,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
             break; //  Все включаем и компрессор тоже
         }
         if(show)
-            journal.jprintf(" Set %s: %.2f %%\r\n", name, (float)FC / 100); // установка частоты OK  - вывод сообщения если надо
+            journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC / 100); // установка частоты OK  - вывод сообщения если надо
 #endif
         return err;
     } // if((x>=_min)&&(x<=_max))

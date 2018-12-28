@@ -831,12 +831,12 @@ void devEEV::resetPID()
 #else
 	pidw.sum = 0;
 	pidw.pre_err = 0;
-	pidw.maxStep = EEV_MAX_STEP * 100;
+	pidw.max = EEV_MAX_STEP * 100;
 #endif
 	if(GETBIT(_data.flags, fEEV_DirectAlgorithm)) {
-		pidw.min = 0;
 		pidw.max = 0;
 		pidw.sum = 0;
+		pidw.pre_err = _data.tOverheat - Overheat;
 		pidw.pre_err2[0] = _data.tOverheatTCOMP - OverheatTCOMP;
 	}
 }
@@ -862,35 +862,42 @@ int8_t devEEV::Update(void) //boolean fHeating)
 #ifdef DEBUG_PID
 		journal.printf("EEV: %d=%d,%d=%d. ", _data.tOverheat - Overheat, pidw.trend[trOH_default], _data.tOverheatTCOMP - OverheatTCOMP, pidw.trend[trOH_TCOMP]);
 #endif
-		if(pidw.min && --pidw.min) {
+		if(pidw.max) {
 #ifdef DEBUG_PID
-			journal.printf("skip ", pidw.min);
+			journal.printf("skip ", pidw.max);
 #endif
+			pidw.max--;
 		} else {
 			if(diff < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 				if(pidw.trend[trOH_default] > _data.trend_threshold) {
 					newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
-					//pidw.trend[trOH_default] = 0;
-					pidw.min = 2;
-				} else if(pidw.trend[trOH_default] > 0) newEEV = 1;
+					pidw.trend[trOH_default] = 0;
+					pidw.max = 2;
+				} else if(pidw.trend[trOH_default] >= 0) {
+					newEEV = 1;
+					pidw.max = 1;
+				}
 			} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 				if(pidw.trend[trOH_default] < -_data.trend_threshold) {
 					newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
-					//pidw.trend[trOH_default] = 0;
-					pidw.min = 2;
-				} else if(pidw.trend[trOH_default] < 0) newEEV = -1;
+					pidw.trend[trOH_default] = 0;
+					pidw.max = 3;
+				} else if(pidw.trend[trOH_default] <= 0) {
+					newEEV = -1;
+					pidw.max = 1;
+				}
 			} else {
 				if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.trend[trOH_TCOMP] >= 0) {
 						newEEV = 1;
-						//pidw.trend[trOH_TCOMP] = 0;
-						pidw.min = 3;
+						pidw.trend[trOH_TCOMP] = 0;
+						pidw.max = 3;
 					}
 				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 					if(pidw.trend[trOH_TCOMP] <= 0) {
 						newEEV = -1;
-						//pidw.trend[trOH_TCOMP] = 0;
-						pidw.min = 3;
+						pidw.trend[trOH_TCOMP] = 0;
+						pidw.max = 3;
 					}
 				}
 			}
@@ -1177,7 +1184,11 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_FREON)==0){
 		if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип
 	}   else if(strcmp(var, eev_RULE)==0){
-		if (x<=MANUAL){ _data.ruleEEV=(RULE_EEV)x; return true;} else return false;	// перечисляемый тип
+		if(x <= MANUAL) {
+			_data.ruleEEV = (RULE_EEV) x;
+			resetPID();
+			return true;
+		} else return false;	// перечисляемый тип
 	} else if(strcmp(var, eev_cCORRECT)==0){
 		if (x==0) SETBIT0(_data.flags, fCorrectOverHeat); else SETBIT1(_data.flags, fCorrectOverHeat);
 	} else if(strcmp(var, eev_cDELAY)==0){

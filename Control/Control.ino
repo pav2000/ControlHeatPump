@@ -1189,6 +1189,9 @@ void vUpdateEEV(void *)
 	for(;;) {
 		while(!(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid())) { // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
 			vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
+			if(GETBIT(HP.dEEV.get_flags(), fEEV_StartPosByTemp)) { // Скорректировать ЭРВ по температуре подачи
+				HP.dEEV.set_EEV(HP.dEEV.get_StartPos());
+			}
 		}
 		HP.dEEV.resetPID();
 xContinue:

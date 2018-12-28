@@ -1743,8 +1743,6 @@ int8_t HeatPump::StartResume(boolean start)
 	if(!dSDM.get_link()) dSDM.uplinkSDM();
 #endif
 
-	resetPID(); 											// Инициализировать переменные ПИД регулятора
-
 	if (get_errcode()!=OK)                                 // ОШИБКА перед стартом
 	{
 		journal.jprintf(" Error before start compressor!\n");
@@ -1801,7 +1799,7 @@ void HeatPump::resetPID()
 #else
 	pidw.pre_err = 0;
 	pidw.sum = 0;
-	pidw.maxStep = 0;
+	pidw.max = 0;
 #endif
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
@@ -2044,24 +2042,22 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #endif
 
 	// Алгоритм гистерезис для старт стоп
-	if(!dFC.get_present()) // Алгоритм гистерезис для старт стоп
+	if(!dFC.get_present() || !GETBIT(Prof.Boiler.flags, fBoilerPID)) // Алгоритм гистерезис для старт стоп и по опции
 	{
-		if (FEED>Prof.Boiler.tempIn)                                         {Status.ret=pBh1; return pCOMP_OFF; }    // Достигнута максимальная температура подачи ВЫКЛ)
+		if (FEED>Prof.Boiler.tempIn) {Status.ret=pBh1; return pCOMP_OFF; }    // Достигнута максимальная температура подачи ВЫКЛ)
 
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
 			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
-		}
-		else
-		{
+		} else {
 			if (T > get_boilerTempTarget())   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (T < (get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
-		if (onBoiler)                                                           {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
+		if (onBoiler)  {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
 		Status.ret=pBh5;  return pCOMP_OFF;    // продолжение ПАУЗЫ бойлера внутри гистрезиса
 	} // if(!dFC.get_present())
 	else // ИНвертор ПИД
@@ -2535,10 +2531,10 @@ void HeatPump::configHP(MODE_HP conf)
                     dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
                     dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
                     _delay(2*1000);                     // Задержка на 2 сек
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
                     PUMPS_ON;           // включить насосы
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
                  _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
 
@@ -2787,8 +2783,9 @@ void HeatPump::compressorON()
 #ifdef DEFROST
    }  // if(mod!=pDEFROST)
 #endif	
-	  	command_completed = rtcSAM3X8.unixtime();
-	  	COMPRESSOR_ON;                                        // Включить компрессор
+		resetPID(); 										// Инициализировать переменные ПИД регулятора
+	    command_completed = rtcSAM3X8.unixtime();
+	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
 		startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
 	} else { // if (get_errcode()==OK)
@@ -3424,8 +3421,8 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	{
 		pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
 		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-		if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
-		else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
+		if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+		else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.sum;
 #ifdef DEBUG_PID

@@ -208,6 +208,7 @@ class HeatPump
       
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
     void     Reset_TempErrors();		// Сбросить счетчик ошибок всех датчиков
+    void     resetPID();				// Инициализировать переменные ПИД регулятора
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -216,8 +217,6 @@ class HeatPump
     boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
     uint8_t is_pause();					// Возвращает 1, если ТН в паузе
 	inline boolean is_compressor_on() { return dRelay[RCOMP].get_Relay() || dFC.isfOnOff(); }    // Проверка работает ли компрессор
-
-
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -504,7 +503,6 @@ class HeatPump
     boolean check_compressor_pause();     // проверка на паузу между включениями
     int8_t check_crc16_eeprom(int32_t addr, uint16_t size);// Проверить контрольную сумму в EEPROM для данных на выходе ошибка, длина определяется из заголовка
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
-    void resetPID();
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
     TEST_MODE testMode;                   // Значение режима тестирования
