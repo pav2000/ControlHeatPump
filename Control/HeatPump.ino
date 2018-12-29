@@ -1661,26 +1661,6 @@ int8_t HeatPump::StartResume(boolean start)
 	offBoiler=0;                                         // Бойлер никогда не выключался
 	onSallmonela=false;                                  // Если true то идет Обеззараживание
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
-	// Сбросить переменные пид регулятора
-	pidw_heat.pre_errPID = 0;
-	pidw_heat.sum = 0;
-#ifdef PID_FORMULA2
-	pidw_heat.PropOnMeasure = DEF_FC_PID_P_ON_M;
-	pidw_heat.max = (int32_t) dFC.get_PidFreqStep() * 1000;
-#else
-	pidw_heat.maxStep = 0;
-#endif
-	updatePidTime=0;                                     // время обновления ПИДа
-	// ГВС Сбросить переменные пид регулятора
-	pidw_boiler.pre_errPID = 0;
-	pidw_boiler.sum = 0;
-#ifdef PID_FORMULA2
-	pidw_boiler.PropOnMeasure = DEF_FC_PID_P_ON_M;
-	pidw_boiler.max = (int32_t) dFC.get_PidFreqStep() * 1000;
-#else
-	pidw_boiler.maxStep = 0;
-#endif
-	updatePidBoiler=0;                                   // время обновления ПИДа
 
 	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
 	if(!CheckAvailableWork())   // Нет работы для ТН - ничего не включено
@@ -1762,6 +1742,7 @@ int8_t HeatPump::StartResume(boolean start)
 #ifdef USE_ELECTROMETER_SDM
 	if(!dSDM.get_link()) dSDM.uplinkSDM();
 #endif
+
 	if (get_errcode()!=OK)                                 // ОШИБКА перед стартом
 	{
 		journal.jprintf(" Error before start compressor!\n");
@@ -1806,6 +1787,24 @@ int8_t HeatPump::StartResume(boolean start)
 	return error;
 }
 
+// Инициализировать переменные ПИД регулятора
+void HeatPump::resetPID()
+{
+#ifdef PID_FORMULA2
+	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw.pre_err = (Status.modWork == pHEAT ? Prof.Heat.tempPID : Status.modWork == pBOILER ? Prof.Boiler.tempPID : Prof.Cool.tempPID) - FEED;
+	pidw.sum = dFC.get_freqFC() * 1000;
+	pidw.min = dFC.get_minFreq() * 1000;
+	pidw.max = dFC.get_maxFreq() * 1000;
+#else
+	pidw.pre_err = 0;
+	pidw.sum = 0;
+	pidw.max = 0;
+#endif
+	updatePidTime=0;                                     // время обновления ПИДа
+	// ГВС Сбросить переменные пид регулятора
+	updatePidBoiler=0;                                   // время обновления ПИДа
+}
                      
 // STOP/WAIT -----------------------------------------
 // Функция Останова/Ожидания ТН  - возвращает код ошибки
@@ -2043,24 +2042,22 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #endif
 
 	// Алгоритм гистерезис для старт стоп
-	if(!dFC.get_present()) // Алгоритм гистерезис для старт стоп
+	if(!dFC.get_present() || !GETBIT(Prof.Boiler.flags, fBoilerPID)) // Алгоритм гистерезис для старт стоп и по опции
 	{
-		if (FEED>Prof.Boiler.tempIn)                                         {Status.ret=pBh1; return pCOMP_OFF; }    // Достигнута максимальная температура подачи ВЫКЛ)
+		if (FEED>Prof.Boiler.tempIn) {Status.ret=pBh1; return pCOMP_OFF; }    // Достигнута максимальная температура подачи ВЫКЛ)
 
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
 			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
-		}
-		else
-		{
+		} else {
 			if (T > get_boilerTempTarget())   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (T < (get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
-		if (onBoiler)                                                           {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
+		if (onBoiler)  {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
 		Status.ret=pBh5;  return pCOMP_OFF;    // продолжение ПАУЗЫ бойлера внутри гистрезиса
 	} // if(!dFC.get_present())
 	else // ИНвертор ПИД
@@ -2133,16 +2130,16 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		updatePidBoiler=xTaskGetTickCount()/1000;
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
-//		errPIDBoiler=((float)(Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())))/100.0; // Текущая ошибка (для Жени, по давлению), переводим в градусы
-        int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw_boiler); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
-        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+        int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #else
 		Status.ret=pBp12;
-//		errPIDBoiler=((float)(Prof.Boiler.pid.target-FEED))/100.0;                                       // Текущая ошибка, переводим в градусы ("+" недогрев частоту увеличивать "-" перегрев частоту уменьшать)
-		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw_boiler);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+#endif
+#ifdef PID_FORMULA2
+		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+#else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
-#endif	
-
+#endif
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
 
@@ -2275,9 +2272,13 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
 
-		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw_heat);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
-        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
- 
+		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+#ifdef PID_FORMULA2
+		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+#else
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+#endif
+
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
 		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
 
@@ -2412,9 +2413,12 @@ MODE_COMP HeatPump::UpdateCool()
 		}
 		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
 
-		newFC = updatePID(FEED - targetRealPID, Prof.Cool.pid, pidw_heat);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
-//        if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+>dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep() 
-        if (newFC<-1*dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()-dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep() 
+		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+#ifdef PID_FORMULA2
+		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+#else
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+#endif
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
@@ -2527,10 +2531,10 @@ void HeatPump::configHP(MODE_HP conf)
                     dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
                     dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
                     _delay(2*1000);                     // Задержка на 2 сек
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
                     PUMPS_ON;           // включить насосы
-                    if (Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_targetFreq(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
                  _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
 
@@ -2692,29 +2696,27 @@ void HeatPump::compressorON()
 	}
 
 #ifdef EEV_DEF
-	if (lastEEV!=-1)              // Не первое включение компрессора после старта ТН
-	{
+	if(lastEEV != -1) {         // Не первое включение компрессора после старта ТН
 		// 1. Обеспечение минимальной паузы компрессора
 		if(check_compressor_pause()) return;
-		#ifdef DEBUG_MODWORK
-			journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
-		#endif
-
-		// 2. Разбираемся с ЭРВ
-		journal.jprintf(EEV_go);
-		if (dEEV.get_LightStart()) {dEEV.set_EEV(dEEV.get_preStartPos());journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }    // Выйти на пусковую позицию
-		else if (dEEV.get_StartFlagPos())  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // Всегда начинать работу ЭРВ со стратовой позиции
-		else                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ
-		if(dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
-			_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
-		}
-
-	}   //  if (lastEEV!=-1)
-	else // первое включение компресора lastEEV=-1
-	{ // 2. Разбираемся с ЭРВ
-		journal.jprintf(EEV_go);
-		if (dEEV.get_LightStart()) { dEEV.set_EEV(dEEV.get_preStartPos());  journal.jprintf("preStartPos: %d\n",dEEV.get_preStartPos());  }      // Выйти на пусковую позицию
-		else                                       { dEEV.set_EEV(dEEV.get_StartPos());   journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }      // Всегда начинать работу ЭРВ со стратовой позиции
+#ifdef DEBUG_MODWORK
+		journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
+#endif
+	}//get_fEEVStartPosByTemp()
+	// 2. Разбираемся с ЭРВ
+	journal.jprintf(EEV_go);
+	if(dEEV.get_LightStart()) { // Выйти на пусковую позицию
+		dEEV.set_EEV(dEEV.get_preStartPos());
+		journal.jprintf("preStartPos: %d\n", dEEV.get_preStartPos());
+	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
+		dEEV.set_EEV(dEEV.get_StartPos());
+		journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
+	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
+		dEEV.set_EEV(lastEEV);
+		journal.jprintf("lastEEV: %d\n", lastEEV);
+	}
+	if(lastEEV != -1 && dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
+		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
 	}
 	dEEV.CorrectOverheatInit();
 #endif
@@ -2781,8 +2783,9 @@ void HeatPump::compressorON()
 #ifdef DEFROST
    }  // if(mod!=pDEFROST)
 #endif	
-	  	command_completed = rtcSAM3X8.unixtime();
-	  	COMPRESSOR_ON;                                        // Включить компрессор
+		resetPID(); 										// Инициализировать переменные ПИД регулятора
+	    command_completed = rtcSAM3X8.unixtime();
+	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
 		startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
 	} else { // if (get_errcode()==OK)
@@ -2794,20 +2797,24 @@ void HeatPump::compressorON()
 #ifdef EEV_DEF
 	if(dEEV.get_LightStart())                  //  ЭРВ ОБЛЕГЧЕННЫЙ ПУСК
 	{
-		journal.jprintf(" Pause %d second before go starting position EEV . . .\n",dEEV.get_DelayStartPos());
-		_delay(dEEV.get_DelayStartPos()*1000);  // Задержка после включения компрессора до ухода на рабочую позицию
+		journal.jprintf(" Pause %d second before go starting position EEV . . .\n", dEEV.get_DelayStartPos());
+		_delay(dEEV.get_DelayStartPos() * 1000);  // Задержка после включения компрессора до ухода на рабочую позицию
 		journal.jprintf(EEV_go);
-		if ((dEEV.get_StartFlagPos())||((lastEEV==-1)  ))  {dEEV.set_EEV(dEEV.get_StartPos()); journal.jprintf("StartPos: %d\n",dEEV.get_StartPos());    }    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
-		else                                                       {dEEV.set_EEV(lastEEV);   journal.jprintf("lastEEV: %d\n",lastEEV);        }    // установка последнего значения ЭРВ в противном случае
+		if((dEEV.get_StartFlagPos()) || ((lastEEV == -1))) {
+			dEEV.set_EEV(dEEV.get_StartPos());
+			journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
+		}    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
+		else { // установка последнего значения ЭРВ в противном случае
+			dEEV.set_EEV(lastEEV);
+			journal.jprintf("lastEEV: %d\n", lastEEV);
+		}
 	}
 #endif
 	// 5. Обеспечение задержки отслеживания ЭРВ
 #ifdef EEV_DEF
 	if (lastEEV>0)                                            // НЕ первое включение компрессора после старта ТН
 	{
-		//      journal.jprintf(" Pause %d second before enabling tracking EEV . . .\n",delayOnPid);    // Задержка внутри задачи!!!
-		if (dEEV.get_StartFlagPos())  dEEV.Resume(dEEV.get_StartPos());     // Снять с паузы задачу Обновления ЭРВ  PID  со стратовой позиции
-		else                                  dEEV.Resume(lastEEV);       // Снять с паузы задачу Обновления ЭРВ  PID c последнего значения ЭРВ
+		dEEV.Resume();
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Resume task update EEV\n");
 		#ifdef DEFROST
@@ -2819,7 +2826,7 @@ void HeatPump::compressorON()
 	}
 	else  // признак первой итерации
 	{
-		lastEEV=dEEV.get_StartPos();                                 // ЭРВ рабоатет запомнить
+		lastEEV=dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
 		set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Start task update EEV\n");
@@ -3369,30 +3376,40 @@ void HeatPump::Sun_OFF(void)
 
 // Уравнение ПИД регулятора в конечных разностях.
 // errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ
-// pid - настройки ПИДа
-// sum, pre_errPID - сумма для расчета и предыдущая ошибка
+// pid - настройки ПИДа в тысячных
+// sum, pre_err - сумма для расчета и предыдущая ошибка
 // Выход управляющее воздействие (в СОТЫХ)
 int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d, %d, %d (%d, %d, %d). ", &pid, errorPid, pidw.sum, pidw.pre_errPID, pid.Kp, pid.Ki, pid.Kd);
+	journal.printf("PID(%x): %d,%d,S:%d(%d,%d,%d). ", &pid, errorPid, pidw.pre_err, pidw.sum, pid.Kp, pid.Ki, pid.Kd);
 #endif
 #ifdef PID_FORMULA2
 	pidw.sum += pid.Ki * errorPid;
 	if(pidw.PropOnMeasure) {
-		pidw.sum -= pid.Kp * (pidw.pre_errPID - errorPid);
+		pidw.sum -= pid.Kp * (pidw.pre_err - errorPid);
 		newVal = 0;
+#ifdef DEBUG_PID
+		journal.printf("P:%d,", -pid.Kp * (pidw.pre_err - errorPid));
+#endif
 	} else {
 		newVal = pid.Kp * errorPid;
-	}
-	if(pidw.sum > pidw.max) pidw.sum = pidw.max;
-	else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
-	newVal += pidw.sum - pid.Kd * (pidw.pre_errPID - errorPid);
-	if(newVal > pidw.max) newVal = pidw.max;
-	else if(newVal < -pidw.max) newVal = -pidw.max;
 #ifdef DEBUG_PID
-	journal.printf("Sum(%d) = %d\n", pidw.sum, newVal);
+		journal.printf("P:%d,", pid.Kp * errorPid);
+#endif
+	}
+#ifdef DEBUG_PID
+	journal.printf("I:%d,", pid.Ki * errorPid);
+#endif
+	if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+	else if(pidw.sum < pidw.min) pidw.sum = pidw.min;
+	newVal += pidw.sum - pid.Kd * (pidw.pre_err - errorPid);
+	//проверка на ограничения не здесь
+	//if(newVal > pidw.max) newVal = pidw.max;
+	//else if(newVal < pidw.min) newVal = pidw.min;
+#ifdef DEBUG_PID
+	journal.printf("D=%d,Sum(%d)=%d\n", -pid.Kd * (pidw.pre_err - errorPid), pidw.sum, newVal);
 #endif
 #else
 	// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
@@ -3405,26 +3422,26 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	{
 		pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
 		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-		if(pidw.sum > pidw.maxStep) pidw.sum = pidw.maxStep;
-		else if(pidw.sum < -pidw.maxStep) pidw.sum = -pidw.maxStep;
+		if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+		else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.sum;
 #ifdef DEBUG_PID
-	journal.printf("I=%d, ", newVal);
+	journal.printf("I:%d,", newVal);
 #endif
 	// Пропорциональная составляющая
 	if(abs(errorPid) < pidw.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pidw.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 #ifdef DEBUG_PID
-	journal.printf("+P=%d, ", newVal);
+	journal.printf("P:%d,", newVal);
 #endif
 	// Дифференцальная составляющая
-	newVal += (int32_t) pid.Kd * (pidw.pre_errPID - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+	newVal += (int32_t) pid.Kd * (pidw.pre_err - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
 #ifdef DEBUG_PID
-	journal.printf("+D=%d\n", newVal);
+	journal.printf("+D:%d=%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
 #endif
 #endif
-	pidw.pre_errPID = errorPid; // запомнить предыдущую ошибку
+	pidw.pre_err = errorPid; // запомнить предыдущую ошибку
 	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов, выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;

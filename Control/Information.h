@@ -143,6 +143,7 @@ struct type_SaveON
 #define fTurboBoiler     	5           // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
 #define fAddHeating      	6           // флаг ДОГРЕВА ГВС ТЭНом
 #define fBoilerTogetherHeat	7			// флаг одновременного нагрева бойлера с отоплением до температуры догрева
+#define fBoilerPID			8			// ПИД
 
 struct type_boilerHP
 {

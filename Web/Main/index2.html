@@ -174,21 +174,6 @@ request.onreadystatechange = function()
 										}									
 									}
 								 else if (idsel=="get_ruleeev") {
-									document.getElementById("get_freoneev").disabled = false;
-									document.getElementById("get_parameev-m_step").disabled = false;
-									document.getElementById("get_parameev-m_step2").disabled = false;
-									document.getElementById("get_parameev-correction").disabled = false;
-									document.getElementById("get_parameev-correction2").disabled = false;
-									document.getElementById("get_parameev-t_owerheat").disabled = false;
-									document.getElementById("get_parameev-t_owerheat2").disabled = false;
-									document.getElementById("get_parameev-time_in").disabled = false;
-									document.getElementById("get_parameev-time_in2").disabled = false;
-									document.getElementById("get_parameev-k_pro").disabled = false;
-									document.getElementById("get_parameev-k_pro2").disabled = false;
-									document.getElementById("get_parameev-k_in").disabled = false;
-									document.getElementById("get_parameev-k_in2").disabled = false;
-									document.getElementById("get_parameev-k_dif").disabled = false;
-									document.getElementById("get_parameev-k_dif2").disabled = false;
 									}
 									else if (idsel=="get_message-smtp_server") {
 										loadParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
@@ -206,33 +191,6 @@ request.onreadystatechange = function()
 										if (cont2[1] == 1)  {
 											selected = true;
 											
-											if (idsel=="get_ruleeev") {
-											if (k==0) {
-											document.getElementById("get_freoneev").disabled = true;
-											document.getElementById("get_parameev-m_step").disabled = true;
-											document.getElementById("get_parameev-m_step2").disabled = true;											
-											}
-											else if (k==1){
-											document.getElementById("get_parameev-m_step").disabled = true;
-											document.getElementById("get_parameev-m_step2").disabled = true;
-											}
-											else if (k==2 || k==3){
-											document.getElementById("get_parameev-t_owerheat").disabled = true;
-											document.getElementById("get_parameev-t_owerheat2").disabled = true;
-											document.getElementById("get_parameev-k_pro").disabled = true;
-											document.getElementById("get_parameev-k_pro2").disabled = true;
-											document.getElementById("get_parameev-k_in").disabled = true;
-											document.getElementById("get_parameev-k_in2").disabled = true;
-											document.getElementById("get_parameev-k_dif").disabled = true;
-											document.getElementById("get_parameev-k_dif2").disabled = true;
-											document.getElementById("get_freoneev").disabled = true;
-											document.getElementById("get_parameev-correction").disabled = true;
-											document.getElementById("get_parameev-correction2").disabled = true;
-											}
-											if(k==2){
-												document.getElementById("get_parameev-m_step").disabled = true;
-												document.getElementById("get_parameev-m_step2").disabled = true;
-											}
 											} else if (idsel=="get_paramcoolhp-rule") {
 												document.getElementById("get_paramcoolhp-target").disabled = false;document.getElementById("get_paramcoolhp-dtemp").disabled = false; document.getElementById("get_paramcoolhp-hp_pro").disabled = false; document.getElementById("get_paramcoolhp-hp_in").disabled = false; document.getElementById("get_paramcoolhp-hp_dif").disabled = false; document.getElementById("get_paramcoolhp-hp_time").disabled = false;
 														if (k==2) { document.getElementById("get_paramcoolhp-target").disabled = true;

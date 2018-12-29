@@ -511,8 +511,8 @@ HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездейс
 //HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
 
 // ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"ReadSensor",200,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*200;// до обрезки стеков было 300
+if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
 
 #ifdef EEV_DEF
   if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",50,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
@@ -671,16 +671,16 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 // Первый поток веб сервера - дополнительно нагружен различными сервисами
 void vWeb0( void *)
 { //const char *pcTaskName = "Web server is running\r\n";
-   volatile unsigned long timeResetW5200=0;
-   volatile unsigned long thisTime=0;
-   volatile unsigned long resW5200=0;
-   volatile unsigned long iniW5200=0;
-   volatile unsigned long pingt=0;
+   static unsigned long timeResetW5200=0;
+   static unsigned long thisTime=0;
+   static unsigned long resW5200=0;
+   static unsigned long iniW5200=0;
+   static unsigned long pingt=0;
 #ifdef MQTT
-   volatile unsigned long narmont=0;
-   volatile unsigned long mqttt=0;
+   static unsigned long narmont=0;
+   static unsigned long mqttt=0;
 #endif
-   volatile boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+   static boolean active=true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
    static boolean network_last_link = true;
    
    HP.timeNTP=xTaskGetTickCount();        // В первый момент не обновляем
@@ -1187,39 +1187,38 @@ void vUpdateEEV(void *)
 { //const char *pcTaskName = "HP_UpdateEEV\r\n";
 	static int16_t cmd = 0;
 	for(;;) {
-		if(HP.get_startCompressor() && rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid()) // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД)
-		{
-			// Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
-			// Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
-			if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) && (HP.dEEV.stepperEEV.isBuzy())) {
-				//     journal.jprintf("$WARNING! Loss of sync EEV\n");
-				HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
+		while(!(HP.get_startCompressor() && (rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid() && HP.dEEV.get_delayOnPid() != 255))) { // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД) и задержка != 255
+			vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
+			if(GETBIT(HP.dEEV.get_flags(), fEEV_StartPosByTemp)) { // Скорректировать ЭРВ по температуре подачи
+				HP.dEEV.set_EEV(HP.dEEV.get_StartPos());
 			}
+		}
+		HP.dEEV.resetPID();
+xContinue:
+		// Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
+		// Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
+		if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) && (HP.dEEV.stepperEEV.isBuzy())) {
+			//     journal.jprintf("$WARNING! Loss of sync EEV\n");
+			HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
+		}
 
-			if(!HP.is_compressor_on()) {
-				switch((uint8_t)HP.get_State()) {
-				case pOFF_HP:
-				case pSTOPING_HP:
-				case pWAIT_HP:
-					// Если компрессор не работает, то остановить задачу Обновления ЭРВ
-					journal.jprintf((const char*) " Stop task update EEV\n");
-					vTaskSuspend(NULL);				// Stop vUpdateEEV
-					continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
-				}
-			} else {
-				HP.dEEV.CorrectOverheat();
-				// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
-				HP.dEEV.Update();
-				// штатная пауза (в зависимости от настроек)
-				if((HP.dEEV.get_ruleEEV() == TEVAOUT_PEVA)
-#ifdef TCOMPIN
-					|| (HP.dEEV.get_ruleEEV() == TCOMPIN_PEVA)
-#endif
-				) {
-					vTaskDelay(HP.dEEV. get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
-					continue;
-				}
+		if(!HP.is_compressor_on()) {
+			switch((uint8_t)HP.get_State()) {
+			case pOFF_HP:
+			case pSTOPING_HP:
+			case pWAIT_HP:
+				// Если компрессор не работает, то остановить задачу Обновления ЭРВ
+				journal.jprintf((const char*) " Stop task update EEV\n");
+				vTaskSuspend(NULL);				// Stop vUpdateEEV
+				continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
 			}
+		} else {
+			HP.dEEV.CorrectOverheat();
+			// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
+			HP.dEEV.Update();
+			// штатная пауза (в зависимости от настроек)
+			vTaskDelay(HP.dEEV. get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
+			goto xContinue;
 		}
 		vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
 	} // for

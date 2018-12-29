@@ -1,4 +1,4 @@
-/* ver 0.985 beta */
+/* ver 0.987 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -137,17 +137,14 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(/[(]SCHEDULER[)]/.test(values[0])) type = "scheduler"; // расписание бойлера
 								else if(/Calendar/.test(values[0])) type = "calendar"; // расписание
 								else if(/et_modbus_/.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/^set_paramEEV[(]POS/)) {
-									var s = "get_parameev-pos";
+								else if(values[0].match(/^set_pEEV[(]POS/)) {
+									var s = "get_peev-pos";
 									if(values[0].substr(-1) == 'p') s += "p";  
 									if((element = document.getElementById(s))) element.value = values[1];
 									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
-									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
-										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
-									}
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
@@ -159,8 +156,14 @@ function loadParam(paramid, noretry, resultdiv) {
 											if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
 											toggleclass('thingspeakon', onoff);
 											toggleclass('thingspeakoff', !onoff);
-										} 
+										}
+										var elements = document.getElementsByName(valueid + "-hide");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] == 1 ? "inline" : "none");
+										var elements = document.getElementsByName(valueid + "-unhide");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] != 1 ? "inline" : "none");
 										continue;
+									} else if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
+										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
 								}
@@ -639,8 +642,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									for(var j = 0; j < elements.length; j++) elements[j].disabled = onoff;
 									var elements = document.getElementsByName('relay');
 									for(var j = 0; j < elements.length; j++) elements[j].disabled = onoff;
-									if((element=document.getElementById('get_parameev-pos'))) element.disabled = onoff;
-									if((element=document.getElementById('get_parameev-posp'))) element.disabled = onoff;
+									if((element=document.getElementById('get_peev-pos'))) element.disabled = onoff;
+									if((element=document.getElementById('get_peev-posp'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eev'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eevp'))) element.disabled = onoff;
 									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;

@@ -129,8 +129,8 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_temp-tboiler	{margin-top:  34px;margin-left: 758px;}
 .visualization #get_press-peva		{margin-top: 169px;margin-left: 259px; width: 55px;text-align: center}
 .visualization #get_press-pcon		{margin-top: 169px;margin-left: 560px; width: 57px;text-align: center}
-.visualization #get_parameev-overheat {margin-top: 353px;margin-left: 370px; text-align: center; }
-.visualization #get_parameev-pospp	{margin-top: 330px;margin-left: 370px; text-align: center; }.visualization #get_parameev-pospp:after{content:"";}
+.visualization #get_peev-overheat	{margin-top: 353px;margin-left: 370px; text-align: center; }
+.visualization #get_peev-pospp		{margin-top: 330px;margin-left: 370px; text-align: center; }.visualization #get_peev-pospp:after{content:"";}
 .visualization #get_flow-floweva	{margin-top: 240px;margin-left: 100px;}.visualization #get_flow-floweva:after{margin-left:3px;content:"м³ч";}
 .visualization #get_flow-flowcon	{margin-top: 280px;margin-left: 690px;}.visualization #get_flow-flowcon:after{margin-left:3px;content:"м³ч";}
 .visualization #get_overcool		{margin-top: 358px;margin-left: 575px;}.visualization #get_overcool:before{content:"Δ";}

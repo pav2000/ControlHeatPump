@@ -208,6 +208,7 @@ class HeatPump
       
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
     void     Reset_TempErrors();		// Сбросить счетчик ошибок всех датчиков
+    void     resetPID();				// Инициализировать переменные ПИД регулятора
 
     void     sendCommand(TYPE_COMMAND c);   // Послать команду на управление ТН
     __attribute__((always_inline)) inline TYPE_COMMAND isCommand()  {return command;}  // Получить текущую команду выполняемую ТН
@@ -216,8 +217,6 @@ class HeatPump
     boolean is_next_command_stop() { return next_command == pSTOP || next_command == pREPEAT; }
     uint8_t is_pause();					// Возвращает 1, если ТН в паузе
 	inline boolean is_compressor_on() { return dRelay[RCOMP].get_Relay() || dFC.isfOnOff(); }    // Проверка работает ли компрессор
-
-
 
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
@@ -536,11 +535,10 @@ class HeatPump
     uint32_t countResSocket;                // Число сбросов сокетов
   
     // Переменные пид регулятора Отопление
-    PID_WORK_STRUCT pidw_heat;
+    PID_WORK_STRUCT pidw;
     unsigned long updatePidTime;          // время обновления ПИДа отопления
     
     // Переменные пид регулятора ГВС
-    PID_WORK_STRUCT pidw_boiler;
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)

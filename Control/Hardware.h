@@ -250,15 +250,17 @@ private:
 };  
 
 // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ---------------------------------------- --------------------------------------
-#define fPresent         0    // флаг наличие Объекта един для всего!!!! определение смотри выше
-#define fOneSeekZero     1		// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
-#define fEnterInPercent  2		// Ввод на веб-странице в %, иначе в шагах
-#define fCorrectOverHeat 3		// Включен режим корректировки перегрева
-#define fHoldMotor       4		// Режим "удержания" шагового двигателя ЭРВ
-#define fEevClose        5      // Флаг закрытие ЭРВ при выключении компрессора
-#define fLightStart      6      // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-#define fStartFlagPos    7      // флаг Всегда начинать работу ЭРВ со стратовой позици
-#define fPID_PropOnMeasure 8    // ПИД пропорционально измерению (Proportional on Measurement), иначе пропорционально ошибке (Proportional on Error)
+#define fPresent         		0   // флаг наличие Объекта един для всего!!!! определение смотри выше
+#define fOneSeekZero     		1	// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+#define fEnterInPercent  		2	// Ввод на веб-странице в %, иначе в шагах
+#define fCorrectOverHeat 		3	// Включен режим корректировки перегрева
+#define fHoldMotor       		4	// Режим "удержания" шагового двигателя ЭРВ
+#define fEevClose        		5   // Флаг закрытие ЭРВ при выключении компрессора
+#define fLightStart      		6   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+#define fStartFlagPos    		7   // флаг Всегда начинать работу ЭРВ со стратовой позици
+#define fPID_PropOnMeasure		8   // ПИД пропорционально измерению (Proportional on Measurement), иначе пропорционально ошибке (Proportional on Error)
+#define fEEV_StartPosByTemp		9	// Стартовая позиция ЭРВ определяется по температуре подачи (пропорционально между EEV_START_POS_LOW_TEMP=StartPos и EEV_START_POS_HIGH_TEMP=PosAtHighTemp)
+#define fEEV_DirectAlgorithm	10	// Прямое управление ЭРВ без ПИД
 
 class devEEV
 {
@@ -266,13 +268,13 @@ public:
 	void initEEV();                                        // Инициализация ЭРВ
 	int8_t Start();                                        // Запуск ЭРВ - начало алгоритма отслеживания - параметр текущее время
 	void Pause(){fPause=true;}                             // Пауза ЭРВ - останов отслеживания
-	void Resume(uint16_t pos);                             // Пауза ЭРВ - возобновление отслеживания
+	void Resume();                                         // Пауза ЭРВ - возобновление отслеживания
 	int8_t Update(void);			             			// Обновление ЭРВ - одна итерация алгоритма отслеживания на входе
 	boolean isWork();                                      // Получить состояние ЭРВ
 	int16_t get_Overheat(){return Overheat;}               // Получить текущий перегрев
 	int16_t set_Overheat(boolean fHeating); 				// Вычислить текущий перегрев, вычисляется каждое измерение (проводится в опросе датчиков)
 	void   CorrectOverheat(void);							 // Корректировка перегрева
-	void 	 CorrectOverheatInit(void);						 // Перед стартом компрессора
+	void   CorrectOverheatInit(void);						 // Перед стартом компрессора
 
 	// Движение ЭРВ
 	__attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
@@ -296,14 +298,17 @@ public:
 	boolean get_EevClose(){return GETBIT(_data.flags,fEevClose);}        // Получить флаг закрытие ЭРВ при выключении компрессора
 	boolean get_LightStart(){return GETBIT(_data.flags,fLightStart);}    // Получить флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
 	boolean get_StartFlagPos(){return GETBIT(_data.flags,fStartFlagPos);}// Получить флаг Всегда начинать работу ЭРВ со стратовой позици
+	boolean get_fEEVStartPosByTemp() { return GETBIT(_data.flags,fEEV_StartPosByTemp); }
+	uint16_t get_flags() { return _data.flags; }
 
 	uint8_t get_minSteps(){return _data.minSteps;}
 	uint8_t get_delayOnPid(){return _data.delayOnPid;}
 	uint8_t get_delayOff(){return _data.delayOff;}
 	uint8_t get_delayOn(){return _data.delayOn;}
-	uint8_t get_DelayStartPos() {return _data.DelayStartPos;}
-	uint16_t get_StartPos(){return _data.StartPos;}
 	uint16_t get_preStartPos(){return _data.preStartPos;}
+	uint8_t get_DelayStartPos() {return _data.DelayStartPos;}
+	uint16_t get_StartPos();
+
 	char*   get_note(){ return note;}                      // Прочитать описание ЭРВ
 	char*   get_name(){ return name;}                      // Прочитать имя ЭРВ
 	int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
@@ -319,58 +324,64 @@ public:
 	uint8_t *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
 	uint16_t get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
 	void after_load(void);
+	void resetPID();                                       // Сброс пид регулятора
 
 	StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
 	statChart Chart;                                       // График по ЭРВ
 	boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
 	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
+	int16_t OverheatTCOMP;								// перегрев TCOMPIN-T[PEVA]
 
 private:
 	boolean fPause;                                        // пауза алгоритма отслеживания true
 	__attribute__((always_inline)) inline int8_t jamp(int x){return set_EEV(EEV+x);} // Перейти на позицию относительную возвращает код ошибки
 	int8_t stepDown();                                     // 1 Шаг в минус возвращает код ошибки
 	int8_t stepUp();                                       // 1 Шаг в плюс возвращает код ошибки
-	void resetPID();                                       // Сброс пид регулятора
 
 	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
-	uint16_t Pid_start;                                    // откуда стартует ПИД регулятор обновление в функции Resume
-	int16_t Overheat;                                      // Перегрев текущий (сотые градуса)
-	int16_t OHCor_tdelta;									 // Расчитанная целевая дельта Нагнетание-Конденсации
-	TEST_MODE testMode;                                    // Значение режима тестирования
-	int8_t  err;                                           // ошибка ЭРВ (работа) при ошибке останов ТН
-	char *note;                                            // Описание
-	char *name;                                            // Имя
+	int16_t Overheat;                                    // Перегрев текущий (сотые градуса)
+	int16_t OHCor_tdelta;								 // Расчитанная целевая дельта Нагнетание-Конденсации
+	int16_t OHCor_tdelta_prev;							 // Расчитанная целевая дельта Нагнетание-Конденсации
+	TEST_MODE testMode;                                  // Значение режима тестирования
+	int8_t  err;                                         // ошибка ЭРВ (работа) при ошибке останов ТН
+
+	char *note;                                          // Описание
+	char *name;                                          // Имя
 
 	struct {                                    // Структура для сохранения настроек! Первая переменная => timeIn
 		uint16_t pid_time;        				// Период расчета ПИД в секундах
 		PID_STRUCT pid;                         // Настройки и переменные ПИД регулятора
-		int16_t pid2_delta;						// Дельта для консервативных вычислений ПИДа
-		int16_t	Correction;                     // Величина корректироровки перегрева (систематическая ошибка расчета перегерва)
-		int16_t	manualStep;                     // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
+		int16_t  pid2_delta;					// Дельта для консервативных вычислений ПИДа
+		int16_t	 Correction;                     // Величина корректироровки перегрева (систематическая ошибка расчета перегерва)
+		int16_t	 manualStep;                     // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 		TYPEFREON typeFreon;                    // Тип фреона
-		RULE_EEV ruleEEV;                       // правило работы ЭРВ
+		RULE_EEV  ruleEEV;                       // правило работы ЭРВ
 		PID_STRUCT pid2;						// Консервативный ПИД
 		uint16_t OHCor_Period;					// Период расчета корректировки перегрева в циклах ЭРВ
-		int16_t OHCor_TDIS_TCON_Thr;			// Порог, после превышения которого начинаем менять перегрев, в сотых градуса
-		int16_t	OverheatMin;					// Минимальный перегрев (сотые градуса)
-		int16_t	OverheatMax;					// Максимальный перегрев (сотые градуса)
-		int16_t	tOverheat;                      // Перегрев ЦЕЛЬ (сотые градуса)
-		uint8_t	speedEEV;                       // Скорость шагового двигателя ЭРВ (импульсы в сек.)
-		uint8_t	minSteps;                       // Минимальное число шагов открытия ЭРВ
+		int16_t  OHCor_TDIS_TCON_Thr;			// Порог, после превышения которого начинаем менять перегрев, в сотых градуса
+		int16_t	 OverheatMin;					// Минимальный перегрев (сотые градуса)
+		int16_t	 OverheatMax;					// Максимальный перегрев (сотые градуса)
+		int16_t	 tOverheat;                      // Перегрев ЦЕЛЬ (сотые градуса)
+		uint8_t	 speedEEV;                       // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+		uint8_t	 minSteps;                       // Минимальное число шагов открытия ЭРВ
 		uint16_t preStartPos;                   // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
 		uint16_t StartPos;                      // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
 		// ЭРВ Времена и задержки
-		uint8_t	delayOnPid;                     // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
-		uint8_t	DelayStartPos;                  // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
-		uint8_t	delayOff;                       // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
-		uint8_t	delayOn;                        // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
-		uint8_t OHCor_TDIS_TCON_MAX;			// верхняя граница для пропорционального изменения перегрева, % от OHCor_TDIS_TCON
-		int16_t	OverHeatStart;                  // Начальный перегрев (сотые градуса)
-		int16_t	maxSteps;                       // Максимальное число шагов ЭРВ (диапазон)
+		uint8_t	 delayOnPid;                     // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
+		uint8_t	 DelayStartPos;                  // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
+		uint8_t	 delayOff;                       // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
+		uint8_t	 delayOn;                        // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрылось при остановке
+		uint8_t  OHCor_TDIS_TCON_MAX;			// верхняя граница для пропорционального изменения перегрева, % от OHCor_TDIS_TCON
+		int16_t	 OverHeatStart;                  // Начальный перегрев (сотые градуса)
+		int16_t	 maxSteps;                       // Максимальное число шагов ЭРВ (диапазон)
 		uint16_t OHCor_Delay;				    // Задержка корректировки пергрева после старта компрессора, сек
-		int16_t	OHCor_TDIS_TCON;				// Температура нагнетания - конденсации (/0.01) при конденсации 30 градусов, 0 испарения, и OHCor_OverHeatStart
+		int16_t	 OHCor_TDIS_TCON;				// Температура нагнетания - конденсации (/0.01) при конденсации 30 градусов, 0 испарения, и OHCor_OverHeatStart
 		uint16_t flags;                         // флаги ЭРВ
 		uint16_t pid_max;						// ограничение ПИД в шагах ЭРВ
+		uint16_t PosAtHighTemp;					// Положение при EEV_START_POS_HIGH_TEMP
+		int16_t  tOverheatTCOMP;				// Целевой перегрев TCOMPIN-T[PEVA]
+		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева TCOMPIN-T[PEVA]
+		int8_t   trend_threshold;				// Порог детектирования тренда
 	} _data;                                    // Конец структуры для сохранения настроек
 };
 
