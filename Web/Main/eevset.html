@@ -1,16 +1,16 @@
 ﻿<html>
 <head> 
-  <title>Настройки ЭРВ. Народный контроллер ТН</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" type="text/css" href="style.css">
-  <script type="text/javascript" src="scripts.js"></script>
-  <script type="text/javascript">
-  window.onload = function() {
-    loadParam("get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(CONST),get_pEEV(MIN),get_pEEV(MAX),get_pEEV(SPEED),get_optionHP(PSP),get_pEEV(DSP),get_pEEV(PSP),get_pEEV(SP),get_pEEV(DOP),get_pEEV(DON),get_pEEV(DOFF),get_pEEV(HM),get_pEEV(P2D),get_pEEV(ZERO)");
+<title>Настройки ЭРВ. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+window.onload = function() {
+	loadParam("get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(CONST),get_pEEV(MIN),get_pEEV(MAX),get_pEEV(SPEED),get_optionHP(PSP),get_pEEV(DSP),get_pEEV(PSP),get_pEEV(SP),get_pEEV(DOP),get_pEEV(DON),get_pEEV(DOFF),get_pEEV(HM),get_pEEV(P2D),get_pEEV(ZERO)");
 	loadParam("get_pEEV(START),get_pEEV(LST),get_pEEV(CLOSE),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cD),get_pEEV(cOH_MIN),get_pEEV(cOH_MAX),get_pEEV(cOH_START),get_pEEV(POM),get_pEEV(PMAX),get_pEEV(SPT),get_pEEV(PHT),get_pEEV(DIR),get_pEEV(TRG2),get_pEEV(TRG2D),get_pEEV(TTH)");
-  };
-  </script>
+};
+</script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
@@ -57,10 +57,10 @@
     <tr><td>Скорость, импульсы в сек [5..120]</td><td nowrap><input type="number" id="get_peev-speed"> <input type="submit" value=">" onclick="setParam('get_pEEV(SPEED)');"></td></tr>
     <tr><td><b>Управление ЭРВ</b></td><td></td></tr>
     <tr><td>Прямой алгоритм управления ЭРВ без ПИД<sup>6</sup></td><td nowrap><input type="checkbox" id="get_peev-dir" onchange="setParam('get_pEEV(DIR)');"></td></tr>
-    <tr><td>ПИД пропорционально измерению, иначе пропорционально ошибке (только для Алгоритма 2)</td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
-    <tr><td>Ограничение за одну итерацию в шагах ЭРВ (только для Алгоритма 1)</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
-    <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
     <tr><td>Порог детектирования тренда в прямом алгоритме</td><td><input type="number" id="get_peev-tth" step="1"> <input type="submit" value=">" onclick="setParam('get_pEEV(TTH)');"></td></tr>
+    <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
+    <tr><td>Алгоритм 1: Ограничение за одну итерацию в шагах ЭРВ</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
+    <tr><td>Алгоритм 2: ПИД <a href="PID2prop.jpg">пропорционально измерению, иначе пропорционально ошибке</a></td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
 
     <tr><td><b>Пуск компрессора</b></td><td></td></tr>
     <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>1</sup></td><td><input type="checkbox" id="get_peev-lst" onchange="setParam('get_pEEV(LST)');"></td></tr>
