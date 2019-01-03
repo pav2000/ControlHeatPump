@@ -1227,7 +1227,7 @@ xContinue:
 #endif
 
 #ifdef EEV_DEF
-// Задача обеспечения движения шаговика EEV
+// Задача обеспечения движения шаговика EEV (StepperEEV)
 void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   // Размер стека не позволяет использовать внутри jprintf.* !!!

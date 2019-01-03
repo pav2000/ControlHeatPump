@@ -892,29 +892,31 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					pidw.max = 1;
 				}
 			} else {
-				if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
-					if(pidw.trend[trOH_TCOMP] >= 0) {
-						newEEV = 1;
-						pidw.max = 1;
-					}
-				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-					if(pidw.trend[trOH_TCOMP] <= 0) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
-							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
-							pidw.trend[trOH_default] = 0;
-							pidw.max = _data.trend_threshold;
-							pidw.trend[trOH_TCOMP] = 0;
-						} else {
-							newEEV = -1;
+				diff = _data.tOverheatTCOMP_delta * 3 / 4;
+				if(pidw.pre_err2[0] < -diff) { // Перегрев больше, проверка порога - открыть ЭРВ
+					if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) {
+						if(pidw.trend[trOH_TCOMP] >= 0) {
+							newEEV = 1;
 							pidw.max = 1;
 						}
-					}
-				}
-				if(newEEV == 0) {
-					if(pidw.trend[trOH_TCOMP] >= _data.trend_threshold * 2) { //
+					} else if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) { // >= * 2
 						newEEV = 1;
 						pidw.trend[trOH_TCOMP] = 0;
-					} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold * 2) { //
+					}
+				} else if(pidw.pre_err2[0] > diff) {
+					if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
+						if(pidw.trend[trOH_TCOMP] <= 0) {
+							if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
+								pidw.max = _data.trend_threshold;
+								pidw.trend[trOH_default] = 0;
+								pidw.trend[trOH_TCOMP] = 0;
+							} else {
+								newEEV = -1;
+								pidw.max = 1;
+							}
+						}
+					} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) { // <= * 2
 						newEEV = -1;
 						pidw.trend[trOH_TCOMP] = 0;
 					}
