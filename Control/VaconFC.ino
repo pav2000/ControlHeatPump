@@ -152,6 +152,9 @@ int8_t devVaconFC::get_readState()
     if(err) // Ошибка
     {
         state = ERR_LINK_FC; // признак потери связи с инвертором
+#ifdef SPOWER
+        if(HP.sInput[SPOWER].is_alarm()) return err;
+#endif
         SETBIT1(flags, fErrFC); // Блок инвертора
         set_Error(err, name); // генерация ошибки
         return err; // Возврат
@@ -679,6 +682,9 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
+#ifdef SPOWER
+        if(HP.sInput[SPOWER].is_alarm()) break;
+#endif
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf("Modbus reg #%d - ", cmd);
         journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
