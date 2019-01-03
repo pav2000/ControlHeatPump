@@ -705,7 +705,7 @@ uint16_t devEEV::get_StartPos()
 		int16_t t = HP.sTemp[HP.get_modWork() == pCOOL || HP.get_modWork() == pNONE_C ? TEVAOUTG : TCONOUTG].get_Temp();
 		if(t <= EEV_START_POS_LOW_TEMP) return _data.StartPos;
 		else if(t >= EEV_START_POS_HIGH_TEMP) return _data.PosAtHighTemp;
-		return (int32_t)_data.PosAtHighTemp + (t - EEV_START_POS_LOW_TEMP) * (_data.StartPos - _data.PosAtHighTemp) / (EEV_START_POS_HIGH_TEMP - EEV_START_POS_LOW_TEMP);
+		return (int32_t)_data.StartPos - (t - EEV_START_POS_LOW_TEMP) * (_data.StartPos - _data.PosAtHighTemp) / (EEV_START_POS_HIGH_TEMP - EEV_START_POS_LOW_TEMP);
 	} else return _data.StartPos;
 }
 
@@ -855,9 +855,13 @@ int8_t devEEV::Update(void) //boolean fHeating)
 #if defined(TCOMPIN)
 		int16_t diff = _data.tOverheatTCOMP - OverheatTCOMP;
 		pidw.trend[trOH_TCOMP] += sign(pidw.pre_err2[0] - diff);
+		if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
+		else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
 		pidw.pre_err2[0] = diff;
 		diff = _data.tOverheat - Overheat;
 		pidw.trend[trOH_default] += sign(pidw.pre_err - diff); //sign_dif(pidw.pre_err - diff, pidw.trend[trOH_default]); // +1 - растет, -1 - падает
+		if(pidw.trend[trOH_default] > _data.trend_threshold * 2) pidw.trend[trOH_default] = _data.trend_threshold * 2;
+		else if(pidw.trend[trOH_default] < -_data.trend_threshold * 2) pidw.trend[trOH_default] = -_data.trend_threshold * 2;
 		pidw.pre_err = diff;
 #ifdef DEBUG_PID
 		journal.printf("EEV: %d=%d,%d=%d. ", _data.tOverheat - Overheat, pidw.trend[trOH_default], _data.tOverheatTCOMP - OverheatTCOMP, pidw.trend[trOH_TCOMP]);
@@ -869,20 +873,21 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			pidw.max--;
 		} else {
 			if(diff < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
-				if(pidw.trend[trOH_default] > _data.trend_threshold) {
-					newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
+				if(pidw.trend[trOH_default] >= _data.trend_threshold) {
+					newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
+					pidw.max = _data.trend_threshold;
 					pidw.trend[trOH_default] = 0;
-					pidw.max = 2;
-				} else if(pidw.trend[trOH_default] >= 0) {
+				} else if(pidw.trend[trOH_default] > 0) {
 					newEEV = 1;
 					pidw.max = 1;
+					//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
 				}
 			} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
-				if(pidw.trend[trOH_default] < -_data.trend_threshold) {
-					newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
+				if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
+					newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
+					pidw.max = _data.trend_threshold;
 					pidw.trend[trOH_default] = 0;
-					pidw.max = 3;
-				} else if(pidw.trend[trOH_default] <= 0) {
+				} else if(pidw.trend[trOH_default] <= _data.trend_threshold) {
 					newEEV = -1;
 					pidw.max = 1;
 				}
@@ -890,14 +895,28 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.trend[trOH_TCOMP] >= 0) {
 						newEEV = 1;
-						pidw.trend[trOH_TCOMP] = 0;
-						pidw.max = 3;
+						pidw.max = 1;
 					}
 				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 					if(pidw.trend[trOH_TCOMP] <= 0) {
+						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
+							pidw.trend[trOH_default] = 0;
+							pidw.max = _data.trend_threshold;
+							pidw.trend[trOH_TCOMP] = 0;
+						} else {
+							newEEV = -1;
+							pidw.max = 1;
+						}
+					}
+				}
+				if(newEEV == 0) {
+					if(pidw.trend[trOH_TCOMP] >= _data.trend_threshold * 2) { //
+						newEEV = 1;
+						pidw.trend[trOH_TCOMP] = 0;
+					} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold * 2) { //
 						newEEV = -1;
 						pidw.trend[trOH_TCOMP] = 0;
-						pidw.max = 3;
 					}
 				}
 			}
@@ -1047,11 +1066,11 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_POSpp)==0){
 		_itoa(EEV,ret);
 		strcat(ret," (");
-		_itoa(get_EEV_percent() / 100, ret);
+		_ftoa(ret, (float)get_EEV_percent() / 100, 1);
 		strcat(ret,"%)");
-		if (stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
+		if(stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-		_ftoa(ret,(float)(Overheat/100.0),2);
+		_ftoa(ret,(float)(Overheat/100),2);
 	} else if(strcmp(var, eev_ERROR)==0){  _itoa(err,ret);
 	} else if(strcmp(var, eev_MIN)==0){    _itoa(_data.minSteps,ret);
 	} else if(strcmp(var, eev_MAX)==0){	   _itoa(_data.maxSteps,ret);
@@ -2147,27 +2166,31 @@ int8_t devSDM::get_readState(uint8_t group)
 	static float tmp;
 	int8_t i;
 	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
-	err=OK;
 	// Чтение состояния счетчика,
+	err=OK;
 	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 		// Читаем значения счетчика
 		if(group == 0) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE,&tmp);   // Напряжение
-			if(err==OK) { Voltage=tmp; group = 1; }
+			if(err==OK) { Voltage=tmp; group = 1; } else goto xErr;
 		}
 		if(group == 1) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER,&tmp);  // Активная мощность
-			if(err==OK) AcPower=tmp;
+			if(err==OK) AcPower=tmp; else goto xErr;
 		} else if(group == 2) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT,&tmp);   // Ток
-			if(err == OK) { Current=tmp; group = 3; }
+			if(err == OK) { Current=tmp; group = 3; } else goto xErr;
 		}
 		if(group == 3) {
 			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY,&tmp); // Суммарная активная энергия
 			if(err==OK) AcEnergy=tmp;
 		}
-		if (err==OK) break;
+		if(err == OK) break;
+xErr:
+#ifdef SPOWER
+        if(HP.sInput[SPOWER].is_alarm()) return err;
+#endif
 		numErr++;                  // число ошибок чтение по модбасу
 		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
 			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, err);      // Выводим сообщение о повторном чтении

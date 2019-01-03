@@ -136,11 +136,12 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						journal.jprintf("WEB:Error request(%d): ", len);
-						for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
-						journal.jprintf("\n");
+						journal.jprintf("WEB:Wrong request(%d): ", len);
+						//for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
+						for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
+						journal.jprintf("...\n");
 #endif
-						sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
+						//sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
 						break;
 					}
 					case HTTP_GET:     // чтение файла
@@ -1230,11 +1231,10 @@ void parserGET(char *buf, char *strReturn, int8_t )
     	   if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA) {
     		   strcat(strReturn," (");
     		   _ftoa(strReturn, (float)HP.dEEV.OverheatTCOMP / 100, 2);
-    		   strcat(strReturn,")" WEBDELIM);
+    		   strcat(strReturn,")");
     	   }
-#else
-           ADD_WEBDELIM(strReturn);
 #endif
+           ADD_WEBDELIM(strReturn);
            continue;
        }
        if(strcmp(str, "get_Evapor") == 0) {
@@ -1966,12 +1966,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
     		   {
     			   if (strcmp(str,"get_Temp")==0)              // Функция get_Temp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100.0,1);
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100,2);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }
     			   if (strcmp(str,"get_rawTemp")==0)           // Функция get_RawTemp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100.0,1);
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100,2);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }
     			   if(strcmp(str, "get_fullTemp") == 0)         // Функция get_FulTemp
@@ -1979,17 +1979,17 @@ void parserGET(char *buf, char *strReturn, int8_t )
     				   if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)         // Если датчик есть в конфигурации то выводим значение
     				   {
     					 #ifdef SENSOR_IP
-    					   _ftoa(strReturn, (float) HP.sTemp[p].get_rawTemp() / 100.0, 1); // Значение проводного датчика вывод
+    					   _ftoa(strReturn, (float) HP.sTemp[p].get_rawTemp() / 100, 2); // Значение проводного датчика вывод
     					   if((HP.sTemp[p].devIP != NULL) && (HP.sTemp[p].devIP->get_fUse())
     							   && (HP.sTemp[p].devIP->get_link() > -1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
     					   {
     						   strcat(strReturn, " [");
-    						   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    						   _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100, 2);
     						   strcat(strReturn, "]");
     					   }
     					 #else
     					   if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
-    					   else _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100.0, 1);
+    					   else _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100, HP.sTemp[p].get_fRadio() ? 1 : 2);
     					 #endif
     				   } else strcat(strReturn, "-");             // Датчика нет ставим прочерк
     				   ADD_WEBDELIM(strReturn);
@@ -1998,18 +1998,18 @@ void parserGET(char *buf, char *strReturn, int8_t )
 
     			   if (strcmp(str,"get_minTemp")==0)           // Функция get_minTemp
     			   { if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100.0,1);
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100,1);
     			   else strcat(strReturn,"-");              // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_maxTemp")==0)           // Функция get_maxTemp
     			   { if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-    				   _ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100.0,1);
+    				   _ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100,1);
     			   else strcat(strReturn,"-");             // Датчика нет ставим прочерк
     			   ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
 
     			   if(strcmp(str, "get_aTemp") == 0)           // Функция get_addressTemp
     			   {
@@ -2021,7 +2021,7 @@ x_get_aTemp:
     			   }
 
     			   if (strcmp(str,"get_testTemp")==0)           // Функция get_testTemp
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn); continue; }
 
     			   if (strcmp(str,"get_eTemp")==0)           // Функция get_errcodeTemp
     			   { _itoa(HP.sTemp[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
@@ -2063,12 +2063,12 @@ x_get_aTemp:
     			   // ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
     			   if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
     			   { if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100.0,1); ADD_WEBDELIM(strReturn);  continue;  }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn);  continue;  }
     			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
     			   if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
     			   { if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100.0,1); ADD_WEBDELIM(strReturn); continue; }
+    			   { _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
     			   else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
     			   }
 
