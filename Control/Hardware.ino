@@ -576,7 +576,7 @@ void devEEV::initEEV()
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
- _data.trend_threshold = 3;
+ _data.trend_threshold = 4;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -1072,7 +1072,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 		strcat(ret,"%)");
 		if(stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-		_ftoa(ret,(float)(Overheat/100),2);
+		_ftoa(ret,(float)Overheat/100,2);
 	} else if(strcmp(var, eev_ERROR)==0){  _itoa(err,ret);
 	} else if(strcmp(var, eev_MIN)==0){    _itoa(_data.minSteps,ret);
 	} else if(strcmp(var, eev_MAX)==0){	   _itoa(_data.maxSteps,ret);
@@ -1371,10 +1371,14 @@ int8_t devOmronMX2::initFC()
   	  analogWriteResolution(12);        // разрешение ЦАП 12 бит;
   	  analogWrite(pin,dac);
   	  ChartPower.init(false);                 // инициалазация графика
+#ifndef MIN_RAM_CHARTS
   	  ChartCurrent.init(false);               // инициалазация графика
+#endif
   #else									// НЕ Аналоговое управление
       ChartPower.init(get_present());            // инициалазация графика
+#ifndef MIN_RAM_CHARTS
       ChartCurrent.init(get_present());          // инициалазация графика
+#endif
       err=Modbus.LinkTestOmronMX2();     // проверка связи с инвертором  xModbusSemaphore не используем так как в один поток
       check_blockFC();   
       if (err!=OK)  return err;          // связи нет выходим

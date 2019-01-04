@@ -79,10 +79,14 @@ int8_t devVaconFC::initFC()
     ChartFC.init(get_present()); // инициалазация графика
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление графики не нужны
     ChartPower.init(false); // инициалазация графика
+	#ifndef MIN_RAM_CHARTS
     ChartCurrent.init(false); // инициалазация графика
+	#endif
 #else
     ChartPower.init(get_present()); // инициалазация графика
+	#ifndef MIN_RAM_CHARTS
     ChartCurrent.init(get_present()); // инициалазация графика
+	#endif
 #endif
 
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление

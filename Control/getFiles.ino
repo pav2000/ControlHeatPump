@@ -692,7 +692,9 @@ uint16_t get_csvChart(uint8_t thread)
 	for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].Chart.get_present()) { strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); strcat(Socket[thread].outBuf,";");}
 #ifdef EEV_DEF
 	if(HP.dEEV.Chart.get_present())     strcat(Socket[thread].outBuf,"posEEV;");
-  #ifdef DEF_OHCor_OverHeatStart
+  #ifdef PID_FORMULA2
+	if(HP.ChartOVERHEAT2.get_present())  strcat(Socket[thread].outBuf,"OverHeat2;");
+  #else
 	if(HP.ChartOVERHEAT_TARGET.get_present())  strcat(Socket[thread].outBuf,"OverHeatTarget;");
   #endif
 	if(HP.ChartOVERHEAT.get_present())  strcat(Socket[thread].outBuf,"OverHeat;");
@@ -701,8 +703,9 @@ uint16_t get_csvChart(uint8_t thread)
 #endif
 	if(HP.dFC.ChartFC.get_present())       strcat(Socket[thread].outBuf,"FrequencyFC;");
 	if(HP.dFC.ChartPower.get_present())    strcat(Socket[thread].outBuf,"PowerFC;");
+#ifndef MIN_RAM_CHARTS
 	if(HP.dFC.ChartCurrent.get_present())     strcat(Socket[thread].outBuf,"CurrentFC;");
-
+#endif
 	if(HP.ChartRCOMP.get_present())     strcat(Socket[thread].outBuf,"RCOMP;");
 
 	if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"dCO;");
@@ -744,7 +747,9 @@ uint16_t get_csvChart(uint8_t thread)
 		for(j=0;j<FNUMBER;j++)  if(HP.sFrequency[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[j].Chart.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
 #ifdef EEV_DEF
 		if(HP.dEEV.Chart.get_present())    { _itoa(HP.dEEV.Chart.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-	#ifdef DEF_OHCor_OverHeatStart
+	#ifdef PID_FORMULA2
+		if(HP.ChartOVERHEAT2.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT2.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
+	#else
 		if(HP.ChartOVERHEAT_TARGET.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT_TARGET.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 	#endif
 		if(HP.ChartOVERHEAT.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
@@ -753,8 +758,9 @@ uint16_t get_csvChart(uint8_t thread)
 #endif
 		if(HP.dFC.ChartFC.get_present())       { _itoa(HP.dFC.ChartFC.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
 		if(HP.dFC.ChartPower.get_present())    { _itoa(HP.dFC.ChartPower.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
+#ifndef MIN_RAM_CHARTS
 		if(HP.dFC.ChartCurrent.get_present())  { _itoa(HP.dFC.ChartCurrent.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-
+#endif
 		if(HP.ChartRCOMP.get_present())    { _itoa(HP.ChartRCOMP.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
 		if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) // считаем на лету экономим оперативку
 		{_ftoa(Socket[thread].outBuf,((float)HP.sTemp[TCONOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); }

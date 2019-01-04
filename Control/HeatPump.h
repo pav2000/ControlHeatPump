@@ -420,7 +420,9 @@ class HeatPump
     
     #ifdef EEV_DEF
     statChart ChartOVERHEAT;                                // перегрев
-		#ifdef DEF_OHCor_OverHeatStart
+		#ifdef PID_FORMULA2
+    statChart ChartOVERHEAT2;                               // перегрев2
+		#else
     statChart ChartOVERHEAT_TARGET;                         // перегрев цель
 		#endif
     statChart ChartTPEVA;                                   // температура расчитанная из давления испариения

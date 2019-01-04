@@ -615,8 +615,10 @@ void HeatPump::resetSettingHP()
   ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
 //  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
   #ifdef EEV_DEF
-	#ifdef DEF_OHCor_OverHeatStart
-  ChartOVERHEAT_TARGET.init(true);                                             // перегрев
+	#ifdef PID_FORMULA2
+  ChartOVERHEAT2.init(true);                                             // перегрев2
+	#else
+  ChartOVERHEAT_TARGET.init(true);                                             // перегрев цель
 	#endif
   ChartOVERHEAT.init(true);                                                    // перегрев
   ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  кипения
@@ -941,49 +943,49 @@ void HeatPump::set_profile()
 // Все значения в графиках целочислены (сотые), выводятся в формате 0.01
 void  HeatPump::updateChart()
 {
- uint8_t i; 
+	uint8_t i;
 
- for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present())  sTemp[i].Chart.addPoint(sTemp[i].get_Temp());
+	for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present())  sTemp[i].Chart.addPoint(sTemp[i].get_Temp());
 #ifndef MIN_RAM_CHARTS
- for(i=0;i<ANUMBER;i++)
+	for(i=0;i<ANUMBER;i++)
 #else
- for(i=PCON+1;i<ANUMBER;i++)
+	for(i=PCON+1;i<ANUMBER;i++)
 #endif
-	 if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
- for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value()); // Частотные датчики
- #ifdef EEV_DEF
-	#ifdef EEV_PREFER_PERCENT
- if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
-	#else
- if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
-	#endif
-	#ifdef DEF_OHCor_OverHeatStart
- if(ChartOVERHEAT_TARGET.get_present())  ChartOVERHEAT_TARGET.addPoint(dEEV.get_tOverheat());
-	#endif
- if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
- if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
- if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
- #endif
- 
- if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
- if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
- if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
-  
- if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
-   
- if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
- #ifdef USE_ELECTROMETER_SDM 
+		if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
+	for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value()); // Частотные датчики
+#ifdef EEV_DEF
+#ifdef EEV_PREFER_PERCENT
+	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
+#else
+	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
+#endif
+#ifdef PID_FORMULA2
+	if(ChartOVERHEAT2.get_present())  ChartOVERHEAT2.addPoint(dEEV.OverheatTCOMP);
+#else
+	if(ChartOVERHEAT_TARGET.get_present())  ChartOVERHEAT_TARGET.addPoint(dEEV.get_tOverheat());
+#endif
+	if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
+	if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
+	if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
+#endif
+
+	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
+	if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
 #ifndef MIN_RAM_CHARTS
-    if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
-    if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
+	if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
 #endif
-    if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint(power220);
-  //  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);    
-    if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
- #endif
+	if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
 
-
-     
+	if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
+#ifdef USE_ELECTROMETER_SDM
+#ifndef MIN_RAM_CHARTS
+	if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
+	if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
+#endif
+	if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint(power220);
+	//  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);
+	if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
+#endif
 }
 
 // сбросить графики в ОЗУ
@@ -999,7 +1001,9 @@ void HeatPump::startChart()
  for(i=0;i<FNUMBER;i++) sFrequency[i].Chart.clear();
  #ifdef EEV_DEF
  dEEV.Chart.clear();
-	#ifdef DEF_OHCor_OverHeatStart
+	#ifdef PID_FORMULA2
+ ChartOVERHEAT2.clear();
+	#else
  ChartOVERHEAT_TARGET.clear();
 	#endif
  ChartOVERHEAT.clear();
@@ -1008,7 +1012,9 @@ void HeatPump::startChart()
  #endif
  dFC.ChartFC.clear();
  dFC.ChartPower.clear();
+#ifndef MIN_RAM_CHARTS
  dFC.ChartCurrent.clear();
+#endif
  ChartRCOMP.clear();
 // ChartRELAY.clear();
  ChartCOP.clear();                                     // Коэффициент преобразования
@@ -1045,10 +1051,8 @@ uint8_t i;
  for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) { strcat(str,sFrequency[i].get_name()); strcat(str,":0;");}
  #ifdef EEV_DEF
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
-#ifdef DEF_OHCor_OverHeatStart
- if(ChartOVERHEAT_TARGET.get_present())   { strcat(str,chart_OVERHEAT_TARGET); strcat(str,":0;"); }
-#endif
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
+ if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
 	 strcat(str,chart_TPCON); strcat(str,":0;");
@@ -1057,7 +1061,9 @@ uint8_t i;
  #endif
  if(dFC.ChartFC.get_present())     { strcat(str,chart_freqFC); strcat(str,":0;"); }
  if(dFC.ChartPower.get_present())  { strcat(str,chart_powerFC); strcat(str,":0;"); }
+#ifndef MIN_RAM_CHARTS
  if(dFC.ChartCurrent.get_present()){ strcat(str,chart_currentFC); strcat(str,":0;"); }
+#endif
  if(ChartRCOMP.get_present())      { strcat(str,chart_RCOMP); strcat(str,":0;"); }
  if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) { strcat(str,chart_dCO); strcat(str,":0;"); }
  if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) { strcat(str,chart_dGEO); strcat(str,":0;"); }
@@ -1119,7 +1125,10 @@ char * HeatPump::get_Chart(char *var, char* str)
   #else
 		dEEV.Chart.get_PointsStr(1, str);
   #endif
-  #ifdef DEF_OHCor_OverHeatStart
+  #ifdef PID_FORMULA2
+	} else if(strcmp(var, chart_OVERHEAT2) == 0) {
+		ChartOVERHEAT2.get_PointsStr(100, str);
+  #else
 	} else if(strcmp(var, chart_OVERHEAT_TARGET) == 0) {
 		ChartOVERHEAT_TARGET.get_PointsStr(100, str);
   #endif
@@ -1136,8 +1145,10 @@ char * HeatPump::get_Chart(char *var, char* str)
 		dFC.ChartFC.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_powerFC) == 0) {
 		dFC.ChartPower.get_PointsStr(100, str);
+#ifndef MIN_RAM_CHARTS
 	} else if(strcmp(var, chart_currentFC) == 0) {
 		dFC.ChartCurrent.get_PointsStr(100, str);
+#endif
 	} else if(strcmp(var, chart_RCOMP) == 0) {
 		ChartRCOMP.get_PointsStr(1, str);
 	} else if(strcmp(var, chart_dCO) == 0) {
@@ -3447,6 +3458,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	return newVal;
 }
 
+#ifdef PID_FORMULA2
 void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid)
 {
 	if(new_time) {
@@ -3454,3 +3466,6 @@ void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid)
 		pid.Kd = (int32_t) pid.Kd * curr_time / new_time;
 	}
 }
+#else
+void UpdatePIDbyTime(uint16_t, uint16_t, PID_STRUCT &) {}
+#endif

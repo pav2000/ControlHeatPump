@@ -30,7 +30,7 @@ function createChart(values, resultdiv) {
 	} else if(title == 'posEEV') {
 		for(var i = 0; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
 		ReadyMask |= 2;
-	} else if(title == 'OverheatTarget') {
+	} else if(title == 'Overheat2') {
 		for(var i = 0; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
 		ReadyMask |= 4;
 	} else if(title == 'TCOMP-TCON' && showdelta) {
@@ -156,7 +156,7 @@ function createChart(values, resultdiv) {
 			},
 			{
 				yAxis: 0,
-				name: 'Цель',
+				name: 'Перегрев 2',
 				tooltip: {
 					valueDecimals: 2},
 				states: {
@@ -187,7 +187,7 @@ function createChart(values, resultdiv) {
 function GetChart() {
 	loadParam("get_Chart(posEEV)");	
 	loadParam("get_Chart(Overheat)"); 
-	loadParam("get_Chart(OverheatTarget)");
+	loadParam("get_Chart(Overheat2)");
 	showdelta = document.getElementById("showdelta").checked;
 	if(showdelta) loadParam("get_Chart(TCOMP-TCON)");
 }
@@ -195,7 +195,7 @@ function GetChart() {
 window.onload = function() {
 	urlupdate = 2000;
 	loadParam("hide_EEVpid,hide_pid2,get_optionHP(TIME_CHART),get_pEEV(NAME),get_pEEV(NOTE),get_pEEV(PINS),get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(CONST),get_pEEV(RULE),get_pEEV(MANUAL)");
-	loadParam("get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cPERIOD),get_pEEV(cD),get_pEEV(cDT),get_pEEV(P2D),get_pEEV(cDM),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(cOH_MIN),get_pEEV(cOH_START),get_pEEV(cOH_MAX),get_pEEV(DIR)");
+	loadParam("get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(P2D),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(cOH_MIN),get_pEEV(cOH_START),get_pEEV(cOH_MAX),get_pEEV(DIR)");
 	updateParam("get_pEEV(POSpp),get_OverHeat,get_pEEV(ERROR),get_pEEV(TARGET),get_TCOMP_TCON,get_pEEV(cTDELTA),get_Evapor");
 	GetChart();
 	$("#autoupdate").change(function(){
@@ -230,11 +230,11 @@ window.onload = function() {
        <select id="get_peev-rule" onchange="setParam('get_pEEV(RULE)');loadParam('get_pEEV(REMARK)')"></select>
      </td>
      <td id="get_peev-remark"></td>
-     <td nowrap><input id="get_peev-const" type="number"  min="-10" max="10" step="0.1" value="0"><input id="get_peev-const2" type="submit" value=">" onclick="setParam('get_pEEV(CONST)');"></td>
+     <td nowrap><input id="get_peev-const" type="number"  min="-10" max="10" step="0.1"><input id="get_peev-const2" type="submit" value=">" onclick="setParam('get_pEEV(CONST)');"></td>
      <td>
        <select id="get_peev-freon" onchange="setParam('get_pEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select>
      </td>
-     <td nowrap><input id="get_peev-manual" type="number" step="1" value="0"><input id="get_peev-manual2" type="submit" value=">"  onclick="setParam('get_pEEV(MANUAL)');"></td>
+     <td nowrap><input id="get_peev-manual" type="number" step="1"><input id="get_peev-manual2" type="submit" value=">"  onclick="setParam('get_pEEV(MANUAL)');"></td>
    </tr>
   </tbody>
   </table>
@@ -245,7 +245,7 @@ window.onload = function() {
 	<th>Имя</th>
 	<th>Описание</th>
 	<th>Положение, шаги</th>
-	<th>Текущий перегрев </th>
+	<th>Текущий перегрев</th>
 	<th>Температура кипения</th>
 	<th>Разница: Нагнетание-Конденсация</th>
 	<th>Разница: Цель</th>
@@ -267,35 +267,6 @@ window.onload = function() {
   </tr>
  </tbody>
  </table>            
-
-<div>
- <h2>Корректировка перегрева <input id="get_peev-ccorrect" type="checkbox" onclick="setParam('get_pEEV(cCORRECT)');"></h2>
- <table name="get_peev-ccorrect-hide">
-  <thead>
-  <tr>
-	<th>Задержка после старта, сек</th>
-	<th>Период в циклах ЭРВ</th>
-	<th><a data-tooltip="При 30° конденсации, при 0° кипения и начальном перегреве">Разница Нагнетание - Конденсации, °C</a></th>
-	<th>Порог разницы, °C</th>
-	<th><a data-tooltip="Порог разницы Нагнетание - Конденсация для пропорционального изменения перегрева в %. Перегрев устанавливаетя пропорционально между мин. и нач. перегревом. Если разница меньше, то устанавливается нач. или макс. перегрев.">Макс. разница, %</a></th>
-	<th>Мин. перегрев, °C</th>
-	<th>Нач. (оптим.) перегрев, °C</th>
-	<th>Макс. перегрев, °C</th>
-  </tr>
-  </thead>
- <tbody>
-  <tr>
-	<td nowrap><input id="get_peev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cDELAY)')"></td>
-	<td nowrap><input id="get_peev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cPERIOD)')"></td>
-	<td nowrap><input id="get_peev-cd" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cD)')"></td>
-	<td nowrap><input id="get_peev-cdt" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_pEEV(cDT)')"></td>
-	<td nowrap><input id="get_peev-cdm" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cDM)')"></td>
-	<td nowrap><input id="get_peev-coh_min" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cOH_MIN)')"></td>
-	<td nowrap><input id="get_peev-coh_start" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cOH_START)')"></td>
-	<td nowrap><input id="get_peev-coh_max" type="number" min="0" step="0.01"><input type="submit" value=">" onclick="setParam('get_pEEV(cOH_MAX)')"></td>
-  </tr>
- </tbody></table>
-</div>
 
  <h2 name="get_peev-dir-unhide">Параметры ПИД ЭРВ</h2>
  <h2 name="get_peev-dir-hide">Прямое управление ЭРВ</h2>
@@ -325,7 +296,6 @@ window.onload = function() {
   </tr>
 </tbody>
 </table>            
-
 <div style="float:right;">Автообновление графика:<input id="autoupdate" type="checkbox" onclick=""> Нагнетание-Конденсация:<input id="showdelta" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
 <select style="display:none" id="get_optionhp-time_chart" disabled></select>
 </div>
