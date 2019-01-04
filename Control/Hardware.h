@@ -537,8 +537,10 @@ public:
 
   statChart ChartFC;                               // График по частоте
   statChart ChartPower;                            // График по мощности
+#ifndef MIN_RAM_CHARTS
   statChart ChartCurrent;                          // График по току инвертора
- 
+#endif
+
 private:
   int8_t  err;                                     // ошибка частотника (работа) при ошибке останов ТН
   uint16_t numErr;                                 // число ошибок чтение по модбасу

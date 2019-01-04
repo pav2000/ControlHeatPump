@@ -576,7 +576,7 @@ void devEEV::initEEV()
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
- _data.trend_threshold = 3;
+ _data.trend_threshold = 4;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -892,29 +892,31 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					pidw.max = 1;
 				}
 			} else {
-				if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
-					if(pidw.trend[trOH_TCOMP] >= 0) {
-						newEEV = 1;
-						pidw.max = 1;
-					}
-				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-					if(pidw.trend[trOH_TCOMP] <= 0) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
-							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
-							pidw.trend[trOH_default] = 0;
-							pidw.max = _data.trend_threshold;
-							pidw.trend[trOH_TCOMP] = 0;
-						} else {
-							newEEV = -1;
+				diff = _data.tOverheatTCOMP_delta * 3 / 4;
+				if(pidw.pre_err2[0] < -diff) { // Перегрев больше, проверка порога - открыть ЭРВ
+					if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) {
+						if(pidw.trend[trOH_TCOMP] >= 0) {
+							newEEV = 1;
 							pidw.max = 1;
 						}
-					}
-				}
-				if(newEEV == 0) {
-					if(pidw.trend[trOH_TCOMP] >= _data.trend_threshold * 2) { //
+					} else if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) { // >= * 2
 						newEEV = 1;
 						pidw.trend[trOH_TCOMP] = 0;
-					} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold * 2) { //
+					}
+				} else if(pidw.pre_err2[0] > diff) {
+					if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
+						if(pidw.trend[trOH_TCOMP] <= 0) {
+							if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
+								pidw.max = _data.trend_threshold;
+								pidw.trend[trOH_default] = 0;
+								pidw.trend[trOH_TCOMP] = 0;
+							} else {
+								newEEV = -1;
+								pidw.max = 1;
+							}
+						}
+					} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) { // <= * 2
 						newEEV = -1;
 						pidw.trend[trOH_TCOMP] = 0;
 					}
@@ -1070,7 +1072,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 		strcat(ret,"%)");
 		if(stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-		_ftoa(ret,(float)(Overheat/100),2);
+		_ftoa(ret,(float)Overheat/100,2);
 	} else if(strcmp(var, eev_ERROR)==0){  _itoa(err,ret);
 	} else if(strcmp(var, eev_MIN)==0){    _itoa(_data.minSteps,ret);
 	} else if(strcmp(var, eev_MAX)==0){	   _itoa(_data.maxSteps,ret);
@@ -1369,10 +1371,14 @@ int8_t devOmronMX2::initFC()
   	  analogWriteResolution(12);        // разрешение ЦАП 12 бит;
   	  analogWrite(pin,dac);
   	  ChartPower.init(false);                 // инициалазация графика
+#ifndef MIN_RAM_CHARTS
   	  ChartCurrent.init(false);               // инициалазация графика
+#endif
   #else									// НЕ Аналоговое управление
       ChartPower.init(get_present());            // инициалазация графика
+#ifndef MIN_RAM_CHARTS
       ChartCurrent.init(get_present());          // инициалазация графика
+#endif
       err=Modbus.LinkTestOmronMX2();     // проверка связи с инвертором  xModbusSemaphore не используем так как в один поток
       check_blockFC();   
       if (err!=OK)  return err;          // связи нет выходим

@@ -59,11 +59,11 @@
 		</tr>
 		<tr>
 			<td>Целевая температура бойлера °C [5..90]</td>
-			<td nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="0.1" value="40"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></td>
+			<td nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></td>
 		</tr>
 		<tr>
 			<td>Гистерезис целевой температуры °C [1..20]<sup>1</sup></td>
-			<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="20" step="0.1" value="10"><input type="submit" value=">" onclick="setParam('get_Boiler(DTRG)');"></td>
+			<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="20" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(DTRG)');"></td>
 		</tr>
 		<tr>
 			<td>Греть совместно с отоплением до температуры догрева тэном</td>
@@ -153,11 +153,11 @@
 		</tr>
 		<tr>
 			<td>Время работы циркуляционного насоса ГВС (мин.) [0...60]<sup>6</sup></td>
-			<td nowrap><input id="get_boiler-circw" type="number" min="0" max="60" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCW)');"></td>
+			<td nowrap><input id="get_boiler-circw" type="number" min="0" max="60" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCW)');"></td>
 		</tr>
 		<tr>
 			<td>Пауза между включениями насоса циркуляции (мин.) [0...60]<sup>7</sup></td>
-			<td nowrap><input id="get_boiler-circp" type="number" min="0" max="60" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCP)');"></td>
+			<td nowrap><input id="get_boiler-circp" type="number" min="0" max="60" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(CIRCP)');"></td>
 		</tr>
 		<tr>
 			<td>При нагреве бойлера сбрасывать "избыточное" тепло<sup>8</sup> </td>
@@ -165,7 +165,7 @@
 		</tr>
 		<tr>
 			<td>Время сброса тепла (сек.) [1..10000]</td>
-			<td nowrap><input id="get_boiler-resht" type="number" min="1" max="10000" step="1" value=""><input type="submit" value=">" onclick="setParam('get_Boiler(RESHT)');"></td>
+			<td nowrap><input id="get_boiler-resht" type="number" min="1" max="10000" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(RESHT)');"></td>
 		</tr>
 		<tr>
 			<td><b>Защиты при работе теплового насоса</b></td>
@@ -173,7 +173,7 @@
 		</tr>
 		<tr>
 			<td>Максимальная температура подачи °C [20..70]</td>
-			<td nowrap><input id="get_boiler-max" type="number" min="20" max="70" step="0.1" value="20"><input type="submit" value=">" onclick="setParam('get_Boiler(MAX)');"></td>
+			<td nowrap><input id="get_boiler-max" type="number" min="20" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(MAX)');"></td>
 		</tr>
 	</tbody>
 	</table>

@@ -35,7 +35,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.988 beta"        // Версия прошивки
+#define VERSION         "0.989 beta"        // Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
@@ -693,8 +693,8 @@ const char *chart_freqFC    = {"freqFC"};                    // 21 Частот�
 const char *chart_powerFC   = {"powerFC"};                   // 22 Мощность инвертора
 const char *chart_currentFC = {"currentFC"};                 // 23 Ток компрессора
 const char *chart_RCOMP     = {"RCOMP"};                     // 24 включение компрессора
-const char *chart_OVERHEAT_TARGET= {"OverheatTarget"};       //    перегрев цель
 const char *chart_OVERHEAT  = {"Overheat"};                  // 25 перегрев текущий
+const char *chart_OVERHEAT2 = {"Overheat2"};       			//    перегрев2
 const char *chart_TCOMP_TCON = {"TCOMP-TCON"};             // 26 дельта TCOMP-T[PCON]
 const char *chart_dCO       = {"dCO"};                       // 26 дельта СО
 const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
