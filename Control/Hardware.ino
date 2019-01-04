@@ -969,7 +969,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		}
 	}
 	if(newEEV < _data.minSteps) {
-#if defined(DEMO) && defined(EEV_MIN_CONTROL) // Контролировать достижение минимального открытия, ошибка генерится
+#if !defined(DEMO) && defined(EEV_MIN_CONTROL) // Контролировать достижение минимального открытия, ошибка генерится
 		if(HP.is_compressor_on()) {   // во время работы - Сообщение
 			err = _data.minSteps;
 			set_Error(err, (char*) name);
@@ -979,7 +979,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		newEEV = _data.minSteps;            // ограничение
 	}
 	if(newEEV > _data.maxSteps) {
-#if defined(DEMO) && defined(EEV_MAX_CONTROL)   // если задан контроль верхнего диапазона
+#if !defined(DEMO) && defined(EEV_MAX_CONTROL)   // если задан контроль верхнего диапазона
 		if(HP.is_compressor_on()) {   // во время работы - Сообщение
 			err = ERR_MAX_EEV;
 			set_Error(err, (char*) name);
