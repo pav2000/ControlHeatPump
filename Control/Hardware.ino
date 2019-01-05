@@ -577,6 +577,9 @@ void devEEV::initEEV()
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
  _data.trend_threshold = 4;
+ _data.tOverheatTCOMP = 1100;
+ _data.tOverheatTCOMP_delta = 400;
+ _data.PosAtHighTemp = 65;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -592,7 +595,8 @@ void devEEV::initEEV()
   SETBIT1(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
   SETBIT0(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
   SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-  SETBIT0(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
+  SETBIT1(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
+  SETBIT1(_data.flags,fEEV_StartPosByTemp);
 
   Chart.init(get_present());                   // инициалазация статистики
   name=(char*)nameEEV;                  // Присвоить имя
@@ -689,11 +693,13 @@ int8_t devEEV::set_zero()
 
  // Перейти на позицию абсолютную возвращает код ошибки
  // Отрицательные значения ЛЮБЫЕ признак установки 0
-int8_t devEEV::set_EEV(int x)                  
+int8_t devEEV::set_EEV(int16_t x)
 {
   err=OK;
   if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
-  if (testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
+  if(x < _data.minSteps) x = _data.minSteps;
+  else if(x > _data.maxSteps) x = _data.maxSteps;
+  if(testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
  return err;  
 }
@@ -905,16 +911,15 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					}
 				} else if(pidw.pre_err2[0] > diff) {
 					if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-						if(pidw.trend[trOH_TCOMP] <= 0) {
-							if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
-								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000);
-								pidw.max = _data.trend_threshold;
-								pidw.trend[trOH_default] = 0;
-								pidw.trend[trOH_TCOMP] = 0;
-							} else {
-								newEEV = -1;
-								pidw.max = 1;
-							}
+						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2 - 1;
+							pidw.max = _data.trend_threshold;
+							pidw.trend[trOH_default] = 0;
+							pidw.trend[trOH_TCOMP] = 0;
+						} else if(pidw.trend[trOH_TCOMP] <= 0) {
+							newEEV = -1;
+							pidw.max = 1;
+							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) { // <= * 2
 						newEEV = -1;
@@ -1147,17 +1152,17 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 boolean devEEV::set_paramEEV(char *var,float x)
 {
 	if(strcmp(var, eev_POS)==0) {
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ set_EEV((int)x); return true;} else return false;
+		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ set_EEV(x); return true;} else return false;
 	} else if(strcmp(var, eev_POSp)==0){
 		x = x * _data.maxSteps / 100;
-		if ((x >= _data.minSteps)&&(x <= _data.maxSteps)) { set_EEV((int)x); return true;} else return false;
+		if ((x >= _data.minSteps)&&(x <= _data.maxSteps)) { set_EEV(x); return true;} else return false;
 	} else if(strcmp(var, eev_POSpp)==0){
 		return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_MIN)==0){
-		if ((x>=0)&&(x<_data.maxSteps)) { _data.minSteps=(int)x; return true;} else return false;	// минимальное число шагов
+		if ((x>=0)&&(x<_data.maxSteps)) { _data.minSteps=x; return true;} else return false;	// минимальное число шагов
 		return true;
 	} else if(strcmp(var, eev_MAX)==0){
-		if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=(int)x; return true;} else return false;	// максимальное число шагов
+		if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=x; return true;} else return false;	// максимальное число шагов
 		return true;
 	} else if(strcmp(var, eev_TIME)==0){
 		if((x >= 1) && (x <= 1000)) {
@@ -1233,21 +1238,21 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_PID2_delta)==0){
 		_data.pid2_delta=rd(x, 100); return true; // сотые
 	} else if(strcmp(var, eev_SPEED)==0){
-		if ((x>=5)&&(x<=120)) { _data.speedEEV=(int)x; return true;} else return false;	// шаги в секунду
+		if ((x>=5)&&(x<=120)) { _data.speedEEV=x; return true;} else return false;	// шаги в секунду
 	} else if(strcmp(var, eev_PRE_START_POS)==0){
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { _data.preStartPos=(int)x; return true;} else return false;	// шаги
+		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { _data.preStartPos=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_START_POS)==0){
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { _data.StartPos=(int)x; return true;} else return false;	// шаги
+		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { _data.StartPos=x; return true;} else return false;	// шаги
 	} else if(strcmp(var, eev_PosAtHighTemp)==0){
-		if ((x>=_data.minSteps)&&(x<=_data.StartPos)) { _data.PosAtHighTemp=x; return true;} else return false;	// шаги
+		_data.PosAtHighTemp=x; return true;	// шаги
 	} else if(strcmp(var, eev_DELAY_ON_PID)==0){
-		if ((x>=0)&&(x<=255)) { _data.delayOnPid=(int)x; return true;} else return false;	// секунды размер 1 байт
+		if ((x>=0)&&(x<=255)) { _data.delayOnPid=x; return true;} else return false;	// секунды размер 1 байт
 	} else if(strcmp(var, eev_DELAY_START_POS)==0){
-		if ((x>=0)&&(x<=255)) { _data.DelayStartPos=(int)x; return true;} else return false;	// секунды размер 1 байт
+		if ((x>=0)&&(x<=255)) { _data.DelayStartPos=x; return true;} else return false;	// секунды размер 1 байт
 	} else if(strcmp(var, eev_DELAY_OFF)==0){
-		if ((x>=0)&&(x<=255)) { _data.delayOff=(int)x; return true;} else return false;	// секунды размер 1 байт
+		if ((x>=0)&&(x<=255)) { _data.delayOff=x; return true;} else return false;	// секунды размер 1 байт
 	} else if(strcmp(var, eev_DELAY_ON)==0){
-		if ((x>=0)&&(x<=255)) { _data.delayOn=(int)x; return true;} else return false;	// секунды размер 1 байт
+		if ((x>=0)&&(x<=255)) { _data.delayOn=x; return true;} else return false;	// секунды размер 1 байт
 	} else if(strcmp(var, eev_HOLD_MOTOR)==0){
 		if (x==0) SETBIT0(_data.flags, fHoldMotor); else SETBIT1(_data.flags, fHoldMotor);
 	} else if(strcmp(var, eev_SEEK_ZERO)==0){

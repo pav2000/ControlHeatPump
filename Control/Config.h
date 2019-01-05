@@ -3139,22 +3139,22 @@ const char *noteTemp[] = {"Температура улицы",
 	// Значения по умолчанию (можно менять из морды)
 	#define DEFAULT_RULE_EEV       TEVAOUT_PEVA	  // Формула по умолчанию - TEVAOUT_PEVA
 	#define DEFAULT_FREON_TYPE     R134A 		  // Типа фрона по умолчанию - R134A
-	#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
-	#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
+	#define DEFAULT_EEV_TIME	   8			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+	#define DEFAULT_OVERHEAT       100			  // Перегрев по умолчанию (сотые градуса)
 	#define DEFAULT_EEV_Kp	       200			  // ПИД Коэф пропорц.  В СОТЫХ
 	#define DEFAULT_EEV_Ki	       0			  // ПИД Коэф интегр.   В СОТЫХ
 	#define DEFAULT_EEV_Kd	       500			  // ПИД Коэф дифф.   В СОТЫХ
     #define DEFAULT_ERR_KP         100.0          // Ошибка (в сотых градуса) при которой происходит уменьшение пропорциональной составляющей ПИД ЭРВ
-    #define DEFAULT_SPEED_EEV      40             // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+    #define DEFAULT_SPEED_EEV      31             // Скорость шагового двигателя ЭРВ (импульсы в сек.)
     #define DEFAULT_PRE_START_POS  300            // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
-    #define DEFAULT_START_POS      120            // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
-    #define DEFAULT_MIN_STEP       10             // Минимальное число шагов открытия ЭРВ
+    #define DEFAULT_START_POS      250            // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+    #define DEFAULT_MIN_STEP       60             // Минимальное число шагов открытия ЭРВ
     #define DEFAULT_HOLD_MOTOR     false          // Режим "удержания" шагового двигателя ЭРВ
 	#define EEV_PREFER_PERCENT					  // Предпочтительно положение ЭРВ в %. (Для графиков и т.п.)
   	// Корректировки для фреона R134a
 	#define DEF_OHCor_OverHeatStart 	200		  	// Начальный перегрев (сотые градуса)
-	#define DEF_OHCor_OverHeatMin 		150    		// Минимальный перегрев (сотые градуса)
-	#define DEF_OHCor_OverHeatMax 		450    		// Максимальный перегрев (сотые градуса)
+	#define DEF_OHCor_OverHeatMin 		50    		// Минимальный перегрев (сотые градуса)
+	#define DEF_OHCor_OverHeatMax 		250    		// Максимальный перегрев (сотые градуса)
 	#define DEF_OHCor_TDIS_TCON			1250 //1450 // Разница температура нагнетания - конденсации(при 30С) и 0С кипении и перегреве OHCor_OverHeatStart (в сотых)
 	//#define DEF_OHCor_TDIS_TCON_Thr 	300		    // Порог, после превышения TDIS_TCON + TDIS_TCON_Thr начинаем уменьшать перегрев (в сотых)
   	#define DEF_OHCor_CONDENSING_30_MUL 220			// Корректировка разницы Нагнетание-Конденсация на кажлые 10 градусов конденсации от 30 (в сотых), зависит от фреона
@@ -3164,7 +3164,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define DEF_OHCor_MAX_STEP			200			// Максимальное изменение перегрева за раз, в сотых градуса
 
   	// ЭРВ Времена и задержки
-    #define DEFAULT_DELAY_ON_PID    10            // Задержка начала регулирования от пуска компрессора, сек. Общее время =delayOnPid+DelayStartPos
+    #define DEFAULT_DELAY_ON_PID    30            // Задержка начала регулирования от пуска компрессора, сек. Общее время =delayOnPid+DelayStartPos
     #define DEFAULT_DELAY_ON        3             // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
     #define DEFAULT_DELAY_START_POS 5             // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
     #define DEFAULT_DELAY_OFF       3             // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff

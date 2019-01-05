@@ -2147,7 +2147,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #endif
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_freqFC() + dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_freqFC() - dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() - dFC.get_PidFreqStep();
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2285,7 +2286,8 @@ MODE_COMP HeatPump::UpdateHeat()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_freqFC() + dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_freqFC() - dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() - dFC.get_PidFreqStep();
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2426,7 +2428,8 @@ MODE_COMP HeatPump::UpdateCool()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_freqFC() + dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_freqFC() - dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() - dFC.get_PidFreqStep();
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
