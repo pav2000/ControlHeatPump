@@ -1804,7 +1804,7 @@ void HeatPump::resetPID()
 #ifdef PID_FORMULA2
 	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
 	pidw.pre_err = (Status.modWork == pHEAT ? Prof.Heat.tempPID : Status.modWork == pBOILER ? Prof.Boiler.tempPID : Prof.Cool.tempPID) - FEED;
-	pidw.sum = dFC.get_freqFC() * 1000;
+	pidw.sum = dFC.get_targetFreq() * 1000;
 	pidw.min = dFC.get_minFreq() * 1000;
 	pidw.max = dFC.get_maxFreq() * 1000;
 #else
@@ -2147,9 +2147,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #endif
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
 #else
-		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
@@ -2285,13 +2286,14 @@ MODE_COMP HeatPump::UpdateHeat()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
 #else
-		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+		if (newFC>dFC.get_PidFreqStep()) newFC=get_targetFreq()+dFC.get_PidFreqStep(); else newFC += get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
-		if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
+		else if (newFC<dFC.get_minFreq())   newFC=dFC.get_minFreq();
 
 		// Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
 		if (dFC.get_targetFreq()<newFC)                                                                        // Идет увеличение частоты проверяем подход к границами если пересекли границы то частоту не меняем
@@ -2426,9 +2428,10 @@ MODE_COMP HeatPump::UpdateCool()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC - dFC.get_freqFC() > dFC.get_PidFreqStep()) newFC = dFC.get_freqFC() + dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
+		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
 #else
-		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_freqFC()+dFC.get_PidFreqStep(); else newFC += dFC.get_freqFC(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
         
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона

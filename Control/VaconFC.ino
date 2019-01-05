@@ -23,7 +23,7 @@ int8_t devVaconFC::initFC()
     err = OK; // ошибка частотника (работа) при ошибке останов ТН
     numErr = 0; // число ошибок чтение по модбасу для статистики
     number_err = 0; // Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
-    FC = 0; // Целевая скорость частотика
+    FC_target = 0; // Целевая скорость частотика
     FC_curr = 0; // текущая скорость инвертора
     power = 0; // Тееущая мощность частотника
     current = 0; // Текуший ток частотника
@@ -145,7 +145,7 @@ int8_t devVaconFC::get_readState()
 {
     if(testMode != NORMAL && testMode != HARD_TEST){
     	state = FC_S_RDY;
-    	FC_curr = FC;
+    	FC_curr = FC_target;
     	return OK;
     }
     if(!get_present() || state == ERR_LINK_FC) return err; // выходим если нет инвертора или нет связи
@@ -194,7 +194,7 @@ int8_t devVaconFC::get_readState()
 		}
     }
 #else // Аналоговое управление
-    FC_curr = FC;
+    FC_curr = FC_target;
     power = 0;
     current = 0;
 #endif
@@ -208,8 +208,8 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
 #ifdef DEMO
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
-        FC = x;
-        if(show) journal.jprintf(" Set %s: %.2f\n", name, (float)FC / 100);
+        FC_target = x;
+        if(show) journal.jprintf(" Set %s: %.2f\n", name, (float)FC_target / 100);
         return err;
     } // установка частоты OK  - вывод сообщения если надо
     else {
@@ -228,8 +228,8 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
 			err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
         }
         if(err == OK) {
-            FC = x;
-            if(show) journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC / 100);
+            FC_target = x;
+            if(show) journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100);
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {
@@ -238,8 +238,8 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
             return err;
         } // генерация ошибки
 #else // Аналоговое управление
-        FC = x;
-        dac = ((level100 - level0) * FC - 0 * level100) / (100 - 0);
+        FC_target = x;
+        dac = ((level100 - level0) * FC_target - 0 * level100) / (100 - 0);
         switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
         {
         case NORMAL:
@@ -254,7 +254,7 @@ int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t
             break; //  Все включаем и компрессор тоже
         }
         if(show)
-            journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC / 100); // установка частоты OK  - вывод сообщения если надо
+            journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100); // установка частоты OK  - вывод сообщения если надо
 #endif
         return err;
     } // if((x>=_min)&&(x<=_max))
@@ -315,7 +315,7 @@ int8_t devVaconFC::start_FC()
     	goto xStarted;
     }
 	if(!get_present() || GETBIT(flags, fErrFC)) return err = ERR_MODBUS_BLOCK; // выходим если нет инвертора или он заблокирован по ошибке
-	if(FC < _data.minFreq || FC > _data.maxFreq) {
+	if(FC_target < _data.minFreq || FC_target > _data.maxFreq) {
 		err = ERR_FC_ERROR;
 		journal.jprintf(" %s: Wrong frequency, ignore start\n", name);
 		return err;
@@ -487,7 +487,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
-    if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC_target/100.0,2); strcat(ret, "%"); } else
     if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
     if(strcmp(var,fc_cPOWER)==0)                {  _itoa(get_power(), ret); } else
     if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_curr_freq/100.0,2);  strcat(ret, " Гц"); } else // Текущая частота!
@@ -551,8 +551,8 @@ boolean devVaconFC::set_paramFC(char *var, float f)
                                                 else     { SETBIT1(flags,fErrFC); note=(char*)noteFC_NO; }
                                                 return true;            
                                                 } else  // только чтение
-    if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<65)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
-    if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else
+    if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<650)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
+    if(strcmp(var,fc_PID_STOP)==0)              { if((x>0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else
    
 		x = rd(f, 100);
     	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
@@ -563,9 +563,9 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_START_FREQ)==0)            { if((x>0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %
 		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>0)&&(x<=10000)){_data.startFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>0)&&(x<=10000)){_data.minFreq=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>0)&&(x<8000)){_data.minFreqCool=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>0)&&(x<8000)){_data.minFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>0)&&(x<8000)){_data.minFreqUser=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { _data.minFreqCool=x;return true; } else // %
+		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { _data.minFreqBoiler=x;return true; } else // %
+		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { _data.minFreqUser=x;return true; } else // %
 		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>0)&&(x<20000)){_data.maxFreq=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>0)&&(x<20000)){_data.maxFreqCool=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>0)&&(x<20000)){_data.maxFreqBoiler=x;return true; } } else // %

@@ -279,7 +279,7 @@ public:
 	// Движение ЭРВ
 	__attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
 	int16_t get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / _data.maxSteps : 0; } //  % открытия ЭРВ, сотые
-	int8_t  set_EEV(int x);                                // Перейти на позицию абсолютную  возвращает код ошибки
+	int8_t  set_EEV(int16_t x);                             // Перейти на позицию абсолютную  возвращает код ошибки
 	int8_t  set_zero();                                    // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
 
 	char* get_paramEEV(char *var, char *ret);              // Получить параметр ЭРВ в виде строки
@@ -379,8 +379,8 @@ private:
 		uint16_t flags;                         // флаги ЭРВ
 		uint16_t pid_max;						// ограничение ПИД в шагах ЭРВ
 		uint16_t PosAtHighTemp;					// Положение при EEV_START_POS_HIGH_TEMP
-		int16_t  tOverheatTCOMP;				// Целевой перегрев TCOMPIN-T[PEVA]
-		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева TCOMPIN-T[PEVA]
+		int16_t  tOverheatTCOMP;				// Целевой перегрев2 TCOMPIN-T[PEVA]
+		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева2 TCOMPIN-T[PEVA]
 		int8_t   trend_threshold;				// Порог детектирования тренда
 	} _data;                                    // Конец структуры для сохранения настроек
 };
