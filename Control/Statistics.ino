@@ -905,13 +905,13 @@ void Statistics::History()
 		case STATS_OBJ_Press:		// bar
 			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 10, &buf, 0); // P
 			break;
-		case STATS_OBJ_PressTemp:	// C
-			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
-			break;
 		case STATS_OBJ_Flow:		// m3h
 			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 100, &buf, 0); // F
 			break;
 #ifdef EEV_DEF
+		case STATS_OBJ_PressTemp:	// C
+			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
+			break;
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
 			case STATS_EEV_Percent:

@@ -1052,7 +1052,11 @@ uint8_t i;
  #ifdef EEV_DEF
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
- if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+ #ifdef PID_FORMULA2
+   if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+ #else
+   if(ChartOVERHEAT_TARGET.get_present())   { strcat(str,chart_OVERHEAT_TARGET); strcat(str,":0;"); }
+ #endif
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
 	 strcat(str,chart_TPCON); strcat(str,":0;");
@@ -1723,9 +1727,12 @@ int8_t HeatPump::StartResume(boolean start)
 		else  dEEV.Start();                                     // Включить ЭРВ  найти 0 по завершению позиция 0!!!
 #endif
 
-		//journal.jprintf(" Charts clear and start\n");
+	#ifdef CLEAR_CHART_HP_ON
+		journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-		//else  startChart();                                      // Запустить графики <- тут не запуск, тут очистка
+		else  startChart();                                     // Запустить графики <- тут не запуск, тут очистка
+	#endif	
+		
 	}
 	
 	// 4. Определяем что нужно делать -----------------------------------------------------------
@@ -2150,7 +2157,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
 		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
 #else
-		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC +=dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
@@ -2289,7 +2296,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
 		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
 #else
-		if (newFC>dFC.get_PidFreqStep()) newFC=get_targetFreq()+dFC.get_PidFreqStep(); else newFC += get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона

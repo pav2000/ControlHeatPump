@@ -57,7 +57,7 @@ enum { // когда
 	STATS_WHEN_WORKD			// Во время работы компрессора, прошло STATS_WORKD_TIME
 	//STATS_WORK				// Во время работы компрессора
 };
-#define STATS_WORKD_TIME 60000 // ms
+#define STATS_WORKD_TIME 150000 // ms
 
 //static char *stats_format = { "%.1f", "" }; // printf format string
 
