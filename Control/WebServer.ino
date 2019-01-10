@@ -929,7 +929,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
     			strcat(strReturn,"1");
 			#endif
     	} else if(strcmp(str, "EEVpid") == 0) { //  hide_EEVpid
-			strcat(strReturn, GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? "1" : "0");
+			#ifdef EEV_DEF
+    			strcat(strReturn, GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? "1" : "0");
+			#else
+    			strcat(strReturn,"1");
+			#endif
     	}
     	ADD_WEBDELIM(strReturn); continue;
      }
@@ -1225,6 +1229,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            ADD_WEBDELIM(strReturn);
            continue;
        }
+#ifdef EEV_DEF
        if(strcmp(str, "get_OverHeat") == 0) { // Выводит 2 перегрева сразу
     	   _ftoa(strReturn, (float)HP.dEEV.get_Overheat() / 100, 2);
 #ifdef TCOMPIN
@@ -1237,6 +1242,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
            ADD_WEBDELIM(strReturn);
            continue;
        }
+#endif
        if(strcmp(str, "get_Evapor") == 0) {
     	   if(HP.sADC[PEVA].get_present()) _ftoa(strReturn, HP.get_temp_evaporating() / 100.0, 2);
     	   else strcat(strReturn,"-");
