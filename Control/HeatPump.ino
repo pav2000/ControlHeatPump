@@ -615,12 +615,8 @@ void HeatPump::resetSettingHP()
   ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
 //  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
   #ifdef EEV_DEF
-	#ifdef PID_FORMULA2
-  ChartOVERHEAT2.init(true);                                             // перегрев2
-	#else
-  ChartOVERHEAT_TARGET.init(true);                                             // перегрев цель
-	#endif
   ChartOVERHEAT.init(true);                                                    // перегрев
+  ChartOVERHEAT2.init(true);                                             // перегрев2
   ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  кипения
   ChartTPCON.init( sADC[PCON].get_present());                                  // температура расчитанная из давления  конденсации
   #endif
@@ -959,12 +955,8 @@ void  HeatPump::updateChart()
 #else
 	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
 #endif
-#ifdef PID_FORMULA2
-	if(ChartOVERHEAT2.get_present())  ChartOVERHEAT2.addPoint(dEEV.OverheatTCOMP);
-#else
-	if(ChartOVERHEAT_TARGET.get_present())  ChartOVERHEAT_TARGET.addPoint(dEEV.get_tOverheat());
-#endif
 	if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
+	if(ChartOVERHEAT2.get_present()) ChartOVERHEAT2.addPoint(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
 	if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
 	if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
 #endif
@@ -1001,12 +993,8 @@ void HeatPump::startChart()
  for(i=0;i<FNUMBER;i++) sFrequency[i].Chart.clear();
  #ifdef EEV_DEF
  dEEV.Chart.clear();
-	#ifdef PID_FORMULA2
- ChartOVERHEAT2.clear();
-	#else
- ChartOVERHEAT_TARGET.clear();
-	#endif
  ChartOVERHEAT.clear();
+ ChartOVERHEAT2.clear();
  ChartTPEVA.clear(); 
  ChartTPCON.clear(); 
  #endif
@@ -1052,11 +1040,7 @@ uint8_t i;
  #ifdef EEV_DEF
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
- #ifdef PID_FORMULA2
-   if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
- #else
-   if(ChartOVERHEAT_TARGET.get_present())   { strcat(str,chart_OVERHEAT_TARGET); strcat(str,":0;"); }
- #endif
+ if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
 	 strcat(str,chart_TPCON); strcat(str,":0;");
@@ -1129,13 +1113,8 @@ char * HeatPump::get_Chart(char *var, char* str)
   #else
 		dEEV.Chart.get_PointsStr(1, str);
   #endif
-  #ifdef PID_FORMULA2
 	} else if(strcmp(var, chart_OVERHEAT2) == 0) {
 		ChartOVERHEAT2.get_PointsStr(100, str);
-  #else
-	} else if(strcmp(var, chart_OVERHEAT_TARGET) == 0) {
-		ChartOVERHEAT_TARGET.get_PointsStr(100, str);
-  #endif
 	} else if(strcmp(var, chart_OVERHEAT) == 0) {
 		ChartOVERHEAT.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPEVA) == 0) {
@@ -2862,21 +2841,9 @@ void HeatPump::compressorON()
 const char *MinPauseOnCompressor={" Wait min pause on compressor . . ."};  
 void HeatPump::compressorOFF()
 {
-  if (dFC.get_present()) // Есть частотник
-  {
-    if (!dFC.isfOnOff()) return; // он выключен
-  }
-  else  if (!dRelay[RCOMP].get_Relay()) return; // Не частотник и реле компрессора выключено
+  if(!is_compressor_on()) return; // он выключен
    
-  if((get_State()==pOFF_HP)/*||(get_State()==pSTARTING_HP)*/ ||(get_State()==pSTOPING_HP)) return;     // ТН выключен /*или включается*/ или выключается выходим ничего не делаем!!!
-
-
-  journal.jprintf(pP_TIME,"compressorOFF > modWork:%d[%s], now %s\n",get_modWork() ,codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
-  #ifdef DEMO
-    if (rtcSAM3X8.unixtime()-startCompressor<10)   {return;journal.jprintf(MinPauseOnCompressor);}     // Обеспечение минимального времени работы компрессора 2 минуты ТЕСТИРОВАНИЕ
-  #else
-    if (rtcSAM3X8.unixtime()-startCompressor<2*60) {return;journal.jprintf(MinPauseOnCompressor);}     // Обеспечение минимального времени работы компрессора 2 минуты
-  #endif
+  journal.jprintf(pP_TIME,"compressorOFF > modWork:%d[%s]\n", get_modWork(), codeRet[Status.ret]);
 
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
@@ -3371,8 +3338,8 @@ COP = dFC.get_power();  // получить текущую мощность ко
 //if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
-	if(COP>0) COP = (int16_t) (powerCO / COP * 100); else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
-	if(power220 != 0) fullCOP = (int16_t) ((powerCO / power220 * 100)); else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
+	if(power220 != 0) fullCOP = powerCO / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
 		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре
 		if(COP>10*100) COP=10*100;  // КОП не более 10
 		if(fullCOP>8*100) COP=8*100;// полный КОП не более 8
