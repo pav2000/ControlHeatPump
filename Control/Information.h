@@ -201,8 +201,8 @@ struct type_settingHP
 #define fEnabled               0      // Разрешение данного профайла использоваться в коротком списке
 struct type_dataProfile               // Хранение общих данных
 {
-  int8_t id;                          // Номер профайла
-  uint8_t flags;                      // Флаги профайла
+  int8_t id;                          // Номер профайла (1 элемент структуры!)
+  uint8_t flags;                      // Флаги профайла (2 элемент структуры!)
   uint16_t len;                       // Длина данных
   uint32_t saveTime;                  // Время сохранения профиля
   char name[LEN_PROFILE_NAME];        // Имя профайла

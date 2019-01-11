@@ -420,11 +420,7 @@ class HeatPump
     
     #ifdef EEV_DEF
     statChart ChartOVERHEAT;                                // перегрев
-		#ifdef PID_FORMULA2
     statChart ChartOVERHEAT2;                               // перегрев2
-		#else
-    statChart ChartOVERHEAT_TARGET;                         // перегрев цель
-		#endif
     statChart ChartTPEVA;                                   // температура расчитанная из давления испариения
     statChart ChartTPCON;                                   // температура расчитанная из давления Конденсации
     #endif
@@ -434,8 +430,8 @@ class HeatPump
     float powerCO;                                          // Мощность системы отопления, Вт
     float powerGEO;                                         // Мощность системы GEO, Вт
     float power220;                                         // Мощность системы 220, Вт
-    int16_t fullCOP;                                        // Полный СОР сотые
-    int16_t COP;                                            // Чистый COP сотые
+    int32_t fullCOP;                                        // Полный СОР сотые
+    int32_t COP;                                            // Чистый COP сотые
     
     // Удаленные датчики
     #ifdef SENSOR_IP

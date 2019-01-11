@@ -692,12 +692,8 @@ uint16_t get_csvChart(uint8_t thread)
 	for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].Chart.get_present()) { strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); strcat(Socket[thread].outBuf,";");}
 #ifdef EEV_DEF
 	if(HP.dEEV.Chart.get_present())     strcat(Socket[thread].outBuf,"posEEV;");
-  #ifdef PID_FORMULA2
-	if(HP.ChartOVERHEAT2.get_present())  strcat(Socket[thread].outBuf,"OverHeat2;");
-  #else
-	if(HP.ChartOVERHEAT_TARGET.get_present())  strcat(Socket[thread].outBuf,"OverHeatTarget;");
-  #endif
 	if(HP.ChartOVERHEAT.get_present())  strcat(Socket[thread].outBuf,"OverHeat;");
+	if(HP.ChartOVERHEAT2.get_present())  strcat(Socket[thread].outBuf,"OverHeat2;");
 	if(HP.ChartTPEVA.get_present())     strcat(Socket[thread].outBuf,"T[PEVA];");
 	if(HP.ChartTPCON.get_present())     strcat(Socket[thread].outBuf,"T[PCON];");
 #endif
@@ -747,12 +743,8 @@ uint16_t get_csvChart(uint8_t thread)
 		for(j=0;j<FNUMBER;j++)  if(HP.sFrequency[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[j].Chart.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
 #ifdef EEV_DEF
 		if(HP.dEEV.Chart.get_present())    { _itoa(HP.dEEV.Chart.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-	#ifdef PID_FORMULA2
-		if(HP.ChartOVERHEAT2.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT2.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-	#else
-		if(HP.ChartOVERHEAT_TARGET.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT_TARGET.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-	#endif
 		if(HP.ChartOVERHEAT.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
+		if(HP.ChartOVERHEAT2.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT2.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 		if(HP.ChartTPEVA.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPEVA.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 		if(HP.ChartTPCON.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPCON.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 #endif

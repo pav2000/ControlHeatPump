@@ -879,11 +879,18 @@ int32_t Profile::load(int8_t num)
   if (dataProfile.len!=get_sizeProfile())  { set_Error(ERR_BAD_LEN_PROFILE,(char*)nameHeatPump); return err=ERR_BAD_LEN_PROFILE;}                                    // длины не совпали
   #endif
   
+  x = TaskSuspendAll(); // Запрет других задач
   // читаем основные данные
-  if (readEEPROM_I2C(adr, (byte*)&SaveON, sizeof(SaveON))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_LOAD_PROFILE;}  adr=adr+sizeof(SaveON);     // прочитать состояние ТН
-  if (readEEPROM_I2C(adr, (byte*)&Cool, sizeof(Cool))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_LOAD_PROFILE;}  adr=adr+sizeof(Cool);           // прочитать настройки охлаждения
-  if (readEEPROM_I2C(adr, (byte*)&Heat, sizeof(Heat))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_LOAD_PROFILE;}  adr=adr+sizeof(Heat);           // прочитать настройки отопления
-  if (readEEPROM_I2C(adr, (byte*)&Boiler, sizeof(Boiler))) { set_Error(ERR_LOAD_PROFILE,(char*)nameHeatPump); return ERR_LOAD_PROFILE;}  adr=adr+sizeof(Boiler);     // прочитать настройки ГВС
+  if(readEEPROM_I2C(adr, (byte*) &SaveON, sizeof(SaveON))) err = ERR_LOAD_PROFILE; // прочитать состояние ТН
+  else if(readEEPROM_I2C(adr += sizeof(SaveON), (byte*) &Cool, sizeof(Cool))) err = ERR_LOAD_PROFILE; // прочитать настройки охлаждения
+  else if(readEEPROM_I2C(adr += sizeof(Cool), (byte*) &Heat, sizeof(Heat))) err = ERR_LOAD_PROFILE; // прочитать настройки отопления
+  else if(readEEPROM_I2C(adr += sizeof(Heat), (byte*) &Boiler, sizeof(Boiler))) err = ERR_LOAD_PROFILE; // прочитать настройки ГВС
+  if(x) xTaskResumeAll(); // Разрешение других задач
+  if(err) {
+	  set_Error(err, (char*) nameHeatPump);
+	  return err;
+  }
+  adr += sizeof(Boiler);     // прочитать настройки ГВС
  
 // ВСЕ ОК
    #ifdef LOAD_VERIFICATION
@@ -1040,27 +1047,29 @@ char *Profile::get_list(char *c/*,int8_t num*/)
 }
 
 // Устанавливает текущий профиль из номера списка, новый профиль;
-int8_t Profile::set_list( int8_t num)
- {
-  uint8_t xx, i,j=0;
-  int32_t adr;
-  
-  for (i=0;i<I2C_PROFIL_NUM;i++)                                                                // перебор по всем профилям
-  {
-    adr=I2C_PROFILE_EEPROM+ get_sizeProfile()*i;                                                // вычислить адрес начала профиля
-    if (readEEPROM_I2C(adr, (byte*)&xx, sizeof(magic))) { continue; }                                 // прочитать заголовок
-    if (xx!=0xaa)  {  continue; }                                                               // Заголовок не верен, данных нет, пропускаем чтение профиля это не ошибка
-    //Serial.print("xx==0xaa ");Serial.println(i);
-    adr=adr+sizeof(magic)+sizeof(crc16);                                                        // вычислить адрес начала данных
-    if (readEEPROM_I2C(adr, (byte*)&temp_prof, sizeof(temp_prof))) { continue; }                          // прочитать данные
-    if ((GETBIT(temp_prof.flags,fEnabled))&&(temp_prof.id==i))                                            // Если разрешено использовать профиль  в  списке, и считанный номер совпадает с текущим (это должно быть всегда)
-     {
-      if (num==j) {load(i);  break; }                                                           // надо проверить не выбран ли он , и если совпало загрузить профиль и выход
-      else j++;                                                                                 // увеличить счетчик - двигаемся по списку
-     } 
-   }
-//update_list(num); // <-- вызывается в load()!                                                 // обновить список
-return dataProfile.id;                                                                          // вернуть текущий профиль
+int8_t Profile::set_list(int8_t num)
+{
+	uint8_t xx, i, j = 0;
+	int32_t adr;
+
+	for(i = 0; i < I2C_PROFIL_NUM; i++)                                                                // перебор по всем профилям
+	{
+		adr = I2C_PROFILE_EEPROM + get_sizeProfile() * i;                                                // вычислить адрес начала профиля
+		if(readEEPROM_I2C(adr, (byte*) &xx, sizeof(magic))) continue;                                // прочитать заголовок
+		if(xx != 0xaa) continue;
+		//Serial.print("xx==0xaa ");Serial.println(i);
+		adr = adr + sizeof(magic) + sizeof(crc16);                                                        // вычислить адрес начала данных
+		if(readEEPROM_I2C(adr, (byte*) &temp_prof, &temp_prof.flags - (uint8_t*)&temp_prof + sizeof(temp_prof.flags))) continue;
+		if((GETBIT(temp_prof.flags, fEnabled)) && (temp_prof.id == i))                 // Если разрешено использовать профиль  в  списке, и считанный номер совпадает с текущим (это должно быть всегда)
+		{
+			if(num == j) { // надо проверить не выбран ли он , и если совпало загрузить профиль и выход
+				load(i);
+				break;
+			} else j++;                                                                                 // увеличить счетчик - двигаемся по списку
+		}
+	}
+	//update_list(num); // <-- вызывается в load()!                                                 // обновить список
+	return dataProfile.id;                                                                          // вернуть текущий профиль
 }
 
 // обновить список имен профилей, зопоминается в строке list

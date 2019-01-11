@@ -146,6 +146,9 @@ int8_t devVaconFC::get_readState()
     if(testMode != NORMAL && testMode != HARD_TEST){
     	state = FC_S_RDY;
     	FC_curr = FC_target;
+    	power = 600;
+    	current = 555;
+    	FC_curr_freq = 5000;
     	return OK;
     }
     if(!get_present() || state == ERR_LINK_FC) return err; // выходим если нет инвертора или нет связи

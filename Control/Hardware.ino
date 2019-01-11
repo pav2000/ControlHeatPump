@@ -402,6 +402,12 @@ int8_t sensorFrequency::Read()
 {
 	if(testMode != NORMAL) {
 		Value = testValue;
+#if defined(RPUMPI) && defined(FLOWEVA)
+		if(number == FLOWEVA && !HP.dRelay[RPUMPI].get_Relay()) Value = 0;
+#endif
+#if defined(RPUMPO) && defined(FLOWCON)
+		if(number == FLOWCON && !HP.dRelay[RPUMPO].get_Relay()) Value = 0;
+#endif
 		Frequency = Value * kfValue / 360;
 		return 0;
 	}   // В режиме теста
