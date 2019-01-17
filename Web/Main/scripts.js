@@ -197,7 +197,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var v = cal_pack[found];
 											if(v >= 0x80 && v <= 0x9B) {
 												v ^= 0x80;
-												colls[j].style = "color:white";
+												colls[j].style = "color:yellow";
 											} else {
 												if(v >= 0x80) v -= 256;
 												v = v / 10; 
