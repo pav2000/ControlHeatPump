@@ -955,9 +955,10 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		case TCOMPIN_PEVA:
 #endif
 			newEEV = _data.tOverheat - Overheat;
+#ifdef PID_FORMULA2
 			newEEV = round_div_int16(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-#ifndef PID_FORMULA2
-			newEEV = EEV - newEEV;
+#else
+			newEEV = EEV + round_div_int16(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 #endif
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
 			//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);

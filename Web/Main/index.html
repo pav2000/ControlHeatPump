@@ -1,4 +1,4 @@
- <html>
+<html>
 <head>
 	<title>Народный контроллер ТН</title>
 	<meta charset="utf-8" />
@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			updateParam("get_MODE,get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO)");
+			updateParam("get_MODE,get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(On)");
 	};
 	</script>	
 </head>
@@ -18,26 +18,14 @@
 	<h2>Тепловой насос</h2>
 	<div class="row1">
 		<div class="swich"></div>
-		<dl>
-			<dt>TEVAIN</dt><dd>-25,0 &deg;C</dd>
-			<dt>TEVAOUT</dt><dd>+20,0 &deg;C</dd>
-			<dt>TCONIN</dt><dd>+21,0 &deg;C</dd>
-			<dt>TEVAIN</dt><dd>-25,0 &deg;C</dd>
-			<dt>TEVAOUT</dt><dd>+20,0 &deg;C</dd>			
-		</dl>
-		<dl>
-			<dt>TEVAIN</dt><dd>-</dd>
-			<dt>TEVAOUT</dt><dd>LOW</dd>
-			<dt>TCONIN</dt><dd>LOW</dd>
-			<dt>TEVAIN</dt><dd>-</dd>
-			<dt>TEVAOUT</dt><dd>-</dd>
-		</dl>
+		<dl></dl><dl></dl>
 		<dl>
 			<dt>Тепловой насос</dt><dd><span id="get_work">-</span></dd>
 			<dt>Режим работы</dt><dd><span id="get_mode2">-</span></dd>
+			<dt>Работа по расписанию</dt><dd><span id="get_schdlr-on-ONOFF">-</span></dd>
 			<dt>Показатели</dt><dd><span id="get_errcode">-</span></dd>
 			<dd style="width:100%;"><span id="get_error">-</span></dd>
-		</dl>				
+		</dl>
 	</div>
 	<div class="row2">
 		<dl>

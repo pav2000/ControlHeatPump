@@ -7,8 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<style>
 	#feedback { font-size: 1.4em; }
-	#calendar .ui-selecting { background: #FECA40; }
-	#calendar .ui-selected { background: #F39814; }
+	#calendar .ui-selecting { background: #00E673; }
+	#calendar .ui-selected { background: #00CC66; }
 	#calendar { margin: 0; padding: 0; width: 850; }
 	#calendar td.clc { margin: 3px; padding: 1px; text-align: center; color: white; border: 1px dotted black; }
 	#calendar td.clh { background: #F7F7F7; } 
@@ -33,7 +33,7 @@
 						this.style = "color:red";
 					} else {
 						v = el.value == -2 ? 0 : el.innerHTML.replace(/\. .*$/, "");
-						this.style = "color:white";
+						this.style = "color:yellow";
 					}
 					this.innerHTML = v == 0 ? "" : v;
 				}

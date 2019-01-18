@@ -1,4 +1,4 @@
-/* ver 0.990 beta */
+/* ver 0.991 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -197,7 +197,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var v = cal_pack[found];
 											if(v >= 0x80 && v <= 0x9B) {
 												v ^= 0x80;
-												colls[j].style = "color:white";
+												colls[j].style = "color:yellow";
 											} else {
 												if(v >= 0x80) v -= 256;
 												v = v / 10; 
