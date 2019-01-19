@@ -151,7 +151,14 @@ int8_t devVaconFC::get_readState()
     	FC_curr_freq = 5000;
     	return OK;
     }
-    if(!get_present() || state == ERR_LINK_FC) return err; // выходим если нет инвертора или нет связи
+    if(!get_present() || state == ERR_LINK_FC) {
+    	state = ERR_LINK_FC;
+    	FC_curr = 0;
+    	FC_curr_freq = 0;
+    	power = 0;
+    	current = 0;
+    	return err; // выходим если нет инвертора или нет связи
+    }
     err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
     // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
@@ -160,6 +167,7 @@ int8_t devVaconFC::get_readState()
     {
         state = ERR_LINK_FC; // признак потери связи с инвертором
 #ifdef SPOWER
+        HP.sInput[SPOWER].Read(true);
         if(HP.sInput[SPOWER].is_alarm()) return err;
 #endif
         SETBIT1(flags, fErrFC); // Блок инвертора
@@ -410,8 +418,11 @@ xStarted:
 // Команда стоп на инвертор Обратно код ошибки
 int8_t devVaconFC::stop_FC()
 {
-    if((testMode == NORMAL || testMode == HARD_TEST) && (!get_present() || state == ERR_LINK_FC))
+    if((testMode == NORMAL || testMode == HARD_TEST) && (!get_present() || state == ERR_LINK_FC)) {
+        SETBIT0(flags, fOnOff);
+        startCompressor = 0;
         return err; // выходим если нет инвертора или нет связи
+    }
     err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 #ifdef DEMO
@@ -690,6 +701,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
 #ifdef SPOWER
+        HP.sInput[SPOWER].Read(true);
         if(HP.sInput[SPOWER].is_alarm()) break;
 #endif
         numErr++; // число ошибок чтение по модбасу

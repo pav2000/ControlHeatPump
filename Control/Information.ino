@@ -598,7 +598,7 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_WEATHER)==0) { Cool.flags = (Cool.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Cool.flags = (Cool.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Cool.flags = (Cool.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Cool.kWeather=rd(x, 1000); return true;} else return false;                             }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ Cool.kWeather=rd(x, 1000); return true; }             // Коэффициент погодозависимости
  return false; 
 }
 
@@ -629,7 +629,7 @@ char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Cool.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Cool.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Cool.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
-   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Cool.kWeather/1000.0,2); return ret;            }                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Cool.kWeather/1000.0,3); return ret;            }                 // Коэффициент погодозависимости
  return  strcat(ret,(char*)cInvalid);   
 }
 
@@ -667,7 +667,7 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else                     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ if ((x>=0.0)&&(x<=1.0)) {Heat.kWeather=rd(x, 1000); return true;} else return false;  }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeather=rd(x, 1000); return true; }             // Коэффициент погодозависимости
  return false; 
 }
 
@@ -701,7 +701,7 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Heat.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Heat.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Heat.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
-   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Heat.kWeather/1000,2); return ret;            }                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Heat.kWeather/1000,3); return ret;            }                 // Коэффициент погодозависимости
  return  strcat(ret,(char*)cInvalid);  
 }
 
@@ -737,6 +737,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_BOIL_DIF)==0)		{ if((x>=0.0)&&(x<=32)) {Boiler.pid.Kd=rd(x, 1000); return true;} else return false; } else   // Дифференциальная составляющая ПИД ГВС
 	if(strcmp(var,boil_BOIL_TEMP)==0)		{ if((x>=30.0)&&(x<=70)) {Boiler.tempPID=rd(x, 100); return true;} else return false; } else   // Целевая темпеартура ПИД ГВС
 	if(strcmp(var,boil_ADD_HEATING)==0)		{ if(x) SETBIT1(Boiler.flags,fAddHeating); else SETBIT0(Boiler.flags,fAddHeating); return true;} else  // флаг использования тена для догрева ГВС
+	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	return false;
 }
@@ -769,6 +770,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd/1000,3); return ret;       }else                            // Дифференциальная составляющая ПИД ГВС
  if(strcmp(var,boil_BOIL_TEMP)==0){       _ftoa(ret,(float)Boiler.tempPID/100,1); return ret;   }else                            // Целевая темпеартура ПИД ГВС
  if(strcmp(var,boil_ADD_HEATING)==0){     if(GETBIT(Boiler.flags,fAddHeating)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else   // флаг использования тена для догрева ГВС
+ if(strcmp(var,hp_SUN)==0) { if(GETBIT(Boiler.flags,fBoilerUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _ftoa(ret,(float)Boiler.tempRBOILER/100,1); return ret;       }else                            // температура включения догрева бойлера
  return strcat(ret,(char*)cInvalid);
 }

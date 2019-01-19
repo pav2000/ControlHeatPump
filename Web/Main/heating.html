@@ -122,9 +122,9 @@
 			<td><input type="checkbox" name="get_paramheathp-weather" id="get_paramheathp-weather" onchange="setParam('get_paramHeatHP(WEATHER)');" ></td>
 		</tr>
 		<tr>
-			<td>Коэффициент погодозависимости [0,00..1,00]<sup>6</sup></td>
-			<td nowrap><input id="get_paramcoolhp-k_weather" type="number" min="0" max="1" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramCoolHP(K_WEATHER)');"></td>
-			<td nowrap><input id="get_paramheathp-k_weather" type="number" min="0" max="1" step="0.01"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(K_WEATHER)');"></td>
+			<td>Коэффициент погодозависимости<sup>6</sup></td>
+			<td nowrap><input id="get_paramcoolhp-k_weather" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramCoolHP(K_WEATHER)');"></td>
+			<td nowrap><input id="get_paramheathp-k_weather" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_paramHeatHP(K_WEATHER)');"></td>
 		</tr>
 		<tr>
 			<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>

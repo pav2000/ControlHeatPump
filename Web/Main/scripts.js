@@ -1,4 +1,4 @@
-/* ver 0.991 beta */
+/* ver 0.992 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -145,6 +145,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].match(/^RELOAD/)) { 
 									location.reload();
 								} else {
+									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
+										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
+									}
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
@@ -162,8 +165,6 @@ function loadParam(paramid, noretry, resultdiv) {
 										var elements = document.getElementsByName(valueid + "-unhide");
 										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] != 1 ? "inline" : "none");
 										continue;
-									} else if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
-										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
 								}

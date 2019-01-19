@@ -1499,8 +1499,8 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	}
 	
 	if(b != dRelay[PUMP_IN].get_Relay()) {// переключение насосов если есть что переключать 
-	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
-	_delay(d);                                      // Задержка на d мсек
+		dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
+		_delay(d);                                // Задержка на d мсек
 	}
 	
 	if((!b) &&  (dRelay[RPUMPO].get_Relay() // пауза перед выключением насосов контуров, если нужно
@@ -2028,10 +2028,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	int16_t T = sTemp[TBOILER].get_Temp();
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
-		if(T < HP.Prof.Boiler.tempRBOILER) {
+		if(!is_compressor_on()) {
+			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		} else if(T < HP.Prof.Boiler.tempRBOILER) {
 			if(FEED > T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_ON();    // ГВС - включить
 			else if(FEED <= T) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat || !is_compressor_on()) {
+		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat) {
 			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
 		}
 		return pCOMP_OFF;
@@ -3017,7 +3019,10 @@ int8_t HeatPump::runCommand()
 			Software_Reset() ;      // Сброс
 			break;
 		case pREPEAT:
-			if(NO_Power) break;       		  			// Нет питания - нет рестарта
+			if(NO_Power) { // Нет питания - ожидание
+				NO_Power = 2;
+				goto xWait;
+			}
 			StopWait(_stop);                            // Попытка запустит ТН (по числу пусков)
 			num_repeat++;                               // увеличить счетчик повторов пуска ТН
 			journal.jprintf("Repeat start %s (attempts remaining %d) . . .\n",(char*)nameHeatPump,get_nStart()-num_repeat);
@@ -3046,6 +3051,7 @@ int8_t HeatPump::runCommand()
 			save();                                            // сохранить настройки
 			break;
 		case pWAIT:   // Перевод в состяние ожидания  - особенность возможна блокировка задач - используем семафор
+xWait:
 			if(SemaphoreTake(xCommandSemaphore,(60*1000/portTICK_PERIOD_MS))==pdPASS)    // Cемафор  захвачен ОЖИДАНИНЕ ДА 60 сек
 			{
 				Task_vUpdate_run = false;					      // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
