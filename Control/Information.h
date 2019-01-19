@@ -144,6 +144,7 @@ struct type_SaveON
 #define fAddHeating      	6           // флаг ДОГРЕВА ГВС ТЭНом
 #define fBoilerTogetherHeat	7			// флаг одновременного нагрева бойлера с отоплением до температуры догрева
 #define fBoilerPID			8			// ПИД
+#define fBoilerUseSun		9		  	// флаг использования солнечного коллектора
 
 struct type_boilerHP
 {

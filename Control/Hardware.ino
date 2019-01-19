@@ -290,34 +290,28 @@ void  sensorDiditalInput::initInput(int sensor)
    Input=digitalReadDirect(pin);    // Состояние датчика прочитать датчик но не анализировать аварию (хотя этого можно не делать)
 };
 
-  // Чтение датчика возвращает ошибку или ОК
-int8_t sensorDiditalInput::Read()
+// Чтение датчика возвращает ошибку или ОК
+int8_t sensorDiditalInput::Read(boolean fast)
 {
-/* old
- err=OK;                                            // Ошибки сбросить
- if (testMode!=NORMAL) Input=testInput;              // В режиме теста
- else Input=digitalReadDirect(pin);                  // Прочитать состяние датчика и запомнить
- 
-  _delay(1);                 						 // почему то нужна задержка
-  if ((Input==alarmInput)&&(type==pALARM))           // Срабатывание аварийного датчика (только его!)
-            { err=ERR_DINPUT;set_Error(err,name); }  // Сработал датчик АВАРИЯ!!!!
-*/
- err=OK;                                            // Ошибки сбросить
- if (testMode!=NORMAL) Input=testInput;             // В режиме теста
- else {
-     boolean in = digitalReadDirect(pin);
-     if(in != Input) {
-         uint8_t i;
-         for(i = 0; i<2; i++) {
-        	 _delay(1);
-             if(in != digitalReadDirect(pin)) break;
-         }
-         if(i == 2) Input = in;
-     }
- }
- if (type == pALARM && Input == alarmInput)     // Срабатывание аварийного датчика (только его!)
-     { err=ERR_DINPUT;set_Error(err,name); }    // Сработал датчик АВАРИЯ!!!!
- return err;
+	err = OK;                                            // Ошибки сбросить
+	if(testMode != NORMAL) Input = testInput;            // В режиме теста
+	else {
+		boolean in = digitalReadDirect(pin);
+		if(!fast && in != Input) {
+			uint8_t i;
+			for(i = 0; i < 2; i++) {
+				_delay(1);
+				if(in != digitalReadDirect(pin)) break;
+			}
+			if(i == 2) Input = in;
+		}
+	}
+	if(type == pALARM && Input == alarmInput)     // Срабатывание аварийного датчика (только его!)
+	{
+		err = ERR_DINPUT;
+		set_Error(err, name);
+	}
+	return err;
 }
     
 // Установить Состояние датчика в режиме теста
@@ -1213,7 +1207,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_CONST)==0){
 		if ((x>=-10.0)&&(x<=10.0)) { _data.Correction=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep=x; return true;} else return false;	// шаги
+		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep = x; if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep); return true; } else return false;	// шаги
 	} else if(strcmp(var, eev_FREON)==0){
 		if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип
 	}   else if(strcmp(var, eev_RULE)==0){
@@ -2207,6 +2201,7 @@ int8_t devSDM::get_readState(uint8_t group)
 		if(err == OK) break;
 xErr:
 #ifdef SPOWER
+		HP.sInput[SPOWER].Read(true);
         if(HP.sInput[SPOWER].is_alarm()) return err;
 #endif
 		numErr++;                  // число ошибок чтение по модбасу

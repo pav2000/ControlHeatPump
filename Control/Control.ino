@@ -170,10 +170,9 @@ uint8_t TaskSuspendAll(void) {
 int8_t set_Error(int8_t _err, char *nam)
 {
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
-	{
+	{ // Выключить компрессор для обоих вариантов
 		journal.jprintf("$Compressor protection: ");
-		if(HP.dFC.get_present()){ HP.dFC.stop_FC();_delay(500);} // Для инвертора частоту в 0, пауза
-		HP.dRelay[RCOMP].set_OFF();    // Выключить компрессор для обоих вариантов (для инвертора дублирование команды получается)
+		if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
@@ -987,6 +986,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif
 #ifdef USE_UPS
+		HP.sInput[SPOWER].Read(true);
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
 				HP.save_motoHour();
@@ -1157,7 +1157,8 @@ void vReadSensor_delay8ms(int16_t ms8)
 		 // Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
-		if(((HP.get_State() == pWORK_HP && !HP.is_pause() && ((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)))) || fregen)
+		if(((HP.get_State() == pWORK_HP && !HP.is_pause()
+				&& ((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)) || (HP.get_modeHouse() == pBOILER && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
 				if(fregen) {

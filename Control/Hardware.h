@@ -122,7 +122,7 @@ class sensorDiditalInput
 {
 public:
   void initInput(int sensor);                            // Инициализация контактного датчика
-  int8_t  Read();                                        // Чтение датчика возвращает ошибку или ОК
+  int8_t  Read(boolean fast = false);                    // Чтение датчика возвращает ошибку или ОК
   __attribute__((always_inline)) inline boolean get_Input(){return Input;}   // Получить значение датчика при последнем чтении
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
   int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку

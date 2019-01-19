@@ -108,29 +108,28 @@ void web_server(uint8_t thread)
 				// Ставить вот сюда
 				if(Socket[thread].client.available()) {
 					len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
-					if(len > W5200_MAX_LEN - 1) {
-						journal.jprintf("WEB:Big packet: %d\n", len);
-						len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
+					if(len > W5200_MAX_LEN) {
+						journal.jprintf("WEB:Big packet: %d - truncated!\n", len);
+#ifdef DEBUG
+						journal.jprintf("%s\n\n", Socket[thread].inBuf);
+#endif
+						len = W5200_MAX_LEN; // Ограничить размером в максимальный размер пакета w5200
 					}
 					if(Socket[thread].client.read(Socket[thread].inBuf, len) != len) {
+						journal.jprintf("WEB:Read error\n");
 						Socket[thread].inBuf[0] = 0;
 						SPI_switchW5200();
 						continue;
 					}
-					Socket[thread].inBuf[len] = 0;                                // обрезать строку
 					// Ищем в запросе полезную информацию (имя файла или запрос ajax)
-#ifdef LOG
-					journal.jprintf("$INPUT: %s\n",(char*)Socket[thread].inBuf);
-#endif
 					// пройти авторизацию и разобрать заголовок -  получить имя файла, тип, тип запроса, и признак меню пользователя
 					Socket[thread].http_req_type = GetRequestedHttpResource(thread);
-#ifdef DEBUG
-					if(len == W5200_MAX_LEN - 1) { // big packet
-						journal.jprintf("%s\n\n", Socket[thread].inBuf);
+					if(Socket[thread].http_req_type != HTTP_POST || len < W5200_MAX_LEN) {
+						Socket[thread].inBuf[len + 1] = 0;              // обрезать строку
 					}
-#endif
 #ifdef LOG
-					journal.jprintf("\r\n$QUERY: %s\r\n",Socket[thread].inPtr);
+					journal.jprintf("$QUERY: %s\n",Socket[thread].inPtr);
+					journal.jprintf("$INPUT: %s\n",(char*)Socket[thread].inBuf);
 #endif
 					switch(Socket[thread].http_req_type)  // По типу запроса
 					{
