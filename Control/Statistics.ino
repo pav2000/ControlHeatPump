@@ -353,8 +353,10 @@ void Statistics::Update()
 		compressor_on_timer += tm;
 		if(compressor_on_timer >= STATS_WORKD_TIME) counts_work++;
 	} else compressor_on_timer = 0;
+	counts++;
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		if(Stats_data[i].when == STATS_WHEN_WORKD && compressor_on_timer < STATS_WORKD_TIME) continue;
+		uint8_t skip_value = 0;
 		switch(Stats_data[i].object) {
 		case STATS_OBJ_Temp:
 			newval = HP.sTemp[Stats_data[i].number].get_Temp();
@@ -387,11 +389,19 @@ void Statistics::Update()
 				newval = HP.COP;
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
 #ifdef STATS_SKIP_COP_WHEN_RELAY_ON
-				if(HP.dRelay[STATS_SKIP_COP_WHEN_RELAY_ON].get_Relay()) continue;
+				static uint8_t skip_by_relay = 0;
+				if(HP.dRelay[STATS_SKIP_COP_WHEN_RELAY_ON].get_Relay()) {
+					skip_by_relay = 30 / (TIME_READ_SENSOR / 1000); // 30 sec pause
+					skip_value = 1;
+				} else if(skip_by_relay) {
+					skip_by_relay--;
+					skip_value = 1;
+				}
+
 #endif
 				newval = HP.fullCOP;
 			}
-			if(newval == 0) continue;
+			if(newval == 0) skip_value = 1;
 			break;
 		case STATS_OBJ_Sun:
 			if(!GETBIT(HP.flags, fHP_SunActive)) continue;
@@ -402,13 +412,14 @@ void Statistics::Update()
 		}
 		switch(Stats_data[i].type){
 		case STATS_TYPE_MIN:
-			if(newval < Stats_data[i].value) Stats_data[i].value = newval;
+			if(newval < Stats_data[i].value && !skip_value) Stats_data[i].value = newval;
 			break;
 		case STATS_TYPE_MAX:
-			if(newval > Stats_data[i].value) Stats_data[i].value = newval;
+			if(newval > Stats_data[i].value && !skip_value) Stats_data[i].value = newval;
 			break;
 		case STATS_TYPE_AVG:
 		case STATS_TYPE_SUM:
+			if(skip_value) newval = Stats_data[i].value / ((Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts) - 1);
 			Stats_data[i].value += newval;
 			break;
 		case STATS_TYPE_TIME:
@@ -416,7 +427,6 @@ void Statistics::Update()
 			break;
 		}
 	}
-	counts++;
 //	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) journal.jprintf("%d=%d, ", i, Stats_data[i].value); journal.jprintf("\n");
 }
 

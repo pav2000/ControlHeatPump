@@ -367,6 +367,7 @@ class HeatPump
    uint32_t get_startDT(){return timeON;}                  // Получить дату и время последеней перезагрузки
    inline uint32_t get_startCompressor(){return startCompressor;} // Получить дату и время пуска компрессора! нужно для старта ЭРВ
    inline uint32_t get_stopCompressor(){return stopCompressor;} // Получить дату и время останова компрессора!
+   void set_stopCompressor() { stopCompressor = rtcSAM3X8.unixtime(); }
    uint32_t get_startTime(){return Prof.SaveON.startTime;} // Получить дату и время пуска ТН (не компрессора!)
    inline uint32_t get_command_completed(){ return command_completed; } // Время выполнения команды
    uint32_t get_motoHourH1(){return motoHour.H1;}          // Получить моточасы ТН ВСЕГО
