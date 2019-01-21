@@ -1537,16 +1537,20 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 #else
 	// здесь выключать насос бойлера бесполезно, уже раньше выключили
 	#ifdef RPUMPBH
-    if ((get_modWork()==pBOILER)||(get_modWork()==pNONE_B)) dRelay[RPUMPBH].set_Relay(b); // Если бойлер
+    if((get_modWork()==pBOILER)||(get_modWork()==pNONE_B)) dRelay[RPUMPBH].set_Relay(b); // Если бойлер
     else
     #endif
     {
     	dRelay[RPUMPO].set_Relay(b);                  // насос отопления
-		#ifdef RPUMPFL
-    	if(!b || get_modWork() == pHEAT || get_modWork() == pNONE_H) {// Выкл или Отопление
+    	if(!b) {
+#ifdef RPUMPBH
+    		dRelay[RPUMPBH].set_Relay(b);
+#endif
+#ifdef RPUMPFL
+    		// if(get_modWork() == pHEAT || get_modWork() == pNONE_H) // Выкл или Отопление
     		Pump_HeatFloor(b); 				  // насос ТП
+#endif
     	}
-		#endif
     }
    _delay(d);                                     // Задержка на d мсек    
 #endif

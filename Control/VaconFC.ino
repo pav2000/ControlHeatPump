@@ -448,9 +448,9 @@ int8_t devVaconFC::stop_FC()
 #endif
     }
     if(err == OK) {
+        journal.jprintf(" %s OFF\n", name);
         SETBIT0(flags, fOnOff);
         startCompressor = 0;
-        journal.jprintf(" %s OFF\n", name);
     }
     else {
         SETBIT1(flags, fErrFC);

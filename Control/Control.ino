@@ -173,6 +173,7 @@ int8_t set_Error(int8_t _err, char *nam)
 	{ // Выключить компрессор для обоих вариантов
 		journal.jprintf("$Compressor protection: ");
 		if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
+		HP.set_stopCompressor();
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
