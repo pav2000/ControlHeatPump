@@ -931,7 +931,7 @@ void Statistics::History()
 			    int_to_dec_str(HP.dEEV.get_EEV()*10, 1, &buf, 0); // S
 			    break;
 			case STATS_EEV_OverHeat:
-				int_to_dec_str(HP.dEEV.get_Overheat(), 10, &buf, 0); // T
+				int_to_dec_str(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat(), 10, &buf, 0); // T
 				break;
 			case STATS_EEV_OverCool:
 				int_to_dec_str(HP.get_overcool(), 10, &buf, 0); // T
