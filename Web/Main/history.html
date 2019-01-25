@@ -294,7 +294,7 @@ function HideAll() {
 var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 
 function get_period() {
-	return document.getElementById("StartDate").value.replace(/-/g,'') + '-' + document.getElementById("EndDate").value.replace(/-/g,'');
+	return document.getElementById("StartDate").value.replace(/-/g,'') + '00-' + document.getElementById("EndDate").value.replace(/-/g,'') + '59';
 }
 
 function init_chart() {
