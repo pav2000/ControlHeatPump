@@ -576,10 +576,11 @@ void devEEV::initEEV()
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
- _data.trend_threshold = 4;
- _data.tOverheatTCOMP = 1100;
+ _data.trend_threshold = 3;
+ _data.tOverheatTCOMP = 1000;
  _data.tOverheatTCOMP_delta = 400;
- _data.PosAtHighTemp = 65;
+ _data.PosAtHighTemp = 10;
+ _data.pid2_delta = 070;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -887,7 +888,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					newEEV = 1;
 					pidw.max = 1;
 					//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
-				}
+				} else if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) goto xSecondHigh;
 			} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 				if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
 					newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
@@ -896,14 +897,15 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				} else if(pidw.trend[trOH_default] <= _data.trend_threshold) {
 					newEEV = -1;
 					pidw.max = 1;
-				}
+				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) goto xSecondLow;
 			} else {
 				diff = _data.tOverheatTCOMP_delta * 3 / 4;
 				if(pidw.pre_err2[0] < -diff) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) {
-						if(pidw.trend[trOH_TCOMP] >= 0) {
+xSecondHigh:			if(pidw.trend[trOH_TCOMP] >= 0) {
 							newEEV = 1;
 							pidw.max = 1;
+							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) { // >= * 2
 						newEEV = 1;
@@ -911,7 +913,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					}
 				} else if(pidw.pre_err2[0] > diff) {
 					if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+xSecondLow:				if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
 							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2 - 1;
 							pidw.max = _data.trend_threshold;
 							pidw.trend[trOH_default] = 0;
