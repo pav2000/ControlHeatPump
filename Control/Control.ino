@@ -1049,9 +1049,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 				 if ((HP.scheduleBoiler())&&(HP.get_BoilerON()))  // если бойлер разрешен и разрешено греть бойлер согласно расписания или расписание выключено
 #endif
 				 {
-					 if ((HP.get_modWork()==pBOILER)||(HP.get_modWork()==pNONE_B))           // Если включен нагрев ГВС всегда включать насос циркуляции
+#ifndef SUPERBOILER                       // если не определен супер бойлер, то при нагреве ГВС циркуляция всегда рабоатет
+					 if ((HP.get_modWork()==pBOILER)||(HP.get_modWork()==pNONE_B))           // Если включен нагрев ГВС всегда включать насос циркуляции ЕСЛИ НЕ СУПЕРБОЙЛЕР
 					 { HP.dRelay[RPUMPB].set_ON(); }
 					 else
+#endif  // #ifndef SUPERBOILER 
 						 if (HP.get_Circulation())                                               // Циркуляция разрешена
 						 {
 							 if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { HP.dRelay[RPUMPB].set_ON(); continue;} // идет нагрев ГВС включаем насос ГВС ВСЕГДА - улучшаем перемешивание
