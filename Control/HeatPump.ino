@@ -961,7 +961,7 @@ void  HeatPump::updateChart()
 	if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
 #endif
 
-	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
+	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_frequency());       // факт
 	if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
 #ifndef MIN_RAM_CHARTS
 	if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());

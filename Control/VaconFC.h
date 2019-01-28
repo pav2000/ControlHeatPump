@@ -27,6 +27,8 @@
 #define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
 #endif
 
+#define RECOVER_OIL_PERIOD_MUL		2  // Множитель периода
+
 // Регистры Vacon 10
 // Чтение
 #define FC_FREQ_OUT		1			// Выходная частота, поступающая на двигатель
@@ -284,9 +286,12 @@ public:
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t setup_flags;              // флаги настройки - см. define FC_SAVED_FLAGS
+	  uint16_t setup_flags;             // флаги настройки - см. define FC_SAVED_FLAGS
+	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
+	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
    } _data;  // Структура для сохранения настроек
-   uint8_t flags;  						// рабочие флаги
+   uint16_t flags;  					// рабочие флаги
+   int16_t ReturnOilTimer;
   // Функции работы с Modbus
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
