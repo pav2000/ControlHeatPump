@@ -60,7 +60,7 @@ window.onload = function() {
     <tr><td>Порог детектирования тренда в прямом алгоритме</td><td><input type="number" id="get_peev-tth" step="1"> <input type="submit" value=">" onclick="setParam('get_pEEV(TTH)');"></td></tr>
     <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
     <tr><td>Ограничение за одну итерацию в шагах ЭРВ (кроме алгоритма 2)</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
-    <tr><td>Алгоритм 2: ПИД <a href="PID2prop.jpg" type="image/jpeg">пропорционально измерению, иначе пропорционально ошибке</a></td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
+    <tr><td>Алгоритм 2: ПИД пропорционально измерению (иначе пропорционально ошибке) <input type="submit" value="?" onclick='location.assign("eevhelp.html")' style="margin-right:10px;"> </td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
 	<tr><td>Целевой перегрев TCOMPIN-T[PEVA], °C</td><td nowrap><input id="get_peev-trg2" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(TRG2)')"></td></tr>
 	<tr><td>Дельта целевого перегрева TCOMPIN-T[PEVA], °C</td><td nowrap><input id="get_peev-trg2d" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(TRG2D)')"></td></tr>
 
