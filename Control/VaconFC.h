@@ -159,8 +159,8 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fFC);} // Наличие датчика в текущей конфигурации
   int8_t	get_err(){return err;}                  // Получить последню ошибку частотника
   uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
-  void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки
-  boolean	set_paramFC(char *var, float x);        // Установить параметр инвертора из строки
+  void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки - get_pFC('x')
+  boolean	set_paramFC(char *var, float x);        // Установить параметр инвертора из строки - set_pFC('x')
 
    // Получение отдельных значений 
   uint16_t get_Uptime(){return _data.Uptime;}				     // Время обновления алгоритма пид регулятора (сек) Основной цикл управления
@@ -289,6 +289,7 @@ public:
 	  uint16_t setup_flags;             // флаги настройки - см. define FC_SAVED_FLAGS
 	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
 	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
+	  int16_t ReturnOilEEV;				// Изменения позиции ЭРВ
    } _data;  // Структура для сохранения настроек
    uint16_t flags;  					// рабочие флаги
    int16_t ReturnOilTimer;

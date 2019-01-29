@@ -834,7 +834,7 @@ if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) retur
 return strcat(ret,(char*)cInvalid);
 }
 
-// Установить опции ТН из числа (float)
+// Установить опции ТН из числа (float), "set_oHP"
 boolean HeatPump::set_optionHP(char *var, float x)   
 {
    if(strcmp(var,option_ADD_HEAT)==0)         {switch ((int)x)  //использование дополнительного нагревателя (значения 1 и 0)
@@ -883,7 +883,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    return false; 
 }
 
-// Получить опции ТН, результат добавляется в ret
+// Получить опции ТН, результат добавляется в ret, "get_oHP"
 char* HeatPump::get_optionHP(char *var, char *ret)
 {
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено

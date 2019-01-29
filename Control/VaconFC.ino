@@ -212,6 +212,9 @@ int8_t devVaconFC::get_readState()
 				if(FC_curr_freq < FC_RETOIL_FREQ) {
 					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (FC_RETOIL_FREQ - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
+#ifdef EEV_DEF
+						if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() + _data.ReturnOilEEV);
+#endif
 						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.startFreq);
 						ReturnOilTimer = 0;
 					}
@@ -219,6 +222,9 @@ int8_t devVaconFC::get_readState()
 			} else {
 				if(++ReturnOilTimer >= FC_RETOIL_TIME) {
 					err = write_0x06_16((uint16_t) FC_SET_SPEED, FC_target);
+#ifdef EEV_DEF
+					if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() - _data.ReturnOilEEV);
+#endif
 					flags &= ~(1 << fFC_RetOilSt);
 					ReturnOilTimer = 0;
 				}
@@ -541,6 +547,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_fFC_RetOil)==0)   			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fFC_RetOil) ? cOne : cZero)); } else
     if(strcmp(var,fc_ReturnOilPeriod)==0)       {  _itoa(_data.ReturnOilPeriod * (FC_TIME_READ/1000), ret); } else
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     {  _itoa(_data.ReturnOilPerDivHz * (FC_TIME_READ/1000), ret); } else
+    if(strcmp(var,fc_ReturnOilEEV)==0)          {  _itoa(_data.ReturnOilEEV, ret); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -580,6 +587,8 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 #ifdef FC_RETOIL_FREQ
     if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{  _ftoa(ret,(float)FC_RETOIL_FREQ/100,2); } else
 #endif
+   	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+
     strcat(ret,(char*)cInvalid);
 }
 
@@ -604,6 +613,7 @@ boolean devVaconFC::set_paramFC(char *var, float f)
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=1)&&(x<650)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
     if(strcmp(var,fc_ReturnOilPeriod)==0)       { _data.ReturnOilPeriod = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     { _data.ReturnOilPerDivHz = (int16_t) x / (FC_TIME_READ/1000); return true; } else
+    if(strcmp(var,fc_ReturnOilEEV)==0)          { _data.ReturnOilEEV = x; return true; } else
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  }
    
 	x = rd(f, 100);

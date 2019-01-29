@@ -194,7 +194,7 @@ function GetChart() {
 
 window.onload = function() {
 	urlupdate = 2000;
-	loadParam("hide_EEVpid,hide_pid2,get_optionHP(TIME_CHART),get_pEEV(NAME),get_pEEV(NOTE),get_pEEV(PINS),get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(CONST),get_pEEV(RULE),get_pEEV(MANUAL)");
+	loadParam("hide_EEVpid,hide_pid2,get_oHP(TIME_CHART),get_pEEV(NAME),get_pEEV(NOTE),get_pEEV(PINS),get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(CONST),get_pEEV(RULE),get_pEEV(MANUAL)");
 	loadParam("get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(P2D),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(cOH_MIN),get_pEEV(cOH_START),get_pEEV(cOH_MAX),get_pEEV(DIR)");
 	updateParam("get_pEEV(POSpp),get_OverHeat,get_pEEV(ERROR),get_pEEV(TARGET),get_TCOMP_TCON,get_pEEV(cTDELTA),get_Evapor");
 	GetChart();
@@ -294,7 +294,7 @@ window.onload = function() {
 </tbody>
 </table>            
 <div style="float:right;">Автообновление графика:<input id="autoupdate" type="checkbox" onclick=""> Нагнетание-Конденсация:<input id="showdelta" type="checkbox" onclick=""> <input type="submit" value="Обновить график" onclick="GetChart()">
-<select style="display:none" id="get_optionhp-time_chart" disabled></select>
+<select style="display:none" id="get_ohp-time_chart" disabled></select>
 </div>
 <div id="chart1">График загружается...</div>
 </div>
