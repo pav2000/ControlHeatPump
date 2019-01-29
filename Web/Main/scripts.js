@@ -1,4 +1,4 @@
-/* ver 0.992 beta */
+/* ver 0.994 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -122,8 +122,8 @@ function loadParam(paramid, noretry, resultdiv) {
 								values = arr[i].split('=');
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
-								if(/get_status|get_paramFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|SMS_SERVICE|et_optionHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								if(/get_status|get_pFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
+								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|SMS_SERVICE|et_oHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
 								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
@@ -549,7 +549,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 												console.log("wait response...");
 											} else alert(values[1]);
-										} else if(valueid == "get_optionhp-time_chart") {
+										} else if(valueid == "get_ohp-time_chart") {
 											window.time_chart = valuevar;
 										}
 										element3 = document.getElementById(valueid + "3");
@@ -592,17 +592,17 @@ function loadParam(paramid, noretry, resultdiv) {
 											element.className = "inactive";
 										}
 										if(values[0] == "get_presentRelay(RHEAT)" && values[1] == 0) {
-											element = document.getElementById("get_optionhp-add_heat");
+											element = document.getElementById("get_ohp-add_heat");
 											if(element) {
 												element.disabled = true;
 											}
 										}
 										if(values[0] == "get_presentRelay(REVI)" && values[1] == 0) {
-											element = document.getElementById("get_optionhp-temp_evi");
+											element = document.getElementById("get_ohp-temp_evi");
 											if(element) {
 												element.disabled = true;
 											}
-											element = document.getElementById("get_optionhp-temp_evi2");
+											element = document.getElementById("get_ohp-temp_evi2");
 											if(element) {
 												element.disabled = true;
 											}
@@ -647,7 +647,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element=document.getElementById('get_peev-posp'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eev'))) element.disabled = onoff;
 									if((element=document.getElementById('set-eevp'))) element.disabled = onoff;
-									if((element=document.getElementById('get_paramfc-on_off'))) element.disabled = onoff;
+									if((element=document.getElementById('get_pfc-on_off'))) element.disabled = onoff;
 								} else if(values[0] == "get_uptime") {
 									if((element = document.getElementById("get_uptime"))) element.innerHTML = values[1];
 									if((element = document.getElementById("get_uptime2"))) element.innerHTML = values[1];

@@ -27,6 +27,8 @@
 #define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
 #endif
 
+#define RECOVER_OIL_PERIOD_MUL		2  // Множитель периода
+
 // Регистры Vacon 10
 // Чтение
 #define FC_FREQ_OUT		1			// Выходная частота, поступающая на двигатель
@@ -157,8 +159,8 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fFC);} // Наличие датчика в текущей конфигурации
   int8_t	get_err(){return err;}                  // Получить последню ошибку частотника
   uint16_t	get_numErr(){return numErr;}            // Получить число ошибок чтения
-  void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки
-  boolean	set_paramFC(char *var, float x);        // Установить параметр инвертора из строки
+  void		get_paramFC(char *var, char *ret);      // Получить параметр инвертора в виде строки - get_pFC('x')
+  boolean	set_paramFC(char *var, float x);        // Установить параметр инвертора из строки - set_pFC('x')
 
    // Получение отдельных значений 
   uint16_t get_Uptime(){return _data.Uptime;}				     // Время обновления алгоритма пид регулятора (сек) Основной цикл управления
@@ -284,9 +286,13 @@ public:
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t setup_flags;              // флаги настройки - см. define FC_SAVED_FLAGS
+	  uint16_t setup_flags;             // флаги настройки - см. define FC_SAVED_FLAGS
+	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
+	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
+	  int16_t ReturnOilEEV;				// Изменения позиции ЭРВ
    } _data;  // Структура для сохранения настроек
-   uint8_t flags;  						// рабочие флаги
+   uint16_t flags;  					// рабочие флаги
+   int16_t ReturnOilTimer;
   // Функции работы с Modbus
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта

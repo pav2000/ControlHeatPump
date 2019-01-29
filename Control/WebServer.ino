@@ -1775,12 +1775,12 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	          }
 
 	          //12.  Частотный преобразователь -----------------------------------------------------------------
-	          if (strcmp(str,"get_paramFC")==0)           // Функция get_paramFC - получить значение параметра FC
+	          if (strcmp(str,"get_pFC")==0)           // Функция get_paramFC - получить значение параметра FC
 	          {
 	        	  HP.dFC.get_paramFC(x+1,strReturn);
 	        	  ADD_WEBDELIM(strReturn);
 	        	  continue;
-	          } else if (strcmp(str,"set_paramFC")==0)           // Функция set_paramFC - установить значение паремтра FC
+	          } else if (strcmp(str,"set_pFC")==0)           // Функция set_paramFC - установить значение паремтра FC
 	          {
 	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 	        		  if (HP.dFC.set_paramFC(x+1,pm)) HP.dFC.get_paramFC(x+1,strReturn);
@@ -1791,11 +1791,11 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	          }
 
 	          // 13 Опции теплового насоса
-	          if (strcmp(str,"get_optionHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
+	          if (strcmp(str,"get_oHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
 	          {
 	        	  HP.get_optionHP(x+1,strReturn); ADD_WEBDELIM(strReturn) ; continue;
 	          }
-	          else if (strcmp(str,"set_optionHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
+	          else if (strcmp(str,"set_oHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
 	          {
 	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 	        		  if (HP.set_optionHP(x+1,pm))   HP.get_optionHP(x+1,strReturn);  // преобразование удачно,

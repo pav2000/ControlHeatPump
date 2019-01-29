@@ -576,10 +576,11 @@ void devEEV::initEEV()
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
- _data.trend_threshold = 4;
- _data.tOverheatTCOMP = 1100;
+ _data.trend_threshold = 3;
+ _data.tOverheatTCOMP = 1000;
  _data.tOverheatTCOMP_delta = 400;
- _data.PosAtHighTemp = 65;
+ _data.PosAtHighTemp = 10;
+ _data.pid2_delta = 070;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -728,7 +729,8 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 	} // ЭРВ в конфиге нет
 	// вычисляется в зависимости от алгоритма
 #ifdef DEMO
-	Overheat = 400;
+	//Overheat = 400;
+	Overheat = random(100,400);
 	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
 #else
 	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
@@ -887,7 +889,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					newEEV = 1;
 					pidw.max = 1;
 					//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
-				}
+				} else if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) goto xSecondHigh;
 			} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 				if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
 					newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
@@ -896,14 +898,15 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				} else if(pidw.trend[trOH_default] <= _data.trend_threshold) {
 					newEEV = -1;
 					pidw.max = 1;
-				}
+				} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) goto xSecondLow;
 			} else {
 				diff = _data.tOverheatTCOMP_delta * 3 / 4;
 				if(pidw.pre_err2[0] < -diff) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) {
-						if(pidw.trend[trOH_TCOMP] >= 0) {
+xSecondHigh:			if(pidw.trend[trOH_TCOMP] >= 0) {
 							newEEV = 1;
 							pidw.max = 1;
+							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) { // >= * 2
 						newEEV = 1;
@@ -911,7 +914,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					}
 				} else if(pidw.pre_err2[0] > diff) {
 					if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
+xSecondLow:				if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // слишком низко
 							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2 - 1;
 							pidw.max = _data.trend_threshold;
 							pidw.trend[trOH_default] = 0;
@@ -1724,7 +1727,6 @@ return err;
 // Получить параметр инвертора в виде строки, результат ДОБАВЛЯЕТСЯ в ret
 void devOmronMX2::get_paramFC(char *var,char *ret)
 {
-
     if(strcmp(var,fc_ON_OFF)==0)                { if (GETBIT(flags,fOnOff))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_INFO)==0)                  {
     	                                        #ifndef FC_ANALOG_CONTROL  
@@ -1745,7 +1747,6 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
-
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -1764,7 +1765,6 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100.0,2); } else // градусы
-
 	if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100.0,2); } else // Гц
 	if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100.0,2); } else // Гц
 	if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100.0,2); } else // Гц
@@ -1778,11 +1778,11 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
 	if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
 	if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
 	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
-
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
-    	strcat(ret,(char*)cInvalid);
+   	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+   		strcat(ret,(char*)cInvalid);
 }
    
 

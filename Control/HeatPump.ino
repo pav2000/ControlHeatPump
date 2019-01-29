@@ -612,13 +612,14 @@ void HeatPump::resetSettingHP()
   Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
 
  // инициализация статистика дополнительно помимо датчиков
-  ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
-//  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
+  ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
   #ifdef EEV_DEF
-  ChartOVERHEAT.init(true);                                                    // перегрев
-  ChartOVERHEAT2.init(true);                                             // перегрев2
-  ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  кипения
-  ChartTPCON.init( sADC[PCON].get_present());                                  // температура расчитанная из давления  конденсации
+  ChartOVERHEAT.init(true);                          // перегрев
+  ChartOVERHEAT2.init(true);                         // перегрев2
+  ChartTPEVA.init(sADC[PEVA].get_present());         // температура расчитанная из давления  кипения
+  if   (sADC[PCON].get_present()) ChartTPCON.init(sADC[PCON].get_present());  // температура расчитанная из давления  конденсации
+  else ChartTPCON.init(sTemp[TCONOUTG].get_present());    // Если датчика высокого давления нет то конденсацию рассчитываем по формуле sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200;
+
   #endif
 
   for(i=0;i<FNUMBER;i++)   // По всем частотным датчикам
@@ -834,7 +835,7 @@ if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) retur
 return strcat(ret,(char*)cInvalid);
 }
 
-// Установить опции ТН из числа (float)
+// Установить опции ТН из числа (float), "set_oHP"
 boolean HeatPump::set_optionHP(char *var, float x)   
 {
    if(strcmp(var,option_ADD_HEAT)==0)         {switch ((int)x)  //использование дополнительного нагревателя (значения 1 и 0)
@@ -883,7 +884,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    return false; 
 }
 
-// Получить опции ТН, результат добавляется в ret
+// Получить опции ТН, результат добавляется в ret, "get_oHP"
 char* HeatPump::get_optionHP(char *var, char *ret)
 {
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
@@ -940,7 +941,6 @@ void HeatPump::set_profile()
 void  HeatPump::updateChart()
 {
 	uint8_t i;
-
 	for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present())  sTemp[i].Chart.addPoint(sTemp[i].get_Temp());
 #ifndef MIN_RAM_CHARTS
 	for(i=0;i<ANUMBER;i++)
@@ -958,10 +958,15 @@ void  HeatPump::updateChart()
 	if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
 	if(ChartOVERHEAT2.get_present()) ChartOVERHEAT2.addPoint(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
 	if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
-	if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
+//	if (sADC[PCON].get_present())    // Если датчик высокого давления есть считаем честно
+//    	{ if(ChartTPCON.get_present()) ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));}
+//	else 
+//	    { if(ChartTPCON.get_present()) ChartTPCON.addPoint(sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200);}
+if(ChartTPCON.get_present()) ChartTPCON.addPoint(get_temp_condensing());
+	
 #endif
 
-	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_freqFC());       // факт
+	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_frequency());       // факт
 	if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
 #ifndef MIN_RAM_CHARTS
 	if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
@@ -1040,11 +1045,11 @@ uint8_t i;
  #ifdef EEV_DEF
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
- if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+ if(ChartOVERHEAT2.get_present())  { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
-	 strcat(str,chart_TPCON); strcat(str,":0;");
-	 strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
+	if (sADC[PCON].get_present()) strcat(str,chart_TPCON);else strcat(str,chart_TCON);  strcat(str,":0;"); 
+    strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
  }
  #endif
  if(dFC.ChartFC.get_present())     { strcat(str,chart_freqFC); strcat(str,":0;"); }
@@ -1121,7 +1126,9 @@ char * HeatPump::get_Chart(char *var, char* str)
 		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
 		ChartTPCON.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {
+	} else if(strcmp(var, chart_TCON) == 0)  {
+		ChartTPCON.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {  // График нагнетание - конденсация
 		sTemp[TCOMP].Chart.get_PointsStrSub(100, str, &ChartTPCON); // считаем график на лету
 #endif
 	} else if(strcmp(var, chart_freqFC) == 0) {
@@ -3226,16 +3233,17 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 }
 
 // Температура конденсации
+#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры конденсатора в температуру конденсации   
 int16_t HeatPump::get_temp_condensing(void)
 {
 #ifdef EEV_DEF  
 	if(sADC[PCON].get_present()) {
 		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
 	} else {
-		return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C
+		return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + MAGIC_CONST_CONDENS; // +2C
 	}
 #else
-  return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C 
+  return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + MAGIC_CONST_CONDENS; // +2C 
 #endif
 }
 
@@ -3311,7 +3319,7 @@ void HeatPump::calculatePower()
 {
 // Мощности контуров	
 #ifdef  FLOWCON 
-	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (FEED-RET) * (float) sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
+	if(sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()) powerCO = (float) (FEED-RET) * sFrequency[FLOWCON].get_Value() / sFrequency[FLOWCON].get_kfCapacity();
 #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
 #ifdef RHEAT
 	if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
@@ -3322,7 +3330,7 @@ void HeatPump::calculatePower()
 #endif
 
 #ifdef  FLOWEVA 
-	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()) * (float) sFrequency[FLOWEVA].get_Value() / sFrequency[FLOWEVA].get_kfCapacity();
+	if(sTemp[TEVAING].get_present() & sTemp[TEVAOUTG].get_present()) powerGEO = (float) (sTemp[TEVAING].get_Temp()-sTemp[TEVAOUTG].get_Temp()) * sFrequency[FLOWEVA].get_Value() / sFrequency[FLOWEVA].get_kfCapacity();
 #else
 	powerGEO=0.0;
 #endif
@@ -3350,7 +3358,7 @@ if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
 	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
 	if(power220 != 0) fullCOP = powerCO / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
-		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре
+		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
 		if(COP>10*100) COP=10*100;  // КОП не более 10
 		if(fullCOP>8*100) COP=8*100;// полный КОП не более 8
 		#endif

@@ -103,7 +103,7 @@ function createChart(values, resultdiv) {
 	});
 }
 window.onload = function() {
-	loadParam("get_listChart,get_optionHP(TIME_CHART)");
+	loadParam("get_listChart,get_oHP(TIME_CHART)");
 	Highcharts.setOptions({ global: { useUTC: false } });
 	$("#autoupdate").change(function(){
 	if(this.checked){
@@ -121,7 +121,7 @@ window.onload = function() {
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
 	<h1>Графики	<div style="float:right; font-size:14px;color:black;"> <input type="submit" value="Обновить всё"  onclick="setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4')">
-	 Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" > <select style="display:none" id="get_optionhp-time_chart" disabled></select></div></h1>
+	 Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" > <select style="display:none" id="get_ohp-time_chart" disabled></select></div></h1>
 	<div class="allcharts">
 		<div>График: <select name="chrt_sel" id="get_listchart" onchange="setParam('get_listChart','chart1')"></select> <input type="submit" value="Обновить"  onclick="setParam('get_listChart','chart1')">
 		<div id="chart1">График не выбран</div></div>

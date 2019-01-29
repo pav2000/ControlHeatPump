@@ -703,7 +703,7 @@ xReadBlock:
 			{
 				int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
 				if(cmp >= 0) {
-					//journal.printf("found %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
+					//journal.printf("found%d %c%c%c%c%c%c%c%c%c%c (%s)\n", cmp, pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
 					findst = 1;
 					if(cmp > 0) {
 						if(cur == bst) {
@@ -712,7 +712,7 @@ xReadBlock:
 						}
 						goto xGoDown;
 					}
-					if(cur > bst) {
+					if(cur > bst) { // slow down at equal
 						cur--;
 						goto xReadBlock;
 					}
@@ -744,7 +744,10 @@ xGoDown:	if(cur == bst) { // low limit
 					pos++;
 				}
 				goto xNext;
-			} else bend = cur - 1;
+			} else {
+				bend = cur - 1;
+				findst = 0;
+			}
 		}
 	}
 	//journal.printf("ST: %d (%d), END: %d\n", bst, bend, bendfile);
@@ -931,7 +934,7 @@ void Statistics::History()
 			    int_to_dec_str(HP.dEEV.get_EEV()*10, 1, &buf, 0); // S
 			    break;
 			case STATS_EEV_OverHeat:
-				int_to_dec_str(HP.dEEV.get_Overheat(), 10, &buf, 0); // T
+				int_to_dec_str(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? HP.dEEV.OverheatTCOMP : HP.dEEV.get_Overheat(), 10, &buf, 0); // T
 				break;
 			case STATS_EEV_OverCool:
 				int_to_dec_str(HP.get_overcool(), 10, &buf, 0); // T
