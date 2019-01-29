@@ -224,13 +224,13 @@ int8_t devVaconFC::get_readState()
 				}
 			}
 		}
-	}
 #endif
 #else // Аналоговое управление
-	FC_curr = FC_target;
-	power = 0;
-	current = 0;
+		FC_curr = FC_target;
+		power = 0;
+		current = 0;
 #endif
+	}
 	return err;
 }
 
@@ -577,8 +577,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
+#ifdef FC_RETOIL_FREQ
     if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{  _ftoa(ret,(float)FC_RETOIL_FREQ/100,2); } else
-
+#endif
     strcat(ret,(char*)cInvalid);
 }
 
