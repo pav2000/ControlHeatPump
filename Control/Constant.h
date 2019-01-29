@@ -700,6 +700,7 @@ const char *chart_dCO       = {"dCO"};                       // 26 дельта 
 const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
 const char *chart_TPEVA     = {"T[PEVA]"};                   // 28 температура расчитанная из давления Испариенифя
 const char *chart_TPCON     = {"T[PCON]"};                   // 29 температура расчитанная из давления Конденсации
+const char *chart_TCON      = {"TCON"};                      // Температура Конденсации (вариант без датчика давления)
 const char *chart_PowerCO   = {"PowerCO"};                   // 30 Мощность выходная теплового насоса
 const char *chart_PowerGEO  = {"PowerGEO"};                  // 31 Мощность контура
 const char *chart_COP       = {"COP"};                       // 32 Коэффициент преобразования Холодильной машины (без насосов)
