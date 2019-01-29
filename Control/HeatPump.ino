@@ -612,13 +612,14 @@ void HeatPump::resetSettingHP()
   Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
 
  // инициализация статистика дополнительно помимо датчиков
-  ChartRCOMP.init(!dFC.get_present());                                         // Статистика по включению компрессора только если нет частотника
-//  ChartRELAY.init(true);                                                     // Хоть одно реле будет всегда
+  ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
   #ifdef EEV_DEF
-  ChartOVERHEAT.init(true);                                                    // перегрев
-  ChartOVERHEAT2.init(true);                                             // перегрев2
-  ChartTPEVA.init( sADC[PEVA].get_present());                                  // температура расчитанная из давления  кипения
-  ChartTPCON.init( sADC[PCON].get_present());                                  // температура расчитанная из давления  конденсации
+  ChartOVERHEAT.init(true);                          // перегрев
+  ChartOVERHEAT2.init(true);                         // перегрев2
+  ChartTPEVA.init(sADC[PEVA].get_present());         // температура расчитанная из давления  кипения
+  if   (sADC[PCON].get_present()) ChartTPCON.init(sADC[PCON].get_present());  // температура расчитанная из давления  конденсации
+  else ChartTPCON.init(sTemp[TCONOUTG].get_present());    // Если датчика высокого давления нет то конденсацию рассчитываем по формуле sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200;
+
   #endif
 
   for(i=0;i<FNUMBER;i++)   // По всем частотным датчикам
@@ -940,7 +941,6 @@ void HeatPump::set_profile()
 void  HeatPump::updateChart()
 {
 	uint8_t i;
-
 	for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present())  sTemp[i].Chart.addPoint(sTemp[i].get_Temp());
 #ifndef MIN_RAM_CHARTS
 	for(i=0;i<ANUMBER;i++)
@@ -958,7 +958,12 @@ void  HeatPump::updateChart()
 	if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
 	if(ChartOVERHEAT2.get_present()) ChartOVERHEAT2.addPoint(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
 	if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(sADC[PEVA].get_Press(),dEEV.get_typeFreon()));
-	if(ChartTPCON.get_present())     ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));
+//	if (sADC[PCON].get_present())    // Если датчик высокого давления есть считаем честно
+//    	{ if(ChartTPCON.get_present()) ChartTPCON.addPoint(PressToTemp(sADC[PCON].get_Press(),dEEV.get_typeFreon()));}
+//	else 
+//	    { if(ChartTPCON.get_present()) ChartTPCON.addPoint(sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200);}
+if(ChartTPCON.get_present()) ChartTPCON.addPoint(get_temp_condensing());
+	
 #endif
 
 	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_frequency());       // факт
@@ -1040,11 +1045,11 @@ uint8_t i;
  #ifdef EEV_DEF
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
- if(ChartOVERHEAT2.get_present())   { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+ if(ChartOVERHEAT2.get_present())  { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
-	 strcat(str,chart_TPCON); strcat(str,":0;");
-	 strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
+	if (sADC[PCON].get_present()) strcat(str,chart_TPCON);else strcat(str,chart_TCON);  strcat(str,":0;"); 
+    strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
  }
  #endif
  if(dFC.ChartFC.get_present())     { strcat(str,chart_freqFC); strcat(str,":0;"); }
@@ -1121,7 +1126,9 @@ char * HeatPump::get_Chart(char *var, char* str)
 		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
 		ChartTPCON.get_PointsStr(100, str);
-	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {
+	} else if(strcmp(var, chart_TCON) == 0)  {
+		ChartTPCON.get_PointsStr(100, str);
+	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {  // График нагнетание - конденсация
 		sTemp[TCOMP].Chart.get_PointsStrSub(100, str, &ChartTPCON); // считаем график на лету
 #endif
 	} else if(strcmp(var, chart_freqFC) == 0) {
@@ -3226,16 +3233,17 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 }
 
 // Температура конденсации
+#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры конденсатора в температуру конденсации   
 int16_t HeatPump::get_temp_condensing(void)
 {
 #ifdef EEV_DEF  
 	if(sADC[PCON].get_present()) {
 		return PressToTemp(sADC[PCON].get_Press(), dEEV.get_typeFreon());
 	} else {
-		return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C
+		return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + MAGIC_CONST_CONDENS; // +2C
 	}
 #else
-  return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + 200; // +2C 
+  return sTemp[get_modeHouse()  == pCOOL ? TEVAOUTG : TCONOUTG].get_Temp() + MAGIC_CONST_CONDENS; // +2C 
 #endif
 }
 
