@@ -257,9 +257,7 @@ void setup() {
     journal.jprintf("Power +5V, +3.3V on board: ON\n"); 
   #endif
 
-//  #ifdef POWER_CONTROL
   SupplyMonitorON(SUPC_SMMR_SMTH_3_0V);           // включение монитора питания
-//  #endif
    
   #ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
     pinMode(PIN_STEP_DIAG,INPUT_PULLUP); 
