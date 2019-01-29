@@ -753,10 +753,12 @@ const char *fc_DT_COMP_TEMP      = {"DTC"};   			  // Защита по темп
 const char *fc_DT_TEMP           = {"DT"};           	  // Превышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 const char *fc_DT_TEMP_BOILER    = {"DTB"};    			  // Превышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 const char *fc_MB_ERR		     = {"MB_ERR"};			  // Ошибок Modbus
+const char *fc_FC_TIME_READ      = {"TR"};				  // Время опроса
 const char *fc_fFC_RetOil	     = {"FRO"};               // Флаг возврат масла
 const char *fc_FC_RETOIL_FREQ	 = {"FRF"};
 const char *fc_ReturnOilPeriod   = {"POP"};
 const char *fc_ReturnOilPerDivHz = {"POPH"};
+const char *fc_ReturnOilEEV      = {"ROE"};
 
 // Описание имен параметров опций ТН  для функций get_optionHP set_optionHP
 const char *option_ADD_HEAT           = {"ADD_HEAT"};           // использование дополнительного нагревателя (значения 1 и 0)
@@ -774,10 +776,10 @@ const char *option_SAVE_ON            = {"SAVE_ON"};            // флаг за
 const char *option_NEXT_SLEEP         = {"NXTS"};               // Время засыпания секунды NEXTION
 const char *option_NEXT_DIM           = {"NXTD"};               // Якрость % NEXTION
 const char option_SGL1W[]             = "SGL1W_";			    // SGLOW_n, На шине n (1-Wire, DS2482) только один датчик
-const char *option_DELAY_ON_PUMP      = {"DELAY_ON_PUMP"};      // Задержка включения компрессора после включения насосов (сек).
-const char *option_DELAY_OFF_PUMP     = {"DELAY_OFF_PUMP"};     // Задержка выключения насосов после выключения компрессора (сек).
-const char *option_DELAY_START_RES    = {"DELAY_START_RES"};    // Задержка включения ТН после внезапного сброса контроллера (сек.)
-const char *option_DELAY_REPEAD_START = {"DELAY_REPEAD_START"}; // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+const char *option_DELAY_ON_PUMP      = {"DLONP"};              // Задержка включения компрессора после включения насосов (сек).
+const char *option_DELAY_OFF_PUMP     = {"DLOFP"};              // Задержка выключения насосов после выключения компрессора (сек).
+const char *option_DELAY_START_RES    = {"DLSR"};               // Задержка включения ТН после внезапного сброса контроллера (сек.)
+const char *option_DELAY_REPEAD_START = {"DELAY_DLRS"};         // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
 const char *option_DELAY_DEFROST_ON   = {"DELAY_DEFROST_ON"};   // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
 const char *option_DELAY_DEFROST_OFF  = {"DELAY_DEFROST_OFF"};  // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
 const char *option_DELAY_TRV          = {"DELAY_TRV"};          // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
