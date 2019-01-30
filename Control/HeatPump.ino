@@ -1808,7 +1808,7 @@ void HeatPump::resetPID()
 #else
 	pidw.pre_err = 0;
 	pidw.sum = 0;
-	pidw.max = 0;
+	pidw.max = 0;   // ПИД может менять частоту без ограничений
 #endif
 	updatePidTime=0;                                     // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
@@ -3418,7 +3418,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("D=%d,Sum(%d)=%d\n", -pid.Kd * (pidw.pre_err - errorPid), pidw.sum, newVal);
 #endif
-#else
+#else  // Алгоритм 1 Классический ПИД
 	// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
 	// u(t) = P (t) + I (t) + D (t);
 	// P (t) = Kp * e (t);
@@ -3427,12 +3427,12 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
 	if(pid.Ki > 0)// Расчет интегральной составляющей
 	{
-		pidw.sum += (int32_t) pid.Ki * errorPid;    // Интегральная составляющая, с накоплением, в ДЕСЯТИТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 100)
-		// Ограничение диапазона изменения ПИД, произведение в ДЕСЯТИТЫСЯЧНЫХ
-		if(pidw.sum > pidw.max) pidw.sum = pidw.max;
+		pidw.sum += (int32_t) pid.Ki * errorPid;     // Интегральная составляющая, с накоплением, в СТО ТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 1000)
+		if(pidw.sum > pidw.max) pidw.sum = pidw.max; // Ограничение диапазона изменения ПИД интегральной составляющей, произведение в СТО ТЫСЯЧНЫХ
 		else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.sum;
+//	if (abs(pidw.sum)>pidw.max) pidw.sum=0; // Сброс интегральной составляющей при достижении максимума
 #ifdef DEBUG_PID
 	journal.printf("I:%d,", newVal);
 #endif
@@ -3444,12 +3444,13 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #endif
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (pidw.pre_err - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
+	if ((abs(newVal)>pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг 
 #ifdef DEBUG_PID
 	journal.printf("+D:%d=%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
 #endif
 #endif
 	pidw.pre_err = errorPid; // запомнить предыдущую ошибку
-	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов, выход в СОТЫХ
+	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов (ТЫСЯЧНЫЕ), выход в СОТЫХ
 	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
 	return newVal;
 }
