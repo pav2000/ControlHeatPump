@@ -213,7 +213,7 @@ const uint16_t  defaultPort=80;
 	#define DEFAULT_FREON_TYPE 0 			  // Типа фрона по умолчанию
 	#define DEFAULT_OVERHEAT   400			  // Перегрев по умолчанию (сотые градуса)
 #endif
-#define EEV_MAX_STEP			300         // Максимальный вклад интегральной составляющей в СОТЫХ шага
+#define EEV_MAX_INT_PID		    1             // Максимальный вклад интегральной составляющей в шагах
 
 #define EEV_START_POS_LOW_TEMP	1000		// Нижняя граница температура для установки позиции при старте, в стотых
 #define EEV_START_POS_HIGH_TEMP	4500		// Верхняя граница температура для установки позиции при старте, в стотых
@@ -489,12 +489,12 @@ const char *eev_TIME          =  {"TIME"};          // ПИД время в се
 const char *eev_TARGET        =  {"TRG"};        	// Перегрев ЦЕЛЬ (сотые градуса)
 const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев цель (сотые градуса)
 const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев цель (сотые градуса)
-const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.  В СОТЫХ!!!
-const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
-const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.   В СОТЫХ!!!
-const char *eev_KP2           =  {"KP2"};           // ПИД Коэф пропорц.  В СОТЫХ!!!
-const char *eev_KI2           =  {"KI2"};           // ПИД Коэф интегр.  для настройки Ki=0  В СОТЫХ!!!
-const char *eev_KD2           =  {"KD2"};           // ПИД Коэф дифф.   В СОТЫХ!!!
+const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.   В ТЫСЯЧНЫХ!!!
+const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0   В ТЫСЯЧНЫХ!!!
+const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.    В ТЫСЯЧНЫХ!!!
+const char *eev_KP2           =  {"KP2"};           // ПИД Коэф пропорц.   В ТЫСЯЧНЫХ!!!
+const char *eev_KI2           =  {"KI2"};           // ПИД Коэф интегр.  для настройки Ki=0   В ТЫСЯЧНЫХ!!!
+const char *eev_KD2           =  {"KD2"};           // ПИД Коэф дифф.    В ТЫСЯЧНЫХ!!!
 const char *eev_PID2_delta	  =  {"P2D"};           // Дельта для консервативных вычислений ПИДа
 const char *eev_PID_MAX       =  {"PMAX"};          // ограничение ПИД в шагах ЭРВ
 const char *eev_CONST         =  {"CONST"};         // Корректировка перегрева (постоянная ошибка)

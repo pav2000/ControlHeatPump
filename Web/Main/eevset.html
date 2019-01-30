@@ -53,7 +53,7 @@ window.onload = function() {
     <tr><td>Скорость, импульсы в сек [5..120]</td><td nowrap><input type="number" id="get_peev-speed"> <input type="submit" value=">" onclick="setParam('get_pEEV(SPEED)');"></td></tr>
     <tr><td><b>Управление ЭРВ</b></td><td></td></tr>
     <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
-    <tr><td>Ограничение за одну итерацию в шагах ЭРВ</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
+    <tr><td>Ограничение за одну итерацию в шагах ЭРВ [1..200]</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
     <tr name="hide_pid2"><td>Алгоритм ПИД - пропорционально измерению, иначе пропорционально ошибке <input type="submit" value="?" onclick='location.assign("eevhelp.html")'> </td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
     <tr><td><b>Прямой алгоритм управления ЭРВ без ПИД<sup>6</sup></b></td><td nowrap><input type="checkbox" id="get_peev-dir" onchange="setParam('get_pEEV(DIR)');"></td></tr>
     <tr><td>Порог детектирования тренда в прямом алгоритме</td><td><input type="number" id="get_peev-tth" step="1"> <input type="submit" value=">" onclick="setParam('get_pEEV(TTH)');"></td></tr>

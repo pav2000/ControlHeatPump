@@ -840,7 +840,7 @@ void devEEV::resetPID()
 #else
 	pidw.sum = 0;
 	pidw.pre_err = 0;
-	pidw.max = EEV_MAX_STEP * 100;
+	pidw.max = EEV_MAX_INT_PID * 1000*100; // максимальное воздействие интегральной составляющей на ПИД
 #endif
 	if(GETBIT(_data.flags, fEEV_DirectAlgorithm)) {
 		pidw.max = 0;
@@ -952,11 +952,12 @@ xSecondLow:				if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) { // сли
 #ifdef TCOMPIN
 		case TCOMPIN_PEVA:
 #endif
-			newEEV = _data.tOverheat - Overheat;
+			newEEV = _data.tOverheat - Overheat;   // Расчет ошибки для пида
 #ifdef PID_FORMULA2
 			newEEV = round_div_int16(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-#else
-			newEEV = EEV + round_div_int16(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+#else  // Алгоритм 1
+			newEEV = round_div_int16(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление
+			if ((abs(newEEV)>_data.pid_max)&&(_data.pid_max>0)) {if (newEEV>0) newEEV=EEV+_data.pid_max; else newEEV=EEV-_data.pid_max;} else newEEV+=EEV;   // Ограничение пида +  добавление предудущего значения
 #endif
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
 			//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
@@ -1129,7 +1130,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OverHeatStart/100, 2);
     } else if(strcmp(var, eev_cDELTA_Thr)==0){	_ftoa(ret, (float)(_data.OHCor_TDIS_TCON_Thr/100), 1);
     } else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){	_itoa(_data.OHCor_TDIS_TCON_MAX, ret);
-    } else if(strcmp(var, eev_PID_MAX)==0){	_itoa(_data.pid_max, ret);
+    } else if(strcmp(var, eev_PID_MAX)==0){	_itoa(_data.pid_max, ret); // ограничение ПИД в шагах ЭРВ
 	} else if(strcmp(var, eev_SPEED)==0){  	_itoa(_data.speedEEV, ret);
 	} else if(strcmp(var, eev_PRE_START_POS)==0){	_itoa(_data.preStartPos, ret);
 	} else if(strcmp(var, eev_START_POS)==0){    	_itoa(_data.StartPos, ret);
@@ -1232,8 +1233,8 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		_data.OHCor_TDIS_TCON_Thr = rd(x, 100); return true; // сотые градуса
 	} else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){
 		_data.OHCor_TDIS_TCON_MAX = x; return true;
-	} else if(strcmp(var, eev_PID_MAX)==0){
-		_data.pid_max = x; return true;
+	} else if(strcmp(var, eev_PID_MAX)==0){ // ограничение ПИД в шагах ЭРВ
+		if ((x>=0.0)&&(x<=200.0)) {_data.pid_max = x; return true;} else return false;
 	} else if(strcmp(var, eev_cOH_MIN)==0){
 		if ((x>=0.0)&&(x<=50.0)) {_data.OverheatMin=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cOH_MAX)==0){
