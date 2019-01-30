@@ -52,7 +52,9 @@ const uint16_t  defaultPort=80;
 #define NTP_REPEAT_TIME   1000              // (мсек) Время между повторами ntp пакетов
 #define PING_SERVER       "8.8.8.8"          // ping сервер по ДЕФОЛТУ
 #define WDT_TIME          10                // период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ установить 0 то Watchdog будет отключен!!!
+#ifndef INDEX_FILE
 #define INDEX_FILE        "index.html"       // стартовый файл по умолчанию для большой морды
+#endif
 #define INDEX_MOB_FILE    INDEX_FILE         // стартовый файл по умолчанию для мобильной морды
 #define MOB_PATH          "/mob/"            // Путь к мобильной морде
 #define HEADER_BIN        "HP-SAVE-DATA"    // Заголовок (начало) файла при сохранении настроек. Необходим для поиска данных в буфере данных при восстановлении из файла

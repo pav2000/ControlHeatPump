@@ -2618,6 +2618,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef HTTP_TIME_REQUEST
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
 	#endif
+	#define INDEX_FILE			"plan.html"       // стартовый файл по умолчанию для веба
 
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
