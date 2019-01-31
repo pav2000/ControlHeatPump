@@ -1,5 +1,6 @@
 /* 
- * Copyright (c) 2016-2018 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav; by vad711 (vad7@yahoo.com)
+ * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
@@ -1423,7 +1424,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        ADD_WEBDELIM(strReturn) ; continue;
       }  
       
-      if (strstr(str,"get_sensorListIP"))    // Удаленные датчики - список привязки удаленного датчика
+      if (strstr(str,"get_slIP"))    // Удаленные датчики - список привязки удаленного датчика
       {
        ptr=x+1; 
        if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
@@ -1804,19 +1805,19 @@ void parserGET(char *buf, char *strReturn, int8_t )
 	        	  ADD_WEBDELIM(strReturn); continue;
 	          }
 	          //14.  Параметры  отопления и охлаждения ТН
-	          if (strcmp(str,"get_paramCoolHP")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
+	          if (strcmp(str,"get_Cool")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
 	          { HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
-	          else if (strcmp(str,"set_paramCoolHP")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
+	          else if (strcmp(str,"set_Cool")==0)           // Функция set_paramCoolHP - установить значение паремтра охлаждения ТН
 	          {
 	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 	        		  if (HP.Prof.set_paramCoolHP(x+1,pm))  HP.Prof.get_paramCoolHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
 	        		  else  strcat(strReturn,"E16") ; // ошибка преобразования строки
 	        	  } else strcat(strReturn,"E11");   // ошибка преобразования во флоат
 	        	  ADD_WEBDELIM(strReturn) ; continue;
-	          } // (strcmp(str,"paramCoolHP")==0)
-	          else if (strcmp(str,"get_paramHeatHP")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
+	          }
+	          else if (strcmp(str,"get_Heat")==0)           // Функция get_paramHeatHP - получить значение параметра отопления ТН
 	          { HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present()); ADD_WEBDELIM(strReturn) ; continue;   }
-	          else if (strcmp(str,"set_paramHeatHP")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
+	          else if (strcmp(str,"set_Heat")==0)           // Функция set_paramHeatHP - установить значение паремтра отопления ТН
 	          {
 	        	  if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 	        		  if (HP.Prof.set_paramHeatHP(x+1,pm))  HP.Prof.get_paramHeatHP(x+1,strReturn,HP.dFC.get_present());    // преобразование удачно
@@ -1873,7 +1874,7 @@ void parserGET(char *buf, char *strReturn, int8_t )
        // --- УДАЛЕННЫЕ ДАТЧИКИ ----------  кусок кода для удаленного датчика - установка параметров ответ - повторение запроса уже сделали
          #ifdef SENSOR_IP                           // Получение данных удаленного датчика
               
-              if (strstr(str,"set_sensorListIP"))    // Удаленные датчики - привязка датчика
+              if (strstr(str,"set_slIP"))    // Удаленные датчики - привязка датчика
               {
                // первое число (имя удаленного датчика)
                if ((x+1)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
@@ -2034,7 +2035,7 @@ x_get_aTemp:
     			   if (strcmp(str, "get_esTemp") == 0)           // Функция get_errorsTemp
     			   { _itoa(HP.sTemp[p].get_sumErrorRead(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
-    			   if (strcmp(str,"get_pTemp")==0)           // Функция get_presentTemp
+    			   if (strcmp(str,"get_isTemp")==0)           // Функция get_presentTemp
     			   {
     				   if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   ADD_WEBDELIM(strReturn) ;    continue;
@@ -2171,7 +2172,7 @@ x_get_aTemp:
     			   if (strcmp(str,"get_errcodePress")==0)           // Функция get_errcodePress
     			   { _itoa(HP.sADC[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
-    			   if (strcmp(str,"get_presentPress")==0)           // Функция get_presentPress
+    			   if (strcmp(str,"get_isPress")==0)           // Функция get_presentPress
     			   {
     				   if (HP.sADC[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   ADD_WEBDELIM(strReturn) ;    continue;
@@ -2225,7 +2226,7 @@ x_get_aTemp:
     				   else strcat(strReturn,"-");               // Датчика нет ставим прочерк
     				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
-    			   if (strcmp(str,"get_presentInput")==0)           // Функция get_presentInput
+    			   if (strcmp(str,"get_isInput")==0)           // Функция get_presentInput
     			   {
     				   if (HP.sInput[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   ADD_WEBDELIM(strReturn) ;    continue;
@@ -2381,7 +2382,7 @@ x_get_aTemp:
     				   if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   ADD_WEBDELIM(strReturn) ;    continue;
     			   }
-    			   if (strcmp(str,"get_presentRelay")==0)           // Функция get_presentRelay
+    			   if (strcmp(str,"get_isRelay")==0)           // Функция get_presentRelay
     			   {
     				   if (HP.dRelay[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
     				   ADD_WEBDELIM(strReturn) ;    continue;

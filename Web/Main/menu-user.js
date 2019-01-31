@@ -23,10 +23,10 @@ document.write('\
     <div id="get_status"></div>\
 </div>');
 //    <div>&#128241 <a href="/mob/">Мобильная версия</a></div>\
-var extract = new RegExp('[a-z0-9-]+\.html'); // /v039/index.html
+var extract = new RegExp('[a-z0-9-]+\.html');
 var pathname = location.pathname;
 pathmath = pathname.match(extract);
-if(!pathmath) {var activeli = "index";} else {var activeli = pathmath.toString().replace(/\.html/g,"");}
+if(!pathmath) {var activeli = document.body.className;} else {var activeli = pathmath.toString().replace(/(-set.*)?\.html/g,"");}
 var elements = document.getElementsByClassName(activeli);
 var countElements = elements.length;
 for(i=0;i<countElements;i++){document.getElementsByClassName(activeli)[i].classList.add("active");}

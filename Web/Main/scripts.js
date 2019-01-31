@@ -1,4 +1,6 @@
-/* ver 0.994 beta */
+// Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
+// &                       by Vadim Kulakov vad7@yahoo.com, vad711
+/* ver 0.995 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -11,8 +13,7 @@ function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "");
 	var rec = new RegExp('et_listChart.?');
-	var rel = new RegExp('et_sensorListIP');
-	var res = new RegExp('et_sensorListIP|et_listProfile|et_testMode|et_modeHP');
+	var res = new RegExp('et_slIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
 	var recldr = new RegExp('Calendar');
 	var elval, clear = true, equate = true;
@@ -72,7 +73,7 @@ function setParam(paramid, resultid) {
 			if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;
 		}
 	}
-	if(rel.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
+	if(/et_slIP/.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
 	if(!resultid) resultid = elid.replace(/set_/g, "get_").toLowerCase();
 	if(clear) {
 		element = document.getElementById(resultid);
@@ -113,9 +114,7 @@ function loadParam(paramid, noretry, resultdiv) {
 						if(req_stek.length != 0) // если массив запросов не пуст - заправшиваем следующие значения.
 						{
 							queue = 1;
-							setTimeout(function() {
-								loadParam(req_stek.shift());
-							}, 10); // запрашиваем следующую порцию.
+							setTimeout(function() {	loadParam(req_stek.shift()); }, 10); // запрашиваем следующую порцию.
 						}
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
@@ -123,9 +122,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|EEV[(]FREON|EEV[(]RULE|et_testMode|HP[(]RULE|HP[(]TARGET|SOCKET|RES_W5200|et_modeHP|SMS_SERVICE|et_oHP[(]ADD_HEAT|PING_TIME|et_sensorListIP|et_SCHDLR[(]lstNames/.test(values[0])) type = "select"; // значения
+								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|[(]FREON|SOCKET|RES_W5200|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
-								else if(/^get_present|^get_pT/.test(values[0])) type = "present"; // наличие датчика в конфигурации
+								else if(/^get_is/.test(values[0])) type = "is"; // наличие датчика в конфигурации
 								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
 								else if(values[0].match(/^hide_/)) { // clear
 									if(values[1] == 1) {
@@ -232,7 +231,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(type == 'select') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										var idsel = values[0].replace(/set_/g, "get_").toLowerCase().replace(/\([0-9]\)/g, "").replace(/\(/g, "-").replace(/\)/g, "").replace(/_skip[1-9]$/,"");
-										if(idsel == 'get_sensorlistip') idsel = valueid;
+										if(idsel == 'get_slip') idsel = valueid;
 										if(idsel == "get_testmode") {
 											var element2 = document.getElementById("get_testmode2");
 											if(element2) {
@@ -266,7 +265,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												loadsens += "get_zeroPress(" +P+ "),get_transPress(" +P+ "),get_maxPress(" +P+ "),get_minPress(" +P+ "),get_pinPress(" +P+ "),get_notePress(" +P+ "),get_testPress(" +P+ "),";
 												upsens += "get_Press(" +P+ "),get_adcPress(" +P+ "),get_errcodePress(" +P+ "),";
 												P = P.toLowerCase();
-												content += '<tr id="get_presentpress-' +P+ '">';
+												content += '<tr id="get_ispress-' +P+ '">';
 												content += '<td>' +count[j]+ '</td>';
 												content += '<td id="get_notepress-' +P+ '"></td>';
 												content += '<td id="get_press-' +P+ '" nowrap>-</td>';
@@ -297,66 +296,66 @@ function loadParam(paramid, noretry, resultdiv) {
 												cont2 = cont1[k].split(':');
 												if(cont2[1] == 1) {
 													selected = true;
-													if(idsel == "get_paramcoolhp-rule") {
-														document.getElementById("get_paramcoolhp-target").disabled = false;
-														document.getElementById("get_paramcoolhp-dtemp").disabled = false;
-														document.getElementById("get_paramcoolhp-hp_pro").disabled = false;
-														document.getElementById("get_paramcoolhp-hp_in").disabled = false;
-														document.getElementById("get_paramcoolhp-hp_dif").disabled = false;
-														document.getElementById("get_paramcoolhp-temp_pid").disabled = false;
-														document.getElementById("get_paramcoolhp-weather").disabled = false;
-														document.getElementById("get_paramcoolhp-k_weather").disabled = false;
-														document.getElementById("get_paramcoolhp-hp_time").disabled = false;
+													if(idsel == "get_cool-rule") {
+														document.getElementById("get_cool-target").disabled = false;
+														document.getElementById("get_cool-dtemp").disabled = false;
+														document.getElementById("get_cool-hp_pro").disabled = false;
+														document.getElementById("get_cool-hp_in").disabled = false;
+														document.getElementById("get_cool-hp_dif").disabled = false;
+														document.getElementById("get_cool-temp_pid").disabled = false;
+														document.getElementById("get_cool-weather").disabled = false;
+														document.getElementById("get_cool-k_weather").disabled = false;
+														document.getElementById("get_cool-hp_time").disabled = false;
 														if(k == 2) {
-															document.getElementById("get_paramcoolhp-target").disabled = true;
+															document.getElementById("get_cool-target").disabled = true;
 														} else if(k == 1) {
-															document.getElementById("get_paramcoolhp-dtemp").disabled = true;
+															document.getElementById("get_cool-dtemp").disabled = true;
 														} else if(k == 0) {
-															document.getElementById("get_paramcoolhp-hp_time").disabled = true;
-															document.getElementById("get_paramcoolhp-hp_pro").disabled = true;
-															document.getElementById("get_paramcoolhp-hp_in").disabled = true;
-															document.getElementById("get_paramcoolhp-hp_dif").disabled = true;
-															document.getElementById("get_paramcoolhp-temp_pid").disabled = true;
-															document.getElementById("get_paramcoolhp-weather").disabled = true;
-															document.getElementById("get_paramcoolhp-k_weather").disabled = true;
+															document.getElementById("get_cool-hp_time").disabled = true;
+															document.getElementById("get_cool-hp_pro").disabled = true;
+															document.getElementById("get_cool-hp_in").disabled = true;
+															document.getElementById("get_cool-hp_dif").disabled = true;
+															document.getElementById("get_cool-temp_pid").disabled = true;
+															document.getElementById("get_cool-weather").disabled = true;
+															document.getElementById("get_cool-k_weather").disabled = true;
 														}
-													} else if(idsel == "get_paramheathp-rule") {
-														document.getElementById("get_paramheathp-target").disabled = false;
-														//document.getElementById("get_paramheathp-dtemp").disabled = false;
-														document.getElementById("get_paramheathp-hp_pro").disabled = false;
-														document.getElementById("get_paramheathp-hp_in").disabled = false;
-														document.getElementById("get_paramheathp-hp_dif").disabled = false;
-														document.getElementById("get_paramheathp-temp_pid").disabled = false;
-														document.getElementById("get_paramheathp-weather").disabled = false;
-														document.getElementById("get_paramheathp-k_weather").disabled = false;
-														document.getElementById("get_paramheathp-hp_time").disabled = false;
+													} else if(idsel == "get_heat-rule") {
+														document.getElementById("get_heat-target").disabled = false;
+														//document.getElementById("get_heat-dtemp").disabled = false;
+														document.getElementById("get_heat-hp_pro").disabled = false;
+														document.getElementById("get_heat-hp_in").disabled = false;
+														document.getElementById("get_heat-hp_dif").disabled = false;
+														document.getElementById("get_heat-temp_pid").disabled = false;
+														document.getElementById("get_heat-weather").disabled = false;
+														document.getElementById("get_heat-k_weather").disabled = false;
+														document.getElementById("get_heat-hp_time").disabled = false;
 														if(k == 2) {
-															document.getElementById("get_paramheathp-target").disabled = true;
-														} else if(k == 1) { //document.getElementById("get_paramheathp-dtemp").disabled = true;
+															document.getElementById("get_heat-target").disabled = true;
+														} else if(k == 1) { //document.getElementById("get_heat-dtemp").disabled = true;
 														} else if(k == 0) {
-															document.getElementById("get_paramheathp-hp_time").disabled = true;
-															document.getElementById("get_paramheathp-hp_pro").disabled = true;
-															document.getElementById("get_paramheathp-hp_in").disabled = true;
-															document.getElementById("get_paramheathp-hp_dif").disabled = true;
-															document.getElementById("get_paramheathp-temp_pid").disabled = true;
-															document.getElementById("get_paramheathp-weather").disabled = true;
-															document.getElementById("get_paramheathp-k_weather").disabled = true;
+															document.getElementById("get_heat-hp_time").disabled = true;
+															document.getElementById("get_heat-hp_pro").disabled = true;
+															document.getElementById("get_heat-hp_in").disabled = true;
+															document.getElementById("get_heat-hp_dif").disabled = true;
+															document.getElementById("get_heat-temp_pid").disabled = true;
+															document.getElementById("get_heat-weather").disabled = true;
+															document.getElementById("get_heat-k_weather").disabled = true;
 														}
-													} else if(idsel == "get_paramcoolhp-target") {
+													} else if(idsel == "get_cool-target") {
 														if(k == 0) {
-															document.getElementById("get_paramcoolhp-temp2").disabled = true;
-															document.getElementById("get_paramcoolhp-temp1").disabled = false;
+															document.getElementById("get_cool-temp2").disabled = true;
+															document.getElementById("get_cool-temp1").disabled = false;
 														} else if(k == 1) {
-															document.getElementById("get_paramcoolhp-temp2").disabled = false;
-															document.getElementById("get_paramcoolhp-temp1").disabled = true;
+															document.getElementById("get_cool-temp2").disabled = false;
+															document.getElementById("get_cool-temp1").disabled = true;
 														}
-													} else if(idsel == "get_paramheathp-target") {
+													} else if(idsel == "get_heat-target") {
 														if(k == 0) {
-															document.getElementById("get_paramheathp-temp2").disabled = true;
-															document.getElementById("get_paramheathp-temp1").disabled = false;
+															document.getElementById("get_heat-temp2").disabled = true;
+															document.getElementById("get_heat-temp1").disabled = false;
 														} else if(k == 1) {
-															document.getElementById("get_paramheathp-temp2").disabled = false;
-															document.getElementById("get_paramheathp-temp1").disabled = true;
+															document.getElementById("get_heat-temp2").disabled = false;
+															document.getElementById("get_heat-temp1").disabled = true;
 														}
 													}
 												} else selected = false;
@@ -393,11 +392,11 @@ function loadParam(paramid, noretry, resultdiv) {
 											count = Number(values[1]);
 											for(var j = 1; j < count + 1; j++) {
 												upsens = upsens + "get_sensorIP(" + j + "),";
-												loadsens = loadsens + "get_sensorListIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
+												loadsens = loadsens + "get_slIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
 												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
 												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
 												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><select id="get_sensorlistip-' + j + '"  onchange="setParam(\'get_sensorListIP-' + j + '\',\'get_sensorlistip-' + j + '\');"></select></td></tr>';
+												content2 = content2 + '<td><select id="get_slip-' + j + '"  onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
@@ -408,9 +407,9 @@ function loadParam(paramid, noretry, resultdiv) {
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												if((relay = count[j].toLowerCase()) == "") continue;
-												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_presentRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
+												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_isRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
 												upsens = upsens + "get_Relay(" + count[j] + "),";
-												content = content + '<tr id="get_presentrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
+												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
@@ -579,40 +578,25 @@ function loadParam(paramid, noretry, resultdiv) {
 										document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
 									}
 
-									if(valueid == "get_paramheathp-k_weather" || valueid == "get_paramheathp-temp_pid") {
+									if(valueid == "get_heat-k_weather" || valueid == "get_heat-temp_pid") {
 										calctpod("heat");
-									} else if(valueid == "get_paramcoolhp-k_weather" || valueid == "get_paramcoolhp-temp_pid") {
+									} else if(valueid == "get_cool-k_weather" || valueid == "get_cool-temp_pid") {
 										calctpod("cool");
 									}
 
-								} else if(type == 'present') {
-									if(valueid != null && values[1] != null && values[1] == 0) {
-										element = document.getElementById(valueid);
-										if(element) {
-											element.className = "inactive";
+								} else if(type == 'is') {
+									if(values[1] == 0 || values[1].substring(0,1) == 'E') {
+										if((element = document.getElementById(valueid))) element.className = "inactive";
+										if(values[0].indexOf("RHEAT")!=-1) {
+											if((element = document.getElementById("get_ohp-add_heat"))) element.disabled = true;
 										}
-										if(values[0] == "get_presentRelay(RHEAT)" && values[1] == 0) {
-											element = document.getElementById("get_ohp-add_heat");
-											if(element) {
-												element.disabled = true;
-											}
+										if(values[0].indexOf("REVI")!=-1) {
+											if((element = document.getElementById("get_ohp-temp_evi"))) element.disabled = true;
+											if((element = document.getElementById("get_ohp-temp_evi2"))) element.disabled = true;
 										}
-										if(values[0] == "get_presentRelay(REVI)" && values[1] == 0) {
-											element = document.getElementById("get_ohp-temp_evi");
-											if(element) {
-												element.disabled = true;
-											}
-											element = document.getElementById("get_ohp-temp_evi2");
-											if(element) {
-												element.disabled = true;
-											}
-										}
-										var tableElem = document.getElementById(valueid);
-										if(tableElem) {
-											var elements = tableElem.getElementsByTagName('select');
-											if(elements[0]) {
-												elements[0].disabled = true;
-											}
+										if((element = document.getElementById(valueid))) {
+											element = element.getElementsByTagName('select');
+											if(element[0]) element[0].disabled = true;
 										}
 									}
 								} else if(type == 'tableval') {
@@ -837,10 +821,10 @@ function calctpod(type) {
 	var tout = document.getElementById("get_temp-tout").value;
 	var cooltpod = document.getElementById("cooltpod");
 	var heattpod = document.getElementById("heattpod");
-	var tpidcool = document.getElementById("get_paramcoolhp-temp_pid").value;
-	var tpidheat = document.getElementById("get_paramheathp-temp_pid").value;
-	var kwcool = document.getElementById("get_paramcoolhp-k_weather").value;
-	var kwheat = document.getElementById("get_paramheathp-k_weather").value;
+	var tpidcool = document.getElementById("get_cool-temp_pid").value;
+	var tpidheat = document.getElementById("get_heat-temp_pid").value;
+	var kwcool = document.getElementById("get_cool-k_weather").value;
+	var kwheat = document.getElementById("get_heat-k_weather").value;
 
 	if(type == "heat") { 
 		heattpod.innerHTML = (tpidheat - kwheat * tout).toFixed(2);

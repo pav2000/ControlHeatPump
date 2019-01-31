@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * Расписание
  * Автор vad711, vad7@yahoo.com
  *

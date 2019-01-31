@@ -10,8 +10,8 @@
     loadParam("get_tblFlow");
     loadParam("get_tblInput");
     loadParam("get_listPress");
-	loadParam("get_SDM(NAME_SDM),get_SDM(NOTE_SDM),get_SDM(LINK_SDM),get_SDM(MAX_VOLTAGE_SDM),get_SDM(MIN_VOLTAGE_SDM),get_SDM(MAX_POWER_SDM)");
-	updateParam("get_SDM(VOLTAGE_SDM),get_SDM(CURRENT_SDM),get_SDM(REPOWER_SDM),get_SDM(ACPOWER_SDM),get_SDM(POWER_SDM),get_SDM(POW_FACTOR_SDM),get_SDM(PHASE_SDM),get_SDM(FREQ_SDM),get_SDM(ACENERGY_SDM),get_SDM(ERR),get_SDM(LINK_SDM)");
+	loadParam("get_SDM(NAME),get_SDM(NOTE),get_SDM(LINK),get_SDM(MAXV),get_SDM(MINV),get_SDM(MAXP)");
+	updateParam("get_SDM(VOLT),get_SDM(CURRENT),get_SDM(REPOWER),get_SDM(ACPOWER),get_SDM(POWER),get_SDM(PF),get_SDM(PHASE),get_SDM(FREQ),get_SDM(ACENERGY),get_SDM(ERR),get_SDM(LINK)");
     };
   </script>
 </head>
@@ -93,7 +93,7 @@
 </div>  
   
 <div class="row1">
-  <h2>Электрический счётчик <span id="get_sdm-name_sdm"></span> Modbus <input type="submit" value="Программирование (3*)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (2*) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
+  <h2>Электрический счётчик <span id="get_sdm-name"></span> Modbus <input type="submit" value="Программирование (3*)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (2*) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
   <table>
     <thead>
     <tr>
@@ -109,16 +109,16 @@
       <th>Связь</th>
     </tr>
     <tr>
-        <td id="get_sdm-voltage_sdm"></td>
-        <td id="get_sdm-current_sdm"></td>
-        <td id="get_sdm-acpower_sdm"></td>
-        <td id="get_sdm-repower_sdm"></td>
-        <td id="get_sdm-power_sdm"></td>
-        <td id="get_sdm-pow_factor_sdm"></td>
-        <td id="get_sdm-freq_sdm"></td>
-        <td id="get_sdm-acenergy_sdm"></td>
+        <td id="get_sdm-volt"></td>
+        <td id="get_sdm-current"></td>
+        <td id="get_sdm-acpower"></td>
+        <td id="get_sdm-repower"></td>
+        <td id="get_sdm-power"></td>
+        <td id="get_sdm-pf"></td>
+        <td id="get_sdm-freq"></td>
+        <td id="get_sdm-acenergy"></td>
         <td id="get_sdm-err"></td>
-        <td id="get_sdm-link_sdm"></td>
+        <td id="get_sdm-link"></td>
       </tr>
     </thead>
   </table>
@@ -154,9 +154,9 @@
       <th>Контроль мощности<sup>5</sup> [0..30000] (W)</th>      
     </tr>
     <tr>
-    <td nowrap><input id="get_sdm-max_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_VOLTAGE_SDM)');"></td>
-    <td nowrap><input id="get_sdm-min_voltage_sdm" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MIN_VOLTAGE_SDM)');"></td>
-    <td nowrap><input id="get_sdm-max_power_sdm" type="number" min="0" max="30000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAX_POWER_SDM)');"></td>
+    <td nowrap><input id="get_sdm-maxv" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAXV)');"></td>
+    <td nowrap><input id="get_sdm-minv" type="number" min="0" max="400" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MINV)');"></td>
+    <td nowrap><input id="get_sdm-maxp" type="number" min="0" max="30000" step="1" value=""><input type="submit" value=">"  onclick="setParam('get_SDM(MAXP)');"></td>
     </tr>  
     </thead>
   </table>
