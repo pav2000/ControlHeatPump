@@ -2084,11 +2084,19 @@ const char *noteTemp[] = {"Температура улицы",
         #define VCC_CONTROL                                                   // + Контроль за питанием контрола (прямое чтение) смотреть ADC_VCC и K_VCC_POWER
         #define EXTERNAL_AREF                                                 // + Использование внешней опоры для АЦП (ADR4525ARZ) требует доработки DUE и поддержки платы
         #define I2C_EEPROM_64KB                                               // + Использование памяти I2C для записи журнала при коментарии используется оперативка
-        #define I2C_FRAM_MEMORY       1                                       // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
+        #ifdef DEMO                                                           // Для удобства переключения между демо и боевым вариантом
+           #define I2C_FRAM_MEMORY       1                                    // + Тип используемой памяти 0 - Флеш; 1  - FRAM память // У меня на демо стоит FRAM 128 кб
+        #else
+           #define I2C_FRAM_MEMORY       0                                    // + Тип используемой памяти 0 - Флеш; 1  - FRAM память // На рабочем контроллере стоит обычная флеш 64 кб
+        #endif
 		#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 			#define I2C_ADR_EEPROM    0x50         // Адрес чипа eeprom на шине I2C
 			#define I2C_SIZE_EEPROM    512    	   // Объем чипа в килобитах (vad711: FM24V10 - это фактически два чипа разделенные пином, в библиотеке exteeprom сквозная нумерация: 65536+ другая страница)
-			#define I2C_MEMORY_TOTAL   1024         // Итоговый размер I2C памяти в килобитах (если несколько чипов)
+			#ifdef DEMO
+			  #define I2C_MEMORY_TOTAL   1024      // FRAM Итоговый размер I2C памяти в килобитах 
+			#else
+			  #define I2C_MEMORY_TOTAL   512       // FLASH Итоговый размер I2C памяти в килобитах 
+			#endif
 			#define I2C_PAGE_EEPROM     64         // Размер страницы для чтения eeprom байты
 		#else // все остальное
 			#define I2C_ADR_EEPROM    0x57         // Адрес чипа eeprom на шине I2C
