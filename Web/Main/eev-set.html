@@ -1,0 +1,104 @@
+﻿<html>
+<head> 
+<title>Настройки ЭРВ. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+window.onload = function() {
+	loadParam("hide_pid2,get_pEEV(REMARK),get_pEEV(FREON),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(CONST),get_pEEV(MIN),get_pEEV(MAX),get_pEEV(SPEED),get_pEEV(DSP),get_pEEV(PSP),get_pEEV(SP),get_pEEV(DOP),get_pEEV(DON),get_pEEV(DOFF),get_pEEV(HM),get_pEEV(P2D),get_pEEV(ZERO),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(PINS)");
+	loadParam("get_pEEV(START),get_pEEV(LST),get_pEEV(CLOSE),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cD),get_pEEV(cOH_MIN),get_pEEV(cOH_MAX),get_pEEV(cOH_START),get_pEEV(POM),get_pEEV(PMAX),get_pEEV(SPT),get_pEEV(PHT),get_pEEV(DIR),get_pEEV(TRG2),get_pEEV(TRG2D),get_pEEV(TTH),get_pEEV(cDM),get_pEEV(cPERIOD),get_pEEV(cDT)");
+};
+</script>
+</head>
+<body class="actuators">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+  <h1>Настройки ЭРВ <input style="float:none;" type="submit" value="Назад" onclick="location.href='eev.html'"> <input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'></h1>
+  <div class="row1">
+   <h2>Определение перегрева</h2>
+   <table>
+   <thead>
+   <tr>
+	<th>Формула перегрева</th>
+	<th>Описание</th>
+	<th>Поправка °С</th>
+	<th>Тип фреона</th>
+	<th>Открытие ЭРВ шаги</th>
+   </tr>
+   </thead>
+   <tbody>
+   <tr>
+	<td><select id="get_peev-rule" onchange="setParam('get_pEEV(RULE)');loadParam('get_pEEV(REMARK)')"></select></td>
+	<td id="get_peev-remark"></td>
+	<td nowrap><input id="get_peev-const" type="number"  min="-5" max="5" step="0.1"><input id="get_peev-const2" type="submit" value=">" onclick="setParam('get_pEEV(CONST)');"></td>
+	<td><select id="get_peev-freon" onchange="setParam('get_pEEV(FREON)');"><option value="0">R22</option><option value="1">R410A</option><option value="2">R600</option><option value="3">R600A</option><option value="4">R134A</option><option value="5">R407C</option><option value="6">R12</option><option value="7">R290</option><option value="8">R404A</option></select></td>
+	<td nowrap><input id="get_peev-manual" type="number" step="1"><input id="get_peev-manual2" type="submit" value=">" onclick="setParam('get_pEEV(MANUAL)');"></td>
+   </tr>
+   </tbody>
+   </table>
+  </div>
+  
+  <div class="row1">
+   <table>
+   <thead>
+    <tr>
+		<th>Описание</th>
+		<th>Значение</th>
+    </tr>
+   </thead><tbody>
+    <tr><td>Минимальное количество шагов [0..max]</td><td nowrap><input type="number" id="get_peev-min"> <input type="submit" value=">" onclick="setParam('get_pEEV(MIN)');"></td></tr>
+    <tr><td>Максимальное количество шагов [min..2000]</td><td nowrap><input type="number" id="get_peev-max"> <input type="submit" value=">" onclick="setParam('get_pEEV(MAX)');"></td></tr>
+    <tr><td>Скорость, импульсы в сек [5..120]</td><td nowrap><input type="number" id="get_peev-speed"> <input type="submit" value=">" onclick="setParam('get_pEEV(SPEED)');"></td></tr>
+    <tr><td><b>Управление ЭРВ</b></td><td></td></tr>
+    <tr><td>Разница при которой происходит уменьшение ПИД или порог в <sup>(6)</sup>, 0 - выкл. (°C)</td><td><input type="number" id="get_peev-p2d" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(P2D)');"></td></tr>
+    <tr><td>Ограничение за одну итерацию в шагах ЭРВ [1..200]</td><td><input type="number" id="get_peev-pmax"> <input type="submit" value=">" onclick="setParam('get_pEEV(PMAX)');"></td></tr>
+    <tr name="hide_pid2"><td>Алгоритм ПИД - пропорционально измерению, иначе пропорционально ошибке <input type="submit" value="?" onclick='location.assign("eev-sethelp.html")'> </td><td nowrap><input type="checkbox" id="get_peev-pom" onchange="setParam('get_pEEV(POM)');"></td></tr>
+    <tr><td><b>Прямой алгоритм управления ЭРВ без ПИД<sup>6</sup></b></td><td nowrap><input type="checkbox" id="get_peev-dir" onchange="setParam('get_pEEV(DIR)');"></td></tr>
+    <tr><td>Порог детектирования тренда в прямом алгоритме</td><td><input type="number" id="get_peev-tth" step="1"> <input type="submit" value=">" onclick="setParam('get_pEEV(TTH)');"></td></tr>
+	<tr><td>Целевой перегрев 2 (TCOMPIN-T[PEVA]), °C</td><td nowrap><input id="get_peev-trg2" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(TRG2)')"></td></tr>
+	<tr><td>Дельта целевого перегрева 2 (TCOMPIN-T[PEVA]), °C</td><td nowrap><input id="get_peev-trg2d" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(TRG2D)')"></td></tr>
+
+    <tr><td><b>Пуск компрессора</b></td><td></td></tr>
+    <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>1</sup></td><td><input type="checkbox" id="get_peev-lst" onchange="setParam('get_pEEV(LST)');"></td></tr>
+    <tr><td>Специальная позиция ЭРВ для облегчения пуска компрессора (шаги) [min..max]</td><td nowrap><input type="number" id="get_peev-psp"> <input type="submit" value=">" onclick="setParam('get_pEEV(PSP)');"></td></tr>
+    <tr><td>Время на раскрутку компрессора (сек.) [0..255]<sup>2</sup></td><td nowrap><input type="number" id="get_peev-dsp"> <input type="submit" value=">" onclick="setParam('get_pEEV(DSP)');"></td></tr>
+    <tr><td>Начинать работу ЭРВ со стартовой позиции<sup>3</sup></td><td nowrap><input type="checkbox" id="get_peev-start" onchange="setParam('get_pEEV(START)');"></td></tr>
+    <tr><td>Стартовая позиция начала работы ЭРВ (шаги) [min..max]</td><td nowrap><input type="number" id="get_peev-sp"> <input type="submit" value=">" onclick="setParam('get_pEEV(SP)');"></td></tr>
+    <tr><td>Стартовая позиция ЭРВ определяется по температуре подачи (10..45°)</td><td><input type="checkbox" id="get_peev-spt" onchange="setParam('get_pEEV(SPT)');"></td></tr>
+    <tr><td>Положение при подаче 10° (шаги)</td><td id="get_peev-sp3"></td></tr>
+    <tr><td>Положение при подаче 45° (шаги) [min..при 10°]</td><td nowrap><input type="number" id="get_peev-pht"> <input type="submit" value=">" onclick="setParam('get_pEEV(PHT)');"></td></tr>
+    <tr><td>Задержка (сек.) начала регулирования от пуска компрессора, 255 - навсегда [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
+
+    <tr><td><b>Останов компрессора</b></td><td></td></tr>
+    <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_peev-close" onchange="setParam('get_pEEV(CLOSE)');"></td></tr>
+    <tr><td>Задержка закрытия EEV после выключения насосов (сек.) [0..255]</td><td nowrap><input type="number" id="get_peev-doff"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOFF)');"></td></tr>
+    <tr><td>Задержка между открытием ЭРВ для старта (если опция закрывать ЭРВ) и включением компрессора (сек.)[0..255]</td><td><input type="number" id="get_peev-don"> <input type="submit" value=">" onclick="setParam('get_pEEV(DON)');"></td></tr>
+
+    <tr><td><b>Опции</b></td><td></td></tr>
+    <tr><td>Однократный поиск "0" ЭРВ<sup>5</sup> </td><td nowrap><input type="checkbox" id="get_peev-zero" onchange="setParam('get_pEEV(ZERO)');"></td></tr>
+    <tr><td>Удержания шагового двигателя в простое</td><td nowrap><input type="checkbox" id="get_peev-hm" onchange="setParam('get_pEEV(HM)');"></td></tr>
+
+    <tr><td><b>Корректировка перегрева</b></td><td><input id="get_peev-ccorrect" type="checkbox" onclick="setParam('get_pEEV(cCORRECT)')"></td></tr>
+	<tr><td>Разница нагнетание - конденсация(30°) при 0° кипения и начальном перегреве</td><td nowrap><input id="get_peev-cd" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(cD)')"></td></tr>
+	<tr><td>Минимальный перегрев, °C</td><td nowrap><input id="get_peev-coh_min" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(cOH_MIN)')"></td></tr>
+	<tr><td>Начальный (оптимальный) перегрев, °C</td><td nowrap><input id="get_peev-coh_start" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(cOH_START)')"></td></tr>
+	<tr><td>Максимальный перегрев, °C</td><td nowrap><input id="get_peev-coh_max" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(cOH_MAX)')"></td></tr>
+	<tr><td>Задержка после старта, сек</td><td nowrap><input id="get_peev-cdelay" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cDELAY)')"></td></tr>
+	<tr><td>Период в циклах ЭРВ</td><td nowrap><input id="get_peev-cperiod" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cPERIOD)')"></td></tr>
+	<tr><td>Порог разницы, °C</td><td nowrap><input id="get_peev-cdt" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_pEEV(cDT)')"></td></tr>
+	<tr><td><a data-tooltip="Граница разницы нагнетание-конденсация для пропорционального изменения перегрева в %. Перегрев устанавливаетя пропорционально между мин. и нач. перегревом. Если разница меньше, то устанавливается нач. или макс. перегрев.">Максимальная разница нагнетание-конденсация, %</a></td><td nowrap><input id="get_peev-cdm" type="number" min="0"><input type="submit" value=">" onclick="setParam('get_pEEV(cDM)')"></td></tr>
+	<tr><td>Пины - <span id="get_peev-pins"></span></td><td></td></tr>
+   </tbody></table>
+<br>
+   1. Позиция ЭРВ с которой начинается раскрутка компрессора<br/>
+   2. Время после которого специальная позиция ЭРВ меняется на стартовую<br/>
+   3. Если эта опция не выбрана, то работа ЭРВ начинается с позции которая была при остановке компрессора<br/>
+   4. Время от начала раскрутки компрессора до момента начала работы ПИД ЭРВ, должно быть больше 2*. Если 255, то будет использована всегда либо фиксированная позиция либо расчитанная по подаче.<br/>
+   5. Если выбрана эта опция, то поиск нуля производится только один раз при первом включении ТН<br/>
+   6. Управление без ПИД по двум перегревам. В зависимости от ошибки и ее тренда крутим ЭРВ в нужную сторону. Если есть превышение порога, то по множителю, иначе по одному шагу. Сначала управляется по выбранному алгоритму перегрева, потом, когда он установлен в заданном пределе, по перегреву на входе компрессора TCOMPIN-T[PEVA] (Overheat2).
+  </div>
+</div>
+</body>
+</html>
