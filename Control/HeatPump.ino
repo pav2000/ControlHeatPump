@@ -1445,7 +1445,8 @@ boolean HeatPump::switchBoiler(boolean b)
 		dRelay[RPUMPO].set_OFF();    // файнкойлы выключить
 	} else { // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
 #ifdef RPUMPBH
-		if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
+		//if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat))
+			dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
 #endif
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
@@ -2038,17 +2039,16 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	Status.ret=pNone;                // Сбросить состояние пида
 
 	int16_t T = sTemp[TBOILER].get_Temp();
+	int16_t TRG = get_boilerTempTarget();
 #ifdef RPUMPBH
-	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
-		if(!is_compressor_on()) {
+	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
+		if(!is_compressor_on() || T > TRG) {
 			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		} else if(T < HP.Prof.Boiler.tempRBOILER) {
-			if(FEED > T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_ON();    // ГВС - включить
-			else if(FEED <= T) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat) {
-			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		}
-		return pCOMP_OFF;
+		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeat * 2) {
+			dRelay[RPUMPBH].set_ON();    // ГВС - включить
+			return pCOMP_OFF;
+		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		else return pCOMP_OFF;
 	}
 #endif
 
@@ -2062,10 +2062,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		{
 			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		} else {
-			if (T > get_boilerTempTarget())   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > TRG)   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
-		if (T < (get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		if (TRG - Prof.Boiler.dTemp) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler)  {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
@@ -2081,13 +2081,13 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		}
 		else
 		{
-			if (T > get_boilerTempTarget())   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > TRG)   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){Status.ret=pBp10; return pCOMP_NONE;  }  // РАЗГОН частоту не трогаем
-		else if ((T < (get_boilerTempTarget()-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		else if ((T < (TRG-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if ((dFC.isfOnOff())&&(!(onBoiler))) return pCOMP_OFF;                               // компрессор рабатает но ГВС греть не надо  - уходим без изменения состояния
-		//    if (T<(get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		//    if (T<(TRG-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 		// ПИД ----------------------------------
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
 		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
@@ -2133,7 +2133,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); Status.ret=pBp9;  return pCOMP_NONE;            // Уменьшить частоту
 		}
 #endif		
-		//   else if (((get_boilerTempTarget()-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		//   else if (((TRG-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                          // Если компрессор не рабоатет то ничего не делаем и выходим
 
 		else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
@@ -2147,8 +2147,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #endif
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC +=dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2286,8 +2286,8 @@ MODE_COMP HeatPump::UpdateHeat()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2428,8 +2428,8 @@ MODE_COMP HeatPump::UpdateCool()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
