@@ -2043,11 +2043,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(!is_compressor_on() || T > TRG) {
-			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeat * 2) {
-			dRelay[RPUMPBH].set_ON();    // ГВС - включить
+			dRelay[RPUMPBH].set_ON();    // насос ГВС - включить
 			return pCOMP_OFF;
-		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
+		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 		else return pCOMP_OFF;
 	}
 #endif
