@@ -61,11 +61,6 @@
 			<td>Гистерезис целевой температуры °C [1..20]<sup>1</sup></td>
 			<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="20" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(DTRG)');"></td>
 		</tr><tr>
-			<td>Греть совместно с отоплением до температуры догрева тэном</td>
-			<td>
-				<input id="get_boiler-tgheat" type="checkbox" onchange="setParam('get_Boiler(TGHEAT)');">
-			</td>
-		</tr><tr>
 			<td><b>Использование ночного тарифа</b></td>
 			<td></td>
 		</tr><tr>
@@ -85,14 +80,10 @@
 			<td><input type="checkbox" id="get_boiler-turbo" onChange="setParam('get_Boiler(TURBO)');" ></td>
 		</tr><tr>
 			<td>Использование ТЭНа для догрева бойлера<sup>4</sup></td>
-			<td>
-				<input id="get_boiler-addh" type="checkbox" onchange="setParam('get_Boiler(ADDH)');">
-			</td>
+			<td><input id="get_boiler-addh" type="checkbox" onchange="setParam('get_Boiler(ADDH)');"></td>
 		</tr><tr>
 			<td>Температура догрева бойлера (выкл. нагрев ТН и вкл. ТЭН бойлера) °C [0..60]</td>
-			<td nowrap>
-				<input id="get_boiler-tempr" type="number" min="0" max="60" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMPR)');">
-			</td>
+			<td nowrap><input id="get_boiler-tempr" type="number" min="0" max="60" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMPR)');"></td>
 		</tr><tr>
 			<td><b>ПИД</b></td>
 			<td><input id="get_boiler-pid" type="checkbox" onchange="setParam('get_Boiler(PID)');"></td>
@@ -120,6 +111,9 @@
 		</tr><tr>
 			<td>Работа по расписанию только для ТЭНа</td>
 			<td><input type="checkbox" name="get_boiler-sch_ah" id="get_boiler-sch_ah" onChange="setParam('get_Boiler(SCH_AH)'); loadParam('get_Boiler(SCH_ON)')" ></td>
+		</tr><tr>
+			<td>Греть совместно с отоплением, если ТН работает на отопление<sup>9</sup></td>
+			<td><input id="get_boiler-tgheat" type="checkbox" onchange="setParam('get_Boiler(TGHEAT)');"></td>
 		</tr><tr>
 			<td>Профилактика сальмонеллы (1 раз в неделю)</td>
 			<td><input type="checkbox" id="get_boiler-slmn" onChange="setParam('get_Boiler(SLMN)');" ></td>
@@ -157,6 +151,7 @@
 6. Если установить 0-насос циркуляции ГВС вообще не работает.<br/>
 7. Если установить 0-насос циркуляции ГВС работает непрерывно.<br/>
 8. Переключение 3-х ходового крана на отопление при достижение максимальной температуры подачи - 1 градус.
+9. Актуально, если на ГВС и систему отопления разные насосы
 <br><br>
 <h2>Расписание</h2>
 <table id="calendar">
