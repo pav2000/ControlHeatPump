@@ -3233,7 +3233,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 }
 
 // Температура конденсации
-#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры конденсатора в температуру конденсации   
+#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры выхода конденсатора по гликолю  в температуру конденсации   
 int16_t HeatPump::get_temp_condensing(void)
 {
 #ifdef EEV_DEF  
