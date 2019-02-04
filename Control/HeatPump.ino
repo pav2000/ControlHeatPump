@@ -1811,9 +1811,8 @@ void HeatPump::resetPID()
 	pidw.sum = 0;
 	pidw.max = 0;   // ПИД может менять частоту без ограничений
 #endif
-	updatePidTime=0;                                     // время обновления ПИДа
+	updatePidTime = updatePidBoiler = xTaskGetTickCount();                // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
-	updatePidBoiler=0;                                   // время обновления ПИДа
 }
                      
 // STOP/WAIT -----------------------------------------
@@ -2136,9 +2135,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		//   else if (((TRG-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                          // Если компрессор не рабоатет то ничего не делаем и выходим
 
-		else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidBoiler<HP.get_timeBoiler()*1000)   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
 		// Дошли до сюда - ПИД на подачу. Компресор работает
-		updatePidBoiler=xTaskGetTickCount()/1000;
+		updatePidBoiler=xTaskGetTickCount();
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
         int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
@@ -2262,14 +2261,14 @@ MODE_COMP HeatPump::UpdateHeat()
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()-SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();// исправил плюс на минус
-		if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pHp15; else Status.ret=pHp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
-		else if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())    { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)    { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		Status.ret=pHp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		updatePidTime=xTaskGetTickCount()/1000;
+		updatePidTime=xTaskGetTickCount();
 		if(GETBIT(Prof.Heat.flags,fWeather))  // включена погодозависимость
 		{
 			targetRealPID = Prof.Heat.tempPID + (Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
@@ -2407,14 +2406,14 @@ MODE_COMP HeatPump::UpdateCool()
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()+SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();
-		if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())         { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pCp15; else Status.ret=pCp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
-		else if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())    { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)    { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		Status.ret=pCp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		updatePidTime=xTaskGetTickCount()/1000;
+		updatePidTime=xTaskGetTickCount();
 	//	Serial.println("------ PID ------");
 
 		if(GETBIT(Prof.Cool.flags,fWeather))  // включена погодозависимость
