@@ -515,7 +515,7 @@ void get_txtSettings(uint8_t thread)
 			 strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  HP.dEEV.get_paramEEV((char*)eev_MAX, Socket[thread].outBuf);  STR_END;
 			 strcat(Socket[thread].outBuf,"Формула перегрева: ");
  			 HP.dEEV.get_ruleEEVtext(Socket[thread].outBuf); STR_END;
-             strcat(Socket[thread].outBuf,"Алгоритм перегрева: ");
+             strcat(Socket[thread].outBuf,"Алгоритм ПИД ЭРВ: ");
              #ifdef PID_FORMULA2
              strcat(Socket[thread].outBuf,"PID_FORMULA2");STR_END;
              #else

@@ -1445,7 +1445,8 @@ boolean HeatPump::switchBoiler(boolean b)
 		dRelay[RPUMPO].set_OFF();    // файнкойлы выключить
 	} else { // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
 #ifdef RPUMPBH
-		if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
+		//if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat))
+			dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
 #endif
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
@@ -1810,9 +1811,8 @@ void HeatPump::resetPID()
 	pidw.sum = 0;
 	pidw.max = 0;   // ПИД может менять частоту без ограничений
 #endif
-	updatePidTime=0;                                     // время обновления ПИДа
+	updatePidTime = updatePidBoiler = xTaskGetTickCount();                // время обновления ПИДа
 	// ГВС Сбросить переменные пид регулятора
-	updatePidBoiler=0;                                   // время обновления ПИДа
 }
                      
 // STOP/WAIT -----------------------------------------
@@ -2038,17 +2038,16 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	Status.ret=pNone;                // Сбросить состояние пида
 
 	int16_t T = sTemp[TBOILER].get_Temp();
+	int16_t TRG = get_boilerTempTarget();
 #ifdef RPUMPBH
-	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
-		if(!is_compressor_on()) {
-			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		} else if(T < HP.Prof.Boiler.tempRBOILER) {
-			if(FEED > T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_ON();    // ГВС - включить
-			else if(FEED <= T) dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		} else if(T >= HP.Prof.Boiler.tempRBOILER + HYSTERESIS_BoilerTogetherHeat) {
-			dRelay[RPUMPBH].set_OFF();   // ГВС - выключить
-		}
-		return pCOMP_OFF;
+	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
+		if(!is_compressor_on() || T > TRG) {
+			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeat * 2) {
+			dRelay[RPUMPBH].set_ON();    // насос ГВС - включить
+			return pCOMP_OFF;
+		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+		else return pCOMP_OFF;
 	}
 #endif
 
@@ -2060,12 +2059,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		} else {
-			if (T > get_boilerTempTarget())   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > TRG)   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
-		if (T < (get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		if (TRG - Prof.Boiler.dTemp) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler)  {Status.ret=pBh4; return pCOMP_NONE; }  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
@@ -2077,17 +2076,17 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER)   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		}
 		else
 		{
-			if (T > get_boilerTempTarget())   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
+			if (T > TRG)   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){Status.ret=pBp10; return pCOMP_NONE;  }  // РАЗГОН частоту не трогаем
-		else if ((T < (get_boilerTempTarget()-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		else if ((T < (TRG-Prof.Boiler.dTemp))&&(!(onBoiler))) {Status.ret=pBp2; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if ((dFC.isfOnOff())&&(!(onBoiler))) return pCOMP_OFF;                               // компрессор рабатает но ГВС греть не надо  - уходим без изменения состояния
-		//    if (T<(get_boilerTempTarget()-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		//    if (T<(TRG-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 		// ПИД ----------------------------------
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
 		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
@@ -2133,12 +2132,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			dFC.set_targetFreq(dFC.get_targetFreq()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); Status.ret=pBp9;  return pCOMP_NONE;            // Уменьшить частоту
 		}
 #endif		
-		//   else if (((get_boilerTempTarget()-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
+		//   else if (((TRG-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                          // Если компрессор не рабоатет то ничего не делаем и выходим
 
-		else if(xTaskGetTickCount()/1000-updatePidBoiler<HP.get_timeBoiler())   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidBoiler<HP.get_timeBoiler()*1000)   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
 		// Дошли до сюда - ПИД на подачу. Компресор работает
-		updatePidBoiler=xTaskGetTickCount()/1000;
+		updatePidBoiler=xTaskGetTickCount();
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
         int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(HP.sADC[PCON].get_Press(),HP.dEEV.get_typeFreon())), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
@@ -2147,8 +2146,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #endif
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC +=dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2262,14 +2261,14 @@ MODE_COMP HeatPump::UpdateHeat()
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()-SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();// исправил плюс на минус
-		if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pHp15; else Status.ret=pHp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
-		else if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())    { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)    { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		Status.ret=pHp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		updatePidTime=xTaskGetTickCount()/1000;
+		updatePidTime=xTaskGetTickCount();
 		if(GETBIT(Prof.Heat.flags,fWeather))  // включена погодозависимость
 		{
 			targetRealPID = Prof.Heat.tempPID + (Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
@@ -2286,8 +2285,8 @@ MODE_COMP HeatPump::UpdateHeat()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -2407,14 +2406,14 @@ MODE_COMP HeatPump::UpdateCool()
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()+SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();
-		if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())         { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pCp15; else Status.ret=pCp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
-		else if(xTaskGetTickCount()/1000-updatePidTime<HP.get_timeHeat())    { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
+		else if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)    { Status.ret=pCp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		Status.ret=pCp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		updatePidTime=xTaskGetTickCount()/1000;
+		updatePidTime=xTaskGetTickCount();
 	//	Serial.println("------ PID ------");
 
 		if(GETBIT(Prof.Cool.flags,fWeather))  // включена погодозависимость
@@ -2428,8 +2427,8 @@ MODE_COMP HeatPump::UpdateCool()
 
 		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
-		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep();
-		else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep();
+		if(newFC > dFC.get_targetFreq() + dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() + dFC.get_PidFreqStep(); // На увеличение
+		//else if(newFC < dFC.get_targetFreq() - dFC.get_PidFreqStep()) newFC = dFC.get_targetFreq() - dFC.get_PidFreqStep(); // На уменьшение
 #else
 		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_targetFreq()+dFC.get_PidFreqStep(); else newFC += dFC.get_targetFreq(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
@@ -3234,7 +3233,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 }
 
 // Температура конденсации
-#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры конденсатора в температуру конденсации   
+#define MAGIC_CONST_CONDENS 200   // Магическая поправка для перевода температуры выхода конденсатора по гликолю  в температуру конденсации   
 int16_t HeatPump::get_temp_condensing(void)
 {
 #ifdef EEV_DEF  
