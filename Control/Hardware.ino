@@ -687,7 +687,7 @@ int8_t devEEV::set_zero()
 		journal.jprintf(" EEV: Set zero\n");
 		setZero = true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
 		EEV = -1;
-		if(testMode != SAFE_TEST) stepperEEV.step(-EEV_STEPS - 40);  // не  SAFE_TEST - работаем
+		if(testMode != SAFE_TEST) stepperEEV.step(-EEV_STEPS - EEV_SET_ZERO_OVERRIDE);  // не  SAFE_TEST - работаем
 		else EEV = 0;                                               // SAFE_TEST только координаты меняем
 	}
 	return OK;

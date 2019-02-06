@@ -760,10 +760,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			if(strcmp(str, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
 			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
-				if((i = HP.save_motoHour()) == OK)
+xSaveStats:		if((i = HP.save_motoHour()) == OK)
 					if((i = Stats.SaveStats(1)) == OK)
 						i = Stats.SaveHistory(1);
 				_itoa(i, strReturn);
+			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению
+				if(HP.is_compressor_on()) _itoa(-1, strReturn);
+				else {
+					if(HP.dEEV.EEV != -1) HP.dEEV.set_EEV(EEV_STEPS);
+					goto xSaveStats;
+				}
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 				if(len > 0) {

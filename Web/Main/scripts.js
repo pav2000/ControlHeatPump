@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-/* ver 0.995 beta */
+/* ver 0.997 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -647,9 +647,10 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0].match(/^set_SAVE/)) { 
 									if(values[1] >= 0) {
 										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
-										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!"); 											
+										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!");
+										else if(values[0].match(/UPD$/)) alert("Успешно!");
 										else alert("Настройки сохранены, записано " + values[1] + " байт");
-									} else alert("Ошибка записи, код ошибки:" + values[1]);
+									} else alert("Ошибка, код: " + values[1]);
 								} else if(values[0] == "RESET_DUE" || values[0] == "RESET_JOURNAL" || values[0] == "set_updateNet" || values[0] == "RESET_ErrorFC") {
 									alert(values[1]);
 								} else if(values[0].toLowerCase() == "set_off" || values[0].toLowerCase() == "set_on") {
