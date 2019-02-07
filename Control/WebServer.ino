@@ -760,10 +760,16 @@ void parserGET(char *buf, char *strReturn, int8_t )
 			if(strcmp(str, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
 			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
-				if((i = HP.save_motoHour()) == OK)
+xSaveStats:		if((i = HP.save_motoHour()) == OK)
 					if((i = Stats.SaveStats(1)) == OK)
 						i = Stats.SaveHistory(1);
 				_itoa(i, strReturn);
+			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению
+				if(HP.is_compressor_on()) _itoa(-1, strReturn);
+				else {
+					if(HP.dEEV.EEV != -1) HP.dEEV.set_EEV(HP.dEEV.get_maxEEV());
+					goto xSaveStats;
+				}
 			} else {
 				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
 				if(len > 0) {
@@ -1085,7 +1091,6 @@ void parserGET(char *buf, char *strReturn, int8_t )
        strcat(strReturn,"SALLMONELA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_ftoa(strReturn,(float)SALLMONELA_TEMP/100.0,2);strcat(strReturn,";");
        // ЭРВ
        #ifdef EEV_DEF
-       strcat(strReturn,"EEV_STEPS|Максимальное число шагов ЭРВ|");_itoa(EEV_STEPS,strReturn);strcat(strReturn,";");
        strcat(strReturn,"EEV_QUEUE|Длина очереди команд шагового двигателя ЭРВ|");_itoa(EEV_QUEUE,strReturn);strcat(strReturn,";");
        strcat(strReturn,"EEV_INVERT|Инвертирование направления движения ЭРВ (по выходам)|");
            #ifdef EEV_INVERT

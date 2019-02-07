@@ -484,8 +484,8 @@ void HeatPump::updateDateTime(int32_t  dTime)
     if (countNTP>0)        countNTP=countNTP+dTime;                           // число секунд с последнего обновления по NTP
     if (offBoiler>0)       offBoiler=offBoiler+dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
     if (startDefrost>0)    startDefrost=startDefrost+dTime;                   // время срабатывания датчика разморозки
-    if (timeBoilerOff>0)   timeBoilerOff=startDefrost+dTime;                  // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
-    if (startSallmonela>0) startSallmonela=startDefrost+dTime;                // время начала обеззараживания
+    if (timeBoilerOff>0)   timeBoilerOff=timeBoilerOff+dTime;                 // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
+    if (startSallmonela>0) startSallmonela=startSallmonela+dTime;             // время начала обеззараживания
     } 
 }
       
@@ -1824,14 +1824,15 @@ int8_t HeatPump::StopWait(boolean stop)
   {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
     setState(pSTOPING_HP);  // Состояние выключения
-    journal.jprintf(pP_DATE,"   Stop . . .\n"); 
+    journal.jprintf(pP_DATE,"   Stop . . .\n");
   } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
     setState(pSTOPING_HP);  // Состояние выключения
-    journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");    
+    journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");
   }
     
-  if (is_compressor_on()) { COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();}      // Выключить компрессор и запомнить время
+  compressorOFF();		// Останов компрессора, насосов - PUMP_OFF(), ЭРВ
+
   if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
   {
 	#ifdef RPUMPBH
@@ -1879,24 +1880,6 @@ int8_t HeatPump::StopWait(boolean stop)
      if (dRelay[RPUMPBH].get_Relay()) dRelay[RPUMPBH].set_OFF();
   #endif
 
-  PUMPS_OFF;                                                       // выключить насосы контуров
-  
-  #ifdef EEV_DEF
-  if(dEEV.get_EevClose())            //ЭРВ само выключится по State
-  {
-     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
-     _delay(dEEV.get_delayOff()*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
-     dEEV.set_EEV(dEEV.get_minSteps());                          // Если нужно, то закрыть ЭРВ
-     journal.jprintf(" EEV go minSteps\n"); 
-  }
-  #endif
-   
- // ЭРВ само выключится по State
-//  #ifdef DEBUG 
-//      Serial.println(" Stop task update EEV"); 
-//  #endif
-   
- 
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
   {
@@ -2878,13 +2861,13 @@ void HeatPump::compressorOFF()
   if( dEEV.get_EevClose())                                 // Hазбираемся с ЭРВ
      { 
      journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
-     _delay(dEEV.get_delayOff()*1000);                                     // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
-     dEEV.set_EEV(dEEV.get_minSteps());                                    // Если нужно, то закрыть ЭРВ
-     journal.jprintf(" EEV go minSteps\n"); 
+     _delay(dEEV.get_delayOff()*1000);                                // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
+     dEEV.set_EEV(EEV_CLOSE_STEP);                                    // Если нужно, то закрыть ЭРВ
+     journal.jprintf(" EEV closed\n");
      } 
   #endif
   
-  journal.jprintf(pP_TIME,"%s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
+  //journal.jprintf(pP_TIME,"%s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
 }
 
 // РАЗМОРОЗКА ВОЗДУШНИКА ----------------------------------------------------------
