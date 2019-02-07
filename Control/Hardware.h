@@ -302,7 +302,6 @@ public:
 	boolean get_fEEVStartPosByTemp() { return GETBIT(_data.flags,fEEV_StartPosByTemp); }
 	uint16_t get_flags() { return _data.flags; }
 
-	uint8_t get_minSteps(){return _data.minSteps;}
 	uint8_t get_delayOnPid(){return _data.delayOnPid;}
 	uint8_t get_delayOff(){return _data.delayOff;}
 	uint8_t get_delayOn(){return _data.delayOn;}
@@ -314,8 +313,8 @@ public:
 	char*   get_name(){ return name;}                      // Прочитать имя ЭРВ
 	int8_t  get_lastErr(){return err;}                     // Получить последнюю ошибку
 	void    set_error(int8_t error) { err = error; }		// Установить ошибку
-	int16_t get_maxEEV(){return  _data.maxSteps;}          // Максимальное число шагов ЭРВ (диапазон)
 	int16_t get_minEEV(){return  _data.minSteps;}          // Число шагов при котором ЭРВ начинает открываться (холостой ход) может быть равным 0
+	int16_t get_maxEEV(){return  _data.maxSteps;}          // Максимальное число шагов ЭРВ (диапазон)
 	__attribute__((always_inline)) inline boolean get_present(){return GETBIT(_data.flags,fPresent);} // Наличие EEV в текущей конфигурации
 
 	TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы

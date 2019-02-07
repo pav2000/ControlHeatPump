@@ -575,7 +575,7 @@ void devEEV::initEEV()
  _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
  _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
  _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
- _data.minSteps = DEFAULT_MIN_STEP;                   // Минимальное число шагов открытия ЭРВ
+ _data.minSteps = EEV_CLOSE_STEP;                   // Минимальное число шагов открытия ЭРВ
  _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
  _data.trend_threshold = 3;
  _data.tOverheatTCOMP = 1000;
@@ -687,7 +687,7 @@ int8_t devEEV::set_zero()
 		journal.jprintf(" EEV: Set zero\n");
 		setZero = true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
 		EEV = -1;
-		if(testMode != SAFE_TEST) stepperEEV.step(-EEV_STEPS - EEV_SET_ZERO_OVERRIDE);  // не  SAFE_TEST - работаем
+		if(testMode != SAFE_TEST) stepperEEV.step(-_data.maxSteps - EEV_SET_ZERO_OVERRIDE);  // не  SAFE_TEST - работаем
 		else EEV = 0;                                               // SAFE_TEST только координаты меняем
 	}
 	return OK;
@@ -699,7 +699,8 @@ int8_t devEEV::set_EEV(int16_t x)
 {
   err=OK;
   if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
-  if(x < _data.minSteps) x = _data.minSteps;
+  //if(x < _data.minSteps) x = _data.minSteps;
+  if(x < 0) x = 0;
   else if(x > _data.maxSteps) x = _data.maxSteps;
   if(testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
