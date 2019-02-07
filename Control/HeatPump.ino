@@ -1831,7 +1831,7 @@ int8_t HeatPump::StopWait(boolean stop)
     journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");
   }
     
-  compressorOFF();		// Останов компрессора и насосов - PUMP_OFF()
+  compressorOFF();		// Останов компрессора, насосов - PUMP_OFF(), ЭРВ
 
   if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
   {
@@ -1880,22 +1880,6 @@ int8_t HeatPump::StopWait(boolean stop)
      if (dRelay[RPUMPBH].get_Relay()) dRelay[RPUMPBH].set_OFF();
   #endif
 
-  #ifdef EEV_DEF
-  if(dEEV.get_EevClose())            //ЭРВ само выключится по State
-  {
-     journal.jprintf(" Pause before closing EEV %d sec . . .\n",dEEV.get_delayOff());
-     _delay(dEEV.get_delayOff()*1000); // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
-     dEEV.set_EEV(EEV_CLOSE_STEP);                          // Если нужно, то закрыть ЭРВ
-     journal.jprintf(" EEV closed\n");
-  }
-  #endif
-   
- // ЭРВ само выключится по State
-//  #ifdef DEBUG 
-//      Serial.println(" Stop task update EEV"); 
-//  #endif
-   
- 
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
   {

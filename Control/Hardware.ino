@@ -699,8 +699,7 @@ int8_t devEEV::set_EEV(int16_t x)
 {
   err=OK;
   if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
-  //if(x < _data.minSteps) x = _data.minSteps;
-  if(x < 0) x = 0;
+  if(x < EEV_CLOSE_STEP) x = EEV_CLOSE_STEP;
   else if(x > _data.maxSteps) x = _data.maxSteps;
   if(testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
   else EEV=x;                                                    // SAFE_TEST только координаты меняем
