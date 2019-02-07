@@ -1622,12 +1622,12 @@ int8_t HeatPump::StartResume(boolean start)
 	if((profile != SCHDLR_NotActive)&&(start)) { // расписание активно и дана команда
 		if(profile == SCHDLR_Profile_off)
 		{
+			journal.jprintf(" Start task UpdateHP\n");
+			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			startWait=true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
 			Task_vUpdate_run = true;
 			vTaskResume(xHandleUpdate);
-			journal.jprintf(" Start task vUpdate\n");
-			journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
 			return error;
 		} else if(profile != HP.Prof.get_idProfile()) {
 			HP.Prof.load(profile);
@@ -1785,7 +1785,7 @@ int8_t HeatPump::StartResume(boolean start)
 	// 11. Запуск задачи обновления ТН ---------------------------------------------------------------------------
 	if(start)
 	{
-		journal.jprintf(" Start task vUpdate\n");
+		journal.jprintf(" Start task UpdateHP\n");
 		Task_vUpdate_run = true;
 		vTaskResume(xHandleUpdate);                                       // Запустить задачу Обновления ТН, дальше она все доделает
 		//_delay(1);
@@ -1845,7 +1845,7 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop) //Обновление ТН отключаем только при останове
   {
 	Task_vUpdate_run = false;					        // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
-    journal.jprintf(" Stop task vUpdate\n");
+    journal.jprintf(" Stop task UpdateHP\n");
 	Sun_OFF();											// Выключить СК
 	time_Sun_OFF = 0;									// выключить задержку последующего включения
   }
@@ -1921,15 +1921,6 @@ MODE_HP HeatPump::get_Work()
     // Обеспечить переключение с бойлера на отопление/охлаждение, т.е бойлер нагрет и надо идти дальше
     if(((Status.ret==pBh3)||(Status.ret==pBp22)||(Status.ret==pBp23)||(Status.ret==pBp24)||(Status.ret==pBp25)||(Status.ret==pBp26)||(Status.ret==pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
      {
-  /*  Должна обеспечивать строка    if (get_modeHouse() == pOFF) return ret;   	
-		#ifdef RPUMPBH
-    	if(get_modeHouse()  == pOFF && is_compressor_on()) {
-    		COMPRESSOR_OFF;  stopCompressor=rtcSAM3X8.unixtime();      // Выключить компрессор и запомнить время
-    		journal.jprintf(" Delay before stop boiler pump\n");
-    		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
-    	}
-		#endif
-  */		
 		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
      }
  
@@ -2559,7 +2550,7 @@ void HeatPump::ChangesPauseTRV()
   journal.jprintf("ChangesPauseTRV\n");
   #ifdef EEV_DEF
   dEEV.Pause();                                                    // Поставить на паузу задачу Обновления ЭРВ
-  journal.jprintf(" Pause task update EEV\n"); 
+  journal.jprintf(" Stop operate EEV\n");
   #endif
   if (is_compressor_on()) {  COMPRESSOR_OFF; stopCompressor=rtcSAM3X8.unixtime(); }                             // Запомнить время выключения компрессора
   #ifdef REVI
@@ -2812,7 +2803,7 @@ void HeatPump::compressorON()
 	{
 		dEEV.Resume();
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
-		journal.jprintf(" Resume task update EEV\n");
+		journal.jprintf(" Resume task UpdateEEV\n");
 		#ifdef DEFROST
 		 if(get_modWork()!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
 		 else journal.jprintf(pP_TIME,"%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
@@ -2825,7 +2816,7 @@ void HeatPump::compressorON()
 		lastEEV=dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
 		set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
-		journal.jprintf(" Start task update EEV\n");
+		journal.jprintf(" Start task UpdateEEV\n");
 	}
 #else
 	lastEEV=1;                                                   // Признак первой итерации
@@ -2844,7 +2835,7 @@ void HeatPump::compressorOFF()
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
   dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ
-  journal.jprintf(" Pause task update EEV\n"); 
+  journal.jprintf(" Stop control EEV\n");
   #endif
   
   command_completed = rtcSAM3X8.unixtime();

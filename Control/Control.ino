@@ -1020,7 +1020,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Задача Управление тепловым насосом (HP.xHandleUpdate)
+// Задача Управление тепловым насосом (HP.xHandleUpdate) "UpdateHP"
  void vUpdate( void * )
 { //const char *pcTaskName = "HP_Update\r\n";
 	#ifdef RPUMPB
@@ -1117,7 +1117,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		 {
 		 case pOFF_HP:                          // 0 ТН выключен
 		 case pSTOPING_HP:                      // 2 Останавливается
-			 journal.jprintf((const char*)" Stop task update %s from vUpdate\n",(char*)nameHeatPump);
+			 journal.jprintf((const char*)" Stop task UpdateHP\n");
 			 HP.Task_vUpdate_run = false;
 			 break;
 		 case pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
@@ -1183,7 +1183,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 	 vTaskDelete( NULL );
 }
 
-// Задача Управление ЭРВ
+// Задача Управление ЭРВ, "UpdateEEV"
 #ifdef EEV_DEF
 void vUpdateEEV(void *)
 { //const char *pcTaskName = "HP_UpdateEEV\r\n";
@@ -1210,7 +1210,7 @@ xContinue:
 			case pSTOPING_HP:
 			case pWAIT_HP:
 				// Если компрессор не работает, то остановить задачу Обновления ЭРВ
-				journal.jprintf((const char*) " Stop task update EEV\n");
+				journal.jprintf((const char*) " Stop task UpdateEEV\n");
 				vTaskSuspend(NULL);				// Stop vUpdateEEV
 				continue; // продолжение задачи работы ЭРВ начитается с этого места, по этому сразу на начало цикла контроля
 			}
