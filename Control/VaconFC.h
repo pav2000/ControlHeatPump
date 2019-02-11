@@ -184,10 +184,7 @@ public:
   int16_t get_dtTemp(){return _data.dtTemp;}                    // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
   int16_t get_dtTempBoiler(){return _data.dtTempBoiler;}        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
   
-  
-  // Управление по модбас Общее для всех частотников
-  int16_t	get_targetFreq() {return FC_target;}                    // Получить целевую скорость в %
-  int8_t	set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
+  // Управление по модбас
   uint16_t	get_power(){return (uint32_t)nominal_power * power / 1000;}   // Получить текущую мощность в Вт
   uint16_t	get_current(){return current;}          // Получить текущий ток в 0.01А
   void		get_infoFC(char *buf);                   // Получить информацию о частотнике
@@ -198,8 +195,9 @@ public:
   int16_t	read_stateFC();                        // Текущее состояние инвертора
   int16_t	read_tempFC();                         // Tемпература радиатора
    
-  int16_t	get_freqFC() {return FC_curr;}            // Получить текущую скорость в 0.01 %
-  int16_t	get_frequency() { return FC_curr_freq; }	// Получить текущую частоту в Гц
+  int16_t	get_target() {return FC_target;}                    // Получить целевую скорость в сотых %
+  int8_t	set_target(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
+  int16_t	get_frequency() { return FC_curr_freq; }	// Получить текущую частоту в сотых Гц
   uint32_t	get_startTime(){return startCompressor;}// Получить время старта компрессора
   int8_t	get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
   int8_t	start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
@@ -241,8 +239,7 @@ public:
   uint16_t numErr;									// число ошибок чтение по модбасу
   uint8_t  number_err;								// Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
    // Управление по 485
-  int16_t FC_target;								// Целевая скорость инвертора в 0.01 %
-  int16_t FC_curr;									// Чтение: текущая скорость двигателя в 0.01 %
+  int16_t  FC_target;								// Целевая скорость инвертора в 0.01 %
   int16_t  FC_curr_freq;							// Чтение: текущая частота двигателя в 0.01 Гц
   int16_t  power;									// Чтение: Текущая мощность двигателя в +-0.1% от номинала
   uint16_t current;									// Чтение: Текущий ток двигателя в 0.01 Ампер единицах

@@ -26,7 +26,7 @@ int8_t devVaconFC::initFC()
     numErr = 0; // число ошибок чтение по модбасу для статистики
     number_err = 0; // Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
     FC_target = 0; // Целевая скорость частотика
-    FC_curr = 0; // текущая скорость инвертора
+    FC_curr_freq = 0; // текущая частота инвертора
     power = 0; // Тееущая мощность частотника
     current = 0; // Текуший ток частотника
     startCompressor = 0; // время старта компрессора
@@ -111,7 +111,7 @@ int8_t devVaconFC::initFC()
     }
     if(err == OK) {
         // 10.Установить стартовую частоту
-        set_targetFreq(_data.startFreq, true, _data.minFreqUser, _data.maxFreqUser); // режим н знаем по этому границы развигаем
+        set_target(_data.startFreq, true, _data.minFreqUser, _data.maxFreqUser); // режим н знаем по этому границы развигаем
     }
     // Вычисление номинальной мощности двигателя компрессора = U*sqrt(3)*I*cos, W
    	//nominal_power = (uint32_t) (400) * (700) / 100 * (75) / 100; // W
@@ -148,14 +148,12 @@ int8_t devVaconFC::get_readState()
 	if(testMode != NORMAL && testMode != HARD_TEST) {
 		err = OK;
 		state = FC_S_RDY;
-		FC_curr = FC_target;
 		power = 600;
 		current = 555;
-		FC_curr_freq = 4000 + (int32_t)FC_curr * 30 / 100;
+		FC_curr_freq = 4000 + (int32_t)FC_target * 30 / 100;
 	} else {
 		if(!get_present() || state == ERR_LINK_FC) {
 			state = ERR_LINK_FC;
-			FC_curr = 0;
 			FC_curr_freq = 0;
 			power = 0;
 			current = 0;
@@ -194,17 +192,15 @@ int8_t devVaconFC::get_readState()
 		}
 		// Состояние прочитали и оно правильное все остальное читаем
 		{
-			uint32_t reg32 = read_0x03_32(FC_SPEED); // +FC_FREQ(low word). прочитать текущую скорость и частоту
+			FC_curr_freq = read_0x03_16(FC_FREQ); // прочитать текущую частоту
 			if(err == OK) {
-				FC_curr = reg32 >> 16;
-				FC_curr_freq = reg32 & 0xFFFF;
 				power = read_0x03_16(FC_POWER); // прочитать мощность
 				if(err == OK) {
 					current = read_0x03_16(FC_CURRENT); // прочитать ток
 					err = Modbus.get_err(); // Скопировать ошибку
 				}
 				if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-					journal.jprintf(pP_TIME, "FC: %Xh,%.2f%%,%.2fHz,%.2fA,%.2f%%=%.3f\n", state, (float) FC_curr / 100.0, (float) FC_curr_freq / 100.0, (float) current / 100.0, (float) power / 100.0,	(float) get_power() / 1000.0);
+					journal.jprintf(pP_TIME, "FC: %Xh,%.2fHz,%.2fA,%.2f%%=%.3f\n", state, (float) FC_curr_freq / 100.0, (float) current / 100.0, (float) power / 100.0,	(float) get_power() / 1000.0);
 				}
 			}
 		}
@@ -234,7 +230,6 @@ int8_t devVaconFC::get_readState()
 		}
 #endif
 #else // Аналоговое управление
-		FC_curr = FC_target;
 		power = 0;
 		current = 0;
 #endif
@@ -244,7 +239,7 @@ int8_t devVaconFC::get_readState()
 
 // Установить целевую скорость в %
 // show - показывать сообщение сообщение или нет, два оставшихся параметра границы
-int8_t devVaconFC::set_targetFreq(int16_t x, boolean show, int16_t _min, int16_t _max)
+int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _max)
 {
 #ifdef DEMO
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
@@ -386,7 +381,7 @@ int8_t devVaconFC::start_FC()
     } // генерация ошибки
 #else // DEMO
     // Боевая часть
-    // set_targetFreq(FC_START_FC,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда скорость стартовая - супербойлер
+    // set_target(FC_START_FC,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда скорость стартовая - супербойлер
 	if((state & FC_S_FLT)) { // Действующий отказ
 		uint16_t reg = read_0x03_16(FC_ERROR);
 		journal.jprintf("%s, Fault: %s(%d) - ", name, err ? cError : get_fault_str(reg), err ? err : reg);
@@ -540,9 +535,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
     if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC_target/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_target/100.0,2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr_freq/100.0,2); strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cPOWER)==0)                {  _itoa(get_power(), ret); } else
-    if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_curr_freq/100.0,2);  strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
@@ -620,7 +615,7 @@ boolean devVaconFC::set_paramFC(char *var, float f)
    
 	x = rd(f, 100);
     	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
-		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_targetFreq(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
+		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_target(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
 		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
 		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
 		if(strcmp(var,fc_START_FREQ)==0)            { if((x>0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %

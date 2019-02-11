@@ -1159,7 +1159,7 @@ xSaveStats:		if((i = HP.save_motoHour()) == OK)
         // Вывод строки статуса
         strcat(strReturn,"Строка статуса ТН| modWork:");_itoa((int)HP.get_modWork(),strReturn);strcat(strReturn,"[");strcat(strReturn,codeRet[HP.get_ret()]);strcat(strReturn,"]");
         for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + m_strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
-        if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_freqFC()/100.0,2); }
+        if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
         if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
         strcat(strReturn,";");  
 
@@ -1517,15 +1517,6 @@ xSaveStats:		if((i = HP.save_motoHour()) == OK)
                 strcat(strReturn,"-" WEBDELIM) ;    continue;
              #endif 
                }  //  if (strcmp(str,"set_set_EEV")==0)    
-         // -----------------------------------------------------------------------------  
-        if (strstr(str,"set_targetFreq"))  // Функция set_EEV
-             {
-            if ((pm=my_atof(x+1))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
-              else
-                {
-                  if(HP.dFC.set_targetFreq(rd(pm, 100),true,HP.dFC.get_minFreqUser() ,HP.dFC.get_maxFreqUser())==0) _itoa(HP.dFC.get_targetFreq()/100,strReturn); else strcat(strReturn,"E12");  ADD_WEBDELIM(strReturn) ;    continue;   // ручное управление границы максимальны
-                }
-               }  //  if (strcmp(str,"set_set_targetFreq")==0)    
          // -----------------------------------------------------------------------------  
          // ПРОФИЛИ функции с одним параметром
          // ----------------------------------------------------------------------------- 
