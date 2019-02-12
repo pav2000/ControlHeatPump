@@ -2017,10 +2017,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(!is_compressor_on() || T > TRG) {
 			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
-		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeat * 2) {
+		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeatSt) {
 			dRelay[RPUMPBH].set_ON();    // насос ГВС - включить
 			return pCOMP_OFF;
-		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeat) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeatEn) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 		else return pCOMP_OFF;
 	}
 #endif
