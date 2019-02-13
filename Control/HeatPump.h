@@ -72,7 +72,8 @@ struct type_motoHour
 int32_t motohour_OUT_work = 0; // рабочий для счетчиков, энергия отопления, мВт
 
 // Рабочие флаги ТН
-#define fHP_SunActive 		0				// Солнечный контур активен
+#define fHP_SunActive 			0			// Солнечный контур активен
+#define fHP_BoilerTogetherHeat	1			// Идет нагрев бойлера вместе с отоплением
 
 //  Работа с отдельными флагами type_optionHP
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве

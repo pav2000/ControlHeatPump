@@ -1445,13 +1445,12 @@ boolean HeatPump::switchBoiler(boolean b)
 		dRelay[RPUMPO].set_OFF();    // файнкойлы выключить
 	} else { // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
 #ifdef RPUMPBH
-		//if(!GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat))
-			dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
+		if(!GETBIT(flags, fHP_BoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
 #endif
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 			Pump_HeatFloor(true);
-		} else { // пауза ИЛИ рабата дома не задействована - все выключить
+		} else { // пауза ИЛИ работа дома не задействована - все выключить
 			Pump_HeatFloor(false);
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
 		}
@@ -1877,8 +1876,9 @@ int8_t HeatPump::StopWait(boolean stop)
 //  #endif
 
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС
-     if (dRelay[RPUMPBH].get_Relay()) dRelay[RPUMPBH].set_OFF();
+     dRelay[RPUMPBH].set_OFF();
   #endif
+  SETBIT0(flags, fHP_BoilerTogetherHeat);
 
   relayAllOFF();                                         // Все выключить, все  (на всякий случай)
   if (stop)
@@ -2017,11 +2017,15 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(!is_compressor_on() || T > TRG) {
 			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+			SETBIT0(flags, fHP_BoilerTogetherHeat);
 		} else if(FEED > T + HYSTERESIS_BoilerTogetherHeatSt) {
+			SETBIT1(flags, fHP_BoilerTogetherHeat);
 			dRelay[RPUMPBH].set_ON();    // насос ГВС - включить
 			return pCOMP_OFF;
-		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeatEn) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
-		else return pCOMP_OFF;
+		} else if(FEED <= T + HYSTERESIS_BoilerTogetherHeatEn) {
+			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+			SETBIT0(flags, fHP_BoilerTogetherHeat);
+		} else return pCOMP_OFF;
 	}
 #endif
 
