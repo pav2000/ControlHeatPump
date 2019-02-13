@@ -496,8 +496,8 @@ public:
   uint16_t get_dtTempBoiler(){return _data.dtTempBoiler;}        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
     
   // Управление по модбас Общее для всех частотников
-  int16_t get_targetFreq() {return FC;}            // Получить целевую частоту в 0.01 герцах
-  int8_t  set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую частоту в 0.01 герцах show - выводить сообщение или нет + границы
+  int16_t get_target() {return FC;}            // Получить целевую частоту в 0.01 герцах
+  int8_t  set_target(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую частоту в 0.01 герцах show - выводить сообщение или нет + границы
   __attribute__((always_inline)) inline uint16_t get_power(){return power * 100;}              // Получить текущую мощность. В ваттах еденица измерения
   __attribute__((always_inline)) inline uint16_t get_current(){return current;}          // Получить текущий ток в 0.01А
   char * get_infoFC(char *bufn);                   // Получить информацию о частотнике
@@ -506,8 +506,7 @@ public:
   int16_t read_stateFC();                          // Текущее состояние инвертора
   int16_t read_tempFC();                           // Tемпература радиатора
    
-  int16_t get_freqFC() {return freqFC;}            // Получить текущую частоту в 0.01 герцах
-  int16_t get_frequency() { return freqFC; }       // Получить текущую частоту в Гц
+  int16_t get_frequency() { return freqFC; }       // Получить текущую частоту в 0.01 Гц
   uint32_t get_startTime(){return startCompressor;}// Получить время старта компрессора
   int8_t get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
   int8_t start_FC();                               // Команда ход на инвертор (целевая частота выставляется)

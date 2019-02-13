@@ -1452,13 +1452,13 @@ int8_t devOmronMX2::initFC()
 
 #endif  // #ifndef FC_ANALOG_CONTROL
   // 10.Установить стартовую частоту
-  set_targetFreq(_data.startFreq,true,_data.minFreqUser ,_data.maxFreqUser);       // режим н знаем по этому границы развигаем
+  set_target(_data.startFreq,true,_data.minFreqUser ,_data.maxFreqUser);       // режим н знаем по этому границы развигаем
   return err;                       
 }
 
 // Установить целевую частоту
 // параметр показывать сообщение сообщение или нет, два оставшихся параметра границы
-int8_t  devOmronMX2::set_targetFreq(int16_t x,boolean show, int16_t _min, int16_t _max)
+int8_t  devOmronMX2::set_target(int16_t x,boolean show, int16_t _min, int16_t _max)
 { 
   err=OK;
   #ifdef DEMO
@@ -1620,7 +1620,7 @@ err=OK;
              // Боевая часть
             if (((testMode==NORMAL)||(testMode==HARD_TEST))&&(((!get_present())||(GETBIT(flags,fErrFC))))) return err;         // выходим если нет инвертора или он заблокирован по ошибке
           
-           // set_targetFreq(startFreq,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда частота стартовая - супербойлер
+           // set_target(startFreq,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда частота стартовая - супербойлер
            
             err=OK;
             if ((testMode==NORMAL)||(testMode==HARD_TEST))  //   Режим работа и хард тест, все включаем,
@@ -1793,7 +1793,7 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
 boolean devOmronMX2::set_paramFC(char *var, float x)
 {
     if(strcmp(var,fc_ON_OFF)==0)                { if (x==0) stop_FC();else start_FC();return true;  } else 
-    if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_targetFreq(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
+    if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_target(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else // для Омрона код не написан
     if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | ((x!=0)<<fLogWork); return true;  } else
 

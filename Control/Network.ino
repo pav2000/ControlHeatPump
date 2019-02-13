@@ -673,7 +673,7 @@ boolean sendNarodMon(boolean debug)
      if(HP.dFC.get_present())
          {
           strcat(topic,"FC");
-          ftoa(temp,(float)HP.dFC.get_freqFC()/100.0,2);
+          ftoa(temp,(float)HP.dFC.get_frequency()/100.0,2);
           if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          }
      else
@@ -771,7 +771,7 @@ boolean sendMQTT(boolean debug)
      if(HP.dFC.get_present())
          {
           strcat(topic,"FC");
-          ftoa(temp,(float)HP.dFC.get_freqFC()/100.0,1);
+          ftoa(temp,(float)HP.dFC.get_frequency()/100.0,1);
           if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
          }
      else
@@ -962,7 +962,7 @@ boolean  sendThingSpeak(boolean debug)
      strcat(topic,"&field4=");
      if(HP.dFC.get_present())
          {
-          strcat(topic,ftoa(temp,(float)HP.dFC.get_freqFC()/100.0,1));
+          strcat(topic,ftoa(temp,(float)HP.dFC.get_frequency()/100.0,1));
          }
      else
          {
