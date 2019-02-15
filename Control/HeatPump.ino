@@ -264,6 +264,10 @@ int32_t HeatPump::save(void)
 		if(save_2bytes(addr, SAVE_TYPE_clMQTT, crc)) break;
 		if(save_struct(addr, clMQTT.get_save_addr(), clMQTT.get_save_size(), crc)) break; // Сохранение MQTT
 		#endif
+		#ifdef CORRECT_POWER220
+		if(save_2bytes(addr, SAVE_TYPE_PwrCorr, crc)) break;
+		if(save_struct(addr, (uint8_t*)&correct_power220, sizeof(correct_power220), crc)) break; // Сохранение correct_power220
+		#endif
 		if(save_2bytes(addr, SAVE_TYPE_END, crc)) break;
 		if(writeEEPROM_I2C(addr, (uint8_t *) &crc, sizeof(crc))) { error = ERR_SAVE_EEPROM; break; } // CRC
 		addr = addr + sizeof(crc) - (I2C_SETTING_EEPROM + 2);
@@ -360,6 +364,10 @@ x_Error:
 #ifdef MQTT
 		} else if(type == SAVE_TYPE_clMQTT) {
 			load_struct(clMQTT.get_save_addr(), &buffer, clMQTT.get_save_size());
+#endif
+#ifdef CORRECT_POWER220
+		} else if(type == SAVE_TYPE_PwrCorr) {
+			load_struct((uint8_t*)&correct_power220, &buffer, sizeof(correct_power220));
 #endif
 		} else if(type == SAVE_TYPE_END) {
 			break;
