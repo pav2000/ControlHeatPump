@@ -36,7 +36,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.998 beta"        // Версия прошивки
+#define VERSION         "0.999 beta"        // Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED       115200             // Скорость отладочного порта
@@ -202,6 +202,7 @@ const uint16_t  defaultPort=80;
 #define SAVE_TYPE_dEEV			-6
 #define SAVE_TYPE_dSDM			-7
 #define SAVE_TYPE_clMQTT		-8
+#define SAVE_TYPE_PwrCorr		-9
 #define SAVE_TYPE_LIMIT			-100
 
 // ------------------- EEV ----------------------------------

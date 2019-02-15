@@ -36,8 +36,8 @@
 			<td><select id="get_heat-rule" onchange="setParam('get_Heat(RULE)','get_heat-rule');"></select></td>
 		<tr>
 			<td>Целевая температура в доме °C [0..30]</td>
-			<td nowrap><input id="get_cool-temp1" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP1)');"></td>
-			<td nowrap><input id="get_heat-temp1" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP1)');"></td>
+			<td nowrap><input id="get_cool-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP1)');"></td>
+			<td nowrap><input id="get_heat-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP1)');"></td>
 		</tr>
 		<tr>
 			<td>Целевая температура обратки °C [10..50]</td>
@@ -51,8 +51,8 @@
 		</tr>						
 		<tr>
 			<td>Гистерезис целевой температуры °C [0..20]<sup>2</sup></td>
-			<td nowrap><input id="get_cool-dtemp" type="number" min="0" max="20" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(DTEMP)');"></td>
-			<td nowrap><input id="get_heat-dtemp" type="number" min="0" max="20" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(DTEMP)');"></td>
+			<td nowrap><input id="get_cool-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(DTEMP)');"></td>
+			<td nowrap><input id="get_heat-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(DTEMP)');"></td>
 		</tr>
 		<tr>
 			<td><b>Использование ночного тарифа</b></td>

@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-/* ver 0.998 beta */
+/* ver 0.999 beta */
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -387,36 +387,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'table') {
 									if(values[1] != null && values[1] != 0) {
-										if(values[0] == 'get_numberIP') {
-											var content = "", content2 = "", upsens = "", loadsens = "";
-											count = Number(values[1]);
-											for(var j = 1; j < count + 1; j++) {
-												upsens = upsens + "get_sensorIP(" + j + "),";
-												loadsens = loadsens + "get_slIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
-												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
-												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><select id="get_slip-' + j + '"  onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
-											}
-											document.getElementById(valueid).innerHTML = content;
-											document.getElementById(valueid + "-inputs").innerHTML = content2;
-											updateParam(upsens);
-											loadParam(loadsens);
-										} else if(values[0] == 'get_tblRelay') {
-											var content = "", content2 = "", upsens = "", loadsens = "";
-											var count = values[1].split(';');
-											for(var j = 0; j < count.length - 1; j++) {
-												if((relay = count[j].toLowerCase()) == "") continue;
-												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_isRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
-												upsens = upsens + "get_Relay(" + count[j] + "),";
-												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
-												content = content + '</tr>';
-											}
-											document.getElementById(valueid).innerHTML = content;
-											updateParam(upsens);
-											loadParam(loadsens);
-
-										} else if(values[0] == 'get_tblInput') {
+										if(values[0] == 'get_tblInput') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
@@ -457,8 +428,8 @@ function loadParam(paramid, noretry, resultdiv) {
 													content += '<td id="get_fulltemp-' +T+ '">-</td>';
 													content += '<td id="get_mintemp-' +T+ '">-</td>';
 													content += '<td id="get_maxtemp-' +T+ '">-</td>';
-													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number"  min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
-													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" min="-5" max="5" step="0.1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
+													content += '<td nowrap><input id="get_errtemp-' +T+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_errTemp(' + count[j] + ')\');"></td>';
+													content += '<td nowrap><input id="get_testtemp-' +T+ '" type="number" step="0.1"><input type="submit" value=">" onclick="setParam(\'get_testTemp(' + count[j] + ')\');"></td>';
 													content += '<td nowrap><input type="checkbox" id="get_ftemp4-' +T+ '" onchange="setParam(\'get_fTemp4(' +count[j]+')\');"><input type="checkbox" id="get_ftemp5-' +T+ '" onchange="setParam(\'get_fTemp5(' +count[j]+')\');"></td>';
 													content += '<td id="get_btemp-' +T+ '">-</td>';
 													content += '<td id="get_estemp-' +T+ '">-</td>';
@@ -480,8 +451,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											if(loadsens.length) loadParam(loadsens);
 											updateParam(upsens);
 										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
-											var count = values[1].split(';');
 											var content = "", loadsens = "", upsens = "";
+											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												var T = count[j];
 												loadsens += "get_nTemp(" +T+ "),";
@@ -493,7 +464,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											loadParam(loadsens);
 											updateParam(upsens);
 										} else if(values[0] == 'get_tblFlow') {
-											var content = "", content2 = "", upsens = "", loadsens = "";
+											var content = "", upsens = "", loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
 												input = count[j].toLowerCase();
@@ -515,8 +486,43 @@ function loadParam(paramid, noretry, resultdiv) {
 											document.getElementById(valueid).innerHTML = content;
 											updateParam(upsens);
 											loadParam(loadsens);
-										} else if(values[0] == 'get_Profile(NUM_PROFILE)') {
+										} else if(values[0] == 'get_tblRelay') {
+											var content = "", upsens = "", loadsens = "";
+											var count = values[1].split(';');
+											for(var j = 0; j < count.length - 1; j++) {
+												if((relay = count[j].toLowerCase()) == "") continue;
+												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_isRelay(" + count[j] + "),get_noteRelay(" + count[j] + "),";
+												upsens = upsens + "get_Relay(" + count[j] + "),";
+												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_noterelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
+												content = content + '</tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											updateParam(upsens);
+											loadParam(loadsens);
+										} else if(values[0] == 'get_tblPwrC') {
+											var content = "";
+											var count = values[1].split(';');
+											for(var j = 0; j < count.length - 1; j++) {
+												content = content + '<tr><td>' + count[j] + '</td><td nowrap><input id="get_pwrc-' + count[j].toLowerCase() + '" type="number" value="' + count[j+1] + '"><input type="submit" value=">" onclick="setParam(\'get_PwrC(' + count[j++] + ')\');"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+										} else if(values[0] == 'get_numberIP') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
+											count = Number(values[1]);
+											for(var j = 1; j < count + 1; j++) {
+												upsens = upsens + "get_sensorIP(" + j + "),";
+												loadsens = loadsens + "get_slIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
+												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
+												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
+												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
+												content2 = content2 + '<td><select id="get_slip-' + j + '"  onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											document.getElementById(valueid + "-inputs").innerHTML = content2;
+											updateParam(upsens);
+											loadParam(loadsens);
+										} else if(values[0] == 'get_Profile(NUM_PROFILE)') {
+											var content = "", loadsens = "";
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
@@ -524,7 +530,6 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td nowrap><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
-											//document.getElementById(valueid + "-inputs").innerHTML = content2;
 											loadParam(loadsens);
 										} else {
 											var content = values[1].replace(/</g, "&lt;").replace(/\:$/g, "").replace(/\:/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");

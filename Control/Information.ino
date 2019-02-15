@@ -535,8 +535,8 @@ void Profile::initProfile()
   Heat.add_delta_hour = 5;		   	   // Начальный Час добавки температуры к установке бойлера
   Heat.add_delta_end_hour = 6;         // Конечный Час добавки температуры к установке
  // Защиты
-  Heat.tempIn=5000;                    // Tемпература подачи (макс)
-  Heat.tempOut=0;                      // Tемпература обратки (минимальная)
+  Heat.tempIn=4700;                    // Tемпература подачи (макс)
+  Heat.tempOut=-5;                      // Tемпература обратки (минимальная)
   Heat.dt=1500;                        // Максимальная разность температур конденсатора.
   Heat.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
@@ -645,7 +645,7 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
 				                 default:Heat.Rule=pHYSTERESIS; break;
 				              }
 							  HP.resetPID(); return true; } else
- if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=30.0))   {Heat.Temp1=rd(x, 100); return true;} else return false;  }else             // целевая температура в доме
+ if(strcmp(var,hp_TEMP1)==0) {   if ((x>=0.0)&&(x<=40.0))   {Heat.Temp1=rd(x, 100); return true;} else return false;  }else             // целевая температура в доме
  if(strcmp(var,ADD_DELTA_TEMP)==0){ if ((x>=-30)&&(x<=50))  {Heat.add_delta_temp=rd(x, 100); return true;}else return false; }else      // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
  if(strcmp(var,ADD_DELTA_HOUR)==0){ if ((x>=0)&&(x<=23))    {Heat.add_delta_hour=x; return true;} else return false; }else
  if(strcmp(var,ADD_DELTA_END_HOUR)==0){ if ((x>=0)&&(x<=23)){Heat.add_delta_end_hour=x; return true;} else return false; }else
@@ -727,7 +727,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_SALLMONELA)==0)		{ if(x) { SETBIT1(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300); }
 												else { SETBIT0(Boiler.flags,fSalmonella); HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]); } return true;} else // Изменение максимальной температуры при включенном режиме сальмонелла
 	if(strcmp(var,boil_CIRCULATION)==0)		{ if(x) SETBIT1(Boiler.flags,fCirculation); else SETBIT0(Boiler.flags,fCirculation); return true;} else
-	if(strcmp(var,boil_TEMP_TARGET)==0)		{ if((x>=5)&&(x<=90)) {Boiler.TempTarget=rd(x, 100); return true;} else return false; } else  // Целевая температура бойлера
+	if(strcmp(var,boil_TEMP_TARGET)==0)		{ if((x>=5)&&(x<=95)) {Boiler.TempTarget=rd(x, 100); return true;} else return false; } else  // Целевая температура бойлера
 	if(strcmp(var,ADD_DELTA_TEMP)==0)		{ if((x>=-50)&&(x<=50)) {Boiler.add_delta_temp=rd(x, 100); return true;}else return false; } else  // Добавка к целевой температуры ВНИМАНИЕ здесь еденица измерения ГРАДУСЫ
 	if(strcmp(var,ADD_DELTA_HOUR)==0)		{ if((x>=0)&&(x<=23)) {Boiler.add_delta_hour=x; return true;} else return false; } else      // Начальный Час добавки температуры к установке бойлера
 	if(strcmp(var,ADD_DELTA_END_HOUR)==0)	{ if((x>=0)&&(x<=23)){Boiler.add_delta_end_hour=x; return true;} else return false; } else   // Конечный Час добавки температуры к установке
