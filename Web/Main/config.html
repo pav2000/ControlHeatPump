@@ -7,8 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE)");
-		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(TIME_CHART),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(PID2),get_oHP(SCG),get_oHP(SCGT)");
+		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART)");
+		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC)");
 	}; 
 	</script>
 </head>
@@ -27,74 +27,56 @@
 		<tbody>
 		<tr>
 			<td>Расположение файлов веб-сервера на SPI Flash (иначе на SD карте)</td>
-			<td>
-				<input type="checkbox" id="get_ohp-wspif" onChange="setParam('get_oHP(WSPIF)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-wspif" onChange="setParam('get_oHP(WSPIF)');"></td>
 		</tr>
 		<tr>
 			<td>Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса</td>
-			<td>
-				<input type="checkbox" id="get_ohp-save_on" onChange="setParam('get_oHP(SAVE_ON)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-save_on" onChange="setParam('get_oHP(SAVE_ON)');"></td>
 		</tr>
 			<td>Число повторных попыток пуска при ошибке [0..255]<sup>1</sup></td>
-			<td nowrap>
-				<input id="get_ohp-attempt" type="number" min="0" max="255" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(ATTEMPT)');">
-			</td>
+			<td nowrap><input id="get_ohp-attempt" type="number" min="0" max="255" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(ATTEMPT)');"></td>
 		</tr>
 		<tr>
 			<td>Период накопления графиков в памяти, сек. <sup>2</sup></td>
-			<td nowrap>
-				<input id="get_ohp-time_chart" type="number" min="2" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(TIME_CHART)','get_ohp-time_chart');">
+			<td nowrap><input id="get_ohp-time_chart" type="number" min="2" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(TIME_CHART)','get_ohp-time_chart');">
 			</td>
 		</tr>
 		<tr>
 			<td>Запись истории на SD карту (раз в минуту) <sup>3</sup></td>
-			<td>
-				<input type="checkbox" id="get_ohp-hist" onChange="setParam('get_oHP(HIST)');">
+			<td><input type="checkbox" id="get_ohp-hist" onChange="setParam('get_oHP(HIST)');">
 			</td>
 		</tr>
 		<tr>
-
 		<tr>
 			<td><b>Настройки контура отопления</b></td>
 			<td></td>
 		</tr>
 		<tr>
 			<td>Использование дополнительного ТЭНа при нагреве отопления<sup>4</sup></td>
-			<td>
-				<select id="get_ohp-add_heat" onchange="setParam('get_oHP(ADD_HEAT)','get_ohp-add_heat');"></select>
-			</td>
+			<td><select id="get_ohp-add_heat" onchange="setParam('get_oHP(ADD_HEAT)','get_ohp-add_heat');"></select></td>
 		</tr>
 		<tr>
 			<td>Температура для управления дополнительным ТЭНом °C [-30..30]</td>
-			<td nowrap>
-				<input id="get_ohp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(TEMP_RHEAT)');">
+			<td nowrap><input id="get_ohp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>5</sup></td>
-			<td nowrap>
-				<input id="get_ohp-pump_work" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_WORK)');">
+			<td nowrap><input id="get_ohp-pump_work" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
 			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
-			<td nowrap>
-				<input id="get_ohp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
+			<td nowrap><input id="get_ohp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Использовать Солнечный Коллектор для регенерации геоконтура в простое</td>
-			<td>
-				<input type="checkbox" id="get_ohp-scg" onchange="setParam('get_oHP(SCG)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-scg" onchange="setParam('get_oHP(SCG)');"></td>
 		</tr>	
 		<tr>
 			<td>Температура начала регенерации геоконтура с помощью СК (+2°)</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-scgt"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGT)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-scgt"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGT)');"></td>
 		</tr>	
 		<tr>
 			<td><b>Времена и задержки</b></td>
@@ -106,45 +88,31 @@
 		</tr>						
 		<tr>
 			<td>Задержка включения компрессора после включения насосов (сек.) [0...900]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlonp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLONP)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlonp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLONP)');"></td>
 		</tr>	
 		<tr>
 			<td>Задержка выключения насосов после выключения компрессора (сек.) [0...900]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlofp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLOFP)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlofp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLOFP)');"></td>
 		</tr>	
 		<tr>
 			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlsr"> <input type="submit" value=">" onclick="setParam('get_oHP(DLSR)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlsr"> <input type="submit" value=">" onclick="setParam('get_oHP(DLSR)');"></td>
 		</tr>	
 		<tr>
 			<td>Задержка перед повторным включением ТН при ошибке (попытке пуска) (сек.) [0...6000]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlrs"> <input type="submit" value=">" onclick="setParam('get_oHP(DLRS)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlrs"> <input type="submit" value=">" onclick="setParam('get_oHP(DLRS)');"></td>
 		</tr>	
 		<tr>
 			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dltrv"> <input type="submit" value=">" onclick="setParam('get_oHP(DLTRV)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dltrv"> <input type="submit" value=">" onclick="setParam('get_oHP(DLTRV)');"></td>
 		</tr>	
 		<tr>
 			<td>Пауза после переключения ГВС (сек.) [0...1200]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlbsw"> <input type="submit" value=">" onclick="setParam('get_oHP(DLBSW)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlbsw"> <input type="submit" value=">" onclick="setParam('get_oHP(DLBSW)');"></td>
 		</tr>	
 		<tr>
 			<td>Время на сколько блокируются защиты при переходе с ГВС на отопление (сек.) [0...1200]</td>
-			<td nowrap>
-				<input type="number" id="get_ohp-dlboff"> <input type="submit" value=">" onclick="setParam('get_oHP(DLBOFF)');">
-			</td>
+			<td nowrap><input type="number" id="get_ohp-dlboff"> <input type="submit" value=">" onclick="setParam('get_oHP(DLBOFF)');"></td>
 		</tr>
 
 		<tr>
@@ -153,65 +121,44 @@
 		</tr>
 		<tr>
 			<td>Логировать не критичные ошибки электро-счетчика SDM</td>
-			<td>
-				<input type="checkbox" id="get_ohp-sdm_loger" onchange="setParam('get_oHP(SDM_LOGER)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-sdm_loger" onchange="setParam('get_oHP(SDM_LOGER)');"></td>
 		</tr>	
 		<tr>
 			<td>Логировать обмен между беспроводными датчиками</td>
-			<td>
-				<input type="checkbox" id="get_ohp-logws" onchange="setParam('get_oHP(LOGWS)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-logws" onchange="setParam('get_oHP(LOGWS)');"></td>
 		</tr>	
 		<tr>
 			<td>Генерация звукового сигнала</td>
-			<td>
-				<input type="checkbox" id="get_ohp-beep" onchange="setParam('get_oHP(BEEP)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-beep" onchange="setParam('get_oHP(BEEP)');"></td>
 		</tr>					
 		<tr>
 			<td>Использование дисплея Nextion</td>
-			<td>
-				<input type="checkbox" id="get_ohp-nxt" onchange="setParam('get_oHP(NXT)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-nxt" onchange="setParam('get_oHP(NXT)');"></td>
 		</tr>	
 		<tr>
 			<td>Включать дисплей при пуске компрессора</td>
-			<td>
-				<input type="checkbox" id="get_ohp-nxtw" onchange="setParam('get_oHP(NXTW)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-nxtw" onchange="setParam('get_oHP(NXTW)');"></td>
 		</tr>	
 		<tr>
 			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>7</sup></td>
-			<td nowrap>
-				<input id="get_ohp-nxts" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(NXTS)');">
-			</td>
+			<td nowrap><input id="get_ohp-nxts" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(NXTS)');"></td>
 		</tr>
 		<tr>
 			<td>Яркость дисплея Nextion в % [1..100]</td>
-			<td nowrap>
-				<input id="get_ohp-nxtd" type="number" min="1" max="100" step="1" value="100"> <input type="submit" value=">" onclick="setParam('get_oHP(NXTD)');">
-			</td>
+			<td nowrap><input id="get_ohp-nxtd" type="number" min="1" max="100" step="1" value="100"> <input type="submit" value=">" onclick="setParam('get_oHP(NXTD)');"></td>
 		</tr>
 		<tr>
 			<td>На второй шине 1-Wire только один датчик температуры</td>
-			<td>
-				<input type="checkbox" id="get_ohp-sgl1w_2" onchange="setParam('get_oHP(SGL1W_2)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-sgl1w_2" onchange="setParam('get_oHP(SGL1W_2)');"></td>
 		</tr>	
 		<tr>
 			<td>На третей шине 1-Wire только один датчик температуры</td>
-			<td>
-				<input type="checkbox" id="get_ohp-sgl1w_3" onchange="setParam('get_oHP(SGL1W_3)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-sgl1w_3" onchange="setParam('get_oHP(SGL1W_3)');"></td>
 		</tr>	
 		<tr>
 			<td>На четвертой шине 1-Wire только один датчик температуры</td>
-			<td>
-				<input type="checkbox" id="get_ohp-sgl1w_4" onchange="setParam('get_oHP(SGL1W_4)');">
-			</td>
+			<td><input type="checkbox" id="get_ohp-sgl1w_4" onchange="setParam('get_oHP(SGL1W_4)');"></td>
 		</tr>	
-
 	</tbody>
 	</table>
 

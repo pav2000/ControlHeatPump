@@ -1,10 +1,10 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-/* ver 0.999 beta */
+var VER_WEB = "1.000";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
-//var urlcontrol = 'http://192.168.1.10';
+var urlcontrol = 'http://192.168.1.10';
 //var urlcontrol = 'http://77.50.254.24:25402'; 
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4010; // время обновления параметров в миллисекундах
@@ -374,16 +374,14 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 									}
 								} else if(type == 'const') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									var element = document.getElementById(valueid);
+									if(element && values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										if(values[0] == 'get_status') {
-											cont1 = values[1].replace(/\|/g, "</div><div>");
-											var content = "<div>" + cont1 + "</div>";
+											element.innerHTML = "<div>" + values[1].replace(/\|/g, "</div><div>") + "</div>";
 										} else {
-											cont1 = values[1].replace(/\|/g, "</td><td>");
-											cont2 = cont1.replace(/(\;)/g, "</td></tr><tr><td>");
-											var content = "<tr><td>" + cont2 + "</td></tr>";
+											if(values[0] == "CONST") values[1] = "VER_WEB|Версия веб-страниц|" + VER_WEB + ';' + values[1];
+											element.innerHTML = "<tr><td>" + values[1].replace(/\|/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";
 										}
-										document.getElementById(valueid).innerHTML = content;
 									}
 								} else if(type == 'table') {
 									if(values[1] != null && values[1] != 0) {

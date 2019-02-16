@@ -899,7 +899,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_ADD_HEAT)==0)         {if(!GETBIT(Option.flags,fAddHeat))          return strcat(ret,(char*)"none:1;reserve:0;bivalent:0;");       // использование ТЭН запрещено
                                                else if(!GETBIT(Option.flags,fTypeRHEAT))   return strcat(ret,(char*)"none:0;reserve:1;bivalent:0;");       // резерв
                                                else                                        return strcat(ret,(char*)"none:0;reserve:0;bivalent:1;");}else  // бивалент
-   if(strcmp(var,option_TEMP_RHEAT)==0)       {_ftoa(ret,(float)Option.tempRHEAT/100.0,1); return ret; }else                                         // температура управления RHEAT (градусы)
+   if(strcmp(var,option_TEMP_RHEAT)==0)       {_ftoa(ret,(float)Option.tempRHEAT/100,1); return ret; }else                                         // температура управления RHEAT (градусы)
    if(strcmp(var,option_PUMP_WORK)==0)        {return _itoa(Option.workPump,ret);}else                                                           // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
@@ -921,7 +921,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	   }
    } else
    if(strcmp(var,option_SunRegGeo)==0)    	  {return _itoa(GETBIT(Option.flags, fSunRegenerateGeo), ret);}else
-   if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100.0,1); return ret; }else
+   if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100,1); return ret; }else
    if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
@@ -1505,19 +1505,14 @@ void HeatPump::Pump_HeatFloor(boolean On)
 // Генерятся задержки для защиты компрессора, есть задержки между включенимями насосов для уменьшения помех
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
-//	boolean old = dRelay[PUMP_IN].get_Relay(); // Входное (текущее) состояние определяется по Гео  (СО - могут быть варианты) ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
-//	if(b == old) return;                       // менять нечего выходим ЭТО УЖЕ НЕ ВЕРНО ЕСТЬ КОНФИГИ КОГДА PUMP_IN РАБОТАЕТ В ПАУЗАХ!!
-
 #ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if((!b) && (b!=dRelay[PUMP_IN].get_Relay())) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
 	}
 	
-	if(b != dRelay[PUMP_IN].get_Relay()) {// переключение насосов если есть что переключать 
-		dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
-		_delay(d);                                // Задержка на d мсек
-	}
+	dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
+	_delay(d);                                // Задержка на d мсек
 	
 	if((!b) &&  (dRelay[RPUMPO].get_Relay() // пауза перед выключением насосов контуров, если нужно
 #ifdef RPUMPBH
@@ -1830,12 +1825,12 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop)
   {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
+    journal.jprintf(pP_DATE," Stopping...\n");
     setState(pSTOPING_HP);  // Состояние выключения
-    journal.jprintf(pP_DATE,"   Stop . . .\n");
   } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
+    journal.jprintf(pP_DATE," Switch to waiting...\n");
     setState(pSTOPING_HP);  // Состояние выключения
-    journal.jprintf(pP_DATE,"   Switch to waiting . . .\n");
   }
     
   compressorOFF();		// Останов компрессора, насосов - PUMP_OFF(), ЭРВ
@@ -1866,16 +1861,16 @@ int8_t HeatPump::StopWait(boolean stop)
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
   #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
   if(boilerAddHeat()) { // Если используется тэн
-     if (dRelay[RBOILER].get_Relay()) dRelay[RBOILER].set_OFF();  // выключить тен бойлера
+     dRelay[RBOILER].set_OFF();  // выключить тен бойлера
   }
   #endif
 
   #ifdef RHEAT  // управление  ТЭНом отопления
-     if (dRelay[RHEAT].get_Relay()) dRelay[RHEAT].set_OFF();     // выключить тен отопления
+     dRelay[RHEAT].set_OFF();     // выключить тен отопления
   #endif
 
   #ifdef RPUMPB  // управление  насосом циркуляции ГВС
-     if (dRelay[RPUMPB].get_Relay()) dRelay[RPUMPB].set_OFF();     // выключить насос циркуляции ГВС
+     dRelay[RPUMPB].set_OFF();     // выключить насос циркуляции ГВС
   #endif
 
 // Выключается в PUMPS_OFF
@@ -2470,7 +2465,7 @@ void HeatPump::configHP(MODE_HP conf)
                  
                  switchBoiler(false);                                            // выключить бойлер
                
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                               // Задержка на 10 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                               // Задержка
                  #ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
                      dRelay[RSUPERBOILER].set_OFF();                            // Евгений добавил выключить супербойлер
                  #endif
@@ -2484,12 +2479,11 @@ void HeatPump::configHP(MODE_HP conf)
                 break;    
       case  pHEAT:    // Отопление
                  PUMPS_ON;                                                     // включить насосы
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
                  #ifdef RTRV
                   if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка
                  #endif
 
                  switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
@@ -2507,7 +2501,6 @@ void HeatPump::configHP(MODE_HP conf)
                 break;    
       case  pCOOL:    // Охлаждение
                  PUMPS_ON;                                                     // включить насосы
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
 
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
@@ -2535,7 +2528,6 @@ void HeatPump::configHP(MODE_HP conf)
                     PUMPS_ON;           // включить насосы
                     if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
                  #endif
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
 
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
@@ -2583,7 +2575,7 @@ void HeatPump::vUpdate()
 		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
 			if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
 				set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-				journal.jprintf(" Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000.0);
+				journal.jprintf(" Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000);
 				return;
 			}
 #endif
@@ -3350,6 +3342,19 @@ if(is_compressor_on()){      // Если компрессор рабоатет
 		#endif
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
 } else { COP=0; fullCOP=0; }  // компрессор не рабоатет
+#endif
+}
+
+void HeatPump::Sun_ON(void)
+{
+#ifdef USE_SUN_COLLECTOR
+	if(time_Sun_OFF == 0 || millis() - time_Sun_OFF > SUN_MIN_PAUSE) { // ON
+		flags |= (1<<fHP_SunActive);
+		dRelay[RSUN].set_Relay(fR_StatusSun);
+		dRelay[PUMP_IN].set_Relay(fR_StatusSun);
+		time_Sun_ON = millis();
+		time_Sun_OFF = 0;
+	}
 #endif
 }
 

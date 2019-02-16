@@ -36,10 +36,10 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION         "0.999 beta"        // Версия прошивки
+#define VERSION			"1.000"				// Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
-#define UART_SPEED       115200             // Скорость отладочного порта
+#define UART_SPEED		115200				// Скорость отладочного порта
 #endif
 //#define LOG                               // В последовательный порт шлет лог веб сервера (логируются запросы)
 #define FAST_LIB                            // использование допиленной библиотеки езернета Обычно используется
@@ -799,7 +799,6 @@ const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура на
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора
-const char *option_fPIDAlg2           = {"PID2"};               // Алгоритм PID vad711, иначе pav2000.
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы
