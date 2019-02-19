@@ -720,6 +720,7 @@ boolean Profile::set_boiler(char *var, char *c)
 												SETBIT0(Boiler.flags,fBoilerTogetherHeat);
 #ifdef RPUMPBH
 												if((HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H)) HP.dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+												SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
 #endif
 											} return true;} else
 	if(strcmp(var,boil_fBoilerPID)==0)	    { if(x) SETBIT1(Boiler.flags,fBoilerPID); else SETBIT0(Boiler.flags,fBoilerPID); return true;} else

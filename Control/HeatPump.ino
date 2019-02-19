@@ -1505,6 +1505,10 @@ void HeatPump::Pump_HeatFloor(boolean On)
 // Генерятся задержки для защиты компрессора, есть задержки между включенимями насосов для уменьшения помех
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
+#ifdef DEBUG_MODWORK
+	journal.printf(" Pumps(%d), modWork: %d\n", b, get_modWork());
+#endif
+
 #ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if((!b) && (b!=dRelay[PUMP_IN].get_Relay())) {
 		journal.jprintf(" Delay: stop IN pump.\n");
@@ -1555,6 +1559,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
     	dRelay[RPUMPO].set_Relay(b);                  // насос отопления
     	if(!b) {
 #ifdef RPUMPBH
+    		if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
     		dRelay[RPUMPBH].set_Relay(b);
 #endif
 #ifdef RPUMPFL
@@ -1670,6 +1675,7 @@ int8_t HeatPump::StartResume(boolean start)
 	offBoiler=0;                                         // Бойлер никогда не выключался
 	onSallmonela=false;                                  // Если true то идет Обеззараживание
 	onBoiler=false;                                      // Если true то идет нагрев бойлера
+	SETBIT0(flags, fHP_BoilerTogetherHeat);
 
 	// 2.1 Проверка конфигурации, которые можно поменять из морды, по этому проверяем всегда ----------------------------------------
 	if(!CheckAvailableWork())   // Нет работы для ТН - ничего не включено
@@ -1917,12 +1923,16 @@ MODE_HP HeatPump::get_Work()
    #ifdef RBOILER  // Управление дополнительным ТЭНом бойлера (функция boilerAddHeat() учитывает все режимы ТУРБО и ДОГРЕВ, сальмонелла)
     if(boilerAddHeat()) dRelay[RBOILER].set_ON(); else dRelay[RBOILER].set_OFF();
    #endif
+
+#ifdef DEBUG_MODWORK
+    journal.printf(" gW: Status.ret=%d, ret=%d, B=%d\n", Status.ret, ret, onBoiler);
+#endif
     
    if ((ret==pBOILER)||(ret==pNONE_B))  return ret; // работает бойлер больше ничего анализировать не надо выход
    if ((get_modeHouse() ==pOFF)&&(ret==pOFF)) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
                   
     // Обеспечить переключение с бойлера на отопление/охлаждение, т.е бойлер нагрет и надо идти дальше
-    if(((Status.ret==pBh3)||(Status.ret==pBp22)||(Status.ret==pBp23)||(Status.ret==pBp24)||(Status.ret==pBp25)||(Status.ret==pBp26)||(Status.ret==pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
+    if(((Status.ret==pBh3)||(Status.ret==pBh22)||(Status.ret==pBp3)||(Status.ret>=pBp22 && Status.ret<=pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
      {
 		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
      }
