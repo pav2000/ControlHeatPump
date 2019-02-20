@@ -45,12 +45,14 @@
 
 #include "mini-printf.h"
 
+/* strlen() on ARM works faster
 unsigned int m_strlen(const char *s)
 {
 	unsigned int len = 0;
 	while (s[len] != '\0') len++;
 	return len;
 }
+*/
 
 struct mini_buff {
 	char *buffer, *pbuffer;
