@@ -456,7 +456,7 @@ class HeatPump
     TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
-    //TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
     SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
     boolean Task_vUpdate_run;							// задача vUpdate работает
