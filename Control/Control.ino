@@ -500,6 +500,60 @@ x_I2C_init_std_message:
   #ifdef TEST_BOARD
   // Scan oneWire - TEST.
   //HP.scan_OneWire(Socket[0].outBuf);
+    char ssss[100];
+    ssss[0] = 0;
+    ssss[1] = 0;
+    journal.printf("Start test\n");
+    uint32_t ll = 0;
+    uint32_t tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += m_strlen(ssss);
+    }
+    journal.printf(" m_strlen(%d) = %u ms\n", ll, micros() - tt);
+    ll = 0;
+    tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += strlen(ssss);
+    }
+    journal.printf(" strlen(%d) = %u ms\n", ll, micros() - tt);
+
+    strcpy(ssss, "345235");
+    journal.printf("Start test 2\n");
+    ll = 0;
+    tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += m_strlen(ssss);
+    }
+    journal.printf(" m_strlen(%d) = %u ms\n", ll, micros() - tt);
+    ll = 0;
+    tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += strlen(ssss);
+    }
+    journal.printf(" strlen(%d) = %u ms\n", ll, micros() - tt);
+
+    strcpy(ssss, "dfgrewf");
+    journal.printf("Start test 3\n");
+    ll = 0;
+    tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += m_strlen(ssss);
+    }
+    journal.printf(" m_strlen(%d) = %u ms\n", ll, micros() - tt);
+    ll = 0;
+    tt = micros();
+    for(uint32_t i = 0; i < 20000; i++) {
+		__asm__ volatile ("" ::: "memory");
+    	ll += strlen(ssss);
+    }
+    journal.printf(" strlen(%d) = %u ms\n", ll, micros() - tt);
+
+
   #endif
 
   // Создание задач FreeRTOS  ----------------------

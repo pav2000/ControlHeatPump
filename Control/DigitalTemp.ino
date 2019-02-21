@@ -441,7 +441,7 @@ void check_radio_sensors(void)
 						// Send response
 						rs_serial_buf[rs_serial_addr_idx] = rs_addr;
 						rs_serial_buf[rs_serial_full_header_size + 2] |= 0x20; // В нижний регистр cmd
-						uint8_t len = m_strlen((char *)rs_serial_buf + rs_serial_full_header_size) + 1;
+						uint8_t len = strlen((char *)rs_serial_buf + rs_serial_full_header_size) + 1;
 						rs_serial_buf[rs_serial_full_header_size - 1] = len;
 						*(uint16_t *)pdata = RS_SUM_CRC((uint8_t *)rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header));
 						rs_serial_idx = pdata + 2 - (char *)rs_serial_buf;
@@ -463,7 +463,7 @@ void radio_sensor_send(char *cmd)
 	memcpy(rs_serial_buf, rs_serial_header, sizeof(rs_serial_header));
 	rs_serial_buf[sizeof(rs_serial_header)] = 0; // адрес приёмника 1 байт (0 – широковещат кадр)
 	rs_serial_buf[sizeof(rs_serial_header) + 1] = rs_addr; // адрес источника 1 байт
-	uint8_t len = m_strlen(cmd) + 2; // +sizeof(" \0")
+	uint8_t len = strlen(cmd) + 2; // +sizeof(" \0")
 	rs_serial_buf[sizeof(rs_serial_header) + 2] = len; // длина данных
 	rs_serial_buf[sizeof(rs_serial_header) + 3] = ' '; // Тип текст
 	strcpy((char *)&rs_serial_buf[sizeof(rs_serial_header) + 4], cmd);

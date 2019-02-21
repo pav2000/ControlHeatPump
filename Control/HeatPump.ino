@@ -137,9 +137,9 @@ void HeatPump::scan_OneWire(char *result_str)
 		OneWireBus4.Scan(result_str);
 #endif
 		journal.jprintf("OneWire found(%d): ", OW_scanTableIdx);
-		while(m_strlen(_result_str)) {
+		while(strlen(_result_str)) {
 			journal.jprintf(_result_str);
-			uint16_t l = m_strlen(_result_str);
+			uint16_t l = strlen(_result_str);
 			_result_str += l > PRINTF_BUF-1 ? PRINTF_BUF-1 : l;
 		}
 #ifdef RADIO_SENSORS
@@ -150,7 +150,7 @@ void HeatPump::scan_OneWire(char *result_str)
 			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
 			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
 			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
-			char *p = result_str + m_strlen(result_str);
+			char *p = result_str + strlen(result_str);
 			m_snprintf(p, 64, "%d:RADIO %.1fV/%c:%.2f:%u:7;", OW_scanTable[OW_scanTableIdx].num, (float)radio_received[i].battery/10, Radio_RSSI_to_Level(radio_received[i].RSSI), (float)radio_received[i].Temp/100.0, radio_received[i].serial_num);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
@@ -1092,14 +1092,14 @@ return str;
 }
 
 // получить данные графика  в виде строки, данные ДОБАВЛЯЮТСЯ к str
-char * HeatPump::get_Chart(char *var, char* str)
+void HeatPump::get_Chart(char *var, char* str)
 {
 	uint8_t i;
 	// В начале имена совпадающие с именами объектов
 	for(i = 0; i < TNUMBER; i++) {
 		if((strcmp(var, sTemp[i].get_name()) == 0) && (sTemp[i].Chart.get_present())) {
 			sTemp[i].Chart.get_PointsStr(100, str);
-			return str;
+			return;
 		}
 	}
 #ifndef MIN_RAM_CHARTS
@@ -1109,13 +1109,13 @@ char * HeatPump::get_Chart(char *var, char* str)
 #endif
 		if((strcmp(var, sADC[i].get_name()) == 0) && (sADC[i].Chart.get_present())) {
 			sADC[i].Chart.get_PointsStr(100, str);
-			return str;
+			return;
 		}
 	}
 	for(i = 0; i < FNUMBER; i++) {
 		if((strcmp(var, sFrequency[i].get_name()) == 0) && (sFrequency[i].Chart.get_present())) {
 			sFrequency[i].Chart.get_PointsStr(1000, str);
-			return str;
+			return;
 		}
 	}
 	if(strcmp(var, chart_NONE) == 0) {
@@ -1181,7 +1181,6 @@ char * HeatPump::get_Chart(char *var, char* str)
 		ChartFullCOP.get_PointsStr(100, str);
 #endif
 	}
-	return str;
 }
 
 // расчитать хеш для пользователя возвращает длину хеша

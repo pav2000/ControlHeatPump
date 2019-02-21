@@ -417,11 +417,11 @@ void parserGET(uint8_t thread, int8_t )
 	urldecode(buf, buf, W5200_MAX_LEN);
 	while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
 	{
-		strReturn += m_strlen(strReturn);
+		strReturn += strlen(strReturn);
 		if((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
 		{
 			strcat(strReturn,str);
-			*(strReturn += m_strlen(strReturn)) = '=';
+			*(strReturn += strlen(strReturn)) = '=';
 			*(++strReturn) = 0;
 		}
 		if(strReturn > Socket[thread].outBuf + sizeof(Socket[thread].outBuf) - 250)  // Контроль длины выходной строки - если слишком длинная обрезаем и выдаем ошибку

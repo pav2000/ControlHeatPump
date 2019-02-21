@@ -30,7 +30,7 @@ void get_Header(uint8_t thread,char *name_file)
     strcat(Socket[thread].outBuf, name_file);
     strcat(Socket[thread].outBuf, "\"");
     strcat(Socket[thread].outBuf, WEB_HEADER_END);
-	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 	sendPrintfRTOS(thread, " ------ Народный контроллер теплового насоса ver. %s  сборка %s %s ------\r\nКонфигурация: %s: %s\r\nСоздание файла: %s %s \r\n\r\n", VERSION,__DATE__,__TIME__,CONFIG_NAME,CONFIG_NOTE,NowTimeToStr(),NowDateToStr());
 }
 
@@ -651,7 +651,7 @@ uint16_t get_binSettings(uint8_t thread)
     strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
     strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
     strcat(Socket[thread].outBuf, "settings.bin\"\r\n\r\n");
-	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 	sendConstRTOS(thread, HEADER_BIN);
 	
 	// 2. Запись настроек ТН
@@ -691,7 +691,7 @@ uint16_t get_csvChart(uint8_t thread)
 	strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	strcat(Socket[thread].outBuf, WEB_HEADER_TEXT_ATTACH);
 	strcat(Socket[thread].outBuf, "chart.csv\"\r\n\r\n");
-	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 	strcpy(Socket[thread].outBuf,"Point;");
 	//    strcpy(Socket[thread].outBuf,""); _itoa(HP.sTemp[TIN].Chart.get_num(),Socket[thread].outBuf);strcat(Socket[thread].outBuf,";");// вывести число точек
 	for(i=0;i<TNUMBER;i++) if(HP.sTemp[i].Chart.get_present())      {strcat(Socket[thread].outBuf,HP.sTemp[i].get_name()); strcat(Socket[thread].outBuf,";");}
@@ -822,7 +822,7 @@ int16_t get_indexNoSD(uint8_t thread)
    	strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
    	strcat(Socket[thread].outBuf, WEB_HEADER_TXT_KEEP);
    	strcat(Socket[thread].outBuf, WEB_HEADER_END);
-   	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+   	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
     n=sizeof(index_noSD);              // сколько надо передать байт
     while (n>0)                        // Пока есть не отправленные данные
       {

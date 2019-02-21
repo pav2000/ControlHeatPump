@@ -45,14 +45,14 @@
 
 #include "mini-printf.h"
 
-/* strlen() on ARM works faster
+unsigned int strlen(const char *s);
+// Warning - strlen() on ARM works faster on length > 6
 unsigned int m_strlen(const char *s)
 {
 	unsigned int len = 0;
 	while (s[len] != '\0') len++;
 	return len;
 }
-*/
 
 struct mini_buff {
 	char *buffer, *pbuffer;
@@ -185,7 +185,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 
 				case 's' :
 					ptr = va_arg(va, char*);
-					_puts(ptr, m_strlen(ptr), &b);
+					_puts(ptr, strlen(ptr), &b);
 					break;
 
 #ifdef MINI_PRINTF_USE_FLOAT
