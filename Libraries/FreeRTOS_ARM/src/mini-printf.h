@@ -44,7 +44,6 @@ extern "C" {
 unsigned int m_vsnprintf(char* buffer, unsigned int buffer_len, const char *fmt, va_list va);
 unsigned int m_snprintf(char* buffer, unsigned int buffer_len, const char *fmt, ...);
 unsigned int m_strlen(const char *s);
-//#define m_strlen(s) strlen(s)
 unsigned int m_itoa(long value, char *buffer, unsigned char radix, unsigned char flags);
 char *ftoa(char *outstr, float val, unsigned char precision);
 
