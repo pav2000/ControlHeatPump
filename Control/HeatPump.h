@@ -416,7 +416,7 @@ class HeatPump
     void updateChart();                                     // обновить статистику
     void startChart();                                      // Запуститьь статистику
     char * get_listChart(char* str);				          // получить список доступных графиков
-    char * get_Chart(char *var,char* str);   				 // получить данные графика
+    void get_Chart(char *var,char* str);   				   // получить данные графика
   
     // графики не по датчикам (по датчикам она хранится внутри датчика)
     statChart ChartRCOMP;                                   // Статистика по включению компрессора
@@ -456,7 +456,7 @@ class HeatPump
     TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
     TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
-    //TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 
     SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
     boolean Task_vUpdate_run;							// задача vUpdate работает

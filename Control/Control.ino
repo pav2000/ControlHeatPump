@@ -227,6 +227,9 @@ void setup() {
   #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
     digitalWriteDirect(PIN_POWER_ON, LOW);
+    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+  #else
+    delay(10);
   #endif
   
 // Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
@@ -234,7 +237,6 @@ void setup() {
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();
-
   #ifdef DEMO
      journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
   #endif 
@@ -262,8 +264,6 @@ void setup() {
   #ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
     pinMode(PIN_STEP_DIAG,INPUT_PULLUP); 
     journal.jprintf("Control EEV driver L9333: ON \n"); 
-  #else
-    journal.jprintf("Control EEV driver no support \n"); 
   #endif
 
 #ifdef RADIO_SENSORS

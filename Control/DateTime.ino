@@ -77,7 +77,7 @@ boolean set_time_NTP(void)
 			tTCP.write_buffer_flash((uint8_t *) &http_get_str1, sizeof(http_get_str1)-1);
 			tTCP.write_buffer_flash((uint8_t *) HTTP_TIME_REQ, sizeof(HTTP_TIME_REQ)-1);
 			tTCP.write_buffer_flash((uint8_t *) &http_get_str2, sizeof(http_get_str2)-1);
-			tTCP.write_buffer((uint8_t *) HP.get_serverNTP(), m_strlen(HP.get_serverNTP()));
+			tTCP.write_buffer((uint8_t *) HP.get_serverNTP(), strlen(HP.get_serverNTP()));
 			tTCP.write_buffer_flash((uint8_t *) &http_get_str3, sizeof(http_get_str3)-1);
 			if(tTCP.write((const uint8_t *)NULL, (size_t)0) == 0) {
 				journal.jprintf(" send error\n");

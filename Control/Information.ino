@@ -28,70 +28,64 @@
 // --------------------------------------------------------------------------------------------------------------- 
 // Инициализация
 void Journal::Init()
-  {
-    bufferTail = 0;
-    bufferHead = 0;
-    full=false;                   // Буфер не полный
-    err=OK;
-    #ifdef DEBUG
-      Serial.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
-    #endif
-        
-    #ifndef I2C_EEPROM_64KB     // журнал в памяти
-     memset(_data,0,JOURNAL_LEN); 
-     jprintf("\nSTART ----------------------\n"); 
-     jprintf("Init RAM journal, size %d . . .\n",JOURNAL_LEN);  
-     return;  
-    #else                      // журнал во флеше
+{
+	bufferTail = 0;
+	bufferHead = 0;
+	full = false;                   // Буфер не полный
+	err = OK;
+#ifdef DEBUG
+	Serial.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#endif
 
-    #ifdef DEBUG
-     Serial.println("\nInit I2C journal . . .");
-    #endif  
-     uint8_t eepStatus=0;
-     uint16_t i;
-     char *ptr;
-     
-     if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
-     {
-      #ifdef DEBUG
-       Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
-      #endif
-      err=ERR_OPEN_I2C_JOURNAL; 
-      return;
-     }
-     
-     if (checkREADY()==false) // Проверка наличия журнал
-     { 
-      #ifdef DEBUG
-        Serial.print("I2C journal not found\n"); 
-       #endif  
-      Format(bufI2C);
-     }   
-     #ifdef DEBUG  
-       else Serial.print("I2C journal is ready for use\n");
-       Serial.print("Scan I2C journal ");
-     #endif 
-     
-     for (i=0;i<JOURNAL_LEN/W5200_MAX_LEN;i++)   // поиск журнала начала и конца, для ускорения читаем по W5200_MAX_LEN байт
-       {
-        #ifdef DEBUG  
-        Serial.print(".");
-        #endif
-        if (readEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C,W5200_MAX_LEN))   
-           { err=ERR_READ_I2C_JOURNAL; 
-             #ifdef DEBUG
-             Serial.print(errorReadI2C); 
-             #endif
-            break; };
-        if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_HEAD,W5200_MAX_LEN))!=NULL)       { bufferHead=i*W5200_MAX_LEN+(ptr-bufI2C); }
-        if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_TAIL,W5200_MAX_LEN))!=NULL)       { bufferTail=i*W5200_MAX_LEN+(ptr-bufI2C); }
-        if ((bufferTail!=0)&&(bufferHead!=0))  break;
-       }
-      if  (bufferTail<bufferHead) full=true;                   // Буфер полный
-      jprintf("\nSTART ----------------------\n"); 
-      jprintf("Found journal I2C: total size %d bytes, head=0x%x, tail=0x%x \n",JOURNAL_LEN,bufferHead,bufferTail);
-    #endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
-  }
+#ifndef I2C_EEPROM_64KB     // журнал в памяти
+	memset(_data, 0, JOURNAL_LEN);
+	jprintf("\nSTART ----------------------\n");
+	jprintf("Init RAM journal, size %d . . .\n", JOURNAL_LEN);
+	return;
+#else                      // журнал во флеше
+
+	uint8_t eepStatus=0;
+	uint16_t i;
+	char *ptr;
+
+	if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
+	{
+#ifdef DEBUG
+		Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
+#endif
+		err=ERR_OPEN_I2C_JOURNAL;
+		return;
+	}
+
+	if (checkREADY()==false) // Проверка наличия журнал
+	{
+#ifdef DEBUG
+		Serial.print("I2C journal not found! ");
+#endif
+		Format(bufI2C);
+	}
+
+	for (i=0;i<JOURNAL_LEN/W5200_MAX_LEN;i++)   // поиск журнала начала и конца, для ускорения читаем по W5200_MAX_LEN байт
+	{
+		WDT_Restart(WDT);
+#ifdef DEBUG
+		Serial.print(".");
+#endif
+		if (readEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C,W5200_MAX_LEN))
+		{	err=ERR_READ_I2C_JOURNAL;
+#ifdef DEBUG
+		Serial.print(errorReadI2C);
+#endif
+		break;};
+		if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_HEAD,W5200_MAX_LEN))!=NULL) {bufferHead=i*W5200_MAX_LEN+(ptr-bufI2C);}
+		if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_TAIL,W5200_MAX_LEN))!=NULL) {bufferTail=i*W5200_MAX_LEN+(ptr-bufI2C);}
+		if ((bufferTail!=0)&&(bufferHead!=0)) break;
+	}
+	if (bufferTail<bufferHead) full=true;                   // Буфер полный
+	jprintf("\nSTART ----------------------\n");
+	jprintf("Found I2C journal: size %d bytes, head=0x%x, tail=0x%x\n",JOURNAL_LEN,bufferHead,bufferTail);
+#endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
+}
 
   
 #ifdef I2C_EEPROM_64KB  // функции долько для I2C журнала
@@ -126,7 +120,7 @@ void Journal::Format(char *buf)
 	err = OK;
 	memset(buf, I2C_JOURNAL_FORMAT, W5200_MAX_LEN);
 	#ifdef DEBUG
-	Serial.print("Formating journal I2C ");
+	Serial.print("Formating I2C journal ");
 	#endif
 	for(i = 0; i < JOURNAL_LEN / W5200_MAX_LEN; i++) {
 		#ifdef DEBUG
@@ -160,73 +154,58 @@ void Journal::Format(char *buf)
     
 // Печать только в консоль
 void Journal::printf(const char *format, ...)             
-  {
-  #ifdef DEBUG
-  va_list ap;
-//    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-    {
-    va_start(ap, format);
-    m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
-    va_end(ap);
-    }
-    Serial.print(pbuf);
-  #endif 
-  }
-  
+{
+#ifdef DEBUG
+	va_list ap;
+	va_start(ap, format);
+	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
+	va_end(ap);
+	Serial.print(pbuf);
+#endif
+}
+
 // Печать в консоль и журнал возвращает число записанных байт
 void Journal::jprintf(const char *format, ...)
-  {
-      va_list ap;
-//      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-//      else
-      {
-      va_start(ap, format);
-      m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
-      va_end(ap);
-      }
-      #ifdef DEBUG
-   //     Serial.print(full); Serial.print(">"); Serial.print(bufferHead);Serial.print(":"); Serial.print(bufferTail); Serial.print(" ");  
-        Serial.print(pbuf);
-      #endif 
-   // добавить строку в журнал
-   _write(pbuf);
-  }
+{
+	va_list ap;
+	va_start(ap, format);
+	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
+	va_end(ap);
+#ifdef DEBUG
+	Serial.print(pbuf);
+#endif
+	// добавить строку в журнал
+	_write(pbuf);
+}
 
 //type_promt вставляется в начале журнала а далее печать в консоль и журнал возвращает число записанных байт с типом промта
 void Journal::jprintf(type_promt pr,const char *format, ...)
 {
-  switch (pr)
-  {
-  case  pP_NONE: break;
-  case  pP_TIME: jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
-  case  pP_DATE: jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
-  case  pP_USER: jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
-  }
-     va_list ap;
-//      if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-//      else
-      {
-      va_start(ap, format);
-      m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
-      va_end(ap);
-      }
-      #ifdef DEBUG
-       Serial.print(pbuf);
-      #endif 
-    _write(pbuf);   // добавить строку в журнал
+	switch (pr)
+	{
+	case  pP_NONE: break;
+	case  pP_TIME: jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
+	case  pP_DATE: jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
+	case  pP_USER: jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
+	}
+	va_list ap;
+	va_start(ap, format);
+	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
+	va_end(ap);
+#ifdef DEBUG
+	Serial.print(pbuf);
+#endif
+	_write(pbuf);   // добавить строку в журнал
 }   
-  
+
 // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
 void Journal::jprintf_only(const char *format, ...)
 {
-  va_list ap;
-//    if (m_strlen(format)>PRINTF_BUF-10) strcpy(pbuf,MessageLongString);   // Слишком длинная строка
-    {
-    va_start(ap, format);
-    m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
-    va_end(ap);
-    }
-   _write(pbuf);
+	va_list ap;
+	va_start(ap, format);
+	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
+	va_end(ap);
+	_write(pbuf);
 }
 
 // отдать журнал в сеть клиенту  Возвращает число записанных байт
@@ -301,7 +280,7 @@ size_t Journal::write (uint8_t c)
 void Journal::_write(char *dataPtr)
 {
 	int32_t numBytes;
-	if(dataPtr == NULL || (numBytes = m_strlen(dataPtr)) == 0) return;  // Записывать нечего
+	if(dataPtr == NULL || (numBytes = strlen(dataPtr)) == 0) return;  // Записывать нечего
 #ifdef I2C_EEPROM_64KB // запись в еепром
 	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
 	// Запись в I2C память
@@ -433,7 +412,7 @@ boolean statChart::get_boolPoint(uint16_t x,uint16_t mask)
 
 // получить строку в которой перечислены все точки в строковом виде через; при этом значения делятся на m
 // строка не обнуляется перед записью
-void statChart::get_PointsStr(uint16_t m, char *b)
+void statChart::get_PointsStr(uint16_t m, char *&b)
 { 
   if ((!present)||(num==0)) {
 	  //strcat(b, ";");
@@ -446,7 +425,7 @@ void statChart::get_PointsStr(uint16_t m, char *b)
   }
 }
 
-void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
+void statChart::get_PointsStrSub(uint16_t m, char *&b, statChart *sChart)
 {
   if (!present || num == 0 || !sChart->get_present() || sChart->get_num() == 0) {
 	  //strcat(b, ";");
@@ -459,7 +438,7 @@ void statChart::get_PointsStrSub(uint16_t m, char *b, statChart *sChart)
   }
 }
 // Расчитать мощность на лету используется для графика потока, передаются указатели на графики температуры + теплоемкость
-void statChart::get_PointsStrPower(uint16_t m, char *b, statChart *inChart,statChart *outChart, float kfCapacity)
+void statChart::get_PointsStrPower(uint16_t m, char *&b, statChart *inChart,statChart *outChart, float kfCapacity)
 {
   if (!present || num == 0 || !inChart->get_present() || inChart->get_num()==0 || !outChart->get_present() || outChart->get_num()== 0) {
 	  //strcat(b, ";");
