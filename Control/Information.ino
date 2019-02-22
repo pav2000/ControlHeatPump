@@ -89,7 +89,7 @@ void Journal::Init()
        }
       if  (bufferTail<bufferHead) full=true;                   // Буфер полный
       jprintf("\nSTART ----------------------\n"); 
-      jprintf("Found journal I2C: total size %d bytes, head=0x%x, tail=0x%x \n",JOURNAL_LEN,bufferHead,bufferTail);
+      jprintf("Found journal I2C: total size %d bytes, head=0x%x, tail=0x%x\n",JOURNAL_LEN,bufferHead,bufferTail);
     #endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
   }
 

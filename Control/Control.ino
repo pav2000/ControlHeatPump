@@ -234,7 +234,7 @@ void setup() {
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();
-
+  delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
   #ifdef DEMO
      journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
   #endif 
