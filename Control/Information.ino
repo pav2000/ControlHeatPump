@@ -28,70 +28,64 @@
 // --------------------------------------------------------------------------------------------------------------- 
 // Инициализация
 void Journal::Init()
-  {
-    bufferTail = 0;
-    bufferHead = 0;
-    full=false;                   // Буфер не полный
-    err=OK;
-    #ifdef DEBUG
-      Serial.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
-    #endif
-        
-    #ifndef I2C_EEPROM_64KB     // журнал в памяти
-     memset(_data,0,JOURNAL_LEN); 
-     jprintf("\nSTART ----------------------\n"); 
-     jprintf("Init RAM journal, size %d . . .\n",JOURNAL_LEN);  
-     return;  
-    #else                      // журнал во флеше
+{
+	bufferTail = 0;
+	bufferHead = 0;
+	full = false;                   // Буфер не полный
+	err = OK;
+#ifdef DEBUG
+	Serial.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#endif
 
-    #ifdef DEBUG
-     Serial.println("\nInit I2C journal . . .");
-    #endif  
-     uint8_t eepStatus=0;
-     uint16_t i;
-     char *ptr;
-     
-     if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
-     {
-      #ifdef DEBUG
-       Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
-      #endif
-      err=ERR_OPEN_I2C_JOURNAL; 
-      return;
-     }
-     
-     if (checkREADY()==false) // Проверка наличия журнал
-     { 
-      #ifdef DEBUG
-        Serial.print("I2C journal not found\n"); 
-       #endif  
-      Format(bufI2C);
-     }   
-     #ifdef DEBUG  
-       else Serial.print("I2C journal is ready for use\n");
-       Serial.print("Scan I2C journal ");
-     #endif 
-     
-     for (i=0;i<JOURNAL_LEN/W5200_MAX_LEN;i++)   // поиск журнала начала и конца, для ускорения читаем по W5200_MAX_LEN байт
-       {
-        #ifdef DEBUG  
-        Serial.print(".");
-        #endif
-        if (readEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C,W5200_MAX_LEN))   
-           { err=ERR_READ_I2C_JOURNAL; 
-             #ifdef DEBUG
-             Serial.print(errorReadI2C); 
-             #endif
-            break; };
-        if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_HEAD,W5200_MAX_LEN))!=NULL)       { bufferHead=i*W5200_MAX_LEN+(ptr-bufI2C); }
-        if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_TAIL,W5200_MAX_LEN))!=NULL)       { bufferTail=i*W5200_MAX_LEN+(ptr-bufI2C); }
-        if ((bufferTail!=0)&&(bufferHead!=0))  break;
-       }
-      if  (bufferTail<bufferHead) full=true;                   // Буфер полный
-      jprintf("\nSTART ----------------------\n"); 
-      jprintf("Found journal I2C: total size %d bytes, head=0x%x, tail=0x%x\n",JOURNAL_LEN,bufferHead,bufferTail);
-    #endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
-  }
+#ifndef I2C_EEPROM_64KB     // журнал в памяти
+	memset(_data, 0, JOURNAL_LEN);
+	jprintf("\nSTART ----------------------\n");
+	jprintf("Init RAM journal, size %d . . .\n", JOURNAL_LEN);
+	return;
+#else                      // журнал во флеше
+
+	uint8_t eepStatus=0;
+	uint16_t i;
+	char *ptr;
+
+	if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
+	{
+#ifdef DEBUG
+		Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
+#endif
+		err=ERR_OPEN_I2C_JOURNAL;
+		return;
+	}
+
+	if (checkREADY()==false) // Проверка наличия журнал
+	{
+#ifdef DEBUG
+		Serial.print("I2C journal not found! ");
+#endif
+		Format(bufI2C);
+	}
+
+	for (i=0;i<JOURNAL_LEN/W5200_MAX_LEN;i++)   // поиск журнала начала и конца, для ускорения читаем по W5200_MAX_LEN байт
+	{
+		WDT_Restart(WDT);
+#ifdef DEBUG
+		Serial.print(".");
+#endif
+		if (readEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C,W5200_MAX_LEN))
+		{	err=ERR_READ_I2C_JOURNAL;
+#ifdef DEBUG
+		Serial.print(errorReadI2C);
+#endif
+		break;};
+		if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_HEAD,W5200_MAX_LEN))!=NULL) {bufferHead=i*W5200_MAX_LEN+(ptr-bufI2C);}
+		if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_TAIL,W5200_MAX_LEN))!=NULL) {bufferTail=i*W5200_MAX_LEN+(ptr-bufI2C);}
+		if ((bufferTail!=0)&&(bufferHead!=0)) break;
+	}
+	if (bufferTail<bufferHead) full=true;                   // Буфер полный
+	jprintf("\nSTART ----------------------\n");
+	jprintf("Found I2C journal: size %d bytes, head=0x%x, tail=0x%x\n",JOURNAL_LEN,bufferHead,bufferTail);
+#endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
+}
 
   
 #ifdef I2C_EEPROM_64KB  // функции долько для I2C журнала
@@ -126,7 +120,7 @@ void Journal::Format(char *buf)
 	err = OK;
 	memset(buf, I2C_JOURNAL_FORMAT, W5200_MAX_LEN);
 	#ifdef DEBUG
-	Serial.print("Formating journal I2C ");
+	Serial.print("Formating I2C journal ");
 	#endif
 	for(i = 0; i < JOURNAL_LEN / W5200_MAX_LEN; i++) {
 		#ifdef DEBUG
