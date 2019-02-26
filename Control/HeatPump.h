@@ -448,15 +448,17 @@ class HeatPump
     #endif
     TaskHandle_t xHandleReadSensor;                     // Заголовок задачи "Чтение датчиков"
     TaskHandle_t xHandleSericeHP;						// Задача обслуживания ТН:
-    //TaskHandle_t xHandleUpdateStat;                        // Заголовок задачи "Обновление ститистики"
-    //TaskHandle_t xHandleUpdateNextion;                     // заголовок задачи "Обновление дисплея nextion"
-    //TaskHandle_t xHandlePauseStart;                        // заголовок задачи "Отложенный старт"
-    //TaskHandle_t xHandleUpdatePump;                        // Заголовок задачи "Работа насоса при выключенном компрессоре"
     TaskHandle_t xHandleUpdateCommand;                  // Разбор очереди команд
-    TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер"
+    TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер" в зависимости от потоков
+#if    W5200_THREARD > 1 
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
+#endif   
+#if    W5200_THREARD > 2 
     TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
+#endif   
+#if    W5200_THREARD > 3 
     TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
+#endif   
 
     SemaphoreHandle_t xCommandSemaphore;                // Семафор команды
     boolean Task_vUpdate_run;							// задача vUpdate работает
