@@ -227,7 +227,7 @@ void setup() {
   #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
     digitalWriteDirect(PIN_POWER_ON, LOW);
-    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+  //  delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
   #else
     delay(10);
   #endif
@@ -237,6 +237,9 @@ void setup() {
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();
+  #ifdef POWER_CONTROL                     
+    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+  #endif 
   #ifdef DEMO
      journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
   #endif 
@@ -546,7 +549,7 @@ HP.Task_vUpdate_run = false;
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 // ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 #if    W5200_THREARD < 2 
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); // первай поток должен иметь больший стек - доп функции
   HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+20);
 #elif  W5200_THREARD < 3
   if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
