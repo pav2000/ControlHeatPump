@@ -450,13 +450,13 @@ class HeatPump
     TaskHandle_t xHandleSericeHP;						// Задача обслуживания ТН:
     TaskHandle_t xHandleUpdateCommand;                  // Разбор очереди команд
     TaskHandle_t xHandleUpdateWeb0;                     // Заголовок задачи "Веб сервер" в зависимости от потоков
-#if    W5200_THREARD > 1 
+#if    W5200_THREAD > 1
     TaskHandle_t xHandleUpdateWeb1;                     // Заголовок задачи "Веб сервер"
 #endif   
-#if    W5200_THREARD > 2 
+#if    W5200_THREAD > 2
     TaskHandle_t xHandleUpdateWeb2;                     // Заголовок задачи "Веб сервер"
 #endif   
-#if    W5200_THREARD > 3 
+#if    W5200_THREAD > 3
     TaskHandle_t xHandleUpdateWeb3;                     // Заголовок задачи "Веб сервер"
 #endif   
 

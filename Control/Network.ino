@@ -178,7 +178,7 @@ boolean initW5200(boolean flag)
 	}
 
 	//  3. Подготовить структура для потоков
-	for(i = 0; i < W5200_THREARD; i++) {
+	for(i = 0; i < W5200_THREAD; i++) {
 		Socket[i].flags = 0x00;
 		Socket[i].sock = -1;
 		memset((char*) Socket[i].inBuf, 0x00, sizeof(Socket[i].inBuf));
@@ -402,11 +402,11 @@ void checkSockStatus()
   if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy);return;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
   for (uint8_t i = 0; i < MAX_SOCK_NUM; i++) {        // По всем сокетам!!
         // Не сбрасывать сокеты которые используется в потоке ОБЯЗАТЕЛЬНО!!
-        #if    W5200_THREARD < 2 
+        #if    W5200_THREAD < 2
          if (Socket[0].sock==i)  continue;   
-        #elif  W5200_THREARD < 3
+        #elif  W5200_THREAD < 3
           if((Socket[0].sock==i)||(Socket[1].sock==i))  continue;    
-        #elif  W5200_THREARD < 4
+        #elif  W5200_THREAD < 4
           if((Socket[0].sock==i)||(Socket[1].sock==i)||(Socket[2].sock==i))  continue;   
         #else
           if((Socket[0].sock==i)||(Socket[1].sock==i)||(Socket[2].sock==i)||(Socket[3].sock==i))  continue;   

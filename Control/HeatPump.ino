@@ -3035,7 +3035,7 @@ int8_t HeatPump::runCommand()
 			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
 			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
-			for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
+			for (i=0;i<W5200_THREAD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
 			SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
 			break;
 //		case pSFORMAT:                                             // Форматировать журнал в I2C памяти
