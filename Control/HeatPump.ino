@@ -1830,14 +1830,15 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop)
   {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
-    journal.jprintf(pP_DATE," Stopping...\n");
+    journal.jprintf(pP_DATE,"Stopping...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
-    journal.jprintf(pP_DATE," Switch to waiting...\n");
+    journal.jprintf(pP_DATE,"Switch to waiting...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   }
-    
+
+  journal.jprintf(" modWork: %d[%s]\n", get_modWork(), codeRet[Status.ret]);
   compressorOFF();		// Останов компрессора, насосов - PUMP_OFF(), ЭРВ
 
   if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
@@ -2841,10 +2842,8 @@ void HeatPump::compressorON()
 const char *MinPauseOnCompressor={" Wait min pause on compressor . . ."};  
 void HeatPump::compressorOFF()
 {
-  if(!is_compressor_on()) return; // он выключен
+  if(!dFC.isfOnOff()) return;
    
-  journal.jprintf(pP_TIME,"compressorOFF > modWork:%d[%s]\n", get_modWork(), codeRet[Status.ret]);
-
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
   dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ

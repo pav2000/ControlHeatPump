@@ -480,7 +480,9 @@ int8_t devVaconFC::stop_FC()
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
         HP.dRelay[RCOMP].set_OFF();
 #else
+#ifdef MODBUS_PORT_NUM
         err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
+#endif
 #endif
     }
     if(err == OK) {
