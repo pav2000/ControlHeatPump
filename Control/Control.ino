@@ -116,7 +116,7 @@ struct type_socketData
     uint8_t flags;                          // Флаги состояния потока
     uint16_t http_req_type;                 // Тип запроса
   };
-static type_socketData Socket[W5200_THREARD];   // Требует много памяти 4*W5200_MAX_LEN*W5200_THREARD=24 кб
+static type_socketData Socket[W5200_THREAD];   // Требует много памяти 4*W5200_MAX_LEN*W5200_THREAD=24 кб
 
 // Установка вачдога таймера вариант vad711 - адаптация для DUE 1.6.11
 // WDT_TIME период Watchdog таймера секунды но не более 16 секунд!!! ЕСЛИ WDT_TIME=0 то Watchdog будет отключен!!!
@@ -171,8 +171,15 @@ int8_t set_Error(int8_t _err, char *nam)
 {
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
 	{ // Выключить компрессор для обоих вариантов
-		journal.jprintf("$Compressor protection: ");
-		if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
+		journal.jprintf("$Compressor protection ");
+#ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
+        HP.dRelay[RCOMP].set_OFF();
+#else
+#ifdef MODBUS_PORT_NUM
+        err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
+#endif
+#endif
+		//if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
 		HP.set_stopCompressor();
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
@@ -227,7 +234,7 @@ void setup() {
   #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
     digitalWriteDirect(PIN_POWER_ON, LOW);
-    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+  //  delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
   #else
     delay(10);
   #endif
@@ -237,6 +244,9 @@ void setup() {
   
 // 2. Инициализация журнала и в нем последовательный порт
   journal.Init();
+  #ifdef POWER_CONTROL                     
+    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+  #endif 
   #ifdef DEMO
      journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
   #endif 
@@ -545,28 +555,18 @@ HP.Task_vUpdate_run = false;
 
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 // ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
-#if    W5200_THREARD < 2 
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+20,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+20);
-#elif  W5200_THREARD < 3
+  // 1 - поток
   if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
   HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+#if W5200_THREAD >= 2 // - потока
   if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
-#elif  W5200_THREARD < 4
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
-  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+#endif
+#if W5200_THREAD >= 3 // - потока
   if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
-#else
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
-  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
-  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+#endif
+#if W5200_THREAD >= 4 // - потока
   if ( xTaskCreate(vWeb3,"Web3", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif

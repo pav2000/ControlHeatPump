@@ -1830,14 +1830,15 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop)
   {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
-    journal.jprintf(pP_DATE," Stopping...\n");
+    journal.jprintf(pP_DATE,"Stopping...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
-    journal.jprintf(pP_DATE," Switch to waiting...\n");
+    journal.jprintf(pP_DATE,"Switch to waiting...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   }
-    
+
+  journal.jprintf(" modWork: %d[%s]\n", get_modWork(), codeRet[Status.ret]);
   compressorOFF();		// Останов компрессора, насосов - PUMP_OFF(), ЭРВ
 
   if (onBoiler) // Если надо уйти с ГВС для облегчения останова компресора
@@ -2583,8 +2584,8 @@ void HeatPump::vUpdate()
 	if(is_compressor_on())                                                            // Только если компрессор включен
 		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
 			if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
+				journal.jprintf("Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000);
 				set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-				journal.jprintf(" Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000);
 				return;
 			}
 #endif
@@ -2841,10 +2842,8 @@ void HeatPump::compressorON()
 const char *MinPauseOnCompressor={" Wait min pause on compressor . . ."};  
 void HeatPump::compressorOFF()
 {
-  if(!is_compressor_on()) return; // он выключен
+  if(!dFC.isfOnOff()) return;
    
-  journal.jprintf(pP_TIME,"compressorOFF > modWork:%d[%s]\n", get_modWork(), codeRet[Status.ret]);
-
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
   dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ
@@ -3035,7 +3034,7 @@ int8_t HeatPump::runCommand()
 			_delay(1000);               						// задержка что бы вывести сообщение в консоль и на веб морду
 			if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) {journal.jprintf((char*)cErrorMutex,__FUNCTION__,MutexWebThreadBuzy); command=pEMPTY; return 0;} // Захват мютекса потока или ОЖИДАНИНЕ W5200_TIME_WAIT
 			initW5200(true);                                  // Инициализация сети с выводом инфы в консоль
-			for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
+			for (i=0;i<W5200_THREAD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);                                 // Признак инициализации сокета, надо прерывать передачу в сервере
 			SemaphoreGive(xWebThreadSemaphore);                                                                // Мютекс потока отдать
 			break;
 //		case pSFORMAT:                                             // Форматировать журнал в I2C памяти

@@ -1408,7 +1408,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
                          HP.num_resMQTT++; 
                          journal.jprintf((char*)ResChip);  
                          initW5200(false);                                  // Инициализация сети без вывода инфы в консоль
-                         for (i=0;i<W5200_THREARD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);  // Признак инициализации сокета, надо прерывать передачу в сервере
+                         for (i=0;i<W5200_THREAD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK);  // Признак инициализации сокета, надо прерывать передачу в сервере
                           _delay(50);
                          break;
      }

@@ -45,7 +45,7 @@
 
 #include "mini-printf.h"
 
-unsigned int strlen(const char *s);
+unsigned long strlen(const char *s);
 // Warning - strlen() on ARM works faster on length > 6
 unsigned int m_strlen(const char *s)
 {
