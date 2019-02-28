@@ -2583,8 +2583,8 @@ void HeatPump::vUpdate()
 	if(is_compressor_on())                                                            // Только если компрессор включен
 		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
 			if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
+				journal.jprintf("Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000);
 				set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-				journal.jprintf(" Low flow: %.3f\n", (float) sFrequency[i].get_Value() / 1000);
 				return;
 			}
 #endif

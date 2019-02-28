@@ -171,7 +171,7 @@ int8_t set_Error(int8_t _err, char *nam)
 {
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
 	{ // Выключить компрессор для обоих вариантов
-		journal.jprintf("$Compressor protection: ");
+		journal.jprintf("$Compressor protection ");
 		if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
 		HP.set_stopCompressor();
 	}

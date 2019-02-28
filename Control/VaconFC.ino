@@ -699,7 +699,7 @@ boolean devVaconFC::reset_errorFC()
 	if((state & FC_S_FLT)) {
 		if(write_0x06_16(FC_CONTROL, FC_C_RST)) { // сброс отказа
 			journal.jprintf("%s: Error reset fault!\n", name);
-		}
+		} else _delay(100); // Ожидание сброса
 	}
     read_stateFC();
 #endif
