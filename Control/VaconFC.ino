@@ -698,10 +698,13 @@ void devVaconFC::get_infoFC(char* buf)
 boolean devVaconFC::reset_errorFC()
 {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-	if((state & FC_S_FLT)) {
-		if(write_0x06_16(FC_CONTROL, FC_C_RST)) { // сброс отказа
-			journal.jprintf("%s: Error reset fault!\n", name);
-		} else _delay(100); // Ожидание сброса
+	if((state & FC_S_FLT)) { // сброс отказа
+		if((err = write_0x06_16(FC_CONTROL, 0)) == OK) {
+			_delay(FC_WRITE_READ);
+			err = write_0x06_16(FC_CONTROL, FC_C_RST);
+			_delay(FC_WRITE_READ);
+		}
+		if(err) journal.jprintf("%s: Error reset fault!\n", name);
 	}
     read_stateFC();
 #endif

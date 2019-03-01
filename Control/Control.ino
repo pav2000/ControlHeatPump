@@ -176,11 +176,10 @@ int8_t set_Error(int8_t _err, char *nam)
         HP.dRelay[RCOMP].set_OFF();
 #else
 #ifdef MODBUS_PORT_NUM
-        err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
+        if(HP.dFC.write_0x06_16(FC_CONTROL, FC_C_STOP) == OK) // подать команду ход/стоп через модбас
 #endif
 #endif
-		//if(HP.dFC.get_present()) HP.dFC.stop_FC(); else HP.dRelay[RCOMP].set_OFF();
-		HP.set_stopCompressor();
+        	HP.set_stopCompressor();
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
