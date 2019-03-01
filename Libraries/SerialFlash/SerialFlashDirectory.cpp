@@ -61,8 +61,8 @@ in the strings section.
 Strings are null terminated.  The remainder of the chip is file data.
 */
 
-#define DEFAULT_MAXFILES      600
-#define DEFAULT_STRINGS_SIZE  25560
+#define DEFAULT_MAXFILES      300 //600
+#define DEFAULT_STRINGS_SIZE  12780 //25560
 
 
 static uint32_t check_signature(void)
@@ -252,6 +252,30 @@ static uint32_t string_length(uint32_t addr)
 //    uint16_t string_index  // div 4
 //  } fileinfo[maxfiles]
 //  char strings[stringssize]
+
+// Return free size in bytes. (by vad7)
+uint32_t SerialFlashChip::free_size(void)
+{
+	uint32_t address;
+	{
+		uint32_t maxfiles, stringsize;
+		uint32_t index, buf[3];
+		maxfiles = check_signature();
+		stringsize = (maxfiles & 0xFFFF0000) >> 14;
+		maxfiles &= 0xFFFF;
+		index = find_first_unallocated_file_index(maxfiles);
+		// compute where to store the filename and actual data
+		address = 8 + maxfiles * 12;
+		if (index == 0) {
+			address += stringsize;
+		} else {
+			SerialFlash.read(8 + maxfiles * 2 + (index-1) * 10, buf, 10);
+			address = buf[0] + buf[1];
+		}
+		address = (address + 255) & 0xFFFFFF00;
+	}
+	return Capacity - address;
+}
 
 bool SerialFlashChip::create(const char *filename, uint32_t length, uint32_t align)
 {

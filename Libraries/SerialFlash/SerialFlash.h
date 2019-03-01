@@ -61,6 +61,8 @@ public:
 	static bool remove(SerialFlashFile &file);
 	static void opendir() { dirindex = 0; }
 	static bool readdir(char *filename, uint32_t strsize, uint32_t &filesize);
+	static uint32_t free_size(void);
+	static uint32_t Capacity;
 private:
 	static uint16_t dirindex; // current position for readdir()
 	static uint8_t flags;	// chip features

@@ -2590,18 +2590,26 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
-			journal.jprintf("Start upload, format SPI disk ");
+			journal.jprintf("Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while (SerialFlash.ready() == false) {
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
 				journal.jprintf(".");
 			}
-			journal.jprintf(" OK\n");
+			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
 			return pNULL;
 		}
 		else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
-			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("Ok. Total %d files uploaded\n",numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
-			else {journal.jprintf("Unable to finish upload\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
+				journal.jprintf("Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_OK;
+			}
+			else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+				journal.jprintf("Unable to finish upload\n", (char*) __FUNCTION__);
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_ERR;
+			}
 		}
 		else { // загрузка отдельных файлов веб морды
 			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
