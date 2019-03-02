@@ -1303,8 +1303,8 @@ void vUpdateStepperEEV(void *)
 		// 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
 		if(xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) {
 			//     Serial.println("6. TaskSuspend ");
-			HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
 			if(!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
+			HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
 			vTaskSuspend(NULL);               // Приостановить задучу vUpdateStepperEEV
 		}
 		// Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди

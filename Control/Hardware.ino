@@ -874,21 +874,30 @@ int8_t devEEV::Update(void) //boolean fHeating)
 		if(GETBIT(_data.flags, fEEV_DirectAlgorithm)) {
 #if defined(TCOMPIN)
 			int16_t diff = _data.tOverheatTCOMP - OverheatTCOMP;
-			pidw.trend[trOH_TCOMP] += sign(pidw.pre_err2[0] - diff);
-			if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
-			else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
+			int8_t fast = signm(pidw.pre_err2[0] - diff, _data.trend_mul_threshold); // 0, +-1, +-2
+			pidw.trend[trOH_TCOMP] += fast;
 			pidw.pre_err2[0] = diff;
+			if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) {
+				pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
+				fast--;
+			} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) {
+				pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
+				fast++;
+			} else fast = 0;
 			diff = _data.tOverheat - Overheat;
-			pidw.trend[trOH_default] += sign(pidw.pre_err - diff); //sign_dif(pidw.pre_err - diff, pidw.trend[trOH_default]); // +1 - растет, -1 - падает
-			if(pidw.trend[trOH_default] > _data.trend_threshold * 2) pidw.trend[trOH_default] = _data.trend_threshold * 2;
-			else if(pidw.trend[trOH_default] < -_data.trend_threshold * 2) pidw.trend[trOH_default] = -_data.trend_threshold * 2;
+			pidw.trend[trOH_default] += signm(pidw.pre_err - diff, _data.trend_mul_threshold); //sign_dif(pidw.pre_err - diff, pidw.trend[trOH_default]); // +1 - растет, -1 - падает
 			pidw.pre_err = diff;
+			if(pidw.trend[trOH_default] > _data.trend_threshold * 2) {
+				pidw.trend[trOH_default] = _data.trend_threshold * 2;
+			} else if(pidw.trend[trOH_default] < -_data.trend_threshold * 2) {
+				pidw.trend[trOH_default] = -_data.trend_threshold * 2;
+			}
 #ifdef DEBUG_PID
 			journal.printf("EEV: %d=%d,%d=%d. ", _data.tOverheat - Overheat, pidw.trend[trOH_default], _data.tOverheatTCOMP - OverheatTCOMP, pidw.trend[trOH_TCOMP]);
 #endif
 			if(pidw.max) {
 #ifdef DEBUG_PID
-				journal.printf("skip ", pidw.max);
+				journal.printf("skip:%d\n", pidw.max);
 #endif
 				pidw.max--;
 			} else {
@@ -897,59 +906,50 @@ int8_t devEEV::Update(void) //boolean fHeating)
 						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
 						pidw.max = _data.trend_threshold;
 						pidw.trend[trOH_default] = 0;
+						pidw.trend[trOH_TCOMP] = 0;
 					} else if(pidw.trend[trOH_default] > 0) {
 						newEEV = 1;
 						pidw.max = 1;
 						//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
-					} else if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) goto xSecondHigh;
+					} else goto xSecond;
 				} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 					if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
 						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
 						pidw.max = _data.trend_threshold;
 						pidw.trend[trOH_default] = 0;
+						pidw.trend[trOH_TCOMP] = 0;
 					} else if(pidw.trend[trOH_default] > 0) {
 						newEEV = -1;
 						pidw.max = 1;
-					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) goto xSecondLow;
+					} else goto xSecond;
 				} else {
-					diff = _data.tOverheatTCOMP_delta * 3 / 4;
-					if(pidw.pre_err2[0] < -diff) { // Перегрев больше, проверка порога - открыть ЭРВ
-						if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) {
-xSecondHigh:				if(pidw.trend[trOH_TCOMP] >= 0) {
-								newEEV = 1;
-								pidw.max = 1;
-								pidw.trend[trOH_TCOMP] = 0;
-							}
-						} else if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) { // >= * 2
+xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
+						if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) {
 							newEEV = 1;
 							pidw.trend[trOH_TCOMP] = 0;
 						}
-					} else if(pidw.pre_err2[0] > diff) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-							if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 3 / 2) { // слишком низко
-xSecondLow:						if(pidw.trend[trOH_TCOMP] < 0) {
-									newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2 - 1;
-									pidw.max = _data.trend_threshold;
-									pidw.trend[trOH_default] = 0;
-									pidw.trend[trOH_TCOMP] = 0;
-								} else {
-									newEEV = -1;
-								}
-							} else if(pidw.trend[trOH_TCOMP] <= 0) {
-								newEEV = -1;
-								pidw.max = 1;
+					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
+						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2 || OverheatTCOMP <= 0) { // слишком низко
+						    if(pidw.trend[trOH_TCOMP] <= 0) {
+								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2;
+								if(newEEV == 0) newEEV = -1;
+								pidw.max = _data.trend_threshold;
+								pidw.trend[trOH_default] = 0;
 								pidw.trend[trOH_TCOMP] = 0;
 							}
-						} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) { // <= * 2
+						} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold) {
 							newEEV = -1;
 							pidw.trend[trOH_TCOMP] = 0;
 						}
+					} else if(fast) {
+						newEEV = fast;
+						pidw.trend[trOH_TCOMP] = 0;
 					}
 				}
-			}
 #ifdef DEBUG_PID
-			journal.printf("%d\n", newEEV);
+				journal.printf("%d\n", newEEV);
 #endif
+			}
 			if(newEEV > _data.pid_max) newEEV = _data.pid_max;
 			else if(newEEV < -_data.pid_max) newEEV = -_data.pid_max;
 			newEEV += EEV;
@@ -1152,6 +1152,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_fEEVStartPosByTemp)==0){ _itoa((_data.flags & (1<<fEEV_StartPosByTemp))!=0, ret);
 	} else if(strcmp(var, eev_fEEV_DirectAlgorithm)==0){ _itoa((_data.flags & (1<<fEEV_DirectAlgorithm))!=0, ret);
 	} else if(strcmp(var, eev_trend_threshold)==0){	_itoa(_data.trend_threshold, ret);
+	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_ftoa(ret, (float)_data.trend_mul_threshold/100, 2);
 	} else strcat(ret,"E10");
 	return ret;
 }
@@ -1281,6 +1282,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if (x==0) SETBIT0(_data.flags, fPID_PropOnMeasure); else SETBIT1(_data.flags, fPID_PropOnMeasure);
 		resetPID();
 	} else if(strcmp(var, eev_trend_threshold)==0){	_data.trend_threshold = x; return true;
+	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_data.trend_mul_threshold = rd(x, 100); return true;
 	} else return false; // ошибочное имя параметра
 
 	return true;  // для флагов

@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.005";
+var VER_WEB = "1.006";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -753,6 +753,8 @@ function toggleclass(elem, onoff) {
 	}
 }
 
+var upload_error = false;
+
 function upload(file) {
 	var xhr = new XMLHttpRequest();
 //	xhr.upload.onprogress = function(event) { console.log(event.loaded + ' / ' + event.total); }
@@ -765,6 +767,7 @@ function upload(file) {
 		if(this.readyState != 4) return;
 		if(xhr.status == 200) {
 			if(xhr.responseText != null && xhr.responseText != "") {
+				upload_error = true;
 				alert(xhr.responseText);
 			}
 		}

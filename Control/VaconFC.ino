@@ -214,7 +214,10 @@ int8_t devVaconFC::get_readState()
 					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (FC_RETOIL_FREQ - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
 #ifdef EEV_DEF
-						if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() + _data.ReturnOilEEV);
+						if(_data.ReturnOilEEV != 0) {
+							HP.dEEV.set_EEV(HP.dEEV.get_EEV() + _data.ReturnOilEEV);
+							_delay(1);
+						}
 #endif
 						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.startFreq);
 						ReturnOilTimer = 0;
@@ -224,7 +227,10 @@ int8_t devVaconFC::get_readState()
 				if(++ReturnOilTimer >= FC_RETOIL_TIME) {
 					err = write_0x06_16((uint16_t) FC_SET_SPEED, FC_target);
 #ifdef EEV_DEF
-					if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() - _data.ReturnOilEEV);
+					if(_data.ReturnOilEEV != 0) {
+						HP.dEEV.set_EEV(HP.dEEV.get_EEV() - _data.ReturnOilEEV);
+						_delay(1);
+					}
 #endif
 					flags &= ~(1 << fFC_RetOilSt);
 					ReturnOilTimer = 0;

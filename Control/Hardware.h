@@ -382,6 +382,7 @@ private:
 		int16_t  tOverheatTCOMP;				// Целевой перегрев2 TCOMPIN-T[PEVA]
 		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева2 TCOMPIN-T[PEVA]
 		int8_t   trend_threshold;				// Порог детектирования тренда
+		uint16_t trend_mul_threshold;			// Порог для *2, сотые градуса
 	} _data;                                    // Конец структуры для сохранения настроек
 };
 

@@ -53,7 +53,7 @@ void StepMotor::step(int steps_to_move)
           journal.jprintf("$ERROR - Command Queue is FULL! command step ignore \n");
           return;
           }
-     else  // В очердь команад попала
+     else  // В очередь команад попала
       if (!buzy) {
          buzy=true;                        // флаг начало движения	
          vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет

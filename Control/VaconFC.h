@@ -228,6 +228,12 @@ public:
   uint8_t  *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
   uint16_t  get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
 
+#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+  int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
+  uint32_t read_0x03_32(uint16_t cmd);             // Функция Modbus 0х03 прочитать 4 байта
+  int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
+#endif
+
   statChart ChartFC;                               // График по скорости
   statChart ChartPower;                            // График по мощности
 #ifndef MIN_RAM_CHARTS
@@ -293,12 +299,6 @@ public:
    uint16_t flags;  					// рабочие флаги
    int16_t ReturnOilTimer;
   // Функции работы с Modbus
-#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-  int16_t  read_0x03_16(uint16_t cmd);             // Функция Modbus 0х03 прочитать 2 байта
-  uint32_t read_0x03_32(uint16_t cmd);             // Функция Modbus 0х03 прочитать 4 байта
-  int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
-
-#endif
  };
 
 #endif
