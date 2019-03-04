@@ -20,7 +20,7 @@
 		var mrk = {name:"*SPI_FLASH*", toString: function(){return "";}};
 		upload_error = false;
 		if(id == "spi") upload(mrk); else fs[0].settings = 1;
-		for(i = 0; i < fs.length || !upload_error; i++) upload(fs[i]);
+		for(i = 0; i < fs.length && !upload_error; i++) upload(fs[i]);
 		if(id == "spi") {
 			mrk.name = "*SPI_FLASH_END*";
 			upload(mrk);
