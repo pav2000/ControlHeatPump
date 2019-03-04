@@ -543,10 +543,10 @@ boolean initSpiDisk(boolean show)
 	} else {
 		if(show) {
 			SerialFlash.readID(id);
-			journal.jprintf(" Manufacturer ID: 0x%02x\n", id[0]);
-			journal.jprintf(" Memory type: 0x%02x\n", id[1]);
-			journal.jprintf(" Capacity: 0x%02x\n", id[2]);
-			journal.jprintf(" Chip size: %d bytes\n", SerialFlash.capacity(id));
+			journal.jprintf(" Manufacturer ID: 0x%02X\n", id[0]);
+			journal.jprintf(" Memory type: 0x%02X\n", id[1]);
+			journal.jprintf(" Chip size(0x%02X): %d bytes\n", id[2], SerialFlash.Capacity);
+			journal.jprintf(" Free: %d bytes\n", SerialFlash.free_size());
 			SerialFlash.readSerialNumber(id);
 			journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n", id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7]);
 		}

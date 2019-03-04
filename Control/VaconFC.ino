@@ -214,7 +214,10 @@ int8_t devVaconFC::get_readState()
 					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (FC_RETOIL_FREQ - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
 #ifdef EEV_DEF
-						if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() + _data.ReturnOilEEV);
+						if(_data.ReturnOilEEV != 0) {
+							HP.dEEV.set_EEV(HP.dEEV.get_EEV() + _data.ReturnOilEEV);
+							_delay(1);
+						}
 #endif
 						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.startFreq);
 						ReturnOilTimer = 0;
@@ -224,7 +227,10 @@ int8_t devVaconFC::get_readState()
 				if(++ReturnOilTimer >= FC_RETOIL_TIME) {
 					err = write_0x06_16((uint16_t) FC_SET_SPEED, FC_target);
 #ifdef EEV_DEF
-					if(_data.ReturnOilEEV != 0) HP.dEEV.set_EEV(HP.dEEV.get_EEV() - _data.ReturnOilEEV);
+					if(_data.ReturnOilEEV != 0) {
+						HP.dEEV.set_EEV(HP.dEEV.get_EEV() - _data.ReturnOilEEV);
+						_delay(1);
+					}
 #endif
 					flags &= ~(1 << fFC_RetOilSt);
 					ReturnOilTimer = 0;
@@ -698,10 +704,13 @@ void devVaconFC::get_infoFC(char* buf)
 boolean devVaconFC::reset_errorFC()
 {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-	if((state & FC_S_FLT)) {
-		if(write_0x06_16(FC_CONTROL, FC_C_RST)) { // сброс отказа
-			journal.jprintf("%s: Error reset fault!\n", name);
-		} else _delay(100); // Ожидание сброса
+	if((state & FC_S_FLT)) { // сброс отказа
+		if((err = write_0x06_16(FC_CONTROL, 0)) == OK) {
+			_delay(FC_WRITE_READ);
+			err = write_0x06_16(FC_CONTROL, FC_C_RST);
+			_delay(FC_WRITE_READ);
+		}
+		if(err) journal.jprintf("%s: Error reset fault!\n", name);
 	}
     read_stateFC();
 #endif

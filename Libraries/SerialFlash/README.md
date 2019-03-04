@@ -93,3 +93,10 @@ A list of files stored in the Flash can be accessed with readdir(), which return
     while (SerialFlash.ready() == false) {
        // wait, 30 seconds to 2 minutes for most chips
     }
+
+## Free size (added by vad7)
+
+	uint32_t free_size_bytes = SerialFlash.free_size();
+
+	uint32_t flash_size_bytes = SerialFlash.Capacity;
+

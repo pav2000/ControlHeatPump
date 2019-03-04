@@ -35,6 +35,7 @@
 uint16_t SerialFlashChip::dirindex = 0;
 uint8_t SerialFlashChip::flags = 0;
 uint8_t SerialFlashChip::busy = 0;
+uint32_t SerialFlashChip::Capacity = 0;
 
 static volatile IO_REG_TYPE *cspin_basereg;
 static IO_REG_TYPE cspin_bitmask;
@@ -343,7 +344,6 @@ bool SerialFlashChip::begin(uint8_t pin)
 {
 	uint8_t id[5];
 	uint8_t f;
-	uint32_t size;
 
 	cspin_basereg = PIN_TO_BASEREG(pin);
 	cspin_bitmask = PIN_TO_BITMASK(pin);
@@ -355,8 +355,8 @@ bool SerialFlashChip::begin(uint8_t pin)
 		return false;
 	}
 	f = 0;
-	size = capacity(id);
-	if (size > 16777216) {
+	Capacity = capacity(id);
+	if (Capacity > 16777216) {
 		// more than 16 Mbyte requires 32 bit addresses
 		f |= FLAG_32BIT_ADDR;
 		SPIPORT.beginTransaction(SPICONFIG);

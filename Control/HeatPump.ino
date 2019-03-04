@@ -2720,6 +2720,7 @@ void HeatPump::compressorON()
 		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
 	}
 	dEEV.CorrectOverheatInit();
+	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
 #endif
 	
 

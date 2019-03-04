@@ -166,7 +166,7 @@ void web_server(uint8_t thread)
 					{
                         uint8_t ret= parserPOST(thread, len);         // разобрать и получить тип ответа
                         strcpy(Socket[thread].outBuf, HEADER_ANSWER);
-						strcat(Socket[thread].outBuf,postRet[ret]);   // вернтуть текстовый ответ, котороый надо вывести
+						strcat(Socket[thread].outBuf, postRet[ret]);   // вернуть текстовый ответ, котороый надо вывести
                			if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) journal.jprintf("$Error send buf:  %s\n", (char*) Socket[thread].inBuf);
 						break;
 					}
@@ -2590,22 +2590,38 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
-			journal.jprintf("Start upload, format SPI disk ");
+			journal.jprintf("Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while (SerialFlash.ready() == false) {
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
 				journal.jprintf(".");
 			}
-			journal.jprintf(" OK\n");
+			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
 			return pNULL;
-		}
-		else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
-			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {journal.jprintf("Ok. Total %d files uploaded\n",numFilesWeb); SemaphoreGive(xLoadingWebSemaphore);return pLOAD_OK;} // Семафор не захвачен (был захвачен ранее) все ок
-			else {journal.jprintf("Unable to finish upload\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-		}
-		else { // загрузка отдельных файлов веб морды
-			if (SemaphoreTake(xLoadingWebSemaphore,0)!=pdPASS) {if (loadFileToSpi(nameFile, lenFile, thread, ptr,full_len)){numFilesWeb++; return pNULL;} else return pLOAD_ERR; }// Cемафор  захвачен загрузка файла
-			else {journal.jprintf("Unable to upload file\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;}	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+		} else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
+				journal.jprintf("Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_OK;
+			} else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
+				journal.jprintf("Unable to finish upload\n", (char*) __FUNCTION__);
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_ERR;
+			}
+		} else { // загрузка отдельных файлов веб морды
+			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Cемафор  захвачен загрузка файла
+				if(loadFileToSpi(nameFile, lenFile, thread, ptr, full_len)) {
+					numFilesWeb++;
+					return pNULL;
+				} else {
+					SemaphoreGive (xLoadingWebSemaphore);
+					return pLOAD_ERR;
+				}
+			} else { // семафор БЫЛ не захвачен, ошибка, отдать обратно
+				journal.jprintf("Unable to upload file\n", (char*) __FUNCTION__);
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_ERR;
+			}
 		}
 	}
 	else { journal.jprintf("Upload: No SPI flash\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
@@ -2622,10 +2638,15 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf)
 {
 	uint16_t len, numPoint = 0;
-	uint32_t loadLen = 0; // Обработанная (загруженная) длина
+	uint32_t loadLen; // Обработанная (загруженная) длина
 
 	journal.jprintf("%s - ", nameFile);
-	if(SerialFlash.create(nameFile, lenFile)) {
+	loadLen = SerialFlash.free_size();
+	if(lenFile > loadLen) {
+		journal.jprintf("Not enough space, free: %d\n", loadLen);
+		loadLen = 0;
+	} else if(SerialFlash.create(nameFile, lenFile)) {
+		loadLen = 0;
 		SerialFlashFile ff = SerialFlash.open(nameFile);
 		if(ff) {
 			if(sizeBuf > 0) loadLen = ff.write(ptr, sizeBuf);  // первый пакет упаковали если он не нулевой
@@ -2644,7 +2665,7 @@ uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* 
 				}                       // точка на 15 кб приема (10 пакетов по 1540)
 			}
 			ff.close();
-			if(loadLen == lenFile) journal.jprintf("%db\n", loadLen);
+			if(loadLen == lenFile) journal.jprintf("%d\n", loadLen);
 			else { // Длины не совпали
 				journal.jprintf("%db, Error length!\n", loadLen);
 				loadLen = 0;

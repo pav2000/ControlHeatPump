@@ -1,23 +1,28 @@
 <html>
 <head> 
-	<title>Инвертор. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
-	<script type="text/javascript">
-	window.onload = function() {
+<title>Инвертор. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+window.onload = function() {
 	loadParam("get_pFC(NAME),get_pFC(NOTE)");
 	updateParam("get_pFC(BLOCK),get_pFC(ON_OFF),get_pFC(FC),get_pFC(cFC),get_pFC(cCURRENT),get_pFC(MB_ERR),get_pFC(INFO)");
-	};
-	</script>
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("pFC(NAME)")!=-1) {
+		document.getElementById("fcdoc").href = document.getElementById("get_pfc-name").value + ".pdf";
+	}
+}
+</script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
 <h1>Инвертор <span id="get_pfc-name"></span> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 <div class="row1">
-	<h2>Основные <input type="submit" value="Сброс ошибок" onclick='loadParam("RESET_ErrorFC")' style="float:right"> <input type="submit" value="Восстановление соединения"  onclick='setParam("set_pFC(BLOCK=0)")' style="float:right;margin-right:10px;"> <input style="float:right;margin-right:10px;" type="submit" value="Доп. настройки" onclick='location.assign("invertor-set.html")'></h2>
+	<h2>Основные <input type="submit" value="Сброс ошибок" onclick='loadParam("RESET_ErrorFC")' style="float:right"> <input type="submit" value="Восстановление соединения"  onclick='setParam("set_pFC(BLOCK=0)")' style="float:right;margin-right:10px;"> <input style="float:right;margin-right:10px;" type="submit" value="Доп. настройки" onclick='location.assign("invertor-set.html")'> <a id="fcdoc" style="float:right;margin-right:10px;" class="download" href="" download><button>?</button></a></h2>
 	<table>
 	<thead>
 	<tr>
@@ -55,7 +60,6 @@
 		</tbody>
 		</table>						
 </div>
-
 </div>
 </body>
 </html>
