@@ -1932,10 +1932,10 @@ MODE_HP HeatPump::get_Work()
    if ((get_modeHouse() ==pOFF)&&(ret==pOFF)) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
                   
     // Обеспечить переключение с бойлера на отопление/охлаждение, т.е бойлер нагрет и надо идти дальше
-    if(((Status.ret==pBh3)||(Status.ret==pBh22)||(Status.ret==pBp3)||(Status.ret>=pBp22 && Status.ret<=pBp27))&&(onBoiler)) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
-     {
+    if(onBoiler && ((Status.ret==pNone || Status.ret==pBh3 || Status.ret==pBh22 || Status.ret==pBp3 || (Status.ret>=pBp22 && Status.ret<=pBp27)))) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
+    {
 		switchBoiler(false);                // выключить бойлер (задержка в функции) имеено здесь  - а то дальше защиты сработают
-     }
+    }
  
     // 3. Отопление/охлаждение
     switch ((int)get_modeHouse() )   // проверка отопления
@@ -2003,6 +2003,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			flagRBOILER=false; // Выключение
 		}
 #endif
+		if(GETBIT(flags, fHP_BoilerTogetherHeat)) {
+			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+			SETBIT0(flags, fHP_BoilerTogetherHeat);
+		}
 		return pCOMP_OFF;             // запрещено греть бойлер согласно расписания
 	}
 	// -----------------------------------------------------------------------------------------------------
@@ -2828,8 +2832,9 @@ void HeatPump::compressorON()
 	}
 	else  // признак первой итерации
 	{
-		lastEEV=dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
 		set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
+		lastEEV=dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
+		dEEV.Resume();
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Start task UpdateEEV\n");
 	}

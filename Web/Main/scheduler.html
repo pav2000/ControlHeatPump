@@ -17,7 +17,6 @@
 	<script src="jquery-ui.min.js"></script>
 	<script src="jquery.ui.touch.js"></script>
 	<script>
-		var ResetHeights = navigator.userAgent.indexOf("Chrome") != -1;
 		var shifted;
 		$( function() { $("#calendar").selectable({filter: ".clc", stop: function() {
 			$( ".ui-selected", this ).each(function() {
@@ -38,10 +37,6 @@
 					this.innerHTML = v == 0 ? "" : v;
 				}
 			});
-			if(ResetHeights) {
-				var arrdiv = [".content",".menu"];
-				for(i = 0; i < arrdiv.length; i++) $(arrdiv[i])[0].style.minHeight = "100%";
-			}
 		} }); });
 		$(document).on('keyup keydown', function(e){ shifted = e.shiftKey } );
 	</script>
