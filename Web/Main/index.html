@@ -29,25 +29,25 @@ window.onload = function() {
 	</div>
 	<div class="row2">
 		<dl>
-			<dt>Режим работы:</dt><dd nowrap><select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select></dd>
-			<dt>На улице</dt><dd nowrap><span id="get_temp-tout">-</span> &deg;C</dd>
-			<dt>В доме</dt><dd nowrap><span id="get_temp-tin">-</span> &deg;C</dd>
+			<dt>Режим:</dt><dd><select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select></dd>
+			<dt><nobr>На улице</nobr></dt><dd><span id="get_temp-tout">-</span>&deg;</dd>
+			<dt><nobr>В доме</nobr></dt><dd><span id="get_temp-tin">-</span>&deg;</dd>
 			<!--<dt>Уставка</dt><dd nowrap><span id="get_targettemp-tin">-</span> &deg;C</dd>-->
 		</dl>
 		<dl>
-			<dt>Из геоконтура</dt><dd nowrap><span id="get_temp-tevaing">-</span> &deg;C</dd>
-			<dt>В геоконтур</dt><dd nowrap><span id="get_temp-tevaoutg">-</span> &deg;C</dd>
-			<dt>Насос ГК</dt><dd nowrap><span id="get_relay-rpumpi-ONOFF">-</span></dd>
+			<dt><nobr>Из геоконтура</nobr></dt><dd><span id="get_temp-tevaing">-</span>&deg;</dd>
+			<dt><nobr>В геоконтур</nobr></dt><dd><span id="get_temp-tevaoutg">-</span>&deg;</dd>
+			<dt><nobr>Насос ГК</nobr></dt><dd><span id="get_relay-rpumpi-ONOFF">-</span></dd>
 		</dl>
 		<dl>
-			<dt>Подача СО</dt><dd nowrap><span id="get_temp-tconoutg">-</span> &deg;C</dd>
-			<dt>Обратка СО</dt><dd nowrap><span id="get_temp-tconing">-</span> &deg;C</dd>
-			<dt>Насос СО</dt><dd nowrap><span id="get_relay-rpumpo-ONOFF">-</span></dd>
+			<dt>Подача</dt><dd><span id="get_temp-tconoutg">-</span>&deg;</dd>
+			<dt>Обратка</dt><dd><span id="get_temp-tconing">-</span>&deg;</dd>
+			<dt><nobr>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
 		</dl>
 		<dl>
-			<dt>Работа бойлера</dt><dd><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');" ></dd>
-			<dt>Целевая температура</dt><dd nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="1" value="40"><input type="submit" value=">"  onclick="setParam('get_Boiler(TRG)');"></dd>
-			<dt>Температура</dt><dd nowrap><span id="get_temp-tboiler">-</span> &deg;C</dd>
+			<dt>Бойлер</dt><dd><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');" ></dd>
+			<dt>Целевая</dt><dd><nobr><input id="get_boiler-trg" type="number" min="5" max="90" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></nobr></dd>
+			<dt>Температура</dt><dd><span id="get_temp-tboiler">-</span>&deg;</dd>
 		</dl>									
 	</div>
 </div>

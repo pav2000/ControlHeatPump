@@ -1212,7 +1212,7 @@ xContinue:
 			// Обновить и выполнить итерацию по контролю ЭРВ Для алгоритма таблица передаем СРЕДНИЕ (IN+OUT)/2 температуры
 			HP.dEEV.Update();
 			// штатная пауза (в зависимости от настроек)
-			vTaskDelay(HP.dEEV. get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
+			vTaskDelay(HP.dEEV.get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
 			goto xContinue;
 		}
 		vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)

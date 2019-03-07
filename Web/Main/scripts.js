@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.006";
+var VER_WEB = "1.007";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -776,22 +776,22 @@ function upload(file) {
 }
 
 function autoheight() {
-	var max_col_height = Math.max(
+/*	var max_col_height = Math.max(
 		document.body.scrollHeight, document.documentElement.scrollHeight,
 		document.body.offsetHeight, document.documentElement.offsetHeight,
 		document.body.clientHeight, document.documentElement.clientHeight
-	);
+	);*/
+	var max_col_height = window.innerHeight;
 	var columns = document.body.children;
 	for(var i = columns.length - 1; i >= 0; i--) { // прокручиваем каждую колонку в цикле
-		//console.log(columns[i].clientHeight);
 		if(columns[i].offsetHeight > max_col_height) {
 			max_col_height = columns[i].offsetHeight; // устанавливаем новое значение максимальной высоты
 		}
 	}
 	for(var i = columns.length - 1; i >= 0; i--) {
-		//console.log(columns[i]+": "+max_col_height)
 		columns[i].style.minHeight = max_col_height; // устанавливаем высоту каждой колонки равной максимальной
 	}
+	document.body.style.width = window.innerWidth;
 }
 
 function calcacp() {
