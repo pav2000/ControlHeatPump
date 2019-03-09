@@ -2003,10 +2003,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			flagRBOILER=false; // Выключение
 		}
 #endif
+#ifdef RPUMPBH
 		if(GETBIT(flags, fHP_BoilerTogetherHeat)) {
 			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 			SETBIT0(flags, fHP_BoilerTogetherHeat);
 		}
+#endif
 		return pCOMP_OFF;             // запрещено греть бойлер согласно расписания
 	}
 	// -----------------------------------------------------------------------------------------------------
