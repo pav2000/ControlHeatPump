@@ -1,9 +1,9 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.007";
+var VER_WEB = "1.008";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-//var urlcontrol = 'http://192.168.0.199';
+var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.1.10';
 //var urlcontrol = 'http://77.50.254.24:25402'; 
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
@@ -575,11 +575,11 @@ function loadParam(paramid, noretry, resultdiv) {
 											element.innerHTML = element.value = (Number(values[1])/1000).toFixed(3);
 										}
 									}
-									if(/^get_mintemp/.test(valueid)) {
-										document.getElementById(valueid.replace(/get_min/g, "get_test")).min = values[1];
-									} else if(/^get_maxtemp/.test(valueid)) {
-										document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
-									}
+									//if(/^get_mintemp/.test(valueid)) {
+									//	document.getElementById(valueid.replace(/get_min/g, "get_test")).min = values[1];
+									//} else if(/^get_maxtemp/.test(valueid)) {
+									//	document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
+									//}
 
 									if(valueid == "get_heat-k_weather" || valueid == "get_heat-temp_pid") {
 										calctpod("heat");
