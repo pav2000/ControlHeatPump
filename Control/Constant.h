@@ -36,7 +36,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.007"				// Версия прошивки
+#define VERSION			"1.008"				// Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -800,6 +800,7 @@ const char *option_DELAY_BOILER_SW    = {"DLBSW"};    			// Пауза (сек) 
 const char *option_DELAY_BOILER_OFF   = {"DLBOFF"};   			// Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
 const char *option_SunRegGeo		  = {"SCG"};				// Использовать солнечный коллектор для регенерации геоконтура в простое
 const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура начала регенерации геоконтура с помощью СК, в градусах
+const char *option_SunTDelta		  = {"STD"};				// Дельта температур для включения, сотые градуса, в градусах
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора

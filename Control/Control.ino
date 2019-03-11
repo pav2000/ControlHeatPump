@@ -1164,7 +1164,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				if(fregen) {
 					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();
 				} else if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + SUNG_TDELTA) HP.Sun_OFF();
-			} else if(HP.sTemp[TSUN].get_Temp() >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + SUN_TDELTA) {
+			} else if(HP.sTemp[TSUN].get_Temp() >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + HP.Option.SunTDelta) {
 				HP.Sun_ON();
 			}
 		} else {

@@ -8,7 +8,7 @@
 	<script type="text/javascript">
 		window.onload = function() {
 		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART)");
-		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC)");
+		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD)");
 	}; 
 	</script>
 </head>
@@ -75,8 +75,12 @@
 			<td><input type="checkbox" id="get_ohp-scg" onchange="setParam('get_oHP(SCG)');"></td>
 		</tr>	
 		<tr>
-			<td>Температура начала регенерации геоконтура с помощью СК (+2°)</td>
+			<td>Температура начала регенерации геоконтура с помощью СК (+Δ) °C</td>
 			<td nowrap><input type="number" id="get_ohp-scgt"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGT)');"></td>
+		</tr>	
+		<tr>
+			<td>Разница (Δ) температур для включения СК °C</td>
+			<td nowrap><input type="number" id="get_ohp-std"> <input type="submit" value=">" onclick="setParam('get_oHP(STD)');"></td>
 		</tr>	
 		<tr>
 			<td><b>Времена и задержки</b></td>
