@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.008";
+var VER_WEB = "1.009";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -237,7 +237,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											if(element2) {
 												var cont1 = values[1].split(';');
 												for(var n = 0, len = cont1.length; n < len; n++) {
-													cont2 = cont1[n].split(':');
+													var cont2 = cont1[n].split(':');
 													if(cont2[1] == 1) {
 														if(cont2[0] != "NORMAL") {
 															document.getElementById("get_testmode2").className = "red";
@@ -289,11 +289,11 @@ function loadParam(paramid, noretry, resultdiv) {
 										  if(values[0].substr(-6, 5) == "_skip") {
 											var j2 = Number(values[0].substr(-1)) - 1;
 											for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
-										  } else document.getElementById(idsel).innerHTML = "";
+										  } else element.innerHTML = "";
+										  var cont1 = values[1].split(';');
 										  if(element.tagName != "SPAN") {
-											var cont1 = values[1].split(';');
-											for(var k = 0, len = cont1.length - 1; k < len; k++) {
-												cont2 = cont1[k].split(':');
+											for(var k = 0; k < cont1.length - 1; k++) {
+												var cont2 = cont1[k].split(':');
 												if(cont2[1] == 1) {
 													selected = true;
 													if(idsel == "get_cool-rule") {
@@ -369,6 +369,11 @@ function loadParam(paramid, noretry, resultdiv) {
 													if(cont2[2] == 0) opt.disabled = true;
 													element.add(opt, null);
 												}
+											}
+										  } else {
+											for(var k = 0; k < cont1.length - 1; k++) {
+												var cont2 = cont1[k].split(':');
+												if(cont2[1] == 1) { element.innerHTML = cont2[0]; break; } 
 											}
 										  }
 										}
@@ -791,7 +796,7 @@ function autoheight() {
 	for(var i = columns.length - 1; i >= 0; i--) {
 		columns[i].style.minHeight = max_col_height; // устанавливаем высоту каждой колонки равной максимальной
 	}
-	document.body.style.minWidth = window.innerWidth;
+	document.body.style.minWidth = Math.max(document.body.clientWidth, document.body.scrollWidth);
 }
 
 function calcacp() {

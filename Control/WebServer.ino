@@ -736,6 +736,11 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 			if(HP.dRelay[PUMP_OUT].get_Relay()) {
 				strcat(strReturn,  "Вкл");
+#ifdef RPUMPFL
+				if(HP.dRelay[RPUMPFL].get_Relay()) {
+					strcat(strReturn,  ", ТП");
+				}
+#endif
 				if(i) strcat(strReturn,  ", ");
 			} else if(!i) strcat(strReturn,  "Выкл");
 			if(i) strcat(strReturn, "ГВС");
