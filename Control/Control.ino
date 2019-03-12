@@ -445,6 +445,7 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
+//  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку с карточки (надо раскоментировать если грузится из флеш не надо)   
   journal.jprintf(" Web interface source: ");
         switch (HP.get_SourceWeb())
         {
@@ -979,7 +980,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			ms8 -= 3;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("Press KEY_ON_OFF\n");
-				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
+				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else {if((HP.get_State()==pWORK_HP)||(HP.get_State()==pWAIT_HP)) HP.sendCommand(pSTOP);}
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif
