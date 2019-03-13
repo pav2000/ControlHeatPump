@@ -2177,12 +2177,25 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	}
 
 }
+
+int16_t HeatPump::CalcTargetPID(type_settingHP &settings)
+{
+    int16_t  targetRealPID;				 // Цель подачи
+	if(GETBIT(settings.flags, fWeather)) { // включена погодозависимость
+		targetRealPID = settings.tempPID + (settings.kWeather * (TEMP_WEATHER - sTemp[TOUT].get_Temp()) / 1000); // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
+		if(targetRealPID > settings.tempIn - 50) targetRealPID = settings.tempIn - 50;  // ограничение целевой подачи = максимальная подача - 0.5 градуса
+		if(targetRealPID < MIN_WEATHER) targetRealPID = MIN_WEATHER;
+		if(targetRealPID > MAX_WEATHER) targetRealPID = MAX_WEATHER;
+	} else targetRealPID = settings.tempPID; // отключена погодозависмость
+	return targetRealPID;
+}
+
 // -----------------------------------------------------------------------------------------------------
 // Итерация по управлению НАГРЕВ  пола
 // выдает что надо делать компрессору, но ничем не управляет для старт-стопа для инвертора меняет обороты
 MODE_COMP HeatPump::UpdateHeat()
 {
-	int16_t target,t1,targetRealPID;
+	int16_t target,t1;
 	int16_t newFC;
 
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
@@ -2271,21 +2284,7 @@ MODE_COMP HeatPump::UpdateHeat()
 #endif
 
 		updatePidTime=xTaskGetTickCount();
-		if(GETBIT(Prof.Heat.flags,fWeather))  // включена погодозависимость
-		{
-			targetRealPID = Prof.Heat.tempPID + (Prof.Heat.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
-			//          journal.jprintf("targetRealPID=%d \n",targetRealPID);
-			//          journal.jprintf("Prof.Heat.tempPID=%d \n",Prof.Heat.tempPID);
-			//          journal.jprintf("Prof.Heat.kWeather=%d \n",Prof.Heat.kWeather);
-			//          journal.jprintf("TEMP_WEATHER=%d \n",TEMP_WEATHER);
-			//          journal.jprintf("sTemp[TOUT].get_Temp()=%d \n",sTemp[TOUT].get_Temp());
-			if (targetRealPID>Prof.Heat.tempIn-50) targetRealPID=Prof.Heat.tempIn-50;  // ограничение целевой подачи = максимальная подача - 0.5 градуса
-			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                 // 12 градусов
-			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                 // 42 градусов
-		}
-		else targetRealPID=Prof.Heat.tempPID;                                                        // отключена погодозависмость
-
-		newFC = updatePID(targetRealPID - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		newFC = updatePID(CalcTargetPID(Prof.Heat) - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
 		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
@@ -2327,7 +2326,7 @@ MODE_COMP HeatPump::UpdateHeat()
 // выдает что надо делать компрессору, но ничем не управляет
 MODE_COMP HeatPump::UpdateCool()
 {
-	int16_t target,t1,targetRealPID;
+	int16_t target,t1;
 	int16_t newFC;
 
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
@@ -2416,18 +2415,7 @@ MODE_COMP HeatPump::UpdateCool()
 #endif
 
 		updatePidTime=xTaskGetTickCount();
-	//	Serial.println("------ PID ------");
-
-		if(GETBIT(Prof.Cool.flags,fWeather))  // включена погодозависимость
-		{
-			targetRealPID = Prof.Cool.tempPID-(Prof.Cool.kWeather*(TEMP_WEATHER-sTemp[TOUT].get_Temp())/1000);  // включена погодозависимость
-			if (targetRealPID<Prof.Cool.tempIn+50) targetRealPID=Prof.Cool.tempIn+50;                          // ограничение целевой подачи = минимальная подача + 0.5 градуса
-			if (targetRealPID<MIN_WEATHER) targetRealPID=MIN_WEATHER;                                         // границы диапазона
-			if (targetRealPID>MAX_WEATHER) targetRealPID=MAX_WEATHER;                                         //
-		}
-		else targetRealPID=Prof.Cool.tempPID;                                                             // отключена погодозависмость
-
-		newFC = updatePID(targetRealPID - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		newFC = updatePID(CalcTargetPID(Prof.Cool) - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
 		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
