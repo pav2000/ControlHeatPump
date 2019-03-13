@@ -884,7 +884,14 @@ void parserGET(uint8_t thread, int8_t )
 		}
 
 		if(strcmp(str, "get_TrgT") == 0) { // целевая температура
-			HP.getTargetTempStr(strReturn + m_strlen(strReturn));
+			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
+			else {
+				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
+				if(GETBIT(HP.get_modeHouseSettings()->flags, fWeather)) {
+					strcat(strReturn, " / ");
+					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
+				}
+			}
 			ADD_WEBDELIM(strReturn); continue;
 		}
 

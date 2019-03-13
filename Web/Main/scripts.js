@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.009";
+var VER_WEB = "1.010";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -297,66 +297,33 @@ function loadParam(paramid, noretry, resultdiv) {
 												if(cont2[1] == 1) {
 													selected = true;
 													if(idsel == "get_cool-rule") {
-														document.getElementById("get_cool-target").disabled = false;
-														document.getElementById("get_cool-dtemp").disabled = false;
-														document.getElementById("get_cool-hp_pro").disabled = false;
-														document.getElementById("get_cool-hp_in").disabled = false;
-														document.getElementById("get_cool-hp_dif").disabled = false;
-														document.getElementById("get_cool-temp_pid").disabled = false;
-														document.getElementById("get_cool-weather").disabled = false;
-														document.getElementById("get_cool-k_weather").disabled = false;
-														document.getElementById("get_cool-hp_time").disabled = false;
-														if(k == 2) {
-															document.getElementById("get_cool-target").disabled = true;
-														} else if(k == 1) {
-															document.getElementById("get_cool-dtemp").disabled = true;
-														} else if(k == 0) {
-															document.getElementById("get_cool-hp_time").disabled = true;
-															document.getElementById("get_cool-hp_pro").disabled = true;
-															document.getElementById("get_cool-hp_in").disabled = true;
-															document.getElementById("get_cool-hp_dif").disabled = true;
-															document.getElementById("get_cool-temp_pid").disabled = true;
-															document.getElementById("get_cool-weather").disabled = true;
-															document.getElementById("get_cool-k_weather").disabled = true;
-														}
+														var onoff = k == 0;
+														document.getElementById("get_cool-target").disabled = k == 2;
+														//document.getElementById("get_cool-dtemp").disabled = k == 1;
+														document.getElementById("get_cool-hp_pro").disabled = onoff;
+														document.getElementById("get_cool-hp_in").disabled = onoff;
+														document.getElementById("get_cool-hp_dif").disabled = onoff;
+														document.getElementById("get_cool-temp_pid").disabled = onoff;
+														document.getElementById("get_cool-w").disabled = onoff;
+														document.getElementById("get_cool-kw").disabled = onoff;
+														document.getElementById("get_cool-hp_time").disabled = onoff;
 													} else if(idsel == "get_heat-rule") {
-														document.getElementById("get_heat-target").disabled = false;
-														//document.getElementById("get_heat-dtemp").disabled = false;
-														document.getElementById("get_heat-hp_pro").disabled = false;
-														document.getElementById("get_heat-hp_in").disabled = false;
-														document.getElementById("get_heat-hp_dif").disabled = false;
-														document.getElementById("get_heat-temp_pid").disabled = false;
-														document.getElementById("get_heat-weather").disabled = false;
-														document.getElementById("get_heat-k_weather").disabled = false;
-														document.getElementById("get_heat-hp_time").disabled = false;
-														if(k == 2) {
-															document.getElementById("get_heat-target").disabled = true;
-														} else if(k == 1) { //document.getElementById("get_heat-dtemp").disabled = true;
-														} else if(k == 0) {
-															document.getElementById("get_heat-hp_time").disabled = true;
-															document.getElementById("get_heat-hp_pro").disabled = true;
-															document.getElementById("get_heat-hp_in").disabled = true;
-															document.getElementById("get_heat-hp_dif").disabled = true;
-															document.getElementById("get_heat-temp_pid").disabled = true;
-															document.getElementById("get_heat-weather").disabled = true;
-															document.getElementById("get_heat-k_weather").disabled = true;
-														}
+														var onoff = k == 0;
+														document.getElementById("get_heat-target").disabled = k == 2;
+														//document.getElementById("get_heat-dtemp").disabled = k == 1;
+														document.getElementById("get_heat-hp_pro").disabled = onoff;
+														document.getElementById("get_heat-hp_in").disabled = onoff;
+														document.getElementById("get_heat-hp_dif").disabled = onoff;
+														document.getElementById("get_heat-temp_pid").disabled = onoff;
+														document.getElementById("get_heat-w").disabled = onoff;
+														document.getElementById("get_heat-kw").disabled = onoff;
+														document.getElementById("get_heat-hp_time").disabled = onoff;
 													} else if(idsel == "get_cool-target") {
-														if(k == 0) {
-															document.getElementById("get_cool-temp2").disabled = true;
-															document.getElementById("get_cool-temp1").disabled = false;
-														} else if(k == 1) {
-															document.getElementById("get_cool-temp2").disabled = false;
-															document.getElementById("get_cool-temp1").disabled = true;
-														}
+														document.getElementById("get_cool-temp2").disabled = k == 0;
+														document.getElementById("get_cool-temp1").disabled = k != 0;
 													} else if(idsel == "get_heat-target") {
-														if(k == 0) {
-															document.getElementById("get_heat-temp2").disabled = true;
-															document.getElementById("get_heat-temp1").disabled = false;
-														} else if(k == 1) {
-															document.getElementById("get_heat-temp2").disabled = false;
-															document.getElementById("get_heat-temp1").disabled = true;
-														}
+														document.getElementById("get_heat-temp2").disabled = k == 0;
+														document.getElementById("get_heat-temp1").disabled = k != 0;
 													}
 												} else selected = false;
 												if(idsel == "get_listchart") {
@@ -585,13 +552,6 @@ function loadParam(paramid, noretry, resultdiv) {
 									//} else if(/^get_maxtemp/.test(valueid)) {
 									//	document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
 									//}
-
-									if(valueid == "get_heat-k_weather" || valueid == "get_heat-temp_pid") {
-										calctpod("heat");
-									} else if(valueid == "get_cool-k_weather" || valueid == "get_cool-temp_pid") {
-										calctpod("cool");
-									}
-
 								} else if(type == 'is') {
 									if(values[1] == 0 || values[1].substring(0,1) == 'E') {
 										if((element = document.getElementById(valueid))) element.className = "inactive";
@@ -827,22 +787,6 @@ function setKanalog() {
 	}
 	setParam('get_zeroPress(' + sens + ')');
 	setParam('get_transPress(' + sens + ')');
-}
-
-function calctpod(type) {
-	var tout = document.getElementById("get_temp-tout").value;
-	var cooltpod = document.getElementById("cooltpod");
-	var heattpod = document.getElementById("heattpod");
-	var tpidcool = document.getElementById("get_cool-temp_pid").value;
-	var tpidheat = document.getElementById("get_heat-temp_pid").value;
-	var kwcool = document.getElementById("get_cool-k_weather").value;
-	var kwheat = document.getElementById("get_heat-k_weather").value;
-
-	if(type == "heat") { 
-		heattpod.innerHTML = (tpidheat - kwheat * tout).toFixed(2);
-	} else if(type == "cool") {
-		cooltpod.innerHTML = (tpidcool - kwcool * tout).toFixed(2);
-	}
 }
 
 function updateParam(paramids) {

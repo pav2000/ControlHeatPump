@@ -7,8 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
-		loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(K_WEATHER),get_Heat(K_WEATHER),get_Cool(WEATHER),get_Heat(WEATHER),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN)");
-		loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_TrgT");
+		loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN)");
+		loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_TrgT,get_Cool(TP),get_Heat(TP)");
 	};
 	</script>
 </head>
@@ -117,18 +117,18 @@
 		</tr>
 		<tr>
 			<td>Использование погодозависимости<sup>5</sup></td>
-			<td><input type="checkbox" id="get_cool-weather" onchange="setParam('get_Cool(WEATHER)');" ></td>
-			<td><input type="checkbox" id="get_heat-weather" onchange="setParam('get_Heat(WEATHER)');" ></td>
+			<td><input type="checkbox" id="get_cool-w" onchange="setParam('get_Cool(W)');" ></td>
+			<td><input type="checkbox" id="get_heat-w" onchange="setParam('get_Heat(W)');" ></td>
 		</tr>
 		<tr>
 			<td>Коэффициент погодозависимости<sup>6</sup></td>
-			<td nowrap><input id="get_cool-k_weather" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(K_WEATHER)');"></td>
-			<td nowrap><input id="get_heat-k_weather" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(K_WEATHER)');"></td>
+			<td nowrap><input id="get_cool-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(KW)');"></td>
+			<td nowrap><input id="get_heat-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KW)');"></td>
 		</tr>
 		<tr>
 			<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>
-			<td id="cooltpod">-</td>
-			<td id="heattpod">-</td>
+			<td id="get_cool-tp">-</td>
+			<td id="get_heat-tp">-</td>
 		</tr>		
 	</tbody>
 	</table>
