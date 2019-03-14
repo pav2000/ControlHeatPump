@@ -928,9 +928,6 @@ void vReadSensor(void *)
 			#ifdef FLOWCON   // если определен датчик потока конденсатора
 			   if ((i==FLOWCON)&&(HP.dRelay[RPUMPO].get_Relay))  // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
 			#endif
-			#ifdef FLOWPCON   // если определен датчик потока предконденсатора
-			   if ((i==FLOWPCON)&&(!HP.dRelay[RPUMPO].get_Relay))  // Для режима супербойлер есть вариант когда не будет протока по контуру предкондесатора 
-			#endif
 		#endif	   
 			if(HP.sFrequency[i].get_checkFlow() && HP.sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
 				journal.jprintf("%s low flow: %.3f\n",(char*) HP.sFrequency[i].get_name(), (float) HP.sFrequency[i].get_Value() / 1000);
