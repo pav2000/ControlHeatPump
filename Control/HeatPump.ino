@@ -26,8 +26,8 @@ const boolean _wait =  false;  // Команда перевода в режим 
 const boolean _start = true;   // Команда запуска ТН
 const boolean _resume = false;  // Команда возобновления работы ТН
 
-#define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_PUMP)               // Включить насосы
-#define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_PUMP)              // Выключить насосы
+#define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_RELAY)               // Включить насосы
+#define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_RELAY)              // Выключить насосы
 // Макросы по работе с компрессором в зависимости от наличия инвертора
 #define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC();else dRelay[RCOMP].set_ON();   // Включить компрессор в зависимости от наличия инвертора
 #define COMPRESSOR_OFF    if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF();  // Выключить компрессор в зависимости от наличия инвертора
@@ -2474,7 +2474,7 @@ void HeatPump::configHP(MODE_HP conf)
                  
                  switchBoiler(false);                                            // выключить бойлер
                
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                               // Задержка
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                               // Задержка
                  #ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
                      dRelay[RSUPERBOILER].set_OFF();                            // Евгений добавил выключить супербойлер
                  #endif
@@ -2492,7 +2492,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                   if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка
                  #endif
 
                  switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
@@ -2514,7 +2514,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
                  dRelay[RTRV].set_ON();                                       // охлаждение
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на 2 сек
                  #endif 
 
                   switchBoiler(false);                                           // выключить бойлер
@@ -2541,7 +2541,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на сек
                  #endif
                  switchBoiler(true);                                             // включить бойлер
                  #ifdef RHEAT
