@@ -923,11 +923,20 @@ void vReadSensor(void *)
 
 #ifdef FLOW_CONTROL                // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
 	if(HP.is_compressor_on())      // Только если компрессор включен 
-		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
+		for(uint8_t i = 0; i < FNUMBER; i++){   // Проверка потока по каждому датчику
+		#ifdef SUPERBOILER   // Если определен супер бойлер
+			#ifdef FLOWCON   // если определен датчик потока конденсатора
+			   if ((i==FLOWCON)&&(HP.dRelay[RPUMPO].get_Relay))  // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			#endif
+			#ifdef FLOWPCON   // если определен датчик потока предконденсатора
+			   if ((i==FLOWPCON)&&(!HP.dRelay[RPUMPO].get_Relay))  // Для режима супербойлер есть вариант когда не будет протока по контуру предкондесатора 
+			#endif
+		#endif	   
 			if(HP.sFrequency[i].get_checkFlow() && HP.sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
 				journal.jprintf("%s low flow: %.3f\n",(char*) HP.sFrequency[i].get_name(), (float) HP.sFrequency[i].get_Value() / 1000);
 				set_Error(ERR_MIN_FLOW, (char*) HP.sFrequency[i].get_name());
 			}
+		}
 #endif
 
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
