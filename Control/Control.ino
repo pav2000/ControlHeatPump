@@ -921,6 +921,15 @@ void vReadSensor(void *)
 		}
 #endif
 
+#ifdef FLOW_CONTROL                // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
+	if(HP.is_compressor_on())      // Только если компрессор включен 
+		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
+			if(HP.sFrequency[i].get_checkFlow() && HP.sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
+				journal.jprintf("%s low flow: %.3f\n",(char*) HP.sFrequency[i].get_name(), (float) HP.sFrequency[i].get_Value() / 1000);
+				set_Error(ERR_MIN_FLOW, (char*) HP.sFrequency[i].get_name());
+			}
+#endif
+
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
@@ -959,7 +968,7 @@ void vReadSensor(void *)
 			}
 			last_life_h = hour;
 		}
-		////
+		//
 		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
 		ttime = TIME_READ_SENSOR - (millis() - ttime);
 		if(ttime && ttime <= 8) vTaskDelay(ttime);

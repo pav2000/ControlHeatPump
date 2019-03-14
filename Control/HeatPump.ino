@@ -2579,6 +2579,8 @@ void HeatPump::ChangesPauseTRV()
 // Итерация по управлению всем ТН, для всего, основной цикл управления.
 void HeatPump::vUpdate()
 {
+	
+/*  // Защита по протоку переехала в задачу  чтение датчиков а то может быть беда в момент пуска (vUpdate запускается не сразу после включения компрессора)
 #ifdef FLOW_CONTROL    // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
 	if(is_compressor_on())                                                            // Только если компрессор включен
 		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
@@ -2588,9 +2590,10 @@ void HeatPump::vUpdate()
 				return;
 			}
 #endif
+*/
 
 #ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
-	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
+ 	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
 		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
