@@ -2786,12 +2786,12 @@ void HeatPump::compressorON()
 			#endif
 		#endif	
 			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
-					_delay(TIME_READ_SENSOR);
-					if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
-						journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
-						set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name()); 
-						return;
-					}
+				_delay(TIME_READ_SENSOR);
+				if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+					journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
+					set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
+					return;
+				}
 			}
 		}	
 #endif
