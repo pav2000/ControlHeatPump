@@ -2790,8 +2790,8 @@ void HeatPump::compressorON()
 					if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
 						journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
 						set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name()); 
+						return;
 					}
-					return;
 			}
 		}	
 #endif
