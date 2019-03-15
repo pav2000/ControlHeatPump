@@ -2779,17 +2779,21 @@ void HeatPump::compressorON()
 		}
 
 #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
-			if(sFrequency[i].get_checkFlow()) {
-				if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+		for(uint8_t i = 0; i < FNUMBER; i++) {   // Проверка потока по каждому датчику
+		#ifdef SUPERBOILER   // Если определен супер бойлер
+			#ifdef FLOWCON   // если определен датчик потока конденсатора
+			   if ((i==FLOWCON)&&(!dRelay[RPUMPO].get_Relay)) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			#endif
+		#endif	
+			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
 					_delay(TIME_READ_SENSOR);
 					if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
 						journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
-						set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
+						set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name()); 
 					}
 					return;
-				}
 			}
+		}	
 #endif
 
 #ifdef DEFROST

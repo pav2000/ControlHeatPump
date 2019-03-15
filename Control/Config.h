@@ -2290,6 +2290,7 @@ const char *noteTemp[] = {"Температура улицы",
     #define RPUMPB             7          // Реле насоса циркуляции бойлера (ГВС)
  //   #define RSTART             8          // Выход для управления пуском инвертор
     #define RRESET             8          // Выход для сброса инвертора
+
     
    // Массив ног соглано индексов
    const uint8_t pinsRelay[RNUMBER] = { PIN_DEVICE_RCOMP,       // ++ PWR_ON1 Реле включения компрессора (через пускатель)
