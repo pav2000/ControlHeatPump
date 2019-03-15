@@ -1060,9 +1060,13 @@ uint8_t i;
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
  if(ChartOVERHEAT2.get_present())  { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+#ifdef TCONOUT
+ strcat(str, chart_OVERCOOL); strcat(str,":0;");
+#endif
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
-	if (sADC[PCON].get_present()) strcat(str,chart_TPCON);else strcat(str,chart_TCON);  strcat(str,":0;"); 
+	if(sADC[PCON].get_present()) strcat(str,chart_TPCON); else strcat(str,chart_TCON);
+	strcat(str,":0;");
     strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
  }
  #endif
@@ -1136,6 +1140,10 @@ void HeatPump::get_Chart(char *var, char* str)
 		ChartOVERHEAT2.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_OVERHEAT) == 0) {
 		ChartOVERHEAT.get_PointsStr(100, str);
+#ifdef TCONOUT
+	} else if(strcmp(var, chart_OVERCOOL) == 0) {
+		ChartTPCON.get_PointsStrSub(100, str, &sTemp[TCONOUT].Chart); // считаем график на лету
+#endif
 	} else if(strcmp(var, chart_TPEVA) == 0) {
 		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {

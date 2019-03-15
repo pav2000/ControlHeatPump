@@ -36,7 +36,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.010"				// Версия прошивки
+#define VERSION			"1.011"				// Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -701,29 +701,30 @@ const char *stat_POWER220  = {"Power220"};         // средняя потре�
 
 // Описание имен параметров Графиков для функций get_Chart ЕСЛИ нет совпадения с именами объектов
 const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
-const char *chart_posEEV    = {"posEEV"};                    // 20 позиция ЭРВ
-const char *chart_freqFC    = {"freqFC"};                    // 21 Частота инвертора
-const char *chart_powerFC   = {"powerFC"};                   // 22 Мощность инвертора
-const char *chart_currentFC = {"currentFC"};                 // 23 Ток компрессора
-const char *chart_RCOMP     = {"RCOMP"};                     // 24 включение компрессора
-const char *chart_OVERHEAT  = {"Overheat"};                  // 25 перегрев текущий
-const char *chart_OVERHEAT2 = {"Overheat2"};       		  	 //    перегрев2
-const char *chart_TCOMP_TCON = {"TCOMP-TCON"};               // 26 дельта TCOMP-T[PCON]
-const char *chart_dCO       = {"dCO"};                       // 26 дельта СО
-const char *chart_dGEO      = {"dGEO"};                      // 27 дельта геоконтура
-const char *chart_TPEVA     = {"T[PEVA]"};                   // 28 температура расчитанная из давления Испариенифя
-const char *chart_TPCON     = {"T[PCON]"};                   // 29 температура расчитанная из давления Конденсации
+const char *chart_posEEV    = {"posEEV"};                    // позиция ЭРВ
+const char *chart_freqFC    = {"freqFC"};                    // Частота инвертора
+const char *chart_powerFC   = {"powerFC"};                   // Мощность инвертора
+const char *chart_currentFC = {"currentFC"};                 // Ток компрессора
+const char *chart_RCOMP     = {"RCOMP"};                     // включение компрессора
+const char *chart_OVERHEAT  = {"Overheat"};                  // перегрев текущий
+const char *chart_OVERHEAT2 = {"Overheat2"};       		  	 // перегрев2
+const char *chart_OVERCOOL  = {"Overcool"};       		  	 // переохлаждение
+const char *chart_TCOMP_TCON = {"TCOMP-TCON"};               // дельта TCOMP-T[PCON]
+const char *chart_dCO       = {"dCO"};                       // дельта СО
+const char *chart_dGEO      = {"dGEO"};                      // дельта геоконтура
+const char *chart_TPEVA     = {"T[PEVA]"};                   // температура расчитанная из давления Испариенифя
+const char *chart_TPCON     = {"T[PCON]"};                   // температура расчитанная из давления Конденсации
 const char *chart_TCON      = {"TCON"};                      // Температура Конденсации (вариант без датчика давления)
-const char *chart_PowerCO   = {"PowerCO"};                   // 30 Мощность выходная теплового насоса
-const char *chart_PowerGEO  = {"PowerGEO"};                  // 31 Мощность контура
-const char *chart_COP       = {"COP"};                       // 32 Коэффициент преобразования Холодильной машины (без насосов)
-const char *chart_VOLTAGE   = {"VOLTAGE"};                   // 33 Статистика по напряжению
-const char *chart_CURRENT   = {"CURRENT"};                   // 34 Статистика по току
-//const char *chart_acPOWER   = {"acPOWER"};                   // 34 Статистика по активная мощность
-//const char *chart_rePOWER   = {"rePOWER"};                   // 36 Статистика по Реактивная мощность
-const char *chart_fullPOWER = {"fullPOWER"};                 // 37 Статистика по Полная мощность
-//const char *chart_kPOWER    = {"kPOWER"};                    // 38 Статистика по Коэффициент мощности
-const char *chart_fullCOP   = {"fullCOP"};                   // 39 Полный COP
+const char *chart_PowerCO   = {"PowerCO"};                   // Мощность выходная теплового насоса
+const char *chart_PowerGEO  = {"PowerGEO"};                  // Мощность контура
+const char *chart_COP       = {"COP"};                       // Коэффициент преобразования Холодильной машины (без насосов)
+const char *chart_VOLTAGE   = {"VOLTAGE"};                   // Статистика по напряжению
+const char *chart_CURRENT   = {"CURRENT"};                   // Статистика по току
+//const char *chart_acPOWER   = {"acPOWER"};                 // Статистика по активная мощность
+//const char *chart_rePOWER   = {"rePOWER"};                 // Статистика по Реактивная мощность
+const char *chart_fullPOWER = {"fullPOWER"};                 // Статистика по Полная мощность
+//const char *chart_kPOWER    = {"kPOWER"};                  // Статистика по Коэффициент мощности
+const char *chart_fullCOP   = {"fullCOP"};                   // Полный COP
 
 // Описание имен параметров инвертора  для функций get_paramFC ("get_pFC") set_paramFC ("set_pFC")
 const char *fc_ON_OFF            = {"ON_OFF"};            // Флаг включения выключения (управление частотником)

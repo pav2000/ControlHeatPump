@@ -1019,7 +1019,7 @@ void devEEV::CorrectOverheat(void)
 #else
 					+ (Overheat
 #endif
-					- _data.OverHeatStart);
+					- DEF_OHCor_OverHeatStart);
 	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_Period) {
 		OverHeatCor_period = 0;
