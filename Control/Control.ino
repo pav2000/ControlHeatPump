@@ -926,7 +926,7 @@ void vReadSensor(void *)
 		for(uint8_t i = 0; i < FNUMBER; i++){   // Проверка потока по каждому датчику
 		#ifdef SUPERBOILER   // Если определен супер бойлер
 			#ifdef FLOWCON   // если определен датчик потока конденсатора
-			   if ((i==FLOWCON)&&(!HP.dRelay[RPUMPO].get_Relay)) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			   if ((i==FLOWCON)&&(!HP.dRelay[RPUMPO].get_Relay())) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
 			#endif
 		#endif
 			if(HP.sFrequency[i].get_checkFlow() && HP.sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН

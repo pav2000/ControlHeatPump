@@ -2782,7 +2782,7 @@ void HeatPump::compressorON()
 		for(uint8_t i = 0; i < FNUMBER; i++) {   // Проверка потока по каждому датчику
 		#ifdef SUPERBOILER   // Если определен супер бойлер
 			#ifdef FLOWCON   // если определен датчик потока конденсатора
-			   if ((i==FLOWCON)&&(!dRelay[RPUMPO].get_Relay)) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			   if ((i==FLOWCON)&&(!dRelay[RPUMPO].get_Relay())) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
 			#endif
 		#endif	
 			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
