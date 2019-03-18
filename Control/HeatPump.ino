@@ -439,7 +439,6 @@ void HeatPump::resetCount(boolean full)
 		motoHour.C1 = 0;
 #ifdef USE_ELECTROMETER_SDM
        if (dSDM.get_link()) motoHour.E1 = dSDM.get_Energy(); // Если счетчик работает (связь не утеряна)
-       else  journal.jprintf("WIRNING: No link SDM - no reset energy 220\n");    
 #endif
 		motoHour.P1 = 0;
 		motoHour.Z1 = 0;
@@ -450,7 +449,7 @@ void HeatPump::resetCount(boolean full)
 	motoHour.C2 = 0;
 #ifdef USE_ELECTROMETER_SDM
 	if (dSDM.get_link()) motoHour.E2 = dSDM.get_Energy();// Если счетчик работает (связь не утеряна)
-    else  journal.jprintf("WIRNING: No link SDM - no reset energy 220\n");   	
+    else  journal.jprintf("WARNING: Link with SDM lost - energy was not reseted!\n");
 #endif
 	motoHour.P2 = 0;
 	motoHour.Z2 = 0;
