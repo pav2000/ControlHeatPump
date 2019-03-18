@@ -15,12 +15,13 @@ html, body {font-size:12px;padding:0;margin:0; font-family: Arial,'Helvetica Neu
 .dateinfo #get_status > div:before{width:50%;float:left;text-align:right;clear:both;padding-right:5px;font-size:0.9em}
 .dateinfo #get_status > div:nth-child(1){width:100%;margin:0;padding:0;text-align: center;font-size: 2em;}
 .dateinfo #get_status > div:nth-child(2){width:100%;margin:0;padding: 0 0 5px 0;text-align: center;font-size: 1.5em;}
-.dateinfo #get_status > div:nth-child(3):before{content:"ВРЕМЯ"}
-.dateinfo #get_status > div:nth-child(4):before{content:"КОМАНДА"}
-.dateinfo #get_status > div:nth-child(5):before{content:"ЗАГРУЗКА"}
-.dateinfo #get_status > div:nth-child(6):before{content:"ПЕРЕГРЕВ"}
-.dateinfo #get_status > div:nth-child(7):before{content:"ЧАСТОТА"}
-.dateinfo #get_status > div:nth-child(8):before{content:"СТАТУС"}
+.dateinfo #SV:before{content:"ВЕРСИЯ"}
+.dateinfo #ST:before{content:"ВРЕМЯ"}
+.dateinfo #SC:before{content:"КОМАНДА"}
+.dateinfo #SI:before{content:"ЗАГРУЗКА"}
+.dateinfo #SO:before{content:"ПЕРЕГРЕВ"}
+.dateinfo #SF:before{content:"ЧАСТОТА"}
+.dateinfo #SS:before{content:"СТАТУС"}
 .menu > ul {list-style:none;margin: 25px 0 ;padding:0;text-transform: uppercase;    clear: both;}
 .menu > ul > li > a, .menu > ul > li > label{height:44px;color: white; text-decoration:none;padding: 0;display:inline-block;line-height:44px; width:220px}
 .menu > ul > li > a > i, .menu > ul > li > label > i{ width: 44px; height: 44px; margin-right:8px;display: inline-block; float: left; background: #0A0D0E center center no-repeat}
@@ -119,7 +120,7 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_temp-tevaoutg	{margin-top:335px;margin-left:140px}
 .visualization #get_temp-tevaing	{margin-top:185px;margin-left:140px}
 .visualization #get_temp-tevaout	{margin-top:230px;margin-left:265px}
-.visualization #get_temp-tcompin	{margin-top:185px;margin-left:415px}
+.visualization #get_temp-tcompin	{margin-top:185px;margin-left:420px}
 .visualization #get_temp-tconout	{margin-top:335px;margin-left:575px}
 .visualization #get_temp-tconing	{margin-top:335px;margin-left:700px}
 .visualization #get_temp-tconoutg	{margin-top:185px;margin-left:700px}
@@ -127,17 +128,17 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_pfc-info1		{margin-top:260px;margin-left:487px}.visualization #get_pfc-info1:after{content:"";}
 .visualization #get_pfc-cfc			{margin-top:283px;margin-left:487px}.visualization #get_pfc-cfc:after{content:""}
 .visualization #get_temp-tboiler	{margin-top:34px;margin-left:758px}
-.visualization #get_press-peva		{margin-top:169px;margin-left:259px;width:56px;text-align:center;white-space:normal}
+.visualization #get_press-peva		{margin-top:169px;margin-left:262px;width:56px;text-align:center;white-space:normal}
 .visualization #get_press-pcon		{margin-top:169px;margin-left:560px;width:56px;text-align:center;white-space:normal}
-.visualization #get_peev-overheat	{margin-top:353px;margin-left:370px;text-align:center}
+.visualization #get_overheat		{margin-top:353px;margin-left:370px;text-align:center}
 .visualization #get_peev-pospp		{margin-top:330px;margin-left:370px;text-align:center}.visualization #get_peev-pospp:after{content:"";}
-.visualization #get_flow-floweva	{margin-top:240px;margin-left:100px}.visualization #get_flow-floweva:after{margin-left:3px;content:"м³ч";}
+.visualization #get_flow-floweva	{margin-top:238px;margin-left:103px}.visualization #get_flow-floweva:after{margin-left:3px;content:"м³ч";}
 .visualization #get_flow-flowcon	{margin-top:280px;margin-left:690px}.visualization #get_flow-flowcon:after{margin-left:3px;content:"м³ч";}
 .visualization #get_overcool		{margin-top:358px;margin-left:575px}.visualization #get_overcool:before{content:"Δ"}
 .visualization #get_relay-rboiler	{margin-top:102px;margin-left:743px}.visualization #get_relay-rboiler:after{content:""}
 .visualization #get_relay-rsun		{margin-top:73px;margin-left:15px}.visualization #get_relay-rsun:after{content:""}
 .visualization #get_temp-tsun		{margin-top:85px;margin-left:115px}
-.visualization #get_temp-tsunoutg	{margin-top:167px;margin-left:20px}
+.visualization #get_temp-tsunoutg	{margin-top:167px;margin-left:25px}
 
 .cd-accordion-menu input[type=checkbox] {position: absolute; opacity: 0;}
 .cd-accordion-menu label, .cd-accordion-menu a {position: relative;	display: block;}

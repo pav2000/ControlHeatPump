@@ -2800,6 +2800,9 @@ void HeatPump::compressorON()
    }  // if(mod!=pDEFROST)
 #endif	
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
+#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
+		task_updstat_chars = 0;
+#endif
 	    command_completed = rtcSAM3X8.unixtime();
 	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим

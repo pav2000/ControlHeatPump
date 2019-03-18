@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.011";
+var VER_WEB = "1.012";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -349,7 +349,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									var element = document.getElementById(valueid);
 									if(element && values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										if(values[0] == 'get_status') {
-											element.innerHTML = "<div>" + values[1].replace(/\|/g, "</div><div>") + "</div>";
+											element.innerHTML = "<div>" + values[1].replace(/>/g, "'>").replace(/\|/g, "</div><div id='") + "</div>";
 										} else {
 											if(values[0] == "CONST") values[1] = "VER_WEB|Версия веб-страниц|" + VER_WEB + ';' + values[1];
 											element.innerHTML = "<tr><td>" + values[1].replace(/\|/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";

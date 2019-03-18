@@ -70,6 +70,7 @@ struct type_motoHour
 };
 
 int32_t motohour_OUT_work = 0; // рабочий для счетчиков, энергия отопления, мВт
+uint16_t task_updstat_chars = 0;
 
 // Рабочие флаги ТН
 #define fHP_SunActive 			0			// Солнечный контур активен

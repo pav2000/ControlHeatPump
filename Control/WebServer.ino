@@ -541,25 +541,34 @@ void parserGET(uint8_t thread, int8_t )
 
 		if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
 		{
-			HP.get_datetime((char*)time_TIME,strReturn);                     strcat(strReturn,"|");
-			HP.get_datetime((char*)time_DATE,strReturn);                     strcat(strReturn,"|");
-			TimeIntervalToStr(HP.get_uptime(),strReturn);                    strcat(strReturn,"|");
+			HP.get_datetime((char*)time_TIME,strReturn); strcat(strReturn,"|SD>");
+			HP.get_datetime((char*)time_DATE,strReturn);
+#ifdef WEB_STATUS_SHOW_VERSION
+			strcat(strReturn,"|SV>");
+			strcat(strReturn,VERSION);
+#endif
+			strcat(strReturn,"|ST>");
+			TimeIntervalToStr(HP.get_uptime(),strReturn);
+			strcat(strReturn,"|SC>");
 			uint32_t t = HP.get_command_completed();
 			if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
-			else strcat(strReturn,"-"); 									 strcat(strReturn,"|");
-			_itoa(100-HP.CPU_IDLE,strReturn);                                strcat(strReturn,"%|");
-			//_itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
-			//strcat(strReturn,VERSION);                                       strcat(strReturn,"|");
-#ifdef EEV_DEF
-			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);strcat(strReturn,"°C|");
+			else strcat(strReturn,"-");
+			strcat(strReturn,"|SI>");
+			_itoa(100-HP.CPU_IDLE,strReturn);
+#if defined(WEB_STATUS_SHOW_OVERHEAT) && defined(EEV_DEF)
+			strcat(strReturn,"%|SO>");
+			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);
+			strcat(strReturn,"°C|SF>");
 #else
-			strcat(strReturn,"-°C|");
+			strcat(strReturn,"%|SF>");
 #endif
+			//_itoa(freeRam()+HP.startRAM,strReturn);                          strcat(strReturn,"b|");
 #ifdef FC_VACON
-			HP.dFC.get_paramFC((char*)fc_FC,strReturn); strcat(strReturn,"|");
+			HP.dFC.get_paramFC((char*)fc_cFC,strReturn);
+			strcat(strReturn,"|SS>");
 #else
-			if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);strcat(strReturn,"Гц|");} // В зависимости от наличия инвертора
-			else                      {strcat(strReturn," - ");strcat(strReturn,"Гц|");}
+			if(HP.dFC.get_present()) HP.dFC.get_paramFC((char*) fc_FC, strReturn); else strcat(strReturn, " - ");
+			strcat(strReturn,"Гц|SS>");
 #endif
 			if (HP.get_errcode() == OK) {
 				if(HP.get_State() == pOFF_HP) {
@@ -570,7 +579,8 @@ void parserGET(uint8_t thread, int8_t )
 					strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
 				}
 			} else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-			strcat(strReturn,"|" WEBDELIM); continue;
+			ADD_WEBDELIM(strReturn);
+			continue;
 		}
 
 		if (strcmp(str,"get_version")==0) // Команда get_version
@@ -1256,9 +1266,8 @@ void parserGET(uint8_t thread, int8_t )
 			_ftoa(strReturn, (float)HP.dEEV.get_Overheat() / 100, 2);
 #ifdef TCOMPIN
 			if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA) {
-				strcat(strReturn," (");
+				strcat(strReturn, " / ");
 				_ftoa(strReturn, (float)HP.dEEV.OverheatTCOMP / 100, 2);
-				strcat(strReturn,")");
 			}
 #endif
 			ADD_WEBDELIM(strReturn);

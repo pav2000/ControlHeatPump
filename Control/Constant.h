@@ -36,7 +36,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.011"				// Версия прошивки
+#define VERSION			"1.012"				// Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -492,7 +492,7 @@ const char *MutexCommandBuzy = {"Command"};
 const char *eev_POS           =  {"POS"};           // Положение ЭРВ шаги
 const char *eev_POSp          =  {"POSp"};          // Положение ЭРВ %
 const char *eev_POSpp         =  {"POSpp"};         // Положение ЭРВ шаги+%
-const char *eev_OVERHEAT      =  {"OVERHEAT"};      // Текущий перегрев ЭРВ
+const char *eev_OVERHEAT      =  {"OH"};            // Текущий перегрев ЭРВ, если
 const char *eev_ERROR         =  {"ERROR"};         // Ошибка ЭРВ
 const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
 const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
@@ -734,7 +734,7 @@ const char *fc_NOTE              = {"NOTE"};              // Получение 
 const char *fc_PIN               = {"PIN"};               // Получение номера пина куда прицеплен analog FC
 const char *fc_PRESENT           = {"PRESENT"};           // Наличие FC в конфигурации. 
 const char *fc_STATE             = {"STATE"};             // Состояние ПЧ (чтение)
-const char *fc_FC                = {"FC"};                // Целевая частота инвертора в 0.01 герцах
+const char *fc_FC                = {"FC"};                // Целевая частота инвертора в 0.01
 const char *fc_cFC               = {"cFC"};               // Текущая частота ПЧ (чтение)
 const char *fc_cPOWER            = {"cPOWER"};            // Текущая мощность (чтение)
 const char *fc_INFO1             = {"INFO1"};             // Первая строка под картинкой инвертора на схеме

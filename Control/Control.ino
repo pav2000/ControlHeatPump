@@ -1346,7 +1346,6 @@ void vUpdateCommand(void *)
 void vServiceHP(void *)
 {
 	static uint32_t NextionTick = 0;
-	static uint16_t task_updstat_chars = 0;
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint32_t timer_sec = GetTickCount();
 	static uint16_t restart_cnt;
@@ -1357,9 +1356,9 @@ void vServiceHP(void *)
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
 				#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
- 				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+ 				if(HP.is_compressor_on() && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и компрессор работает
                 #else
- 				if(++task_updstat_chars >= HP.get_tChart() && HP.get_State()!=pOFF_HP) { // пришло время и ТН включен
+ 				if(HP.get_State() != pOFF_HP && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и ТН включен
                 #endif 					
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
