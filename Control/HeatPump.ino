@@ -438,7 +438,8 @@ void HeatPump::resetCount(boolean full)
 		motoHour.H1 = 0;
 		motoHour.C1 = 0;
 #ifdef USE_ELECTROMETER_SDM
-		motoHour.E1 = dSDM.get_Energy();
+       if (dSDM.get_link()) motoHour.E1 = dSDM.get_Energy(); // Если счетчик работает (связь не утеряна)
+       else  journal.jprintf("WIRNING: No link SDM - no reset energy 220\n");    
 #endif
 		motoHour.P1 = 0;
 		motoHour.Z1 = 0;
@@ -448,7 +449,8 @@ void HeatPump::resetCount(boolean full)
 	motoHour.H2 = 0;
 	motoHour.C2 = 0;
 #ifdef USE_ELECTROMETER_SDM
-	motoHour.E2 = dSDM.get_Energy();
+	if (dSDM.get_link()) motoHour.E2 = dSDM.get_Energy();// Если счетчик работает (связь не утеряна)
+    else  journal.jprintf("WIRNING: No link SDM - no reset energy 220\n");   	
 #endif
 	motoHour.P2 = 0;
 	motoHour.Z2 = 0;
@@ -3346,17 +3348,18 @@ if (powerGEO<0) powerGEO=0;
 // Получение мощностей потребления электроэнергии
 COP = dFC.get_power();  // получить текущую мощность компрессора 
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
+    if (dSDM.get_link()){  // Если счетчик работает (связь не утеряна)
 	power220 = dSDM.get_Power();
 	#ifdef CORRECT_POWER220
 		for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
 	#endif
+    } else power220=0; // свзяи со счетчиком нет
 #else
    power220=0; // электросчетчика нет
 #endif
 
 // Расчет КОП
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
-//if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
 	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
