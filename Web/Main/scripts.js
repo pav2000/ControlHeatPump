@@ -11,7 +11,7 @@ var urlupdate = 4010; // время обновления параметров в
 
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
-	var elid = paramid.replace(/\(/g, "-").replace(/\)/g, "");
+	var elid = paramid.replace("(", "-").replace(")", "");
 	var rec = new RegExp('et_listChart.?');
 	var res = new RegExp('et_slIP|et_listProfile|et_testMode|et_modeHP');
 	var ret = new RegExp('[(]SCHEDULER[)]');
@@ -63,18 +63,18 @@ function setParam(paramid, resultid) {
 		//if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
 	}
 	if(res.test(paramid)) {
-		var elsend = paramid.replace(/get_/g, "set_").replace(/\)/g, "") + "(" + elval + ")";
+		var elsend = paramid.replace("get_", "set_").replace(")", "") + "(" + elval + ")";
 	} else if(rec.test(paramid)) {
-		var elsend = paramid.replace(/get_listChart/g, "get_Chart(" + elval + ")");
+		var elsend = paramid.replace("get_listChart", "get_Chart(" + elval + ")");
 		clear = false;
 	} else {
-		var elsend = paramid.replace(/get_/g, "set_");
+		var elsend = paramid.replace("get_", "set_");
 		if(equate) {
-			if(elsend.substr(-1) == ")") elsend = elsend.replace(/\)/g, "") + "=" + elval + ")"; else elsend += "=" + elval;
+			if(elsend.substr(-1) == ")") elsend = elsend.replace(")", "") + "=" + elval + ")"; else elsend += "=" + elval;
 		}
 	}
-	if(/et_slIP/.test(paramid)) elsend = elsend.replace(/\(/g, "=").replace(/\-/g, "(");
-	if(!resultid) resultid = elid.replace(/set_/g, "get_").toLowerCase();
+	if(/et_slIP/.test(paramid)) elsend = elsend.replace("(", "=").replace("-", "(");
+	if(!resultid) resultid = elid.replace("set_", "get_").toLowerCase();
 	if(clear) {
 		element = document.getElementById(resultid);
 		if(element) {
@@ -119,29 +119,29 @@ function loadParam(paramid, noretry, resultdiv) {
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
 								values = arr[i].split('=');
-								var valueid = values[0].replace(/\(/g, "-").replace(/\)/g, "").replace(/set_/g, "get_").toLowerCase();
+								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
 								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|[(]FREON|SOCKET|RES_W5200|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
-								else if(/^get_is/.test(values[0])) type = "is"; // наличие датчика в конфигурации
-								else if(/^scan_/.test(values[0])) type = "scan"; // ответ на сканирование
-								else if(values[0].match(/^hide_/)) { // clear
+								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
+								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
+								else if(values[0].indexOf("hide_")==0) { // clear
 									if(values[1] == 1) {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
 									}
 									continue;
-								} else if(/^get_Chart/.test(values[0])) type = "chart"; // график
-								else if(/[(]SCHEDULER[)]/.test(values[0])) type = "scheduler"; // расписание бойлера
-								else if(/Calendar/.test(values[0])) type = "calendar"; // расписание
-								else if(/et_modbus_/.test(values[0])) type = "tableval"; // таблица значений
-								else if(values[0].match(/^set_pEEV[(]POS/)) {
+								} else if(values[0].indexOf("get_Chart")==0) type = "chart"; // график
+								else if(values[0].indexOf("(SCHEDULER)")!=-1) type = "scheduler"; // расписание бойлера
+								else if(values[0].indexOf("(Calendar)")!=-1) type = "calendar"; // расписание
+								else if(values[0].indexOf("et_modbus_")==1) type = "tableval"; // таблица значений
+								else if(values[0].indexOf("set_pEEV(POS")==0) {
 									var s = "get_peev-pos";
 									if(values[0].substr(-1) == 'p') s += "p";  
 									if((element = document.getElementById(s))) element.value = values[1];
 									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
-								} else if(values[0].match(/^RELOAD/)) { 
+								} else if(values[0].indexOf("RELOAD")==0) { 
 									location.reload();
 								} else {
 									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
@@ -230,7 +230,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'select') {
 									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
-										var idsel = values[0].replace(/set_/g, "get_").toLowerCase().replace(/\([0-9]\)/g, "").replace(/\(/g, "-").replace(/\)/g, "").replace(/_skip[1-9]$/,"");
+										var idsel = values[0].replace("set_", "get_").toLowerCase().replace(/\([0-9]\)/g, "").replace("(", "-").replace(")", "").replace(/_skip[1-9]$/,"");
 										if(idsel == 'get_slip') idsel = valueid;
 										if(idsel == "get_testmode") {
 											var element2 = document.getElementById("get_testmode2");
@@ -568,14 +568,14 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 									}
 								} else if(type == 'tableval') {
-									var element2 = document.getElementById(valueid.replace(/val/, "err"));
+									var element2 = document.getElementById(valueid.replace("val", "err"));
 									if(values[1].match(/^E-?\d/)) {
 										if(element2) element2.innerHTML = values[1]; 
 									} else {
 										if(element2) element2.innerHTML = "OK";
 										if((element = document.getElementById(valueid))) {
 											element.value = values[1];
-											element2 = document.getElementById(valueid.replace(/val/, "hex"));
+											element2 = document.getElementById(valueid.replace("val", "hex"));
 											if(element2) element2.value = "0x" + Number(values[1]).toString(16).toUpperCase();
 										}
 									}
@@ -612,7 +612,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 								} else if(values[0] == "test_SMS") {
 									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
-								} else if(values[0].match(/^set_SAVE/)) { 
+								} else if(values[0].indexOf("set_SAVE")==0) { 
 									if(values[1] >= 0) {
 										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
 										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!");

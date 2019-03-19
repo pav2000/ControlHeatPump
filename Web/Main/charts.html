@@ -9,7 +9,7 @@
 <script type="text/javascript" src="exporting.js"></script>
 <script type='text/javascript'>
 function createChart(values, resultdiv) {
-	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
+	var title = values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, "");
 	var yizm = '';
 	if(/^(T|O|d)/g.test(title)) { yizm = "Температура, °C"; }
 	if(/^PE/g.test(title)) { yizm = "Давление, BAR"; }
