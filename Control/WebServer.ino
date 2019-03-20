@@ -897,7 +897,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
 			else {
 				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
-				if(GETBIT(HP.get_modeHouseSettings()->flags, fWeather)) {
+				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS) {
 					strcat(strReturn, " / ");
 					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
 				}

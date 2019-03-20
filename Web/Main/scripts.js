@@ -14,18 +14,16 @@ function setParam(paramid, resultid) {
 	var elid = paramid.replace("(", "-").replace(")", "");
 	var rec = new RegExp('et_listChart.?');
 	var res = new RegExp('et_slIP|et_listProfile|et_testMode|et_modeHP');
-	var ret = new RegExp('[(]SCHEDULER[)]');
-	var recldr = new RegExp('Calendar');
 	var elval, clear = true, equate = true;
 	var element;
-	if(ret.test(paramid)) {
+	if(paramid.indexOf("(SCHEDULER)")!=-1) {
 		var colls = document.getElementById("calendar").getElementsByClassName("clc");
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
 			if(colls[j].innerHTML != "") elval += 1; else elval += 0;
 			if(j % 24 == 23) elval += "/";
 		}
-	} else if(recldr.test(paramid)) { 
+	} else if(paramid.indexOf("(Calendar")!=-1) { 
 		var colls = document.getElementById("calendar").getElementsByClassName("clc");
 		var fprof, lprof = -255, len = 0;
 		elval = "";
@@ -133,9 +131,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 									continue;
 								} else if(values[0].indexOf("get_Chart")==0) type = "chart"; // график
-								else if(values[0].indexOf("(SCHEDULER)")!=-1) type = "scheduler"; // расписание бойлера
-								else if(values[0].indexOf("(Calendar)")!=-1) type = "calendar"; // расписание
-								else if(values[0].indexOf("et_modbus_")==1) type = "tableval"; // таблица значений
+								else if(values[0].indexOf("(SCHEDULER)")!=-1) type = "sch"; // расписание бойлера
+								else if(values[0].indexOf("(Calendar")!=-1) type = "cld"; // расписание
+								else if(values[0].indexOf("et_modbus_")==1) type = "tbv"; // таблица значений
 								else if(values[0].indexOf("set_pEEV(POS")==0) {
 									var s = "get_peev-pos";
 									if(values[0].substr(-1) == 'p') s += "p";  
@@ -167,13 +165,13 @@ function loadParam(paramid, noretry, resultdiv) {
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
 								}
-								if(type == 'scheduler') {
+								if(type == 'sch') {
 									var colls = document.getElementById("calendar").getElementsByClassName("clc");
 									var cont1 = values[1].replace(/\//g, "");
 									for(var j = 0; j < colls.length; j++) {
 										colls[j].innerHTML = cont1.charAt(j) == 1 ? window.calendar_act_chr : "";
 									}
-								} else if(type == 'calendar') { // {WeekDay+Hour};{Profile|};...
+								} else if(type == 'cld') { // {WeekDay+Hour};{Profile|};...
 									if(values[1] == "E33") alert("Ошибка: не верный номер расписания!");
 									else if(values[1] == "E34") alert("Ошибка: нет места для календаря!");
 									else {
@@ -567,7 +565,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											if(element[0]) element[0].disabled = true;
 										}
 									}
-								} else if(type == 'tableval') {
+								} else if(type == 'tbv') {
 									var element2 = document.getElementById(valueid.replace("val", "err"));
 									if(values[1].match(/^E-?\d/)) {
 										if(element2) element2.innerHTML = values[1]; 

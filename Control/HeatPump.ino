@@ -1253,24 +1253,30 @@ void HeatPump::set_nextMode()
 // Параметр само ИЗМЕНЕНИЕ температуры
 int16_t HeatPump::setTargetTemp(int16_t dt)
 {
-  switch ((MODE_HP)get_modeHouse() )   // проверка для режима ДОМА
-  {
-  case  pOFF:
-	  return 0;
-      break;
-  case  pHEAT:
-      if (get_ruleHeat()==pHYBRID) {if((Prof.Heat.Temp1+dt>=0.0*100)&&(Prof.Heat.Temp1+dt<=30.0*100)) Prof.Heat.Temp1=Prof.Heat.Temp1+dt; return Prof.Heat.Temp1;}
-      if(!(GETBIT(Prof.Heat.flags,fTarget))) { if((Prof.Heat.Temp1+dt>=0.0*100)&&(Prof.Heat.Temp1+dt<=30.0*100)) Prof.Heat.Temp1=Prof.Heat.Temp1+dt; return Prof.Heat.Temp1;}
-      else  { if((Prof.Heat.Temp2+dt>=10.0*100)&&(Prof.Heat.Temp2+dt<=50.0*100)) Prof.Heat.Temp2=Prof.Heat.Temp2+dt; return Prof.Heat.Temp2; }
-      break;
-  case  pCOOL:
-      if (get_ruleCool()==pHYBRID) {if((Prof.Cool.Temp1+dt>=0.0*100)&&(Prof.Cool.Temp1+dt<=30.0*100)) Prof.Cool.Temp1=Prof.Cool.Temp1+dt; return Prof.Cool.Temp1;}
-      if(!(GETBIT(Prof.Cool.flags,fTarget))) {if((Prof.Cool.Temp1+dt>=0.0*100)&&(Prof.Cool.Temp1+dt<=30.0*100)) Prof.Cool.Temp1=Prof.Cool.Temp1+dt; return Prof.Cool.Temp1;}
-      else  { if((Prof.Cool.Temp2+dt>=0.0*100)&&(Prof.Cool.Temp2+dt<=30.0*100)) Prof.Cool.Temp2=Prof.Cool.Temp2+dt; return Prof.Cool.Temp2; }
-      break;
-  default: break;
-  }
-  return 0;
+	switch((int)get_modeHouse())   // проверка для режима ДОМА
+	{
+	case pOFF:
+		break;
+	case pHEAT:
+		if(GETBIT(Prof.Heat.flags,fTarget) == 0 || get_ruleHeat() == pHYBRID) {
+			if((Prof.Heat.Temp1 + dt >= 0) && (Prof.Heat.Temp1 + dt <= 4000)) Prof.Heat.Temp1 = Prof.Heat.Temp1 + dt;
+			return Prof.Heat.Temp1;
+		} else {
+			if((Prof.Heat.Temp2 + dt >= 1000) && (Prof.Heat.Temp2 + dt <= 5000)) Prof.Heat.Temp2 = Prof.Heat.Temp2 + dt;
+			return Prof.Heat.Temp2;
+		}
+		break;
+	case pCOOL:
+		if(GETBIT(Prof.Cool.flags, fTarget) || get_ruleCool() == pHYBRID) {
+			if((Prof.Cool.Temp1 + dt >= 0) && (Prof.Cool.Temp1 + dt <= 3000)) Prof.Cool.Temp1 = Prof.Cool.Temp1 + dt;
+			return Prof.Cool.Temp1;
+		} else {
+			if((Prof.Cool.Temp2 + dt >= 0) && (Prof.Cool.Temp2 + dt <= 5000)) Prof.Cool.Temp2 = Prof.Cool.Temp2 + dt;
+			return Prof.Cool.Temp2;
+		}
+		break;
+	}
+	return 0;
 }
 
 int16_t HeatPump::get_targetTempCool()
