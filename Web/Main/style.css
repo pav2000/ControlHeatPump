@@ -119,7 +119,7 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_temp-tevain		{margin-top:335px;margin-left:260px}
 .visualization #get_temp-tevaoutg	{margin-top:335px;margin-left:140px}
 .visualization #get_temp-tevaing	{margin-top:185px;margin-left:140px}
-.visualization #get_temp-tevaout	{margin-top:230px;margin-left:265px}
+.visualization #get_temp-tevaout	{margin-top:230px;margin-left:260px}
 .visualization #get_temp-tcompin	{margin-top:185px;margin-left:420px}
 .visualization #get_temp-tconout	{margin-top:335px;margin-left:575px}
 .visualization #get_temp-tconing	{margin-top:335px;margin-left:700px}
@@ -128,7 +128,7 @@ body.test #get_tblrelay span{display:none}
 .visualization #get_pfc-info1		{margin-top:260px;margin-left:487px}.visualization #get_pfc-info1:after{content:"";}
 .visualization #get_pfc-cfc			{margin-top:283px;margin-left:487px}.visualization #get_pfc-cfc:after{content:""}
 .visualization #get_temp-tboiler	{margin-top:34px;margin-left:758px}
-.visualization #get_press-peva		{margin-top:169px;margin-left:262px;width:56px;text-align:center;white-space:normal}
+.visualization #get_press-peva		{margin-top:169px;margin-left:260px;width:56px;text-align:center;white-space:normal}
 .visualization #get_press-pcon		{margin-top:169px;margin-left:560px;width:56px;text-align:center;white-space:normal}
 .visualization #get_overheat		{margin-top:353px;margin-left:370px;text-align:center}
 .visualization #get_peev-pospp		{margin-top:330px;margin-left:370px;text-align:center}.visualization #get_peev-pospp:after{content:"";}
