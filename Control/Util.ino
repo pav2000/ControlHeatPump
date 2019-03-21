@@ -477,22 +477,20 @@ char * get_Schedule(uint32_t *sh)
 boolean initSD(void)
 {
 	boolean success = false;   // флаг успешности инициализации
-	journal.jprintf("Initializing SD card...\n");
+	journal.jprintf("Initializing SD card... ");
 #ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
 	pinMode(PIN_NO_SD_CARD, INPUT);     // ++ CD Программирование проверки наличия карты
-	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("ERROR - No SD card in slot.\n"); return false;}
-	else journal.jprintf("SUCCESS - SD card insert in slot.\n");
+	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("No SD card!\n"); return false;}
 #endif
 	// 1. Инициалазация карты
 	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
-		journal.jprintf("Init SD card error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
+		journal.jprintf("Init error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
 	} else success = true;  // Карта инициализирована с первого раза
 
 	if(success)  // Запоминаем результаты
-		journal.jprintf("SUCCESS - SD card initialized.\n");
+		journal.jprintf("OK\n");
 	else {
-		journal.jprintf((char*) "$ERROR - SD card initialization failed!\n");
-		//  set_Error(ERR_SD_INIT,"SD card");   // Уведомить об ошибке
+		//set_Error(ERR_SD_INIT,"SD card");   // Уведомить об ошибке
 		HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка инициализации SD карты", 0);    // сформировать уведомление
 		SPI_switchW5200();
 		return false;
@@ -500,13 +498,13 @@ boolean initSD(void)
 
 	// 2. Проверка наличия индексного файла
 	if(!card.exists(INDEX_FILE)) {
-		journal.jprintf((char*) "$ERROR - Can't find index.xxx file!\n");
+		journal.jprintf((char*) " ERROR - Can't find %s file!\n", INDEX_FILE);
 		//   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
-		HP.message.setMessage(pMESSAGE_SD, (char*) "Файл index.xxx не найден на SD карте", 0); // сформировать уведомление
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Начальный файл не найден на SD карте", 0); // сформировать уведомление
 		SPI_switchW5200();
 		return false;
 	} // стартовый файл не найден
-	journal.jprintf((char*) "SUCCESS - Found %s file\n", INDEX_FILE);
+	journal.jprintf((char*) " Found %s file\n", INDEX_FILE);
 
 	// 3. Вывод инфо о карте
 	cid_t cid;

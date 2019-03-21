@@ -55,7 +55,7 @@ static const char *noteRemarkTest[] = {"Тестирование отключе�
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
 
 const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
-const char* NO_SUPPORT            = {"no support"};                                                                            // сокращение места
+const char* NO_SUPPORT            = {"not supported"};
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
 
 const char *postRet[]            = {"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n",                           //  Ответы на пост запросы
@@ -975,79 +975,33 @@ void parserGET(uint8_t thread, int8_t )
 		{
 			strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
 			strcat(strReturn,"__DATE__ __TIME__|Дата и время сборки прошивки|");strcat(strReturn,__DATE__);strcat(strReturn," ");strcat(strReturn,__TIME__) ;strcat(strReturn,";");
-			strcat(strReturn,"VER_SAVE|Версия формата сохраненных данных в I2C памяти|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"CONFIG_NAME|Имя конфигурации|");strcat(strReturn,CONFIG_NAME);strcat(strReturn,";");
-			strcat(strReturn,"CONFIG_NOTE|");strcat(strReturn,CONFIG_NOTE);strcat(strReturn,"|-");strcat(strReturn,";");
+			strcat(strReturn,"CONFIG_NOTE|");strcat(strReturn,CONFIG_NOTE);strcat(strReturn,"|;");
+			strcat(strReturn,"configCPU_CLOCK_HZ|Частота CPU (МГц)|");_itoa(configCPU_CLOCK_HZ/1000000,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты (МГц)|");_itoa(SD_CLOCK, strReturn);strcat(strReturn,";");
+			strcat(strReturn,"W5200_SPI_SPEED|Частота SPI сети "); strcat(strReturn,nameWiznet);strcat(strReturn," (МГц)|");_itoa(84/W5200_SPI_SPEED, strReturn);strcat(strReturn,";");
+			strcat(strReturn,"I2C_SPEED|Частота работы шины I2C (кГц)|"); _itoa(I2C_SPEED/1000,strReturn); strcat(strReturn,";");
 			strcat(strReturn,"UART_SPEED|Скорость отладочного порта (бод)|");_itoa(UART_SPEED,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"DEMO|Режим демонстрации (эмуляция датчиков)|");
-#ifdef DEMO
-			strcat(strReturn,"ON;");
-#else
-			strcat(strReturn,"OFF;");
-#endif
-			strcat(strReturn,"DEBUG|Вывод в порт отладочных сообщений|");
-#ifdef DEBUG
-			strcat(strReturn,"ON;");
-#else
-			strcat(strReturn,"OFF;");
-#endif
-			strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики FreeRTOS (отладка)|");
-#ifdef STAT_FREE_RTOS
-			strcat(strReturn,"ON;");
-#else
-			strcat(strReturn,"OFF;");
-#endif
-			strcat(strReturn,"LOG|Вывод в порт лога web сервера|");
-#ifdef LOG
-			strcat(strReturn,"ON;");
-#else
-			strcat(strReturn,"OFF;");
-#endif
-#ifdef I2C_EEPROM_64KB
-			//       strcat(strReturn,"STAT_POINT|Максимальное число дней накопления статистики|");_itoa(STAT_POINT,strReturn);strcat(strReturn,";");
-#endif
-			strcat(strReturn,"CHART_POINT|Максимальное число точек графиков|");_itoa(CHART_POINT,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"I2C_EEPROM_64KB|Место хранения системного журнала|");
-#ifdef I2C_EEPROM_64KB
-			strcat(strReturn,"I2C flash memory;");
-#else
-			strcat(strReturn,"RAM memory;");
-#endif
-			strcat(strReturn,"JOURNAL_LEN|Размер кольцевого буфера системного журнала (байт)|");_itoa(JOURNAL_LEN,strReturn);strcat(strReturn,";");
-
-			// Карта
-			m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
-			strcat(strReturn,"USE_SD_CRC|Использовать проверку CRC|");_itoa(USE_SD_CRC,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"SD_REPEAT|Число попыток чтения карты и открытия файлов, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
-			//strcat(strReturn,"SD_SPI_SPEED|Частота SPI SD карты, пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/SD_SPI_SPEED,strReturn);strcat(strReturn,";");
-
-			// W5200
-			strcat(strReturn,"W5200_THREAD|Число потоков для сетевого чипа (web сервера) "); strcat(strReturn,nameWiznet);strcat(strReturn,"|");_itoa(W5200_THREAD,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"W5200_TIME_WAIT|Время ожидания захвата мютекса, для управления потоками (мсек)|");_itoa( W5200_TIME_WAIT,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"STACK_vWebX|Размер стека для задачи одного web потока "); strcat(strReturn,nameWiznet);strcat(strReturn," (х4 байта)|");_itoa(STACK_vWebX,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"W5200_NUM_PING|Число попыток пинга до определения потери связи |");_itoa(W5200_NUM_PING,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"W5200_MAX_LEN|Размер аппаратного буфера  сетевого чипа "); strcat(strReturn,nameWiznet);strcat(strReturn," (байт)|");_itoa(W5200_MAX_LEN,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"W5200_SPI_SPEED|Частота SPI чипа "); strcat(strReturn,nameWiznet);strcat(strReturn,", пересчитывается через делитель базовой частоты CPU 84 МГц (МГц)|");_itoa(84/W5200_SPI_SPEED,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"INDEX_FILE|Файл загружаемый по умолчанию|");strcat(strReturn,INDEX_FILE);strcat(strReturn,";");
+			strcat(strReturn,"WDT_TIME|Период сторожевого таймера, 0 - нет (сек)|");_itoa(WDT_TIME,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"MODBUS_PORT_NUM|Используемый порт для обмена по Modbus RTU|Serial");
+			if(&MODBUS_PORT_NUM==&Serial1) strcat(strReturn,cOne);
+			else if(&MODBUS_PORT_NUM==&Serial2) strcat(strReturn,"2");
+			else if(&MODBUS_PORT_NUM==&Serial3) strcat(strReturn,"3");
+			else strcat(strReturn,"?");
+			strcat(strReturn,";");
+			strcat(strReturn,"MODBUS_PORT_SPEED|Скорость обмена (бод)|");_itoa(MODBUS_PORT_SPEED,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|SERIAL_8N1;");
+			strcat(strReturn,"MODBUS_TIME_WAIT|Максимальное время ожидания освобождения порта (мсек)|");_itoa(MODBUS_TIME_WAIT,strReturn);strcat(strReturn,";");
 			// Частотник
+			strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|");
 			if (HP.dFC.get_present())
 			{
-				strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|");strcat(strReturn,HP.dFC.get_name());strcat(strReturn,";");
+				strcat(strReturn,HP.dFC.get_name());strcat(strReturn,";");
 				strcat(strReturn,"FC_MODBUS_ADR|Адрес инвертора на шине Modbus RTU|");strcat(strReturn,byteToHex(FC_MODBUS_ADR));strcat(strReturn,";");
-				strcat(strReturn,"MODBUS_PORT_NUM|Используемый порт для обмена по Modbus RTU|Serial");
-				if(&MODBUS_PORT_NUM==&Serial1) strcat(strReturn,cOne);
-				else if(&MODBUS_PORT_NUM==&Serial2) strcat(strReturn,"2");
-				else if(&MODBUS_PORT_NUM==&Serial3) strcat(strReturn,"3");
-				else strcat(strReturn,"??");
-				strcat(strReturn,";");
-				strcat(strReturn,"MODBUS_PORT_SPEED|Скорость обмена (бод)|");_itoa(MODBUS_PORT_SPEED,strReturn);strcat(strReturn,";");
-				strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|");strcat(strReturn,"SERIAL_8N1");strcat(strReturn,";");
-				strcat(strReturn,"MODBUS_TIME_WAIT|Максимальное время ожидания освобождения порта (мсек)|");_itoa(MODBUS_TIME_WAIT,strReturn);strcat(strReturn,";");
-
 			}
-			else strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|Нет;");
+			else strcat(strReturn,"Нет;");
 			// NEXTION
-			strcat(strReturn,"NEXTION|Использование дисплея Nextion 4.3|");
+			strcat(strReturn,"NEXTION|Использование дисплея Nextion|");
 #ifdef NEXTION
 			strcat(strReturn,"ON;");
 #else
@@ -1063,33 +1017,28 @@ void parserGET(uint8_t thread, int8_t )
 			if(&NEXTION_PORT==&Serial1) strcat(strReturn,cOne);
 			else if(&NEXTION_PORT==&Serial2) strcat(strReturn,"2");
 			else if(&NEXTION_PORT==&Serial3) strcat(strReturn,"3");
-			else strcat(strReturn,"??");
+			else strcat(strReturn,"?");
 			strcat(strReturn,";");
+			strcat(strReturn,"NEXTION_PORT_SPEED|Скорость обмена (бод)|");_itoa(NEXTION_PORT_SPEED,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"NEXTION_UPDATE|Время обновления информации на дисплее Nextion (мсек)|");_itoa(NEXTION_UPDATE,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"NEXTION_READ|Время опроса дисплея Nextion (мсек)|");_itoa(NEXTION_READ,strReturn);strcat(strReturn,";");
+
+			// Карта
+			m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
+			m_snprintf(strReturn + m_strlen(strReturn), 128, "USE_SD_CRC|SD - Использовать проверку CRC|%с%с;", USE_SD_CRC ? 'R' : ' ', USE_SD_CRC_FOR_WRITE ? 'W' : ' ');
+			strcat(strReturn,"SD_REPEAT|SD - Число попыток чтения, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
+
+			// W5200
+			strcat(strReturn,"W5200_THREAD|Число потоков для сетевого чипа (web сервера) "); strcat(strReturn,nameWiznet);strcat(strReturn,"|");_itoa(W5200_THREAD,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"W5200_TIME_WAIT|Время ожидания захвата мютекса, для управления потоками (мсек)|");_itoa( W5200_TIME_WAIT,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"STACK_vWebX|Размер стека для задачи одного web потока "); strcat(strReturn,nameWiznet);strcat(strReturn," (х4 байта)|");_itoa(STACK_vWebX,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"W5200_NUM_PING|Число попыток пинга до определения потери связи |");_itoa(W5200_NUM_PING,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"W5200_MAX_LEN|Размер аппаратного буфера  сетевого чипа "); strcat(strReturn,nameWiznet);strcat(strReturn," (байт)|");_itoa(W5200_MAX_LEN,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"INDEX_FILE|Файл загружаемый по умолчанию|");strcat(strReturn,INDEX_FILE);strcat(strReturn,";");
 			strcat(strReturn,"TIME_ZONE|Часовой пояс|");_itoa(TIME_ZONE,strReturn);strcat(strReturn,";");
 			// FreeRTOS
-			strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки FreeRTOS due|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"configCPU_CLOCK_HZ|Частота CPU (мГц)|");_itoa(configCPU_CLOCK_HZ/1000000,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки FreeRTOS|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы FreeRTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"WDT_TIME|Период Watchdog таймера, 0 - запрет таймера (сек)|");_itoa(WDT_TIME,strReturn);strcat(strReturn,";");
-
-			// Удаленные датчики
-			strcat(strReturn,"SENSOR_IP|Использование удаленных датчиков|");
-#ifdef SENSOR_IP
-			strcat(strReturn,"ON;");
-			strcat(strReturn,"IPNUMBER|Максимальное число удаленных датчиков, нумерация начинается с 1|");_itoa(IPNUMBER,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"UPDATE_IP|Максимальное время между посылками данных с удаленного датчика (сек)|");_itoa(UPDATE_IP,strReturn);strcat(strReturn,";");
-#else
-			strcat(strReturn,"OFF;");
-#endif
-
-			strcat(strReturn,"K_VCC_POWER|Коэффициент пересчета для канала контроля напряжения питания (отсчеты/В)|");
-#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-			_ftoa(strReturn,(float)K_VCC_POWER,2);strcat(strReturn,";");
-#else
-			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
-#endif
 
 			ADD_WEBDELIM(strReturn);  continue;
 		} // end CONST
@@ -1097,7 +1046,6 @@ void parserGET(uint8_t thread, int8_t )
 		if (strcmp(str,"CONST1")==0)   // Команда CONST1 Информация очень большая по этому разбито на 2 запроса CONST CONST1
 		{
 			// i2c
-			strcat(strReturn,"I2C_SPEED|Частота работы шины I2C (кГц)|"); _itoa(I2C_SPEED/1000,strReturn); strcat(strReturn,";");
 			strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
 			strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа I2C с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
 			strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа I2C с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
@@ -1112,6 +1060,21 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_ftoa(strReturn,(float)GAP_TEMP_VAL/100.0,2);strcat(strReturn,";");
 			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn,(float)MAX_TEMP_ERR/100.0,2);strcat(strReturn,";");
+			// Удаленные датчики
+			strcat(strReturn,"SENSOR_IP|Использование удаленных датчиков|");
+#ifdef SENSOR_IP
+			strcat(strReturn,"ON;");
+			strcat(strReturn,"IPNUMBER|Максимальное число удаленных датчиков, нумерация начинается с 1|");_itoa(IPNUMBER,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"UPDATE_IP|Максимальное время между посылками данных с удаленного датчика (сек)|");_itoa(UPDATE_IP,strReturn);strcat(strReturn,";");
+#else
+			strcat(strReturn,"OFF;");
+#endif
+			strcat(strReturn,"K_VCC_POWER|Коэффициент пересчета для канала контроля напряжения питания (отсчеты/В)|");
+#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+			_ftoa(strReturn,(float)K_VCC_POWER,2);strcat(strReturn,";");
+#else
+			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
+#endif
 			// SALLMONELA
 			strcat(strReturn,"SALLMONELA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALLMONELA_DAY,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"SALLMONELA_HOUR|Час когда начинаятся обеззарживание ГВС|");_itoa(SALLMONELA_HOUR,strReturn);strcat(strReturn,";");
@@ -1141,6 +1104,40 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"MQTT_NUM_ERR_OFF|Число ошибок отправки подряд при котором отключается сервис MQTT (флаг сбрасывается)|");_itoa(MQTT_NUM_ERR_OFF,strReturn);strcat(strReturn,";");
 
 #endif
+			strcat(strReturn,"DEMO|Режим демонстрации (эмуляция датчиков)|");
+#ifdef DEMO
+			strcat(strReturn,"ON;");
+#else
+			strcat(strReturn,"OFF;");
+#endif
+			strcat(strReturn,"VER_SAVE|Версия формата сохраненных данных в I2C памяти|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"DEBUG|Вывод в порт отладочных сообщений|");
+#ifdef DEBUG
+			strcat(strReturn,"ON;");
+#else
+			strcat(strReturn,"OFF;");
+#endif
+			strcat(strReturn,"STAT_FREE_RTOS|Накопление статистики FreeRTOS (отладка)|");
+#ifdef STAT_FREE_RTOS
+			strcat(strReturn,"ON;");
+#else
+			strcat(strReturn,"OFF;");
+#endif
+			strcat(strReturn,"LOG|Вывод в порт лога web сервера|");
+#ifdef LOG
+			strcat(strReturn,"ON;");
+#else
+			strcat(strReturn,"OFF;");
+#endif
+			strcat(strReturn,"CHART_POINT|Максимальное число точек графиков|");_itoa(CHART_POINT,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"I2C_EEPROM_64KB|Место хранения системного журнала|");
+#ifdef I2C_EEPROM_64KB
+			strcat(strReturn,"I2C flash memory;");
+#else
+			strcat(strReturn,"RAM memory;");
+#endif
+			strcat(strReturn,"JOURNAL_LEN|Размер кольцевого буфера системного журнала (байт)|");_itoa(JOURNAL_LEN,strReturn);strcat(strReturn,";");
+
 			ADD_WEBDELIM(strReturn) ;
 			continue;
 		} // end CONST1
@@ -1645,7 +1642,7 @@ void parserGET(uint8_t thread, int8_t )
 				}
 				else   strcat(strReturn,"E03" WEBDELIM);  continue;
 #else
-				strcat(strReturn,"no support EEV" WEBDELIM);  continue;
+				strcat(strReturn,"EEV not supported" WEBDELIM);  continue;
 #endif
 			}  //  if (strstr(str,"EEV"))
 			// 2. Проверка для запросов содержащих MQTT ---------------------------------------------
@@ -1661,7 +1658,7 @@ void parserGET(uint8_t thread, int8_t )
 					ADD_WEBDELIM(strReturn) ; continue;
 				} // (strcmp(str,"set_MQTT")==0)
 #else
-				strcat(strReturn,"no support MQTT" WEBDELIM);  continue; // не поддерживается
+				strcat(strReturn,"MQTT not supported" WEBDELIM);  continue; // не поддерживается
 #endif
 			} //if ((strstr(str,"MQTT")>0)
 
@@ -1694,7 +1691,7 @@ void parserGET(uint8_t thread, int8_t )
 					else strcat(strReturn, "E31");            // ошибка преобразования строки
 				} else strcat(strReturn, "E03");
 #else
-				strcat(strReturn,"no support SDM"); // не поддерживается
+				strcat(strReturn,"SDM not supported"); // не поддерживается
 #endif
 				ADD_WEBDELIM(strReturn); continue;
 			}

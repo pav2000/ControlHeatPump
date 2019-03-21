@@ -55,11 +55,7 @@ boolean Nextion::init()
 	StatusCrc = 0;
 	fUpdate = 0;
 	PageID = NXTID_PAGE_MAIN;
-	NEXTION_PORT.begin(9600);
-	// Поднятие скорости обмена
-	//  sendCommand("baud=115200");
-//	  _delay(100);
-	//  NEXTION_PORT.begin(115200);
+	NEXTION_PORT.begin(NEXTION_PORT_SPEED);
 //	sendCommand("rest");
 //	sendCommand("cls 0");
     sendCommand("sleep=0");

@@ -251,7 +251,7 @@ void setup() {
   #ifdef TEST_BOARD
      journal.jprintf("\n---> TEST BOARD!!!\n\n");
   #endif
-  journal.jprintf("Vesion firmware: %s\n",VERSION); 
+  journal.jprintf("Firmware version: %s\n",VERSION);
   showID();                                                                  // информация о чипе
   journal.jprintf("Chip ID SAM3X8E: %s\n",getIDchip((char*)Socket[0].inBuf));// информация об серийном номере чипа
   if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
