@@ -12,7 +12,7 @@ var dataSeries1 = [], dataSeries2 = [], dataSeries3 = [], dataSeries4 = [];
 var ReadyMask = 0;
 var showdelta = false;
 function createChart(values, resultdiv) {
-	var title = values[0].replace(/get_Chart\(/g, "").replace(/\)[0-9]?/g, "");
+	var title = values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, "");
 	var data = values[1].split(';');
 	if(ReadyMask == 0) {
 		dataSeries1.splice(0,dataSeries1.length); 

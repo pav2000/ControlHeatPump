@@ -930,7 +930,7 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 						}
 					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2 || OverheatTCOMP <= 0) { // слишком низко
-						    if(pidw.trend[trOH_TCOMP] <= 0) {
+						    if(pidw.trend[trOH_TCOMP] < _data.trend_threshold || OverheatTCOMP <= 0) {
 								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2;
 								if(newEEV == 0) newEEV = -1;
 								pidw.max = _data.trend_threshold;
@@ -1019,7 +1019,7 @@ void devEEV::CorrectOverheat(void)
 #else
 					+ (Overheat
 #endif
-					- _data.OverHeatStart);
+					- DEF_OHCor_OverHeatStart);
 	if(fPause || !GETBIT(_data.flags, fCorrectOverHeat)) return;
 	if(rtcSAM3X8.unixtime() - HP.get_startCompressor() > _data.OHCor_Delay && ++OverHeatCor_period >= _data.OHCor_Period) {
 		OverHeatCor_period = 0;

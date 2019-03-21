@@ -26,8 +26,8 @@ const boolean _wait =  false;  // Команда перевода в режим 
 const boolean _start = true;   // Команда запуска ТН
 const boolean _resume = false;  // Команда возобновления работы ТН
 
-#define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_PUMP)               // Включить насосы
-#define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_PUMP)              // Выключить насосы
+#define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_RELAY)               // Включить насосы
+#define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_RELAY)              // Выключить насосы
 // Макросы по работе с компрессором в зависимости от наличия инвертора
 #define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC();else dRelay[RCOMP].set_ON();   // Включить компрессор в зависимости от наличия инвертора
 #define COMPRESSOR_OFF    if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF();  // Выключить компрессор в зависимости от наличия инвертора
@@ -438,7 +438,7 @@ void HeatPump::resetCount(boolean full)
 		motoHour.H1 = 0;
 		motoHour.C1 = 0;
 #ifdef USE_ELECTROMETER_SDM
-		motoHour.E1 = dSDM.get_Energy();
+       if (dSDM.get_link()) motoHour.E1 = dSDM.get_Energy(); // Если счетчик работает (связь не утеряна)
 #endif
 		motoHour.P1 = 0;
 		motoHour.Z1 = 0;
@@ -448,7 +448,8 @@ void HeatPump::resetCount(boolean full)
 	motoHour.H2 = 0;
 	motoHour.C2 = 0;
 #ifdef USE_ELECTROMETER_SDM
-	motoHour.E2 = dSDM.get_Energy();
+	if (dSDM.get_link()) motoHour.E2 = dSDM.get_Energy();// Если счетчик работает (связь не утеряна)
+    else  journal.jprintf("WARNING: Link with SDM lost - energy was not reseted!\n");
 #endif
 	motoHour.P2 = 0;
 	motoHour.Z2 = 0;
@@ -1060,9 +1061,13 @@ uint8_t i;
  if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
  if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
  if(ChartOVERHEAT2.get_present())  { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
+#ifdef TCONOUT
+ strcat(str, chart_OVERCOOL); strcat(str,":0;");
+#endif
  if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
  if(ChartTPCON.get_present())      {
-	if (sADC[PCON].get_present()) strcat(str,chart_TPCON);else strcat(str,chart_TCON);  strcat(str,":0;"); 
+	if(sADC[PCON].get_present()) strcat(str,chart_TPCON); else strcat(str,chart_TCON);
+	strcat(str,":0;");
     strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
  }
  #endif
@@ -1136,6 +1141,10 @@ void HeatPump::get_Chart(char *var, char* str)
 		ChartOVERHEAT2.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_OVERHEAT) == 0) {
 		ChartOVERHEAT.get_PointsStr(100, str);
+#ifdef TCONOUT
+	} else if(strcmp(var, chart_OVERCOOL) == 0) {
+		ChartTPCON.get_PointsStrSub(100, str, &sTemp[TCONOUT].Chart); // считаем график на лету
+#endif
 	} else if(strcmp(var, chart_TPEVA) == 0) {
 		ChartTPEVA.get_PointsStr(100, str);
 	} else if(strcmp(var, chart_TPCON) == 0) {
@@ -1244,24 +1253,30 @@ void HeatPump::set_nextMode()
 // Параметр само ИЗМЕНЕНИЕ температуры
 int16_t HeatPump::setTargetTemp(int16_t dt)
 {
-  switch ((MODE_HP)get_modeHouse() )   // проверка для режима ДОМА
-  {
-  case  pOFF:
-	  return 0;
-      break;
-  case  pHEAT:
-      if (get_ruleHeat()==pHYBRID) {if((Prof.Heat.Temp1+dt>=0.0*100)&&(Prof.Heat.Temp1+dt<=30.0*100)) Prof.Heat.Temp1=Prof.Heat.Temp1+dt; return Prof.Heat.Temp1;}
-      if(!(GETBIT(Prof.Heat.flags,fTarget))) { if((Prof.Heat.Temp1+dt>=0.0*100)&&(Prof.Heat.Temp1+dt<=30.0*100)) Prof.Heat.Temp1=Prof.Heat.Temp1+dt; return Prof.Heat.Temp1;}
-      else  { if((Prof.Heat.Temp2+dt>=10.0*100)&&(Prof.Heat.Temp2+dt<=50.0*100)) Prof.Heat.Temp2=Prof.Heat.Temp2+dt; return Prof.Heat.Temp2; }
-      break;
-  case  pCOOL:
-      if (get_ruleCool()==pHYBRID) {if((Prof.Cool.Temp1+dt>=0.0*100)&&(Prof.Cool.Temp1+dt<=30.0*100)) Prof.Cool.Temp1=Prof.Cool.Temp1+dt; return Prof.Cool.Temp1;}
-      if(!(GETBIT(Prof.Cool.flags,fTarget))) {if((Prof.Cool.Temp1+dt>=0.0*100)&&(Prof.Cool.Temp1+dt<=30.0*100)) Prof.Cool.Temp1=Prof.Cool.Temp1+dt; return Prof.Cool.Temp1;}
-      else  { if((Prof.Cool.Temp2+dt>=0.0*100)&&(Prof.Cool.Temp2+dt<=30.0*100)) Prof.Cool.Temp2=Prof.Cool.Temp2+dt; return Prof.Cool.Temp2; }
-      break;
-  default: break;
-  }
-  return 0;
+	switch((int)get_modeHouse())   // проверка для режима ДОМА
+	{
+	case pOFF:
+		break;
+	case pHEAT:
+		if(GETBIT(Prof.Heat.flags,fTarget) == 0 || get_ruleHeat() == pHYBRID) {
+			if((Prof.Heat.Temp1 + dt >= 0) && (Prof.Heat.Temp1 + dt <= 4000)) Prof.Heat.Temp1 = Prof.Heat.Temp1 + dt;
+			return Prof.Heat.Temp1;
+		} else {
+			if((Prof.Heat.Temp2 + dt >= 1000) && (Prof.Heat.Temp2 + dt <= 5000)) Prof.Heat.Temp2 = Prof.Heat.Temp2 + dt;
+			return Prof.Heat.Temp2;
+		}
+		break;
+	case pCOOL:
+		if(GETBIT(Prof.Cool.flags, fTarget) || get_ruleCool() == pHYBRID) {
+			if((Prof.Cool.Temp1 + dt >= 0) && (Prof.Cool.Temp1 + dt <= 3000)) Prof.Cool.Temp1 = Prof.Cool.Temp1 + dt;
+			return Prof.Cool.Temp1;
+		} else {
+			if((Prof.Cool.Temp2 + dt >= 0) && (Prof.Cool.Temp2 + dt <= 5000)) Prof.Cool.Temp2 = Prof.Cool.Temp2 + dt;
+			return Prof.Cool.Temp2;
+		}
+		break;
+	}
+	return 0;
 }
 
 int16_t HeatPump::get_targetTempCool()
@@ -2474,7 +2489,7 @@ void HeatPump::configHP(MODE_HP conf)
                  
                  switchBoiler(false);                                            // выключить бойлер
                
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                               // Задержка
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                               // Задержка
                  #ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
                      dRelay[RSUPERBOILER].set_OFF();                            // Евгений добавил выключить супербойлер
                  #endif
@@ -2492,7 +2507,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                   if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка
                  #endif
 
                  switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
@@ -2514,7 +2529,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==false)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
                  dRelay[RTRV].set_ON();                                       // охлаждение
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на 2 сек
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на 2 сек
                  #endif 
 
                   switchBoiler(false);                                           // выключить бойлер
@@ -2541,7 +2556,7 @@ void HeatPump::configHP(MODE_HP conf)
                  #ifdef RTRV
                  if (is_compressor_on()&&(dRelay[RTRV].get_Relay()==true)) ChangesPauseTRV();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
                  dRelay[RTRV].set_OFF();                                        // нагрев
-                 _delay(DELAY_AFTER_SWITCH_PUMP);                        // Задержка на сек
+                 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на сек
                  #endif
                  switchBoiler(true);                                             // включить бойлер
                  #ifdef RHEAT
@@ -2579,6 +2594,8 @@ void HeatPump::ChangesPauseTRV()
 // Итерация по управлению всем ТН, для всего, основной цикл управления.
 void HeatPump::vUpdate()
 {
+	
+/*  // Защита по протоку переехала в задачу  чтение датчиков а то может быть беда в момент пуска (vUpdate запускается не сразу после включения компрессора)
 #ifdef FLOW_CONTROL    // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
 	if(is_compressor_on())                                                            // Только если компрессор включен
 		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
@@ -2588,9 +2605,10 @@ void HeatPump::vUpdate()
 				return;
 			}
 #endif
+*/
 
 #ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
-	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
+ 	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
 		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
@@ -2768,23 +2786,30 @@ void HeatPump::compressorON()
 		}
 
 #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
-		for(uint8_t i = 0; i < FNUMBER; i++)   // Проверка потока по каждому датчику
-			if(sFrequency[i].get_checkFlow()) {
+		for(uint8_t i = 0; i < FNUMBER; i++) {   // Проверка потока по каждому датчику
+		#ifdef SUPERBOILER   // Если определен супер бойлер
+			#ifdef FLOWCON   // если определен датчик потока конденсатора
+			   if ((i==FLOWCON)&&(!dRelay[RPUMPO].get_Relay())) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			#endif
+		#endif	
+			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+				_delay(TIME_READ_SENSOR);
 				if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
-					_delay(TIME_READ_SENSOR);
-					if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
-						journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
-						set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
-					}
+					journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
+					set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
 					return;
 				}
 			}
+		}	
 #endif
 
 #ifdef DEFROST
    }  // if(mod!=pDEFROST)
 #endif	
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
+#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
+		task_updstat_chars = 0;
+#endif
 	    command_completed = rtcSAM3X8.unixtime();
 	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
@@ -3331,17 +3356,18 @@ if (powerGEO<0) powerGEO=0;
 // Получение мощностей потребления электроэнергии
 COP = dFC.get_power();  // получить текущую мощность компрессора 
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
+    if (dSDM.get_link()){  // Если счетчик работает (связь не утеряна)
 	power220 = dSDM.get_Power();
 	#ifdef CORRECT_POWER220
 		for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
 	#endif
+    } else power220=0; // свзяи со счетчиком нет
 #else
    power220=0; // электросчетчика нет
 #endif
 
 // Расчет КОП
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
-//if (get_modWork()!=pOFF) { // Для избавления от глюков коп считается только при работающем компрессоре
 if(is_compressor_on()){      // Если компрессор рабоатет
 #endif	
 	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!

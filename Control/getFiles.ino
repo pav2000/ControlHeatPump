@@ -811,13 +811,15 @@ uint16_t get_csvChart(uint8_t thread)
 	return sum;
 }
 
+/*
 // файл статистики на карте отсутсвует 
 void noCsvStatistic(uint8_t thread)
 {
    get_Header(thread,(char*)FILE_STATISTIC);
    sendPrintfRTOS(thread, "Файл статистики за выбранный год не найден на карте памяти.\r\n");
 }
-    
+*/ 
+   
 // Получить индексный файл при отсутвии SD карты
 // выдача массива index_noSD в index_noSD
 int16_t get_indexNoSD(uint8_t thread)

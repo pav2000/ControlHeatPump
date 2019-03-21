@@ -228,12 +228,11 @@ void setup() {
   pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
   pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти (ВРЕМЕННО, пока нет реализации)
 #endif
-  SPI_switchAllOFF();                          // Выключить все устройства на SPI
+  SPI_switchAllOFF();                         // Выключить все устройства на SPI
 
-  #ifdef POWER_CONTROL                       // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
+  #ifdef POWER_CONTROL                        // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
     pinMode(PIN_POWER_ON,OUTPUT);  
     digitalWriteDirect(PIN_POWER_ON, LOW);
-  //  delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
   #else
     delay(10);
   #endif
@@ -252,7 +251,7 @@ void setup() {
   #ifdef TEST_BOARD
      journal.jprintf("\n---> TEST BOARD!!!\n\n");
   #endif
-  journal.jprintf("Vesion firmware: %s\n",VERSION); 
+  journal.jprintf("Firmware version: %s\n",VERSION);
   showID();                                                                  // информация о чипе
   journal.jprintf("Chip ID SAM3X8E: %s\n",getIDchip((char*)Socket[0].inBuf));// информация об серийном номере чипа
   if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
@@ -397,9 +396,10 @@ x_I2C_init_std_message:
 
 // 4. Инициализировать основной класс
   journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
-  HP.initHeatPump();                                               // Основной класс
+  HP.initHeatPump();                           // Основной класс
 
 // 5. Установка сервисных пинов
+   
    journal.jprintf("3. Read safe Network key . . .\n");
    pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
    HP.safeNetwork=!digitalReadDirect(PIN_KEY1); 
@@ -445,7 +445,7 @@ x_I2C_init_std_message:
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
-//  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку с карточки (надо раскоментировать если грузится из флеш не надо)   
+//  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
   journal.jprintf(" Web interface source: ");
         switch (HP.get_SourceWeb())
         {
@@ -921,6 +921,21 @@ void vReadSensor(void *)
 		}
 #endif
 
+#ifdef FLOW_CONTROL                // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
+	if(HP.is_compressor_on())      // Только если компрессор включен 
+		for(uint8_t i = 0; i < FNUMBER; i++){   // Проверка потока по каждому датчику
+		#ifdef SUPERBOILER   // Если определен супер бойлер
+			#ifdef FLOWCON   // если определен датчик потока конденсатора
+			   if ((i==FLOWCON)&&(!HP.dRelay[RPUMPO].get_Relay())) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
+			#endif
+		#endif
+			if(HP.sFrequency[i].get_checkFlow() && HP.sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {     // Поток меньше минимального ошибка осанавливаем ТН
+				journal.jprintf("%s low flow: %.3f\n",(char*) HP.sFrequency[i].get_name(), (float) HP.sFrequency[i].get_Value() / 1000);
+				set_Error(ERR_MIN_FLOW, (char*) HP.sFrequency[i].get_name());
+			}
+		}
+#endif
+
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
@@ -959,7 +974,7 @@ void vReadSensor(void *)
 			}
 			last_life_h = hour;
 		}
-		////
+		//
 		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
 		ttime = TIME_READ_SENSOR - (millis() - ttime);
 		if(ttime && ttime <= 8) vTaskDelay(ttime);
@@ -1331,7 +1346,6 @@ void vUpdateCommand(void *)
 void vServiceHP(void *)
 {
 	static uint32_t NextionTick = 0;
-	static uint16_t task_updstat_chars = 0;
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint32_t timer_sec = GetTickCount();
 	static uint16_t restart_cnt;
@@ -1342,9 +1356,9 @@ void vServiceHP(void *)
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
 				#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
- 				if(++task_updstat_chars >= HP.get_tChart() && HP.is_compressor_on()) { // пришло время и компрессор работает
+ 				if(HP.is_compressor_on() && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и компрессор работает
                 #else
- 				if(++task_updstat_chars >= HP.get_tChart() && HP.get_State()!=pOFF_HP) { // пришло время и ТН включен
+ 				if(HP.get_State() != pOFF_HP && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и ТН включен
                 #endif 					
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
