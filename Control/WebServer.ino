@@ -990,7 +990,7 @@ void parserGET(uint8_t thread, int8_t )
 			else strcat(strReturn,"?");
 			strcat(strReturn,";");
 			strcat(strReturn,"MODBUS_PORT_SPEED|Скорость обмена (бод)|");_itoa(MODBUS_PORT_SPEED,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|SERIAL_8N1;");
+			strcat(strReturn,"MODBUS_PORT_CONFIG|Конфигурация порта|8N1;");
 			strcat(strReturn,"MODBUS_TIME_WAIT|Максимальное время ожидания освобождения порта (мсек)|");_itoa(MODBUS_TIME_WAIT,strReturn);strcat(strReturn,";");
 			// Частотник
 			strcat(strReturn,"DEVICEFC|Поддержка инвертора для компрессора|");
@@ -1025,7 +1025,7 @@ void parserGET(uint8_t thread, int8_t )
 
 			// Карта
 			m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
-			m_snprintf(strReturn + m_strlen(strReturn), 128, "USE_SD_CRC|SD - Использовать проверку CRC|%с%с;", USE_SD_CRC ? 'R' : ' ', USE_SD_CRC_FOR_WRITE ? 'W' : ' ');
+			m_snprintf(strReturn + m_strlen(strReturn), 128, "USE_SD_CRC|SD - Использовать проверку CRC|%c;", USE_SD_CRC ? '0'+USE_SD_CRC : USE_SD_CRC_FOR_WRITE ? 'W' : '-');
 			strcat(strReturn,"SD_REPEAT|SD - Число попыток чтения, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
 
 			// W5200
