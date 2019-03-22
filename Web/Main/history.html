@@ -258,7 +258,7 @@ function createChart() {
 			data: fieldList[fieldIndex].data,
 			index: fieldList[fieldIndex].series,
 			yAxis: ax,
-			tooltipOptions: {valueDecimals: ax == 'W' ? 3 : ax == 'C' ? 2 : 1},
+			tooltip: {valueDecimals: ax == 'W' ? 3 : ax == 'C' ? 2 : 1},
 			//visible:false,
 			name: fieldList[fieldIndex].name
 		});
