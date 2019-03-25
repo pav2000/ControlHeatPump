@@ -2868,10 +2868,9 @@ void HeatPump::compressorON()
 }
 
 // попытка выключить компрессор  с учетом всех защит
-const char *MinPauseOnCompressor={" Wait min pause on compressor . . ."};  
 void HeatPump::compressorOFF()
 {
-  if(!dFC.isfOnOff()) return;
+  if(DEVICEFC && !dFC.isfOnOff()) return;
    
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
