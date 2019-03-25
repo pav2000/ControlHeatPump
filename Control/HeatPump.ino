@@ -622,6 +622,7 @@ void HeatPump::resetSettingHP()
   Option.pause = 5 * 60;               // Минимальное время простоя компрессора, секунды
 #ifdef USE_SUN_COLLECTOR
   Option.SunTDelta = SUN_TDELTA;
+  Option.SunGTDelta = SUNG_TDELTA;
 #endif
 
  // инициализация статистика дополнительно помимо датчиков
@@ -885,6 +886,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SunRegGeo)==0)        { Option.flags = (Option.flags & ~(1<<fSunRegenerateGeo)) | ((x!=0)<<fSunRegenerateGeo); return true; }else
    if(strcmp(var,option_SunRegGeoTemp)==0)    { Option.SunRegGeoTemp = rd(x, 100); return true; }else
    if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
+   if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
    if(strcmp(var,option_PAUSE)==0) { if ((x>=0)&&(x<=60)) {Option.pause=x*60; return true;} else return false; }else                         // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
@@ -928,6 +930,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SunRegGeo)==0)    	  {return _itoa(GETBIT(Option.flags, fSunRegenerateGeo), ret);}else
    if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100,1); return ret; }else
    if(strcmp(var,option_SunTDelta)==0)        {_ftoa(ret,(float)Option.SunTDelta/100,1); return ret; }else
+   if(strcmp(var,option_SunGTDelta)==0)       {_ftoa(ret,(float)Option.SunGTDelta/100,1); return ret; }else
    if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
@@ -2865,10 +2868,9 @@ void HeatPump::compressorON()
 }
 
 // попытка выключить компрессор  с учетом всех защит
-const char *MinPauseOnCompressor={" Wait min pause on compressor . . ."};  
 void HeatPump::compressorOFF()
 {
-  if(!dFC.isfOnOff()) return;
+  if(DEVICEFC && !dFC.isfOnOff()) return;
    
   #ifdef EEV_DEF
   lastEEV=dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
@@ -3416,7 +3418,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
-	journal.printf("PID(%x): %d,%d,S:%d(%d,%d,%d). ", &pid, errorPid, pidw.pre_err, pidw.sum, pid.Kp, pid.Ki, pid.Kd);
+	journal.printf("PID(%x): err:%d,pre_err:%d,sum:%d (%d,%d,%d). ", &pid, errorPid, pidw.pre_err, pidw.sum, pid.Kp, pid.Ki, pid.Kd);
 #endif
 #ifdef PID_FORMULA2
 	pidw.sum += pid.Ki * errorPid;
@@ -3451,7 +3453,8 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	// I (t) = I (t — 1) + Ki * e (t);
 	// D (t) = Kd * {e (t) — e (t — 1)};
 	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-	if(pid.Ki > 0)// Расчет интегральной составляющей
+
+	if(pid.Ki != 0)// Расчет интегральной составляющей, если она не равна 0
 	{
 		pidw.sum += (int32_t) pid.Ki * errorPid;     // Интегральная составляющая, с накоплением, в СТО ТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 1000)
 		if(pidw.sum > pidw.max) pidw.sum = pidw.max; // Ограничение диапазона изменения ПИД интегральной составляющей, произведение в СТО ТЫСЯЧНЫХ
@@ -3470,9 +3473,9 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #endif
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (pidw.pre_err - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	if ((abs(newVal)>pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг 
+	if ((abs(newVal)>pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг (оптимизация классического ПИДа)
 #ifdef DEBUG_PID
-	journal.printf("+D:%d=%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
+	journal.printf("D:%d PID:%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
 #endif
 #endif
 	pidw.pre_err = errorPid; // запомнить предыдущую ошибку

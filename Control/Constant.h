@@ -36,7 +36,7 @@ byte defaultMAC[] = { 0xDE, 0xA1, 0x1E, 0x01, 0x02, 0x03 };// не менять
 const uint16_t  defaultPort=80;
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.012"				// Версия прошивки
+#define VERSION			"1.013"				// Версия прошивки
 #define VER_SAVE		131					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -241,7 +241,7 @@ const uint16_t  defaultPort=80;
 #define MAX_WEATHER       (50*100)       // Максимальная температура подачи при погодозависимости
 #define HYSTERESIS_RHEAD  20             // Гистерезис работы дополнительного тена отопления (вычитается из целевой) в сотых градуса
 #define HYSTERESIS_RBOILER 30            // Гистерезис работы дополнительного тена ГВС догрева (вычитается из целевой) в сотых градуса
-#define HYSTERESIS_BoilerTogetherHeatSt 350 // Гистерезис совместного нагрева бойлера с отоплением в сотых градуса
+#define HYSTERESIS_BoilerTogetherHeatSt 500 // Гистерезис совместного нагрева бойлера с отоплением в сотых градуса
 #define HYSTERESIS_BoilerTogetherHeatEn 200 // Гистерезис совместного нагрева бойлера с отоплением в сотых градуса
 #define HYSTERESIS_BoilerAddHeat      100 // Гистерезис нагрева бойлера до температуры догрева, в сотых градуса
 #define SALLMONELA_DAY    3              // День когда включается алгоритм обеззараживания воды (Понедельник 1 воскресенье 7)
@@ -805,7 +805,8 @@ const char *option_DELAY_BOILER_SW    = {"DLBSW"};    			// Пауза (сек) 
 const char *option_DELAY_BOILER_OFF   = {"DLBOFF"};   			// Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
 const char *option_SunRegGeo		  = {"SCG"};				// Использовать солнечный коллектор для регенерации геоконтура в простое
 const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура начала регенерации геоконтура с помощью СК, в градусах
-const char *option_SunTDelta		  = {"STD"};				// Дельта температур для включения, сотые градуса, в градусах
+const char *option_SunTDelta		  = {"STD"};				// Дельта температур для включения, сотые градуса
+const char *option_SunGTDelta		  = {"SGD"};				// Дельта температур жидкости для выключения, сотые градуса
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора
