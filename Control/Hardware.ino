@@ -497,7 +497,9 @@ int8_t devRelay::set_Relay(int8_t r)
 	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
 	r = (flags & fR_StatusMask) != 0;
 	if(Relay == r) return OK;                              // Ничего менять не надо выходим
-	// if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
+	#ifdef INVERT_TRV
+	 if (strcmp(name,"RTRV")==0) r=!r;                     // Инвертировать 4-x ходовой если выбрана эта опция  #define INVERT_TRV
+	#endif 
 #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
 	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
 	{
