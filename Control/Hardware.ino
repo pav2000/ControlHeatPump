@@ -496,9 +496,9 @@ int8_t devRelay::set_Relay(int8_t r)
 	}
 	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
 	r = (flags & fR_StatusMask) != 0;
-	if(Relay == r) return OK;                              // Ничего менять не надо выходим
+	if(Relay == r) return OK;          // Ничего менять не надо выходим
 	#ifdef INVERT_TRV
-	 if (number==RTRV) r=!r;                     // Инвертировать 4-x ходовой если выбрана эта опция  #define INVERT_TRV
+	 if (number==RTRV) r=!r;           // Инвертировать 4-x ходовой если выбрана эта опция  #define INVERT_TRV
 	#endif 
 #ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
 	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
@@ -537,7 +537,11 @@ int8_t devRelay::set_Relay(int8_t r)
 	delay(RELAY_WAIT_SWITCH);
 	if(tasks_suspended) xTaskResumeAll();
 #endif
-	Relay = r;
+#ifdef INVERT_TRV // При инвертирование состяние записывается не инвертированным (т.к.к есть проверки типа if(dRelay[RTRV].get_Relay())), Relay=TRUE это ВСЕГДА охлажние, а вот выход (реле) может быть при этом инвертированным 
+	 if (number==RTRV) Relay=!r; else  Relay = r; 
+#else
+     Relay = r;
+#endif
 	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 	return OK;
 }
