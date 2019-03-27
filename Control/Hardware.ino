@@ -466,24 +466,26 @@ void sensorFrequency::set_minValue(float f)
 // ВНИМАНИЕ: По умолчанию (не определен RELAY_INVERT) выход инвертируется - Влючение реле (Relay=true) соответствует НИЗКИЙ уровень на выходе МК
 void devRelay::initRelay(int sensor)
 {
-   boolean temp;                   // промежуточное состояние реле                	
-   Relay=false;                    // Состояние реле - выключено
-   temp= Relay;
    flags=0x00;
    number = sensor;
    testMode=NORMAL;                // Значение режима тестирования
    flags=0x01;                     // наличие датчика в текушей конфигурации (отстатки прошлого, реле сейчас есть всегда)  флаги  0 - наличие датчика,  1- режим теста
    pin=pinsRelay[sensor];  
    pinMode(pin, OUTPUT);           // Настроить ножку на выход
-   
-   #ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
-      temp=!temp;
-   #endif   
-   #ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
-	 if (number==RTRV) temp=!temp; 
-   #endif    
-   
-   digitalWriteDirect(pin, temp);  // Установить значение
+   Relay=false;                    // Состояние реле - выключено
+#ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
+	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number != RTRV);  // Установить значение
+	#else
+   	   digitalWriteDirect(pin, true);  // Установить значение
+	#endif
+#else
+	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number == RTRV);  // Установить значение
+	#else
+   	   digitalWriteDirect(pin, false);  // Установить значение
+	#endif
+#endif
    note=(char*)noteRelay[sensor];  // присвоить описание реле
    name=(char*)nameRelay[sensor];  // присвоить имя реле
 }
@@ -493,10 +495,7 @@ void devRelay::initRelay(int sensor)
 // Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
-	boolean temp;                   // промежуточное состояние реле   
-	if(!(flags & (1 << fPresent))) {
-		return ERR_DEVICE;
-	}  // Реле не установлено  и пытаемся его включить
+	if(!(flags & (1 << fPresent))) return ERR_DEVICE;  // Реле не установлено  и пытаемся его включить
 	if(r == 0) r = -fR_StatusMain;
 	else if(r == fR_StatusAllOff) {
 		flags &= ~fR_StatusMask;
@@ -504,35 +503,23 @@ int8_t devRelay::set_Relay(int8_t r)
 	}
 	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
 	r = (flags & fR_StatusMask) != 0;
-	if(Relay == r) return OK;        // Ничего менять не надо выходим
-	temp=r;
-    #ifndef RELAY_INVERT             // Нет инвертирования реле - Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
-      temp=!temp;
-    #endif
-	#ifdef RTRV_INVERT               // Признак инвертирования 4х ходового 
-	 if (number==RTRV) temp=!temp;   // Инвертировать 4-x ходовой если выбрана эта опция  #define RTRV_INVERT
-	#endif 
-	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-	{
-	case NORMAL:
-		digitalWriteDirect(pin, temp);
-		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-	case SAFE_TEST:
-		break;//  Ничего не включаем
-	case TEST:
-		if(number != RCOMP) digitalWriteDirect(pin, temp);
-		break;//  Включаем все кроме компрессора
-	case HARD_TEST:
-		digitalWriteDirect(pin, temp);
-		break;//  Все включаем и компрессор тоже
+	if(Relay == r) return OK;   // Ничего менять не надо выходим
+    Relay = r;                  // Все удачно, сохранить
+	if(testMode == NORMAL || testMode == HARD_TEST || (testMode == TEST && number != RCOMP)) {
+#ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
+		r = !r;
+#endif
+#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+		if(number == RTRV) r = !r;
+#endif
+		digitalWriteDirect(pin, r);
 	}
+	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 #ifdef RELAY_WAIT_SWITCH
 	uint8_t tasks_suspended = TaskSuspendAll();
 	delay(RELAY_WAIT_SWITCH);
 	if(tasks_suspended) xTaskResumeAll();
 #endif
-    Relay = r;                     // Все удачно, сохранить
-	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 	return OK;
 }
 
