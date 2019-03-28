@@ -514,12 +514,12 @@ int8_t devRelay::set_Relay(int8_t r)
 #endif
 		digitalWriteDirect(pin, r);
 	}
-	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 #ifdef RELAY_WAIT_SWITCH
 	uint8_t tasks_suspended = TaskSuspendAll();
 	delay(RELAY_WAIT_SWITCH);
 	if(tasks_suspended) xTaskResumeAll();
 #endif
+	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 	return OK;
 }
 
