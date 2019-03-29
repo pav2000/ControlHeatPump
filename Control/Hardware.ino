@@ -461,22 +461,31 @@ void sensorFrequency::set_minValue(float f)
 
 // ------------------------------------------------------------------------------------------
 // Исполнительное устройство РЕЛЕ (есть 2 состяния 0 и 1) --------------------------------------
-// Реле активный уровень (включения) НИЗКИЙ!!!
+// Relay = true - это означает включение исполнительного механизама. 
+// При этом реальный выход и состояние (физическое реле) определяется дефайнами RELAY_INVERT и RTRV_INVERT
+// ВНИМАНИЕ: По умолчанию (не определен RELAY_INVERT) выход инвертируется - Влючение реле (Relay=true) соответствует НИЗКИЙ уровень на выходе МК
 void devRelay::initRelay(int sensor)
 {
-   Relay=false;                    // Состояние реле - выключено
    flags=0x00;
    number = sensor;
    testMode=NORMAL;                // Значение режима тестирования
-   // флаги  0 - наличие датчика,  1- режим теста
-   flags=0x01;                     // наличие датчика в текушей конфигурации (отстатки прошлого, реле сейчас есть всегда)
+   flags=0x01;                     // наличие датчика в текушей конфигурации (отстатки прошлого, реле сейчас есть всегда)  флаги  0 - наличие датчика,  1- режим теста
    pin=pinsRelay[sensor];  
    pinMode(pin, OUTPUT);           // Настроить ножку на выход
-   #ifdef RELAY_INVERT // признак инвертирования реле
-      digitalWriteDirect(pin, Relay); 
-   #else
-      digitalWriteDirect(pin, !Relay);// выключить реле
-   #endif
+   Relay=false;                    // Состояние реле - выключено
+#ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
+	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number != RTRV);  // Установить значение
+	#else
+   	   digitalWriteDirect(pin, true);  // Установить значение
+	#endif
+#else
+	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number == RTRV);  // Установить значение
+	#else
+   	   digitalWriteDirect(pin, false);  // Установить значение
+	#endif
+#endif
    note=(char*)noteRelay[sensor];  // присвоить описание реле
    name=(char*)nameRelay[sensor];  // присвоить имя реле
 }
@@ -486,9 +495,7 @@ void devRelay::initRelay(int sensor)
 // Если состояния совпадают то ничего не делаем, 0/-1 - выкл основной алгоритм, fR_Status* - включить, -fR_Status* - выключить)
 int8_t devRelay::set_Relay(int8_t r)
 {
-	if(!(flags & (1 << fPresent))) {
-		return ERR_DEVICE;
-	}  // Реле не установлено  и пытаемся его включить
+	if(!(flags & (1 << fPresent))) return ERR_DEVICE;  // Реле не установлено  и пытаемся его включить
 	if(r == 0) r = -fR_StatusMain;
 	else if(r == fR_StatusAllOff) {
 		flags &= ~fR_StatusMask;
@@ -496,46 +503,22 @@ int8_t devRelay::set_Relay(int8_t r)
 	}
 	flags = (flags & ~(1 << abs(r))) | ((r > 0) << abs(r));
 	r = (flags & fR_StatusMask) != 0;
-	if(Relay == r) return OK;                              // Ничего менять не надо выходим
-	// if (strcmp(name,"RTRV")==0) r=!r;                                                  // Инвертировать 4-x ходовой
-#ifdef RELAY_INVERT                                                                   // инвертирование реле выходов реле
-	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-	{
-	case NORMAL:
-		digitalWriteDirect(pin, r);
-		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-	case SAFE_TEST:
-		break;//  Ничего не включаем
-	case TEST:
-		if(number != RCOMP) digitalWriteDirect(pin, r);
-		break;//  Включаем все кроме компрессора
-	case HARD_TEST:
-		digitalWriteDirect(pin, r);
-		break;//  Все включаем и компрессор тоже
-	}
-#else                                                                                // НЕ инвертирование реле выходов реле (так было раньше)
-	switch(testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-	{
-	case NORMAL:
-		digitalWriteDirect(pin, !r);
-		break; //  Режим работа не тест, все включаем ИНВЕРТИРУЕМ для того что бы true соответсвовал включенному реле (зависит от схемы реле)
-	case SAFE_TEST:
-		break; //  Ничего не включаем
-	case TEST:
-		if(number != RCOMP) digitalWriteDirect(pin, !r);
-		break; //  Включаем все кроме компрессора
-	case HARD_TEST:
-		digitalWriteDirect(pin, !r);
-		break; //  Все включаем и компрессор тоже
-	}
-
+	if(Relay == r) return OK;   // Ничего менять не надо выходим
+    Relay = r;                  // Все удачно, сохранить
+	if(testMode == NORMAL || testMode == HARD_TEST || (testMode == TEST && number != RCOMP)) {
+#ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
+		r = !r;
 #endif
+#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
+		if(number == RTRV) r = !r;
+#endif
+		digitalWriteDirect(pin, r);
+	}
 #ifdef RELAY_WAIT_SWITCH
 	uint8_t tasks_suspended = TaskSuspendAll();
 	delay(RELAY_WAIT_SWITCH);
 	if(tasks_suspended) xTaskResumeAll();
 #endif
-	Relay = r;
 	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 	return OK;
 }

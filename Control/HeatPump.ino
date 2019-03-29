@@ -2351,7 +2351,7 @@ MODE_COMP HeatPump::UpdateCool()
 
 	if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&((abs(FEED-RET)>Prof.Cool.dt)&&is_compressor_on()))   {set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае
 #ifdef RTRV
-	if ((!dRelay[RTRV].get_Relay())&&is_compressor_on())  dRelay[RTRV].set_ON();                                        // Охлаждение Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
+	if ((!dRelay[RTRV].get_Relay())&&is_compressor_on())  dRelay[RTRV].set_ON();                        // Охлаждение Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
 #endif
 	Status.ret=pNone;                                                                                   // Сбросить состояние пида
 	t1 = GETBIT(Prof.Cool.flags,fTarget) ? RET : sTemp[TIN].get_Temp(); // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
