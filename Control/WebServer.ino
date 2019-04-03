@@ -444,7 +444,8 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"|ST>");
 			TimeIntervalToStr(HP.get_uptime(),strReturn);
 			strcat(strReturn,"|SC>");
-			if(HP.get_command_completed()) TimeIntervalToStr(rtcSAM3X8.unixtime() - HP.get_command_completed(), strReturn, 1);
+			uint32_t t = HP.get_command_completed();
+			if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
 			else strcat(strReturn,"-");
 			strcat(strReturn,"|SI>");
 			_itoa(100-HP.CPU_IDLE,strReturn);
