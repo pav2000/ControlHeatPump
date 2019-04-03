@@ -152,18 +152,10 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element && element.getAttribute('type') == 'checkbox') {
 										var onoff = values[1] == 1;
 										element.checked = onoff;
-										if(valueid == "get_mqtt-use_ts") {
-											if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
-											if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
-											if((element=document.getElementById('get_mqtt-fc_mqtt'))) element.disabled = onoff;
-											if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
-											toggleclass('thingspeakon', onoff);
-											toggleclass('thingspeakoff', !onoff);
-										}
 										var elements = document.getElementsByName(valueid + "-hide");
-										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] == 1 ? "inline" : "none");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (onoff ? "inline" : "none");
 										var elements = document.getElementsByName(valueid + "-unhide");
-										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (values[1] != 1 ? "inline" : "none");
+										for(var j = 0; j < elements.length; j++) elements[j].style = "display:" + (!onoff ? "inline" : "none");
 										continue;
 									} 
 									type = /\([a-z0-9_]+\)/i.test(values[0]) ? "values" : "str";
