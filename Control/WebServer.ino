@@ -433,112 +433,6 @@ void parserGET(uint8_t thread, int8_t )
 			break;   // выход из обработки запроса
 		}
 		// 1. Функции без параметра
-		if (strcmp(str,"TEST")==0)   // Команда TEST
-		{
-			_itoa(random(-50,50),strReturn);
-			ADD_WEBDELIM(strReturn);
-			continue;
-		}
-
-		if (strncmp(str,"TASK_LIST", 9)==0)  // Функция получение списка задач и статистики
-		{
-			str += 9;
-			if (strcmp(str,"_RST")==0)  // Функция сброс статистики по задачам
-			{
-#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-				vTaskResetRunTimeCounters();
-#else
-				strcat(strReturn,NO_SUPPORT);
-#endif
-			} else {
-#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
-				//strcat(strReturn,cStrEnd);
-				vTaskList(strReturn + m_strlen(strReturn));
-#else
-				strcat(strReturn,NO_SUPPORT);
-#endif
-			}
-			ADD_WEBDELIM(strReturn);  continue;
-		}
-
-		if(strncmp(str, "RESET_", 6)==0) {
-			str += 6;
-			if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
-				HP.Reset_TempErrors();
-			} else if (strcmp(str,"STAT")==0)   // RESET_STAT, Команда очистки статистики (в зависимости от типа)
-			{
-#ifndef I2C_EEPROM_64KB     // Статистика в памяти
-				strcat(strReturn,"Статистика не поддерживается в конфигурации . . .");
-				journal.jprintf("No support statistics (low I2C) . . .\n");
-#else                      // Статистика в ЕЕПРОМ
-				if (HP.get_modWork()==pOFF)
-				{
-					strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .");
-					HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
-				}
-				else strcat(strReturn,"The heat pump must be switched OFF");
-#endif
-			} else if (strcmp(str,"JOURNAL")==0)   // RESET_JOURNAL,  Команда очистки журнала (в зависимости от типа)
-			{
-#ifndef I2C_EEPROM_64KB     // журнал в памяти
-				strcat(strReturn,"Сброс системного журнала в RAM . . .");
-				journal.Clear();       // Послать команду на очистку журнала в памяти
-				journal.jprintf("Reset system RAM journal . . .\n");
-#else                      // Журнал в ЕЕПРОМ
-				journal.Format(strReturn);
-				//HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
-				strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
-				strcat(strReturn,"OK");
-#endif
-			} else if (strcmp(str,"DUE")==0)   // RESET_DUE, Команда сброса контроллера
-			{
-				strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
-				HP.sendCommand(pRESET);        // Послать команду на сброс
-			} else if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
-			{
-				journal.jprintf("$RESET counter moto hour . . .\n");
-				strcat(strReturn,"Сброс счетчика моточасов за сезон");
-				HP.resetCount(false);
-			} else if (strcmp(str,"ALL_COUNT")==0) // Команда RESET_ALL_COUNT
-			{
-				journal.jprintf("$RESET All counter moto hour . . .\n");
-				strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
-				HP.resetCount(true);  // Полный сброс
-			} else if (strcmp(str,"SETTINGS")==0) // RESET_SETTINGS, Команда сброса настроек HP
-			{
-				if(HP.get_State() == pOFF_HP) {
-					journal.jprintf("$RESET All HP settings . . .\n");
-					uint16_t d = 0;
-					writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
-					HP.sendCommand(pRESET);        // Послать команду на сброс
-					strcat(strReturn, "OK");
-				}
-			}
-			// FC запросы, те которые без параметра ------------------------------
-			else if (strcmp(str,"ErrorFC")==0)  // Функция RESET_ErrorFC
-			{
-				if (!HP.dFC.get_present()) {
-					strcat(strReturn,"Инвертор отсутствует");
-				}
-#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-				else {
-					HP.dFC.reset_errorFC();
-					strcat(strReturn,"Ошибки инвертора сброшены . . .");
-				}
-#endif
-			} else if (strcmp(str,"FC")==0)    // RESET_FC
-			{
-				if (!HP.dFC.get_present()) {
-					strcat(strReturn,"Инвертор отсутствует");
-				} else {
-					HP.dFC.reset_FC();                             // подать команду на сброс
-					strcat(strReturn,"Cброс преобразователя частоты . . .");
-				}
-
-			} else goto x_FunctionNotFound;
-			ADD_WEBDELIM(strReturn); continue;
-		}
-
 		if (strcmp(str,"get_status")==0) // Команда get_status Получить состояние ТН - основные параметры ТН
 		{
 			HP.get_datetime((char*)time_TIME,strReturn); strcat(strReturn,"|SD>");
@@ -737,6 +631,7 @@ void parserGET(uint8_t thread, int8_t )
 			web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_modeHouse() );
 			ADD_WEBDELIM(strReturn) ; continue;
 		} // strcmp(str,"get_modeHP")==0)
+
 		if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
 		{
 #ifdef RPUMPBH
@@ -902,6 +797,112 @@ void parserGET(uint8_t thread, int8_t )
 					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
 				}
 			}
+			ADD_WEBDELIM(strReturn); continue;
+		}
+
+		if(strcmp(str,"TEST")==0)   // Команда TEST
+		{
+			_itoa(random(-50,50),strReturn);
+			ADD_WEBDELIM(strReturn);
+			continue;
+		}
+
+		if(strncmp(str,"TASK_LIST", 9)==0)  // Функция получение списка задач и статистики
+		{
+			str += 9;
+			if (strcmp(str,"_RST")==0)  // Функция сброс статистики по задачам
+			{
+#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+				vTaskResetRunTimeCounters();
+#else
+				strcat(strReturn,NO_SUPPORT);
+#endif
+			} else {
+#ifdef STAT_FREE_RTOS   // определена в utility/FreeRTOSConfig.h
+				//strcat(strReturn,cStrEnd);
+				vTaskList(strReturn + m_strlen(strReturn));
+#else
+				strcat(strReturn,NO_SUPPORT);
+#endif
+			}
+			ADD_WEBDELIM(strReturn);  continue;
+		}
+
+		if(strncmp(str, "RESET_", 6)==0) {
+			str += 6;
+			if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
+				HP.Reset_TempErrors();
+			} else if (strcmp(str,"STAT")==0)   // RESET_STAT, Команда очистки статистики (в зависимости от типа)
+			{
+#ifndef I2C_EEPROM_64KB     // Статистика в памяти
+				strcat(strReturn,"Статистика не поддерживается в конфигурации . . .");
+				journal.jprintf("No support statistics (low I2C) . . .\n");
+#else                      // Статистика в ЕЕПРОМ
+				if (HP.get_modWork()==pOFF)
+				{
+					strcat(strReturn,"Форматирование I2C статистики, ожидайте 10 сек . . .");
+					HP.sendCommand(pSFORMAT);        // Послать команду форматирование статитсики
+				}
+				else strcat(strReturn,"The heat pump must be switched OFF");
+#endif
+			} else if (strcmp(str,"JOURNAL")==0)   // RESET_JOURNAL,  Команда очистки журнала (в зависимости от типа)
+			{
+#ifndef I2C_EEPROM_64KB     // журнал в памяти
+				strcat(strReturn,"Сброс системного журнала в RAM . . .");
+				journal.Clear();       // Послать команду на очистку журнала в памяти
+				journal.jprintf("Reset system RAM journal . . .\n");
+#else                      // Журнал в ЕЕПРОМ
+				journal.Format(strReturn);
+				//HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
+				strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
+				strcat(strReturn,"OK");
+#endif
+			} else if (strcmp(str,"DUE")==0)   // RESET_DUE, Команда сброса контроллера
+			{
+				strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
+				HP.sendCommand(pRESET);        // Послать команду на сброс
+			} else if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
+			{
+				journal.jprintf("$RESET counter moto hour . . .\n");
+				strcat(strReturn,"Сброс счетчика моточасов за сезон");
+				HP.resetCount(false);
+			} else if (strcmp(str,"ALL_COUNT")==0) // Команда RESET_ALL_COUNT
+			{
+				journal.jprintf("$RESET All counter moto hour . . .\n");
+				strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
+				HP.resetCount(true);  // Полный сброс
+			} else if (strcmp(str,"SETTINGS")==0) // RESET_SETTINGS, Команда сброса настроек HP
+			{
+				if(HP.get_State() == pOFF_HP) {
+					journal.jprintf("$RESET All HP settings . . .\n");
+					uint16_t d = 0;
+					writeEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)&d, sizeof(d));
+					HP.sendCommand(pRESET);        // Послать команду на сброс
+					strcat(strReturn, "OK");
+				}
+			}
+			// FC запросы, те которые без параметра ------------------------------
+			else if (strcmp(str,"ErrorFC")==0)  // Функция RESET_ErrorFC
+			{
+				if (!HP.dFC.get_present()) {
+					strcat(strReturn,"Инвертор отсутствует");
+				}
+#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
+				else {
+					HP.dFC.reset_errorFC();
+					strcat(strReturn,"Ошибки инвертора сброшены . . .");
+				}
+#endif
+			} else if (strcmp(str,"FC")==0)    // RESET_FC
+			{
+				if (!HP.dFC.get_present()) {
+					strcat(strReturn,"Инвертор отсутствует");
+				} else {
+					HP.dFC.reset_FC();                             // подать команду на сброс
+					strcat(strReturn,"Cброс преобразователя частоты . . .");
+				}
+
+			} else goto x_FunctionNotFound;
 			ADD_WEBDELIM(strReturn); continue;
 		}
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.013";
+var VER_WEB = "1.014";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -144,6 +144,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else {
 									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
 										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
+									}
+									if(valueid == "get_schdlr-on") {
+										if((element = document.getElementById("SCH-PR"))) element.innerHTML = values[1] == '1' ? "РАСПИСАНИЕ" : "ПРОФИЛЬ";
 									}
 									element = document.getElementById(valueid);
 									if(element && element.getAttribute('type') == 'checkbox') {
@@ -510,7 +513,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'values') {
 									var valuevar = values[1].toLowerCase().replace(/[^\w\d]/g, "");
-									if(valueid != null && valueid != "" && values[1] != null) {
+									if(valueid) {
 										if(valueid == "get_message-sms_ret") {
 											if(valuevar == "waitresponse") {
 												setTimeout(loadParam('get_Message(SMS_RET)'), 3000);

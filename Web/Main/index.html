@@ -7,7 +7,7 @@
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 window.onload = function() {
-	updateParam("get_MODE,get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(On)");
+	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN)");
 };
 </script>	
 </head>
@@ -22,7 +22,7 @@ window.onload = function() {
 		<dl>
 			<dt>Тепловой насос</dt><dd><span id="get_work">-</span></dd>
 			<dt>Режим работы</dt><dd><span id="get_mode2">-</span></dd>
-			<dt>Работа по расписанию</dt><dd><span id="get_schdlr-on-ONOFF">-</span></dd>
+			<dt>Расписание</dt><dd><span id="get_schdlr-an">-</span></dd>
 			<dt>Показатели</dt><dd><span id="get_errcode">-</span></dd>
 			<dd style="width:100%;"><span id="get_error">-</span></dd>
 		</dl>
@@ -42,7 +42,7 @@ window.onload = function() {
 		<dl>
 			<dt>Подача</dt><dd><span id="get_temp-tconoutg">-</span>&deg;</dd>
 			<dt>Обратка</dt><dd><span id="get_temp-tconing">-</span>&deg;</dd>
-			<dt><nobr>Насос СО</dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
+			<dt><nobr>Насос СО</nobr></dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
 		</dl>
 		<dl>
 			<dt>Бойлер</dt><dd><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');" ></dd>
