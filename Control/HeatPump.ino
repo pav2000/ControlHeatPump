@@ -1352,7 +1352,8 @@ void HeatPump::getTargetTempStr(char *rstr)
  boolean HeatPump::boilerAddHeat()
  {
 	 int16_t T = sTemp[TBOILER].get_Temp();
-#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
+	 if (get_State()!=pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только рабоатет ТН, в противном случае выкл
+//#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
 	 if ((GETBIT(Prof.SaveON.flags,fBoilerON))&&(GETBIT(Prof.Boiler.flags,fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
 	 {
 		 if((rtcSAM3X8.get_day_of_week()==SALLMONELA_DAY)&&(rtcSAM3X8.get_hours()==SALLMONELA_HOUR)&&(rtcSAM3X8.get_minutes()<=2)&&(!onSallmonela)) {  // Надо начитать процесс обеззараживания
@@ -1380,7 +1381,7 @@ void HeatPump::getTargetTempStr(char *rstr)
 			 }
 		 }
 	 } else  if (onSallmonela)  { onSallmonela=false;  startSallmonela=0;  journal.jprintf(" Off salmonella\n");  } // если сальмонелу отключили на ходу выключаем и идем дальше по алгоритму
-#endif	 
+//#endif	 
 
 	 if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
 	 {
@@ -1889,9 +1890,9 @@ int8_t HeatPump::StopWait(boolean stop)
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
   #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-  if(boilerAddHeat()) { // Если используется тэн
+ // if(boilerAddHeat()) { // Если используется тэн
      dRelay[RBOILER].set_OFF();  // выключить тен бойлера
-  }
+//  }
   #endif
 
   #ifdef RHEAT  // управление  ТЭНом отопления
