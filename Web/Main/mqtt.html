@@ -10,6 +10,18 @@
 		loadParam("get_MQTT(USE_TS),get_MQTT(USE_MQTT),get_MQTT(ID_NARMON),get_MQTT(BIG_MQTT),get_MQTT(SDM_MQTT),get_MQTT(FC_MQTT),get_MQTT(COP_MQTT),get_MQTT(TIME_MQTT),get_MQTT(ADR_MQTT),get_MQTT(PORT_MQTT),get_MQTT(IP_MQTT),get_MQTT(PASSWORD_MQTT),get_MQTT(LOGIN_MQTT),get_MQTT(ID_MQTT),get_MQTT(BIG_NARMON),get_MQTT(ADR_NARMON),get_MQTT(IP_NARMON),get_Network(MAC),get_MQTT(USE_NARMON),get_MQTT(PORT_NARMON),get_MQTT(LOGIN_NARMON),get_MQTT(PASSWORD_NARMON)");
 		updateParam("get_MQTT(IP_MQTT),get_MQTT(IP_NARMON)");
 	}; 
+	function loadParam_after(paramid) {
+		if(paramid.indexOf("MQTT(USE_TS")!=-1) {
+			if((element=document.getElementById('get_mqtt-adr_mqtt'))) if(element.placeholder == "E02") document.getElementById('main_header').innerHTML = "Выключен в конфигурации!";
+			var onoff = document.getElementById('get_mqtt-use_ts').checked;
+			if((element=document.getElementById('get_mqtt-cop_mqtt'))) element.disabled = onoff;
+			if((element=document.getElementById('get_mqtt-big_mqtt'))) element.disabled = onoff;
+			if((element=document.getElementById('get_mqtt-fc_mqtt'))) element.disabled = onoff;
+			if((element=document.getElementById('get_mqtt-sdm_mqtt'))) element.disabled = onoff;
+			toggleclass('thingspeakon', onoff);
+			toggleclass('thingspeakoff', !onoff);
+		}
+	}
 	</script>
 </head>
 <body class="mqtt">
@@ -17,7 +29,7 @@
 <div class="content">
 	<h1>MQTT <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 	<div class="row1">
-		<h2>Настройка клиента MQTT</h2>
+		<h2 id="main_header">Настройка клиента MQTT</h2>
 		<table>
 		<thead>
 		<tr>

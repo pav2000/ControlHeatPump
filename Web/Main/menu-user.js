@@ -8,7 +8,7 @@ document.write('\
     </div><span>HP ON</span></div>\
 <div class="menu-profiles">\
 	<span id="get_mode" style="color: red">-</span><br>\
-ПРОФИЛЬ<br>\
+<span id="SCH-PR"></span><br>\
     <select id="get_listprofile" onchange="setParam(\'get_listProfile\',\'get_listprofile\');"></select>\
 </div>');
 
@@ -30,4 +30,4 @@ if(!pathmath) {var activeli = document.body.className;} else {var activeli = pat
 var elements = document.getElementsByClassName(activeli);
 var countElements = elements.length;
 for(i=0;i<countElements;i++){document.getElementsByClassName(activeli)[i].classList.add("active");}
-updateParam("get_status,get_WORK,get_MODE,get_listProfile");
+updateParam("get_status,get_WORK,get_MODE,get_listProfile,get_SCHDLR(On)");

@@ -27,6 +27,7 @@ const char WEB_SCH_Active[] = "Active";
 const char WEB_SCH_Names[] = "lstNames";
 const char WEB_SCH_Name[] = "Name";
 const char WEB_SCH_Calendar[] = "Calendar";
+const char WEB_SCH_ActiveName[] = "AN";
 
 #define ifparam(s) if(strncmp(param, s, sizeof(s)-1) == 0)
 
@@ -133,6 +134,8 @@ void Scheduler::web_get_param(char *param, char *result)
 				if(ptr < max) strcat(result, ";");
 			}
 		}
+	} else ifparam(WEB_SCH_ActiveName) { // get_SCHDLR(AN)
+		if(sch_data.Flags & (1<<bScheduler_active)) strcat(result, sch_data.Names[sch_data.Active]); else strcat(result, "-");
 	}
 //#if DEBUG
 //	journal.printf("WEB_GET: %s=%s\n", param, result);
