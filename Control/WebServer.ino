@@ -686,12 +686,12 @@ void parserGET(uint8_t thread, int8_t )
 					goto xSaveStats;
 				}
 			} else {
-				uint16_t len = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-				if(len > 0) {
-					uint16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
-					if(len2 > 0) len += len2; else len = len2;
+				e = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
+				if(e > 0) {
+					int16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
+					if(len2 > 0) e += len2; else e = len2;
 				}
-				_itoa(len, strReturn); // сохранение настроек ВСЕХ!
+				_itoa(e, strReturn); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
 			}
 			ADD_WEBDELIM(strReturn);

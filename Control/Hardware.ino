@@ -534,35 +534,35 @@ void devEEV::initEEV()
   EEV=-1;                               // шаговик в непонятном положении
   setZero=false;                        // Признак процесса обнуления (шаговик ищет 0)
   err=OK;                               // Ошибок нет
-  Resume(); 			              // Обнулить рабочие переменные
+  Resume(); 			                // Обнулить рабочие переменные
   testMode=NORMAL;                      // Значение режима тестирования
 	
 // Устновка настроек по умолчанию (структара данных _data)
- _data.tOverheat = DEFAULT_OVERHEAT;                  // Перегрев ЦЕЛЬ (сотые градуса)
+ _data.tOverheat = DEFAULT_OVERHEAT;                 // Перегрев ЦЕЛЬ (сотые градуса)
  _data.pid_time = DEFAULT_EEV_TIME;                  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
- _data.pid.Kp =  -DEFAULT_EEV_Kp * 10;                       // ПИД Коэф пропорц, в тысячных
- _data.pid.Ki =  -DEFAULT_EEV_Ki * 10;                       // ПИД Коэф интегр.,  в тысячных
- _data.pid.Kd =  -DEFAULT_EEV_Kd * 10;                       // ПИД Коэф дифф., в тысячных
- _data.Correction = 0;                                 // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
+ _data.pid.Kp =  -DEFAULT_EEV_Kp * 10;               // ПИД Коэф пропорц, в тысячных
+ _data.pid.Ki =  -DEFAULT_EEV_Ki * 10;               // ПИД Коэф интегр.,  в тысячных
+ _data.pid.Kd =  -DEFAULT_EEV_Kd * 10;               // ПИД Коэф дифф., в тысячных
+ _data.Correction = 0;                               // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
  _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
- _data.typeFreon = DEFAULT_FREON_TYPE;                // Тип фреона
- _data.ruleEEV = DEFAULT_RULE_EEV;                    // правило работы ЭРВ
-#ifdef DEF_OHCor_OverHeatStart							// Корректировка перегрева
- _data.OHCor_Delay = DEF_OHCor_Delay;			     	// Задержка после старта компрессора, сек
- _data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		    // Температура нагнетания - конденсации при 30С и 0 конденсации
- _data.OverheatMin = DEF_OHCor_OverHeatMin;		// Минимальный перегрев (сотые градуса)
- _data.OverheatMax = DEF_OHCor_OverHeatMax;		// Максимальный перегрев (сотые градуса)
- _data.OverHeatStart = DEF_OHCor_OverHeatStart; 	// Начальный перегрев (сотые градуса)
+ _data.typeFreon = DEFAULT_FREON_TYPE;               // Тип фреона
+ _data.ruleEEV = DEFAULT_RULE_EEV;                   // правило работы ЭРВ
+#ifdef DEF_OHCor_OverHeatStart						 // Корректировка перегрева
+ _data.OHCor_Delay = DEF_OHCor_Delay;			     // Задержка после старта компрессора, сек
+ _data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		 // Температура нагнетания - конденсации при 30С и 0 конденсации
+ _data.OverheatMin = DEF_OHCor_OverHeatMin;		     // Минимальный перегрев (сотые градуса)
+ _data.OverheatMax = DEF_OHCor_OverHeatMax;		     // Максимальный перегрев (сотые градуса)
+ _data.OverHeatStart = DEF_OHCor_OverHeatStart; 	 // Начальный перегрев (сотые градуса)
  _data.OHCor_Period = DEF_OHCor_Period;
 #endif
- _data.speedEEV = DEFAULT_SPEED_EEV;                  // Скорость шагового двигателя ЭРВ (импульсы в сек.)
- _data.preStartPos = DEFAULT_PRE_START_POS;           // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
- _data.StartPos = DEFAULT_START_POS;                  // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
- _data.minSteps = EEV_CLOSE_STEP;                   // Минимальное число шагов открытия ЭРВ
- _data.maxSteps=EEV_STEPS;                           // Максимальное число шагов ЭРВ (диапазон)
+ _data.speedEEV = DEFAULT_SPEED_EEV;                 // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+ _data.preStartPos = DEFAULT_PRE_START_POS;          // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
+ _data.StartPos = DEFAULT_START_POS;                 // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+ _data.minSteps = EEV_CLOSE_STEP;                    // Минимальное число шагов открытия ЭРВ
+ _data.maxSteps = EEV_STEPS;                         // Максимальное число шагов ЭРВ (диапазон)
  _data.trend_threshold = 3;
- _data.tOverheatTCOMP = 1000;
- _data.tOverheatTCOMP_delta = 400;
+ _data.tOverheatTCOMP = 850;
+ _data.tOverheatTCOMP_delta = 300;
  _data.PosAtHighTemp = 10;
  _data.pid2_delta = 070;
 
