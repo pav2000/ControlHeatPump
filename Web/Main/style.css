@@ -53,7 +53,6 @@ div.remtemp table table th {height:45px!important;}
 .row1 dl:nth-child(1){float:left;width:89%;padding:3% 5%;background: rgba(255, 255, 255, 0.6);min-height:170px;line-height:38px;margin-left:0.5%;}
 .row1 dl:nth-child(1) dt {font-size:1.5em;padding:0;width:30%;}
 .row1 dl:nth-child(1) dd {font-size:1.5em;padding:0;width:70%;}
-.row1 dl:nth-child(2){width:1%;min-height:190px;}
 .row2 dd, .row2 dt{float:left;width:35%;margin:10;line-height:20px;padding: 0; text-align:left;height: 15px;}
 .row2 dd {font-size:1.5em} dt{color:#575A5B}
 .row2 dl {float:left; margin: 10px 0.5%; padding:120px 0 10px 0; list-style:none; width:24%; min-height:100px; background: rgba(255, 255, 255, 0.6) center 15px no-repeat}
