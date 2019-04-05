@@ -147,7 +147,14 @@ void web_server(uint8_t thread)
 					case HTTP_GET:     // чтение файла
 					{
 						// Для обычного пользователя подменить файл меню, для сокращения функционала
-						if((GETBIT(Socket[thread].flags, fUser)) && (strcmp(Socket[thread].inPtr, "menu.js") == 0)) strcpy(Socket[thread].inPtr, "menu-user.js");
+						if(GETBIT(Socket[thread].flags, fUser)) {
+							if(strcmp(Socket[thread].inPtr, "menu.js") == 0) strcpy(Socket[thread].inPtr, "menu-user.js");
+							else if(strstr(Socket[thread].inPtr, ".html")) {
+								if(!(strcmp(Socket[thread].inPtr, "index.html")
+									|| strcmp(Socket[thread].inPtr, "plan.html")
+									|| strcmp(Socket[thread].inPtr, "about.html"))) goto xUNAUTHORIZED;
+							}
+						}
 						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len + 1);
 						readFileSD(Socket[thread].inPtr, thread);
 						break;
@@ -177,7 +184,7 @@ void web_server(uint8_t thread)
 						break;
 					}
 					case UNAUTHORIZED: {
-						journal.jprintf("$UNAUTHORIZED\n");
+xUNAUTHORIZED:			journal.jprintf("$UNAUTHORIZED\n");
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
@@ -788,11 +795,22 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 		}
 
-		if(strcmp(str, "get_TrgT") == 0) { // целевая температура
+		if(strncmp(str + 4, "TrgT", 4) == 0) { // целевая температура
+			if(*str == 's') {	// "set_TrgT"
+				if(HP.get_modeHouse() != pOFF) {
+					if((x = strchr(str, '='))) {
+						x++;
+						HP.setTargetTemp(rd(my_atof(x), 100) - (HP.get_modeHouse() == pCOOL ? HP.get_targetTempCool() : HP.get_targetTempHeat()));
+						*x = '\0';
+						strcat(strReturn, str);
+					}
+				}
+			}
+			// "get_TrgT" -> "x.x / y.y", "get_TrgT1" -> "x.x"
 			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
 			else {
 				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
-				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS) {
+				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '1') {
 					strcat(strReturn, " / ");
 					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
 				}
