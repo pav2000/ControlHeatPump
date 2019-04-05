@@ -1351,8 +1351,8 @@ void HeatPump::getTargetTempStr(char *rstr)
  // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
  boolean HeatPump::boilerAddHeat()
  {
+	 if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только рабоатет ТН, в противном случае выкл
 	 int16_t T = sTemp[TBOILER].get_Temp();
-	 if (get_State()!=pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только рабоатет ТН, в противном случае выкл
 //#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
 	 if ((GETBIT(Prof.SaveON.flags,fBoilerON))&&(GETBIT(Prof.Boiler.flags,fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
 	 {
@@ -3022,7 +3022,6 @@ int8_t HeatPump::runCommand()
 	while(1) {
 		journal.jprintf("Run command: %s\n", get_command_name(command));
 
-		HP.PauseStart = 0;                    // Необходимость начать задачу xHandlePauseStart с начала
 		switch(command)
 		{
 		case pEMPTY:  return true; break;     // 0 Команд нет

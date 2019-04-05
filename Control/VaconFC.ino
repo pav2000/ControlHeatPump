@@ -389,7 +389,6 @@ int8_t devVaconFC::start_FC()
         set_Error(err, name);
     } // генерация ошибки
 #else // DEMO
-    // Боевая часть
     // set_target(FC_START_FC,true);  // Запись в регистр инвертора стартовой частоты  НЕ всегда скорость стартовая - супербойлер
 	if((state & FC_S_FLT)) { // Действующий отказ
 		uint16_t reg = read_0x03_16(FC_ERROR);
@@ -400,9 +399,11 @@ int8_t devVaconFC::start_FC()
 				for(; i < sizeof(FC_NonCriticalFaults); i++) if(FC_NonCriticalFaults[i] == reg) break;
 				if(i < sizeof(FC_NonCriticalFaults)) {
 					if(reset_errorFC()) {
-						if((state & FC_S_FLT)) err = ERR_FC_FAULT; else journal.jprintf("Reseted.\n");
+						if((state & FC_S_FLT)) {
+							if(reset_errorFC() && (state & FC_S_FLT)) err = ERR_FC_FAULT; else journal.jprintf("Reseted(2).\n");
+						} else journal.jprintf("Reseted.\n");
 					}
-					if(err) journal.jprintf(" reset failed!\n");
+					if(err) journal.jprintf("reset failed!\n");
 				} else {
 					journal.jprintf("Critical!\n");
 					err = ERR_FC_FAULT;
@@ -706,9 +707,9 @@ boolean devVaconFC::reset_errorFC()
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
 	if((state & FC_S_FLT)) { // сброс отказа
 		if((err = write_0x06_16(FC_CONTROL, 0)) == OK) {
-			_delay(FC_WRITE_READ);
+			_delay(100);
 			err = write_0x06_16(FC_CONTROL, FC_C_RST);
-			_delay(FC_WRITE_READ);
+			_delay(100);
 		}
 		if(err) journal.jprintf("%s: Error reset fault!\n", name);
 	}
