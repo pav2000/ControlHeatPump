@@ -1351,8 +1351,9 @@ void HeatPump::getTargetTempStr(char *rstr)
  // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
  boolean HeatPump::boilerAddHeat()
  {
+	 if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только рабоатет ТН, в противном случае выкл
 	 int16_t T = sTemp[TBOILER].get_Temp();
-#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
+//#ifdef RBOILER 	// нужно т.к. гистерезис определяется по реле
 	 if ((GETBIT(Prof.SaveON.flags,fBoilerON))&&(GETBIT(Prof.Boiler.flags,fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
 	 {
 		 if((rtcSAM3X8.get_day_of_week()==SALLMONELA_DAY)&&(rtcSAM3X8.get_hours()==SALLMONELA_HOUR)&&(rtcSAM3X8.get_minutes()<=2)&&(!onSallmonela)) {  // Надо начитать процесс обеззараживания
@@ -1380,7 +1381,7 @@ void HeatPump::getTargetTempStr(char *rstr)
 			 }
 		 }
 	 } else  if (onSallmonela)  { onSallmonela=false;  startSallmonela=0;  journal.jprintf(" Off salmonella\n");  } // если сальмонелу отключили на ходу выключаем и идем дальше по алгоритму
-#endif	 
+//#endif	 
 
 	 if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
 	 {
@@ -1889,9 +1890,9 @@ int8_t HeatPump::StopWait(boolean stop)
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
   #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-  if(boilerAddHeat()) { // Если используется тэн
+ // if(boilerAddHeat()) { // Если используется тэн
      dRelay[RBOILER].set_OFF();  // выключить тен бойлера
-  }
+//  }
   #endif
 
   #ifdef RHEAT  // управление  ТЭНом отопления
@@ -3021,7 +3022,6 @@ int8_t HeatPump::runCommand()
 	while(1) {
 		journal.jprintf("Run command: %s\n", get_command_name(command));
 
-		HP.PauseStart = 0;                    // Необходимость начать задачу xHandlePauseStart с начала
 		switch(command)
 		{
 		case pEMPTY:  return true; break;     // 0 Команд нет
@@ -3453,7 +3453,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	// I (t) = I (t — 1) + Ki * e (t);
 	// D (t) = Kd * {e (t) — e (t — 1)};
 	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-
+  
 	if(pid.Ki != 0)// Расчет интегральной составляющей, если она не равна 0
 	{
 		pidw.sum += (int32_t) pid.Ki * errorPid;     // Интегральная составляющая, с накоплением, в СТО ТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 1000)
@@ -3461,7 +3461,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.sum;
-//	if (abs(pidw.sum)>pidw.max) pidw.sum=0; // Сброс интегральной составляющей при достижении максимума
+//	if (abs(pidw.sum)>=pidw.max) pidw.sum=0; // Сброс интегральной составляющей при достижении максимума
 #ifdef DEBUG_PID
 	journal.printf("I:%d,", newVal);
 #endif
@@ -3469,11 +3469,13 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	if(abs(errorPid) < pidw.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pidw.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 #ifdef DEBUG_PID
-	journal.printf("P:%d,", newVal);
+	journal.printf("P:%d,", newVal-pidw.sum);
 #endif
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (pidw.pre_err - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	if ((abs(newVal)>pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг (оптимизация классического ПИДа)
+	if ((abs(newVal)>=pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг (оптимизация классического ПИДа) 100000 Это один шаг
+//    if ((abs(newVal)>=pidw.max-50*1000)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на pidw.max шагов (оптимизация классического ПИДа) Округление (50000 это один шаг)
+
 #ifdef DEBUG_PID
 	journal.printf("D:%d PID:%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
 #endif
