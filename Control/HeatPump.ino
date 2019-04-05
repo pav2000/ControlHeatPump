@@ -3453,7 +3453,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	// I (t) = I (t — 1) + Ki * e (t);
 	// D (t) = Kd * {e (t) — e (t — 1)};
 	// T – период дискретизации(период, с которым вызывается ПИД регулятор).
-
+  
 	if(pid.Ki != 0)// Расчет интегральной составляющей, если она не равна 0
 	{
 		pidw.sum += (int32_t) pid.Ki * errorPid;     // Интегральная составляющая, с накоплением, в СТО ТЫСЯЧНЫХ (градусы 100 и интегральный коэффициент 1000)
@@ -3461,7 +3461,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 		else if(pidw.sum < -pidw.max) pidw.sum = -pidw.max;
 	} else pidw.sum = 0;              // если Кi равен 0 то интегрирование не используем
 	newVal = pidw.sum;
-//	if (abs(pidw.sum)>pidw.max) pidw.sum=0; // Сброс интегральной составляющей при достижении максимума
+//	if (abs(pidw.sum)>=pidw.max) pidw.sum=0; // Сброс интегральной составляющей при достижении максимума
 #ifdef DEBUG_PID
 	journal.printf("I:%d,", newVal);
 #endif
@@ -3469,11 +3469,13 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	if(abs(errorPid) < pidw.Kp_dmin) newVal += (int32_t) abs(errorPid) * pid.Kp * errorPid / pidw.Kp_dmin; // Вблизи уменьшить воздействие
 	else newVal += (int32_t) pid.Kp * errorPid;
 #ifdef DEBUG_PID
-	journal.printf("P:%d,", newVal);
+	journal.printf("P:%d,", newVal-pidw.sum);
 #endif
 	// Дифференцальная составляющая
 	newVal += (int32_t) pid.Kd * (pidw.pre_err - errorPid);// ДЕСЯТИТЫСЯЧНЫЕ Положительная составляющая - ошибка растет (воздействие надо увеличиить)  Отрицательная составляющая - ошибка уменьшается (воздействие надо уменьшить)
-	if ((abs(newVal)>pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг (оптимизация классического ПИДа)
+	if ((abs(newVal)>=pidw.max)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на один шаг (оптимизация классического ПИДа) 100000 Это один шаг
+//    if ((abs(newVal)>=pidw.max-50*1000)&&(pidw.max>0)) pidw.sum=0; // Сброс интегральной составляющей при движении на pidw.max шагов (оптимизация классического ПИДа) Округление (50000 это один шаг)
+
 #ifdef DEBUG_PID
 	journal.printf("D:%d PID:%d\n", pid.Kd * (pidw.pre_err - errorPid), newVal);
 #endif
