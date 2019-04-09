@@ -1129,7 +1129,10 @@ void parserGET(uint8_t thread, int8_t )
 #else
 			strcat(strReturn,"OFF;");
 #endif
-			strcat(strReturn,"VER_SAVE|Версия формата сохраненных данных в I2C памяти|");_itoa(VER_SAVE,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"VER_SAVE|Версия формата сохраненных данных в I2C памяти|");
+			_itoa(VER_SAVE,strReturn);
+			//if(VER_SAVE != HP.Option.ver) { strcat(strReturn," ("); _itoa(HP.Option.ver, strReturn); strcat(strReturn,")"); }
+			strcat(strReturn,";");
 			strcat(strReturn,"DEBUG|Вывод в порт отладочных сообщений|");
 #ifdef DEBUG
 			strcat(strReturn,"ON;");
@@ -2153,7 +2156,7 @@ void parserGET(uint8_t thread, int8_t )
 						{ _itoa(HP.sADC[p].get_zeroPress(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
 						if (strcmp(str,"get_transPress")==0)           // Функция get_transTPress
-						{ _ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); ADD_WEBDELIM(strReturn); continue; }
+						{ _ftoa(strReturn,(float)HP.sADC[p].get_transADC() / 1000, 3); ADD_WEBDELIM(strReturn); continue; }
 
 						if (strcmp(str,"get_pinPress")==0)           // Функция get_pinPress
 						{
@@ -2200,7 +2203,7 @@ void parserGET(uint8_t thread, int8_t )
 
 						if (strcmp(str,"set_transPress")==0)           // Функция set_transPress float
 						{ if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
-						{_ftoa(strReturn,(float)HP.sADC[p].get_transADC(),3); ADD_WEBDELIM(strReturn); continue;}
+						{_ftoa(strReturn,(float)HP.sADC[p].get_transADC() / 1000, 3); ADD_WEBDELIM(strReturn); continue;}
 						else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 						}
 

@@ -170,7 +170,6 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
       last=0;
 #endif
       SETBIT0(flags,fFull);                      // Буфер не полный
-      lastPress=0;                               // последнее считанное давление по умолчанию ноль
  }
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
@@ -178,7 +177,7 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
  {
 
 	 if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
-
+	 int16_t lastPress;
 	 if (testMode!=NORMAL) lastPress=cfg.testPress;        // В режиме теста
 	 else                                              // Чтение датчика
 	 {
@@ -207,44 +206,34 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 			 //if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
 		 }
 #endif
-		 lastPress=(int)((float)lastADC*(cfg.transADC))-cfg.zeroPress;
+		 lastPress = (int32_t) lastADC * cfg.transADC / 1000 - cfg.zeroPress;
 	 }
-	 //  Serial.print(lastADC);  Serial.print(" ");  Serial.println(lastPress);
 #if P_NUMSAMLES > 1
 	 // Усреднение значений
 	 sum=sum+lastPress;          // Добавить новое значение
 	 sum=sum-p[last];            // Убрать самое старое значение
 	 p[last]=lastPress;          // Запомить новое значение
 	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
-	 if (GETBIT(flags,fFull)) Press=sum/P_NUMSAMLES; else Press=sum/last;
-#else
-	 Press = lastPress;
+	 if (GETBIT(flags,fFull)) lastPress=sum/P_NUMSAMLES; else lastPress=sum/last;
 #endif
-	 Temp = ERROR_TEMPERATURE;
-
-	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
-	 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
-	 if(lastPress<cfg.minPress)  { err=ERR_MINPRESS;set_Error(err,name); return err;}
-	 if(lastPress>cfg.maxPress)  { err=ERR_MAXPRESS;set_Error(err,name); return err;}
-
+	 if(Press != lastPress) {
+		 Press = lastPress;
+		 Temp = ERROR_TEMPERATURE;
+		 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
+		 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
+		 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
+		 if(Press < cfg.minPress)  { err=ERR_MINPRESS;set_Error(err,name); return err;}
+		 if(Press > cfg.maxPress)  { err=ERR_MAXPRESS;set_Error(err,name); return err;}
+	 }
 	 // Дошли до сюда значит ошибок нет
 	 err=OK;                                         // Новый цикл новые ошибки
 	 return err;
  }
 
-//// полный цикл получения данных возвращает значение давления, только тестирование!! никакие переменные класса не трогает!!
-//int16_t sensorADC::Test()
-//{
-//   int16_t x;
-//   if (adc.flagFull) x=adc.sum/adc.filter_size; else x=adc.sum/adc.last;
-//   return (int)((float)x*(transADC))-zeroPress;
-//}
-
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
 {
-  if((p>=0)&&(p<=4096)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
+  if((p>=-1024)&&(p<=4096)) { clearBuffer(); cfg.zeroPress=p; return OK;} // Суммы обнулить надо
   else return WARNING_VALUE;
 }
 
@@ -258,8 +247,11 @@ return Press;
 // Установить значение коэффициента преобразования напряжение (отсчеты ацп)-температура
 int8_t sensorADC::set_transADC(float p)
 {
-  if((p>=0.0)&&(p<=4.0)) { clearBuffer(); cfg.transADC=p; return OK;}  // Суммы обнулить надо
-  else return WARNING_VALUE;
+	if((p >= 0.0) && (p <= 4.0)) {
+		clearBuffer();   // Суммы обнулить надо
+		cfg.transADC = rd(p, 1000);
+		return OK;
+	} else return WARNING_VALUE;
 }
 
 // Установить значение давления датчика в режиме теста
@@ -267,6 +259,13 @@ int8_t sensorADC::set_testPress(int16_t p)
 {
 	cfg.testPress=p;
 	return OK;
+}
+
+void sensorADC::after_load(void)
+{
+	if(HP.Option.ver <= 131) {
+		cfg.transADC = rd(cfg.transADC_f, 1000);
+	}
 }
 
 // ------------------------------------------------------------------------------------------

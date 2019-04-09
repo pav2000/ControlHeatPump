@@ -321,13 +321,14 @@ x_Error:
 		journal.jprintf("Error: %04x != %04x!\n", crc, *((uint16_t *)(buffer + size)));
 		return error = ERR_CRC16_EEPROM;
 	}
-	journal.jprintf("%04x ", crc);
+	journal.jprintf("%04x", crc);
 	#else
-	journal.jprintf("*No verification ");
+	journal.jprintf("*No verification");
 	#endif
 	uint8_t *buffer_max = buffer + size;
 	size += 2;
 	load_struct(&Option, &buffer, sizeof(Option));
+	journal.jprintf(", v.%d ", Option.ver);
 	load_struct(&DateTime, &buffer, sizeof(DateTime));
 	load_struct(&Network, &buffer, sizeof(Network));
 	load_struct(message.get_save_addr(), &buffer, message.get_save_size());
@@ -343,7 +344,7 @@ x_Error:
 		if(type == SAVE_TYPE_sTemp) { // первый в структуре идет номер датчика
 			if(n < TNUMBER) { load_struct(sTemp[n].get_save_addr(), &buffer, sTemp[n].get_save_size());	sTemp[n].after_load(); } else goto xSkip;
 		} else if(type == SAVE_TYPE_sADC) {
-			if(n < ANUMBER) load_struct(sADC[n].get_save_addr(), &buffer, sADC[n].get_save_size()); else goto xSkip;
+			if(n < ANUMBER) { load_struct(sADC[n].get_save_addr(), &buffer, sADC[n].get_save_size()); sADC[n].after_load(); } else goto xSkip;
 		} else if(type == SAVE_TYPE_sInput) {
 			if(n < INUMBER) load_struct(sInput[n].get_save_addr(), &buffer, sInput[n].get_save_size()); else goto xSkip;
 		} else if(type == SAVE_TYPE_sFrequency) {

@@ -59,10 +59,9 @@ class sensorADC
     __attribute__((always_inline)) inline int16_t get_maxPress(){return cfg.maxPress;}     // Максимальная давление датчика - верхняя граница диапазона, при выходе из него ошибка
     int16_t get_zeroPress(){return cfg.zeroPress;}           // Выход датчика (отсчеты ацп)  соответсвующий 0
     int8_t  set_zeroPress(int16_t p);                    // Установка Выход датчика (отсчеты ацп)  соответсвующий 0
-    int16_t get_lastPress(){return lastPress;}           // Последнее считанное значение датчика - НЕ обработанное (без усреднения)
     uint16_t get_lastADC(){ return lastADC; }            // Последнее считанное значение датчика в отсчетах с фильтром
     int16_t get_Press();                                 // Получить значение давления датчика - это то что используется
-    float get_transADC(){return cfg.transADC;}           // Получить значение коэффициента преобразования напряжение-температура
+    uint16_t get_transADC(){return cfg.transADC;}        // Получить значение коэффициента преобразования напряжение-температура
     int8_t set_transADC(float p);                        // Установить значение коэффициента преобразования напряжение-температура
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
     __attribute__((always_inline)) inline boolean get_fmodbus(){return GETBIT(flags,fsensModbus);} // Подключен по Modbus
@@ -79,6 +78,7 @@ class sensorADC
     char*   get_name(){return name;}                     // Получить имя датчика
     uint8_t *get_save_addr(void) { return (uint8_t *)&cfg; } // Адрес структуры сохранения
     uint16_t get_save_size(void) { return sizeof(cfg); } // Размер структуры сохранения
+    void	after_load(void);
    
     statChart Chart;                                      // График по датчику
     //type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
@@ -91,12 +91,17 @@ class sensorADC
     int16_t  Temp;										// Температура в сотых
     
   private:
-    int16_t lastPress;                                   // последнее считанное давление с датчика
     int16_t Press;                                       // давление датчика (обработанное) в сотых бара
     struct {     // Save GROUP, firth number
    	uint8_t number;										 // Номер
     int16_t zeroPress;                                   // отсчеты АЦП при нуле датчика
-    float   transADC;                                    // коэффициент пересчета АЦП в давление
+    union {
+    	float transADC_f;
+    	struct {
+    		uint16_t transADC;                           // коэффициент пересчета АЦП в давление, тысячные
+    	    uint16_t _reserved_2;
+    	} __attribute__((packed));
+    };
     int16_t testPress;                                   // давление датчика в режиме тестирования
     int16_t minPress;                                    // минимально разрешенное давление
     int16_t maxPress;                                    // максимально разрешенное давление
