@@ -88,6 +88,7 @@ class sensorADC
     uint16_t adc_last;       			                // текущий индекс
     boolean  adc_flagFull;              			    // буфер полный
     uint16_t adc_lastVal;                      			// последнее считанное значение
+    int16_t  Temp;										// Температура в сотых
     
   private:
     int16_t lastPress;                                   // последнее считанное давление с датчика

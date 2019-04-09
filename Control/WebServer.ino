@@ -150,9 +150,9 @@ void web_server(uint8_t thread)
 						if(GETBIT(Socket[thread].flags, fUser)) {
 							if(strcmp(Socket[thread].inPtr, "menu.js") == 0) strcpy(Socket[thread].inPtr, "menu-user.js");
 							else if(strstr(Socket[thread].inPtr, ".html")) {
-								if(!(strcmp(Socket[thread].inPtr, "index.html")
-									|| strcmp(Socket[thread].inPtr, "plan.html")
-									|| strcmp(Socket[thread].inPtr, "about.html"))) goto xUNAUTHORIZED;
+								if(!(strcmp(Socket[thread].inPtr, "index.html") == 0
+									|| strcmp(Socket[thread].inPtr, "plan.html") == 0
+									|| strcmp(Socket[thread].inPtr, "about.html") == 0)) goto xUNAUTHORIZED;
 							}
 						}
 						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len + 1);
@@ -1032,7 +1032,7 @@ void parserGET(uint8_t thread, int8_t )
 #else
 			strcat(strReturn,"OFF;");
 #endif
-			strcat(strReturn,"NEXTION_PORT|Порт куда присоединен дисплей Nextion|Serial");
+			strcat(strReturn,"NEXTION_PORT|Порт подключения дисплея Nextion|Serial");
 			if(&NEXTION_PORT==&Serial1) strcat(strReturn,cOne);
 			else if(&NEXTION_PORT==&Serial2) strcat(strReturn,"2");
 			else if(&NEXTION_PORT==&Serial3) strcat(strReturn,"3");
@@ -2120,19 +2120,19 @@ void parserGET(uint8_t thread, int8_t )
 					if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
 					{
-						if (strcmp(str,"get_Press")==0)           // Функция get_Press
-						{ if (HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
+						if(strcmp(str,"get_Press")==0)           // Функция get_Press
 						{
-							int16_t x=HP.sADC[p].get_Press();
-							_ftoa(strReturn,(float)x/100.0,2);
+							if(HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
+							{
+								_ftoa(strReturn,(float)HP.sADC[p].get_Press() / 100, 2);
 #ifdef EEV_DEF
-							if(p < 2) {
-								m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(x,HP.dEEV.get_typeFreon())/100.0);
-							}
+								if(p < 2) {
+									m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(p,HP.dEEV.get_typeFreon()) / 100);
+								}
 #endif
+							} else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+							ADD_WEBDELIM(strReturn); continue;
 						}
-						else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-						ADD_WEBDELIM(strReturn); continue; }
 
 						if (strcmp(str,"get_adcPress")==0)           // Функция get_adcPress
 						{ _itoa(HP.sADC[p].get_lastADC(),strReturn); ADD_WEBDELIM(strReturn); continue; }

@@ -156,6 +156,7 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 	Chart.init(sensor <= PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
 	err = OK;                                     // ошибка датчика (работа)
 	Press = 0;                                    // давление датчика (обработанная)
+	Temp = ERROR_TEMPERATURE;
 	note = (char*) notePress[sensor];              // присвоить наименование датчика
 	name = (char*) namePress[sensor];              // присвоить имя датчика
 }
@@ -219,12 +220,13 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 #else
 	 Press = lastPress;
 #endif
+	 Temp = ERROR_TEMPERATURE;
 
 	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
 	 // Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
 	 // При ошибке запоминаем мговенное значение как среднее  что бы видно было
-	 if(lastPress<cfg.minPress)  {Press=lastPress; err=ERR_MINPRESS;set_Error(err,name);return err;}
-	 if(lastPress>cfg.maxPress)  {Press=lastPress; err=ERR_MAXPRESS;set_Error(err,name);return err;}
+	 if(lastPress<cfg.minPress)  { err=ERR_MINPRESS;set_Error(err,name); return err;}
+	 if(lastPress>cfg.maxPress)  { err=ERR_MAXPRESS;set_Error(err,name); return err;}
 
 	 // Дошли до сюда значит ошибок нет
 	 err=OK;                                         // Новый цикл новые ошибки
@@ -246,7 +248,7 @@ int8_t sensorADC::set_zeroPress(int16_t p)
   else return WARNING_VALUE;
 }
 
-//Получить значение давления датчика - это то что используется
+//Получить значение давления датчика в сотых бара
 int16_t sensorADC::get_Press()
 {
 if (!(GETBIT(flags,fPresent))) return -100;                  // датчик запрещен в конфигурации то давление -100
@@ -715,9 +717,9 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 #ifdef DEMO
 	//Overheat = 400;
 	Overheat = random(100,400);
-	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
+	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA, _data.typeFreon) : -32767;
 #else
-	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(HP.sADC[PEVA].get_Press(), _data.typeFreon) : -32767;
+	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA, _data.typeFreon) : -32767;
 	switch(_data.ruleEEV)  // определение доступности элемента
 	{
 #if defined(TEVAIN) && defined(TEVAOUT)
