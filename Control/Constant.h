@@ -1235,7 +1235,6 @@ enum SMS_SERVICE
 //  Перечисляемый тип - тип фреона
 enum TYPEFREON           
 {
-	RNone = -1,
     R22,        
     R410A,
     R600A,
