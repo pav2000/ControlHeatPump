@@ -787,11 +787,13 @@ xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - tPEVA + _data.Correctio
 		else
 #endif
 #if defined(TCOMPIN) && defined(TEVAIN)
-		if((HP.sTemp[TCOMPIN].get_present()) && tPEVA != -32767) goto xTCOMPIN_TEVAIN;
+// 		if((HP.sTemp[TCOMPIN].get_present()) && tPEVA != -32767) goto xTCOMPIN_TEVAIN;
+        if (HP.sTemp[TCOMPIN].get_present() goto xTCOMPIN_TEVAIN; // нашел Romanmp
 		else
 #endif
 #if defined(TEVAIN) && defined(TEVAOUT)
-		if((HP.sTemp[TEVAOUT].get_present()) && tPEVA != -32767) goto xTEVAOUT_TEVAIN;
+//		if((HP.sTemp[TEVAOUT].get_present()) && tPEVA != -32767) goto xTEVAOUT_TEVAIN;
+        if (HP.sTemp[TEVAOUT].get_present() goto xTEVAOUT_TEVAIN;  // нашел Romanmp
 		else
 #endif
 		{
