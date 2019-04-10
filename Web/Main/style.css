@@ -78,7 +78,7 @@ th:nth-child(-n+2), td:nth-child(-n+2){text-align: left; }
 tr.inactive{display:none;}
 tr.alarm{background:#C1272D;color:white;}
 input[type=number]{max-width:55px;/*float: left;*/}
-#a1,#a2,#p1,#p2,#get_transpress-peva,#get_transpress-pcon,#get_zeropress-peva,#get_zeropress-pcon{max-width:70px;min-width:60px;} 
+#a1,#a2,#p1,#p2{max-width:70px;min-width:60px;}
 input[type=submit]{/*float: left;*/}
 h1 input, h1 select{float:right;}
 #temps th:nth-child(6),#temps th:nth-child(7){min-width:75px;}

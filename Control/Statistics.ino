@@ -925,7 +925,7 @@ void Statistics::History()
 			break;
 #ifdef EEV_DEF
 		case STATS_OBJ_PressTemp:	// C
-			int_to_dec_str(PressToTemp(HP.sADC[HistorySetup[i].number].get_Press(), HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
+			int_to_dec_str(PressToTemp(HistorySetup[i].number, HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {

@@ -403,7 +403,7 @@ const char *noteTemp[] = {"Температура улицы",
                                 "Датчик давления конденсации (bar)"};
 
    // Коэффициент преобразования отсчеты АЦП-давление
-    const float TRANsADC[ANUMBER]={0.482,0.3};
+    const uint16_t TRANsADC[ANUMBER]={482,300};
     // напряжение (отсчеты АЦП) соответсвующее cZero
     const uint16_t ZEROPRESS[ANUMBER]={285,150};
 
@@ -909,7 +909,7 @@ const char *noteTemp[] = {"Температура улицы",
                                  "Датчик давления конденсации (bar)"};
 
      // Коэффициент преобразования отсчеты АЦП-давление
-      const float TRANsADC[ANUMBER]={1.032,2.1};
+      const uint16_t TRANsADC[ANUMBER]={1032,2100};
       // напряжение (отсчеты АЦП) соответсвующее cZero
       const uint16_t ZEROPRESS[ANUMBER]={410,410};
 
@@ -1419,7 +1419,7 @@ const char *noteTemp[] = {"Температура улицы",
                                  "Датчик давления конденсации (bar)"};
 
      // Коэффициент преобразования отсчеты АЦП-давление
-      const float TRANsADC[ANUMBER]={1.250,1.500};
+      const uint16_t TRANsADC[ANUMBER]={1250,1500};
       // напряжение (отсчеты АЦП) соответсвующее cZero
       const uint16_t ZEROPRESS[ANUMBER]={625,750};
 	  
@@ -1882,7 +1882,7 @@ const char *noteTemp[] = {"Температура улицы",
                                   "Датчик давления конденсации (bar)"};
 
       // Коэффициент преобразования отсчеты АЦП-давление
-       const float TRANsADC[ANUMBER]={0.482,0.3};
+       const uint16_t TRANsADC[ANUMBER]={482,300};
        // напряжение (отсчеты АЦП) соответсвующее cZero
        const uint16_t ZEROPRESS[ANUMBER]={285,150};
 
@@ -2441,7 +2441,7 @@ const char *noteTemp[] = {"Температура улицы",
                                  "Датчик давления конденсации (bar)"};
 
      // Коэффициент преобразования отсчеты АЦП-давление
-      const float TRANsADC[ANUMBER]={0.482,0.3};
+      const uint16_t TRANsADC[ANUMBER]={482,300};
       // напряжение (отсчеты АЦП) соответсвующее cZero
       const uint16_t ZEROPRESS[ANUMBER]={285,150};
 
@@ -3093,10 +3093,10 @@ const char *noteTemp[] = {"Температура улицы",
   #define ADC_SENSOR_PCON		12		// X31.  датчик давления конденсатора
   #define ADC_SENSOR_PGEO		4		// X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
   #define ADC_SENSOR_POUT		5		// X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
-  // Коэффициент преобразования отсчеты АЦП-давление
-  const float    TRANsADC[ANUMBER]  = {0.373, 1.380, 0.181, 0.181};
+  // Коэффициент преобразования отсчеты АЦП-давление, тысячные
+  const uint16_t TRANsADC[ANUMBER]  = { 373, 1380,  181,  181};
   // напряжение (отсчеты АЦП) соответсвующее cZero
-  const uint16_t ZEROPRESS[ANUMBER] = {  290,   740, 	70,    70};
+  const uint16_t ZEROPRESS[ANUMBER] = { 290,  740,   70,   70};
 
   const boolean SENSORPRESS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
   const int16_t MINPRESS[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения давления, в сотых бар

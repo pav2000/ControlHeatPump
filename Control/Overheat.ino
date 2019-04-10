@@ -40,11 +40,11 @@ const uint16_t tableEEVCool[5][5]= // Охлаждение
                               };                                                   
 
 
-// Таблицы по фреонам
-#define STEP_TEMP   0.1        // шаг температуры в таблице
-#define START_TEMP  -37.9      // температура первого элемента в таблице. Это минимальное значение кипения!!!  нижний край таблицы, при значениях давленимя ниже (выход за нижнюю границу) выдается это значение температуры
+// Таблицы по фреонам (в тысячных бара)
+//#define STEP_TEMP   0.1      // шаг температуры в таблице
+#define START_TEMP  -379       // температура первого элемента в таблице. Это минимальное значение кипения!!!  нижний край таблицы, при значениях давленимя ниже (выход за нижнюю границу) выдается это значение температуры
 #define SIZEOF_TEMP 10*108     // размерность массива температур Диапазон таблицы от -37.9 до +70 градусов ВСЕГО 108 градусов с шагом 0.1 градус
-#define CONST_PRESS 1.013      // Поправка давления для перевода в манометрическое в барах
+#define CONST_PRESS 1013       // Поправка давления для перевода в манометрическое в барах, в тысячных
 
 const uint16_t tR22[SIZEOF_TEMP]={
 1156,1161,1167,1172,1177,1183,1188,1193,1199,1204,1210,1215,1221,1226,1232,1237,1243,1248,1254,1259,1265,1271,1276,1282,1288,1294,1299,1305,1311,1317,1323,1328,1334,1340,1346,1352,1358,1364,1370,1376,
@@ -330,74 +330,73 @@ const uint16_t tR717[SIZEOF_TEMP]={
 // Получение температуры по давлению - возврат температура в сотых градуса
 // При ошибке возвращает -50 градусов
 // Давление в сотых бара!!!!!
-int16_t PressToTemp(uint16_t search_value, TYPEFREON freon)
+int16_t PressToTemp(uint8_t sensor, TYPEFREON freon)
 {
-  uint16_t *table;                    // Указатель на таблицу нужного фреона
-  uint16_t average_index = 0,         // переменная для хранения индекса среднего элемента массива
-  first_index    = 0,                 // индекс первого элемента в массиве
-  last_index     = SIZEOF_TEMP -1;    // индекс последнего элемента в массиве, и также найденого элемента
+	if(HP.sADC[sensor].Temp != ERROR_TEMPERATURE) return HP.sADC[sensor].Temp;
+	uint16_t *table;                    // Указатель на таблицу нужного фреона
+	uint16_t average_index = 0,         // переменная для хранения индекса среднего элемента массива
+			first_index    = 0,                 // индекс первого элемента в массиве
+			last_index     = SIZEOF_TEMP -1;    // индекс последнего элемента в массиве, и также найденого элемента
 
-  switch (freon)
-   {
-     case R22:       table=(uint16_t*)tR22;        break;
-     case R410A:     table=(uint16_t*)tR410A;      break;
-     case R600A:     table=(uint16_t*)tR600A;      break;
-     case R134A:     table=(uint16_t*)tR134A;      break;
-     case R407C:     table=(uint16_t*)tR407C;      break;
-     case R12:       table=(uint16_t*)tR12;        break;
-     case R290:      table=(uint16_t*)tR290;       break;
-     case R404A:     table=(uint16_t*)tR404A;      break;
-     case R717:      table=(uint16_t*)tR717;       break;
-     default:        
-                     journal.jprintf("Unknow type freon? Repeat set type freon.\n");
-                     return -5000;                 break;      
-    }
+	switch (freon)
+	{
+	case R22:       table=(uint16_t*)tR22;        break;
+	case R410A:     table=(uint16_t*)tR410A;      break;
+	case R600A:     table=(uint16_t*)tR600A;      break;
+	case R134A:     table=(uint16_t*)tR134A;      break;
+	case R407C:     table=(uint16_t*)tR407C;      break;
+	case R12:       table=(uint16_t*)tR12;        break;
+	case R290:      table=(uint16_t*)tR290;       break;
+	case R404A:     table=(uint16_t*)tR404A;      break;
+	case R717:      table=(uint16_t*)tR717;       break;
+	default:
+		journal.jprintf("Unknown freon type!\n");
+		return -5000;                 break;
+	}
 
-// Сделать перевод из манометрического давления в абсолютное И ТАБЛИЦА в ТЫСЯЧНЫХ!! ноадо умножить на 10 для перевода из сотых
-search_value=10*search_value+1013;
+	// Сделать перевод из манометрического давления в абсолютное И ТАБЛИЦА в ТЫСЯЧНЫХ!! надо умножить на 10 для перевода из сотых
+	uint16_t search_value = HP.sADC[sensor].get_Press() * 10 + CONST_PRESS;
 
+	// Бинарный поиск для ускорения работы
+	while (first_index < last_index) // Бинарный поиск ближайшего большего
+	{
+		average_index = first_index + (last_index - first_index) / 2; // меняем индекс среднего значения
+		if (search_value <= table[average_index])  last_index = average_index;
+		else first_index = average_index + 1;
+	}
 
-// Бинарный поиск для ускорения работы
-    while (first_index < last_index) // Бинарный поиск ближайшего большего
-    {
-        average_index = first_index + (last_index - first_index) / 2; // меняем индекс среднего значения
-        if (search_value <= table[average_index])  last_index = average_index; 
-        else first_index = average_index + 1;    
-    }
-
-// линейная апроксимация между двумя точками
-float k = (float)STEP_TEMP/(table[last_index]-table[last_index-1]);
-float c = (last_index*STEP_TEMP+START_TEMP) - k * table[last_index];
-
-//Serial.print(search_value); Serial.print(" t="); Serial.println((k * search_value + c)*100);
-return (k * search_value + c)*100;
+	// линейная апроксимация между двумя точками
+	//float k = (float)STEP_TEMP/(table[last_index]-table[last_index-1]);
+	//float c = (last_index*STEP_TEMP+START_TEMP/10.0) - k * table[last_index];
+	//return (k * search_value + c)*100;
+	return HP.sADC[sensor].Temp = ((int32_t) 100 * (last_index + START_TEMP) + (search_value - table[last_index]) * 100 / (table[last_index] - table[last_index-1])) / 10;
 }
 
 // Получить положение ЭРВ по температурам Конденсатора и Испарителя алгоритм ТАБЛИЦА
 // EVA - испаритель столбцы (первый индекс)   CON - конденсатор строки (второй индекс)
 int16_t TempToEEV(int16_t teva, int16_t tcon)
 {
-  int8_t x=0,y=0;
-// Определение индексов
-     if (teva<-600)  x=4;
-else if (teva<300)   x=3;
-else if (teva<1300)  x=2;
-else if (teva<2500)  x=1;
-else                 x=0;
+	int8_t x=0,y=0;
+	// Определение индексов
+	if (teva<-600)  x=4;
+	else if (teva<300)   x=3;
+	else if (teva<1300)  x=2;
+	else if (teva<2500)  x=1;
+	else                 x=0;
 
-     if (tcon<1500)  y=0;
-else if (tcon<2500)  y=1;
-else if (tcon<4300)  y=2;
-else if (tcon<5500)  y=3;
-else                 y=4;
+	if (tcon<1500)  y=0;
+	else if (tcon<2500)  y=1;
+	else if (tcon<4300)  y=2;
+	else if (tcon<5500)  y=3;
+	else                 y=4;
 
-// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
+	// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef RTRV 
-if ((!HP.dRelay[RTRV].get_Relay())||(!HP.dRelay[RTRV].get_present())) 
-     return  tableEEVHeat[y][x];  // нагрев
-else return  tableEEVCool[y][x];  // охлаждение
+	if ((!HP.dRelay[RTRV].get_Relay())||(!HP.dRelay[RTRV].get_present()))
+		return  tableEEVHeat[y][x];  // нагрев
+	else return  tableEEVCool[y][x];  // охлаждение
 #else
-     return  tableEEVHeat[y][x];  // нагрев
+	return  tableEEVHeat[y][x];  // нагрев
 #endif
 }
 
