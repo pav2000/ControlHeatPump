@@ -586,14 +586,16 @@ boolean pingServer()
 #endif
 	if (echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
-		journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
+		//journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
+		journal.jprintf("%dms\n", millis() - echoReply.data.time);
 #endif
 		return true;
 	} else {
 #ifdef DONT_LOG_SUCCESS_PING
-		journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
-#endif
+		journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: FAILED - ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
+#else
 		journal.jprintf("FAILED - ");                                 // Неудача, пинга нет
+#endif
 		switch (echoReply.status)
 		{
 		case SEND_TIMEOUT: journal.jprintf( "send timed out");  break;

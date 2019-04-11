@@ -2647,7 +2647,6 @@ const char *noteTemp[] = {"Температура улицы",
 //		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 //		#define DEBUG_PID				// Отладка ПИДа
-		#define DONT_LOG_SUCCESS_PING	// Не логировать в журнал успешные пинги
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
@@ -2655,6 +2654,7 @@ const char *noteTemp[] = {"Температура улицы",
 		//#define DEBUG_PID				// Отладка ПИДа
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
 		#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
+		//#define DONT_LOG_SUCCESS_PING	// Не логировать в журнал успешные пинги
 	#endif
 	#ifdef  I2C_EEPROM_64KB                    // В зависимости от типа чипа
 		#define I2C_ADR_EEPROM    0x50         // Адрес чипа на шине I2C
