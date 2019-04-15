@@ -523,8 +523,8 @@ if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errC
 HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",40,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*40; // 50, 100, 150, до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",45,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*45; // 50, 100, 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif

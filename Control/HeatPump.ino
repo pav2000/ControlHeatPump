@@ -3059,9 +3059,11 @@ int8_t HeatPump::runCommand()
 			StartResume(_start);    // включить ТН
 			break;
 		case pSTOP:                           // 3 Стоп теплового насоса
+		    PauseStart = 0;
 			StopWait(_stop);        // Выключить ТН
 			break;
 		case pRESET:                          // 4 Сброс контроллера
+		    PauseStart = 0;
 			StopWait(_stop);        // Выключить ТН
 			journal.jprintf("$SOFTWARE RESET control . . .\n\n");
 			save_motoHour();

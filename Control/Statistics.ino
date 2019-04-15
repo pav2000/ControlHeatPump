@@ -87,6 +87,7 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryC
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
 						free(temp_buf);
+						_delay(CREATE_STATFILE_PAUSE);
 						return OK;
 					}
 				}
