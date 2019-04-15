@@ -469,7 +469,7 @@ const char *noteTemp[] = {"Температура улицы",
       // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)
         	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
-		#define FREON     R410A 		  // Типа фрона по умолчанию - R134A
+		#define FREON     R410A 		  			// Тип фрона
 		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
@@ -955,7 +955,7 @@ const char *noteTemp[] = {"Температура улицы",
   
     // Значения по умолчанию (можно менять из морды)
     #define DEFAULT_RULE_EEV          TEVAOUT_PEVA    // Формула по умолчанию - TEVAOUT_PEVA
-    #define FREON				        R410A           // Типа фрона по умолчанию - R134A
+    #define FREON				        R410A           // Тип фреона
     #define DEFAULT_EEV_TIME          10              // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
     #define DEFAULT_OVERHEAT          300             // Перегрев по умолчанию (сотые градуса)
     #define DEFAULT_EEV_Kp            160             // ПИД Коэф пропорц.  В СОТЫХ
@@ -1462,7 +1462,7 @@ const char *noteTemp[] = {"Температура улицы",
    
 	 	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
-		#define FREON     R410A 		  // Типа фрона по умолчанию - R134A
+		#define FREON     R410A 		  			// Тип фреона
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
@@ -1934,7 +1934,7 @@ const char *noteTemp[] = {"Температура улицы",
           // #define EEV_MAX_CONTROL                        // Контроль верхней границы ЭРВ, включать только если ЭРВ правильно подобран (верхняя граница не достижима в процессе работы)    
 	// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
-		#define FREON     R410A 		  // Типа фрона по умолчанию - R134A
+		#define FREON     R410A 		  			// Тип фреона
 		#define DEFAULT_EEV_TIME	   10			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       300			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       160			  // ПИД Коэф пропорц.  В СОТЫХ
@@ -2499,7 +2499,7 @@ const char *noteTemp[] = {"Температура улицы",
 	     
 		// Значения по умолчанию (можно менять из морды)
 		#define DEFAULT_RULE_EEV       TEVAOUT_PEVA   // Формула по умолчанию - TEVAOUT_PEVA
-		#define FREON     R410A 		  // Типа фрона по умолчанию - R134A
+		#define FREON                  R410A 		  // Тип фреона
 		#define DEFAULT_EEV_TIME	   50			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
 		#define DEFAULT_OVERHEAT       310			  // Перегрев по умолчанию (сотые градуса)
 		#define DEFAULT_EEV_Kp	       2500			  // ПИД Коэф пропорц.  В ТЫСЯЧНЫХ
@@ -3168,7 +3168,7 @@ const char *noteTemp[] = {"Температура улицы",
 	//#define EEV_MIN_CONTROL                     // Контроль нижней границы ЭРВ - останов по ошибке.
     //#define EEV_MAX_CONTROL                     // Контроль верхней границы ЭРВ - останов по ошибке.
       
-	#define FREON                  R134A 		  // Типа фрона по умолчанию - R134A
+	#define FREON                  R134A 		  // Тип фреона
 	// Значения по умолчанию
 	#define DEFAULT_RULE_EEV       TEVAOUT_PEVA	  // Формула по умолчанию - TEVAOUT_PEVA
 	#define DEFAULT_EEV_TIME	   8			  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
