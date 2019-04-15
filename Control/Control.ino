@@ -523,8 +523,8 @@ if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errC
 HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",50,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*50; // 100, 150, до обрезки стеков было 200
+  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",40,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*40; // 50, 100, 150, до обрезки стеков было 200
   vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
   HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
@@ -536,7 +536,7 @@ vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу
 
 
 // ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ, сервис
-if(xTaskCreate(vServiceHP, "ServiceHP", 200, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+if(xTaskCreate(vServiceHP, "ServiceHP", STACK_vUpdateCommand, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
 
 vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
@@ -548,8 +548,8 @@ vTaskSuspend(HP.xHandleUpdate);                                 // Остано�
 HP.Task_vUpdate_run = false;
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"UpdateEEV",120,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*120;  //до обрезки стеков было 200
+  if (xTaskCreate(vUpdateEEV,"UpdateEEV",100,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*100;
   vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
 #endif  
 
@@ -1014,8 +1014,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 			}
 			HP.NO_Power_delay = NO_POWER_ON_DELAY_CNT;
 		} else if(HP.NO_Power) { // Включаемся
-			if(HP.NO_Power_delay) HP.NO_Power_delay--;
-			else {
+			if(HP.NO_Power_delay) {
+				if(--HP.NO_Power_delay == 0) HP.sendCommand(pNETWORK);
+			} else {
 				journal.jprintf(pP_DATE, "Power restored!\n");
 				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {

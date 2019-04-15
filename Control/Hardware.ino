@@ -546,7 +546,7 @@ void devEEV::initEEV()
  _data.pid.Kd =  -DEFAULT_EEV_Kd * 10;               // ПИД Коэф дифф., в тысячных
  _data.Correction = 0;                               // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
  _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
- _data.typeFreon = DEFAULT_FREON_TYPE;               // Тип фреона
+ //_data.typeFreon = DEFAULT_FREON_TYPE;               // Тип фреона
  _data.ruleEEV = DEFAULT_RULE_EEV;                   // правило работы ЭРВ
 #ifdef DEF_OHCor_OverHeatStart						 // Корректировка перегрева
  _data.OHCor_Delay = DEF_OHCor_Delay;			     // Задержка после старта компрессора, сек
@@ -716,9 +716,9 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 #ifdef DEMO
 	//Overheat = 400;
 	Overheat = random(100,400);
-	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA, _data.typeFreon) : -32767;
+	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA) : -32767;
 #else
-	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA, _data.typeFreon) : -32767;
+	int16_t tPEVA = HP.sADC[PEVA].get_present() ? PressToTemp(PEVA) : -32767;
 	switch(_data.ruleEEV)  // определение доступности элемента
 	{
 #if defined(TEVAIN) && defined(TEVAOUT)
@@ -941,11 +941,11 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 		} else {
 			newEEV = _data.tOverheat - Overheat;   // Расчет ошибки для пида
 #ifdef PID_FORMULA2
-			newEEV = round_div_int16(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
+			newEEV = round_div_int32(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
 #else  // Алгоритм 1
             pidw.Kp_dmin=_data.pid2_delta; // передать параметр - уменьшение пропорциональной при определенной ошибке
 			newEEV = updatePID(newEEV, _data.pid, pidw)/100; // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление вниз
-	//		newEEV = round_div_int16(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление здесь 0.5 это один шаг
+	//		newEEV = round_div_int32(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление здесь 0.5 это один шаг
 			if ((abs(newEEV)>_data.pid_max)&&(_data.pid_max>0)) {if (newEEV>0) newEEV=EEV+_data.pid_max; else newEEV=EEV-_data.pid_max;} else newEEV+=EEV;   // Ограничение пида +  добавление предудущего значения
 #endif
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
@@ -1096,8 +1096,9 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_CONST)==0){  _ftoa(ret,(float)_data.Correction/100,2);
 	} else if(strcmp(var, eev_MANUAL)==0){ _itoa(_data.manualStep,ret);
 	} else if(strcmp(var, eev_FREON)==0){
-		for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
-		{ strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
+		strcat(ret, noteFreon[FREON]);
+//		for(uint8_t i=0;i<=R717;i++) // Формирование списка фреонов
+//		{ strcat(ret,noteFreon[i]); strcat(ret,":"); if(i==get_typeFreon()) strcat(ret,cOne); else strcat(ret,cZero); strcat(ret,";");  }
 	}   else if(strcmp(var, eev_RULE)==0){
 		web_fill_tag_select(ret, noteRuleEEV, get_ruleEEV());
 	} else if(strcmp(var, eev_NAME)==0){    strcat(ret,name);
@@ -1203,8 +1204,8 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if ((x>=-10.0)&&(x<=10.0)) { _data.Correction=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_MANUAL)==0){
 		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep = x; if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep); return true; } else return false;	// шаги
-	} else if(strcmp(var, eev_FREON)==0){
-		if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип
+//	} else if(strcmp(var, eev_FREON)==0){
+//		if ((x>=0)&&(x<=R717)){ _data.typeFreon=(TYPEFREON)x; return true;} else return false;	// перечисляемый тип
 	}   else if(strcmp(var, eev_RULE)==0){
 		if(x <= MANUAL) {
 			_data.ruleEEV = (RULE_EEV) x;

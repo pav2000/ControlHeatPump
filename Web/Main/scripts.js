@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.016";
+var VER_WEB = "1.017";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -120,7 +120,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sysInfo|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|[(]FREON|SOCKET|RES_W5200|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
+								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|SOCKET|RES_W5200|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование

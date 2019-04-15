@@ -297,7 +297,7 @@ public:
 	inline int16_t get_PID_time() { return  _data.pid_time; } // Получить ЗАДАННУЮ постоянную времени в секундах ЭРВ
 	int16_t get_Correction(){return _data.Correction;}     // Получить поправку в градусах для правила работы ЭРВ «TEVAOUT-TEVAIN».  СОТЫЕ ГРАДУСА
 	int16_t get_manualStep(){return _data.manualStep;}     // Получить число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-	TYPEFREON get_typeFreon(){return _data.typeFreon;}     // Получить тип фреона
+	uint8_t get_typeFreon(){return FREON; }     			// Получить тип фреона
 	RULE_EEV get_ruleEEV(){return _data.ruleEEV;}          // Получить правило перегрева
 	void get_ruleEEVtext(char *strReturn);				 // Получить правило перегрева как строку
 	boolean get_HoldMotor(){return GETBIT(_data.flags,fHoldMotor);}      // Получить флаг Удержания шагового двигателя
@@ -360,7 +360,7 @@ private:
 		int16_t  pid2_delta;					// Дельта для консервативных вычислений ПИДа
 		int16_t	 Correction;                     // Величина корректироровки перегрева (систематическая ошибка расчета перегерва)
 		int16_t	 manualStep;                     // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
-		TYPEFREON typeFreon;                    // Тип фреона
+		uint8_t  _reserved1;                    // было: Тип фреона
 		RULE_EEV  ruleEEV;                       // правило работы ЭРВ
 		PID_STRUCT pid2;						// Консервативный ПИД
 		uint16_t OHCor_Period;					// Период расчета корректировки перегрева в циклах ЭРВ

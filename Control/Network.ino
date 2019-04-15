@@ -575,7 +575,7 @@ boolean pingServer()
 {
 	IPAddress ip;
 	if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  {return false;}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-	if (!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong address ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
+	if(!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong address ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
  	// Адрес правильный
 	ping.setTimeout(W5200_TIME_PING);                   // время между попытками пинга мсек
 	WDT_Restart(WDT);                                   // Сбросить вачдог
@@ -584,10 +584,14 @@ boolean pingServer()
 #ifndef DONT_LOG_SUCCESS_PING
 	journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
 #endif
-	if (echoReply.status == SUCCESS) {
+	if(echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
 		//journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
-		journal.jprintf("%dms\n", millis() - echoReply.data.time);
+		if(ping.attempts()) {
+			journal.jprintf("%dms, lost: %d.\n", millis() - echoReply.data.time, ping.attempts());
+		} else {
+			journal.jprintf("%dms\n", millis() - echoReply.data.time);
+		}
 #endif
 		return true;
 	} else {

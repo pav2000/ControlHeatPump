@@ -31,7 +31,7 @@
 // that takes a good while.
 // Define (uncomment the following line) on these platforms, which
 // will call a short delay() at critical junctures.
-// #define ICMPPING_INSERT_YIELDS
+#define ICMPPING_INSERT_YIELDS
 
 typedef unsigned long icmp_time_t;
 
@@ -192,6 +192,7 @@ public:
 
     */
     void setPayload(uint8_t * payload);
+    uint8_t attempts() { return _attempt; };
 
 #ifdef ICMPPING_ASYNCH_ENABLE
     /*
