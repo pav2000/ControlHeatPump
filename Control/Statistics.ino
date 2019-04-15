@@ -82,8 +82,8 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryC
 					free(temp_buf);
 					goto xError;
 				}
-				if(((++b) & 0x7FF) == 0) {
-					journal.jprintf("."); // каждый 1Мб
+				if(((++b) & 0x1FF) == 0) {
+					if((b & 0x7FF) == 0) journal.jprintf("."); // каждый 1 Мб
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
 						free(temp_buf);
