@@ -82,11 +82,12 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryC
 					free(temp_buf);
 					goto xError;
 				}
-				if(((++b) & 0x7FF) == 0) {
-					journal.jprintf("."); // каждый 1Мб
+				if(((++b) & 0x1FF) == 0) {
+					if((b & 0x7FF) == 0) journal.jprintf("."); // каждый 1 Мб
 					if(what) { // время другим задачам (~200 bps)
 						HistoryBlockCreating = b;
 						free(temp_buf);
+						_delay(CREATE_STATFILE_PAUSE);
 						return OK;
 					}
 				}
@@ -925,7 +926,7 @@ void Statistics::History()
 			break;
 #ifdef EEV_DEF
 		case STATS_OBJ_PressTemp:	// C
-			int_to_dec_str(PressToTemp(HistorySetup[i].number, HP.dEEV.get_typeFreon()), 10, &buf, 0); // T
+			int_to_dec_str(PressToTemp(HistorySetup[i].number), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {

@@ -11,18 +11,25 @@
 #include <util.h>
 
 #ifdef ICMPPING_INSERT_YIELDS
-#define ICMPPING_DOYIELD()		delay(2)
+//#define ICMPPING_DOYIELD()		delay(1)
+#include "FreeRTOS_ARM.h"
+#define ICMPPING_DOYIELD() { if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) vTaskDelay(1/portTICK_PERIOD_MS); else delay(1); }
 #else
 #define ICMPPING_DOYIELD()
 #endif
 
-
+/*
 inline uint16_t _makeUint16(const uint8_t& highOrder, const uint8_t& lowOrder)
 {
     // make a 16-bit unsigned integer given the low order and high order bytes.
     // lowOrder first because the Arduino is little endian.
     uint8_t value [] = {lowOrder, highOrder};
     return *(uint16_t *)&value;
+}
+*/
+inline uint16_t _makeUint16(const uint8_t highOrder, const uint8_t lowOrder)
+{
+	return (highOrder << 8) + lowOrder;
 }
 
 uint16_t _checksum(const ICMPEcho& echo)

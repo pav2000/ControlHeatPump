@@ -280,7 +280,7 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
         }
         if(err == OK) {
             FC_target = x;
-            if(show) journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100);
+            if(show) journal.jprintf(" Set %s[%s]: %.2f%%\n", name, (char *)codeRet[HP.get_ret()], (float)FC_target / 100);
             return err;
         } // установка частоты OK  - вывод сообщения если надо
         else {

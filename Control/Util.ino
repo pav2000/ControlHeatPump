@@ -927,23 +927,13 @@ void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract)
 }
 
 // округление к ближайшему целому, div: 10 / 100 / 1000 / 10000
-int16_t round_div_int16(int16_t value, int16_t div)
-{
-	if(value >= 0) {
-		if(value % div >= div / 2) value += div / 2;
-	} else {
-		if(value % div <= -div / 2) value -= div / 2;
-	}
-	return value / div;
-}
-
 int32_t round_div_int32(int32_t value, int16_t div)
 {
 	if(value >= 0) {
-		if(value % div >= div / 2) value += div / 2;
+		if(value % div >= (div >> 1)) value = value / div + 1; else value /= div;
 	} else {
-		if(value % div <= -div / 2) value -= div / 2;
+		if(value % div <= -(div >> 1)) value = value / div - 1; else value /= div;
 	}
-	return value / div;
+	return value;
 }
 

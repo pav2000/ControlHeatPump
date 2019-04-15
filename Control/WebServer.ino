@@ -1059,21 +1059,21 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"FREE_RTOS_ARM_VERSION|Версия библиотеки FreeRTOS|");_itoa(FREE_RTOS_ARM_VERSION,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"configTICK_RATE_HZ|Квант времени системы FreeRTOS (мкс)|");_itoa(configTICK_RATE_HZ,strReturn);strcat(strReturn,";");
 
+			strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков (мсек)|");_itoa(TIME_READ_SENSOR,strReturn);//strcat(strReturn,";");
 			ADD_WEBDELIM(strReturn);  continue;
 		} // end CONST
 
 		if (strcmp(str,"CONST1")==0)   // Команда CONST1 Информация очень большая по этому разбито на 2 запроса CONST CONST1
 		{
-			// i2c
-			strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
-			strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа I2C с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
-			strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа I2C с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
-			strcat(strReturn,"TIME_READ_SENSOR|Период опроса датчиков|");_itoa(TIME_READ_SENSOR,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"TIME_CONTROL|Период управления тепловым насосом (мсек)|");_itoa(TIME_CONTROL,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"TIME_EEV|Период управления ЭРВ (мсек)|");_itoa(TIME_EEV,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"TIME_WEB_SERVER|Период опроса web сервера "); strcat(strReturn,nameWiznet);strcat(strReturn," (мсек)|");_itoa(TIME_WEB_SERVER,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"TIME_COMMAND|Период разбора команд управления ТН (мсек)|");_itoa(TIME_COMMAND,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"TIME_I2C_UPDATE |Период синхронизации внутренних часов с I2C часами (мсек)|");_itoa(TIME_I2C_UPDATE,strReturn);strcat(strReturn,";");
+			// i2c
+			strcat(strReturn,"I2C_COUNT_EEPROM|Адрес внутри чипа I2C с которого пишется счетчики ТН|"); strcat(strReturn,uint16ToHex(I2C_COUNT_EEPROM)); strcat(strReturn,";");
+			strcat(strReturn,"I2C_SETTING_EEPROM|Адрес внутри чипа I2C с которого пишутся настройки ТН|"); strcat(strReturn,uint16ToHex(I2C_SETTING_EEPROM)); strcat(strReturn,";");
+			strcat(strReturn,"I2C_PROFILE_EEPROM|Адрес внутри чипа I2C с которого пишется профили ТН|"); strcat(strReturn,uint16ToHex(I2C_PROFILE_EEPROM)); strcat(strReturn,";");
 			// Датчики
 			strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
@@ -1088,11 +1088,9 @@ void parserGET(uint8_t thread, int8_t )
 #else
 			strcat(strReturn,"OFF;");
 #endif
-			strcat(strReturn,"K_VCC_POWER|Коэффициент пересчета для канала контроля напряжения питания (отсчеты/В)|");
 #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+			strcat(strReturn,"K_VCC_POWER|Коэффициент пересчета для канала контроля напряжения питания (отсчеты/В)|");
 			_ftoa(strReturn,(float)K_VCC_POWER,2);strcat(strReturn,";");
-#else
-			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
 #endif
 			// SALLMONELA
 			strcat(strReturn,"SALLMONELA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALLMONELA_DAY,strReturn);strcat(strReturn,";");
@@ -1158,8 +1156,7 @@ void parserGET(uint8_t thread, int8_t )
 #else
 			strcat(strReturn,"RAM memory;");
 #endif
-			strcat(strReturn,"JOURNAL_LEN|Размер кольцевого буфера системного журнала (байт)|");_itoa(JOURNAL_LEN,strReturn);strcat(strReturn,";");
-
+			strcat(strReturn,"JOURNAL_LEN|Размер кольцевого буфера системного журнала (байт)|");_itoa(JOURNAL_LEN,strReturn);//strcat(strReturn,";");
 			ADD_WEBDELIM(strReturn) ;
 			continue;
 		} // end CONST1
@@ -2130,7 +2127,7 @@ void parserGET(uint8_t thread, int8_t )
 								_ftoa(strReturn,(float)HP.sADC[p].get_Press() / 100, 2);
 #ifdef EEV_DEF
 								if(p < 2) {
-									m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(p,HP.dEEV.get_typeFreon()) / 100);
+									m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(p) / 100);
 								}
 #endif
 							} else strcat(strReturn,"-");             // Датчика нет ставим прочерк
