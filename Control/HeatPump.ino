@@ -2577,10 +2577,10 @@ void HeatPump::configHP(MODE_HP conf)
                     dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
                     dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
                     _delay(2*1000);                     // Задержка на 2 сек
-                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());      // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
                  #else  
                     PUMPS_ON;           // включить насосы
-                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());// установить стартовую частоту
+                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту
                  #endif
 
                  #ifdef RTRV
