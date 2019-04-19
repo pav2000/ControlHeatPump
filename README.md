@@ -9,6 +9,22 @@
 https://www.forumhouse.ru/threads/352693/ <br>
 https://www.forumhouse.ru/threads/437182/
 
+Скриншеты веб-интерфейса:
+
+![Состояние](https://user-images.githubusercontent.com/6220128/56410007-3079bb00-6284-11e9-829b-f6a959f91073.png)
+![Схема](https://user-images.githubusercontent.com/6220128/56410009-3079bb00-6284-11e9-804b-d476fb43ca89.png)
+![ЭРВ](https://user-images.githubusercontent.com/6220128/56410010-3079bb00-6284-11e9-9673-fb239037f33a.png)
+![Настройки](https://user-images.githubusercontent.com/6220128/56410003-2fe12480-6284-11e9-91c9-26ff2ed4c03b.png)
+![Расписание](https://user-images.githubusercontent.com/6220128/56410004-2fe12480-6284-11e9-8b03-78b331157580.png)
+![Датчики](https://user-images.githubusercontent.com/6220128/56410001-2fe12480-6284-11e9-8cd5-69d094656276.png)
+![Реле](https://user-images.githubusercontent.com/6220128/56410005-2fe12480-6284-11e9-8a4d-72b94401ffb2.png)
+![Инвертор](https://user-images.githubusercontent.com/6220128/56410002-2fe12480-6284-11e9-8702-9bad735ddebe.png)
+![RTOS](https://user-images.githubusercontent.com/6220128/56409998-2f488e00-6284-11e9-851b-1800e9cf688d.png)
+![Графики](https://user-images.githubusercontent.com/6220128/56410245-1a202f00-6285-11e9-8991-ae68be600a8a.png)
+![Графический лог](https://user-images.githubusercontent.com/6220128/56410000-2fe12480-6284-11e9-8b83-9b014c41a389.png)
+![Статистика](https://user-images.githubusercontent.com/6220128/56410008-3079bb00-6284-11e9-97d6-145e7347cb60.png)
+
+
 Изменения по версиям: <br>
 Версия 0.967-1.017
 1.	Оптимизирован и уточнен алгоритм расчета температуры фреона по давлению
