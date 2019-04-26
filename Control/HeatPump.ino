@@ -1534,7 +1534,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 #endif
 
 #ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
-	if((!b) && (b!=dRelay[PUMP_IN].get_Relay())) {
+	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
 	}
@@ -1542,9 +1542,9 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
 	_delay(d);                                // Задержка на d мсек
 	
-	if((!b) &&  (dRelay[RPUMPO].get_Relay() // пауза перед выключением насосов контуров, если нужно
+	if(!b && (GETBIT(dRelay[RPUMPO].flags, fR_StatusMain) // пауза перед выключением насосов контуров, если нужно
 #ifdef RPUMPBH
-						|| dRelay[RPUMPBH].get_Relay()
+			|| GETBIT(dRelay[RPUMPBH].flags, fR_StatusMain)
 #endif
 	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");

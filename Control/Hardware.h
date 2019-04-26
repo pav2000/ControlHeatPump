@@ -246,7 +246,7 @@ public:
   __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
   TEST_MODE get_testMode(){return testMode;}             // Получить текущий режим работы
   void set_testMode(TEST_MODE t){testMode=t;}            // Установить значение текущий режим работы
-  byte flags;                                           // флаги  0 - наличие реле, 1 -
+  byte flags;                                           // флаги  0 - наличие реле, 1.. - fR_Status*
 private:
    uint8_t number;										// Номер массива реле
    boolean Relay;                                        // Состояние реле
