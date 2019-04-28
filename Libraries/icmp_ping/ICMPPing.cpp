@@ -146,20 +146,22 @@ void ICMPPing::operator()(const IPAddress& addr, int nRetries, ICMPEchoReply& re
 
     for (_attempt=0; _attempt<nRetries; ++_attempt)
     {
-
-    	ICMPPING_DOYIELD();
-
+    	if(_attempt) {
+    		echoReq.time = millis();
+    		echoReq.icmpHeader.checksum = _checksum(echoReq);
+    	}
         result.status = sendEchoRequest(addr, echoReq);
         if (result.status == SUCCESS)
         {
             //byte replyAddr [4];
-        	ICMPPING_DOYIELD();
+        	//ICMPPING_DOYIELD();
             receiveEchoReply(echoReq, addr, result);
         }
         if (result.status == SUCCESS)
         {
             break;
         }
+    	ICMPPING_DOYIELD();
     }
    
     W5100.execCmdSn(_socket, Sock_CLOSE);
