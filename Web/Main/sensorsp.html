@@ -1,25 +1,55 @@
 ﻿<html>
 <head>
-  <title>Датчики. Народный контроллер ТН</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" type="text/css" href="style.css">
-  <script type='text/javascript' src='scripts.js'></script>
-  <script type="text/javascript">
-    window.onload = function() {
-    loadParam("get_tblFlow");
-    loadParam("get_tblInput");
-    loadParam("get_listPress");
+<title>Датчики. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+var BASE_TIME_READ = 10;// sec
+var ClcAvgHowLong = 60;// 10 min
+var ClcAvgCnt = 0;
+var ClcAvgTime;
+var ClcAvgSens;
+var ClcAvgSum;
+var ClcAvgSumCnt;
+var ClcAvgLast;
+urltimeout = 2000;
+window.onload = function() {
+	loadParam("get_tblFlow");
+	loadParam("get_tblInput");
+	loadParam("get_listPress");
 	loadParam("get_SDM(NAME),get_SDM(NOTE),get_SDM(LINK),get_SDM(MAXV),get_SDM(MINV),get_SDM(MAXP)");
 	updateParam("get_SDM(VOLT),get_SDM(CURRENT),get_SDM(REPOWER),get_SDM(ACPOWER),get_SDM(POWER),get_SDM(PF),get_SDM(PHASE),get_SDM(FREQ),get_SDM(ACENERGY),get_SDM(ERR),get_SDM(LINK)");
-    };
-  </script>
+}
+function CalcAvgValue(sens) {
+	if(ClcAvgCnt > 0) return;
+	ClcAvgSum = 0;
+	ClcAvgSumCnt = 0;
+	ClcAvgLast = -99999;
+	ClcAvgCnt = ClcAvgHowLong;
+	ClcAvgSens = sens;
+	ClcAvgTime = Date.now();
+	document.getElementById('ClcFlow' + ClcAvgSens).value = "?";
+}
+function loadParam_after(paramid) {
+	if(ClcAvgCnt && paramid.indexOf("et_Flow(")!=-1) {
+		var element = document.getElementById('get_flow-' + ClcAvgSens);
+		if(ClcAvgLast != Number(element.value) || (Date.now() - ClcAvgTime > BASE_TIME_READ * 1400)) {
+			ClcAvgTime = Date.now() - (ClcAvgLast != Number(element.value) ? 0 : BASE_TIME_READ * 400);
+			ClcAvgLast = Number(element.value);
+			ClcAvgSum += ClcAvgLast;
+			ClcAvgSumCnt++;
+			if(--ClcAvgCnt == 0) document.getElementById('ClcFlow' + ClcAvgSens).value = (ClcAvgSum / ClcAvgSumCnt).toFixed(3);
+		}
+	}
+}
+</script>
 </head>
 <body  class="sensorsp">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
   <h1>Датчики (кроме датчиков температуры)<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
-
 <div class="row1">
 <h2>Частотные датчики</h2>
 <table>

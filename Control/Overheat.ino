@@ -343,14 +343,6 @@ const uint16_t tFREON[SIZEOF_TEMP]={ // R717
  };
 #endif
     
-// Получение температуры по давлению - возврат температура в сотых градуса
-// Давление в сотых бара!!!!!
-__attribute__((always_inline)) inline int16_t PressToTemp(const uint8_t sensor)
-{
-	if(HP.sADC[sensor].Temp != ERROR_TEMPERATURE) return HP.sADC[sensor].Temp;
-	return HP.sADC[sensor].Temp = _PressToTemp(HP.sADC[sensor].get_Press());
-}
-
 int16_t _PressToTemp(const int16_t press)
 {
 	// Сделать перевод из манометрического давления в абсолютное И ТАБЛИЦА в ТЫСЯЧНЫХ!! надо умножить на 10 для перевода из сотых
@@ -379,6 +371,14 @@ int16_t _PressToTemp(const int16_t press)
 	}
 	//journal.printf(" FREON %d=%d (%d, %d, %d)\n", search_value, v, last_index + START_TEMP, tFREON[last_index-1], tFREON[last_index]);
 	return v;
+}
+
+// Получение температуры по давлению - возврат температура в сотых градуса
+// Давление в сотых бара!!!!!
+__attribute__((always_inline)) inline int16_t PressToTemp(const uint8_t sensor)
+{
+	if(HP.sADC[sensor].Temp != ERROR_TEMPERATURE) return HP.sADC[sensor].Temp;
+	return HP.sADC[sensor].Temp = _PressToTemp(HP.sADC[sensor].get_Press());
 }
 
 // Получить положение ЭРВ по температурам Конденсатора и Испарителя алгоритм ТАБЛИЦА
