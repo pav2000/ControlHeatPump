@@ -45,11 +45,9 @@ Highcharts.theme = {
 	},
 	yAxis: {
 		minorTickInterval: 'auto',
-		title: {
-			style: {
-				textTransform: 'uppercase'
-			}
-		},
+//		title: {
+//			style: { textTransform: 'uppercase'	}
+//		},
 		labels: {
 			style: {
 				fontSize: '10px'
@@ -140,12 +138,6 @@ function createChart() {
 		plotOptions: {
 			line: {
 				gapSize: 5
-				//color: '#d62020'
-				//  },
-				//  bar: {
-				//color: '#d52020'
-				//  },
-				//  column: {
 			},
 			series: {
 				marker: {
@@ -159,8 +151,25 @@ function createChart() {
 		},
 		tooltip: {
 			//valueDecimals: 1,
-			valueSuffix: '',
-			xDateFormat: '%d.%m.%Y<br/>%H:%M:%S'
+			xDateFormat: '%A, %d.%m.%Y'
+/*
+ %a: Short weekday, like 'Mon'.
+ %A: Long weekday, like 'Monday'.
+ %d: Two digit day of the month, 01 to 31.
+ %e: Day of the month, 1 through 31.
+ %b: Short month, like 'Jan'.
+ %B: Long month, like 'January'.
+ %m: Two digit month number, 01 through 12.
+ %y: Two digits year, like 09 for 2009.
+ %Y: Four digits year, like 2009.
+ %H: Two digits hours in 24h format, 00 through 23.
+ %I: Two digits hours in 12h format, 00 through 11.
+ %l: Hours in 12h format, 1 through 11.
+ %M: Two digits minutes, 00 through 59.
+ %p: Upper case AM or PM.
+ %P: Lower case AM or PM.
+ %S: Two digits seconds, 00 through 59
+*/
 			// reformat the tooltips so that local times are displayed
 			//formatter: function() {
 			//var d = new Date(this.x + (myOffset*60000));
@@ -185,42 +194,42 @@ function createChart() {
 		},
 		yAxis: [{
 			title: {
-				text: '°C'
+				text: '°C', align: 'high', offset: -10
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'T'
 		}, {
 			title: {
-				text: 'бар'
+				text: 'бар', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'P'
 		}, {
 			title: {
-				text: 'V'
+				text: 'V', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'кВт'
+				text: 'кВт', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP'
+				text: 'COP', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: 'минуты'
+				text: 'мин.', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
@@ -231,7 +240,7 @@ function createChart() {
 			csv: {
 //				decimalPoint: ',',
 				itemDelimiter: ';',
-				dateFormat: '%Y.%m.%d %H:%M:%S'
+				dateFormat: '%Y.%m.%d'// %H:%M:%S'
 			}
 		},
 		legend: {

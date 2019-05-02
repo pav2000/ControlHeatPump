@@ -45,11 +45,9 @@ Highcharts.theme = {
 	},
 	yAxis: {
 		minorTickInterval: 'auto',
-		title: {
-			style: {
-				textTransform: 'uppercase'
-			}
-		},
+//		title: {
+//			style: { textTransform: 'uppercase'	}
+//		},
 		labels: {
 			style: {
 				fontSize: '10px'
@@ -126,12 +124,6 @@ function createChart() {
 		plotOptions: {
 			line: {
 				gapSize: 5
-				//color: '#d62020'
-				//  },
-				//  bar: {
-				//color: '#d52020'
-				//  },
-				//  column: {
 			},
 			series: {
 				marker: {
@@ -146,13 +138,7 @@ function createChart() {
 		tooltip: {
 			//valueDecimals: 2,
 			valueSuffix: '',
-			xDateFormat: '%d.%m.%Y<br/>%H:%M:%S'
-			// reformat the tooltips so that local times are displayed
-			//formatter: function() {
-			//var d = new Date(this.x + (myOffset*60000));
-			//var n = (this.point.name === undefined) ? '' : '<br/>' + this.point.name;
-			//return this.series.name + ':<b>' + this.y + '</b>' + n + '<br/>' + d.toDateString() + '<br/>' + d.toTimeString().replace(/\(.*\)/, "");
-			//}
+			xDateFormat: '%A, %d.%m.%Y %H:%M'
 		},
 		xAxis: {
 			type: 'datetime',
@@ -171,67 +157,67 @@ function createChart() {
 		},
 		yAxis: [{
 			title: {
-				text: '°C'
+				text: '°C', align: 'high', offset: -10
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'T'
 		}, {
 			title: {
-				text: 'бар'
+				text: 'бар', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'P'
 		}, {
 			title: {
-				text: 'V'
+				text: 'V', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'кВт'
+				text: 'кВт', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP'
+				text: 'COP', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: '%'
+				text: '%', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'R'
 		}, {
 			title: {
-				text: 'Гц'
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'H'
-		}, {
-			title: {
-				text: 'Шаги'
+				text: 'Шаги', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'S'
 		}, {
 			title: {
-				text: 'м³ч'
+				text: 'м³ч', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'F'
+		}, {
+			title: {
+				text: 'Гц', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'H'
 		}],
 		exporting: {
 			enabled: true,
