@@ -238,11 +238,14 @@ void readFileSD(char *filename, uint8_t thread)
 
 	// В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
 	if(strcmp(filename, "state.txt") == 0) { get_txtState(thread, true); return; }
-	if(strcmp(filename, "settings.txt") == 0) {	get_txtSettings(thread); return; }
-	if(strcmp(filename, "settings.bin") == 0) {	get_binSettings(thread); return; }
+	if(strncmp(filename, "settings", 8) == 0) {
+		filename += 8;
+		if(strcmp(filename, ".txt") == 0) {	get_txtSettings(thread); return; }
+		else if(strcmp(filename, ".bin") == 0) { get_binSettings(thread); return; }
+		filename -= 8;
+	}
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
-	if(strcmp(filename, "test.dat") == 0) { get_datTest(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики, stats_yyyy.dat, stats_yyyy.csv
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
@@ -286,36 +289,43 @@ void readFileSD(char *filename, uint8_t thread)
 	    }
 		return;
 	}
-	if(strncmp(filename, "TEST_SD:", 8) == 0) { // Тестирует скорость чтения файла с SD карты
-		sendConstRTOS(thread, HEADER_FILE_WEB);
-		filename += 8;
-		journal.jprintf("SD card test: %s - ", filename);
-		SPI_switchSD();
-		if(webFile.open(filename, O_READ)) {
-			uint32_t startTick = millis();
-			uint32_t size = 0;
-			for(;;) {
-				int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
-				if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
-				if(n <= 0) break;
-				size += n;
-				if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
-				WDT_Restart(WDT);
-			}
-			startTick = millis() - startTick;
-			journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
-			webFile.close();
-			/*/ check write!
-			if(!webFile.open(filename, O_RDWR)) journal.jprintf("Error open for writing!\n");
-			else {
-				n = webFile.write("Test write!");
-				journal.jprintf("Wrote %d byte\n", n);
-				if(!webFile.sync()) journal.jprintf("Sync failed (%d,%d)\n", card.cardErrorCode(), card.cardErrorData());
+	if(strncmp(filename, "TEST.", 5) == 0) {
+		filename += 5;
+		if(strcmp(filename, "DAT") == 0) { // TEST.DAT
+			get_datTest(thread);
+		} else if(strcmp(filename, "NOSD") == 0) { // TEST.NOSD
+			get_indexNoSD(thread); // минимальная морда
+		} else if(strncmp(filename, "SD:", 3) == 0) {  // TEST.SD:<filename> - Тестирует скорость чтения файла с SD карты
+			filename += 3;
+			journal.jprintf("SD card test: %s - ", filename);
+			sendConstRTOS(thread, HEADER_FILE_WEB);
+			SPI_switchSD();
+			if(webFile.open(filename, O_READ)) {
+				uint32_t startTick = millis();
+				uint32_t size = 0;
+				for(;;) {
+					int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
+					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
+					if(n <= 0) break;
+					size += n;
+					if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
+					WDT_Restart(WDT);
+				}
+				startTick = millis() - startTick;
+				journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
 				webFile.close();
+				/*/ check write!
+				if(!webFile.open(filename, O_RDWR)) journal.jprintf("Error open for writing!\n");
+				else {
+					n = webFile.write("Test write!");
+					journal.jprintf("Wrote %d byte\n", n);
+					if(!webFile.sync()) journal.jprintf("Sync failed (%d,%d)\n", card.cardErrorCode(), card.cardErrorData());
+					webFile.close();
+				}
+				//*/
+			} else {
+				journal.jprintf("not found (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 			}
-			//*/
-		} else {
-			journal.jprintf("not found (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 		}
 		return;
 	}
@@ -326,9 +336,9 @@ void readFileSD(char *filename, uint8_t thread)
 // загрузка файла -----------
 	// Разбираемся откуда грузить надо (три варианта)
 	switch(HP.get_SourceWeb()) {
-	case pMIN_WEB:
+	case pMIN_WEB: // минимальная морда
 		get_indexNoSD(thread);
-		break;  // минимальная морда
+		break;
 	case pSD_WEB:
 		{ // Чтение с карты  файлов
 			SPI_switchSD();
@@ -1973,18 +1983,21 @@ void parserGET(uint8_t thread, int8_t )
 					else  // параметр верный
 					{
 						if (strcmp(str,"get_Temp")==0)              // Функция get_Temp
-						{ if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-							_ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100,2);
-						else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-						ADD_WEBDELIM(strReturn); continue; }
+						{
+							if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
+								_ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100,2);
+							else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+							ADD_WEBDELIM(strReturn); continue;
+						}
 						if (strcmp(str,"get_rawTemp")==0)           // Функция get_RawTemp
-						{ if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-							_ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100,2);
-						else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-						ADD_WEBDELIM(strReturn); continue; }
+						{ 	if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
+								_ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100,2);
+							else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+							ADD_WEBDELIM(strReturn); continue;
+						}
 						if(strcmp(str, "get_fullTemp") == 0)         // Функция get_FulTemp
 						{
-							if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)         // Если датчик есть в конфигурации то выводим значение
+							if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP) // Если датчик есть в конфигурации то выводим значение
 							{
 #ifdef SENSOR_IP
 								_ftoa(strReturn, (float) HP.sTemp[p].get_rawTemp() / 100, 2); // Значение проводного датчика вывод
@@ -2005,16 +2018,18 @@ void parserGET(uint8_t thread, int8_t )
 						}
 
 						if (strcmp(str,"get_minTemp")==0)           // Функция get_minTemp
-						{ if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
-							_ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100,1);
-						else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-						ADD_WEBDELIM(strReturn); continue; }
+						{ 	if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
+								_ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100,1);
+							else strcat(strReturn,"-");              // Датчика нет ставим прочерк
+							ADD_WEBDELIM(strReturn); continue;
+						}
 
 						if (strcmp(str,"get_maxTemp")==0)           // Функция get_maxTemp
-						{ if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-							_ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100,1);
-						else strcat(strReturn,"-");             // Датчика нет ставим прочерк
-						ADD_WEBDELIM(strReturn); continue; }
+						{ 	if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+								_ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100,1);
+							else strcat(strReturn,"-");             // Датчика нет ставим прочерк
+							ADD_WEBDELIM(strReturn); continue;
+						}
 
 						if (strcmp(str,"get_errTemp")==0)           // Функция get_errTemp
 						{ _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
@@ -2070,14 +2085,14 @@ void parserGET(uint8_t thread, int8_t )
 
 						// ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
 						if (strcmp(str,"set_testTemp")==0)           // Функция set_testTemp
-						{ if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-						{ _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn);  continue;  }
-						else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+						{ 	if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
+								{ _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn);  continue;  }
+							else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 						}
 						if (strcmp(str,"set_errTemp")==0)           // Функция set_errTemp
-						{ if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-						{ _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
-						else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+						{ 	if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
+								{ _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
+							else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 						}
 
 						if(strncmp(str, "set_fTemp", 9) == 0) {   // set_flagTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика
@@ -2396,10 +2411,17 @@ void parserGET(uint8_t thread, int8_t )
 						{ strcat(strReturn,"D"); _itoa(HP.dRelay[p].get_pinD(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
 						// ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
-						if (strcmp(str,"set_Relay")==0)           // Функция set_Relay
-						{ if (HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual)==OK)    // Установить значение
-						{ if (HP.dRelay[p].get_Relay()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn); continue; }
-						else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+						if(strcmp(str, "set_Relay") == 0)           // Функция set_Relay
+						{
+							if(HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual) == OK) // Установить значение
+							{
+								if(HP.dRelay[p].get_Relay()) strcat(strReturn, cOne); else strcat(strReturn, cZero);
+								ADD_WEBDELIM(strReturn);
+								continue;
+							} else { // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+								strcat(strReturn, "E05" WEBDELIM);
+								continue;
+							}
 						}
 					}  // else end
 				} //if ((strstr(str,"Relay")>0)  5

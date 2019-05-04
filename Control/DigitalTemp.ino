@@ -155,18 +155,16 @@ int16_t sensorTemp::get_Temp()
     if ((devIP->get_fRule())) return (t+Temp)/2;          // Усреднение датчиков
     else return t;                                      // Использование только удаленного датчика
    }
-  else  return Temp;                                    // датчик не привязан
+  else return Temp;                                     // датчик не привязан
  #else                                                  // При отсутствии удаленныхдатчиков сразу выводим проводной датчик
-   if (!(GETBIT(flags,fPresent))) return 0;             // проводной датчик запрещен в конфигурации ничего не делаем
-   return Temp;  
+   return Temp;
  #endif
 }
 
 // Получить значение температуры ПРОВОДНОГО датчика
 int16_t sensorTemp::get_rawTemp()
 {
- if (!(GETBIT(flags,fPresent))) return 0;                // датчик запрещен в конфигурации ничего не делаем
- return Temp;  
+	return Temp;
 }
 
 // Установить значение температуры датчика в режиме теста

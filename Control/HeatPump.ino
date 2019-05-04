@@ -1885,7 +1885,7 @@ int8_t HeatPump::StopWait(boolean stop)
     
   if(startPump)
   {
-     startPump=false;                                    // Поставить признак что насос выключен
+     startPump = 0;                                    // Поставить признак что насос выключен
      journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
   }
 
@@ -2242,6 +2242,17 @@ MODE_COMP HeatPump::UpdateHeat()
 	Status.ret=pNone;         // Сбросить состояние пида
 	t1 = GETBIT(Prof.Heat.flags,fTarget) ? RET : sTemp[TIN].get_Temp();  // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
 	target = get_targetTempHeat();
+#ifdef RPUMPFL
+	if(GETBIT(Prof.Heat.flags, fHeatFloor)) {
+		int16_t temp = STARTTEMP;
+		for(uint8_t i = 0; i < TNUMBER; i++) {
+			if(sTemp[i].get_setup_flag(fTEMP_HeatFloor) && temp > sTemp[i].get_Temp()) temp = sTemp[i].get_Temp();
+		}
+		if(temp != STARTTEMP) {
+			if(temp < target) dRelay[RPUMPFL].set_ON(); else if(temp - HYSTERESIS_HeatFloor > target) dRelay[RPUMPFL].set_OFF();
+		} else if(!dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_ON();
+	}
+#endif
 	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
