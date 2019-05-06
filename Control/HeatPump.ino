@@ -1885,7 +1885,7 @@ int8_t HeatPump::StopWait(boolean stop)
     
   if(startPump)
   {
-     startPump=false;                                    // Поставить признак что насос выключен
+     startPump = 0;                                    // Поставить признак что насос выключен
      journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
   }
 
@@ -2081,7 +2081,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : Prof.Boiler.dAddHeat)) {Status.ret=pBh22; return pCOMP_OFF; } // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		} else {
 			if (T > TRG)   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
@@ -2098,10 +2098,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
-		}
-		else
-		{
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : Prof.Boiler.dAddHeat))   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+		} else {
 			if (T > TRG)   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
@@ -2236,12 +2234,25 @@ MODE_COMP HeatPump::UpdateHeat()
 	if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return pCOMP_OFF;    // Если ТН выключен или выключается ничего не делаем
 
 	if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&((abs(FEED-RET)>Prof.Heat.dt)&&is_compressor_on())){set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);return pCOMP_NONE;}// Привышение разности температур кондесатора при включеноом компрессорае (есть задержка при переключении ГВС)
-#ifdef RTRV    
-	if ((dRelay[RTRV].get_Relay())&&is_compressor_on())      dRelay[RTRV].set_OFF();  // отопление Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
-#endif
 	Status.ret=pNone;         // Сбросить состояние пида
 	t1 = GETBIT(Prof.Heat.flags,fTarget) ? RET : sTemp[TIN].get_Temp();  // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
 	target = get_targetTempHeat();
+	if(is_compressor_on()) {
+#ifdef RTRV
+		if(dRelay[RTRV].get_Relay()) dRelay[RTRV].set_OFF();  // отопление Проверить и если надо установить 4-ходовой клапан только если компрессор работает (защита это лишнее)
+#endif
+#ifdef RPUMPFL
+		if(GETBIT(Prof.Heat.flags, fHeatFloor)) {
+			int16_t temp = STARTTEMP;
+			for(uint8_t i = 0; i < TNUMBER; i++) {
+				if(sTemp[i].get_setup_flag(fTEMP_HeatFloor) && temp > sTemp[i].get_Temp()) temp = sTemp[i].get_Temp();
+			}
+			if(temp != STARTTEMP) {
+				if(temp < target) dRelay[RPUMPFL].set_ON(); else if(temp - HYSTERESIS_HeatFloor > target) dRelay[RPUMPFL].set_OFF();
+			}// else if(!dRelay[RPUMPFL].get_Relay()) dRelay[RPUMPFL].set_ON();
+		}
+#endif
+	}
 	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.

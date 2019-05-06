@@ -867,20 +867,20 @@ void vReadSensor(void *)
 				temp = 0;
 				uint8_t cnt = 0;
 				for(i = 0; i < TNUMBER; i++) {
-					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average)) {
+					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average) && HP.sTemp[i].get_Temp() != STARTTEMP) {
 						temp += HP.sTemp[i].get_Temp();
 						cnt++;
 					}
 				}
-				if(cnt) temp /= cnt; else temp = 32767;
-			} else temp = 32767;
+				if(cnt) temp /= cnt; else temp = STARTTEMP;
+			} else temp = STARTTEMP;
 			int16_t temp2 = temp;
 			if(GETBIT(flags, fTEMP_as_TIN_min)) { // Выбор минимальной температуры для TIN
 				for(i = 0; i < TNUMBER; i++) {
 					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_min) && temp2 > HP.sTemp[i].get_Temp()) temp2 = HP.sTemp[i].get_Temp();
 				}
 			}
-			if(temp2 != 32767) HP.sTemp[TIN].set_Temp(temp2);
+			if(temp2 != STARTTEMP) HP.sTemp[TIN].set_Temp(temp2);
 		}
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика

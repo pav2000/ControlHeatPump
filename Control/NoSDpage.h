@@ -22,7 +22,7 @@
 #ifndef NoSDpage_h
 #define NoSDpage_h
 
-// Конвертор http://www.buildmystring.com/default.ph
+// Конвертор http://www.buildmystring.com/default.php
 // индексная страница без карты
 const char index_noSD[] =
 "<html>\r\n"
@@ -116,7 +116,7 @@ const char index_noSD[] =
 "           var reerr = new RegExp('^E');\r\n"
 "           var rec = new RegExp('^CONST|get_sysInfo|get_socketInfo');\r\n"
 "           var reo = new RegExp('^scan_');\r\n"
-"           var rer = new RegExp('^get_Relay|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADDH|CIRC|RESH|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_oHP[(]ADD_HEA|et_oHP[(]BEEP|RTV_OFF|get_oHP[(]SAVE_ON|et_oHP[(]NEXTION|et_oHP[(]HIST|et_oHP[(]EEV_CLOSE|get_datetime[(]UPDATE');\r\n"
+"           var rer = new RegExp('^get_Relay|MESS_RESET|MESS_WARNING|MESS_SD|MESS_TEMP|MESS_LIFE|MESS_ERROR|[(]MAIL[)]|MAIL_AUTH|MAIL_INFO|[(]SMS[)]|UPDATE_I2C|Boiler[(]BOILER_ON|Boiler[(]SCHEDULER_ON|Boiler[(]ADDH|CIRC|RESH|Boiler[(]SALLMONELA|et_Network[(]DHCP|et_Network[(]PASSWORD|et_oHP[(]ADD_HEA|et_oHP[(]BEEP|RTV_OFF|get_oHP[(]SAVE_ON|et_oHP[(]NEXTION|et_oHP[(]HIST|et_oHP[(]EEV_CLOSE|get_datetime[(]UPDATE|oHP[(]WSPIF');\r\n"
 "           var rep = new RegExp('^get_is');\r\n"
 "           var ret = new RegExp('[(]SCHEDULER[)]');\r\n"
 "           var res = new RegExp('et_Network[(]SIZE_PACKET|et_freon|et_rule|et_testMode|et_listChart|HP[(]RULE|HP[(]TARGET|SOCKET|W5200|et_modeHP|TIME_CHART|SMS_SERVICE');\r\n"
@@ -195,7 +195,7 @@ const char index_noSD[] =
 "                         document.getElementById(\"get_testmode2\").innerHTML = cont2[0];\r\n"
 "                         } \r\n"
 "                     }\r\n"
-"                   }                 \r\n"
+"                   }\r\n"
 "                 }\r\n"
 "                else if (idsel==\"get_ruleeev\") {\r\n"
 "                 document.getElementById(\"get_freoneev\").disabled = false;\r\n"
