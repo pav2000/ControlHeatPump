@@ -54,8 +54,9 @@
 	function loadParam_after(paramid) {
 		if(paramid.indexOf("et_SCHDLR")!=-1) {
 			var i = get_sch_index();
-			if(i != -1) {
-				document.getElementById('get_schdlr-name').value = document.getElementById('get_schdlr-lstnames').options[i].innerHTML;
+			element = document.getElementById('get_schdlr-name');
+			if(i != -1 && document.activeElement != element) {
+				element.value = document.getElementById('get_schdlr-lstnames').options[i].innerHTML;
 				$('#calendar .ui-selected').removeClass('ui-selected');
 			}
 		}

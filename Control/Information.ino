@@ -760,8 +760,8 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_BOIL_TIME)==0){       return  _itoa(Boiler.pid_time,ret);                        }else                            // Постоянная интегрирования времени в секундах ПИД ГВС
  if(strcmp(var,boil_BOIL_PRO)==0){        _ftoa(ret,(float)Boiler.pid.Kp/1000,3); return ret;       }else                            // Пропорциональная составляющая ПИД ГВС
 #ifdef PID_FORMULA2
-   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Boiler.pid.Ki/Boiler.pid_time/1000,3); return ret;} else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Boiler.pid.Kd*Boiler.pid_time/1000,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
+ if(strcmp(var,boil_BOIL_IN)==0){         _ftoa(ret,(float)Boiler.pid.Ki/Boiler.pid_time/1000,3); return ret;} else             // Интегральная составляющая ПИД ТН
+ if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd*Boiler.pid_time/1000,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
 #else
  if(strcmp(var,boil_BOIL_IN)==0){         _ftoa(ret,(float)Boiler.pid.Ki/1000,3); return ret;       }else                            // Интегральная составляющая ПИД ГВС
  if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd/1000,3); return ret;       }else                            // Дифференциальная составляющая ПИД ГВС
