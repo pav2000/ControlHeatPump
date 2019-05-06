@@ -1190,13 +1190,11 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 			m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
 			strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
-			//       strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
+			//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
 
-			strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
 #ifdef DRV_EEV_L9333          // Контроль за работой драйвера ЭРВ
+			strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
 			if (digitalReadDirect(PIN_STEP_DIAG))  strcat(strReturn,"Error L9333;"); else strcat(strReturn,"Normal;");
-#else
-			strcat(strReturn,NO_SUPPORT); strcat(strReturn,";");
 #endif
 			strcat(strReturn,"Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|");
 			strcat(strReturn,uint16ToHex(lastErrorFreeRtosCode));strcat(strReturn,";");

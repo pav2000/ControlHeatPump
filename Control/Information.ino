@@ -540,8 +540,9 @@ void Profile::initProfile()
   Boiler.pid.Kp=1;                      // Пропорциональная составляющая ПИД ГВС
   Boiler.pid.Ki=0;                      // Интегральная составляющая ПИД ГВС
   Boiler.pid.Kd=3;                      // Дифференциальная составляющая ПИД ГВС
-  Boiler.tempPID=3800;               // Целевая температура ПИД ГВС
-  Boiler.tempRBOILER=3500;              // Темпеартура ГВС при котором включается бойлер и отключатся ТН
+  Boiler.tempPID=3800;                  // Целевая температура ПИД ГВС
+  Boiler.tempRBOILER=3500;              // Температура ГВС при котором включается бойлер и отключатся ТН
+  Boiler.dAddHeat = HYSTERESIS_BoilerAddHeat;
   Boiler.add_delta_temp = 1800;		    // Добавка температуры к установке бойлера, в градусах
   Boiler.add_delta_hour = 6;		    // Начальный Час добавки температуры к установке бойлера
   Boiler.add_delta_end_hour = 6;        // Конечный Час добавки температуры к установке
@@ -732,6 +733,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_ADD_HEATING)==0)		{ if(x) SETBIT1(Boiler.flags,fAddHeating); else SETBIT0(Boiler.flags,fAddHeating); return true;} else  // флаг использования тена для догрева ГВС
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
+	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
 	return false;
 }
 
@@ -758,7 +760,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_RESET_HEAT)==0){      if (GETBIT(Boiler.flags,fResetHeat))   return  strcat(ret,(char*)cOne); else return  strcat(ret,(char*)cZero); }else       // флаг Сброса лишнего тепла в СО
  if(strcmp(var,boil_RESET_TIME)==0){      return  _itoa(Boiler.Reset_Time,ret);                      }else                            // время сброса излишков тепла в секундах (fResetHeat)
  if(strcmp(var,boil_BOIL_TIME)==0){       return  _itoa(Boiler.pid_time,ret);                        }else                            // Постоянная интегрирования времени в секундах ПИД ГВС
- if(strcmp(var,boil_BOIL_PRO)==0){        _ftoa(ret,(float)Boiler.pid.Kp/1000,3); return ret;       }else                            // Пропорциональная составляющая ПИД ГВС
+ if(strcmp(var,boil_BOIL_PRO)==0){        _ftoa(ret,(float)Boiler.pid.Kp/1000,3); return ret;        }else                            // Пропорциональная составляющая ПИД ГВС
 #ifdef PID_FORMULA2
  if(strcmp(var,boil_BOIL_IN)==0){         _ftoa(ret,(float)Boiler.pid.Ki/Boiler.pid_time/1000,3); return ret;} else             // Интегральная составляющая ПИД ТН
  if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd*Boiler.pid_time/1000,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
@@ -766,10 +768,11 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_BOIL_IN)==0){         _ftoa(ret,(float)Boiler.pid.Ki/1000,3); return ret;       }else                            // Интегральная составляющая ПИД ГВС
  if(strcmp(var,boil_BOIL_DIF)==0){        _ftoa(ret,(float)Boiler.pid.Kd/1000,3); return ret;       }else                            // Дифференциальная составляющая ПИД ГВС
 #endif
- if(strcmp(var,boil_BOIL_TEMP)==0){       _ftoa(ret,(float)Boiler.tempPID/100,1); return ret;   }else                            // Целевая темпеартура ПИД ГВС
+ if(strcmp(var,boil_BOIL_TEMP)==0){       _ftoa(ret,(float)Boiler.tempPID/100,1); return ret;       }else                            // Целевая темпеартура ПИД ГВС
  if(strcmp(var,boil_ADD_HEATING)==0){     if(GETBIT(Boiler.flags,fAddHeating)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else   // флаг использования тена для догрева ГВС
  if(strcmp(var,hp_SUN)==0) { if(GETBIT(Boiler.flags,fBoilerUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
- if(strcmp(var,boil_TEMP_RBOILER)==0){    _ftoa(ret,(float)Boiler.tempRBOILER/100,1); return ret;       }else                            // температура включения догрева бойлера
+ if(strcmp(var,boil_TEMP_RBOILER)==0){    _ftoa(ret,(float)Boiler.tempRBOILER/100,1); return ret;    }else                            // температура включения догрева бойлера
+ if(strcmp(var,boil_dAddHeat)==0){        _ftoa(ret,(float)Boiler.dAddHeat/100,1); return ret;       }else
  return strcat(ret,(char*)cInvalid);
 }
 

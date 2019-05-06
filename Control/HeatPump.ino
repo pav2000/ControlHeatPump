@@ -2081,7 +2081,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBh22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : Prof.Boiler.dAddHeat)) {Status.ret=pBh22; return pCOMP_OFF; } // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 		} else {
 			if (T > TRG)   {Status.ret=pBh3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
@@ -2098,10 +2098,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if ((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(GETBIT(Prof.Boiler.flags,fAddHeating)))  // режим догрева
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : HYSTERESIS_BoilerAddHeat))   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
-		}
-		else
-		{
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler ? 0 : Prof.Boiler.dAddHeat))   {Status.ret=pBp22; return pCOMP_OFF; }  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
+		} else {
 			if (T > TRG)   {Status.ret=pBp3; return pCOMP_OFF; }  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
