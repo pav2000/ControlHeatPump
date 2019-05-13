@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -141,11 +141,12 @@ struct type_SaveON
 #define fSalmonella      	2           // флаг Сальмонела раз внеделю греть бойлер
 #define fCirculation     	3           // флаг Управления циркуляционным насосом ГВС
 #define fResetHeat       	4           // флаг Сброса лишнего тепла в СО
-#define fTurboBoiler     	5           // флаг ТУРБО ГВС нагрев (нагрев=ТН+ТЭН)
+#define fTurboBoiler     	5           // флаг Ускоренный нагрев бойлера (ТН + ТЭН)
 #define fAddHeating      	6           // флаг ДОГРЕВА ГВС ТЭНом
 #define fBoilerTogetherHeat	7			// флаг одновременного нагрева бойлера с отоплением до температуры догрева
 #define fBoilerPID			8			// ПИД
 #define fBoilerUseSun		9		  	// флаг использования солнечного коллектора
+#define fAddHeatingForce	10			// флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
 
 struct type_boilerHP
 {

@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.020"				// Версия прошивки
+#define VERSION			"1.021"				// Версия прошивки
 #define VER_SAVE		133					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -656,6 +656,7 @@ const char *boil_BOIL_IN      = {"PI"};                  // Интегральн
 const char *boil_BOIL_DIF     = {"PD"};                  // Дифференциальная составляющая ПИД ГВС
 const char *boil_BOIL_TEMP    = {"TEMP"};                // Целевая температура ПИД ГВС
 const char *boil_ADD_HEATING  = {"ADDH"};                // флаг ДОГРЕВА ГВС ТЭНом
+const char *boil_fAddHeatingForce={"AHF"};                 // флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
 const char *boil_TEMP_RBOILER = {"TEMPR"};               // температура включения догрева бойлера
 const char *boil_TOGETHER_HEAT= {"TGHEAT"};              // флаг Использование расписания только для ТЭНа
 const char *boil_fBoilerPID   = {"PID"};                 // ПИД вкл/выкл

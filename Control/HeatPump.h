@@ -549,9 +549,10 @@ class HeatPump
     
     // Переменные пид регулятора ГВС
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
-    boolean flagRBOILER;                  // true - идет цикл догрева бойлера
+    boolean flagRBOILER;                  // true - идет или скоро может быть пойдет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
     boolean onSallmonela;                 // Если true то идет Обеззараживание
+    uint8_t HeatBoilerUrgently;				// Срочно нужно ГВС
     
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };

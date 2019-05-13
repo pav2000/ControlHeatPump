@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления 
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -119,19 +119,19 @@ boolean set_time_NTP(void)
 				} else flag = -1;
 			}
 			tTCP.stop();
-			if(flag > 0) {
-				journal.jprintf("OK\n");
-				break;
-			} else journal.jprintf(" Error %d\n", flag);
+			if(flag > 0) break; else journal.jprintf(" Error %d\n", flag);
 		}
 	}
 	if(flag > 0) {  // Обновление времени если оно получено
-		rtcSAM3X8.set_clock(secs, TIME_ZONE);    // обновить внутренние часы
+		unsigned long lt = rtcSAM3X8.unixtime();
+		if(lt != secs) {
+			rtcSAM3X8.set_clock(secs, TIME_ZONE);    // обновить внутренние часы
+		}
 		// обновились, можно и часы i2c обновить
 		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
-		journal.jprintf(" Set time from server: %s ", NowDateToStr());
-		journal.jprintf("%s\n", NowTimeToStr());  // Через один глобальный буфер
+		journal.jprintf("OK\n Set time from server: %s ", NowDateToStr()); // Через один глобальный буфер
+		journal.jprintf("%s (%s%d)\n", NowTimeToStr(), secs <= lt ? "" : "+", secs - lt);  // Через один глобальный буфер
 	} else {
 		journal.jprintf(" ERROR update time from server! %s ", NowDateToStr());
 		journal.jprintf("%s\n", NowTimeToStr()); // Через один глобальный буфер
