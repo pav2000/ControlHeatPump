@@ -97,7 +97,7 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryC
 			free(temp_buf);
 			return OK;
 		} else if(!FindEndPosition(what)) {
-			journal.jprintf(" Endpos not found!\n");
+			journal.jprintf("Endpos not found!\n");
 		} else {
 			return OK;
 		}
@@ -142,7 +142,7 @@ boolean Statistics::FindEndPosition(uint8_t what)
 	}
 	if(pos == NULL) return false;
 	if(pos == buffer || *(pos-1) != '\n') { // Обрезанные данные - пропускаем
-		journal.jprintf(" CUT");
+		journal.jprintf("CUT ");
 		if(pos != buffer) {
 xCutSearch:	while(--pos >= buffer) if(*pos == '\n') break;
 			pos++;
@@ -164,7 +164,7 @@ xCutSearch:	while(--pos >= buffer) if(*pos == '\n') break;
 		CurrentPos = pos - buffer;
 	}
 //#ifdef DEBUG_MODWORK
-	journal.jprintf(" End pos: %u/%u\n", cur, pos - buffer);
+	journal.jprintf("End pos: %u/%u\n", cur, pos - buffer);
 //#endif
 	return true;
 }
@@ -265,6 +265,8 @@ void Statistics::Init(uint8_t newyear)
 								}
 							}
 							counts = 1;
+							StatsFileString(temp_initbuf);
+							journal.jprintf(" Loaded: %s\n", temp_initbuf);
 						}
 					}
 					break;
@@ -341,7 +343,11 @@ void Statistics::Reset()
 // Обновить статистику, вызывается часто, раз в TIME_READ_SENSOR
 void Statistics::Update()
 {
-	if(NewYearFlag || HP.get_testMode() != NORMAL) return; // waiting to switch a next year
+	if(NewYearFlag
+#ifndef TEST_BOARD
+			|| HP.get_testMode() != NORMAL
+#endif
+		) return; // waiting to switch a next year
 	uint32_t tm = millis() - previous;
 	previous = millis();
 	if(rtcSAM3X8.get_days() != day) {
@@ -901,7 +907,11 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 // Логирование параметров работы ТН, раз в 1 минуту
 void Statistics::History()
 {
-	if(!GETBIT(HP.Option.flags, fHistory) || HP.get_testMode() != NORMAL) return;
+	if(!GETBIT(HP.Option.flags, fHistory)
+#ifndef TEST_BOARD
+			|| HP.get_testMode() != NORMAL
+#endif
+		) return;
 	uint16_t y = rtcSAM3X8.get_years();
 	if(y != year) return;
 	char *mbuf = (char*) malloc(HISTORY_MAX_RECORD_LEN);

@@ -656,11 +656,12 @@ const char *boil_BOIL_IN      = {"PI"};                  // Интегральн
 const char *boil_BOIL_DIF     = {"PD"};                  // Дифференциальная составляющая ПИД ГВС
 const char *boil_BOIL_TEMP    = {"TEMP"};                // Целевая температура ПИД ГВС
 const char *boil_ADD_HEATING  = {"ADDH"};                // флаг ДОГРЕВА ГВС ТЭНом
-const char *boil_fAddHeatingForce={"AHF"};                 // флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
+const char *boil_fAddHeatingForce={"AHF"};               // флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
 const char *boil_TEMP_RBOILER = {"TEMPR"};               // температура включения догрева бойлера
 const char *boil_TOGETHER_HEAT= {"TGHEAT"};              // флаг Использование расписания только для ТЭНа
 const char *boil_fBoilerPID   = {"PID"};                 // ПИД вкл/выкл
 const char *boil_dAddHeat     = {"dAH"};				 // Гистерезис нагрева бойлера до температуры догрева, в сотых градуса
+const char *boil_HeatUrgently = {"URG"};				 // Срочно нужно ГВС
 
 // Дата время
 const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд

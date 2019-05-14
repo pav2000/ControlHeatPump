@@ -3416,26 +3416,26 @@ void HeatPump::calculatePower()
 #endif
 
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда То отбрасываем отрицательные мощности, это переходные процессы, возможно это надо делать всегда
-if (powerCO<0) powerCO=0;
-if (powerGEO<0) powerGEO=0;
+	if (powerCO<0) powerCO=0;
+	if (powerGEO<0) powerGEO=0;
 #endif
 
 // Получение мощностей потребления электроэнергии
-COP = dFC.get_power();  // получить текущую мощность компрессора 
+	COP = dFC.get_power();  // получить текущую мощность компрессора
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
-    if (dSDM.get_link()){  // Если счетчик работает (связь не утеряна)
-	power220 = dSDM.get_Power();
-	#ifdef CORRECT_POWER220
-		for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
-	#endif
-    } else power220=0; // свзяи со счетчиком нет
+	if (dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
+		power220 = dSDM.get_Power();
+	} else power220=0; // связи со счетчиком нет
 #else
-   power220=0; // электросчетчика нет
+	power220=0; // электросчетчика нет
+#endif
+#ifdef CORRECT_POWER220
+	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
 #endif
 
 // Расчет КОП
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
-if(is_compressor_on()){      // Если компрессор рабоатет
+if(is_compressor_on()){      // Если компрессор работает
 #endif	
 	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
 	if(power220 != 0) fullCOP = powerCO / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
@@ -3444,7 +3444,7 @@ if(is_compressor_on()){      // Если компрессор рабоатет
 		if(fullCOP>8*100) COP=8*100;// полный КОП не более 8
 		#endif
 #ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
-} else { COP=0; fullCOP=0; }  // компрессор не рабоатет
+	} else { COP=0; fullCOP=0; }  // компрессор не рабоатет
 #endif
 }
 

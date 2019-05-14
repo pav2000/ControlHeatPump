@@ -485,6 +485,7 @@ class HeatPump
     uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
     uint8_t  NO_Power_delay;
+    uint8_t HeatBoilerUrgently;				// Срочно нужно ГВС
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
@@ -552,7 +553,6 @@ class HeatPump
     boolean flagRBOILER;                  // true - идет или скоро может быть пойдет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
     boolean onSallmonela;                 // Если true то идет Обеззараживание
-    uint8_t HeatBoilerUrgently;				// Срочно нужно ГВС
     
     friend int8_t set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };

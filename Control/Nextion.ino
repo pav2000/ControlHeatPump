@@ -302,6 +302,7 @@ void Nextion::Update()
 		setComponentText("t5", ntemp);
 		if(HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 		else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
+		if(HP.HeatBoilerUrgently) sendCommand("vis g,1"); else sendCommand("vis g,0");
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{
 		/*
