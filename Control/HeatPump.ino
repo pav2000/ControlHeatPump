@@ -380,6 +380,15 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 	updateLinkIP();
 #endif
 	journal.jprintf("OK\n");
+	if(HP.Option.ver <= 133) {
+		if(dSDM.get_readState(3) == OK) {
+			motoHour.E1 = (dSDM.get_Energy() - motoHour.E1_f) * 1000;
+			motoHour.E2 = (dSDM.get_Energy() - motoHour.E2_f) * 1000;
+		} else {
+			motoHour.E1 = 0;
+			motoHour.E2 = 0;
+		}
+	}
 	return size + sizeof(crc);
 }
 
@@ -438,25 +447,21 @@ void HeatPump::resetCount(boolean full)
 	{
 		motoHour.H1 = 0;
 		motoHour.C1 = 0;
-#ifdef USE_ELECTROMETER_SDM
-       if (dSDM.get_link()) motoHour.E1 = dSDM.get_Energy(); // Если счетчик работает (связь не утеряна)
-#endif
 		motoHour.P1 = 0;
 		motoHour.Z1 = 0;
+		motoHour.E1 = 0;
 		motoHour.D1 = rtcSAM3X8.unixtime();           // Дата сброса общих счетчиков
 	}
 	// Сезон
 	motoHour.H2 = 0;
 	motoHour.C2 = 0;
-#ifdef USE_ELECTROMETER_SDM
-	if (dSDM.get_link()) motoHour.E2 = dSDM.get_Energy();// Если счетчик работает (связь не утеряна)
-    else  journal.jprintf("WARNING: Link with SDM lost - energy was not reseted!\n");
-#endif
 	motoHour.P2 = 0;
 	motoHour.Z2 = 0;
+	motoHour.E2 = 0;
 	motoHour.D2 = rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
 	save_motoHour();  // записать счетчики
 	motohour_OUT_work = 0;
+	motohour_IN_work = 0;
 }
 
 // Обновление счетчиков моточасов, вызывается раз в минуту
@@ -468,6 +473,13 @@ void HeatPump::updateCount()
 		motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
 	}
 	int32_t p;
+	//taskENTER_CRITICAL();
+	p = motohour_IN_work;
+	motohour_IN_work = 0;
+	//taskEXIT_CRITICAL();
+	p /= 1000;
+	motoHour.E1 += p;
+	motoHour.E2 += p;
 	//taskENTER_CRITICAL();
 	p = motohour_OUT_work;
 	motohour_OUT_work = 0;
@@ -483,20 +495,20 @@ void HeatPump::updateCount()
 
 // После любого изменения часов необходимо пересчитать все времна которые используются
 // параметр изменение времени - корректировка
-void HeatPump::updateDateTime(int32_t  dTime)
+void HeatPump::updateDateTime(int32_t dTime)
 {
-  if(dTime!=0)                                   // было изменено время, надо скорректировать переменные времени
-    {
-    Prof.SaveON.startTime=Prof.SaveON.startTime+dTime; // время пуска ТН (для организации задержки включения включение ЭРВ)
-    if (timeON>0)          timeON=timeON+dTime;                               // время включения контроллера для вычисления UPTIME
-    if (startCompressor>0) startCompressor=startCompressor+dTime;             // время пуска компрессора
-    if (stopCompressor>0)  stopCompressor=stopCompressor+dTime;               // время останова компрессора
-    if (countNTP>0)        countNTP=countNTP+dTime;                           // число секунд с последнего обновления по NTP
-    if (offBoiler>0)       offBoiler=offBoiler+dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
-    if (startDefrost>0)    startDefrost=startDefrost+dTime;                   // время срабатывания датчика разморозки
-    if (timeBoilerOff>0)   timeBoilerOff=timeBoilerOff+dTime;                 // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
-    if (startSallmonela>0) startSallmonela=startSallmonela+dTime;             // время начала обеззараживания
-    } 
+	if(dTime != 0)                                   // было изменено время, надо скорректировать переменные времени
+	{
+		Prof.SaveON.startTime = Prof.SaveON.startTime + dTime; // время пуска ТН (для организации задержки включения включение ЭРВ)
+		if(timeON > 0) timeON = timeON + dTime;                               // время включения контроллера для вычисления UPTIME
+		if(startCompressor > 0) startCompressor = startCompressor + dTime;             // время пуска компрессора
+		if(stopCompressor > 0) stopCompressor = stopCompressor + dTime;               // время останова компрессора
+		if(countNTP > 0) countNTP = countNTP + dTime;                           // число секунд с последнего обновления по NTP
+		if(offBoiler > 0) offBoiler = offBoiler + dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
+		if(startDefrost > 0) startDefrost = startDefrost + dTime;                   // время срабатывания датчика разморозки
+		if(timeBoilerOff > 0) timeBoilerOff = timeBoilerOff + dTime; // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
+		if(startSallmonela > 0) startSallmonela = startSallmonela + dTime;             // время начала обеззараживания
+	}
 }
       
 
@@ -523,8 +535,7 @@ void HeatPump::resetSettingHP()
   motoHour.C2=0;                                // моточасы компрессора сбрасываемый счетчик (сезон)
   motoHour.E1=0.0;                              // Значение потреленный энергии в момент пуска  актуально при использовании счетчика SDM120 (вычитаем текущее и получам итого)
   motoHour.E2=0.0;                              // Значение потреленный энергии в начале сезона актуально при использовании счетчика SDM120 (вычитаем текущее и получам итого)
-  motoHour.D1=rtcSAM3X8.unixtime();             // Дата сброса общих счетчиков
-  motoHour.D2=rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
+  motoHour.D1 = motoHour.D2 = rtcSAM3X8.unixtime(); // Дата сброса счетчиков
  
   startPump=false;                              // Признак работы задачи насос
   flagRBOILER=false;                            // не идет нагрев бойлера
@@ -791,50 +802,72 @@ char* HeatPump::get_network(char *var,char *ret)
 }
 
 // Установить параметр дата и время из строки
-boolean  HeatPump::set_datetime(char *var, char *c)
+boolean HeatPump::set_datetime(char *var, char *c)
 {
 	float tz;
-	int16_t m,h,d,mo,y;
+	int16_t m, h, d, mo, y;
 	int16_t buf[4];
-	uint32_t oldTime=rtcSAM3X8.unixtime(); // запомнить время
-	int32_t  dTime=0;
-	if(strcmp(var,time_TIME)==0){ if (!parseInt16_t(c, ':',buf,2,10)) return false;
-						  h=buf[0]; m=buf[1];
-						  rtcSAM3X8.set_time (h,m,0);  // внутренние
-						  setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(),rtcSAM3X8.get_seconds()); // внешние
-						  dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-					  }else
-	if(strcmp(var,time_DATE)==0){
-						  char ch, f = 0; m = 0;
-						  do { // ищем разделитель чисел
-							  ch = c[m++];
-							  if(ch >= '0' && ch <= '9') f = 1; else if(f == 1) { f = 2; break; }
-						  } while(ch != '\0');
-						  if(f != 2 || !parseInt16_t(c, ch,buf,3,10)) return false;
-						  d=buf[0]; mo=buf[1]; y=buf[2];
-						  rtcSAM3X8.set_date(d,mo,y); // внутренние
-						  setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(),rtcSAM3X8.get_years()); // внешние
-						  dTime=rtcSAM3X8.unixtime()-oldTime;// получить изменение времени
-					  }else
-	if(strcmp(var,time_NTP)==0){if(strlen(c)==0) return false;                                                 // пустая строка
-						  if(strlen(c)>NTP_SERVER_LEN) return false;                                     // слишком длиная строка
-						  else { strcpy(DateTime.serverNTP,c); return true;  }                           // ок сохраняем
-					  }else
-	if(strcmp(var,time_UPDATE)==0){     if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateNTP); return true;}
-						  else if (strcmp(c,cOne)==0) { SETBIT1( DateTime.flags,fUpdateNTP);countNTP=0; return true;}
-						  else return false;
-					  }else
-	if(strcmp(var,time_TIMEZONE)==0){  tz=my_atof(c);
-						  if (tz==-9876543.00) return   false;
-						  else if((tz<-12)||(tz>12)) return   false;
-						  else DateTime.timeZone=(int)tz; return true;
-					  }else
-	if(strcmp(var,time_UPDATE_I2C)==0){ if (strcmp(c,cZero)==0) { SETBIT0(DateTime.flags,fUpdateI2C); return true;}
-						  else if (strcmp(c,cOne)==0) {SETBIT1( DateTime.flags,fUpdateI2C);countNTP=0; return true;}
-						  else return false;
-					  } else return  false;
+	uint32_t oldTime = rtcSAM3X8.unixtime(); // запомнить время
+	int32_t dTime = 0;
+	if(strcmp(var, time_TIME) == 0) {
+		if(!parseInt16_t(c, ':', buf, 2, 10)) return false;
+		h = buf[0];
+		m = buf[1];
+		rtcSAM3X8.set_time(h, m, 0);  // внутренние
+		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds()); // внешние
+		dTime = rtcSAM3X8.unixtime() - oldTime; // получить изменение времени
+	} else if(strcmp(var, time_DATE) == 0) {
+		char ch, f = 0;
+		m = 0;
+		do { // ищем разделитель чисел
+			ch = c[m++];
+			if(ch >= '0' && ch <= '9') f = 1;
+			else if(f == 1) {
+				f = 2;
+				break;
+			}
+		} while(ch != '\0');
+		if(f != 2 || !parseInt16_t(c, ch, buf, 3, 10)) return false;
+		d = buf[0];
+		mo = buf[1];
+		y = buf[2];
+		rtcSAM3X8.set_date(d, mo, y); // внутренние
+		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years()); // внешние
+		dTime = rtcSAM3X8.unixtime() - oldTime; // получить изменение времени
+	} else if(strcmp(var, time_NTP) == 0) {
+		if(strlen(c) == 0) return false;                                                 // пустая строка
+		if(strlen(c) > NTP_SERVER_LEN) return false;                                     // слишком длиная строка
+		else {
+			strcpy(DateTime.serverNTP, c);
+			return true;
+		}                           // ок сохраняем
+	} else if(strcmp(var, time_UPDATE) == 0) {
+		if(strcmp(c, cZero) == 0) {
+			SETBIT0(DateTime.flags, fUpdateNTP);
+			return true;
+		} else if(strcmp(c, cOne) == 0) {
+			SETBIT1(DateTime.flags, fUpdateNTP);
+			countNTP = 0;
+			return true;
+		} else return false;
+	} else if(strcmp(var, time_TIMEZONE) == 0) {
+		tz = my_atof(c);
+		if(tz == -9876543.00) return false;
+		else if((tz < -12) || (tz > 12)) return false;
+		else DateTime.timeZone = (int) tz;
+		return true;
+	} else if(strcmp(var, time_UPDATE_I2C) == 0) {
+		if(strcmp(c, cZero) == 0) {
+			SETBIT0(DateTime.flags, fUpdateI2C);
+			return true;
+		} else if(strcmp(c, cOne) == 0) {
+			SETBIT1(DateTime.flags, fUpdateI2C);
+			countNTP = 0;
+			return true;
+		} else return false;
+	} else return false;
 
-	if(dTime!=0)  updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+	if(dTime != 0) updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
 	return true;
 }
 // Получить параметр дата и время из строки
@@ -866,6 +899,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((x>=0)&&(x<=65535)) {Option.pausePump=x; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          { if ((x>=0)&&(x<=255)) {Option.nStart=x; return true;} else return false;  }else                // число попыток пуска
    if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) startChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
+   if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = x; return true;} else
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          { Option.flags = (Option.flags & ~(1<<fNextion)) | ((x!=0)<<fNextion); updateNextion(); return true; } else            // использование дисплея nextion
    if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(); return true; } else            // использование дисплея nextion
@@ -913,6 +947,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_PUMP_PAUSE)==0)       {return _itoa(Option.pausePump,ret);}else                                                          // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          {return _itoa(Option.nStart,ret);}else                                                             // число попыток пуска
    if(strcmp(var,option_TIME_CHART)==0)       {return _itoa(Option.tChart,ret);} else
+   if(strcmp(var,option_Charts_when_comp_on)==0){return _itoa(Charts_when_comp_on, ret);} else
    if(strcmp(var,option_BEEP)==0)             {if(GETBIT(Option.flags,fBeep)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          { return strcat(ret, (char*)(GETBIT(Option.flags,fNextion) ? cOne : cZero)); } else         // использование дисплея nextion
    if(strcmp(var,option_NEXTION_WORK)==0)     { return strcat(ret, (char*)(GETBIT(Option.flags,fNextionOnWhileWork) ? cOne : cZero)); } else         // использование дисплея nextion
@@ -2878,9 +2913,7 @@ void HeatPump::compressorON()
    }  // if(mod!=pDEFROST)
 #endif	
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
-#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
-		task_updstat_chars = 0;
-#endif
+		if(Charts_when_comp_on) task_updstat_chars = 0;
 	    command_completed = rtcSAM3X8.unixtime();
 	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим

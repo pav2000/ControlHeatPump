@@ -59,8 +59,14 @@ struct type_motoHour
   uint32_t H2;      // моточасы ТН сбрасываемый счетчик (сезон)
   uint32_t C1;      // моточасы компрессора ВСЕГО
   uint32_t C2;      // моточасы компрессора сбрасываемый счетчик (сезон)
-  float    E1;      // Значение потребленный энергии в момент пуска  актуально при использовании счетчика SDM120 (вычитаем текущее и получам итого)
-  float    E2;      // Значение потребленный энергии в начале сезона актуально при использовании счетчика SDM120 (вычитаем текущее и получам итого)
+  union {
+  float    E1_f;	// ver <= 133
+  uint32_t E1;		// Значение потребленной энергии ВСЕГО
+  };
+  union {
+  float    E2_f;	// ver <= 133
+  uint32_t E2;		// Значение потребленной энергии в начале сезона
+  };
   uint32_t D1;      // Дата сброса общих счетчиков
   uint32_t D2;      // дата сброса сезонных счетчиков
   uint32_t P1;      // выработанное тепло  ВСЕГО
@@ -69,8 +75,14 @@ struct type_motoHour
   uint32_t Z2;      // Резервный параметр 2
 };
 
-int32_t motohour_OUT_work = 0; // рабочий для счетчиков, энергия отопления, мВт
+int32_t motohour_OUT_work = 0; // рабочий для счетчиков - энергия отопления, мВт
+int32_t motohour_IN_work = 0;  // рабочий для счетчиков - энергия потребленная, мВт
 uint16_t task_updstat_chars = 0;
+#ifdef CHART_ONLY_COMP_ON
+boolean  Charts_when_comp_on = true;	// Графики в памяти только во время работы компрессора
+#else
+boolean  Charts_when_comp_on = false;
+#endif
 
 // Рабочие флаги ТН
 #define fHP_SunActive 			0			// Солнечный контур активен
@@ -381,8 +393,8 @@ class HeatPump
    uint32_t get_motoHourH2(){return motoHour.H2;}          // Получить моточасы ТН сбрасываемый счетчик (сезон)
    uint32_t get_motoHourC1(){return motoHour.C1;}          // моточасы компрессора ВСЕГО
    uint32_t get_motoHourC2(){return motoHour.C2;}          // моточасы компрессора сбрасываемый счетчик (сезон)
-   float    get_motoHourE1(){return motoHour.E1;}          // Значение потреленный энергии в момент пуска  актуально при использовании счетчика SDM120
-   float    get_motoHourE2(){return motoHour.E2;}          // Значение потреленный энергии в начале сезона актуально при использовании счетчика SDM120
+   uint32_t get_motoHourE1(){return motoHour.E1;}          // Значение потребленной энергии ВСЕГО
+   uint32_t get_motoHourE2(){return motoHour.E2;}          //Значение потребленной энергии за сезон
    uint32_t get_motoHourD2(){return motoHour.D2;}          // дата сброса сезонных счетчиков
    uint32_t get_motoHourD1(){return motoHour.D1;}          // Дата сброса общих счетчиков
    uint32_t get_motoHourP2(){return motoHour.P2;}          // Выработанная энергия в вт/часах сезон

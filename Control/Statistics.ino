@@ -250,7 +250,7 @@ void Statistics::Init(uint8_t newyear)
 										if(Stats_data[i].type == STATS_TYPE_TIME) Stats_data[i].value = val * 60000;
 										break;
 									}
-									if(Stats_data[i].value == 0) {
+									if(*p == '\0') {
 										switch(Stats_data[i].type) {
 										case STATS_TYPE_MIN:
 											Stats_data[i].value = MAX_INT32_VALUE;
@@ -259,14 +259,15 @@ void Statistics::Init(uint8_t newyear)
 											Stats_data[i].value = MIN_INT32_VALUE;
 											break;
 										}
+									} else {
+										if(Stats_data[i].when == STATS_WHEN_WORKD) counts_work = 1;
+										else if(Stats_data[i].type == STATS_TYPE_AVG) counts = 1;
 									}
-									if(Stats_data[i].when == STATS_WHEN_WORKD && Stats_data[i].value) counts_work = 1;
 									if((p = (char*)memchr(p, '\0', STATS_MAX_RECORD_LEN)) == NULL) break;
 								}
 							}
-							counts = 1;
 							StatsFileString(temp_initbuf);
-							journal.jprintf(" Loaded: %s\n", temp_initbuf);
+							journal.jprintf(" Loaded: %s", temp_initbuf);
 						}
 					}
 					break;
@@ -357,12 +358,10 @@ void Statistics::Update()
 		}
 	}
 	int32_t newval = 0;
-	boolean compressor_on = HP.is_compressor_on();
-	if(compressor_on) {
+	if(HP.is_compressor_on()) {
 		compressor_on_timer += tm;
 		if(compressor_on_timer >= STATS_WORKD_TIME) counts_work++;
 	} else compressor_on_timer = 0;
-	counts++;
 	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) {
 		if(Stats_data[i].when == STATS_WHEN_WORKD && compressor_on_timer < STATS_WORKD_TIME) continue;
 		uint8_t skip_value = 0;
@@ -378,21 +377,25 @@ void Statistics::Update()
 			newval = HP.dSDM.get_Voltage();
 			#endif
 			break;
-		case STATS_OBJ_Power:
+		case STATS_OBJ_Power: {
+			int32_t *ptr = NULL;
 			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
 				newval = HP.powerCO; // Вт
+				ptr = &motohour_OUT_work;
 			} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
 				newval = HP.powerGEO; // Вт
-			} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
+			} else if(Stats_data[i].number == OBJ_power220) { // Электричество
 				newval = HP.power220; // Вт
+				ptr = &motohour_IN_work;
 			} else continue;
 			switch(Stats_data[i].type) {
 			case STATS_TYPE_SUM:
-			case STATS_TYPE_AVG:
+			//case STATS_TYPE_AVG:
 				newval = newval * tm / 3600; // в мВт
-				if(Stats_data[i].number == OBJ_powerCO) motohour_OUT_work += newval; // для motoHour
+				if(ptr) *ptr += newval; // для motoHour
 			}
 			break;
+		}
 		case STATS_OBJ_COP:
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
 				newval = HP.COP;
@@ -406,7 +409,6 @@ void Statistics::Update()
 					skip_by_relay--;
 					skip_value = 1;
 				}
-
 #endif
 				newval = HP.fullCOP;
 			}
@@ -416,7 +418,7 @@ void Statistics::Update()
 			if(!GETBIT(HP.flags, fHP_SunActive)) continue;
 			break;
 		case STATS_OBJ_Compressor:
-			if(!compressor_on) continue;
+			if(compressor_on_timer == 0) continue;
 			break;
 		}
 		switch(Stats_data[i].type){
@@ -428,7 +430,7 @@ void Statistics::Update()
 			break;
 		case STATS_TYPE_AVG:
 		case STATS_TYPE_SUM:
-			if(skip_value) newval = Stats_data[i].value / ((Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts) - 1);
+			if(skip_value) newval = Stats_data[i].value / (Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts);
 			Stats_data[i].value += newval;
 			break;
 		case STATS_TYPE_TIME:
@@ -436,6 +438,8 @@ void Statistics::Update()
 			break;
 		}
 	}
+	counts++;
+	if(compressor_on_timer >= STATS_WORKD_TIME) counts_work++;
 //	for(uint8_t i = 0; i < sizeof(Stats_data) / sizeof(Stats_data[0]); i++) journal.jprintf("%d=%d, ", i, Stats_data[i].value); journal.jprintf("\n");
 }
 
@@ -565,8 +569,13 @@ void Statistics::StatsFileHeader(char *ret, uint8_t flag)
 
 void Statistics::StatsFieldString(char **ret, uint8_t i)
 {
-	int32_t val = Stats_data[i].type == STATS_TYPE_AVG ? Stats_data[i].value / (Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts) : Stats_data[i].value;
-	if(val == MIN_INT32_VALUE || val == MAX_INT32_VALUE) val = 0;
+	int32_t val;
+	if(Stats_data[i].type == STATS_TYPE_AVG) {
+		val = Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts;
+		if(val == 0) return; // skip empty
+		val = Stats_data[i].value / val;
+	} else if(Stats_data[i].when == STATS_WHEN_WORKD && counts_work == 0) return; else val = Stats_data[i].value;
+	if((val == MIN_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MAX) || (val == MAX_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MIN)) return;
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:					// C
 	case STATS_OBJ_Press: 					// bar

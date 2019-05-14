@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART)");
+		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO)");
 		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD)");
 	}; 
 	</script>
@@ -42,11 +42,15 @@
 			</td>
 		</tr>
 		<tr>
+			<td>Графики в памяти только во время работы компрессора</td>
+			<td><input type="checkbox" id="get_ohp-cwco" onChange="setParam('get_oHP(CWCO)');">
+			</td>
+		</tr>
+		<tr>
 			<td>Запись истории на SD карту (раз в минуту) <sup>3</sup></td>
 			<td><input type="checkbox" id="get_ohp-hist" onChange="setParam('get_oHP(HIST)');">
 			</td>
 		</tr>
-		<tr>
 		<tr>
 			<td><b>Настройки контура отопления</b></td>
 			<td></td>
@@ -66,7 +70,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
+			<td>Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
 			<td nowrap><input id="get_ohp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
 			</td>
 		</tr>

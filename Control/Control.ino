@@ -434,8 +434,10 @@ x_I2C_init_std_message:
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
+	  if(HP.Option.ver <= 133) {
+		  HP.save();
+	  }
   }
-
   HP.Schdlr.load();							// Загрузка настроек расписания
 
   start_ADC(); // после инициализации HP
@@ -1356,11 +1358,7 @@ void vServiceHP(void *)
 		if(t - timer_sec >= 1000) { // 1 sec
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
-				#ifdef CHART_ONLY_COMP_ON  // Накопление точек для графиков ТОЛЬКО если компрессор работает
- 				if(HP.is_compressor_on() && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и компрессор работает
-                #else
- 				if(HP.get_State() != pOFF_HP && ++task_updstat_chars >= HP.get_tChart()) { // пришло время и ТН включен
-                #endif 					
+				if(((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) && ++task_updstat_chars >= HP.get_tChart()) { // пришло время
 					task_updstat_chars = 0;
 					HP.updateChart();                                       // Обновить графики
 				}

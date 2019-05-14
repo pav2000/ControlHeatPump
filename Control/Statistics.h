@@ -60,7 +60,7 @@ enum { // когда
 	STATS_WHEN_WORKD			// Во время работы компрессора, прошло STATS_WORKD_TIME
 	//STATS_WORK				// Во время работы компрессора
 };
-#define STATS_WORKD_TIME 150000 // ms
+#define STATS_WORKD_TIME 100000 // ms
 
 //static char *stats_format = { "%.1f", "" }; // printf format string
 
@@ -79,7 +79,7 @@ Stats_Data Stats_data[] = {
 	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, TIN },
 	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_WORKD, TEVAING },
 	{ 0, STATS_OBJ_Temp, STATS_TYPE_AVG, STATS_WHEN_ALWAYS, TBOILER },
-	{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, STATS_WHEN_ALWAYS, OBJ_powerCO },
+	{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, STATS_WHEN_WORKD, OBJ_powerCO },
 	{ 0, STATS_OBJ_Power, STATS_TYPE_SUM, STATS_WHEN_ALWAYS, OBJ_power220 },
 	{ 0, STATS_OBJ_Power, STATS_TYPE_MAX, STATS_WHEN_ALWAYS, OBJ_power220 },
 	{ 0, STATS_OBJ_COP, STATS_TYPE_MIN, STATS_WHEN_WORKD, OBJ_COP_Full },

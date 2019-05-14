@@ -2073,66 +2073,70 @@ int16_t devOmronMX2::read_tempFC()
 // Инициализация счетчика и проверка и если надо программирование
 int8_t devSDM::initSDM()
 {
-  err=OK;                                        // Ошибок нет
-  numErr=0;                                      // счетчик 0
-  Voltage=0.0;                                   // Напряжение
-  Current=0.0;                                   // Ток
-  AcPower=0.0;                                   // активная мощность
-  AcEnergy=0.0;                                  // Суммараная активная энергия
-  flags=0x00;
-  // Настройки
-  settingSDM.maxVoltage=SDM_MAX_VOLTAGE;         // максимальное напряжение (вольты) иначе ошибка если 0 то не работает
-  settingSDM.minVoltage=SDM_MIN_VOLTAGE;         // минимальное напряжение (вольты) иначе ПРЕДУПРЕЖДЕНИЕ если 0 то не работает
-  settingSDM.maxPower=SDM_MAX_POWER;             // максимальная мощность (ватты) напряжение иначе ошибка если 0 то не работает
-  name=(char*)nameSDM;
-  note=(char*)noteSDM_NONE;  
-      
-  #ifdef USE_ELECTROMETER_SDM
-      if(!Modbus.get_present())                  // modbus отсутствует
-      {
-      journal.jprintf("%s: modbus not found, block.\n",name); 
-      SETBIT0(flags,fSDM);                           // счетчик не представлен
-      SETBIT0(flags,fSDMLink);
-      err=ERR_NO_MODBUS;
-      }
-      else
-      {
-      SETBIT1(flags,fSDM);                           // счетчик представлен
-      note=(char*)noteSDM;
-      uplinkSDM();                                  // проверить связь со счетчиком
-      }
-  #else
-      SETBIT0(flags,fSDM);                           // счетчик не представлен
-      SETBIT0(flags,fSDMLink);
-      note=(char*)noteSDM_NONE;
-  #endif
-   // инициализация статистики
-#ifndef MIN_RAM_CHARTS
-  ChartVoltage.init(GETBIT(flags,fSDM));               // Статистика по напряжению
-  ChartCurrent.init(GETBIT(flags,fSDM));               // Статистика по току
+	err = OK;                                        // Ошибок нет
+	numErr = 0;                                      // счетчик 0
+	Voltage = 0.0;                                   // Напряжение
+	Current = 0.0;                                   // Ток
+	AcPower = 0.0;                                   // активная мощность
+	AcEnergy = 0.0;                                  // Суммараная активная энергия
+	flags = 0x00;
+	// Настройки
+	settingSDM.maxVoltage = SDM_MAX_VOLTAGE;         // максимальное напряжение (вольты) иначе ошибка если 0 то не работает
+	settingSDM.minVoltage = SDM_MIN_VOLTAGE;         // минимальное напряжение (вольты) иначе ПРЕДУПРЕЖДЕНИЕ если 0 то не работает
+	settingSDM.maxPower = SDM_MAX_POWER;             // максимальная мощность (ватты) напряжение иначе ошибка если 0 то не работает
+	name = (char*) nameSDM;
+	note = (char*) noteSDM_NONE;
+
+#ifdef USE_ELECTROMETER_SDM
+	if(!Modbus.get_present())                  // modbus отсутствует
+	{
+		journal.jprintf("%s: modbus not found, block.\n", name);
+		SETBIT0(flags, fSDM);                           // счетчик не представлен
+		SETBIT0(flags, fSDMLink);
+		err = ERR_NO_MODBUS;
+	} else {
+		SETBIT1(flags, fSDM);                           // счетчик представлен
+		note = (char*) noteSDM;
+		uplinkSDM();                                  // проверить связь со счетчиком
+	}
+#else
+	SETBIT0(flags,fSDM);                           // счетчик не представлен
+	SETBIT0(flags,fSDMLink);
+	note=(char*)noteSDM_NONE;
 #endif
-//  sAcPower.init(GETBIT(flags,fSDM));               // Статистика по активная мощность
-//  sRePower.init(GETBIT(flags,fSDM));               // Статистика по Реактивная мощность
-  ChartPower.init(GETBIT(flags,fSDM));                 // Статистика по Полная мощность
- // ChartPowerFactor.init(GETBIT(flags,fSDM));           // Статистика по Коэффициент мощности
- return err;
+	// инициализация статистики
+#ifndef MIN_RAM_CHARTS
+	ChartVoltage.init(GETBIT(flags,fSDM));               // Статистика по напряжению
+	ChartCurrent.init(GETBIT(flags,fSDM));// Статистика по току
+#endif
+	//  sAcPower.init(GETBIT(flags,fSDM));               // Статистика по активная мощность
+	//  sRePower.init(GETBIT(flags,fSDM));               // Статистика по Реактивная мощность
+	ChartPower.init(GETBIT(flags, fSDM));                 // Статистика по Полная мощность
+	// ChartPowerFactor.init(GETBIT(flags,fSDM));           // Статистика по Коэффициент мощности
+	return err;
 }
 
 // Проверить связь со счетчиком предполагается что модбас уже нинициализирован читаем из регистра скорость
 // Выводит сообщеиня в журнал и устанавливает флаг связи
-boolean  devSDM::uplinkSDM() 
+boolean devSDM::uplinkSDM()
 {
-  float band;
-  int8_t i;
-  for(i=0;i<SDM_NUM_READ;i++)   // делаем SDM_NUM_READ попыток чтения
-    {
-     if ((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR,SDM_BAUD_RATE,&band)==OK)&&(band==SDM_SPEED)) {SETBIT1(flags,fSDMLink); journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n",name,band,SDM_MODBUS_ADR);  return true;}
-     else { SETBIT0(flags,fSDMLink); journal.jprintf("%s, no connect.\n",name);}
-     _delay(SDM_DELAY_REPEAD);
-      WDT_Restart(WDT);                                                            // Сбросить вачдог
-    }
- SETBIT0(flags,fSDMLink);                                                             // связи нет
- return false;   
+	float band;
+	int8_t i;
+	for(i = 0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
+	{
+		if((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR, SDM_BAUD_RATE, &band) == OK) && (band == SDM_SPEED)) {
+			SETBIT1(flags, fSDMLink);
+			journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n", name, band, SDM_MODBUS_ADR);
+			return true;
+		} else {
+			SETBIT0(flags, fSDMLink);
+			journal.jprintf("%s, no connect.\n", name);
+		}
+		_delay(SDM_DELAY_REPEAD);
+		WDT_Restart(WDT);                                                            // Сбросить вачдог
+	}
+	SETBIT0(flags, fSDMLink);                                                             // связи нет
+	return false;
 }
 
 // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
