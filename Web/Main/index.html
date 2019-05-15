@@ -7,7 +7,7 @@
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 window.onload = function() {
-	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN)");
+	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_targetTemp(TIN),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG)");
 	loadParam("get_TrgT1");
 };
 </script>	
@@ -41,11 +41,14 @@ window.onload = function() {
 		<dt><nobr>Насос СО</nobr></dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
 	</dl>
 	<dl>
-		<dt>Бойлер</dt><dd><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></dd>
+		<dt><nobr>Бойлер <input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></nobr></dt><dd><nobr> <span style="font-size:small">Нагреть сейчас <sup>1</sup></span> <input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></nobr></dd>
 		<dt>Температура</dt><dd><span id="get_temp-tboiler">-</span>&deg;</dd>
 		<dt>Целевая</dt><dd><nobr><input id="get_boiler-trg" type="number" min="5" max="90" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></nobr></dd>
 	</dl>									
 </div>
+      1. Принудительно включить нагрев бойлера (отключается расписание и устанавливается гистерезис 0°C), после нагрева флаг автоматически снимается.<br/>
+	<br>
+
 </div>
 </body>
 </html>

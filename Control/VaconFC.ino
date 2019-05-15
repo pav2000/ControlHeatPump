@@ -493,7 +493,7 @@ int8_t devVaconFC::stop_FC()
 #endif
     }
     if(err == OK) {
-        journal.jprintf(" %s OFF\n", name);
+        journal.jprintf(" %s[%s] OFF\n", (char *)codeRet[HP.get_ret()], name);
         SETBIT0(flags, fOnOff);
         startCompressor = 0;
     }

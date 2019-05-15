@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART)");
+		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO)");
 		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD)");
 	}; 
 	</script>
@@ -37,22 +37,26 @@
 			<td nowrap><input id="get_ohp-attempt" type="number" min="0" max="255" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(ATTEMPT)');"></td>
 		</tr>
 		<tr>
-			<td>Период накопления графиков в памяти, сек. <sup>2</sup></td>
+			<td>Интервал накопления точек графиков в памяти, сек.<sup>2</sup></td>
 			<td nowrap><input id="get_ohp-time_chart" type="number" min="2" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(TIME_CHART)','get_ohp-time_chart');">
 			</td>
 		</tr>
 		<tr>
-			<td>Запись истории на SD карту (раз в минуту) <sup>3</sup></td>
-			<td><input type="checkbox" id="get_ohp-hist" onChange="setParam('get_oHP(HIST)');">
+			<td>Графики в памяти пишутся только во время работы компрессора<sup>3</sup></td>
+			<td><input type="checkbox" id="get_ohp-cwco" onChange="setParam('get_oHP(CWCO)');">
 			</td>
 		</tr>
 		<tr>
+			<td>Запись истории на SD карту (раз в минуту) <sup>4</sup></td>
+			<td><input type="checkbox" id="get_ohp-hist" onChange="setParam('get_oHP(HIST)');">
+			</td>
+		</tr>
 		<tr>
 			<td><b>Настройки контура отопления</b></td>
 			<td></td>
 		</tr>
 		<tr>
-			<td>Использование дополнительного ТЭНа при нагреве отопления<sup>4</sup></td>
+			<td>Использование дополнительного ТЭНа при нагреве отопления<sup>5</sup></td>
 			<td><select id="get_ohp-add_heat" onchange="setParam('get_oHP(ADD_HEAT)','get_ohp-add_heat');"></select></td>
 		</tr>
 		<tr>
@@ -61,12 +65,12 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>5</sup></td>
+			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>6</sup></td>
 			<td nowrap><input id="get_ohp-pump_work" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
-			<td> Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>6</sup></td>
+			<td>Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>7</sup></td>
 			<td nowrap><input id="get_ohp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
@@ -148,7 +152,7 @@
 			<td><input type="checkbox" id="get_ohp-nxtw" onchange="setParam('get_oHP(NXTW)');"></td>
 		</tr>	
 		<tr>
-			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>7</sup></td>
+			<td>Время засыпания дисплея Nextion (мин.) [0..255] <sup>8</sup></td>
 			<td nowrap><input id="get_ohp-nxts" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(NXTS)');"></td>
 		</tr>
 		<tr>
@@ -172,11 +176,12 @@
 
 	1. 0 - Повторный пуск при ошибке не производится<br/>
 	2. При изменении периода графики обнуляются.<br/>
-	3. Эти данные будут использованы для пострения графиков в Истории. Первоначальное создание файла занимает до 5 минут, веб сервер при этом не работает.<br/>
-	4. Reserve - ТЭН включается если температура в доме ниже заданной, bivalent - ТЭН включится если уличная температуа ниже заданной<br/>
-	5. Установка 0 - насос вообще не работает<br/>
-	6. Установка 0 - насос работает непрерывно<br/>
-	7. 0 - дисплей Nextion не выключается<br/>
+	3. Не сохраняемая настройка (после сброса НК изменение флага будет сброшено).<br/>
+	4. Эти данные будут использованы для пострения графиков в Истории. Первоначальное создание файла занимает до 5 минут, веб сервер при этом не работает.<br/>
+	5. Reserve - ТЭН включается если температура в доме ниже заданной, bivalent - ТЭН включится если уличная температуа ниже заданной<br/>
+	6. Установка 0 - насос вообще не работает<br/>
+	7. Установка 0 - насос работает непрерывно<br/>
+	8. 0 - дисплей Nextion не выключается<br/>
 	<br>
 	<input type="submit" value="Сброс настроек HP" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_SETTINGS");'> Введите RESET: <input id="reset_code" size="7">
 </div>	

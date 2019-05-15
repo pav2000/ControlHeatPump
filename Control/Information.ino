@@ -3,7 +3,7 @@
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  *
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -731,6 +731,8 @@ boolean Profile::set_boiler(char *var, char *c)
 #endif
 	if(strcmp(var,boil_BOIL_TEMP)==0)		{ if((x>=30.0)&&(x<=70)) {Boiler.tempPID=rd(x, 100); return true;} else return false; } else   // Целевая темпеартура ПИД ГВС
 	if(strcmp(var,boil_ADD_HEATING)==0)		{ if(x) SETBIT1(Boiler.flags,fAddHeating); else SETBIT0(Boiler.flags,fAddHeating); return true;} else  // флаг использования тена для догрева ГВС
+	if(strcmp(var,boil_fAddHeatingForce)==0){ if(x) SETBIT1(Boiler.flags,fAddHeatingForce); else SETBIT0(Boiler.flags,fAddHeatingForce); return true;} else
+	if(strcmp(var,boil_HeatUrgently)==0)    { HP.HeatBoilerUrgently = x; return true;} else
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
@@ -770,9 +772,11 @@ char* Profile::get_boiler(char *var, char *ret)
 #endif
  if(strcmp(var,boil_BOIL_TEMP)==0){       _ftoa(ret,(float)Boiler.tempPID/100,1); return ret;       }else                            // Целевая темпеартура ПИД ГВС
  if(strcmp(var,boil_ADD_HEATING)==0){     if(GETBIT(Boiler.flags,fAddHeating)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else   // флаг использования тена для догрева ГВС
+ if(strcmp(var,boil_fAddHeatingForce)==0){if(GETBIT(Boiler.flags,fAddHeatingForce)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  if(strcmp(var,hp_SUN)==0) { if(GETBIT(Boiler.flags,fBoilerUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _ftoa(ret,(float)Boiler.tempRBOILER/100,1); return ret;    }else                            // температура включения догрева бойлера
  if(strcmp(var,boil_dAddHeat)==0){        _ftoa(ret,(float)Boiler.dAddHeat/100,1); return ret;       }else
+ if(strcmp(var,boil_HeatUrgently)==0){if(HP.HeatBoilerUrgently) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  return strcat(ret,(char*)cInvalid);
 }
 

@@ -1236,26 +1236,21 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
 #endif
 			if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
-			strcat(strReturn,"<b> Глобальные счетчики (с момента монтажа ТН)</b>|;");
-			strcat(strReturn,"Время сброса счетчиков с момента монтажа|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы компрессора ТН с момента монтажа (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
-#ifdef USE_ELECTROMETER_SDM
-			strcat(strReturn,"Потребленная энергия ТН с момента монтажа (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE1(),2);strcat(strReturn,";");
-#endif
+			strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
+			strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
+			strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
+			strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE1() / 1000.0, 2);strcat(strReturn,";");
 #ifdef  FLOWCON
-			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН с момента монтажа (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
 #endif
-
 			strcat(strReturn,"<b> Сезонные счетчики</b>|;");
 			strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
 			strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
 			strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
-#ifdef USE_ELECTROMETER_SDM
-			strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.dSDM.get_Energy()-HP.get_motoHourE2(),2);strcat(strReturn,";");
-#endif
+			strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE2() / 1000.0, 2);strcat(strReturn,";");
 #ifdef  FLOWCON
 			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
 #endif
@@ -2599,7 +2594,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
-			journal.jprintf("Start upload, erase SPI disk ");
+			journal.jprintf(pP_TIME,"Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while (SerialFlash.ready() == false) {
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
@@ -2609,7 +2604,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			return pNULL;
 		} else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
-				journal.jprintf("Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
+				journal.jprintf(pP_TIME,"Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_OK;
 			} else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
