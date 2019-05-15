@@ -497,7 +497,8 @@ class HeatPump
     uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов
     uint8_t  NO_Power_delay;
-    uint8_t HeatBoilerUrgently;				// Срочно нужно ГВС
+    boolean  HeatBoilerUrgently;				// Срочно нужно ГВС
+    void     set_HeatBoilerUrgently(boolean onoff);
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки

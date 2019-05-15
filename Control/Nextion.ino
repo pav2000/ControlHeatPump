@@ -196,7 +196,7 @@ void Nextion::readCommand()
 							return;
 						}
 					} else if(cmd2 == NXTID_BOILER_URGENT) {
-						HP.HeatBoilerUrgently = !HP.HeatBoilerUrgently;
+						HP.set_HeatBoilerUrgently(!HP.HeatBoilerUrgently);
 						fUpdate = 2;
 						input_delay = NEXTION_INPUT_DELAY;
 					}

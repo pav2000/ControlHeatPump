@@ -1430,7 +1430,7 @@ boolean HeatPump::boilerAddHeat()
 		}
 		if(GETBIT(Prof.Boiler.flags, fAddHeating))  // Включен догрев
 		{
-			if((T < get_boilerTempTarget() - Prof.Boiler.dTemp) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+			if((T < get_boilerTempTarget() - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
 				flagRBOILER = true;
 				return false;
 			}
@@ -2071,7 +2071,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		dRelay[RBOILER].set_ON();
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler)) return pCOMP_OFF;
 	} else {
-		if(dRelay[RBOILER].get_Relay()) HeatBoilerUrgently = 0;
+		if(dRelay[RBOILER].get_Relay()) set_HeatBoilerUrgently(false);
 		dRelay[RBOILER].set_OFF();
 		if(get_State() == pOFF_HP || get_State() == pSTOPING_HP) { // Если ТН выключен или выключается
 			return pCOMP_OFF;
@@ -2152,7 +2152,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		} else {
 			if (T > TRG) {
 				Status.ret=pBh3;
-				HeatBoilerUrgently = 0;
+				set_HeatBoilerUrgently(false);
 				return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 			}
 		}
@@ -2177,7 +2177,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		} else {
 			if (T > TRG) {
 				Status.ret=pBp3;
-				HeatBoilerUrgently = 0;
+				set_HeatBoilerUrgently(false);
 				return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 			}
 		}
@@ -3523,6 +3523,13 @@ void HeatPump::Sun_OFF(void)
 		time_Sun_OFF = millis();
 	}
 #endif
+}
+
+void HeatPump::set_HeatBoilerUrgently(boolean onoff)
+{
+	if(HeatBoilerUrgently != onoff) {
+		journal.jprintf("Boiler urgent = %s\n", (HeatBoilerUrgently = onoff) ? "ON" : "OFF");
+	}
 }
 
 // Уравнение ПИД регулятора в конечных разностях.
