@@ -2594,7 +2594,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
-			journal.jprintf("Start upload, erase SPI disk ");
+			journal.jprintf(pP_TIME,"Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while (SerialFlash.ready() == false) {
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
@@ -2604,7 +2604,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			return pNULL;
 		} else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
-				journal.jprintf("Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
+				journal.jprintf(pP_TIME,"Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_OK;
 			} else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
