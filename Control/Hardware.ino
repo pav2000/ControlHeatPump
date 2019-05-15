@@ -153,7 +153,11 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 #ifdef ANALOG_MODBUS
 	flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
 #endif
-	Chart.init(sensor <= PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
+#ifndef MIN_RAM_CHARTS
+	Chart.init(SENSORPRESS[sensor]);  			// инициалазация статистики
+#else
+	Chart.init(sensor > PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
+#endif
 	err = OK;                                     // ошибка датчика (работа)
 	Press = 0;                                    // давление датчика (обработанная)
 	Temp = ERROR_TEMPERATURE;

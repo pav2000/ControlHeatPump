@@ -39,6 +39,7 @@ private:
   uint8_t  DataAvaliable;
   uint16_t StatusCrc;
   uint8_t  flags;
+  uint8_t  input_delay;							// Delay for * NEXTION_READ ms
   void    getTargetTemp(char *rstr);			// Получить целевую температуру
   void    StatusLine();
 };

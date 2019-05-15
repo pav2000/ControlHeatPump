@@ -1236,7 +1236,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
 #endif
 			if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (ds18b20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
 			strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
 			strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");

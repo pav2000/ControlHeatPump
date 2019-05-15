@@ -572,10 +572,14 @@ void Statistics::StatsFieldString(char **ret, uint8_t i)
 	int32_t val;
 	if(Stats_data[i].type == STATS_TYPE_AVG) {
 		val = Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts;
-		if(val == 0) return; // skip empty
+		if(val == 0) {
+xSkipEmpty:
+			**ret = '\0';
+			return;
+		}
 		val = Stats_data[i].value / val;
-	} else if(Stats_data[i].when == STATS_WHEN_WORKD && counts_work == 0) return; else val = Stats_data[i].value;
-	if((val == MIN_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MAX) || (val == MAX_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MIN)) return;
+	} else if(Stats_data[i].when == STATS_WHEN_WORKD && counts_work == 0) goto xSkipEmpty; else val = Stats_data[i].value;
+	if((val == MIN_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MAX) || (val == MAX_INT32_VALUE && Stats_data[i].type == STATS_TYPE_MIN)) goto xSkipEmpty;
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:					// C
 	case STATS_OBJ_Press: 					// bar

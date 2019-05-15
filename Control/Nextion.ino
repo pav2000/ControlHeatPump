@@ -35,6 +35,7 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_PAGE_BOILER	0x06
 #define NXTID_PAGE_INFO		0x07
 #define NXTID_ONOFF			0x03
+#define NXTID_BOILER_URGENT	0x14
 #define NXTID_TEMP_PLUS		0x17
 #define NXTID_TEMP_MINUS	0x18
 #define NXTID_NEXT_MODE		0x1A
@@ -43,6 +44,7 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_BOILER_MINUS	0x0E
 
 #define fSleep 1
+#define NEXTION_INPUT_DELAY	10		// * NEXTION_READ ms
 
 char buffer[64];
 #define ntemp buffer
@@ -54,6 +56,7 @@ boolean Nextion::init()
 	flags = 0;
 	StatusCrc = 0;
 	fUpdate = 0;
+	input_delay = 0;
 	PageID = NXTID_PAGE_MAIN;
 	NEXTION_PORT.begin(NEXTION_PORT_SPEED);
 //	sendCommand("rest");
@@ -181,14 +184,21 @@ void Nextion::readCommand()
 
 		switch(buffer[0]) {
 		case 0x65:   //   	Touch Event
+			if(input_delay && --input_delay) break;
 			if(len == 4 && buffer[3] == 0) { // event: release
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
-				if(cmd1 == NXTID_PAGE_MAIN && cmd2 == NXTID_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
-					if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
-						if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART);
-						else HP.sendCommand(pSTOP);
-						return;
+				if(cmd1 == NXTID_PAGE_MAIN) {
+					if(cmd2 == NXTID_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
+						if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
+							if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
+							input_delay = NEXTION_INPUT_DELAY * 2;
+							return;
+						}
+					} else if(cmd2 == NXTID_BOILER_URGENT) {
+						HP.HeatBoilerUrgently = !HP.HeatBoilerUrgently;
+						fUpdate = 2;
+						input_delay = NEXTION_INPUT_DELAY;
 					}
 				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
 					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
