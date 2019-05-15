@@ -263,7 +263,7 @@ void Nextion::readCommand()
 			break;
 		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
 			sendCommand("sendme");
-			journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
+	//		journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
 			_delay(10);
 		}
 	}
