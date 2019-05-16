@@ -466,7 +466,7 @@ void sensorFrequency::set_minValue(float f)
 // ------------------------------------------------------------------------------------------
 // Исполнительное устройство РЕЛЕ (есть 2 состяния 0 и 1) --------------------------------------
 // Relay = true - это означает включение исполнительного механизама. 
-// При этом реальный выход и состояние (физическое реле) определяется дефайнами RELAY_INVERT и RTRV_INVERT
+// При этом реальный выход и состояние (физическое реле) определяется дефайнами RELAY_INVERT и R4WAY_INVERT
 // ВНИМАНИЕ: По умолчанию (не определен RELAY_INVERT) выход инвертируется - Влючение реле (Relay=true) соответствует НИЗКИЙ уровень на выходе МК
 void devRelay::initRelay(int sensor)
 {
@@ -478,14 +478,14 @@ void devRelay::initRelay(int sensor)
    pinMode(pin, OUTPUT);           // Настроить ножку на выход
    Relay=false;                    // Состояние реле - выключено
 #ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
-	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
-   	   digitalWriteDirect(pin, number != RTRV);  // Установить значение
+	#ifdef R4WAY_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number != R4WAY);  // Установить значение
 	#else
    	   digitalWriteDirect(pin, true);  // Установить значение
 	#endif
 #else
-	#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
-   	   digitalWriteDirect(pin, number == RTRV);  // Установить значение
+	#ifdef R4WAY_INVERT              // Признак инвертирования 4х ходового
+   	   digitalWriteDirect(pin, number == R4WAY);  // Установить значение
 	#else
    	   digitalWriteDirect(pin, false);  // Установить значение
 	#endif
@@ -513,8 +513,8 @@ int8_t devRelay::set_Relay(int8_t r)
 #ifndef RELAY_INVERT            // Нет инвертирования реле -  Влючение реле (Relay=true) соответсвует НИЗКИЙ уровень на выходе МК
 		r = !r;
 #endif
-#ifdef RTRV_INVERT              // Признак инвертирования 4х ходового
-		if(number == RTRV) r = !r;
+#ifdef R4WAY_INVERT              // Признак инвертирования 4х ходового
+		if(number == R4WAY) r = !r;
 #endif
 		digitalWriteDirect(pin, r);
 	}
@@ -697,7 +697,7 @@ int8_t devEEV::set_EEV(int16_t x)
 uint16_t devEEV::get_StartPos()
 {
 	if(GETBIT(_data.flags, fEEV_StartPosByTemp)) {
-		int16_t t = HP.sTemp[HP.get_modWork() == pCOOL || HP.get_modWork() == pNONE_C ? TEVAOUTG : TCONOUTG].get_Temp();
+		int16_t t = HP.sTemp[HP.is_heating() ? TCONOUTG : TEVAOUTG].get_Temp();
 		if(t <= EEV_START_POS_LOW_TEMP) return _data.StartPos;
 		else if(t >= EEV_START_POS_HIGH_TEMP) return _data.PosAtHighTemp;
 		return (int32_t)_data.StartPos - (t - EEV_START_POS_LOW_TEMP) * (_data.StartPos - _data.PosAtHighTemp) / (EEV_START_POS_HIGH_TEMP - EEV_START_POS_LOW_TEMP);

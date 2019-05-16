@@ -903,7 +903,7 @@ void vReadSensor(void *)
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
 #ifdef EEV_DEF
-		HP.dEEV.set_Overheat(HP.get_modWork() != pCOOL && HP.get_modWork() != pNONE_C); // нагрев(1) или охлаждение(0)
+		HP.dEEV.set_Overheat(HP.is_heating()); // нагрев(1) или охлаждение(0)
 #endif
 
 		//  Опрос состояния инвертора
@@ -1111,7 +1111,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 					type_SaveON _son;
 					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
 						MODE_HP currmode = HP.get_modWork();
-						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL) != (_son.mode == pCOOL)); // Если направление работы ТН разное
+						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL || currmode == pNONE_C) != (_son.mode == pCOOL || _son.mode == pNONE_C)); // Если направление работы ТН разное
 						if(frestart) {
 							HP.sendCommand(pWAIT);
 							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
@@ -1177,8 +1177,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
 		if(((HP.get_State() == pWORK_HP && !HP.is_pause()
-				&& ((HP.get_modeHouse() == pHEAT && GETBIT(HP.Prof.Heat.flags, fUseSun)) || (HP.get_modeHouse() == pCOOL && GETBIT(HP.Prof.Cool.flags, fUseSun)) || (HP.get_modeHouse() == pBOILER && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
-				&& HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
+				&& (((HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() == pCOOL || HP.get_modWork() == pNONE_C) && GETBIT(HP.Prof.Cool.flags, fUseSun))
+					|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
+			 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
 				if(fregen) {
 					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();

@@ -1285,7 +1285,11 @@ void parserGET(uint8_t thread, int8_t )
 		if(strcmp(str, "get_OverHeat") == 0) { // Выводит 2 перегрева сразу
 			_ftoa(strReturn, (float)HP.dEEV.get_Overheat() / 100, 2);
 #ifdef TCOMPIN
+#ifdef TCONIN
 			if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA) {
+#else
+			if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA && HP.is_heating()) {
+#endif
 				strcat(strReturn, " / ");
 				_ftoa(strReturn, (float)HP.dEEV.OverheatTCOMP / 100, 2);
 			}

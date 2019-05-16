@@ -124,7 +124,7 @@ struct type_optionHP
  uint16_t delayRepeadStart;            // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
  uint16_t delayDefrostOn;              // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
  uint16_t delayDefrostOff;             // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
- uint16_t delayTRV;                    // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+ uint16_t delayR4WAY;                    // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
  uint16_t delayBoilerSW;               // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
  uint16_t delayBoilerOff;              // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
  int16_t  SunRegGeoTemp;			   // Температура начала регенерации геоконтура с помощью СК, в сотых градуса
@@ -202,7 +202,12 @@ class HeatPump
      __attribute__((always_inline)) inline TYPE_STATE_HP get_State() {return Status.State;}    // (переменная) Получить состяние теплового насоса [0-Выключен 1 Стартует 2 Останавливается  3 Работает 4 Ожидание ТН (расписание - пустое место) 5 Ошибка ТН 6 - Эта ошибка возникать не должна!]
      __attribute__((always_inline)) inline int8_t get_ret()          {return Status.ret;}      // (переменная) Точка выхода из алгоритма регулирования (причина (условие) нахождения в текущем положении modWork)
     __attribute__((always_inline)) inline  MODE_HP get_modeHouse()   {return Prof.SaveON.mode;}// (настройка) Получить режим работы ДОМА (охлаждение/отопление/выключено) ЭТО НАСТРОЙКА через веб морду!
-    inline  type_settingHP *get_modeHouseSettings() {return Prof.SaveON.mode == pCOOL ? &Prof.Cool : &Prof.Heat; }
+    inline  type_settingHP *get_modeHouseSettings() {return Prof.SaveON.mode == pCOOL ? &Prof.Cool : &Prof.Heat; } // Настройки для режима отопление или охлаждение
+#ifdef R4WAY
+    __attribute__((always_inline)) inline  boolean is_heating() { return !dRelay[R4WAY].get_Relay(); } 	// true = Режим нагрева отопления или бойлера, false = охлаждение
+#else
+    __attribute__((always_inline)) inline  boolean is_heating() { return true; } 	// true = Режим нагрева отопления или бойлера, false = охлаждение
+#endif
     boolean IsWorkingNow() { return !(get_State() == pOFF_HP && PauseStart == 0); }				// Включен ТН или нет
     boolean CheckAvailableWork();							// проверить есть ли работа для ТН
   
@@ -507,14 +512,11 @@ class HeatPump
 
     MODE_HP get_Work();                   // Что надо делать
     void configHP(MODE_HP conf);          // Концигурация 4-х, 3-х ходового крана и включение насосов
-    void ChangesPauseTRV();               // "Интелектуальная пауза" для перекидывания на "ходу" 4-х ходового
+    void PauseAfterSwitchR4WAY();          // "Интелектуальная пауза" для перекидывания на "ходу" 4-х ходового
     void defrost();                       // Все что касается разморозки воздушника
 
     void resetSettingHP();                // Функция сброса настроек охлаждения и отопления
     void relayAllOFF();                   // Все реле выключить
-    #ifdef  RTRV
-    void set_RTRV(uint16_t d);            // Поставить 4х ходовой в нужное положение для работы в заваисимости от Prof.SaveON.mode параметр задержка после включения mсек.
-    #endif
     boolean boilerAddHeat();              // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть)
     boolean switchBoiler(boolean b);      // Переключение на нагрев бойлера ТН true-бойлер false-отопление/охлаждение
     boolean checkEVI();                   // Проверка и если надо включение EVI если надо то выключение возвращает состояние реле
