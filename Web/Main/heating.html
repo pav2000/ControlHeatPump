@@ -15,124 +15,122 @@
 <body class="test">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<div class="row1">
-	<h1>Отопление <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
-	</div>
-		<h2>Параметры отопления</h2>
-		<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select> Цель: <span id="get_trgt">-</span>°</h2>
-		<table>
-			<thead>
-		<tr>
-			<th>Параметр</th>
-			<th>Охлаждение</th>
-			<th>Отопление</th>
-		</tr>
-		</thead>			
-		<tbody>
-		<tr>
-			<td>Алгоритм работы<sup>1</sup></td>
-			<td><select id="get_cool-rule" onchange="setParam('get_Cool(RULE)','get_cool-rule');"></select></td>
-			<td><select id="get_heat-rule" onchange="setParam('get_Heat(RULE)','get_heat-rule');"></select></td>
-		<tr>
-			<td>Целевая температура в доме °C [0..30]</td>
-			<td nowrap><input id="get_cool-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP1)');"></td>
-			<td nowrap><input id="get_heat-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP1)');"></td>
-		</tr>
-		<tr>
-			<td>Целевая температура обратки °C [10..50]</td>
-			<td nowrap><input id="get_cool-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP2)');"></td>
-			<td nowrap><input id="get_heat-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP2)');"></td>
-		</tr>						
-		<tr>
-			<td>Целевая температура (что является целью)</td>
-			<td nowrap><select id="get_cool-target" onchange="setParam('get_Cool(TARGET)','get_cool-target');"></select></td>
-			<td nowrap><select id="get_heat-target" onchange="setParam('get_Heat(TARGET)','get_heat-target');"></select></td>
-		</tr>						
-		<tr>
-			<td>Гистерезис целевой температуры °C [0..20]<sup>2</sup></td>
-			<td nowrap><input id="get_cool-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(DTEMP)');"></td>
-			<td nowrap><input id="get_heat-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(DTEMP)');"></td>
-		</tr>
-		<tr>
-			<td><b>Использование ночного тарифа</b></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>Добавка к целевой температуре по часам C° [-30...50]<sup>3</sup></td>
-			<td></td>
-			<td nowrap><input id="get_heat-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADT)');"></td>
-		</tr>
-		<tr>
-			<td>Начальный час добавки к целевой температуре [0...23]</td>
-			<td></td>
-			<td nowrap><input id="get_heat-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADH)');"></td>
-		</tr>
-		<tr>
-			<td>Конечный час добавки к целевой температуре [0...23]</td>
-			<td></td>
-			<td nowrap><input id="get_heat-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADEH)');"></td>
-		</tr>
-		<tr>
-			<td><b>ПИД</b></td>
-			<td></td><td></td>
-		</tr>		
-		<tr>
-			<td>Целевая температура подачи °C [10..50]<sup>4</sup></td>
-			<td nowrap><input id="get_cool-temp_pid" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_PID)');"></td>
-			<td nowrap><input id="get_heat-temp_pid" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_PID)');"></td>
-		</tr>								
-		<tr>
-			<td>Постоянная интегрирования времени (сек.) [10..600]</td>
-			<td nowrap><input id="get_cool-hp_time" type="number" min="10" max="600" step="1"><input type="submit" value=">" onclick="setParam('get_Cool(HP_TIME)');"></td>
-			<td nowrap><input id="get_heat-hp_time" type="number" min="10" max="600" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(HP_TIME)');"></td>
-		</tr>						
-		<tr>
-			<td>Пропорциональная составляющая [0..32]</td>
-			<td nowrap><input id="get_cool-hp_pro" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_PRO)');"></td>
-			<td nowrap><input id="get_heat-hp_pro" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_PRO)');"></td>
-		</tr>						
-		<tr>
-			<td>Интегральная составляющая [0..32]</td>
-			<td nowrap><input id="get_cool-hp_in" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_IN)');"></td>
-			<td nowrap><input id="get_heat-hp_in" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_IN)');"></td>
-		</tr>						
-		<tr>
-			<td>Дифференциальная составляющая [0..32]</td>
-			<td nowrap><input id="get_cool-hp_dif" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_DIF)');"></td>
-			<td nowrap><input id="get_heat-hp_dif" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_DIF)');"></td>
-		</tr>
-		<tr>
-			<td><b>Опции</b></td>
-			<td></td><td></td>
-		</tr>	
-		<tr>
-			<td>Теплый пол</td>
-			<td><input type="checkbox" id="get_cool-hfl" onchange="setParam('get_Cool(HFL)');"></td>
-			<td><input type="checkbox" id="get_heat-hfl" onchange="setParam('get_Heat(HFL)');"></td>
-		</tr>
-		<tr>
-			<td>Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°)</td>
-			<td><input type="checkbox" id="get_cool-sun" onchange="setParam('get_Cool(SUN)');"></td>
-			<td><input type="checkbox" id="get_heat-sun" onchange="setParam('get_Heat(SUN)');"></td>
-		</tr>
-		<tr>
-			<td>Использование погодозависимости<sup>5</sup></td>
-			<td><input type="checkbox" id="get_cool-w" onchange="setParam('get_Cool(W)');" ></td>
-			<td><input type="checkbox" id="get_heat-w" onchange="setParam('get_Heat(W)');" ></td>
-		</tr>
-		<tr>
-			<td>Коэффициент погодозависимости<sup>6</sup></td>
-			<td nowrap><input id="get_cool-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(KW)');"></td>
-			<td nowrap><input id="get_heat-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KW)');"></td>
-		</tr>
-		<tr>
-			<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>
-			<td id="get_cool-tp">-</td>
-			<td id="get_heat-tp">-</td>
-		</tr>		
-	</tbody>
-	</table>
-1. Для ПИДа производится стабилизация заданной темпеартуры подачи<br/>
+<h1>Отопление <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1><br>
+	<h2>Параметры отопления</h2>
+	<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select> Цель: <span id="get_trgt">-</span>°</h2>
+	<table>
+		<thead>
+	<tr>
+		<th>Параметр</th>
+		<th>Охлаждение</th>
+		<th>Отопление</th>
+	</tr>
+	</thead>			
+	<tbody>
+	<tr>
+		<td>Алгоритм работы<sup>1</sup></td>
+		<td><select id="get_cool-rule" onchange="setParam('get_Cool(RULE)','get_cool-rule');"></select></td>
+		<td><select id="get_heat-rule" onchange="setParam('get_Heat(RULE)','get_heat-rule');"></select></td>
+	<tr>
+		<td>Целевая температура в доме °C [0..30]</td>
+		<td nowrap><input id="get_cool-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP1)');"></td>
+		<td nowrap><input id="get_heat-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP1)');"></td>
+	</tr>
+	<tr>
+		<td>Целевая температура обратки °C [10..50]</td>
+		<td nowrap><input id="get_cool-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP2)');"></td>
+		<td nowrap><input id="get_heat-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP2)');"></td>
+	</tr>						
+	<tr>
+		<td>Целевая температура (что является целью)</td>
+		<td nowrap><select id="get_cool-target" onchange="setParam('get_Cool(TARGET)','get_cool-target');"></select></td>
+		<td nowrap><select id="get_heat-target" onchange="setParam('get_Heat(TARGET)','get_heat-target');"></select></td>
+	</tr>						
+	<tr>
+		<td>Гистерезис целевой температуры °C [0..20]<sup>2</sup></td>
+		<td nowrap><input id="get_cool-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(DTEMP)');"></td>
+		<td nowrap><input id="get_heat-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(DTEMP)');"></td>
+	</tr>
+	<tr>
+		<td><b>Использование ночного тарифа</b></td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>Добавка к целевой температуре по часам C° [-30...50]<sup>3</sup></td>
+		<td></td>
+		<td nowrap><input id="get_heat-adt" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADT)');"></td>
+	</tr>
+	<tr>
+		<td>Начальный час добавки к целевой температуре [0...23]</td>
+		<td></td>
+		<td nowrap><input id="get_heat-adh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADH)');"></td>
+	</tr>
+	<tr>
+		<td>Конечный час добавки к целевой температуре [0...23]</td>
+		<td></td>
+		<td nowrap><input id="get_heat-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADEH)');"></td>
+	</tr>
+	<tr>
+		<td><b>ПИД</b></td>
+		<td></td><td></td>
+	</tr>		
+	<tr>
+		<td>Целевая температура подачи °C [10..50]<sup>4</sup></td>
+		<td nowrap><input id="get_cool-temp_pid" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_PID)');"></td>
+		<td nowrap><input id="get_heat-temp_pid" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_PID)');"></td>
+	</tr>								
+	<tr>
+		<td>Постоянная интегрирования времени (сек.) [10..600]</td>
+		<td nowrap><input id="get_cool-hp_time" type="number" min="10" max="600" step="1"><input type="submit" value=">" onclick="setParam('get_Cool(HP_TIME)');"></td>
+		<td nowrap><input id="get_heat-hp_time" type="number" min="10" max="600" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(HP_TIME)');"></td>
+	</tr>						
+	<tr>
+		<td>Пропорциональная составляющая [0..32]</td>
+		<td nowrap><input id="get_cool-hp_pro" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_PRO)');"></td>
+		<td nowrap><input id="get_heat-hp_pro" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_PRO)');"></td>
+	</tr>						
+	<tr>
+		<td>Интегральная составляющая [0..32]</td>
+		<td nowrap><input id="get_cool-hp_in" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_IN)');"></td>
+		<td nowrap><input id="get_heat-hp_in" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_IN)');"></td>
+	</tr>						
+	<tr>
+		<td>Дифференциальная составляющая [0..32]</td>
+		<td nowrap><input id="get_cool-hp_dif" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(HP_DIF)');"></td>
+		<td nowrap><input id="get_heat-hp_dif" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_DIF)');"></td>
+	</tr>
+	<tr>
+		<td><b>Опции</b></td>
+		<td></td><td></td>
+	</tr>	
+	<tr>
+		<td>Теплый пол</td>
+		<td><input type="checkbox" id="get_cool-hfl" onchange="setParam('get_Cool(HFL)');"></td>
+		<td><input type="checkbox" id="get_heat-hfl" onchange="setParam('get_Heat(HFL)');"></td>
+	</tr>
+	<tr>
+		<td>Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°)</td>
+		<td><input type="checkbox" id="get_cool-sun" onchange="setParam('get_Cool(SUN)');"></td>
+		<td><input type="checkbox" id="get_heat-sun" onchange="setParam('get_Heat(SUN)');"></td>
+	</tr>
+	<tr>
+		<td>Использование погодозависимости<sup>5</sup></td>
+		<td><input type="checkbox" id="get_cool-w" onchange="setParam('get_Cool(W)');" ></td>
+		<td><input type="checkbox" id="get_heat-w" onchange="setParam('get_Heat(W)');" ></td>
+	</tr>
+	<tr>
+		<td>Коэффициент погодозависимости<sup>6</sup></td>
+		<td nowrap><input id="get_cool-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(KW)');"></td>
+		<td nowrap><input id="get_heat-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KW)');"></td>
+	</tr>
+	<tr>
+		<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>
+		<td id="get_cool-tp">-</td>
+		<td id="get_heat-tp">-</td>
+	</tr>		
+</tbody>
+</table>
+1. Для ПИДа производится стабилизация заданной температуры подачи<br/>
 2. При установке значения добавки 0 °C данная опция не работает.<br/>
 3. Диапазон регулирования равен: Целевая температура - Гистерезис целевой температуры.<br/>
 4. При использовании погодозависимости Целевая температура подачи указывается для уличной температуре 0 градусов<br/>

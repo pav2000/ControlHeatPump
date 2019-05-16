@@ -260,7 +260,7 @@ void readFileSD(char *filename, uint8_t thread)
 		if(!n) {
 			Stats.SendFileData(thread, &webFile, filename);
 		} else {
-			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+			sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 		}
 		return;
 	}
@@ -284,7 +284,7 @@ void readFileSD(char *filename, uint8_t thread)
 			if(!n) {
 				Stats.SendFileData(thread, &webFile, filename);
 			} else {
-				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, m_strlen(Socket[thread].outBuf), 0);
+				sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 			}
 	    }
 		return;
@@ -1053,8 +1053,8 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"NEXTION_READ|Время опроса дисплея Nextion (мсек)|");_itoa(NEXTION_READ,strReturn);strcat(strReturn,";");
 
 			// Карта
-			m_snprintf(strReturn + m_strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
-			m_snprintf(strReturn + m_strlen(strReturn), 128, "USE_SD_CRC|SD - Использовать проверку CRC|%c;", USE_SD_CRC ? '0'+USE_SD_CRC : USE_SD_CRC_FOR_WRITE ? 'W' : '-');
+			m_snprintf(strReturn + strlen(strReturn), 128, "SD_FAT_VERSION|Версия библиотеки SdFat|%s;", SD_FAT_VERSION);
+			m_snprintf(strReturn + strlen(strReturn), 128, "USE_SD_CRC|SD - Использовать проверку CRC|%c;", USE_SD_CRC ? '0'+USE_SD_CRC : USE_SD_CRC_FOR_WRITE ? 'W' : '-');
 			strcat(strReturn,"SD_REPEAT|SD - Число попыток чтения, при неудаче переход на работу без карты|");_itoa(SD_REPEAT,strReturn);strcat(strReturn,";");
 
 			// W5200
@@ -1186,9 +1186,9 @@ void parserGET(uint8_t thread, int8_t )
 #ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 			_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
 #else
-			m_snprintf(strReturn+m_strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
+			m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
 #endif
-			m_snprintf(strReturn+m_strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
+			m_snprintf(strReturn+strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
 			strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
 			//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
 
@@ -1208,11 +1208,12 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,";");
 
 			// Вывод строки статуса
-			strcat(strReturn,"Строка статуса ТН| modWork:");_itoa((int)HP.get_modWork(),strReturn);strcat(strReturn,"[");strcat(strReturn,codeRet[HP.get_ret()]);strcat(strReturn,"]");
-			for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + m_strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
-			if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
-			if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
+			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН|State:%d modWork:%d[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
+			for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
+			//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
+			//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
 			strcat(strReturn,";");
+			strReturn += strlen(strReturn);
 
 			strcat(strReturn,"<b> Времена</b>|;");
 			strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
@@ -1231,7 +1232,7 @@ void parserGET(uint8_t thread, int8_t )
 #ifdef MQTT
 			strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
 #endif
-			strcat(strReturn,"Счетчик потерянных пакетов ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Счетчик неудачных Ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
 #ifdef USE_ELECTROMETER_SDM
 			strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
 #endif
@@ -2057,9 +2058,9 @@ void parserGET(uint8_t thread, int8_t )
 							if(HP.sTemp[p].get_fRadio()) {
 								i = HP.sTemp[p].get_radio_received_idx();
 								if(i >= 0) {
-									if(str[9] == '2') m_snprintf(strReturn + m_strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10);
-									m_snprintf(strReturn + m_strlen(strReturn), 20, ", ᛉ%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
-								} else strcat(strReturn, ", -");
+									m_snprintf(strReturn + strlen(strReturn), 20, ", \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
+									if(str[9] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
+								} else strcat(strReturn, ", \xF0\x9F\x93\xB6-");
 							}
 #endif
 							ADD_WEBDELIM(strReturn); continue;
@@ -2574,7 +2575,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
 			full_len=full_len+len;                                                     // определить размер данных
 		}
-		ptr =(byte*)Socket[thread].outBuf+m_strlen(HEADER_BIN);                     // отрезать заголовок в данных
+		ptr =(byte*)Socket[thread].outBuf + sizeof(HEADER_BIN)-1;                     // отрезать заголовок в данных
 		journal.jprintf("Loading %s, length %d bytes:\n",SETTINGS, full_len);
 		// Чтение настроек из ptr
 		len = HP.load(ptr, 1);
