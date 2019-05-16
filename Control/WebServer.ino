@@ -2058,7 +2058,7 @@ void parserGET(uint8_t thread, int8_t )
 							if(HP.sTemp[p].get_fRadio()) {
 								i = HP.sTemp[p].get_radio_received_idx();
 								if(i >= 0) {
-									m_snprintf(strReturn + strlen(strReturn), 20, ", \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
+									m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
 									if(str[9] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
 								} else strcat(strReturn, ", \xF0\x9F\x93\xB6-");
 							}

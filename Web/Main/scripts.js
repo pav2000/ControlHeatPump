@@ -421,7 +421,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												loadsens += "get_nTemp(" +T+ "),";
 												upsens += "get_fullTemp(" +T+ "),";
 												T = T.toLowerCase();
-												content += '<tr><td id="get_ntemp-' +T+ '" style="font-weight: bold;" nowrap></td><td id="get_fulltemp-' +T+ '"></td></tr>';
+												content += '<tr><td nowrap><span id="get_ntemp-' +T+ '"></span>:</td><td id="get_fulltemp-' +T+ '"></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											loadParam(loadsens);
