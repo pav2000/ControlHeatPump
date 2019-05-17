@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -487,7 +487,13 @@ void parserGET(uint8_t thread, int8_t )
 				} else if(HP.get_State() == pWAIT_HP) {
 					strcat(strReturn, "...");
 				} else if(HP.get_State() == pWORK_HP) {
-					strcat(strReturn, MODE_HP_STR[HP.get_modWork()]); strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
+					if((HP.get_modWork() & pHEAT)) strcat(strReturn, MODE_HP_STR[1]);
+					else if((HP.get_modWork() & pCOOL)) strcat(strReturn, MODE_HP_STR[2]);
+					else if((HP.get_modWork() & pBOILER)) strcat(strReturn, MODE_HP_STR[3]);
+					else if((HP.get_modWork() & pDEFROST)) strcat(strReturn, MODE_HP_STR[4]);
+					else strcat(strReturn, MODE_HP_STR[0]);
+					if((HP.get_modWork() & pCONTINUE)) strcat(strReturn, MODE_HP_STR[5]);
+					strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
 				}
 			} else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
 			ADD_WEBDELIM(strReturn);
@@ -1529,20 +1535,13 @@ void parserGET(uint8_t thread, int8_t )
 
 			if (strcmp(str,"set_modeHP")==0)           // Функция set_modeHP - установить режим отопления ТН
 			{
-				if ((pm=my_atof(x))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
-				else
-				{
-					switch ((MODE_HP)pm)  // режим работы отопления
-					{
-					case pOFF:   HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;
-					case pHEAT:  HP.set_mode(pHEAT); strcat(strReturn,(char*)"Выключено:0;Отопление:1;Охлаждение:0;"); break;
-					case pCOOL:  HP.set_mode(pCOOL); strcat(strReturn,(char*)"Выключено:0;Отопление:0;Охлаждение:1;"); break;
-					default: HP.set_mode(pOFF);  strcat(strReturn,(char*)"Выключено:1;Отопление:0;Охлаждение:0;"); break;   // Исправить по умолчанию
-					}
+				if((pm = my_atof(x)) == ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
+				else {
+					if(pm > pCOOL) pm = pOFF;
+					web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", pm);
 				}
-				//        Serial.print(pm); Serial.print("   "); Serial.println(HP.get_modeHouse() );
 				ADD_WEBDELIM(strReturn) ; continue;
-			} // strcmp(str,"set_modeHP")==0)
+			}
 			// ------------------------------------------------------------------------
 			if (strcmp(str,"set_testMode")==0)  // Функция set_testMode  - Установить режим работы бойлера
 			{
@@ -1554,7 +1553,7 @@ void parserGET(uint8_t thread, int8_t )
 					{ strcat(strReturn,noteTestMode[i]); strcat(strReturn,":"); if(i==HP.get_testMode()) strcat(strReturn,cOne); else strcat(strReturn,cZero); strcat(strReturn,";");  }
 				} // else
 				ADD_WEBDELIM(strReturn) ;    continue;
-			} //  if (strcmp(str,"set_testMode")==0)
+			}
 
 			// -----------------------------------------------------------------------------
 			if (strcmp(str,"set_EEV")==0)  // Функция set_EEV
@@ -2450,11 +2449,6 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 	boolean user, admin;
 	uint8_t i;
 	uint16_t len;
-
-//	journal.jprintf(">%s\n",Socket[thread].inBuf);
-//	journal.jprintf("--------------------------------------------------------\n");
-	
-
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
 		if(!(pass = strstr((char*) Socket[thread].inBuf, header_Authorization_))) return UNAUTHORIZED; // строка авторизации не найдена

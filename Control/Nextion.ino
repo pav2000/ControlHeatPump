@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -441,34 +441,34 @@ void Nextion::Update()
 				break;
 			}  // switch((RULE_HP) HP.get_ruleHeat())
 			break;
-			case pCOOL:
-				sendCommand("vis hotin,0");
-				sendCommand("vis hotout,1");
-				sendCommand("vis coolin,1");
-				sendCommand("vis coolout,0");
-				sendCommand("vis coin,0");
-				sendCommand("vis coout,1");
-				switch((RULE_HP) HP.get_ruleCool()) {
-				case pHYSTERESIS:
-				case pPID:
-					if(HP.get_TargetCool()) {
-						sendCommand("vis alg1,0");
-						sendCommand("vis alg2,1");
-					} else {
-						sendCommand("vis alg1,1");
-						sendCommand("vis alg2,0");
-					}
-					break;
-				case pHYBRID:
+		case pCOOL:
+			sendCommand("vis hotin,0");
+			sendCommand("vis hotout,1");
+			sendCommand("vis coolin,1");
+			sendCommand("vis coolout,0");
+			sendCommand("vis coin,0");
+			sendCommand("vis coout,1");
+			switch((RULE_HP) HP.get_ruleCool()) {
+			case pHYSTERESIS:
+			case pPID:
+				if(HP.get_TargetCool()) {
 					sendCommand("vis alg1,0");
 					sendCommand("vis alg2,1");
-					break;
-				default:
-					break;
-				}  // switch((RULE_HP) HP.get_ruleCool())
+				} else {
+					sendCommand("vis alg1,1");
+					sendCommand("vis alg2,0");
+				}
 				break;
-				default:
-					break;
+			case pHYBRID:
+				sendCommand("vis alg1,0");
+				sendCommand("vis alg2,1");
+				break;
+			default:
+				break;
+			}  // switch((RULE_HP) HP.get_ruleCool())
+			break;
+			default:
+				break;
 		} // switch ((MODE_HP)HP.get_modeHouse() )
 
 	} else if(PageID == NXTID_PAGE_BOILER)  // Обновление данных 6 страницы "ГВС"

@@ -1066,7 +1066,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 #endif
 				{
 #ifndef SUPERBOILER                       // если не определен супер бойлер, то при нагреве ГВС циркуляция всегда рабоатет
-					if ((HP.get_modWork()==pBOILER)||(HP.get_modWork()==pNONE_B))           // Если включен нагрев ГВС всегда включать насос циркуляции ЕСЛИ НЕ СУПЕРБОЙЛЕР
+					if ((HP.get_modWork() & pBOILER))           // Если включен нагрев ГВС всегда включать насос циркуляции ЕСЛИ НЕ СУПЕРБОЙЛЕР
 					{ HP.dRelay[RPUMPB].set_ON(); }
 					else
 #endif  // #ifndef SUPERBOILER 
@@ -1111,7 +1111,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 					type_SaveON _son;
 					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
 						MODE_HP currmode = HP.get_modWork();
-						uint8_t frestart = currmode != pOFF && ((currmode == pCOOL || currmode == pNONE_C) != (_son.mode == pCOOL || _son.mode == pNONE_C)); // Если направление работы ТН разное
+						uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_son.mode & (~pCONTINUE))); // Если направление работы ТН разное
 						if(frestart) {
 							HP.sendCommand(pWAIT);
 							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
@@ -1140,36 +1140,27 @@ void vReadSensor_delay8ms(int16_t ms8)
 			break;
 		case pSTARTING_HP: _delay(10000); break; // 1 Стартует  - этого не должно быть в этом месте
 		case pWORK_HP:                           // 3 Работает   - анализ режима работы get_modWork()
-			switch(HP.get_modWork())              // Что делает ТН если включен (7 вариантов) 0 Пауза 1 Включить отопление 2 Включить охлаждение 3 Включить бойлер 4 Продолжаем греть отопление 5 Продолжаем охлаждение 6 Продолжаем греть бойлер
-			{
-			case pOFF:                          // 0 Пауза
-				vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
-				break;
-			case pHEAT:                         // 1 Включить отопление
-			case pNONE_H:                       // 4 Продолжаем греть отопление
+			if((HP.get_modWork() & pHEAT)) {	// Отопление
 				if(HP.get_ruleHeat()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
 				else
-					vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                        // Время интегрирования ПИД  секунды
-				break;
-			case pCOOL:                         // 2 Включить охлаждение
-			case pNONE_C:                       // 5 Продолжаем охлаждение
+					vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                        // Время интегрирования ПИД  секунды
+			} else if((HP.get_modWork() & pCOOL)) { // охлаждение
 				if(HP.get_ruleCool()==pHYSTERESIS)  vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);    // Гистерезис
 				else
-					vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                         // Время интегрирования ПИД секунды
-				break;
-			case pBOILER:                       // 3 Включить бойлер
-			case pNONE_B:                       // 6 Продолжаем греть бойлер
-				vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                                    // Время интегрирования ПИД секунды
-				break;
-			default:
-				journal.jprintf((const char*)" $ERROR: Bad mode HP in function %s\n",(char*)__FUNCTION__);
-			}  // switch(HP.get_modeHouse() )
+					vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                        // Время интегрирования ПИД секунды
+			} else if((HP.get_modWork() & pCOOL)) { // бойлер
+				vTaskDelay(HP.dFC.get_Uptime()*1000/portTICK_PERIOD_MS);                            // Время интегрирования ПИД секунды
+			} else { // Пауза
+				vTaskDelay(TIME_CONTROL/portTICK_PERIOD_MS);                                        // Гистерезис
+			}
 			break;
-			case pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
-			case pERROR_HP:_delay(UPDATE_HP_WAIT_PERIOD); break;     // 5 Ошибка ТН
-			case pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
-			default:
-				journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
+		case pWAIT_HP:                          // 4 Ожидание ТН (расписание - пустое место)   проверям раз в 5 сек
+		case pERROR_HP: 						// 5 Ошибка ТН
+			_delay(UPDATE_HP_WAIT_PERIOD);
+			break;
+		case pERROR_CODE:                       // 6 - Эта ошибка возникать не должна!
+		default:
+			journal.jprintf((const char*)" $ERROR: Bad state HP in function %s\n",(char*)__FUNCTION__);
 		} //  switch (HP.get_State())
 
 		if(!HP.Task_vUpdate_run) continue;
@@ -1177,7 +1168,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
 		if(((HP.get_State() == pWORK_HP && !HP.is_pause()
-				&& (((HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() == pCOOL || HP.get_modWork() == pNONE_C) && GETBIT(HP.Prof.Cool.flags, fUseSun))
+				&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
 					|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 			 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {

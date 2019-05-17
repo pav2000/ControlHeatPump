@@ -1177,20 +1177,15 @@ enum MODE_COMP
 };
 
 //  Перечисляемый тип - что надо делать или какой режим отопления выбран (первые три)
-enum MODE_HP          
-{
-  pOFF,                          // 0 Выключить
-  pHEAT,                         // 1 Включить отопление
-  pCOOL,                         // 2 Включить охлаждение
-  pBOILER,                       // 3 Включить бойлер
-  pNONE_H,                       // 4 Продолжаем греть отопление
-  pNONE_C,                       // 5 Продолжаем охлаждение
-  pNONE_B,                       // 6 Продолжаем греть бойлер
-  pDEFROST,                      // 7 Разморозка воздушника
-  pEND8                          // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
+#define MODE_HP uint8_t
+#define pOFF		0             // Выключить
+#define pHEAT		0x01          // Отопление
+#define pCOOL		0x02          // Охлаждение
+#define pBOILER		0x04          // Бойлер
+#define pDEFROST	0x08          // Разморозка воздушника
+#define pCONTINUE	0x80          // флаг Продолжения
 
-const char *MODE_HP_STR[] = { "Off", "Heat", "Cool", "Boil", "HeatC", "CoolC", "BoilC", "Defrost" };
+const char *MODE_HP_STR[] = { "Off", "Heat", "Cool", "Boil", "Defrost", "C" };
 
 //  Перечисляемый тип - Команды управления ТН
 enum TYPE_COMMAND         

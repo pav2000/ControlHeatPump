@@ -574,6 +574,7 @@ void HeatPump::resetSettingHP()
   command_completed = 0;
   time_Sun_ON = 0;
   time_Sun_OFF = 0;
+  compressor_in_pause = false;
    
   safeNetwork=false;                            // режим safeNetwork
 
@@ -1475,7 +1476,7 @@ void HeatPump::relayAllOFF()
   onBoiler=false;                                     // выключить признак нагрева бойлера
 }                               
 
-// Конфигурирование насосов ТН, вход желаемое состояние(true-бойлер false-отопление/охлаждение) возврат onBoiler
+// Переключение на бойлер или обратно (true-бойлер false-отопление/охлаждение) возврат onBoiler
 // в зависимости от режима, не забываем менять onBoiler по нему определяется включение ГВС
 boolean HeatPump::switchBoiler(boolean b)
 {
@@ -1509,7 +1510,7 @@ boolean HeatPump::switchBoiler(boolean b)
 	}
 #endif
 	if(old && get_State() == pWORK_HP) { // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
-		journal.jprintf(" Pause %ds, Boiler->House.\n", HP.Option.delayBoilerSW);
+		journal.jprintf(" Pause %ds, Boiler->House\n", HP.Option.delayBoilerSW);
 		_delay(HP.Option.delayBoilerSW * 1000); // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 	}
 	return onBoiler;
@@ -1560,7 +1561,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	}
 	
 	dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
-	_delay(d);                                // Задержка на d мсек
 	
 	if(!b && (GETBIT(dRelay[RPUMPO].flags, fR_StatusMain) // пауза перед выключением насосов контуров, если нужно
 #ifdef RPUMPBH
@@ -1569,6 +1569,8 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");
 		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+	} else {
+		_delay(d);                                // Задержка на d мсек
 	}
 #else
 	// пауза перед выключением насосов контуров, если нужно
@@ -1594,29 +1596,26 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 #else
-	// здесь выключать насос бойлера бесполезно, уже раньше выключили
-#ifdef RPUMPBH
-    if((get_modWork() == pBOILER || get_modWork() == pNONE_B) && (!b || is_heating())) dRelay[RPUMPBH].set_Relay(b); // Если бойлер
-    else
+#ifdef RPUMPBH											// насос бойлера
+   	if(b) {
+   		if((get_modWork() & pBOILER)) {
+   			dRelay[RPUMPBH].set_ON();
+   		} else {
+   		   	dRelay[RPUMPO].set_ON();                	// насос отопления
+   		}
+   	} else {
+   		dRelay[RPUMPBH].set_OFF();					// насос бойлера
+   		dRelay[RPUMPO].set_OFF();                	// насос отопления
+   	}
+   	_delay(d); 										// Задержка на d мсек
+#else
+   	dRelay[RPUMPO].set_Relay(b);                	// насос отопления
+   	_delay(d); 										// Задержка на d мсек
 #endif
-    {
-    	dRelay[RPUMPO].set_Relay(b);                  // насос отопления
-    	if(!b) {
-#ifdef RPUMPBH
-    		if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
-    		dRelay[RPUMPBH].set_Relay(b);
-#endif
-#ifdef RPUMPFL
-    		// if(get_modWork() == pHEAT || get_modWork() == pNONE_H) // Выкл или Отопление
-    		Pump_HeatFloor(b); 				  // насос ТП
-#endif
-    	}
-    }
-   _delay(d);                                     // Задержка на d мсек    
-#endif
-	//  }
-   // Пауза Option.delayOnPump перенесена перед вызовом COMPRESSOR_ON
-   //if((b) && (!old))   // Насосы включены (старт компрессора), нужна пауза
+#endif // R3WAY
+   	if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
+  	Pump_HeatFloor(b); 				  				// насос ТП
+
 }
 // Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
 // Проводится различный сброс в зависимсти от конфигурации
@@ -1780,9 +1779,9 @@ int8_t HeatPump::StartResume(boolean start)
 	}
 	
 	// 4. Определяем что нужно делать -----------------------------------------------------------
-	if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+	if(get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 	else  mod=get_Work();                                   // определяем что делаем с компрессором
-	if (mod>pBOILER) mod=pOFF;                              // При первом пуске могут быть только состояния pOFF,pHEAT,pCOOL,pBOILER
+	if(mod > pBOILER) mod=pOFF;                              // При первом пуске могут быть только состояния pOFF,pHEAT,pCOOL,pBOILER
 	journal.jprintf(" Start modWork:%d[%s]\n",(int)mod,codeRet[Status.ret]);
 	Status.modWork = mod;  // Установка режима!
 
@@ -1811,7 +1810,7 @@ int8_t HeatPump::StartResume(boolean start)
 		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);
 		return error;
 	}
-	if ((mod==pCOOL)||(mod==pHEAT)||(mod==pBOILER)) {
+	if (mod && mod <= pBOILER) { // pCOOL or pHEAT or pBOILER
 #ifndef DEMO   // проверка блокировки инвертора
 		if((dFC.get_present())&&(dFC.get_blockFC()))          // есть инвертор но он блокирован
 		{
@@ -1854,7 +1853,7 @@ void HeatPump::resetPID()
 {
 #ifdef PID_FORMULA2
 	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
-	pidw.pre_err = (Status.modWork == pHEAT ? Prof.Heat.tempPID : Status.modWork == pBOILER ? Prof.Boiler.tempPID : Prof.Cool.tempPID) - FEED;
+	pidw.pre_err = ((Status.modWork & pHEAT) ? Prof.Heat.tempPID : (Status.modWork & pBOILER) ? Prof.Boiler.tempPID : Prof.Cool.tempPID) - FEED;
 	pidw.sum = dFC.get_target() * 1000;
 	pidw.min = dFC.get_minFreq() * 1000;
 	pidw.max = dFC.get_maxFreq() * 1000;
@@ -1922,11 +1921,6 @@ int8_t HeatPump::StopWait(boolean stop)
      dRelay[RPUMPB].set_OFF();     // выключить насос циркуляции ГВС
   #endif
 
-// Выключается в PUMPS_OFF
-//  #ifdef RPUMPFL  // управление  насосом циркуляции ТП
-//     Pump_HeatFloor(false);    // выключить насос циркуляции ТП
-//  #endif
-
   #ifdef RPUMPBH  // управление  насосом нагрева ГВС
      dRelay[RPUMPBH].set_OFF();
   #endif
@@ -1964,7 +1958,7 @@ MODE_HP HeatPump::get_Work()
 		ret = pBOILER;
 		break;
 	case pCOMP_NONE:
-		ret = pNONE_B;
+		ret = pBOILER + pCONTINUE;
 		break;
 	}
 
@@ -1972,14 +1966,8 @@ MODE_HP HeatPump::get_Work()
 	journal.printf(" gW: Status.ret=%d, ret=%d, B=%d\n", Status.ret, ret, onBoiler);
 #endif
 
-	if((ret == pBOILER) || (ret == pNONE_B)) return ret; // работает бойлер больше ничего анализировать не надо выход
+	if((ret & pBOILER)) return ret; // работает бойлер больше ничего анализировать не надо выход
 	if((get_modeHouse() == pOFF) && (ret == pOFF)) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
-
-	// Обеспечить переключение с бойлера на отопление/охлаждение, т.е бойлер нагрет и надо идти дальше
-//	if(onBoiler && ((Status.ret == pNone || Status.ret == pBh3 || Status.ret == pBh22 || Status.ret == pBp3 || (Status.ret >= pBp22 && Status.ret <= pBp27)))) // если бойлер выключяетя по достижению цели или ограничений И режим ГВС
-//	{
-//		switchBoiler(false);                // выключить бойлер (задержка в функции) именно здесь  - а то дальше защиты сработают
-//	}
 
 	// 3. Отопление/охлаждение
 	switch((int) get_modeHouse())   // проверка отопления
@@ -1997,28 +1985,25 @@ MODE_HP HeatPump::get_Work()
 			if(onBoiler) switchBoiler(false);    // переключить с бойлера на отопление
 			break;
 		case pCOMP_NONE:
-			ret = pNONE_H;
+			ret = pHEAT + pCONTINUE;
 			if(onBoiler) switchBoiler(false);    // переключить с бойлера на отопление
 			break;
 		}
 		break;
-		case pCOOL:
-			switch((int) UpdateCool()) {
-			case pCOMP_OFF:
-				ret = pOFF;
-				break;
-			case pCOMP_ON:
-				ret = pCOOL;
-				if(onBoiler) switchBoiler(false);    // переключить с бойлера на отопление
-				break;
-			case pCOMP_NONE:
-				if(onBoiler) {
-					ret = pCOOL;
-					switchBoiler(false);    // переключить с бойлера на отопление
-				} else ret = pNONE_C;
-				break;
-			}
+	case pCOOL:
+		switch((int) UpdateCool()) {
+		case pCOMP_OFF:
+			ret = pOFF;
 			break;
+		case pCOMP_ON:
+			ret = pCOOL;
+			break;
+		case pCOMP_NONE:
+			ret = pCOOL;
+			if(!onBoiler) ret += pCONTINUE;
+			break;
+		}
+		break;
 	}
 #ifdef RHEAT  // Дополнительный тен для нагрева отопления
 	if (GETBIT(Option.flags,fAddHeat))
@@ -2104,7 +2089,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	int16_t T = sTemp[TBOILER].get_Temp();
 	int16_t TRG = get_boilerTempTarget();
 #ifdef RPUMPBH
-	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork == pHEAT || Status.modWork == pNONE_H)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
+	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork & pHEAT)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(!is_compressor_on() || T > TRG) {
 			dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 			SETBIT0(flags, fHP_BoilerTogetherHeat);
@@ -2306,8 +2291,7 @@ MODE_COMP HeatPump::UpdateHeat()
 	target = get_targetTempHeat();
 	if(is_compressor_on()) {
 #ifdef R4WAY
-		if(dRelay[R4WAY].get_Relay()) {
-			//dRelay[R4WAY].set_OFF();  // отопление Проверить и если надо установить 4-ходовой клапан только если компрессор работает (защита это лишнее)
+		if(dRelay[R4WAY].get_Relay()) {	// 4-х ходовой в другом положении - ошибка
 			set_Error(ERR_WRONG_HARD_STATE, (char*)__FUNCTION__);
 			return pCOMP_NONE;
 		}
@@ -2459,10 +2443,9 @@ MODE_COMP HeatPump::UpdateCool()
 			return pCOMP_NONE;
 		}
 //#ifdef R4WAY
-//		if(!dRelay[R4WAY].get_Relay()) {
+//		if(!dRelay[R4WAY].get_Relay()) { // 4-х ходовой в другом положении - ошибка
 //			set_Error(ERR_WRONG_HARD_STATE, (char*)__FUNCTION__);
 //			return pCOMP_NONE;
-//			//dRelay[R4WAY].set_ON();                // Охлаждение Проверить и если надо установить 4-ходовой клапан только если компрессор рабоатет (защита это лишнее)
 //		}
 //#endif
 	}
@@ -2597,123 +2580,95 @@ MODE_COMP HeatPump::UpdateCool()
 // В зависммости от входного параметра конфигурирует краны
 void HeatPump::configHP(MODE_HP conf)
 {
-     // 1. Обеспечение минимальной паузы компрессора, если мало времени то не конфигурируем  и срузу выходим!!
-	 // теперь в другом месте (vad7)
-   
-     // 2. Конфигурация в нужный режим
-     //#ifdef RBOILER // Если надо выключить тен бойлера (если его нет в настройках)
-   	 // не будем мешать тэну...
-     //  if((!GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(!GETBIT(Prof.Boiler.flags,fAddHeating))) dRelay[RBOILER].set_OFF();   // ТЭН вообще не используется - Выключить ТЭН бойлера если настройки соответсвуют
-     //#endif
-     switch ((int)conf)
-     {
-      case  pOFF: // ЭТО может быть пауза! Выключить - установить положение как при включении ( перевод 4-х ходового производится после отключения компрессора (см compressorOFF()))
-                 
-                 switchBoiler(false);                                            // выключить бойлер
-               
-                 _delay(DELAY_AFTER_SWITCH_RELAY);                               // Задержка
-                 #ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
-                     dRelay[RSUPERBOILER].set_OFF();                            // Евгений добавил выключить супербойлер
-                 #endif
-                 #ifdef RBOILER
-                      if((GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF();  // Выключить ТЭН бойлера в режиме турбо (догрев не работате)
-                 #endif
-                 #ifdef RHEAT
-                     if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
-                 #endif 
-                 PUMPS_OFF;
-                break;    
-      case  pHEAT:    // Отопление
-                 PUMPS_ON;                                                     // включить насосы
-
-                 #ifdef R4WAY
-                 	 if(is_compressor_on() && dRelay[R4WAY].get_Relay()) PauseAfterSwitchR4WAY();    // Компрессор работает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
-                 	 dRelay[R4WAY].set_OFF();                                        // нагрев
-                 	 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка
-                 #endif
-
-                 switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
-                 
-                 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
-                 	 dRelay[RSUPERBOILER].set_OFF();                             // Евгений добавил выключить супербойлер
-                 #endif
-                 #ifdef RBOILER
-                 	 if((GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF(); // Выключить ТЭН бойлера (режим форсированного нагрева)
-                 #endif
-                 #ifdef RHEAT
-              //     if((GETBIT(Option.flags,fAddHeat))&&(dRelay[RHEAT].get_present())) dRelay[RHEAT].set_ON(); else dRelay[RHEAT].set_OFF(); // Если надо включить ТЭН отопления
-                 #endif
-                 if (!is_compressor_on())  dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  // установить стартовую частоту если компрессор выключен
-                break;    
-      case  pCOOL:    // Охлаждение
-                 PUMPS_ON;                                                     // включить насосы
-
-                 #ifdef R4WAY
-                 	 if(is_compressor_on() && !dRelay[R4WAY].get_Relay()) PauseAfterSwitchR4WAY();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
-                 	 dRelay[R4WAY].set_ON();                                       // охлаждение
-                 	 _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на 2 сек
-                 #endif 
-
-                  switchBoiler(false);                                           // выключить бойлер
-                 #ifdef RBOILER
-                  	  if((GETBIT(Prof.Boiler.flags,fTurboBoiler)) && (dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF(); // Выключить ТЭН бойлера (режим форсированного нагрева)
-                 #endif
-                 #ifdef RHEAT
-                 	 if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
-                 #endif 
-                 if (!is_compressor_on()) dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());   // установить стартовую частоту
-                break;
-       case  pBOILER:   // Бойлер
-                 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
-                    dRelay[PUMP_IN].set_ON();                                  // Реле включения насоса входного контура  (геоконтур)
-                    dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
-                    dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
-                    _delay(2*1000);                     // Задержка на 2 сек
-                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
-                 #else  
-                    PUMPS_ON;           // включить насосы
-                    if (!is_compressor_on() && Status.ret<pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту
-                 #endif
-
-                 #ifdef R4WAY
-                    if(is_compressor_on() && dRelay[R4WAY].get_Relay()) PauseAfterSwitchR4WAY();    // Компрессор рабатает и 4-х ходовой стоит на холоде то хитро переключаем 4-х ходовой в положение тепло
-                    dRelay[R4WAY].set_OFF();                                        // нагрев
-                    _delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка на сек
-                 #endif
-                 switchBoiler(true);                                             // включить бойлер
-                 #ifdef RHEAT
-                 	 if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
-                 #endif 
-                break;   
-         case  pNONE_H:  // Продолжаем греть отопление
-         case  pNONE_C:  // Продолжаем охлаждение
-         case  pNONE_B:  // Продолжаем греть бойлер
-               break;    // конфигурировать ничего не надо, продолжаем движение
-         default:  set_Error(ERR_CONFIG,(char*)__FUNCTION__);  break;   // Ошибка!  что то пошло не так
-     }
- }
-
-// "Интелектуальная пауза" для перекидывания на "ходу" 4-х ходового
-// фактически останов компрессора и обезпечение нужных пауз, компрессор включается далее в vUpdate()
-void HeatPump::PauseAfterSwitchR4WAY()
-{
-	journal.jprintf("Pause after switch R4WAY\n");
-#ifdef EEV_DEF
-	dEEV.Pause();                                                    // Поставить на паузу задачу Обновления ЭРВ
-	journal.jprintf(" Stop operate EEV\n");
-#endif
-	if(is_compressor_on()) {
-		COMPRESSOR_OFF;
-		stopCompressor = rtcSAM3X8.unixtime(); // Запомнить время выключения компрессора
+	if(conf == pOFF) { // ЭТО может быть пауза! Выключить - установить положение как при включении ( перевод 4-х ходового производится после отключения компрессора (см compressorOFF()))
+		#ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
+		 dRelay[RSUPERBOILER].set_OFF();                            // Евгений добавил выключить супербойлер
+		#endif
+		#ifdef RBOILER
+			if((GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF();  // Выключить ТЭН бойлера в режиме турбо (догрев не работате)
+		#endif
+		#ifdef RHEAT
+			if(dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
+		#endif
+		PUMPS_OFF;
+		//switchBoiler(false);                                            // выключить бойлер
+		//_delay(DELAY_AFTER_SWITCH_RELAY);                               // Задержка
+	} else if((conf & pHEAT)) {    // Отопление
+		if(Switch_R4WAY(false)) return; 									// 4-х ходовой на нагрев
+		if(is_compressor_on()) {
+			switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
+		} else {
+			PUMPS_ON;                                                     // включить насосы
+			dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  // установить стартовую частоту если компрессор выключен
+		}
+		#ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
+			dRelay[RSUPERBOILER].set_OFF();                             // Евгений добавил выключить супербойлер
+		#endif
+		#ifdef RBOILER
+		 	 if((GETBIT(Prof.Boiler.flags,fTurboBoiler))&&(dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF(); // Выключить ТЭН бойлера (режим форсированного нагрева)
+		#endif
+		#ifdef RHEAT
+		//if((GETBIT(Option.flags,fAddHeat))&&(dRelay[RHEAT].get_present())) dRelay[RHEAT].set_ON(); else dRelay[RHEAT].set_OFF(); // Если надо включить ТЭН отопления
+		#endif
+	} else if((conf & pCOOL)) {  // Охлаждение
+		if(Switch_R4WAY(true)) return; 										// 4-х ходовой на охлаждение
+		if(is_compressor_on()) {
+			switchBoiler(false);                                           // выключить бойлер
+		} else {
+			PUMPS_ON;                                                     // включить насосы
+			dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());   // установить стартовую частоту
+		}
+		#ifdef RBOILER
+			if((GETBIT(Prof.Boiler.flags,fTurboBoiler)) && (dRelay[RBOILER].get_present())) dRelay[RBOILER].set_OFF(); // Выключить ТЭН бойлера (режим форсированного нагрева)
+		#endif
+		#ifdef RHEAT
+		  	  if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
+		#endif
+	} else if((conf & pBOILER)) {  // Бойлер
+		if(Switch_R4WAY(false)) return; 	 						 // 4-х ходовой на нагрев
+		#ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
+			dRelay[PUMP_IN].set_ON();                                  // Реле включения насоса входного контура  (геоконтур)
+			dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
+			dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
+			_delay(2*1000);                     // Задержка на 2 сек
+			if(!is_compressor_on() && Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+		#else
+			if(is_compressor_on()) {
+				switchBoiler(true);                     // включить бойлер
+			} else {
+				PUMPS_ON;           // включить насосы
+				if(Status.ret < pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту
+			}
+		#endif
+		#ifdef RHEAT
+			if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
+		#endif
+	} else { // ?
+		set_Error(ERR_CONFIG,(char*)__FUNCTION__);   // Ошибка!  что то пошло не так
 	}
-#ifdef REVI
-	checkEVI();                                                     // выключить ЭВИ
+}
+
+// Переключение реверсивного 4-х ходового клапана (true - охлаждение, false - нагрев), выход - компрессор остановлен
+// останов компрессора и обезпечение нужных пауз, компрессор включается далее в vUpdate()
+boolean HeatPump::Switch_R4WAY(boolean fCool)
+{
+#ifdef R4WAY
+	if(fCool == dRelay[R4WAY].get_Relay()) return false;
+	journal.jprintf("Switch to %s\n", fCool ? "COOL" : "HEAT");
+	boolean ret = false;
+	if(is_compressor_on()) {
+		compressorOFF();
+		ret = true;
+	}
+	if(fCool) dRelay[R4WAY].set_ON(); else dRelay[R4WAY].set_OFF();
+	_delay(DELAY_AFTER_SWITCH_RELAY);                        // Задержка
+//	пауза не нужна, отстоялись в насосах
+//	journal.jprintf(" Pressure equalization...\n");
+//	_delay(Option.delayR4WAY * 1000);                                   // Пауза 120 секунд для выравнивания давлений
+#else // R4WAY
+	if(fCool) journal.jprintf("No 4-way valve avalilable!\n");
 #endif
-	journal.jprintf(" Pressure equalization...\n");
-	_delay(Option.delayR4WAY * 1000);                                   // Пауза 120 секунд для выравнивания давлений
-#ifdef EEV_DEF
-	lastEEV = dEEV.get_StartPos();                                     // Выставление ЭРВ на стартовую позицию т.к идет смена режима тепло-холод
-#endif
+	return ret;
 }
 // UPDATE --------------------------------------------------------------------------------
 // Итерация по управлению всем ТН, для всего, основной цикл управления.
@@ -2759,20 +2714,15 @@ void HeatPump::vUpdate()
 	defrost();                                                          // Разморозка только для воздушных ТН
 #endif
 
-
-//	uint8_t old_mw = Status.modWork;
-//	if(old_mw >= pNONE_H) old_mw -= pNONE_H - 1;
 	Status.modWork = get_Work();                                         // определяем что делаем
-//	if(old_mw != (Status.modWork < pNONE_H ? Status.modWork : Status.modWork - (pNONE_H - 1))) command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 #ifdef DEBUG_MODWORK
 	save_DumpJournal(false);                                           // Вывод строки состояния
 #endif
 	//  реализуем требуемый режим
-	switch((int) get_modWork()) {
-	case pOFF:
+	if(Status.modWork == pOFF) {
 		if(is_compressor_on()) {  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
 			compressorOFF();
-			configHP(get_modWork());
+			configHP(Status.modWork);
 			if(!startPump && get_modeHouse() != pOFF)  // Когда режим выключен (не отопление и не охлаждение), то насосы отопления крутить не нужно
 			{
 				startPump = true;                                 // Поставить признак запуска задачи насос
@@ -2780,10 +2730,7 @@ void HeatPump::vUpdate()
 			}
 			command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
-		break;
-	case pHEAT:
-	case pCOOL:
-	case pBOILER: // Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
+	} else if(!(Status.modWork & pCONTINUE)) { // Начало режимов, Включаем задачу насос, конфигурируем 3 и 4-х клапаны включаем насосы и потом включить компрессор
 		if(startPump)                                         // Остановить задачу насос
 		{
 			startPump = false;                                     // Поставить признак останова задачи насос
@@ -2791,37 +2738,24 @@ void HeatPump::vUpdate()
 		    command_completed = rtcSAM3X8.unixtime(); // поменялся режим
 		}
 		if(!check_compressor_pause()) {
-			configHP(get_modWork());                    // Конфигурируем насосы
+			configHP(Status.modWork);                    // Конфигурируем насосы
 			compressorON();                             // Включаем компрессор
 		}
-		break;
-	case pNONE_H:
-	case pNONE_C:
-	case pNONE_B:
-		break;                                    // компрессор уже включен
-	default:
-		set_Error(ERR_CONFIG, (char*) __FUNCTION__);
-		break;
 	}
 }
 
-// проверка на паузу между включениями
+// проверка на паузу между включениями, возврат true - в паузе
 boolean HeatPump::check_compressor_pause()
 {
 	if(stopCompressor) {
-		int32_t nTime = rtcSAM3X8.unixtime() - stopCompressor;
-#ifdef DEMO
-		if (nTime<10) {journal.jprintf("Compressor pause\n");return true;} // Обеспечение паузы компрессора Хранится в секундах!!! ТЕСТИРОВАНИЕ
-#else
-		if((nTime = Option.pause - nTime) > 0) {
-			#ifdef DEBUG_MODWORK
-				if(nTime <= UPDATE_HP_WAIT_PERIOD / 1000) journal.jprintf(" Compressor pause\n");
-			#endif
-			return true;
-		}
+		if((int)Option.pause - (rtcSAM3X8.unixtime() - stopCompressor) > 0) {
+#ifdef DEBUG_MODWORK
+			journal.jprintf(" Compressor pause\n");
 #endif
+			return compressor_in_pause = true;
+		}
 	}
-	return false;
+	return compressor_in_pause = false;
 }
 
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена
@@ -2841,7 +2775,7 @@ void HeatPump::compressorON()
 #ifdef EEV_DEF
 	if(lastEEV != -1) {         // Не первое включение компрессора после старта ТН
 		// 1. Обеспечение минимальной паузы компрессора
-		if(check_compressor_pause()) return;
+		if(compressor_in_pause) return;
 #ifdef DEBUG_MODWORK
 		journal.jprintf(pP_TIME,"compressorON > modWork:%d[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 #endif
@@ -2876,8 +2810,8 @@ void HeatPump::compressorON()
 			journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
 	#ifdef DEFROST
-	  if(get_modWork()!=pDEFROST)  // При разморозке есть лишние проверки
-	   {
+	  if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
+	  {
 	#endif		
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
@@ -2929,7 +2863,7 @@ void HeatPump::compressorON()
 #endif
 
 #ifdef DEFROST
-   }  // if(mod!=pDEFROST)
+   }  // if(!(mod & pDEFROST))
 #endif	
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
 		if(Charts_when_comp_on) task_updstat_chars = 0;
@@ -2967,7 +2901,7 @@ void HeatPump::compressorON()
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Resume task UpdateEEV\n");
 		#ifdef DEFROST
-		 if(get_modWork()!=pDEFROST) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+		 if(!(get_modWork() & pDEFROST)) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
 		 else journal.jprintf(pP_TIME,"%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
 		#else
 		journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
@@ -3046,12 +2980,8 @@ void HeatPump::defrost()
       if (startDefrost==0) startDefrost=xTaskGetTickCount();               // первое срабатывание датчика - запоминаем время (тики)
       if (xTaskGetTickCount()-startDefrost<Option.delayDefrostOn*1000)  return; //  Еще рано размораживать
       // придется размораживать
-       journal.jprintf("Start defrost\n"); 
-       #ifdef R4WAY
-         if (is_compressor_on()&&(dRelay[R4WAY].get_Relay()==false)) PauseAfterSwitchR4WAY();    // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
-         dRelay[R4WAY].set_ON();                                              // охлаждение
-         _delay(2*1000);                               // Задержка на 2 сек
-       #endif
+       journal.jprintf("Start defrost\n");
+       Switch_R4WAY(true);  // охлаждение
        
        compressorON();                                                 // включить компрессор на холод
       
@@ -3075,8 +3005,9 @@ void HeatPump::defrost()
 	  {
 	    if (dRelay[R4WAY].get_Relay() == true) // Если четырехходовой стоит на тепло - Главный вариант
 	    {
-		     PauseAfterSwitchR4WAY();                                                     // Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
-		     if (sTemp[TOUT].get_Temp()<=TEMP_STEAM_DEFROST)                        // Если температура на улице ниже или равна TEMP_STEAM_DEFROST то оттаиваем паром 	
+	    	// Компрессор рабатает и 4-х ходовой стоит на тепле то хитро переключаем 4-х ходовой в положение холод
+	    	compressorOFF();
+		    if (sTemp[TOUT].get_Temp()<=TEMP_STEAM_DEFROST)                        // Если температура на улице ниже или равна TEMP_STEAM_DEFROST то оттаиваем паром
 			     {
 			      dRelay[PUMP_IN].set_OFF();                                        // выключаем вентиляторы
 			     _delay(1*1000);
@@ -3097,7 +3028,7 @@ void HeatPump::defrost()
 		 _delay(1*1000);
 		  dRelay[PUMP_IN1].set_ON();                                                 // включаем вентиляторы	
 		 }
-	      compressorON(pDEFROST);                                                    // включить компрессор на разморозку
+	      compressorON();                                                    // включить компрессор на разморозку
 	  } // Компрессор не рабоатет
 	
 	 // ТН в нужном состояниии надо только ждать 
@@ -3257,29 +3188,22 @@ char *HeatPump::StateToStr()
 	case pSTOPING_HP: return (char*)"Останов...";break;         // 2 Останавливается
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
-			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Ожид. Нагр.";         // 1 Включить отопление
-			case  pCOOL:   return (char*)"Ожид. Охл.";          // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Ожид. ГВС";           // 3 Включить бойлер
-			}
+			if((get_modWork() & pHEAT)) return (char*)"Ожид. Нагр.";         // Включить отопление
+			if((get_modWork() & pCOOL)) return (char*)"Ожид. Охл.";          // Включить охлаждение
+			if((get_modWork() & pBOILER)) return (char*)"Ожид. ГВС";         // Включить бойлер
 			return (char*)strRusPause;
 		} else {
-			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pOFF:    return (char*)strRusPause;   break;  // 0 Пауза
-			case  pHEAT:   return (char*)"Нагрев";      break;  // 1 Включить отопление
-			case  pCOOL:   return (char*)"Холод";   break;  // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Нагрев ГВС";  break;  // 3 Включить бойлер
-			case  pNONE_H: return (char*)"Отопление";   break;  // 4 Продолжаем греть отопление
-			case  pNONE_C: return (char*)"Охлаждение";  break;  // 5 Продолжаем охлаждение
-			case  pNONE_B: return (char*)"ГВС";         break;  // 6 Продолжаем греть бойлер
-			case  pDEFROST:return (char*)"Разморозка";  break;  // 7 Разморозка
-			}
-			return (char*)"Статус Р.?";
+			if(get_modWork() == pOFF) return (char*)strRusPause;
+			if((get_modWork() & pHEAT))    return (char*)"Отопление";
+			if((get_modWork() & pCOOL))    return (char*)"Охлаждение";
+			if((get_modWork() & pBOILER))  return (char*)"ГВС";
+			if((get_modWork() & pDEFROST)) return (char*)"Разморозка";
+			return (char*)"...";
 		}
-	case pWAIT_HP:    return (char*)"Ожидание";  break;         // 4 Ожидание
-	case pERROR_HP:   return (char*)"Ошибка";    break;         // 5 Ошибка ТН
+	case pWAIT_HP:    return (char*)"Ожидание";         	// 4 Ожидание
+	case pERROR_HP:   return (char*)"Ошибка";  				// 5 Ошибка ТН
 	}
-	return (char*)"Статус ?"; 							        // 6 - Эта ошибка возникать не должна!
+	return (char*)"...."; 							        // 6 - Эта ошибка возникать не должна!
 }
 
 // Получить строку состояния ТН в виде строки АНГЛИСКИЕ буквы
@@ -3292,24 +3216,17 @@ char *HeatPump::StateToStrEN()
 	case pSTOPING_HP: return (char*)"Stop...";    break;         // 2 Останавливается
 	case pWORK_HP:                                               // 3 Работает
 		if(!is_compressor_on()) {
-			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pHEAT:   return (char*)"Wait Heat";          // 1 Включить отопление
-			case  pCOOL:   return (char*)"Wait Cool";          // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Wait Boiler";        // 3 Включить бойлер
-			}
+			if((get_modWork() & pHEAT)) return (char*)"Wait Heat";         // Включить отопление
+			if((get_modWork() & pCOOL)) return (char*)"Wait Cool";          // Включить охлаждение
+			if((get_modWork() & pBOILER)) return (char*)"Wait Boiler";         // Включить бойлер
 			return (char*)strRusPause;
 		} else {
-			switch ((int)get_modWork()) {                       // MODE_HP
-			case  pOFF:    return (char*)strEngPause;   break;  // 0 Пауза
-			case  pHEAT:   return (char*)"Heat";        break;  // 1 Включить отопление
-			case  pCOOL:   return (char*)"Cool";        break;  // 2 Включить охлаждение
-			case  pBOILER: return (char*)"Boiler";      break;  // 3 Включить бойлер
-			case  pNONE_H: return (char*)"Heating";     break;  // 4 Продолжаем греть отопление
-			case  pNONE_C: return (char*)"Cooling";     break;  // 5 Продолжаем охлаждение
-			case  pNONE_B: return (char*)"Boiler";      break;  // 6 Продолжаем греть бойлер
-			case  pDEFROST:return (char*)"Defrost";     break;  // 7 Разморозка
-			}
-			return (char*)"Work ?";
+			if(get_modWork() == pOFF) return (char*)strRusPause;
+			if((get_modWork() & pHEAT))    return (char*)"Heating";
+			if((get_modWork() & pCOOL))    return (char*)"Cooling";
+			if((get_modWork() & pBOILER))  return (char*)"Boiler";
+			if((get_modWork() & pDEFROST)) return (char*)"Defrost";
+			return (char*)"...";
 		}
 	case pWAIT_HP:    return (char*)"Wait";  break;         // 4 Ожидание
 	case pERROR_HP:   return (char*)"Error"; break;       // 5 Ошибка ТН
