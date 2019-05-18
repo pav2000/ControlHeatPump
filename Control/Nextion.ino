@@ -181,10 +181,10 @@ void Nextion::readCommand()
 		for(uint8_t i = 0; i < len + 3; i++) journal.jprintf("%02x", buffer[i]);
 		journal.jprintf("\n");
 #endif
-
+		if(input_delay) input_delay--;
 		switch(buffer[0]) {
 		case 0x65:   //   	Touch Event
-			if(input_delay && --input_delay) break;
+			if(input_delay) break;
 			if(len == 4 && buffer[3] == 0) { // event: release
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
