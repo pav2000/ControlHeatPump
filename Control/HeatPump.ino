@@ -2748,10 +2748,9 @@ void HeatPump::vUpdate()
 boolean HeatPump::check_compressor_pause()
 {
 	if(stopCompressor) {
-		if((int)Option.pause - (rtcSAM3X8.unixtime() - stopCompressor) > 0) {
-#ifdef DEBUG_MODWORK
-			journal.jprintf(" Compressor pause\n");
-#endif
+		int i;
+		if((i = (int)Option.pause - (rtcSAM3X8.unixtime() - stopCompressor)) > 0) {
+			if(!compressor_in_pause) journal.jprintf(" Wait compressor pause %d s...\n", i);
 			return compressor_in_pause = true;
 		}
 	}
