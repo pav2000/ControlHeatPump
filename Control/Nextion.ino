@@ -164,6 +164,7 @@ boolean Nextion::setComponentText(const char* component, char* txt)
 // Обработка входящей команды (только одна - первая)
 void Nextion::readCommand()
 {
+	if(input_delay) input_delay--;
 	while(check_incoming() || DataAvaliable) {
 		uint8_t buffer_idx = 0;
 		char *p = NULL;
@@ -181,7 +182,6 @@ void Nextion::readCommand()
 		for(uint8_t i = 0; i < len + 3; i++) journal.jprintf("%02x", buffer[i]);
 		journal.jprintf("\n");
 #endif
-		if(input_delay) input_delay--;
 		switch(buffer[0]) {
 		case 0x65:   //   	Touch Event
 			if(input_delay) break;
@@ -491,7 +491,6 @@ void Nextion::Update()
 		setComponentText("t2", buffer);
 	}
 	StatusLine();
-	//sendCommand("ref_star");    // Восстановить обновление
 	fUpdate = 1;
 }
 
@@ -501,7 +500,7 @@ void Nextion::StatusLine()
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
-	uint16_t newcrc = !StatusCrc;
+	uint16_t newcrc = ~StatusCrc;
 	if(fUpdate == 1) {
 		newcrc = calulate_crc16((uint8_t*)tm, 5);
 		newcrc = _crc16(newcrc, HP.get_errcode());

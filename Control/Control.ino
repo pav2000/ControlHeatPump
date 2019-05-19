@@ -1167,9 +1167,8 @@ void vReadSensor_delay8ms(int16_t ms8)
 		// Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
-		if(((HP.get_State() == pWORK_HP && !HP.is_pause()
-				&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
-					|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
+		if(((!HP.is_pause()	&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
+								|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 			 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
 				if(fregen) {
