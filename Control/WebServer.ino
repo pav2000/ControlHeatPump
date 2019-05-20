@@ -651,9 +651,9 @@ void parserGET(uint8_t thread, int8_t )
 
 		if (strcmp(str,"get_modeHP")==0)           // Функция get_modeHP - получить режим отопления ТН
 		{
-			web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", HP.get_modeHouse() );
+			web_fill_tag_select(strReturn, MODE_HOUSE_WEBSTR, HP.get_modeHouse());
 			ADD_WEBDELIM(strReturn) ; continue;
-		} // strcmp(str,"get_modeHP")==0)
+		}
 
 		if (strcmp(str,"get_relayOut")==0)  // Функция Строка выходных насосов: RPUMPO = Вкл, RPUMPBH = Бойлер
 		{
@@ -670,7 +670,12 @@ void parserGET(uint8_t thread, int8_t )
 				}
 #endif
 				if(i) strcat(strReturn,  ", ");
-			} else if(!i) strcat(strReturn,  "Выкл");
+			} else {
+				if(HP.dRelay[RPUMPFL].get_Relay()) {
+					strcat(strReturn,  "ТП");
+					if(i) strcat(strReturn,  ", ");
+				} else if(!i) strcat(strReturn,  "Выкл");
+			}
 			if(i) strcat(strReturn, "ГВС");
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
@@ -1214,7 +1219,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,";");
 
 			// Вывод строки статуса
-			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН|State:%d modWork:%d[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
+			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
 			for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
 			//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
 			//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
@@ -1538,7 +1543,8 @@ void parserGET(uint8_t thread, int8_t )
 				if((pm = my_atof(x)) == ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
 				else {
 					if(pm > pCOOL) pm = pOFF;
-					web_fill_tag_select(strReturn, "Выключено:0;Отопление:0;Охлаждение:0;", pm);
+					HP.set_mode(pm);
+					web_fill_tag_select(strReturn, MODE_HOUSE_WEBSTR, HP.get_modeHouse());
 				}
 				ADD_WEBDELIM(strReturn) ; continue;
 			}

@@ -24,8 +24,8 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.022"				// Версия прошивки
-#define VER_SAVE		134					// Версия формата сохраняемых данных в I2C память
+#define VERSION			"1.023"				// Версия прошивки
+#define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
@@ -808,6 +808,7 @@ const char *option_DELAY_BOILER_SW    = {"DLBSW"};    			// Пауза (сек) 
 const char *option_DELAY_BOILER_OFF   = {"DLBOFF"};   			// Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
 const char *option_SunRegGeo		  = {"SCG"};				// Использовать солнечный коллектор для регенерации геоконтура в простое
 const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура начала регенерации геоконтура с помощью СК, в градусах
+const char *option_SunRegGeoTempGOff  = {"SCGO"};				// Температура жидкости конца регенерации геоконтура с помощью СК, в градусах
 const char *option_SunTDelta		  = {"STD"};				// Дельта температур для включения, сотые градуса
 const char *option_SunGTDelta		  = {"SGD"};				// Дельта температур жидкости для выключения, сотые градуса
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
@@ -1186,6 +1187,7 @@ enum MODE_COMP
 #define pCONTINUE	0x80          // флаг Продолжения
 
 const char *MODE_HP_STR[] = { "Off", "Heat", "Cool", "Boil", "Defrost", "C" };
+const char MODE_HOUSE_WEBSTR[] = "Выключено:0;Отопление:0;Охлаждение:0;";
 
 //  Перечисляемый тип - Команды управления ТН
 enum TYPE_COMMAND         

@@ -937,6 +937,10 @@ void vReadSensor(void *)
 			}
 		}
 #endif
+#ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
+ 	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
+		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
+#endif
 
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
@@ -1171,9 +1175,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 								|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 			 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 			if((HP.flags & (1<<fHP_SunActive))) {
-				if(fregen) {
-					if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp) HP.Sun_OFF();
-				} else if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME && HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
+				if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME) {
+					if(fregen) {
+						if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
+					} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
+				}
 			} else if(HP.sTemp[TSUN].get_Temp() >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + HP.Option.SunTDelta) {
 				HP.Sun_ON();
 			}
