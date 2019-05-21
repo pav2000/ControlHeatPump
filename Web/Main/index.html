@@ -41,14 +41,11 @@ window.onload = function() {
 		<dt><nobr>Насос СО</nobr></dt><dd><span id="get_relay-rpumpo-ONOFF">-</span></dd>
 	</dl>
 	<dl>
-		<dt><nobr>Бойлер <input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></nobr></dt><dd><nobr> <span style="font-size:small">Нагреть сейчас <sup>1</sup></span> <input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></nobr></dd>
+		<dt><nobr>Бойлер <input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></nobr></dt><dd><nobr> <span style="font-size:small">Срочно</span> <input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></nobr></dd>
 		<dt>Температура</dt><dd><span id="get_temp-tboiler">-</span>&deg;</dd>
 		<dt>Целевая</dt><dd><nobr><input id="get_boiler-trg" type="number" min="5" max="90" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></nobr></dd>
 	</dl>									
 </div>
-      1. Принудительно включить нагрев бойлера (отключается расписание и устанавливается гистерезис 0°C), после нагрева флаг автоматически снимается.<br/>
-	<br>
-
 </div>
 </body>
 </html>

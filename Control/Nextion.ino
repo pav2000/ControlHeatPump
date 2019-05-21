@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
- * Данное програмноое обеспечение предназначено для управления
+ * Данное програмное обеспечение предназначено для управления
  * различными типами тепловых насосов для отопления и ГВС.
  *
  * This file is free software; you can redistribute it and/or
@@ -164,6 +164,7 @@ boolean Nextion::setComponentText(const char* component, char* txt)
 // Обработка входящей команды (только одна - первая)
 void Nextion::readCommand()
 {
+	if(input_delay) input_delay--;
 	while(check_incoming() || DataAvaliable) {
 		uint8_t buffer_idx = 0;
 		char *p = NULL;
@@ -181,10 +182,9 @@ void Nextion::readCommand()
 		for(uint8_t i = 0; i < len + 3; i++) journal.jprintf("%02x", buffer[i]);
 		journal.jprintf("\n");
 #endif
-
 		switch(buffer[0]) {
 		case 0x65:   //   	Touch Event
-			if(input_delay && --input_delay) break;
+			if(input_delay) break;
 			if(len == 4 && buffer[3] == 0) { // event: release
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
@@ -196,7 +196,7 @@ void Nextion::readCommand()
 							return;
 						}
 					} else if(cmd2 == NXTID_BOILER_URGENT) {
-						HP.HeatBoilerUrgently = !HP.HeatBoilerUrgently;
+						HP.set_HeatBoilerUrgently(!HP.HeatBoilerUrgently);
 						fUpdate = 2;
 						input_delay = NEXTION_INPUT_DELAY;
 					}
@@ -441,34 +441,34 @@ void Nextion::Update()
 				break;
 			}  // switch((RULE_HP) HP.get_ruleHeat())
 			break;
-			case pCOOL:
-				sendCommand("vis hotin,0");
-				sendCommand("vis hotout,1");
-				sendCommand("vis coolin,1");
-				sendCommand("vis coolout,0");
-				sendCommand("vis coin,0");
-				sendCommand("vis coout,1");
-				switch((RULE_HP) HP.get_ruleCool()) {
-				case pHYSTERESIS:
-				case pPID:
-					if(HP.get_TargetCool()) {
-						sendCommand("vis alg1,0");
-						sendCommand("vis alg2,1");
-					} else {
-						sendCommand("vis alg1,1");
-						sendCommand("vis alg2,0");
-					}
-					break;
-				case pHYBRID:
+		case pCOOL:
+			sendCommand("vis hotin,0");
+			sendCommand("vis hotout,1");
+			sendCommand("vis coolin,1");
+			sendCommand("vis coolout,0");
+			sendCommand("vis coin,0");
+			sendCommand("vis coout,1");
+			switch((RULE_HP) HP.get_ruleCool()) {
+			case pHYSTERESIS:
+			case pPID:
+				if(HP.get_TargetCool()) {
 					sendCommand("vis alg1,0");
 					sendCommand("vis alg2,1");
-					break;
-				default:
-					break;
-				}  // switch((RULE_HP) HP.get_ruleCool())
+				} else {
+					sendCommand("vis alg1,1");
+					sendCommand("vis alg2,0");
+				}
 				break;
-				default:
-					break;
+			case pHYBRID:
+				sendCommand("vis alg1,0");
+				sendCommand("vis alg2,1");
+				break;
+			default:
+				break;
+			}  // switch((RULE_HP) HP.get_ruleCool())
+			break;
+			default:
+				break;
 		} // switch ((MODE_HP)HP.get_modeHouse() )
 
 	} else if(PageID == NXTID_PAGE_BOILER)  // Обновление данных 6 страницы "ГВС"
@@ -491,7 +491,6 @@ void Nextion::Update()
 		setComponentText("t2", buffer);
 	}
 	StatusLine();
-	//sendCommand("ref_star");    // Восстановить обновление
 	fUpdate = 1;
 }
 
@@ -501,7 +500,7 @@ void Nextion::StatusLine()
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
-	uint16_t newcrc = !StatusCrc;
+	uint16_t newcrc = ~StatusCrc;
 	if(fUpdate == 1) {
 		newcrc = calulate_crc16((uint8_t*)tm, 5);
 		newcrc = _crc16(newcrc, HP.get_errcode());

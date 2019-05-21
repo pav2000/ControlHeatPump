@@ -701,7 +701,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_TOGETHER_HEAT)==0)	{ if(x) SETBIT1(Boiler.flags,fBoilerTogetherHeat); else {
 												SETBIT0(Boiler.flags,fBoilerTogetherHeat);
 #ifdef RPUMPBH
-												if((HP.get_modWork() == pHEAT || HP.get_modWork() == pNONE_H)) HP.dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+												if((HP.get_modWork() & pHEAT)) HP.dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
 												SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
 #endif
 											} return true;} else
@@ -732,7 +732,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_BOIL_TEMP)==0)		{ if((x>=30.0)&&(x<=70)) {Boiler.tempPID=rd(x, 100); return true;} else return false; } else   // Целевая темпеартура ПИД ГВС
 	if(strcmp(var,boil_ADD_HEATING)==0)		{ if(x) SETBIT1(Boiler.flags,fAddHeating); else SETBIT0(Boiler.flags,fAddHeating); return true;} else  // флаг использования тена для догрева ГВС
 	if(strcmp(var,boil_fAddHeatingForce)==0){ if(x) SETBIT1(Boiler.flags,fAddHeatingForce); else SETBIT0(Boiler.flags,fAddHeatingForce); return true;} else
-	if(strcmp(var,boil_HeatUrgently)==0)    { HP.HeatBoilerUrgently = x; return true;} else
+	if(strcmp(var,boil_HeatUrgently)==0)    { HP.set_HeatBoilerUrgently(x); return true;} else
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0.0)&&(x<=60.0))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else

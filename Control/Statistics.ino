@@ -142,7 +142,7 @@ boolean Statistics::FindEndPosition(uint8_t what)
 	}
 	if(pos == NULL) return false;
 	if(pos == buffer || *(pos-1) != '\n') { // Обрезанные данные - пропускаем
-		journal.jprintf("CUT ");
+		journal.jprintf("*CUT* ");
 		if(pos != buffer) {
 xCutSearch:	while(--pos >= buffer) if(*pos == '\n') break;
 			pos++;
