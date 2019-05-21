@@ -426,7 +426,7 @@ int8_t devVaconFC::start_FC()
 xStarted:
     	SETBIT1(flags, fOnOff);
         startCompressor = rtcSAM3X8.unixtime();
-        journal.jprintf(" %s ON\n", name);
+        journal.jprintf(" %s[%s] ON\n", name, (char *)codeRet[HP.get_ret()]);
     } else {
         SETBIT1(flags, fErrFC);
         set_Error(err, name);

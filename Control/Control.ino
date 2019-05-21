@@ -1378,7 +1378,7 @@ void vServiceHP(void *)
 				}
 			}
 			if(HP.startPump) {  // Если разрешена работа насоса( 0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
-				if(HP.startPump == 1 && HP.get_pausePump() == 0) { // Постоянно работают
+				if(HP.startPump == 1 && HP.get_pausePump() == 0 && HP.get_workPump()) { // Постоянно работают
 					goto xPumpsOn;
 				} else if(HP.get_workPump()) {
 					if(pump_in_pause_timer <= 1) {
