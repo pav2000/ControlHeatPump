@@ -1488,7 +1488,8 @@ boolean HeatPump::switchBoiler(boolean b)
 	journal.printf(" swBoiler(%d): %X, mW:%d\n", b, onBoiler, get_modWork());
 #endif
 #ifdef R3WAY
-	dRelay[R3WAY].set_Relay(onBoiler);            // Установить в нужное полежение 3-х ходового
+	dRelay[R3WAY].set_Relay(b);            // Установить в нужное полежение 3-х ходового
+	Pump_HeatFloor(b);
 #else // Нет трехходового - схема с двумя насосами
 	// ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
 	if(b) { // переключение на ГВС
