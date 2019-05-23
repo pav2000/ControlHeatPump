@@ -1557,7 +1557,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	journal.printf(" Pumps(%d), modWork: %X\n", b, get_modWork());
 #endif
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
@@ -1575,17 +1574,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	} else {
 		_delay(d);                                // Задержка на d мсек
 	}
-#else
-	// пауза перед выключением насосов контуров, если нужно
-	if(!b)  // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
-	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
-		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
-	}
-	// переключение насосов если есть что переключать (проверка была выше)
-	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
-	_delay(d);                                      // Задержка на d мсек
-#endif
 #ifdef  TWO_PUMP_IN                                                // второй насос для воздушника если есть
 	if (!b) dRelay[PUMP_IN1].set_OFF();    // если насососы выключаем то второй вентилятор ВСЕГДА выключается!!
 	else// а если насос включается то смотрим на условия
@@ -1606,7 +1594,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
 	}
 #else
-#ifdef RPUMPBH											// насос бойлера
+  #ifdef RPUMPBH											// насос бойлера
    	if(b) {
    		if((get_modWork() & pBOILER)) {
    			dRelay[RPUMPBH].set_ON();
@@ -1622,10 +1610,10 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
    	}
    	_delay(d); 										// Задержка на d мсек
-#else
+  #else
    	dRelay[RPUMPO].set_Relay(b);                	// насос отопления
    	_delay(d); 										// Задержка на d мсек
-#endif
+  #endif
 #endif // R3WAY
    	if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
   	Pump_HeatFloor(b); 				  				// насос ТП

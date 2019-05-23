@@ -136,7 +136,9 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						journal.jprintf("WEB:Wrong request(%d): ", len);
+						uint8_t ip[4];
+						W5100.readSnDIPR(sock, ip);
+						journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
 						//for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
 						for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
 						journal.jprintf("...\n");
@@ -354,7 +356,9 @@ void readFileSD(char *filename, uint8_t thread)
 					}
 				}
 				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf((char*) "$WARNING - File not found: %s\n", filename);
+				uint8_t ip[4];
+				W5100.readSnDIPR(Socket[thread].sock, ip);
+				journal.jprintf((char*) "WEB: %d.%d.%d.%d - File not found: %s\n", ip[0], ip[1], ip[2], ip[3], filename);
 				return;
 			} // файл не найден
 xFileFound:
