@@ -904,7 +904,7 @@ void parserGET(uint8_t thread, int8_t )
 			{
 				strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
 				HP.sendCommand(pRESET);        // Послать команду на сброс
-			} else if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
+			} else if (strcmp(str,"COUNT")==0) // Команда RESET_COUNT
 			{
 				journal.jprintf("$RESET counter moto hour . . .\n");
 				strcat(strReturn,"Сброс счетчика моточасов за сезон");
@@ -2073,7 +2073,7 @@ void parserGET(uint8_t thread, int8_t )
 								if(i >= 0) {
 									m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
 									if(str[9] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
-								} else strcat(strReturn, ", \xF0\x9F\x93\xB6-");
+								} else strcat(strReturn, " \xF0\x9F\x93\xB6");
 							}
 #endif
 							ADD_WEBDELIM(strReturn); continue;
