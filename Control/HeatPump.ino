@@ -1709,8 +1709,8 @@ int8_t HeatPump::StartResume(boolean start)
 
 	if(startPump)                                      // Если задача не остановлена то остановить (0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
 	{
-		startPump = false;                                     // Поставить признак останова задачи насос
-		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n", (char*) __FUNCTION__);
+		startPump = 0;                                     // Поставить признак останова задачи насос
+	    if(HP.get_workPump()) journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
 	}
 
 	offBoiler = 0;                                         // Бойлер никогда не выключался
@@ -2517,6 +2517,7 @@ void HeatPump::vUpdate()
 #ifdef DEBUG_MODWORK
 	save_DumpJournal(false);                                           // Вывод строки состояния
 #endif
+	if(error) return;
 	//  реализуем требуемый режим
 	if(Status.modWork == pOFF) {
 		if(is_compressor_on()) {  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
@@ -2568,9 +2569,8 @@ MODE_HP HeatPump::get_Work()
 #ifdef DEBUG_MODWORK
 	journal.printf(" get_Work-Boiler: %s, ret=%X, B=%d, RB=%d\n", codeRet[Status.ret], ret, onBoiler, flagRBOILER);
 #endif
-
+	if(((get_modeHouse() == pOFF) && (ret == pOFF)) || error) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 	if((ret & pBOILER)) return ret; // работает бойлер больше ничего анализировать не надо выход
-	if((get_modeHouse() == pOFF) && (ret == pOFF)) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 
 	// 3. Отопление/охлаждение
 	switch((int) get_modeHouse())   // проверка отопления
@@ -2743,7 +2743,7 @@ boolean HeatPump::check_compressor_pause()
 const char *EEV_go={" EEV go "};  // экономим место
 void HeatPump::compressorON()
 {
-	if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
+	if(get_State() == pOFF_HP || get_State() == pSTOPING_HP || error) return;  // ТН выключен или выключается выходим ничего не делаем!!!
 
 	if(is_compressor_on()) return;                                  // Компрессор уже работает
 	if(is_next_command_stop()) {
