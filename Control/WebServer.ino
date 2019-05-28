@@ -675,10 +675,13 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 				if(i) strcat(strReturn,  ", ");
 			} else {
+#ifdef RPUMPFL
 				if(HP.dRelay[RPUMPFL].get_Relay()) {
 					strcat(strReturn,  "ТП");
 					if(i) strcat(strReturn,  ", ");
-				} else if(!i) strcat(strReturn,  "Выкл");
+				} else
+#endif
+					if(!i) strcat(strReturn,  "Выкл");
 			}
 			if(i) strcat(strReturn, "ГВС");
 			ADD_WEBDELIM(strReturn) ;    continue;
