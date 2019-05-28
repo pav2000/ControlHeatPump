@@ -381,10 +381,13 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 #endif
 	journal.jprintf("OK\n");
 	if(HP.Option.ver <= 133) {
+#ifdef USE_ELECTROMETER_SDM
 		if(dSDM.get_readState(3) == OK) {
 			motoHour.E1 = (dSDM.get_Energy() - motoHour.E1_f) * 1000;
 			motoHour.E2 = (dSDM.get_Energy() - motoHour.E2_f) * 1000;
-		} else {
+		} else
+#endif
+		{
 			motoHour.E1 = 0;
 			motoHour.E2 = 0;
 		}
@@ -1557,7 +1560,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	journal.printf(" Pumps(%d), modWork: %X\n", b, get_modWork());
 #endif
 
-#ifdef DELAY_BEFORE_STOP_IN_PUMP               // Задержка перед выключением насоса геоконтура, насос отопления отключается позже (сек)
 	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
@@ -1575,17 +1577,6 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	} else {
 		_delay(d);                                // Задержка на d мсек
 	}
-#else
-	// пауза перед выключением насосов контуров, если нужно
-	if(!b)  // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
-	{
-		journal.jprintf(" Pause before stop pumps %d sec . . .\n",Option.delayOffPump);
-		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
-	}
-	// переключение насосов если есть что переключать (проверка была выше)
-	dRelay[PUMP_IN].set_Relay(b);                   // Реле включения насоса входного контура  (геоконтур)
-	_delay(d);                                      // Задержка на d мсек
-#endif
 #ifdef  TWO_PUMP_IN                                                // второй насос для воздушника если есть
 	if (!b) dRelay[PUMP_IN1].set_OFF();    // если насососы выключаем то второй вентилятор ВСЕГДА выключается!!
 	else// а если насос включается то смотрим на условия
@@ -1606,7 +1597,7 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
 	}
 #else
-#ifdef RPUMPBH											// насос бойлера
+  #ifdef RPUMPBH											// насос бойлера
    	if(b) {
    		if((get_modWork() & pBOILER)) {
    			dRelay[RPUMPBH].set_ON();
@@ -1622,10 +1613,10 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
    	}
    	_delay(d); 										// Задержка на d мсек
-#else
+  #else
    	dRelay[RPUMPO].set_Relay(b);                	// насос отопления
    	_delay(d); 										// Задержка на d мсек
-#endif
+  #endif
 #endif // R3WAY
    	if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
   	Pump_HeatFloor(b); 				  				// насос ТП
@@ -1721,8 +1712,8 @@ int8_t HeatPump::StartResume(boolean start)
 
 	if(startPump)                                      // Если задача не остановлена то остановить (0 - останов задачи, 1 - запуск, 2 - в работе (выкл), 3 - в работе (вкл))
 	{
-		startPump = false;                                     // Поставить признак останова задачи насос
-		journal.jprintf(" WARNING! %s: Bad startPump, OFF . . .\n", (char*) __FUNCTION__);
+		startPump = 0;                                     // Поставить признак останова задачи насос
+	    if(HP.get_workPump()) journal.jprintf(" %s: Pumps in pause %s. . .\n",(char*)__FUNCTION__, "OFF");
 	}
 
 	offBoiler = 0;                                         // Бойлер никогда не выключался
@@ -2529,6 +2520,7 @@ void HeatPump::vUpdate()
 #ifdef DEBUG_MODWORK
 	save_DumpJournal(false);                                           // Вывод строки состояния
 #endif
+	if(error) return;
 	//  реализуем требуемый режим
 	if(Status.modWork == pOFF) {
 		if(is_compressor_on()) {  // ЕСЛИ компрессор работает, то выключить компрессор,и затем сконфигурировать 3 и 4-х клапаны и включаем насосы
@@ -2580,9 +2572,8 @@ MODE_HP HeatPump::get_Work()
 #ifdef DEBUG_MODWORK
 	journal.printf(" get_Work-Boiler: %s, ret=%X, B=%d, RB=%d\n", codeRet[Status.ret], ret, onBoiler, flagRBOILER);
 #endif
-
+	if(((get_modeHouse() == pOFF) && (ret == pOFF)) || error) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 	if((ret & pBOILER)) return ret; // работает бойлер больше ничего анализировать не надо выход
-	if((get_modeHouse() == pOFF) && (ret == pOFF)) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 
 	// 3. Отопление/охлаждение
 	switch((int) get_modeHouse())   // проверка отопления
@@ -2755,7 +2746,7 @@ boolean HeatPump::check_compressor_pause()
 const char *EEV_go={" EEV go "};  // экономим место
 void HeatPump::compressorON()
 {
-	if((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return;  // ТН выключен или выключается выходим ничего не делаем!!!
+	if(get_State() == pOFF_HP || get_State() == pSTOPING_HP || error) return;  // ТН выключен или выключается выходим ничего не делаем!!!
 
 	if(is_compressor_on()) return;                                  // Компрессор уже работает
 	if(is_next_command_stop()) {

@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.023";
+var VER_WEB = "1.024";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -656,20 +656,14 @@ function dhcp(dcb) {
 }
 
 function validip(valip) {
-	var re = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/;
-	var valip = document.getElementById(valip).value;
-	var valid = re.test(valip);
+	var valid = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/.test(document.getElementById(valip).value);
 	if(!valid) alert('Сетевые настройки введены неверно!');
-	//document.getElementById('message').innerHTML = document.getElementById('message').innerHTML+'<br />'+output;
 	return valid;
 }
 
 function validmac(valimac) {
-	var re = /^[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/;
-	var valimac = document.getElementById(valimac).value;
-	var valid = re.test(valimac);
+	var valid = /^[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}$/.test(document.getElementById(valimac).value);
 	if(!valid) alert('Аппаратный mac адрес введен неверно!');
-	//document.getElementById('message').innerHTML = document.getElementById('message').innerHTML+'<br />'+output;
 	return valid;
 }
 

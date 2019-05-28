@@ -49,7 +49,7 @@
 		</tr>								
 		<tr>
 			<td>Аппаратный mac адрес</td>
-			<td nowrap><input id="get_network-mac" type="text" ><input type="submit" value=">" onclick="validmac('get_network-mac');setParam('get_Network(MAC)');"></td>
+			<td nowrap><input id="get_network-mac" type="text" ><input type="submit" value=">" onclick="if(validmac('get_network-mac')) setParam('get_Network(MAC)');"></td>
 		</tr>					
 <tr><td></td><td><input type="submit" value="Применить настройки (2)" onclick='loadParam("set_updateNet")'></td></tr>
 	</tbody>

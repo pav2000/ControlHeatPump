@@ -136,7 +136,9 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						journal.jprintf("WEB:Wrong request(%d): ", len);
+						uint8_t ip[4];
+						W5100.readSnDIPR(sock, ip);
+						journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
 						//for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
 						for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
 						journal.jprintf("...\n");
@@ -354,7 +356,9 @@ void readFileSD(char *filename, uint8_t thread)
 					}
 				}
 				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf((char*) "$WARNING - File not found: %s\n", filename);
+				uint8_t ip[4];
+				W5100.readSnDIPR(Socket[thread].sock, ip);
+				journal.jprintf((char*) "WEB: %d.%d.%d.%d - File not found: %s\n", ip[0], ip[1], ip[2], ip[3], filename);
 				return;
 			} // файл не найден
 xFileFound:
@@ -671,10 +675,13 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 				if(i) strcat(strReturn,  ", ");
 			} else {
+#ifdef RPUMPFL
 				if(HP.dRelay[RPUMPFL].get_Relay()) {
 					strcat(strReturn,  "ТП");
 					if(i) strcat(strReturn,  ", ");
-				} else if(!i) strcat(strReturn,  "Выкл");
+				} else
+#endif
+					if(!i) strcat(strReturn,  "Выкл");
 			}
 			if(i) strcat(strReturn, "ГВС");
 			ADD_WEBDELIM(strReturn) ;    continue;
@@ -900,7 +907,7 @@ void parserGET(uint8_t thread, int8_t )
 			{
 				strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
 				HP.sendCommand(pRESET);        // Послать команду на сброс
-			} else if (strcmp(str,"RESET_COUNT")==0) // Команда RESET_COUNT
+			} else if (strcmp(str,"COUNT")==0) // Команда RESET_COUNT
 			{
 				journal.jprintf("$RESET counter moto hour . . .\n");
 				strcat(strReturn,"Сброс счетчика моточасов за сезон");
@@ -2069,7 +2076,7 @@ void parserGET(uint8_t thread, int8_t )
 								if(i >= 0) {
 									m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
 									if(str[9] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
-								} else strcat(strReturn, ", \xF0\x9F\x93\xB6-");
+								} else strcat(strReturn, " \xF0\x9F\x93\xB6");
 							}
 #endif
 							ADD_WEBDELIM(strReturn); continue;

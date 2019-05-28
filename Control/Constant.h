@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.023"				// Версия прошивки
+#define VERSION			"1.024"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -608,7 +608,7 @@ const char *prof_SEL_PROFILE    = {"SEL_PROFILE"};        // список про
 const char *mess_MAIL         = {"MAIL"};                // флаг уведомления скидывать на почту
 const char *mess_MAIL_AUTH    = {"MAIL_AUTH"};           // флаг необходимости авторизации на почтовом сервере
 const char *mess_MAIL_INFO    = {"MAIL_INFO"};           // флаг необходимости добавления в письмо информации о состоянии ТН
-const char *mess_SMS          = {"SMS"};                 // флаг уведомления скидывать на СМС (пока не реализовано)
+const char *mess_SMS          = {"SMS"};                 // флаг уведомления скидывать на СМС
 const char *mess_MESS_RESET   = {"MESS_RESET"};          // флаг уведомления Сброс
 const char *mess_MESS_ERROR   = {"MESS_ERROR"};          // флаг уведомления Ошибка
 const char *mess_MESS_LIFE    = {"MESS_LIFE"};           // флаг уведомления Сигнал жизни
@@ -1231,6 +1231,8 @@ enum SMS_SERVICE
 { 
   pSMS_RU,                       // Сервис sms.ru
   pSMSC_RU,                      // Сервис smsc.ru
+  pSMSC_UA,                      // Сервис smsc.ua
+  pSMSCLUB_UA,                   // Сервис smsclub.mobi
   pEND12
 };
 

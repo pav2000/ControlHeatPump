@@ -26,6 +26,8 @@
 // Константы 
 #define ADR_SMS_RU       "sms.ru"
 #define ADR_SMSC_RU      "smsc.ru"
+#define ADR_SMSC_UA      "smsc.ua"
+#define ADR_SMSCLUB_UA   "gate.smsclub.mobi"
 #define LEN_TEMPBUF      250                // Длина рабочего буфера используемого для работы уведомлений
 #define LEN_RETMAIL      100                // Длина ответа почты
 #define LEN_RETSMS       64                 // Длина ответа sms
@@ -38,7 +40,7 @@
 #define fMail            0                  // флаг уведомления скидывать на почту 
 #define fMailAUTH        1                  // флаг необходимости авторизации на почтовом сервере
 #define fMailInfo        2                  // флаг необходимости добавления в письмо информации о состянии ТН
-#define fSMS             3                  // флаг уведомления скидывать на СМС (пока не реализовано)
+#define fSMS             3                  // флаг уведомления скидывать на СМС
 #define fMessageReset    4                  // флаг уведомления Сброс
 #define fMessageError    5                  // флаг уведомления Ошибка
 #define fMessageLife     6                  // флаг уведомления Сигнал жизни
@@ -125,6 +127,7 @@ class Message
     boolean sendMail();                                                      // Отправить почту
     boolean sendSMS();                                                       // Отправить SMS через sms.ru
     boolean sendSMSC();                                                      // Отправить SMS через smsc.ru
+    boolean sendSMSCLUB();                                                   // Отправить SMS через smsclub.mobi (Ukraine)
     boolean SendCommandSMTP(char *c,boolean w);                              // Послать команду SMTP серверу  и разобрать ответ  
   };
 
