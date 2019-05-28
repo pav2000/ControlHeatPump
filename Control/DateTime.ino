@@ -30,16 +30,15 @@ byte packetBuffer[NTP_PACKET_SIZE+1];       // буфер, в котором б�
 // Возвращает код ошибки
 int8_t set_time(void)
 {
-   journal.jprintf(" Init RTC Sam3x8e\n");
-   //rtcI2C.begin(); // I2C уже инициализирована.// Запустить i2c часы 
-   rtcSAM3X8.init();                             // Запуск внутренних часов
-   rtcSAM3X8.set_clock(TimeToUnixTime(getTime_RtcI2C()));                // Установить внутренние часы по i2c
-//   _delay(200);
-   journal.jprintf(" Set time internal RTC form i2c RTC DS3231: %s ",NowDateToStr());journal.jprintf("%s\n",NowTimeToStr());  // Одним оператором есть косяк
-  
-   if(HP.get_updateNTP()) set_time_NTP() ;      // Обновить время по NTP
-   HP.set_uptime(TimeToUnixTime(getTime_RtcI2C()));                         // Запомнить время старта контроллера
-   return OK;
+	journal.jprintf(" Init SAM3X8E RTC\n");
+	//rtcI2C.begin(); // I2C уже инициализирована.// Запустить i2c часы
+	rtcSAM3X8.init();                             // Запуск внутренних часов
+	if(HP.get_updateNTP() && !set_time_NTP()) { // Обновить время по NTP
+		rtcSAM3X8.set_clock(TimeToUnixTime(getTime_RtcI2C()));                // Установить внутренние часы по i2c
+		journal.jprintf(" Time updated from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+	}
+	HP.set_uptime(TimeToUnixTime(getTime_RtcI2C()));                         // Запомнить время старта контроллера
+	return OK;
 }
 
 #ifdef HTTP_TIME_REQUEST
@@ -56,7 +55,7 @@ boolean set_time_NTP(void)
 	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 		return false;
 	}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-	journal.jprintf(pP_TIME, "Update time from: %s\n", HP.get_serverNTP());
+	journal.jprintf("Update time from: %s\n", HP.get_serverNTP());
 	if(check_address(HP.get_serverNTP(), ip) == 0) {
 		SemaphoreGive(xWebThreadSemaphore);
 		return false;
@@ -130,14 +129,10 @@ boolean set_time_NTP(void)
 		// обновились, можно и часы i2c обновить
 		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
-		journal.jprintf("OK\n Set time from server: %s ", NowDateToStr()); // Через один глобальный буфер
-		journal.jprintf("%s (%s%d)\n", NowTimeToStr(), secs <= lt ? "" : "+", secs - lt);  // Через один глобальный буфер
-	} else {
-		journal.jprintf(" ERROR update time from server! %s ", NowDateToStr());
-		journal.jprintf("%s\n", NowTimeToStr()); // Через один глобальный буфер
+		journal.jprintf("OK\n Set time from server: %s %s (was %s)\n", NowDateToStr(), NowTimeToStr(), TimeToStr(lt));
 	}
 	SemaphoreGive(xWebThreadSemaphore);
-	return flag;
+	return flag > 0;
 }
 
 #else
@@ -245,23 +240,28 @@ boolean set_time_NTP(void)
 
 #endif // HTTP_TIME_REQUEST
 
-//  Получить текущее время (с секундами!) в виде строки
+//  Получить текущее время (с секундами!) в виде строки, не реентерабельна!
 char* NowTimeToStr()
 {
-  uint32_t x;
-  static char _tmp[12];  // Длина xx:xx:xx - 10+1 символов
-  x=rtcSAM3X8.get_hours();
-  if (x<10) strcpy(_tmp,cZero); else strcpy(_tmp,"");  _itoa(x,_tmp); strcat(_tmp,":");
+	uint32_t x;
+	static char _tmp[12];  // Длина xx:xx:xx - 10+1 символов
+	x = rtcSAM3X8.get_hours();
+	if(x < 10) strcpy(_tmp, cZero);	else _tmp[0] = '\0';
+	_itoa(x, _tmp);
+	strcat(_tmp, ":");
 
-  x=rtcSAM3X8.get_minutes();
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); strcat(_tmp,":");
+	x = rtcSAM3X8.get_minutes();
+	if(x < 10) strcat(_tmp, cZero);
+	_itoa(x, _tmp);
+	strcat(_tmp, ":");
 
-   x=rtcSAM3X8.get_seconds();
-  if (x<10) strcat(_tmp,cZero);   _itoa(x,_tmp); 
-  
-   return _tmp;
+	x = rtcSAM3X8.get_seconds();
+	if(x < 10) strcat(_tmp, cZero);
+	_itoa(x, _tmp);
+
+	return _tmp;
 }
-//  Получить текущее время (без секунд!) в виде строки
+//  Получить текущее время (без секунд!) в виде строки, не реентерабельна!
 char* NowTimeToStr1()
 {
   uint8_t x;
@@ -289,7 +289,6 @@ char* NowDateToStr()
 // Результат ДОБАВЛЯЕТСЯ в ret
 char* TimeIntervalToStr(uint32_t idt, char *ret, uint8_t fSec = 0)
 {
-	uint32_t Day;
 	uint8_t Hour, Min, Sec;
 	/* decode the interval into days, hours, minutes, seconds */
 	if(fSec) Sec = idt % 60;
@@ -298,12 +297,11 @@ char* TimeIntervalToStr(uint32_t idt, char *ret, uint8_t fSec = 0)
 	idt /= 60;
 	Hour = idt % 24;
 	idt /= 24;
-	Day = idt;
 
 #ifndef  SENSOR_IP  // Разный формат вывода в зависимости от наличия удаленных датчиков
 	//   С этим кодом не работает удаленный датчик - ЕГО парсер не разбирает строку uptime
-	if(Day) {
-		_itoa(Day, ret);
+	if(idt) {
+		_itoa(idt, ret);
 		strcat(ret, " ");
 		goto xHour;
 	}
@@ -325,31 +323,19 @@ xSec:	_itoa(Sec, ret);
 		strcat(ret, "s");
 	}
 #else  // Специально для удаленного датчика
-	if(Day>0) {_itoa(Day,ret); strcat(ret,"d ");}  // если есть уже дни
+	if(idt>0) {_itoa(idt,ret); strcat(ret,"d ");}  // если есть уже дни
 	if(Hour>0) {if (Hour<10) strcat(ret,cZero); _itoa(Hour,ret);strcat(ret,"h ");}
 	if(Min>0) {if (Min<10) strcat(ret,cZero); _itoa(Min,ret); strcat(ret,"m ");} else strcat(ret,"00m ");
 #endif
 	return ret;
 }
 
-// вывод Времени в формате 12:34:34 
+// вывод Времени в формате 12:34:34, не реентерабельна
 char* TimeToStr(uint32_t idt)
 {
-static char _tmp[12];  // Длина xx:xx:xx - 10+1 символов
-strcpy(_tmp,"");  // очистить строку
-
-// Время
-_itoa((idt % 86400L)/3600,_tmp);       // показываем час (86400  - это количество секунд в сутках)
-strcat(_tmp,":");
-if (((idt % 3600) / 60) < 10) strcat(_tmp,cZero);  // у первых 10 минут каждого часа впереди должна стоять цифра «0»:
-_itoa((idt % 3600)/60,_tmp);           // показываем минуту (3600 – это количество секунд в минуту)  
-strcat(_tmp,":");
-if ((idt % 60) < 10)  strcat(_tmp,cZero);          // у первых 10 секунд каждой минуты впереди должна стоять цифра «0»:
-_itoa(idt % 60,_tmp);                  // показываем секунду
-
-strcat(_tmp," ");
-
-return _tmp;       
+	static char _tmp[10];  // Длина xx:xx:xx - 10+1 символов
+	m_snprintf((char *)_tmp, sizeof(_tmp), "%02d:%02d:%02d", (idt % 86400L) / 3600, idt % 3600, idt % 60);
+	return _tmp;
 }
 
 // вывод Времи и даты  в формате hh:mm:ss dd/mm/yyyy

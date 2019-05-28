@@ -381,10 +381,13 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 #endif
 	journal.jprintf("OK\n");
 	if(HP.Option.ver <= 133) {
+#ifdef USE_ELECTROMETER_SDM
 		if(dSDM.get_readState(3) == OK) {
 			motoHour.E1 = (dSDM.get_Energy() - motoHour.E1_f) * 1000;
 			motoHour.E2 = (dSDM.get_Energy() - motoHour.E2_f) * 1000;
-		} else {
+		} else
+#endif
+		{
 			motoHour.E1 = 0;
 			motoHour.E2 = 0;
 		}

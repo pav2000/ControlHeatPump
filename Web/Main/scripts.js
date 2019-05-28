@@ -656,11 +656,8 @@ function dhcp(dcb) {
 }
 
 function validip(valip) {
-	var re = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/;
-	var valip = document.getElementById(valip).value;
-	var valid = re.test(valip);
+	var valid = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/.test(document.getElementById(valip).value);
 	if(!valid) alert('Сетевые настройки введены неверно!');
-	//document.getElementById('message').innerHTML = document.getElementById('message').innerHTML+'<br />'+output;
 	return valid;
 }
 
