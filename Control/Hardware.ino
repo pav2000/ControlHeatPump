@@ -177,61 +177,67 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
  }
   
 // чтение данных c аналогового датчика (АЦП) возвращает код ошибки, делает все преобразования
-int8_t  sensorADC::Read()
-{
-	if(!(GETBIT(flags,fPresent)))  return err;        // датчик запрещен в конфигурации ничего не делаем
-	int16_t lastPress;
-	if (testMode!=NORMAL) lastPress=cfg.testPress;        // В режиме теста
-	else                                              // Чтение датчика
-	{
+ int8_t sensorADC::Read()
+ {
+	 if(!(GETBIT(flags, fPresent))) return err;        // датчик запрещен в конфигурации ничего не делаем
+	 int16_t lastPress;
+	 if(testMode != NORMAL) {
+		 lastPress = cfg.testPress;                // В режиме теста
+	 } else {                                      // Чтение датчика
 #ifdef DEMO
-		lastADC=random(1350,2500);                   // В демо режиме генерим значение
+		 lastADC=random(1350,2500);                // В демо режиме генерим значение
 #else
-	#ifdef ANALOG_MODBUS
-		if(get_fmodbus()) {
-			for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
-				err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[cfg.number], ANALOG_MODBUS_REG[cfg.number] - 1, &adc_lastVal);
-				if(err == OK) {
-					lastADC = adc_lastVal;
-					break;
-				}
-				_delay(ANALOG_MODBUS_ERR_DELAY);
-			}
-			if(err) {
-				journal.jprintf(pP_TIME, "Error read %s by Modbus: %d\n", name, err);
-				set_Error(ERR_READ_PRESS, name);
-				return ERR_READ_PRESS;
-			}
-		} else
-	#endif
-		{
-			 if(adc_flagFull) lastADC=adc_sum/(adc_filter_max+1); else lastADC=adc_sum/adc_last;
+#ifdef ANALOG_MODBUS
+		 if(get_fmodbus()) {
+			 for(uint8_t i = 0; i < ANALOG_MODBUS_NUM_READ; i++) {
+				 err = Modbus.readHoldingRegisters16(ANALOG_MODBUS_ADDR[cfg.number], ANALOG_MODBUS_REG[cfg.number] - 1, &adc_lastVal);
+				 if(err == OK) {
+					 lastADC = adc_lastVal;
+					 break;
+				 }
+				 _delay(ANALOG_MODBUS_ERR_DELAY);
+			 }
+			 if(err) {
+				 journal.jprintf(pP_TIME, "Error read %s by Modbus: %d\n", name, err);
+				 set_Error(ERR_READ_PRESS, name);
+				 return ERR_READ_PRESS;
+			 }
+		 } else
+#endif
+		 {
+			 if(adc_flagFull) lastADC = adc_sum / (adc_filter_max + 1);	else lastADC = adc_sum / adc_last;
 			 //if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
-		}
+		 }
 #endif
-		lastPress = (int32_t) lastADC * cfg.transADC / 1000 - cfg.zeroPress;
-	}
+		 lastPress = (int32_t) lastADC * cfg.transADC / 1000 - cfg.zeroPress;
+	 }
 #if P_NUMSAMLES > 1
-	// Усреднение значений
-	sum=sum+lastPress;          // Добавить новое значение
-	sum=sum-p[last];            // Убрать самое старое значение
-	p[last]=lastPress;          // Запомить новое значение
-	if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
-	if (GETBIT(flags,fFull)) lastPress=sum/P_NUMSAMLES; else lastPress=sum/last;
+	 // Усреднение значений
+	 sum=sum+lastPress;// Добавить новое значение
+	 sum=sum-p[last];// Убрать самое старое значение
+	 p[last]=lastPress;// Запомить новое значение
+	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
+	 if (GETBIT(flags,fFull)) lastPress=sum/P_NUMSAMLES; else lastPress=sum/last;
 #endif
-	if(Press != lastPress) {
-		Press = lastPress;
-		Temp = ERROR_TEMPERATURE;
-		// Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-		// Берутся МНОВЕННЫЕ значения!!!! для увеличения реакции системы на ошибки
-		// При ошибке запоминаем мговенное значение как среднее  что бы видно было
-		if(Press < cfg.minPress)  { err=ERR_MINPRESS;set_Error(err,name); return err;}
-		if(Press > cfg.maxPress)  { err=ERR_MAXPRESS;set_Error(err,name); return err;}
+	 if(Press != lastPress) {
+		 Press = lastPress;
+		 Temp = ERROR_TEMPERATURE;
+	 }
+	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
+	 if(Press < cfg.minPress) {
+		 err = ERR_MINPRESS;
+		 set_Error(err, name);
+		 return err;
+	 }
+	 if(Press > cfg.maxPress) {
+		 err = ERR_MAXPRESS;
+		 set_Error(err, name);
+		 return err;
 	 }
 	 // Дошли до сюда значит ошибок нет
-	 err=OK;                                         // Новый цикл новые ошибки
+	 err = OK;                                         // Новый цикл новые ошибки
 	 return err;
-}
+ }
 
 // Установка 0 датчика темпеартуры
 int8_t sensorADC::set_zeroPress(int16_t p)
