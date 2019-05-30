@@ -33,7 +33,7 @@ int8_t set_time(void)
 	journal.jprintf(" Init SAM3X8E RTC\n");
 	//rtcI2C.begin(); // I2C уже инициализирована.// Запустить i2c часы
 	rtcSAM3X8.init();                             // Запуск внутренних часов
-	if(HP.get_updateNTP() && !set_time_NTP()) { // Обновить время по NTP
+	if(!(HP.get_updateNTP() && set_time_NTP())) { // Обновить время по NTP
 		rtcSAM3X8.set_clock(TimeToUnixTime(getTime_RtcI2C()));                // Установить внутренние часы по i2c
 		journal.jprintf(" Time updated from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
 	}
