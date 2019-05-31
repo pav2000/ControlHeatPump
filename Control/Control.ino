@@ -453,7 +453,7 @@ x_I2C_init_std_message:
   #ifdef NEXTION   
     journal.jprintf("14. Nextion display - ");
     if(GETBIT(HP.Option.flags, fNextion)) {
-    	if(myNextion.init()) journal.jprintf("Ok\n");
+    	if(myNextion.init()) journal.jprintf("OK\n");
     } else {
     	journal.jprintf("Disabled\n");
     }
