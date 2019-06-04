@@ -28,7 +28,7 @@
 #include "Scheduler.h"
 extern char *MAC2String(byte* mac);
 
-int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
+int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
 void UpdatePIDbyTime(uint16_t new_time, uint16_t curr_time, PID_STRUCT &pid);
 
 /*/ Структура для хранения заголовка при сохранении настроек EEPROM

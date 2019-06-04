@@ -334,7 +334,7 @@ xSec:	_itoa(Sec, ret);
 char* TimeToStr(uint32_t idt)
 {
 	static char _tmp[10];  // Длина xx:xx:xx - 10+1 символов
-	m_snprintf((char *)_tmp, sizeof(_tmp), "%02d:%02d:%02d", (idt % 86400L) / 3600, idt % 3600, idt % 60);
+	m_snprintf((char *)_tmp, sizeof(_tmp), "%02d:%02d:%02d", (idt % 86400L) / 3600, (idt % 3600) / 60, idt % 60);
 	return _tmp;
 }
 
