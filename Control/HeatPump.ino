@@ -3495,22 +3495,22 @@ void HeatPump::set_HeatBoilerUrgently(boolean onoff)
 // pid - настройки ПИДа в тысячных
 // sum, pre_err - сумма для расчета и предыдущая ошибка
 // Выход управляющее воздействие (в СОТЫХ)
-int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
+int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 {
 	int32_t newVal;
 #ifdef DEBUG_PID
 	journal.printf("PID(%x): err:%d,pre_err:%d,sum:%d (%d,%d,%d). ", &pid, errorPid, pidw.pre_err, pidw.sum, pid.Kp, pid.Ki, pid.Kd);
 #endif
 #ifdef PID_FORMULA2
-	pidw.sum += pid.Ki * errorPid;
+	pidw.sum += (int32_t)pid.Ki * errorPid;
 	if(pidw.PropOnMeasure) {
-		pidw.sum -= pid.Kp * (pidw.pre_err - errorPid);
+		pidw.sum -= (int32_t)pid.Kp * (pidw.pre_err - errorPid);
 		newVal = 0;
 #ifdef DEBUG_PID
 		journal.printf("P:%d,", -pid.Kp * (pidw.pre_err - errorPid));
 #endif
 	} else {
-		newVal = pid.Kp * errorPid;
+		newVal = (int32_t)pid.Kp * errorPid;
 #ifdef DEBUG_PID
 		journal.printf("P:%d,", pid.Kp * errorPid);
 #endif
@@ -3562,9 +3562,7 @@ int16_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #endif
 #endif
 	pidw.pre_err = errorPid; // запомнить предыдущую ошибку
-	newVal = round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов (ТЫСЯЧНЫЕ), выход в СОТЫХ
-	if(newVal > 32767) newVal = 32767; else if(newVal < -32767) newVal = -32767; // фикс переполнения
-	return newVal;
+	return round_div_int32(newVal, 1000); // Учесть разрядность коэффициентов (ТЫСЯЧНЫЕ), выход в СОТЫХ
 }
 
 #ifdef PID_FORMULA2
