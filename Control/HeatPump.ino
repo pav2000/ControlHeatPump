@@ -2497,7 +2497,7 @@ MODE_COMP HeatPump::UpdateCool()
 #endif
 
 		updatePidTime=xTaskGetTickCount();
-		newFC = updatePID(CalcTargetPID(Prof.Cool) - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		newFC = updatePID(FEED - CalcTargetPID(Prof.Cool), Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
 		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
