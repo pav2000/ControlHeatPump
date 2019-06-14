@@ -1673,36 +1673,27 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 
 }
 // Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
-// Проводится различный сброс в зависимсти от конфигурации
+// Проводится различный сброс в зависимости от конфигурации
 int8_t HeatPump::ResetFC()
 {
 	if(!dFC.get_present()) return OK;                                                 // Инвертора нет выходим
-
-#ifdef FC_USE_RCOMP                                                               // ЕСЛИ есть провод сброса
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
 	if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сбрасывать не надо
+#else
+	if(dFC.get_err() == OK) return OK;
+#endif
+#ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
 	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();// Подать импульс сброса
 	journal.jprintf("Reset %s use RRESET\r\n",dFC.get_name());
+#else
+	dFC.reset_FC();                                                       // подать команду на сброс по модбас
+	if(dFC.get_blockFC()) return ERR_RESET_FC;                            // Инвертор блокирован
+#endif
+#ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
 	_delay(100);
 	sInput[SERRFC].Read();
 	if (sInput[SERRFC].get_lastErr()==OK) return OK;// Инвертор сброшен
 	else return ERR_RESET_FC;// Сброс не прошел
-#else                                                                      // нет провода сброса - сбрасываем по модбас
-	if(dFC.get_err() != OK)                                                       // инвертор есть ошибки
-	{
-		dFC.reset_FC();                                                       // подать команду на сброс по модбас
-		if(!dFC.get_blockFC()) return OK;                                   // Инвертор НЕ блокирован
-		else return ERR_RESET_FC;                                             // Сброс не удачный
-	} else return OK;                                                         // Ошибок нет сбрасывать нечего
-#endif // SERRFC
-#else   //  #ifdef FC_USE_RCOMP
-	if (dFC.get_err()!=OK)                                                           //  инвертор есть ошибки
-	{
-		dFC.reset_FC();                                                               // подать команду на сброс по модбас
-		if (!dFC.get_blockFC()) return OK;// Инвертор НЕ блокирован
-		else return ERR_RESET_FC;// Сброс не удачный
-	}
-	else return OK;                                                                  // Ошибок нет сбрасывать нечего
 #endif
 	return OK;
 }
