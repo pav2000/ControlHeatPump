@@ -226,7 +226,8 @@ class HeatPump
     boolean  get_fSPIFlash() {return fSPIFlash;}     // Получить флаг наличия РАБОТАЮЩЕГО флеш диска
     void     set_fSPIFlash(boolean f) {fSPIFlash=f;}    // Установить флаг наличия РАБОТАЮЩЕГО флеш диска
     TYPE_SOURSE_WEB get_SourceWeb()                    // Получить источник загрузки веб морды
-              { if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
+              { // return pMIN_WEB;                       // отладка минимальной морды
+                 if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
                  else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
       
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры

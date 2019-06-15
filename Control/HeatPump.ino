@@ -1487,13 +1487,14 @@ boolean HeatPump::boilerAddHeat()
 		}
 		if(GETBIT(Prof.Boiler.flags, fAddHeating))  // Включен догрев
 		{
-			if((T < get_boilerTempTarget() - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+			int16_t b_target = get_boilerTempTarget();
+			if((T < b_target - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
 				flagRBOILER = true;
 				return false;
 			}
 			if(!flagRBOILER || onBoiler) return false; // флажка нет или работет бойлер, но догрев не включаем
 			else {
-				if(T < get_boilerTempTarget() && (T >= Prof.Boiler.tempRBOILER || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
+				if(T < b_target && (T >= Prof.Boiler.tempRBOILER || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
 					return true;
 				} else { // бойлер выше целевой температуры - цель достигнута или греть тэном еще рано
 					flagRBOILER = false;
@@ -1639,9 +1640,11 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 	if(b && (get_modWork() & pBOILER)) {
+		dRelay[R3WAY].set_Relay(true); 
 		onBoiler = true;
 		offBoiler = 0;
 	} else {
+		dRelay[R3WAY].set_Relay(false);    
 		onBoiler = false;
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
 	}
@@ -1672,36 +1675,27 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 
 }
 // Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
-// Проводится различный сброс в зависимсти от конфигурации
+// Проводится различный сброс в зависимости от конфигурации
 int8_t HeatPump::ResetFC()
 {
 	if(!dFC.get_present()) return OK;                                                 // Инвертора нет выходим
-
-#ifdef FC_USE_RCOMP                                                               // ЕСЛИ есть провод сброса
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
 	if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сбрасывать не надо
+#else
+	if(dFC.get_err() == OK) return OK;
+#endif
+#ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
 	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();// Подать импульс сброса
 	journal.jprintf("Reset %s use RRESET\r\n",dFC.get_name());
+#else
+	dFC.reset_FC();                                                       // подать команду на сброс по модбас
+	if(dFC.get_blockFC()) return ERR_RESET_FC;                            // Инвертор блокирован
+#endif
+#ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
 	_delay(100);
 	sInput[SERRFC].Read();
 	if (sInput[SERRFC].get_lastErr()==OK) return OK;// Инвертор сброшен
 	else return ERR_RESET_FC;// Сброс не прошел
-#else                                                                      // нет провода сброса - сбрасываем по модбас
-	if(dFC.get_err() != OK)                                                       // инвертор есть ошибки
-	{
-		dFC.reset_FC();                                                       // подать команду на сброс по модбас
-		if(!dFC.get_blockFC()) return OK;                                   // Инвертор НЕ блокирован
-		else return ERR_RESET_FC;                                             // Сброс не удачный
-	} else return OK;                                                         // Ошибок нет сбрасывать нечего
-#endif // SERRFC
-#else   //  #ifdef FC_USE_RCOMP
-	if (dFC.get_err()!=OK)                                                           //  инвертор есть ошибки
-	{
-		dFC.reset_FC();                                                               // подать команду на сброс по модбас
-		if (!dFC.get_blockFC()) return OK;// Инвертор НЕ блокирован
-		else return ERR_RESET_FC;// Сброс не удачный
-	}
-	else return OK;                                                                  // Ошибок нет сбрасывать нечего
 #endif
 	return OK;
 }
@@ -2087,7 +2081,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			}
 		}
 		// Отслеживание включения
-		if (T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp) && !onBoiler) {Status.ret=pBh2; return pCOMP_ON;}    // Температура ниже гистрезиса надо включаться!
+		if (!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;}    // Температура ниже гистрезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler) {Status.ret=pBh4; return pCOMP_NONE;}  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
@@ -2101,7 +2095,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently || flagRBOILER ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		} else {
@@ -2112,7 +2106,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			}
 		}
 		// Отслеживание включения
-		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ) {
+		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ) {
 			Status.ret=pBp10; return pCOMP_NONE;  // РАЗГОН частоту не трогаем
 		} else if(!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) {
 			Status.ret=pBp2; return pCOMP_ON; // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
@@ -2341,7 +2335,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 #endif		
 		else if(!(dFC.isfOnOff())) {Status.ret=pHp5; return pCOMP_NONE;  }                                               // Если компрессор не рабоатет то ничего не делаем и выходим
-		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){ Status.ret=pHp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
+		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ){ Status.ret=pHp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()-SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();// исправил плюс на минус
@@ -2485,7 +2479,7 @@ MODE_COMP HeatPump::UpdateCool()
 		}
 #endif		
 		else if(!(dFC.isfOnOff())) {Status.ret=pCp5; return pCOMP_NONE;  }                                               // Если компрессор не рабоатет то ничего не делаем и выходим
-		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_ACCEL_TIME/100 ){ Status.ret=pCp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
+		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ){ Status.ret=pCp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
 		if (sTemp[TCOMP].get_Temp()+SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();
@@ -2497,7 +2491,7 @@ MODE_COMP HeatPump::UpdateCool()
 #endif
 
 		updatePidTime=xTaskGetTickCount();
-		newFC = updatePID(CalcTargetPID(Prof.Cool) - FEED, Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+		newFC = updatePID(FEED - CalcTargetPID(Prof.Cool), Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
 		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
@@ -2608,6 +2602,7 @@ MODE_HP HeatPump::get_Work()
 	switch((int) UpdateBoiler())  // проверка бойлера высший приоритет
 	{
 	case pCOMP_OFF:
+		if(onBoiler) journal.jprintf(" Stop Boiler [%s]\n", (char *)codeRet[HP.get_ret()]);
 		ret = pOFF;
 		break;
 	case pCOMP_ON:

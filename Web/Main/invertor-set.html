@@ -34,8 +34,8 @@
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
     <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_pfc-dtc"> <input type="submit" value=">" onclick="setParam('get_pFC(DTC)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_pfc-dt"> <input type="submit" value=">" onclick="setParam('get_pFC(DT)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита ГВС, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_pfc-dtb"> <input type="submit" value=">" onclick="setParam('get_pFC(DTB)');"></td></tr>
+    <tr><td>Уменьшение частоты (отопление/охлаждение) при приближении к максимальной температуре подачи на °C [0...10]</td><td><input type="number" id="get_pfc-dt"> <input type="submit" value=">" onclick="setParam('get_pFC(DT)');"></td></tr>
+    <tr><td>Уменьшение частоты (ГВС) при приближении к максимальной температуре подачи на °C [0...10]</td><td><input type="number" id="get_pfc-dtb"> <input type="submit" value=">" onclick="setParam('get_pFC(DTB)');"></td></tr>
 
     <tr><td><b>Стартовые частоты</b></td><td></td></tr>
     <tr><td>Стартовая установка инвертора</td><td><input type="number" id="get_pfc-frq"> <input type="submit" value=">" onclick="setParam('get_pFC(FRQ)');"></td></tr>

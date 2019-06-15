@@ -264,55 +264,51 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
     }
 #else // Боевой вариант
     if((!get_present()) || (GETBIT(flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
-    if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
-    {
-    	err = OK;
+    if(x < _min) x = _min; // Проверка диапазона разрешенных частот
+    else if(x > _max) x = _max;
+
+	err = OK;
 #ifdef FC_RETOIL_FREQ
-    	if(GETBIT(flags, fFC_RetOilSt)) {
-    		FC_target = x;
-    		return err;
-    	}
+	if(GETBIT(flags, fFC_RetOilSt)) {
+		FC_target = x;
+		return err;
+	}
 #endif
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
-        // Запись в регистры инвертора установленной частоты
-        if(testMode == NORMAL || testMode == HARD_TEST){
-			err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
-        }
-        if(err == OK) {
-            FC_target = x;
-            if(show) journal.jprintf(" Set %s[%s]: %.2f%%\n", name, (char *)codeRet[HP.get_ret()], (float)FC_target / 100);
-            return err;
-        } // установка частоты OK  - вывод сообщения если надо
-        else {
-            SETBIT1(flags, fErrFC);
-            set_Error(err, name);
-            return err;
-        } // генерация ошибки
+	// Запись в регистры инвертора установленной частоты
+	if(testMode == NORMAL || testMode == HARD_TEST){
+		err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
+	}
+	if(err == OK) {
+		FC_target = x;
+		if(show) journal.jprintf(" Set %s[%s]: %.2f%%\n", name, (char *)codeRet[HP.get_ret()], (float)FC_target / 100);
+		return err;
+	} else {  // генерация ошибки
+		SETBIT1(flags, fErrFC);
+		set_Error(err, name);
+		return err;
+	}
 #else // Аналоговое управление
-        FC_target = x;
-        dac = ((level100 - level0) * FC_target - 0 * level100) / (100 - 0);
-        switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
-        {
-        case NORMAL:
-            analogWrite(pin, dac);
-            break; //  Режим работа не тест, все включаем
-        case SAFE_TEST:
-            break; //  Ничего не включаем
-        case TEST:
-            break; //  Включаем все кроме компрессора
-        case HARD_TEST:
-            analogWrite(pin, dac);
-            break; //  Все включаем и компрессор тоже
-        }
-        if(show)
-            journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100); // установка частоты OK  - вывод сообщения если надо
-#endif
-        return err;
-    } // if((x>=_min)&&(x<=_max))
-    else {
-        journal.jprintf("%s: Wrong speed %.2f\n", name, (float)x / 100);
-        return WARNING_VALUE;
+	FC_target = x;
+	dac = ((level100 - level0) * FC_target - 0 * level100) / (100 - 0);
+	switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
+	{
+	case NORMAL:
+		analogWrite(pin, dac);
+		break; //  Режим работа не тест, все включаем
+	case SAFE_TEST:
+		break; //  Ничего не включаем
+	case TEST:
+		break; //  Включаем все кроме компрессора
+	case HARD_TEST:
+		analogWrite(pin, dac);
+		break; //  Все включаем и компрессор тоже
+	}
+	if(show)
+		journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100); // установка частоты OK  - вывод сообщения если надо
     }
+#endif
+	return err;
 #endif // DEMO
 }
 
@@ -368,11 +364,6 @@ int8_t devVaconFC::start_FC()
     	goto xStarted;
     }
 	if(!get_present() || GETBIT(flags, fErrFC)) return err = ERR_MODBUS_BLOCK; // выходим если нет инвертора или он заблокирован по ошибке
-	if(FC_target < _data.minFreq || FC_target > _data.maxFreq) {
-		err = ERR_FC_ERROR;
-		journal.jprintf(" %s: Wrong frequency, ignore start\n", name);
-		return err;
-	}
     err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 #ifdef DEMO
