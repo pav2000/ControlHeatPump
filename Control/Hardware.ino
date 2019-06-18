@@ -922,8 +922,13 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
-						if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2 || OverheatTCOMP <= 0) { // слишком низко
-						    if(pidw.trend[trOH_TCOMP] < _data.trend_threshold || OverheatTCOMP <= 0) {
+						if(OverheatTCOMP <= 70) { // слишком низко
+							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) - 1;
+							pidw.max = _data.trend_threshold;
+							pidw.trend[trOH_default] = 0;
+							pidw.trend[trOH_TCOMP] = 0;
+						} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) {
+						    if(pidw.trend[trOH_TCOMP] < _data.trend_threshold) {
 								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2;
 								if(newEEV == 0) newEEV = -1;
 								pidw.max = _data.trend_threshold;
