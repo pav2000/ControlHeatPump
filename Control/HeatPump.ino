@@ -2073,12 +2073,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently || flagRBOILER ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBh22; return pCOMP_OFF; // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
-		} else {
-			if (T > TRG) {
-				Status.ret=pBh3;
-				set_HeatBoilerUrgently(false);
-				return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
-			}
+		}
+		if (T > TRG) {
+			Status.ret=pBh3;
+			set_HeatBoilerUrgently(false);
+			return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;}    // Температура ниже гистрезиса надо включаться!
@@ -2098,12 +2097,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently || flagRBOILER ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
-		} else {
-			if (T > TRG) {
-				Status.ret=pBp3;
-				set_HeatBoilerUrgently(false);
-				return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
-			}
+		}
+		if (T > TRG) {
+			Status.ret=pBp3;
+			set_HeatBoilerUrgently(false);
+			return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
 		if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ) {
