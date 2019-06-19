@@ -34,6 +34,9 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_PAGE_HEAT		0x05
 #define NXTID_PAGE_BOILER	0x06
 #define NXTID_PAGE_INFO		0x07
+#define NXTID_PAGE_PROFILE	0x08
+#define NXT_CHNG_PAGE_PROFILE "page 8"
+
 #define NXTID_ONOFF			0x03
 #define NXTID_BOILER_URGENT	0x14
 #define NXTID_TEMP_PLUS		0x17
@@ -42,6 +45,8 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_BOILER_ONOFF	0x14
 #define NXTID_BOILER_PLUS	0x0D
 #define NXTID_BOILER_MINUS	0x0E
+#define NXTID_SCHEDULER_OFF	0x80
+#define NXTID_SCHEDULER_ON	0x81
 
 #define fSleep 1
 #define NEXTION_INPUT_DELAY	10		// * NEXTION_READ ms
@@ -145,6 +150,40 @@ boolean Nextion::sendCommand(const char* cmd)
 	return true;
 }
 
+boolean Nextion::setComponentValIdx(const char* component, uint8_t idx, int8_t val)
+{
+	check_incoming();
+	NEXTION_PORT.write(component);
+	NEXTION_PORT.print(idx);
+	NEXTION_PORT.write(".val=");
+	NEXTION_PORT.print(val);
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+#ifdef NEXTION_DEBUG
+	journal.jprintf("NXTTX: %s%d=%d\n", component, idx, val);
+#endif
+	return !check_incoming();
+}
+
+// cmd with space
+boolean Nextion::sendCommandToComponentIdx(const char* component, const char* cmd, uint8_t idx, int8_t val)
+{
+	check_incoming();
+	NEXTION_PORT.write(cmd);
+	NEXTION_PORT.write(component);
+	NEXTION_PORT.print(idx);
+	NEXTION_PORT.write(",");
+	NEXTION_PORT.print(val);
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+#ifdef NEXTION_DEBUG
+	journal.jprintf("NXTTX: %s%s%d,%d\n", cmd, component, idx, val);
+#endif
+	return !check_incoming();
+}
+
 boolean Nextion::setComponentText(const char* component, char* txt)
 {
 	check_incoming();
@@ -157,6 +196,23 @@ boolean Nextion::setComponentText(const char* component, char* txt)
 	NEXTION_PORT.write(COMM_END_B);
 #ifdef NEXTION_DEBUG
 	journal.jprintf("NXTTX: %s=%s\n", component, txt);
+#endif
+	return !check_incoming();
+}
+
+boolean Nextion::setComponentIdxText(const char* component, uint8_t idx, char* txt)
+{
+	check_incoming();
+	NEXTION_PORT.write(component);
+	NEXTION_PORT.print(idx);
+	NEXTION_PORT.write(".txt=\"");
+	NEXTION_PORT.write(txt);
+	NEXTION_PORT.write("\"");
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+	NEXTION_PORT.write(COMM_END_B);
+#ifdef NEXTION_DEBUG
+	journal.jprintf("NXTTX: %s%d=%s\n", component, idx, txt);
 #endif
 	return !check_incoming();
 }
@@ -185,7 +241,7 @@ void Nextion::readCommand()
 		switch(buffer[0]) {
 		case 0x65:   //   	Touch Event
 			if(input_delay) break;
-			if(len == 4 && buffer[3] == 0) { // event: release
+			if((len == 4 && buffer[3] == 0) || len == 3) { // event: release
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
 				if(cmd1 == NXTID_PAGE_MAIN) {
@@ -242,6 +298,17 @@ void Nextion::readCommand()
 					} else if(cmd2 == NXTID_BOILER_PLUS || cmd2 == NXTID_BOILER_MINUS) {  // Изменение целевой температуры ГВС шаг изменения сотые градуса
 						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 100.0, 1));
 					}
+				} else if(cmd1 == NXTID_PAGE_PROFILE) {
+					if(cmd2 == NXTID_SCHEDULER_OFF) {
+						SETBIT0(HP.Schdlr.sch_data.Flags, bScheduler_active);
+						input_delay = NEXTION_INPUT_DELAY;
+					} else if(cmd2 == NXTID_SCHEDULER_ON) {
+						SETBIT1(HP.Schdlr.sch_data.Flags, bScheduler_active);
+						input_delay = NEXTION_INPUT_DELAY;
+					} else if(cmd2 < 10) {
+						if(cmd2 >= I2C_PROFIL_NUM) fUpdate = 2;
+						else HP.Prof.set_list(cmd2);
+					}
 				}
 			}
 			break;
@@ -269,7 +336,7 @@ void Nextion::readCommand()
 			_delay(10);
 		}
 	}
-	if(fUpdate == 2) Update();
+	if(fUpdate >= 2) Update();
 }
 
 // Обновление информации на дисплее вызывается в цикле
@@ -339,6 +406,7 @@ void Nextion::Update()
 		setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp)); ntemp[0] = '\0';
 		setComponentText("pas4", (char*) NAME_ADMIN);
 		setComponentText("pas5", HP.get_network((char*) net_PASSADMIN, ntemp));
+		fUpdate = 0;
 	} else if(PageID == NXTID_PAGE_SYSTEM)  // Обновление данных 3 страницы "Система"
 	{
 		setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
@@ -489,9 +557,34 @@ void Nextion::Update()
 		setComponentText("t1", buffer);
 		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NOTE, sizeof(buffer)-1);
 		setComponentText("t2", buffer);
+		fUpdate = 0;
+	} else if(PageID == NXTID_PAGE_PROFILE) { // Обновление данных страницы 8 "Профили"
+#ifdef NEXTION_DEBUG
+		journal.printf("#: %u\n", millis());
+#endif
+		if(HP.Schdlr.IsShedulerOn()) sendCommand("s.val=1"); else sendCommand("s.val=0");
+		Encode_UTF8_to_ISO8859_5(buffer, HP.Schdlr.sch_data.Names[HP.Schdlr.sch_data.Active], sizeof(buffer)-1);
+		setComponentText("trn", buffer);
+		char *lst = HP.Prof.list;
+		int8_t i = 0;
+		for(; i < I2C_PROFIL_NUM; i++) {
+			char *p = strchr(lst, ':');
+			if(p == NULL) break;
+			memcpy(buffer, lst, p - lst);
+			buffer[p - lst] = '\0';
+			Encode_UTF8_to_ISO8859_5(buffer, buffer, sizeof(buffer)-1);
+			setComponentIdxText("t", i, buffer);
+			if(p[1] == '1') sendCommandToComponentIdx("r", "click ", i, 1);
+			lst = p + 3;
+		}
+		for(; i < 10; i++) sendCommandToComponentIdx("r", "vis ", i, 0);
+		fUpdate = 0;
+#ifdef NEXTION_DEBUG
+		journal.printf("##: %u\n", millis());
+#endif
 	}
 	StatusLine();
-	fUpdate = 1;
+	if(fUpdate) fUpdate = 1;
 }
 
 // Показ строки статуса в зависимости от состояния ТН

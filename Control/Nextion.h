@@ -31,6 +31,9 @@ public:
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean setComponentText(const char* component, char* txt);
+  boolean setComponentIdxText(const char* component, uint8_t idx, char* txt);
+  boolean setComponentValIdx(const char* component, uint8_t idx, int8_t val);
+  boolean sendCommandToComponentIdx(const char* component, const char* cmd, uint8_t idx, int8_t val);
   void    set_dim(uint8_t dim);					// Установить яркость экрана
   void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outstrsize);
 private:
