@@ -418,7 +418,7 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
  
 // 11. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("8. Setting time and clock . . .\n");
+   journal.jprintf("9. Setting time and clock . . .\n");
    set_time();        
    
  // 12. Инициалазация уведомлений
