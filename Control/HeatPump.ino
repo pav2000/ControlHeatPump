@@ -2243,7 +2243,7 @@ MODE_COMP HeatPump::UpdateHeat()
 	Status.ret=pNone;         // Сбросить состояние пида
 	t1 = GETBIT(Prof.Heat.flags,fTarget) ? RET : sTemp[TIN].get_Temp();  // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
 	target = get_targetTempHeat();
-	if(is_compressor_on()) {
+	if(is_compressor_on() && !onBoiler) {
 #ifdef R4WAY
 		if(dRelay[R4WAY].get_Relay()) {	// 4-х ходовой в другом положении - ошибка
 			set_Error(ERR_WRONG_HARD_STATE, (char*)__FUNCTION__);
