@@ -1618,6 +1618,24 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	journal.printf(" Pumps(%d), modWork: %X\n", b, get_modWork());
 #endif
 
+#ifdef R3WAY           // Если определен трехходовой то в начале переключаем его (при выключении что бы остыл теплообменник)
+if(b && (get_modWork() & pBOILER)){
+        dRelay[R3WAY].set_Relay(true);             // скорее всего это пуск ТН (не переключение) по этому надо включить ГВС
+		_delay(d); 
+		onBoiler = true;
+		offBoiler = 0;
+	} else {
+		dRelay[R3WAY].set_Relay(false);            // скорее всего это выключение ТН (не переключение) по этому надо выключить ГВС     
+	    if(onBoiler && get_State() == pWORK_HP) {  // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
+		 journal.jprintf(" Pause %ds, Boiler->Pause\n", HP.Option.delayBoilerSW);
+		_delay(HP.Option.delayBoilerSW * 1000);    // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+	      }
+    	onBoiler = false;
+		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
+	}
+#endif
+
+
 	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
 		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
@@ -1644,20 +1662,10 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	}
 	_delay(d);                                 // Задержка на d мсек
 #endif
+
 #ifdef R3WAY  
 	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
-if(b && (get_modWork() & pBOILER)){
-        dRelay[R3WAY].set_Relay(true);             // скорее всего это пуск ТН (не переключение) по этому надо включить ГВС
-		_delay(d); 
-		onBoiler = true;
-		offBoiler = 0;
-	} else {
-		dRelay[R3WAY].set_Relay(false);            // скорее всего это выключение ТН (не переключение) по этому надо выключить ГВС     
-		_delay(d);  
-		onBoiler = false;
-		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
-	}
 #else
   #ifdef RPUMPBH									// насос бойлера
    	if(b) {
