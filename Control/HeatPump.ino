@@ -1534,9 +1534,16 @@ void HeatPump::relayAllOFF()
 
 // Переключение на бойлер или обратно (true-бойлер false-отопление/охлаждение) возврат onBoiler
 // в зависимости от режима, не забываем менять onBoiler по нему определяется включение ГВС
+// Функция вызывается на работающем компрессоре
 boolean HeatPump::switchBoiler(boolean b)
 {
-	if(b == onBoiler) return onBoiler;        // Нечего делать выходим
+#ifdef R3WAY
+	if((b == onBoiler)&&(b==dRelay[R3WAY].get_Relay())) return onBoiler; // Нечего делать выходим
+#else
+   if(b == onBoiler) return onBoiler;                                     // Нечего делать выходим
+#endif	
+
+	
 #ifdef DEBUG_MODWORK
 	journal.printf(" swBoiler(%d): %X, mW:%d\n", b, onBoiler, get_modWork());
 #endif
@@ -1604,6 +1611,7 @@ void HeatPump::Pump_HeatFloor(boolean On)
 // Второй параметр параметр задержка после включения/выключения мсек. отдельного насоса (борьба с помехами)
 // Идет проверка на необходимость изменения состояния насосов
 // Генерятся задержки для защиты компрессора, есть задержки между включенимями насосов для уменьшения помех
+// Не забываем что сдесь устанавливается onBoiler, по этому сначала вызывается Pumps потом switchBoiler
 void HeatPump::Pumps(boolean b, uint16_t d)
 {
 #ifdef DEBUG_MODWORK
@@ -1640,11 +1648,13 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 	if(b && (get_modWork() & pBOILER)) {
-		dRelay[R3WAY].set_Relay(true);
+		dRelay[R3WAY].set_Relay(true); 
+		_delay(d); 
 		onBoiler = true;
 		offBoiler = 0;
 	} else {
-		dRelay[R3WAY].set_Relay(false);
+		dRelay[R3WAY].set_Relay(false); 
+		_delay(d);  
 		onBoiler = false;
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
 	}
@@ -2042,8 +2052,8 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 	Status.ret=pNone;                // Сбросить состояние пида
 
-	int16_t T = sTemp[TBOILER].get_Temp();
-	int16_t TRG = get_boilerTempTarget();
+	int16_t T = sTemp[TBOILER].get_Temp();  // текущая температура
+	int16_t TRG = get_boilerTempTarget();   // целевая температура
 #ifdef RPUMPBH
 	if(GETBIT(Prof.Boiler.flags, fBoilerTogetherHeat) && (Status.modWork & pHEAT)) { // Режим одновременного нагрева бойлера с отоплением до температуры догрева
 		if(!is_compressor_on() || T > TRG) {
@@ -2612,7 +2622,7 @@ MODE_HP HeatPump::get_Work()
 	}
 
 #ifdef DEBUG_MODWORK
-	journal.printf(" get_Work-Boiler: %s, ret=%X, B=%d, RB=%d\n", codeRet[Status.ret], ret, onBoiler, flagRBOILER);
+	journal.printf(" get_Work-Boiler: %s, ret=%X, onBoiler=%d, flagRBOILER=%d\n", codeRet[Status.ret], ret, onBoiler, flagRBOILER);
 #endif
 	if(((get_modeHouse() == pOFF) && (ret == pOFF)) || error) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 	if((ret & pBOILER)) return ret; // работает бойлер больше ничего анализировать не надо выход
@@ -2691,9 +2701,9 @@ boolean HeatPump::configHP(MODE_HP conf)
 		//switchBoiler(false);                                            // выключить бойлер
 		//_delay(DELAY_AFTER_SWITCH_RELAY);                               // Задержка
 	} else if((conf & pHEAT)) {    // Отопление
-		if(Switch_R4WAY(false)) return false; 									// 4-х ходовой на нагрев
-		if(is_compressor_on()) {
-			switchBoiler(false);                                            // выключить бойлер это лишнее наверное переключение идет в get_Work() но пусть будет
+		if(Switch_R4WAY(false)) return false; 							  // 4-х ходовой на нагрев
+		if(is_compressor_on()) {                                          // Компрессор рабоатет, переключаемся на ходу 
+			switchBoiler(false);                                          // выключить бойлер 
 		} else {
 			PUMPS_ON;                                                     // включить насосы
 			dFC.set_target(dFC.get_startFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  // установить стартовую частоту если компрессор выключен
@@ -2708,8 +2718,8 @@ boolean HeatPump::configHP(MODE_HP conf)
 		//if((GETBIT(Option.flags,fAddHeat))&&(dRelay[RHEAT].get_present())) dRelay[RHEAT].set_ON(); else dRelay[RHEAT].set_OFF(); // Если надо включить ТЭН отопления
 		#endif
 	} else if((conf & pCOOL)) {  // Охлаждение
-		if(Switch_R4WAY(true)) return false; 										// 4-х ходовой на охлаждение
-		if(is_compressor_on()) {
+		if(Switch_R4WAY(true)) return false; 							   // 4-х ходовой на охлаждение
+		if(is_compressor_on()) {                                           // Компрессор рабоатет, переключаемся на ходу   
 			switchBoiler(false);                                           // выключить бойлер
 		} else {
 			PUMPS_ON;                                                     // включить насосы
@@ -2722,16 +2732,16 @@ boolean HeatPump::configHP(MODE_HP conf)
 		  	  if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
 		#endif
 	} else if((conf & pBOILER)) {  // Бойлер
-		if(Switch_R4WAY(false)) return false; 	 						 // 4-х ходовой на нагрев
-		#ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
+		if(Switch_R4WAY(false)) return false; 	 					   // 4-х ходовой на нагрев
+		#ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
 			dRelay[PUMP_IN].set_ON();                                  // Реле включения насоса входного контура  (геоконтур)
 			dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
 			dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
 			_delay(2*1000);                     // Задержка на 2 сек
 			if(!is_compressor_on() && Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
 		#else
-			if(is_compressor_on()) {
-				switchBoiler(true);                     // включить бойлер
+			if(is_compressor_on()) {                                    // Компрессор рабоатет, переключаемся на ходу 
+				switchBoiler(true);                                     // включить бойлер
 			} else {
 				PUMPS_ON;           // включить насосы
 				if(Status.ret < pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту

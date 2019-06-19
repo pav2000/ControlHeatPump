@@ -1319,5 +1319,3 @@ struct PID_WORK_STRUCT {    // Переменные ПИД регулятора
 };
 
 #endif
-
-
