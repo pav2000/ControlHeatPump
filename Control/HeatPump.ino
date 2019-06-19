@@ -1648,12 +1648,12 @@ void HeatPump::Pumps(boolean b, uint16_t d)
 	dRelay[PUMP_OUT].set_Relay(b);                 // Реле включения насоса выходного контура  (отопление и ГВС)
 	_delay(d);                                     // Задержка на d мсек
 	if(b && (get_modWork() & pBOILER)) {
-		dRelay[R3WAY].set_Relay(true); 
+        dRelay[R3WAY].set_Relay(true);             // скорее всего это пуск ТН (не переключение) по этому надо включить ГВС
 		_delay(d); 
 		onBoiler = true;
 		offBoiler = 0;
 	} else {
-		dRelay[R3WAY].set_Relay(false); 
+		dRelay[R3WAY].set_Relay(false);            // скорее всего это выключение ТН (не переключение) по этому надо выключить ГВС     
 		_delay(d);  
 		onBoiler = false;
 		offBoiler = rtcSAM3X8.unixtime();			// запомнить время выключения ГВС (нужно для переключения)
