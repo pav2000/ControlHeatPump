@@ -31,6 +31,9 @@ public:
   void    readCommand();
   boolean sendCommand(const char* cmd);
   boolean setComponentText(const char* component, char* txt);
+  boolean setComponentIdxText(const char* component, uint8_t idx, char* txt);
+  boolean setComponentValIdx(const char* component, uint8_t idx, int8_t val);
+  boolean sendCommandToComponentIdx(const char* component, const char* cmd, uint8_t idx, int8_t val);
   void    set_dim(uint8_t dim);					// Установить яркость экрана
   void    Encode_UTF8_to_ISO8859_5(char* outstr, const char* instr, uint16_t outstrsize);
 private:
@@ -38,6 +41,7 @@ private:
   uint8_t  fUpdate;								// Признак обновления: 0 - нет, 1 - штатно, 2 - обновить срочно
   uint8_t  DataAvaliable;
   uint16_t StatusCrc;
+  uint16_t Page1Crc;
   uint8_t  flags;
   uint8_t  input_delay;							// Delay for * NEXTION_READ ms
   void    getTargetTemp(char *rstr);			// Получить целевую температуру

@@ -1226,7 +1226,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,";");
 
 			// Вывод строки статуса
-			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
+			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
 			for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
 			//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
 			//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }

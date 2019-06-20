@@ -24,7 +24,8 @@
 #include "Hardware.h"
 #include "Message.h"
 #include "Information.h"
-#include "VaconFC.h" 
+#include "OmronFC.h"
+#include "VaconFC.h"
 #include "Scheduler.h"
 extern char *MAC2String(byte* mac);
 

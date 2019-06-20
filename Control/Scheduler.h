@@ -29,6 +29,13 @@
 
 #define bScheduler_active	1
 
+const char WEB_SCH_On[] = "On";
+const char WEB_SCH_Active[] = "Active";
+const char WEB_SCH_Names[] = "lstNames";
+const char WEB_SCH_Name[] = "Name";
+const char WEB_SCH_Calendar[] = "Calendar";
+const char WEB_SCH_ActiveName[] = "AN";
+
 struct Scheduler_Calendar_Item {
 	uint8_t		WD_Hour; 	// День недели (3bits, 0 = monday)  + час (5bits)
 	int8_t		Profile;	// 0x80+Номер профиля(макс 27)+1, 0 = выключен, иначе температура -10,0..+10,0
@@ -59,8 +66,8 @@ public:
 	uint16_t get_crc16(uint8_t *data);             		// Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 	int8_t   check_crc16_eeprom(void);
 	uint16_t get_data_size(void) { return sizeof(sch_data); }
-private:
 	Scheduler_Data sch_data;
+private:
 	uint8_t current_hour;
 	int16_t current_change; // -10,00..+10,00
 };
