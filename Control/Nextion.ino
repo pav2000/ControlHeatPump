@@ -425,8 +425,9 @@ void Nextion::Update()
 	} else if(PageID == NXTID_PAGE_SYSTEM)  // Обновление данных 3 страницы "Система"
 	{
 		if(fUpdate == 2) {
-			setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
+			setComponentText("syst1", (char*) VERSION);
 		}
+		ntemp[0] = '\0';
 		setComponentText("syst2", TimeIntervalToStr(HP.get_uptime(), ntemp));
 		setComponentText("syst3", ResetCause());
 		setComponentText("syst4", HP.IsWorkingNow() ? itoa(HP.num_repeat, ntemp, 10) : (char*) _HP_OFF_8859);
