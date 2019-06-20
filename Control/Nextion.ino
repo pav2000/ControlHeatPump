@@ -301,13 +301,10 @@ void Nextion::readCommand()
 				} else if(cmd1 == NXTID_PAGE_PROFILE) {
 					if(cmd2 == NXTID_SCHEDULER_OFF) {
 						SETBIT0(HP.Schdlr.sch_data.Flags, bScheduler_active);
-						input_delay = NEXTION_INPUT_DELAY;
 					} else if(cmd2 == NXTID_SCHEDULER_ON) {
 						SETBIT1(HP.Schdlr.sch_data.Flags, bScheduler_active);
-						input_delay = NEXTION_INPUT_DELAY;
-					} else if(cmd2 < 10) {
-						if(cmd2 >= I2C_PROFIL_NUM) fUpdate = 2;
-						else HP.Prof.set_list(cmd2);
+					} else if(cmd2 < I2C_PROFIL_NUM) {
+						HP.Prof.set_list(cmd2);
 					}
 				}
 			}
@@ -369,8 +366,6 @@ void Nextion::Update()
 	{
 		strcat(ftoa(ntemp, (float) HP.sTemp[TIN].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t0", ntemp);
-		HP.getTargetTempStr(ntemp); strcat(ntemp, _xB0);
-		setComponentText("t1", ntemp);
 		strcat(ftoa(ntemp, (float) HP.sTemp[TOUT].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("t2", ntemp);
 		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
@@ -379,37 +374,59 @@ void Nextion::Update()
 		setComponentText("t4", ntemp);
 		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
 		setComponentText("t5", ntemp);
-		if(HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
-		else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
-		if(HP.HeatBoilerUrgently) sendCommand("vis g,1"); else sendCommand("vis g,0");
+		HP.getTargetTempStr(ntemp);
+		uint8_t b_on_off = HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP;
+		uint16_t newcrc;
+		if(fUpdate == 1) {
+			newcrc = calulate_crc16((uint8_t*)ntemp, 4);
+			newcrc = _crc16(newcrc, b_on_off | (HP.HeatBoilerUrgently << 1)
+#ifdef USE_SUN_COLLECTOR
+					| (HP.dRelay[RSUN].get_Relay() << 2)
+#endif
+				);
+		} else newcrc = ~Page1Crc;
+		if(newcrc != Page1Crc) {
+			Page1Crc = newcrc;
+			strcat(ntemp, _xB0);
+			setComponentText("t1", ntemp);
+			if(b_on_off) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
+			else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
+			if(HP.HeatBoilerUrgently) sendCommand("vis g,1"); else sendCommand("vis g,0");
+	#ifdef USE_SUN_COLLECTOR
+			if(HP.dRelay[RSUN].get_Relay()) sendCommand("vis s,1"); else sendCommand("vis s,0");
+	#endif
+		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{
-		/*
-		 Использовать DHCP сервер  -web1
-		 IP адрес контролера  -web2
-		 Маска подсети - web3
-		 Адрес шлюза  - web4
-		 Адрес DNS сервера - web5
-		 Аппаратный mac адрес - web6 */
-		setComponentText("web1", (char*) (HP.get_DHCP() ? _YES_8859 : _NO_8859)); ntemp[0] = '\0';
-		setComponentText("web2", HP.get_network((char*) net_IP, ntemp)); ntemp[0] = '\0';
-		setComponentText("web3", HP.get_network((char*) net_SUBNET, ntemp)); ntemp[0] = '\0';
-		setComponentText("web4", HP.get_network((char*) net_GATEWAY, ntemp)); ntemp[0] = '\0';
-		setComponentText("web5", HP.get_network((char*) net_DNS, ntemp)); ntemp[0] = '\0';
-		setComponentText("web6", HP.get_network((char*) net_MAC, ntemp));
-		/*
-		 Использование паролей - pas1
-		 Имя - pas2 пароль - pas3
-		 Имя - pas4 пароль - pas5 */
-		setComponentText("pas1", (char*) (HP.get_fPass() ? _YES_8859 : _NO_8859));
-		setComponentText("pas2", (char*) NAME_USER); ntemp[0] = '\0';
-		setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp)); ntemp[0] = '\0';
-		setComponentText("pas4", (char*) NAME_ADMIN);
-		setComponentText("pas5", HP.get_network((char*) net_PASSADMIN, ntemp));
-		fUpdate = 0;
+		if(fUpdate == 2) {
+			/*
+			 Использовать DHCP сервер  -web1
+			 IP адрес контролера  -web2
+			 Маска подсети - web3
+			 Адрес шлюза  - web4
+			 Адрес DNS сервера - web5
+			 Аппаратный mac адрес - web6 */
+			setComponentText("web1", (char*) (HP.get_DHCP() ? _YES_8859 : _NO_8859)); ntemp[0] = '\0';
+			setComponentText("web2", HP.get_network((char*) net_IP, ntemp)); ntemp[0] = '\0';
+			setComponentText("web3", HP.get_network((char*) net_SUBNET, ntemp)); ntemp[0] = '\0';
+			setComponentText("web4", HP.get_network((char*) net_GATEWAY, ntemp)); ntemp[0] = '\0';
+			setComponentText("web5", HP.get_network((char*) net_DNS, ntemp)); ntemp[0] = '\0';
+			setComponentText("web6", HP.get_network((char*) net_MAC, ntemp));
+			/*
+			 Использование паролей - pas1
+			 Имя - pas2 пароль - pas3
+			 Имя - pas4 пароль - pas5 */
+			setComponentText("pas1", (char*) (HP.get_fPass() ? _YES_8859 : _NO_8859));
+			setComponentText("pas2", (char*) NAME_USER); ntemp[0] = '\0';
+			setComponentText("pas3", HP.get_network((char*) net_PASSUSER, ntemp)); ntemp[0] = '\0';
+			setComponentText("pas4", (char*) NAME_ADMIN);
+			setComponentText("pas5", HP.get_network((char*) net_PASSADMIN, ntemp));
+		}
 	} else if(PageID == NXTID_PAGE_SYSTEM)  // Обновление данных 3 страницы "Система"
 	{
-		setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
+		if(fUpdate == 2) {
+			setComponentText("syst1", (char*) VERSION);	ntemp[0] = '\0';
+		}
 		setComponentText("syst2", TimeIntervalToStr(HP.get_uptime(), ntemp));
 		setComponentText("syst3", ResetCause());
 		setComponentText("syst4", HP.IsWorkingNow() ? itoa(HP.num_repeat, ntemp, 10) : (char*) _HP_OFF_8859);
@@ -553,38 +570,40 @@ void Nextion::Update()
 		else sendCommand("gvson.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ
 
 	} else if(PageID == NXTID_PAGE_INFO) { // Обновление данных 7 страницы "О контролллере"
-		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NAME, sizeof(buffer)-1);
-		setComponentText("t1", buffer);
-		Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NOTE, sizeof(buffer)-1);
-		setComponentText("t2", buffer);
-		fUpdate = 0;
+		if(fUpdate == 2) {
+			Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NAME, sizeof(buffer)-1);
+			setComponentText("t1", buffer);
+			Encode_UTF8_to_ISO8859_5(buffer, CONFIG_NOTE, sizeof(buffer)-1);
+			setComponentText("t2", buffer);
+		}
 	} else if(PageID == NXTID_PAGE_PROFILE) { // Обновление данных страницы 8 "Профили"
 #ifdef NEXTION_DEBUG
 		journal.printf("#: %u\n", millis());
 #endif
 		if(HP.Schdlr.IsShedulerOn()) sendCommand("s.val=1"); else sendCommand("s.val=0");
-		Encode_UTF8_to_ISO8859_5(buffer, HP.Schdlr.sch_data.Names[HP.Schdlr.sch_data.Active], sizeof(buffer)-1);
-		setComponentText("trn", buffer);
-		char *lst = HP.Prof.list;
-		int8_t i = 0;
-		for(; i < I2C_PROFIL_NUM; i++) {
-			char *p = strchr(lst, ':');
-			if(p == NULL) break;
-			memcpy(buffer, lst, p - lst);
-			buffer[p - lst] = '\0';
-			Encode_UTF8_to_ISO8859_5(buffer, buffer, sizeof(buffer)-1);
-			setComponentIdxText("t", i, buffer);
-			if(p[1] == '1') sendCommandToComponentIdx("r", "click ", i, 1);
-			lst = p + 3;
+		if(fUpdate == 2) {
+			Encode_UTF8_to_ISO8859_5(buffer, HP.Schdlr.sch_data.Names[HP.Schdlr.sch_data.Active], sizeof(buffer)-1);
+			setComponentText("trn", buffer);
+			char *lst = HP.Prof.list;
+			int8_t i = 0;
+			for(; i < I2C_PROFIL_NUM; i++) {
+				char *p = strchr(lst, ':');
+				if(p == NULL) break;
+				memcpy(buffer, lst, p - lst);
+				buffer[p - lst] = '\0';
+				Encode_UTF8_to_ISO8859_5(buffer, buffer, sizeof(buffer)-1);
+				setComponentIdxText("t", i, buffer);
+				if(p[1] == '1') sendCommandToComponentIdx("r", "click ", i, 1);
+				lst = p + 3;
+			}
+			for(; i < 10; i++) sendCommandToComponentIdx("r", "vis ", i, 0);
 		}
-		for(; i < 10; i++) sendCommandToComponentIdx("r", "vis ", i, 0);
-		fUpdate = 0;
 #ifdef NEXTION_DEBUG
 		journal.printf("##: %u\n", millis());
 #endif
 	}
 	StatusLine();
-	if(fUpdate) fUpdate = 1;
+	fUpdate = 1;
 }
 
 // Показ строки статуса в зависимости от состояния ТН
@@ -593,14 +612,14 @@ void Nextion::StatusLine()
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
-	uint16_t newcrc = ~StatusCrc;
+	uint16_t newcrc;
 	if(fUpdate == 1) {
 		newcrc = calulate_crc16((uint8_t*)tm, 5);
 		newcrc = _crc16(newcrc, HP.get_errcode());
 		newcrc = _crc16(newcrc, HP.get_modeHouse());
 		newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
 		newcrc = calulate_crc16((uint8_t*)ss, m_strlen(ss), newcrc);
-	}
+	} else newcrc = ~StatusCrc;
 	if(newcrc != StatusCrc) { // поменялся
 		StatusCrc = newcrc;
 

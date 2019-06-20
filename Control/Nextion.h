@@ -41,6 +41,7 @@ private:
   uint8_t  fUpdate;								// Признак обновления: 0 - нет, 1 - штатно, 2 - обновить срочно
   uint8_t  DataAvaliable;
   uint16_t StatusCrc;
+  uint16_t Page1Crc;
   uint8_t  flags;
   uint8_t  input_delay;							// Delay for * NEXTION_READ ms
   void    getTargetTemp(char *rstr);			// Получить целевую температуру
