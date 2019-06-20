@@ -28,6 +28,11 @@ https://www.forumhouse.ru/threads/437182/
 ![Графический лог](https://user-images.githubusercontent.com/6220128/56410000-2fe12480-6284-11e9-8b83-9b014c41a389.png)
 ![Статистика](https://user-images.githubusercontent.com/6220128/56410008-3079bb00-6284-11e9-97d6-145e7347cb60.png)
 
+Выносной экран Nextion:
+
+![Nextion Main](https://user-images.githubusercontent.com/6220128/59842650-a15e5180-935f-11e9-894a-a86d4157c38c.png)
+![Nextion Scheme](https://user-images.githubusercontent.com/6220128/59842761-d8346780-935f-11e9-878e-2635b119225a.png)
+![Nextion Heat](https://user-images.githubusercontent.com/6220128/59842865-12056e00-9360-11e9-98db-e4ee1a1464a2.png)
 
 Изменения по версиям: <br>
 Версия 0.967-1.017
