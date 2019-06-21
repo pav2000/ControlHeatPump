@@ -35,7 +35,6 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_PAGE_BOILER	0x06
 #define NXTID_PAGE_INFO		0x07
 #define NXTID_PAGE_PROFILE	0x08
-#define NXT_CHNG_PAGE_PROFILE "page 8"
 
 #define NXTID_ONOFF			0x03
 #define NXTID_BOILER_URGENT	0x14
@@ -300,9 +299,9 @@ void Nextion::readCommand()
 					}
 				} else if(cmd1 == NXTID_PAGE_PROFILE) {
 					if(cmd2 == NXTID_SCHEDULER_OFF) {
-						SETBIT0(HP.Schdlr.sch_data.Flags, bScheduler_active);
+						HP.Schdlr.web_set_param((char*)WEB_SCH_On, (char*)"0");
 					} else if(cmd2 == NXTID_SCHEDULER_ON) {
-						SETBIT1(HP.Schdlr.sch_data.Flags, bScheduler_active);
+						HP.Schdlr.web_set_param((char*)WEB_SCH_On, (char*)"1");
 					} else if(cmd2 < I2C_PROFIL_NUM) {
 						HP.Prof.set_list(cmd2);
 					}
@@ -376,16 +375,13 @@ void Nextion::Update()
 		setComponentText("t5", ntemp);
 		HP.getTargetTempStr(ntemp);
 		uint8_t b_on_off = HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP;
-		uint16_t newcrc;
-		if(fUpdate == 1) {
-			newcrc = calulate_crc16((uint8_t*)ntemp, 4);
-			newcrc = _crc16(newcrc, b_on_off | (HP.HeatBoilerUrgently << 1)
+		uint16_t newcrc = calulate_crc16((uint8_t*)ntemp, 4);
+		newcrc = _crc16(newcrc, b_on_off | (HP.HeatBoilerUrgently << 1)
 #ifdef USE_SUN_COLLECTOR
 					| (HP.dRelay[RSUN].get_Relay() << 2)
 #endif
 				);
-		} else newcrc = ~Page1Crc;
-		if(newcrc != Page1Crc) {
+		if(newcrc != Page1Crc || fUpdate == 2) {
 			Page1Crc = newcrc;
 			strcat(ntemp, _xB0);
 			setComponentText("t1", ntemp);
@@ -598,7 +594,7 @@ void Nextion::Update()
 				if(p[1] == '1') sendCommandToComponentIdx("r", "click ", i, 1);
 				lst = p + 3;
 			}
-			for(; i < 10; i++) sendCommandToComponentIdx("r", "vis ", i, 0);
+			sendCommand("click z,0");
 		}
 #ifdef NEXTION_DEBUG
 		journal.printf("##: %u\n", millis());
@@ -614,29 +610,26 @@ void Nextion::StatusLine()
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
-	uint16_t newcrc;
-	if(fUpdate == 1) {
-		newcrc = calulate_crc16((uint8_t*)tm, 5);
-		newcrc = _crc16(newcrc, HP.get_errcode());
-		newcrc = _crc16(newcrc, HP.get_modeHouse());
-		newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
-		newcrc = calulate_crc16((uint8_t*)ss, m_strlen(ss), newcrc);
-	} else newcrc = ~StatusCrc;
-	if(newcrc != StatusCrc) { // поменялся
+	uint16_t newcrc = calulate_crc16((uint8_t*)tm, 5);
+	newcrc = _crc16(newcrc, HP.get_errcode());
+	newcrc = _crc16(newcrc, HP.get_modeHouse());
+	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
+	newcrc = calulate_crc16((uint8_t*)ss, m_strlen(ss), newcrc);
+	if(newcrc != StatusCrc || fUpdate > 1) { // поменялся
 		StatusCrc = newcrc;
 
 		setComponentText("time", tm);  // Обновить время
 		// Ошибки
 		if(HP.get_errcode() == OK) {
-			sendCommand("vis options,1");
-			sendCommand("vis fault,0");
+			sendCommand("vis ok,1");
+			sendCommand("vis er,0");
 		} else {
-			sendCommand("vis fault,1");
-			sendCommand("vis options,0");
+			sendCommand("vis er,1");
+			sendCommand("vis ok,0");
 			if(PageID == NXTID_PAGE_MAIN) {
 				Encode_UTF8_to_ISO8859_5(ntemp, "Ошибка", sizeof(ntemp)-1);
 				_itoa(HP.get_errcode(), ntemp);
-				setComponentText("fault", ntemp);
+				setComponentText("er", ntemp);
 			}
 		}
 
@@ -649,10 +642,10 @@ void Nextion::StatusLine()
 			case pOFF:
 				if(HP.get_BoilerON()) {
 					sendCommand("vis gvs,0");
-					sendCommand("vis onlygvs,1");
+					sendCommand("vis og,1");
 				} else {
 					sendCommand("vis gvs,0");
-					sendCommand("vis onlygvs,0");
+					sendCommand("vis og,0");
 				}
 				break;
 			case pHEAT:
@@ -660,10 +653,10 @@ void Nextion::StatusLine()
 				sendCommand("vis cool,0");
 				if(HP.get_BoilerON()) {
 					sendCommand("vis gvs,1");
-					sendCommand("vis onlygvs,0");
+					sendCommand("vis og,0");
 				} else {
 					sendCommand("vis gvs,0");
-					sendCommand("vis onlygvs,0");
+					sendCommand("vis og,0");
 				}
 				break;
 			case pCOOL:
@@ -671,10 +664,10 @@ void Nextion::StatusLine()
 				sendCommand("vis cool,1");
 				if(HP.get_BoilerON()) {
 					sendCommand("vis gvs,1");
-					sendCommand("vis onlygvs,0");
+					sendCommand("vis og,0");
 				} else {
 					sendCommand("vis gvs,0");
-					sendCommand("vis onlygvs,0");
+					sendCommand("vis og,0");
 				}
 				break;
 			default:
@@ -686,7 +679,7 @@ void Nextion::StatusLine()
 			sendCommand("vis heat,0");
 			sendCommand("vis cool,0");
 			sendCommand("vis gvs,0");
-			sendCommand("vis onlygvs,0");
+			sendCommand("vis og,0");
 		}
 	}
 }
