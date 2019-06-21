@@ -210,7 +210,7 @@ void setup() {
   lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
   journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
   journal.jprintf("Last FreeRTOS task + error: 0x%04x", lastErrorFreeRtosCode);
-  if(GPBR->SYS_GPBR[1]) journal.jprintf(" (%d)", GPBR->SYS_GPBR[1]);
+  if(GPBR->SYS_GPBR[4]) journal.jprintf(" (%d)", GPBR->SYS_GPBR[4]);
   journal.jprintf("\n");
 
   #ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
