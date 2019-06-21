@@ -118,9 +118,7 @@ void web_server(uint8_t thread)
 					}
 					if(Socket[thread].client.read(Socket[thread].inBuf, len) != len) {
 						journal.jprintf("WEB:Read error\n");
-						Socket[thread].inBuf[0] = 0;
-						SPI_switchW5200();
-						continue;
+						break;
 					}
 					// Ищем в запросе полезную информацию (имя файла или запрос ajax)
 					// пройти авторизацию и разобрать заголовок -  получить имя файла, тип, тип запроса, и признак меню пользователя

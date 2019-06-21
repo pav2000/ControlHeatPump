@@ -614,7 +614,7 @@ void Nextion::StatusLine()
 	newcrc = _crc16(newcrc, HP.get_errcode());
 	newcrc = _crc16(newcrc, HP.get_modeHouse());
 	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
-	newcrc = calulate_crc16((uint8_t*)ss, m_strlen(ss), newcrc);
+	newcrc = calulate_crc16((uint8_t*)ss, strlen(ss), newcrc);
 	if(newcrc != StatusCrc || fUpdate > 1) { // поменялся
 		StatusCrc = newcrc;
 

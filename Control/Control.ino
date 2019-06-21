@@ -392,22 +392,22 @@ x_I2C_init_std_message:
   }
   HP.Schdlr.load();							// Загрузка настроек расписания
 
-  start_ADC(); // после инициализации HP
-  journal.jprintf("7. Start read ADC sensors\n");
-  //journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
-
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
 //  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
   journal.jprintf(" Web interface source: ");
-        switch (HP.get_SourceWeb())
-        {
-        case pMIN_WEB:   journal.jprintf("internal\n"); break;
-        case pSD_WEB:    journal.jprintf("SD card\n"); break;
-        case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
-        default:         journal.jprintf("unknown\n"); break;
-        }
+  switch (HP.get_SourceWeb())
+  {
+     case pMIN_WEB:   journal.jprintf("internal\n"); break;
+     case pSD_WEB:    journal.jprintf("SD card\n"); break;
+     case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
+     default:         journal.jprintf("unknown\n"); break;
+  }
+
+  journal.jprintf("7. Start read ADC sensors\n");
+  start_ADC(); // после инициализации HP
+  //journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
 
 // 10. Сетевые настройки
    journal.jprintf("8. Setting Network . . .\n");
@@ -510,8 +510,8 @@ HP.Task_vUpdate_run = false;
 // ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 // ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
   // 1 - поток
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+10,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX+10;
 #if W5200_THREAD >= 2 // - потока
   if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
   HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
