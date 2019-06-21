@@ -345,6 +345,8 @@ const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax
 #define SUPC_MR_BODDIS_ENABLE (0x0u << 13) /**< \brief (SUPC_MR) the core brownout detector is enabled. */
 #define SUPC_MR_BODDIS_DISABLE (0x1u << 13) /**< \brief (SUPC_MR) the core brownout detector is disabled. */
 
+#define STORE_DEBUG_INFO(s) GPBR->SYS_GPBR[1] = s
+
 // --------------------------------------------------------------------------------
 // ОШИБКИ едины для всего - сквозной список
 // --------------------------------------------------------------------------------

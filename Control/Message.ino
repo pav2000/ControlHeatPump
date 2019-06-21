@@ -621,9 +621,9 @@ boolean Message::setTestSMS()
 boolean Message::sendMessage()
 {
   uint16_t i;
-  strcpy(retTest, "Ничего не отправлено. Проверьте флаг разрешения отправки сообщений.");
 
   if (!waitSend) return true;                            // Отправлять нечего выходим
+  strcpy(retTest, "Ничего не отправлено. Проверьте флаг разрешения отправки сообщений.");
   if (HP.get_uptime() < cDELAY_START_MESSAGE) {
     _delay(200);  // Прошло мало времени после старта возможно инет еще не поднят
     return true;

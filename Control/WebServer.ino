@@ -107,6 +107,7 @@ void web_server(uint8_t thread)
 		{
 			while(Socket[thread].client.connected()) {
 				// Ставить вот сюда
+				STORE_DEBUG_INFO(10);
 				if(Socket[thread].client.available()) {
 					len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
 					if(len > W5200_MAX_LEN) {
@@ -225,6 +226,7 @@ void readFileSD(char *filename, uint8_t thread)
 	//  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
 	// Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
 	char *str;
+	STORE_DEBUG_INFO(11);
 	if((str = strchr(filename, '[')) != NULL) // скобка найдена надо обрабатывать
 	{
 		if(strncmp(str + 1, filename_subst_scheme, sizeof(filename_subst_scheme)-1) == 0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
@@ -247,6 +249,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики, stats_yyyy.dat, stats_yyyy.csv
+		STORE_DEBUG_INFO(12);
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -265,6 +268,7 @@ void readFileSD(char *filename, uint8_t thread)
 		return;
 	}
 	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью: только для бакапа - hist_yyyy.dat, hist_yyyy.csv, обрезанный по периоду - hist__yyyymmdd-yyyymmdd
+		STORE_DEBUG_INFO(13);
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -290,6 +294,7 @@ void readFileSD(char *filename, uint8_t thread)
 		return;
 	}
 	if(strncmp(filename, "TEST.", 5) == 0) {
+		STORE_DEBUG_INFO(14);
 		filename += 5;
 		if(strcmp(filename, "DAT") == 0) { // TEST.DAT
 			get_datTest(thread);
@@ -341,6 +346,7 @@ void readFileSD(char *filename, uint8_t thread)
 		break;
 	case pSD_WEB:
 		{ // Чтение с карты  файлов
+			STORE_DEBUG_INFO(15);
 			SPI_switchSD();
 			if(!webFile.open(filename, O_READ))
 			{
@@ -378,6 +384,7 @@ xFileFound:
 		break;
 	case pFLASH_WEB:
 		{
+			STORE_DEBUG_INFO(16);
 			SerialFlashFile ff = SerialFlash.open(filename);
 			if(ff) {
 	#ifdef LOG
@@ -436,6 +443,7 @@ void parserGET(uint8_t thread, int8_t )
 	urldecode(buf, buf, W5200_MAX_LEN);
 	while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
 	{
+		STORE_DEBUG_INFO(20);
 		strReturn += strlen(strReturn);
 		if((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
 		{
@@ -701,6 +709,7 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
+		STORE_DEBUG_INFO(21);
 
 		if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
@@ -748,6 +757,8 @@ void parserGET(uint8_t thread, int8_t )
 			HP.sendCommand(pSTOP);        // Послать команду на останов ТН
 			if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn) ;    continue;
 		}
+		STORE_DEBUG_INFO(22);
+
 		if (strcmp(str,"get_errcode")==0)  // Функция get_errcode
 		{
 			_itoa(HP.get_errcode(),strReturn); ADD_WEBDELIM(strReturn) ;    continue;
@@ -843,6 +854,7 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			ADD_WEBDELIM(strReturn); continue;
 		}
+		STORE_DEBUG_INFO(23);
 
 		if(strcmp(str,"TEST")==0)   // Команда TEST
 		{
@@ -873,6 +885,7 @@ void parserGET(uint8_t thread, int8_t )
 		}
 
 		if(strncmp(str, "RESET_", 6)==0) {
+			STORE_DEBUG_INFO(24);
 			str += 6;
 			if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
 				HP.Reset_TempErrors();
@@ -1018,6 +1031,7 @@ void parserGET(uint8_t thread, int8_t )
 
 		if (strcmp(str,"CONST")==0)   // Команда CONST  Информация очень большая по этому разбито на 2 запроса CONST CONST1
 		{
+			STORE_DEBUG_INFO(25);
 			strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
 			strcat(strReturn,"__DATE__ __TIME__|Дата и время сборки прошивки|");strcat(strReturn,__DATE__);strcat(strReturn," ");strcat(strReturn,__TIME__) ;strcat(strReturn,";");
 			strcat(strReturn,"CONFIG_NAME|Имя конфигурации|");strcat(strReturn,CONFIG_NAME);strcat(strReturn,";");
@@ -1189,6 +1203,7 @@ void parserGET(uint8_t thread, int8_t )
 
 		if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
 		{
+			STORE_DEBUG_INFO(26);
 			strcat(strReturn,"Источник загрузкки web интерфейса |");
 			switch (HP.get_SourceWeb())
 			{
@@ -1277,6 +1292,7 @@ void parserGET(uint8_t thread, int8_t )
 
 			ADD_WEBDELIM(strReturn) ;    continue;
 		} // sisInfo
+		STORE_DEBUG_INFO(27);
 
 		if (strcmp(str,"test_Mail")==0)  // Функция test_mail
 		{
@@ -1403,6 +1419,7 @@ void parserGET(uint8_t thread, int8_t )
 		// -----------------------------------------------------------------------------------------------------
 		// 2. Функции с параметром ------------------------------------------------------------------------------
 		// Ищем скобки ------------------------------------------------------------------------------------------
+		STORE_DEBUG_INFO(28);
 		if (((x=strpbrk(str,"("))!=0)&&((y=strpbrk(str,")"))!=0))  // Функция с одним параметром - найдена открывающиеся и закрывающиеся скобка
 		{
 			// Выделяем параметр функции на выходе число - номер параметра
@@ -1542,6 +1559,7 @@ void parserGET(uint8_t thread, int8_t )
 			// ----------------------------------------------------------------------------------------------------------
 			// 2.2 Функции с одним параметром
 			// ----------------------------------------------------------------------------------------------------------
+			STORE_DEBUG_INFO(29);
 
 			if (strcmp(str,"set_modeHP")==0)           // Функция set_modeHP - установить режим отопления ТН
 			{
@@ -1642,6 +1660,7 @@ void parserGET(uint8_t thread, int8_t )
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//  2.3 Функции с параметрами
 			// проверяем наличие функции set_  конструкция типа (TIN=23)
+			STORE_DEBUG_INFO(30);
 			if((z=strpbrk(x,"=")) != NULL)  // нашли знак "=" запрос на установку параметра
 			{
 				*z++ = 0; // '=' -> '\0'
@@ -1689,6 +1708,7 @@ void parserGET(uint8_t thread, int8_t )
 				continue;
 			}
 #endif
+			STORE_DEBUG_INFO(31);
 
 			// 3. Расписание --------------------------------------------------------
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
@@ -1717,6 +1737,7 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn); continue;
 			}
 #endif
+			STORE_DEBUG_INFO(32);
 
 			// 5.  Настройки профилей ---------------------------------------------------------
 			if(strcmp(str, "get_Profile") == 0)           // Функция получить настройки профиля
@@ -1757,10 +1778,12 @@ void parserGET(uint8_t thread, int8_t )
 			//8.  Настройки дата время --------------------------------------------------------
 			if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
 			{
+				STORE_DEBUG_INFO(33);
 				HP.get_datetime(x,strReturn);
 				ADD_WEBDELIM(strReturn) ; continue;
 			} else if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
 			{
+				STORE_DEBUG_INFO(34);
 				if (HP.set_datetime(x,z))  HP.get_datetime(x,strReturn);    // преобразование удачно
 				else  strcat(strReturn,"E18") ; // ошибка преобразования строки
 				ADD_WEBDELIM(strReturn) ; continue;
@@ -1788,11 +1811,13 @@ void parserGET(uint8_t thread, int8_t )
 			//12.  Частотный преобразователь -----------------------------------------------------------------
 			if (strcmp(str,"get_pFC")==0)           // Функция get_paramFC - получить значение параметра FC
 			{
+				STORE_DEBUG_INFO(35);
 				HP.dFC.get_paramFC(x,strReturn);
 				ADD_WEBDELIM(strReturn);
 				continue;
 			} else if (strcmp(str,"set_pFC")==0)           // Функция set_paramFC - установить значение паремтра FC
 			{
+				STORE_DEBUG_INFO(36);
 				if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 					if (HP.dFC.set_paramFC(x,pm)) HP.dFC.get_paramFC(x,strReturn);
 					else  strcat(strReturn,"E27");  // выход за диапазон значений
@@ -1835,6 +1860,7 @@ void parserGET(uint8_t thread, int8_t )
 				} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
+			STORE_DEBUG_INFO(37);
 
 
 			// str - полное имя запроса до (), x - содержит строку что между (), z - после =
@@ -1842,6 +1868,7 @@ void parserGET(uint8_t thread, int8_t )
 			// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
 			// N - номер устройства, D - тип данных, X - адрес, Y - новое значение
 			if(strncmp(str+1, "et_modbus_", 10) == 0) {
+				STORE_DEBUG_INFO(38);
 				if((y = strchr(x, ':'))) {
 					*y++ = '\0';
 					uint8_t id = atoi(x);
@@ -1971,6 +1998,7 @@ void parserGET(uint8_t thread, int8_t )
 #endif //  #ifdef SENSOR_IP
 
 			//////////////////////////////////////////// массивы датчиков ////////////////////////////////////////////////
+			STORE_DEBUG_INFO(40);
 
 			if(pm==ATOF_ERROR) { strcat(strReturn,"E04");ADD_WEBDELIM(strReturn);continue; }// Ошибка преобразования для чисел - завершить запрос с ошибкой
 
@@ -2139,6 +2167,7 @@ void parserGET(uint8_t thread, int8_t )
 				// 2.  Датчики аналоговые, давления смещение param 30, ТОЧНОСТЬ СОТЫЕ дипазон 6
 				if (strstr(str,"Press"))          // Проверка для запросов содержащих Press
 				{
+					STORE_DEBUG_INFO(41);
 					p -= 100;                             // Убрать смещение
 					if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2240,6 +2269,7 @@ void parserGET(uint8_t thread, int8_t )
 				//3.  Датчики сухой контакт смещение param 20
 				if (strstr(str,"Input"))          // Проверка для запросов содержащих Input
 				{
+					STORE_DEBUG_INFO(42);
 					p -= 200;
 					if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2309,6 +2339,7 @@ void parserGET(uint8_t thread, int8_t )
 				// 4 Частотные датчики ДАТЧИКИ ПОТОКА
 				if (strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
 				{
+					STORE_DEBUG_INFO(43);
 					p -= 300;
 					if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2398,6 +2429,7 @@ void parserGET(uint8_t thread, int8_t )
 				//5.  РЕЛЕ смещение param 36 диапазон 14
 				if (strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
 				{
+					STORE_DEBUG_INFO(44);
 					p -= 400;
 					if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2446,6 +2478,7 @@ void parserGET(uint8_t thread, int8_t )
 		strcat(strReturn,"E01");   // Ошибка нет такой команды
 		ADD_WEBDELIM(strReturn) ;
 	}
+	STORE_DEBUG_INFO(45);
 	ADD_WEBDELIM(strReturn) ; // двойной знак закрытие посылки
 }
 
@@ -2460,6 +2493,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 	boolean user, admin;
 	uint8_t i;
 	uint16_t len;
+	STORE_DEBUG_INFO(50);
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
 		if(!(pass = strstr((char*) Socket[thread].inBuf, header_Authorization_))) return UNAUTHORIZED; // строка авторизации не найдена
@@ -2541,6 +2575,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	uint8_t  i=0;
 	int32_t len, full_len=0, lenFile;
 	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
+	STORE_DEBUG_INFO(51);
 
 	// Поиски во входном буфере: данных, имени файла и длинны файла
 	ptr = (byte*) strstr((char*)Socket[thread].inPtr,emptyStr)+strlen(emptyStr);                // поиск начала даных
@@ -2566,6 +2601,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 	// В зависимости от имени файла (Title)
 	if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
+		STORE_DEBUG_INFO(52);
 		// Определение начала данных (поиск HEADER_BIN)
 		if((strstr((char*) ptr,HEADER_BIN)) == NULL) {  // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s\n",nameFile);
@@ -2600,6 +2636,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 	// загрузка вебморды
 	else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
+		STORE_DEBUG_INFO(53);
 		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
 
 			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
@@ -2654,6 +2691,7 @@ uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* 
 	uint16_t len, numPoint = 0;
 	uint32_t loadLen; // Обработанная (загруженная) длина
 
+	STORE_DEBUG_INFO(54);
 	journal.jprintf("%s - ", nameFile);
 	loadLen = SerialFlash.free_size();
 	if(lenFile > loadLen) {

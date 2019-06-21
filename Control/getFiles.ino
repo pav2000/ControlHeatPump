@@ -855,6 +855,7 @@ void get_txtJournal(uint8_t thread)
 {
    get_Header(thread,(char*)"journal.txt");
    sendPrintfRTOS(thread, "  Системный журнал (размер %d из %d байт)\r\n", journal.available(),JOURNAL_LEN);
+   STORE_DEBUG_INFO(17);
    journal.send_Data(thread);
 }
 
