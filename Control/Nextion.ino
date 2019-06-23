@@ -35,15 +35,18 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_PAGE_BOILER	0x06
 #define NXTID_PAGE_INFO		0x07
 #define NXTID_PAGE_PROFILE	0x08
-
-#define NXTID_ONOFF			0x03
-#define NXTID_BOILER_URGENT	0x14
+// Page Main
+#define NXTID_ONOFF			0x02
+#define NXTID_BOILER_URGENT	0x13
+// Page Heat
 #define NXTID_TEMP_PLUS		0x17
 #define NXTID_TEMP_MINUS	0x18
 #define NXTID_NEXT_MODE		0x1A
+// Page Boiler
 #define NXTID_BOILER_ONOFF	0x14
 #define NXTID_BOILER_PLUS	0x0D
 #define NXTID_BOILER_MINUS	0x0E
+// Page Profile
 #define NXTID_SCHEDULER_OFF	0x80
 #define NXTID_SCHEDULER_ON	0x81
 
@@ -374,23 +377,40 @@ void Nextion::Update()
 		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
 		setComponentText("t5", ntemp);
 		HP.getTargetTempStr(ntemp);
-		uint8_t b_on_off = HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP;
 		uint16_t newcrc = calulate_crc16((uint8_t*)ntemp, 4);
-		newcrc = _crc16(newcrc, b_on_off | (HP.HeatBoilerUrgently << 1)
+		if(newcrc != Page1crc || fUpdate == 2) {
+			Page1crc = newcrc;
+			strcat(ntemp, _xB0);
+			setComponentText("t1", ntemp);
+		}
+		uint8_t flags = (HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) | (HP.HeatBoilerUrgently << 1)
 #ifdef USE_SUN_COLLECTOR
 					| (HP.dRelay[RSUN].get_Relay() << 2)
 #endif
-				);
-		if(newcrc != Page1Crc || fUpdate == 2) {
-			Page1Crc = newcrc;
-			strcat(ntemp, _xB0);
-			setComponentText("t1", ntemp);
-			if(b_on_off) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
-			else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
-			if(HP.HeatBoilerUrgently) sendCommand("vis g,1"); else sendCommand("vis g,0");
-	#ifdef USE_SUN_COLLECTOR
-			if(HP.dRelay[RSUN].get_Relay()) sendCommand("vis s,1"); else sendCommand("vis s,0");
-	#endif
+#ifdef RBOILER
+					| (HP.dRelay[RBOILER].get_Relay() << 3)
+#endif
+					;
+		if(fUpdate == 2) Page1flags = ~flags;
+		if(flags != Page1flags) {
+			if((flags ^ Page1flags) & (1<<0)) {
+				if(flags & (1<<0)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
+				else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
+			}
+			if((flags ^ Page1flags) & (1<<1)) {
+				if(flags & (1<<1)) sendCommand("vis g,1"); else sendCommand("vis g,0");
+			}
+#ifdef USE_SUN_COLLECTOR
+			if((flags ^ Page1flags) & (1<<2)) {
+				if(flags & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
+			}
+#endif
+#ifdef RBOILER
+			if((flags ^ Page1flags) & (1<<3)) {
+				if(flags & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
+			}
+#endif
+			Page1flags = flags;
 		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{
