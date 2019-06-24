@@ -893,29 +893,32 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				journal.printf("skip:%d\n", pidw.max);
 #endif
 				pidw.max--;
-			} else {
+			} else {	// Основной перегрев
 				if(diff < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.trend[trOH_default] >= _data.trend_threshold) {
 						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
-						pidw.max = _data.trend_threshold;
+						pidw.max = 1;
 						pidw.trend[trOH_default] = 0;
 						pidw.trend[trOH_TCOMP] = 0;
-					} else if(pidw.trend[trOH_default] > 0) {
-						newEEV = 1;
-						pidw.max = 1;
-						//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
-					} else goto xSecond;
+					} else {
+						if(pidw.trend[trOH_default] > 0) {
+							newEEV = 1;
+							pidw.max = 1;
+							//if(pidw.trend[trOH_default] > 0) pidw.trend[trOH_default] = 0;
+						}
+						goto xSecond;
+					}
 				} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 					if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
 						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
-						pidw.max = _data.trend_threshold;
+						pidw.max = 1;
 						pidw.trend[trOH_default] = 0;
 						pidw.trend[trOH_TCOMP] = 0;
 					} else if(pidw.trend[trOH_default] > 0) {
 						newEEV = -1;
 						pidw.max = 1;
 					} else goto xSecond;
-				} else {
+				} else {	// Перегрев 2
 xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 						if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) {
 							newEEV = 1;
@@ -924,14 +927,13 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 						if(OverheatTCOMP <= 70) { // слишком низко
 							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) - 1;
-							pidw.max = _data.trend_threshold;
+							pidw.max = 1;
 							pidw.trend[trOH_default] = 0;
 							pidw.trend[trOH_TCOMP] = 0;
 						} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) {
-						    if(pidw.trend[trOH_TCOMP] < _data.trend_threshold) {
-								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2;
-								if(newEEV == 0) newEEV = -1;
-								pidw.max = _data.trend_threshold;
+						    if(pidw.trend[trOH_TCOMP] < 0) {
+								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / 2 - 1;
+								pidw.max = 1;
 								pidw.trend[trOH_default] = 0;
 								pidw.trend[trOH_TCOMP] = 0;
 							}
