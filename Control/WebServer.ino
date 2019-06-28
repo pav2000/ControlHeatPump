@@ -403,7 +403,9 @@ xFileFound:
 				//webFile.close();
 			} else {
 				sendConstRTOS(thread, HEADER_FILE_NOT_FOUND);
-				journal.jprintf((char*) "$WARNING - File not found: %s\n", filename);
+				uint8_t ip[4];
+				W5100.readSnDIPR(Socket[thread].sock, ip);
+				journal.jprintf((char*) "WEB GET(%d.%d.%d.%d) - Not found: %s\n", ip[0], ip[1], ip[2], ip[3], filename);
 				return;
 			}
 		}
@@ -2669,7 +2671,9 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 					return pLOAD_ERR;
 				}
 			} else { // семафор БЫЛ не захвачен, ошибка, отдать обратно
-				journal.jprintf("Unable to upload file\n", (char*) __FUNCTION__);
+				uint8_t ip[4];
+				W5100.readSnDIPR(Socket[thread].sock, ip);
+				journal.jprintf("Unable to upload file %s (%d.%d.%d.%d)\n", nameFile, ip[0], ip[1], ip[2], ip[3]);
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_ERR;
 			}
