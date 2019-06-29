@@ -1675,6 +1675,7 @@ if(b && (get_modWork() & pBOILER)){
    			offBoiler = 0;
    		} else {
    		   	dRelay[RPUMPO].set_ON();               	// насос отопления
+   		   	onBoiler = false;
    		}
    	} else {
    		dRelay[RPUMPBH].set_OFF();					// насос бойлера
@@ -2650,8 +2651,10 @@ MODE_HP HeatPump::get_Work()
 			ret = pHEAT;
 			break;
 		case pCOMP_NONE:
-			ret = pHEAT;
-			if(!onBoiler) ret += pCONTINUE;
+			if(is_compressor_on()) {
+				ret = pHEAT;
+				if(!onBoiler) ret += pCONTINUE;
+			}
 			break;
 		}
 		break;
@@ -2664,8 +2667,10 @@ MODE_HP HeatPump::get_Work()
 			ret = pCOOL;
 			break;
 		case pCOMP_NONE:
-			ret = pCOOL;
-			if(!onBoiler) ret += pCONTINUE;
+			if(is_compressor_on()) {
+				ret = pCOOL;
+				if(!onBoiler) ret += pCONTINUE;
+			}
 			break;
 		}
 		break;
