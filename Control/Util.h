@@ -24,7 +24,7 @@
 #define sign(a) (a > 0 ? 1 : a < 0 ? -1 : 0)
 #define signm(a,t) ((a > 0 ? 1 : a < 0 ? -1 : 0) * (abs(a) > t ? 2 : 1))
 
-uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc = 0xFFFF);
+uint16_t calc_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc = 0xFFFF);
 void int_to_dec_str(int32_t value, int32_t div, char **ret, uint8_t maxfract);
 uint8_t calc_bits_in_mask(uint32_t mask);
 int32_t round_div_int32(int32_t value, int16_t div);

@@ -730,7 +730,7 @@ const uint16_t Crc16Table[256] = {
 };
 
 // defaults crc = 0xFFFF
-uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
+uint16_t calc_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
 {
     while (len--)
         crc = (crc >> 8) ^ Crc16Table[(crc & 0xFF) ^ *pcBlock++];
