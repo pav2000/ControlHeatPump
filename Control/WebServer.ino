@@ -1221,33 +1221,31 @@ void parserGET(uint8_t thread, int8_t )
 #else
 			m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
 #endif
-			m_snprintf(strReturn+strlen(strReturn),256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
-			strcat(strReturn,"Уникальный ID чипа SAM3X8E|");getIDchip(strReturn);strcat(strReturn,";");
+			m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
+			//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
+			//getIDchip(strReturn); strcat(strReturn,";");
 			//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
 
 #ifdef DRV_EEV_L9333          // Контроль за работой драйвера ЭРВ
 			strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
 			if (digitalReadDirect(PIN_STEP_DIAG))  strcat(strReturn,"Error L9333;"); else strcat(strReturn,"Normal;");
 #endif
-			strcat(strReturn,"Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|");
-			strcat(strReturn,uint16ToHex(lastErrorFreeRtosCode));strcat(strReturn,";");
+			m_snprintf(strReturn+strlen(strReturn), 256, "Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|0x%04X;", lastErrorFreeRtosCode);
 
-			strcat(strReturn,"Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|");  // Регистры состояния контроллера питания
-			strcat(strReturn,uint32ToHex(SUPC->SUPC_SMMR));strcat(strReturn," ");
-			strcat(strReturn,uint32ToHex(SUPC->SUPC_MR));strcat(strReturn," ");
 			startSupcStatusReg |= SUPC->SUPC_SR;                                  // Копим изменения
-			strcat(strReturn,uint32ToHex(startSupcStatusReg));
-			if ((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT)  strcat(strReturn," bad VDDIN!");
+			m_snprintf(strReturn += strlen(strReturn), 256, "Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|0x%08X %08X %08X", SUPC->SUPC_SMMR, SUPC->SUPC_MR, startSupcStatusReg);  // Регистры состояния контроллера питания
+			if((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT) strcat(strReturn," bad VDDIN!");
 			strcat(strReturn,";");
 
 			// Вывод строки статуса
-			m_snprintf(strReturn + strlen(strReturn), 64, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
-			for(i = 0; i < RNUMBER; i++) m_snprintf(strReturn + strlen(strReturn), 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
+			STORE_DEBUG_INFO(46);
+			strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
+			for(i = 0; i < RNUMBER; i++) strReturn += m_snprintf(strReturn, 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
 			//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
 			//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
 			strcat(strReturn,";");
-			strReturn += strlen(strReturn);
 
+			STORE_DEBUG_INFO(47);
 			strcat(strReturn,"<b> Времена</b>|;");
 			strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
 			strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
@@ -1265,9 +1263,9 @@ void parserGET(uint8_t thread, int8_t )
 #ifdef MQTT
 			strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
 #endif
-			strcat(strReturn,"Счетчик неудачных Ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Счетчик неудачных ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
 #ifdef USE_ELECTROMETER_SDM
-			strcat(strReturn,"Счетчик числа ошибок чтения счетчика SDM120 (RS485)|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
+			strcat(strReturn,"Счетчик числа ошибок чтения электро-счетчика|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
 #endif
 			if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
 			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
@@ -1289,7 +1287,9 @@ void parserGET(uint8_t thread, int8_t )
 			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
 #endif
 
+			STORE_DEBUG_INFO(48);
 			strcat(strReturn,"<b> Статистика за день</b>|;");
+			strReturn += strlen(strReturn);
 			Stats.StatsWebTable(strReturn);
 
 			ADD_WEBDELIM(strReturn) ;    continue;
