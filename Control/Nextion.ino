@@ -377,7 +377,7 @@ void Nextion::Update()
 		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
 		setComponentText("t5", ntemp);
 		HP.getTargetTempStr(ntemp);
-		uint16_t newcrc = calulate_crc16((uint8_t*)ntemp, 4);
+		uint16_t newcrc = calc_crc16((uint8_t*)ntemp, 4);
 		if(newcrc != Page1crc || fUpdate == 2) {
 			Page1crc = newcrc;
 			strcat(ntemp, _xB0);
@@ -630,11 +630,11 @@ void Nextion::StatusLine()
 	// Вычисление статуса
 	char *tm = NowTimeToStr1();
 	char *ss = HP.StateToStr();
-	uint16_t newcrc = calulate_crc16((uint8_t*)tm, 5);
+	uint16_t newcrc = calc_crc16((uint8_t*)tm, 5);
 	newcrc = _crc16(newcrc, HP.get_errcode());
 	newcrc = _crc16(newcrc, HP.get_modeHouse());
 	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
-	newcrc = calulate_crc16((uint8_t*)ss, strlen(ss), newcrc);
+	newcrc = calc_crc16((uint8_t*)ss, strlen(ss), newcrc);
 	if(newcrc != StatusCrc || fUpdate > 1) { // поменялся
 		StatusCrc = newcrc;
 

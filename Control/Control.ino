@@ -205,7 +205,8 @@ void setup() {
   #endif
   journal.jprintf("Firmware version: %s\n",VERSION);
   showID();                                                                  // информация о чипе
-  journal.jprintf("Chip ID SAM3X8E: %s\n",getIDchip((char*)Socket[0].inBuf));// информация об серийном номере чипа
+  getIDchip((char*)Socket[0].inBuf);
+  journal.jprintf("Chip ID SAM3X8E: %s\n", Socket[0].inBuf);// информация об серийном номере чипа
   if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
   lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
   journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());

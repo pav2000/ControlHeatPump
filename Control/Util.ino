@@ -407,23 +407,37 @@ journal.jprintf("Chip ID EXID: %d\n",test);
 
 //--------------------------------------------------------------
 // Определение уникального номера чипа пишет в строку
+enum {
+	FLASH_RC_OK = 0,        //!< Operation OK
+	FLASH_RC_YES = 1,       //!< Yes
+	FLASH_RC_NO = 0,        //!< No
+	FLASH_RC_ERROR = 0x10,  //!< General error
+	FLASH_RC_INVALID,       //!< Invalid argument input
+	FLASH_RC_NOT_SUPPORT = 0xFFFFFFFF    //!< Operation is not supported
+};
 #define EFC_ACCESS_MODE_128       0
 #define FLASH_ACCESS_MODE_128    EFC_ACCESS_MODE_128
 #define _EFC0_                   (0x400E0A00U)   // Возможно переопределение имен
 #define EFC                      ((Efc*)EFC0)
-char* getIDchip(char *outstr) 
-  {
-    char buf[10];  
-    uint32_t unique_id[4]; 
-    efc_init(EFC,FLASH_ACCESS_MODE_128,4);
-    if (0 != efc_perform_read_sequence(EFC, EFC_FCMD_STUI, EFC_FCMD_SPUI, unique_id, 4)) { return  strcat(outstr,"FLASH_RC_ERROR");  }
-    for (uint8_t i=0; i<4;i++) 
-     {
-      itoa(unique_id[i],buf, 16);
-      strcat(outstr,buf);
-      if (i<3) strcat(outstr,"-");
-     }
-return outstr;
+void getIDchip(char *outstr)
+{
+	uint32_t unique_id[4];
+
+	portDISABLE_INTERRUPTS();
+	efc_init(EFC, FLASH_ACCESS_MODE_128, 4);
+	if(efc_perform_read_sequence(EFC, EFC_FCMD_STUI, EFC_FCMD_SPUI, unique_id, 4) != FLASH_RC_OK) {
+		unique_id[0] = 0;
+	}
+	portENABLE_INTERRUPTS();
+	if(unique_id[0] == 0) {
+		strcat(outstr, "FLASH_RC_ERROR");
+	} else {
+		for(uint8_t i = 0; i < 4; i++) {
+			outstr += strlen(outstr);
+			itoa(unique_id[i], outstr, 16);
+			if(i < 3) strcat(outstr, "-");
+		}
+	}
 }
 
 // Преобразование строкового расписания в бинарный массив ----------------------------------------------------------------
@@ -730,7 +744,7 @@ const uint16_t Crc16Table[256] = {
 };
 
 // defaults crc = 0xFFFF
-uint16_t calulate_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
+uint16_t calc_crc16(unsigned char * pcBlock, unsigned short len, uint16_t crc)
 {
     while (len--)
         crc = (crc >> 8) ^ Crc16Table[(crc & 0xFF) ^ *pcBlock++];
