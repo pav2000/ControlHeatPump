@@ -575,8 +575,7 @@ void HeatPump::resetSettingHP()
 
 	flags = 0;
 	NO_Power = 0;
-	Status.modWork = pOFF;
-	;                         // Что сейчас делает ТН (7 стадий)
+	Status.modWork = pOFF;                          // Что сейчас делает ТН (7 стадий)
 	Status.State = pOFF_HP;                         // Сотояние ТН - выключен
 	Status.ret = pNone;                             // точка выхода алгоритма
 	motoHour.magic = 0xaa;                          // волшебное число
@@ -1675,6 +1674,7 @@ if(b && (get_modWork() & pBOILER)){
    			offBoiler = 0;
    		} else {
    		   	dRelay[RPUMPO].set_ON();               	// насос отопления
+   		   	onBoiler = false;
    		}
    	} else {
    		dRelay[RPUMPBH].set_OFF();					// насос бойлера
@@ -2650,8 +2650,10 @@ MODE_HP HeatPump::get_Work()
 			ret = pHEAT;
 			break;
 		case pCOMP_NONE:
-			ret = pHEAT;
-			if(!onBoiler) ret += pCONTINUE;
+			if(is_compressor_on()) {
+				ret = pHEAT;
+				if(!onBoiler) ret += pCONTINUE;
+			}
 			break;
 		}
 		break;
@@ -2664,8 +2666,10 @@ MODE_HP HeatPump::get_Work()
 			ret = pCOOL;
 			break;
 		case pCOMP_NONE:
-			ret = pCOOL;
-			if(!onBoiler) ret += pCONTINUE;
+			if(is_compressor_on()) {
+				ret = pCOOL;
+				if(!onBoiler) ret += pCONTINUE;
+			}
 			break;
 		}
 		break;
@@ -3235,16 +3239,16 @@ char *HeatPump::StateToStr()
 	case pSTOPING_HP: return (char*)"Останов...";break;         // 2 Останавливается
 	case pWORK_HP:                                              // 3 Работает
 		if(!is_compressor_on()) {
-			if((get_modWork() & pHEAT)) return (char*)"Ожид. Нагр.";         // Включить отопление
-			if((get_modWork() & pCOOL)) return (char*)"Ожид. Охл.";          // Включить охлаждение
-			if((get_modWork() & pBOILER)) return (char*)"Ожид. ГВС";         // Включить бойлер
+			if(get_modWork() == pHEAT) return (char*)"Ожид. Нагр.";         // Включить отопление
+			if(get_modWork() == pCOOL) return (char*)"Ожид. Охл.";          // Включить охлаждение
+			if(get_modWork() == pBOILER) return (char*)"Ожид. ГВС";         // Включить бойлер
 			return (char*)strRusPause;
 		} else {
 			if(get_modWork() == pOFF) return (char*)strRusPause;
-			if((get_modWork() & pHEAT))    return (char*)"Отопление";
-			if((get_modWork() & pCOOL))    return (char*)"Охлаждение";
-			if((get_modWork() & pBOILER))  return (char*)"ГВС";
-			if((get_modWork() & pDEFROST)) return (char*)"Разморозка";
+			if(get_modWork() & pHEAT)    return (char*)"Отопление";
+			if(get_modWork() & pCOOL)    return (char*)"Охлаждение";
+			if(get_modWork() & pBOILER)  return (char*)"ГВС";
+			if(get_modWork() & pDEFROST) return (char*)"Разморозка";
 			return (char*)"...";
 		}
 	case pWAIT_HP:    return (char*)"Ожидание";         	// 4 Ожидание
@@ -3263,16 +3267,16 @@ char *HeatPump::StateToStrEN()
 	case pSTOPING_HP: return (char*)"Stop...";    break;         // 2 Останавливается
 	case pWORK_HP:                                               // 3 Работает
 		if(!is_compressor_on()) {
-			if((get_modWork() & pHEAT)) return (char*)"Wait Heat";         // Включить отопление
-			if((get_modWork() & pCOOL)) return (char*)"Wait Cool";          // Включить охлаждение
-			if((get_modWork() & pBOILER)) return (char*)"Wait Boiler";         // Включить бойлер
+			if(get_modWork() == pHEAT)   return (char*)"Wait Heat";         // Включить отопление
+			if(get_modWork() == pCOOL)   return (char*)"Wait Cool";         // Включить охлаждение
+			if(get_modWork() == pBOILER) return (char*)"Wait Boiler";       // Включить бойлер
 			return (char*)strRusPause;
 		} else {
-			if(get_modWork() == pOFF) return (char*)strRusPause;
-			if((get_modWork() & pHEAT))    return (char*)"Heating";
-			if((get_modWork() & pCOOL))    return (char*)"Cooling";
-			if((get_modWork() & pBOILER))  return (char*)"Boiler";
-			if((get_modWork() & pDEFROST)) return (char*)"Defrost";
+			if(get_modWork() == pOFF)    return (char*)strRusPause;
+			if(get_modWork() & pHEAT)    return (char*)"Heating";
+			if(get_modWork() & pCOOL)    return (char*)"Cooling";
+			if(get_modWork() & pBOILER)  return (char*)"Boiler";
+			if(get_modWork() & pDEFROST) return (char*)"Defrost";
 			return (char*)"...";
 		}
 	case pWAIT_HP:    return (char*)"Wait";  break;         // 4 Ожидание

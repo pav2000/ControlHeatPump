@@ -920,14 +920,14 @@ int8_t devEEV::Update(void) //boolean fHeating)
 					} else goto xSecond;
 				} else {	// Перегрев 2
 xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
-						if(pidw.trend[trOH_TCOMP] > _data.trend_threshold) {
+						if(pidw.trend[trOH_TCOMP] >= _data.trend_threshold) {
 							newEEV = 1;
 							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 						if(OverheatTCOMP <= 70) { // слишком низко
 							newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) - 1;
-							pidw.max = 1;
+							pidw.max = 2;
 							pidw.trend[trOH_default] = 0;
 							pidw.trend[trOH_TCOMP] = 0;
 						} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta * 2) {
@@ -943,7 +943,6 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 						}
 					} else if(fast) {
 						newEEV = fast;
-						pidw.trend[trOH_TCOMP] = 0;
 					}
 				}
 #ifdef DEBUG_PID
