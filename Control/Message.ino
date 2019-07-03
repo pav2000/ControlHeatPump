@@ -321,17 +321,14 @@ boolean Message::set_messageSetting(char *var, char *c)
           if (strcmp(var, mess_MESS_TIN) == 0) {
             x = my_atof(c);
             if (x == ATOF_ERROR) return   false;
-            else if ((x < 0) || (x > 30)) return   false;
             else messageSetting.mTIN = rd(x, 100); return true;
           } else if (strcmp(var, mess_MESS_TBOILER) == 0) {
             x = my_atof(c);
             if (x == ATOF_ERROR) return   false;
-            else if ((x < 0) || (x > 70)) return   false;
             else messageSetting.mTBOILER = rd(x, 100); return true;
           } else if (strcmp(var, mess_MESS_TCOMP) == 0) {
             x = my_atof(c);
             if (x == ATOF_ERROR) return   false;
-            else if ((x < -5) || (x > 80)) return   false;
             else messageSetting.mTCOMP = rd(x, 100); return true;
           } else if (strcmp(var, mess_MAIL_RET) == 0) {
             return true;
