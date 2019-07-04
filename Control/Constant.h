@@ -345,7 +345,14 @@ const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax
 #define SUPC_MR_BODDIS_ENABLE (0x0u << 13) /**< \brief (SUPC_MR) the core brownout detector is enabled. */
 #define SUPC_MR_BODDIS_DISABLE (0x1u << 13) /**< \brief (SUPC_MR) the core brownout detector is disabled. */
 
-#define STORE_DEBUG_INFO(s) GPBR->SYS_GPBR[4] = s
+// GPBR  - 8 32x битных регистров не обнуляющиеся при сбросе, Энергозависимы!
+// адереса - 0x90-0xDC General Purpose Backup Register GPBR   
+// The System Controller embeds Eight general-purpose backup registers.
+// Карта использования GPBR в НК
+// GPBR->SYS_GPBR[0] текущую задача (сдвиг на 8 влево) +  номера ошибки RTOS 
+// GPBR->SYS_GPBR[1] причина сброса контроллера
+// GPBR->SYS_GPBR[4] последня точка отладки перед сбросом максимальнаое значение точки отладки сейчас 54 (обновляем!)
+#define STORE_DEBUG_INFO(s) GPBR->SYS_GPBR[4] = s  // Сохранение номера точки отладки в энергозависимой памяти sam3
 
 // --------------------------------------------------------------------------------
 // ОШИБКИ едины для всего - сквозной список
