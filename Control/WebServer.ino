@@ -2637,7 +2637,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	} //if (strcmp(nameFile,"*SETTINGS*")==0)
 
 	// загрузка вебморды
-	else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
+	  else if(SerialFlash.ready()) { // если флеш диск присутвует на плате (морда может отсутствовать)
 		STORE_DEBUG_INFO(53);
 		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
 
@@ -2650,7 +2650,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
 				if(SemaphoreTake(xWebThreadSemaphore, (3*W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) { // получить семафор веб морды
 				journal.jprintf("%s: Socket %d %s\n",(char*) __FUNCTION__, Socket[thread].sock, MutexWebThreadBuzy);	
-				return pLOAD_ERR;} // если не удается то ошибка и выход
+				return pLOAD_ERR;} // если не удается захватить мютекс, то ошибка и выход
 				journal.jprintf(".");
 			}
 			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
