@@ -2641,12 +2641,16 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		STORE_DEBUG_INFO(53);
 		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
 
-			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("Upload already started\n");SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
+			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Upload already started\n",(char*) __FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
 			numFilesWeb=0;
 			journal.jprintf(pP_TIME,"Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while (SerialFlash.ready() == false) {
+		    	xSemaphoreGive (xWebThreadSemaphore); // отдать семафор вебморды, что бы обработались другие потоки веб морды	
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
+				if(SemaphoreTake(xWebThreadSemaphore, (3*W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) { // получить семафор веб морды
+				journal.jprintf("%s: Socket %d %s\n",(char*) __FUNCTION__, Socket[thread].sock, MutexWebThreadBuzy);	
+				return pLOAD_ERR;} // если не удается то ошибка и выход
 				journal.jprintf(".");
 			}
 			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
@@ -2657,7 +2661,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_OK;
 			} else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-				journal.jprintf("Unable to finish upload\n", (char*) __FUNCTION__);
+				journal.jprintf("%s: Unable to finish upload\n", (char*) __FUNCTION__);
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_ERR;
 			}
@@ -2679,7 +2683,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			}
 		}
 	}
-	else { journal.jprintf("Upload: No SPI flash\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
+	else { journal.jprintf("%s: Upload: No SPI flash\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
 	return pPOST_ERR; // До сюда добегать не должны
 }
 // Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка

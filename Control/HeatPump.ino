@@ -2130,7 +2130,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		//    if (T<(TRG-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
 		// ПИД ----------------------------------
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
+#if defined(SUPERBOILER) && defined(PCON)
+		else if ((dFC.isfOnOff())&&(PressToTemp(PCON)>Prof.Boiler.tempIn-dFC.get_dtTempBoiler())) // Ограничение, по температуре нагнетания для SUPERBOILER.
+#else
 		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
+#endif
 		{
 #ifdef DEBUG_MODWORK
 			journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,FEED/100.0);

@@ -61,17 +61,17 @@
 		</tr>
 		<tr>
 			<td>Температура для управления дополнительным ТЭНом °C [-30..30]</td>
-			<td nowrap><input id="get_ohp-temp_rheat" type="number" min="-30" max="30" step="0.1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(TEMP_RHEAT)');">
+			<td nowrap><input id="get_ohp-temp_rheat" type="number" min="-30" max="30" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(TEMP_RHEAT)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Работа насосов отопления, когда ТН в паузе (сек.) [0..65535] <sup>6</sup></td>
-			<td nowrap><input id="get_ohp-pump_work" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_WORK)');">
+			<td nowrap><input id="get_ohp-pump_work" type="number" min="0" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_WORK)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Период останова насосов отопления в паузе ТН (сек.) [0..65535] <sup>7</sup></td>
-			<td nowrap><input id="get_ohp-pump_pause" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
+			<td nowrap><input id="get_ohp-pump_pause" type="number" min="0" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(PUMP_PAUSE)');">
 			</td>
 		</tr>
 		<tr>
@@ -83,19 +83,19 @@
 		</tr>	
 		<tr>
 			<td>Температура воздуха (TSUN) начала регенерации геоконтура с помощью СК (+Δ) °C</td>
-			<td nowrap><input type="number" id="get_ohp-scgt"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGT)');"></td>
+			<td nowrap><input type="number" id="get_ohp-scgt" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGT)');"></td>
 		</tr>	
 		<tr>
 			<td>Температура (TSUNOUTG) завершения регенерации геоконтура с помощью СК °C</td>
-			<td nowrap><input type="number" id="get_ohp-scgo"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGO)');"></td>
+			<td nowrap><input type="number" id="get_ohp-scgo" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(SCGO)');"></td>
 		</tr>	
 		<tr>
 			<td>Разница (Δ) температур: TSUN и на выходе в геоконтур для включения СК °C</td>
-			<td nowrap><input type="number" id="get_ohp-std"> <input type="submit" value=">" onclick="setParam('get_oHP(STD)');"></td>
+			<td nowrap><input type="number" id="get_ohp-std" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(STD)');"></td>
 		</tr>	
 		<tr>
 			<td>Разница (Δ) температур на выходе из СК и на выходе в геоконтур для выключения СК °C</td>
-			<td nowrap><input type="number" id="get_ohp-sgd"> <input type="submit" value=">" onclick="setParam('get_oHP(SGD)');"></td>
+			<td nowrap><input type="number" id="get_ohp-sgd" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(SGD)');"></td>
 		</tr>	
 		<tr>
 			<td><b>Времена и задержки</b></td><td></td>
