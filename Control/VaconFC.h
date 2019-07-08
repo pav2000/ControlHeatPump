@@ -26,7 +26,7 @@
 
 #define FC_VACON_NAME "Vacon"
 #ifdef FC_VACON
-#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
+#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи по Modbus
 #endif
 
 #define RECOVER_OIL_PERIOD_MUL		2  // Множитель периода

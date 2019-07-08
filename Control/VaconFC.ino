@@ -30,7 +30,7 @@ int8_t devVaconFC::initFC()
 	power = 0; // Тееущая мощность частотника
 	current = 0; // Текуший ток частотника
 	startCompressor = 0; // время старта компрессора
-	state = ERR_LINK_FC; // Состояние - нет связи с частотником
+	state = ERR_LINK_FC; // Состояние - нет связи с частотником по Modbus
 
 	testMode = NORMAL; // Значение режима тестирования
 	name = (char*) FC_VACON_NAME; // Имя
@@ -69,6 +69,7 @@ int8_t devVaconFC::initFC()
 	_data.level0 = 0;                                 // Отсчеты ЦАП соответсвующие 0   мощности
 	_data.level100 = 255;                             // Отсчеты ЦАП соответсвующие 100 мощности
 	SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
+	note = (char*)"OK";
 #endif
 
 	if(get_present()) journal.jprintf("Invertor %s: present config\n", name);
@@ -123,9 +124,10 @@ int8_t devVaconFC::initFC()
 	return err;
 }
 
-// Возвращает состояние, или ERR_LINK_FC, если нет связи
+// Возвращает состояние, или ERR_LINK_FC, если нет связи по Modbus
 int16_t devVaconFC::CheckLinkStatus(void)
 {
+#ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     if(testMode == NORMAL || testMode == HARD_TEST){
 		for (uint8_t i = 0; i < FC_NUM_READ+1; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		{
@@ -141,6 +143,9 @@ int16_t devVaconFC::CheckLinkStatus(void)
     	err = OK;
     }
     return state;
+#else
+    return ERR_LINK_FC;
+#endif
 }
 
 // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
@@ -154,6 +159,7 @@ int8_t devVaconFC::get_readState()
 		current = 555;
 		FC_curr_freq = 4000 + (int32_t)FC_target * 30 / 100;
 	} else {
+#ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 		if(!get_present() || state == ERR_LINK_FC) {
 			state = ERR_LINK_FC;
 			FC_curr_freq = 0;
@@ -162,7 +168,6 @@ int8_t devVaconFC::get_readState()
 			return err; // выходим если нет инвертора или нет связи
 		}
 		err = OK;
-#ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 		// Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		state = read_0x03_16(FC_STATUS); // прочитать состояние
 		if(err) // Ошибка
@@ -238,6 +243,7 @@ int8_t devVaconFC::get_readState()
 		}
 #endif
 #else // Аналоговое управление
+		err = OK;
 		power = 0;
 		current = 0;
 #endif
@@ -449,14 +455,9 @@ xStarted:
 // Команда стоп на инвертор Обратно код ошибки
 int8_t devVaconFC::stop_FC()
 {
-    if((testMode == NORMAL || testMode == HARD_TEST) && (!get_present() || state == ERR_LINK_FC)) {
-        SETBIT0(flags, fOnOff);
-        startCompressor = 0;
-        return err; // выходим если нет инвертора или нет связи
-    }
-    err = OK;
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
 #ifdef DEMO
+    err = OK;
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
@@ -472,6 +473,12 @@ int8_t devVaconFC::stop_FC()
 #else // DEMO
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
+    	if(!get_present() || state == ERR_LINK_FC) {
+            SETBIT0(flags, fOnOff);
+            startCompressor = 0;
+            return err; // выходим если нет инвертора или нет связи
+    	}
+        err = OK;
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
         HP.dRelay[RCOMP].set_OFF();
 #else
@@ -502,11 +509,14 @@ int8_t devVaconFC::stop_FC()
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
-        HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
+        HP.dRelay[RCOMP].set_OFF();
 #else // подать команду ход/стоп через модбас
         err = ERR_FC_CONF_ANALOG;
         SETBIT1(flags, fErrFC);
         set_Error(err, name); // Ошибка конфигурации
+#endif
+#ifdef FC_ANALOG_OFF_SET_0
+        analogWrite(pin, dac = 0);
 #endif
     }
     SETBIT0(flags, fOnOff);
@@ -527,7 +537,9 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     	                                        #ifndef FC_ANALOG_CONTROL  
     	                                        get_infoFC(ret);
     	                                        #else
-                                                 strcat(ret, "|Данные не доступны, работа через аналоговый вход|;") ;
+                                                 strcat(ret, "|Данные не доступны, управление через ") ;
+                                                 if((g_APinDescription[pin].ulPinAttribute & PIN_ATTR_ANALOG) == PIN_ATTR_ANALOG) strcat(ret, "аналоговый"); else strcat(ret, "ШИМ");
+                                                 strcat(ret, " выход|;");
                                                 #endif              
     	                                        } else
     if(strcmp(var,fc_NAME)==0)                  {  strcat(ret,name);             } else
@@ -609,26 +621,26 @@ boolean devVaconFC::set_paramFC(char *var, float f)
     if(strcmp(var,fc_ReturnOilPeriod)==0)       { _data.ReturnOilPeriod = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     { _data.ReturnOilPerDivHz = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilEEV)==0)          { _data.ReturnOilEEV = x; return true; } else
-    if(strcmp(var,fc_PID_STOP)==0)              { if((x>0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  }
+    if(strcmp(var,fc_PID_STOP)==0)              { if((x>=0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  }
    
 	x = rd(f, 100);
-    	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
+    	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>=0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
 		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_target(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
-		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
-		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
-		if(strcmp(var,fc_START_FREQ)==0)            { if((x>0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %
-		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>0)&&(x<=10000)){_data.startFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>0)&&(x<=10000)){_data.minFreq=x;return true; } } else // %
+		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>=0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
+		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>=0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
+		if(strcmp(var,fc_START_FREQ)==0)            { if((x>=0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %
+		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=0)&&(x<=10000)){_data.startFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>=0)&&(x<=10000)){_data.minFreq=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { _data.minFreqCool=x;return true; } else // %
 		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { _data.minFreqBoiler=x;return true; } else // %
 		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { _data.minFreqUser=x;return true; } else // %
-		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>0)&&(x<20000)){_data.maxFreq=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>0)&&(x<20000)){_data.maxFreqCool=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>0)&&(x<20000)){_data.maxFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>0)&&(x<20000)){_data.maxFreqUser=x;return true; } } else // %
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<10000)){_data.PidFreqStep=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0)&&(x<10000)){_data.stepFreq=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0)&&(x<10000)){_data.stepFreqBoiler=x;return true; } } // %
+		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>=0)&&(x<20000)){_data.maxFreq=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=0)&&(x<20000)){_data.maxFreqCool=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=0)&&(x<20000)){_data.maxFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=0)&&(x<20000)){_data.maxFreqUser=x;return true; } } else // %
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>=0)&&(x<10000)){_data.PidFreqStep=x;return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>=0)&&(x<10000)){_data.stepFreq=x;return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>=0)&&(x<10000)){_data.stepFreqBoiler=x;return true; } } // %
  
     return false;
 }
@@ -708,8 +720,10 @@ boolean devVaconFC::reset_errorFC()
 boolean devVaconFC::reset_FC()
 {
     number_err = 0;
+#ifndef FC_ANALOG_CONTROL
     CheckLinkStatus();
     if(!err && state == ERR_LINK_FC) err = ERR_RESET_FC;
+#endif
     return err == OK;
 }
 
