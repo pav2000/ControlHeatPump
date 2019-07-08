@@ -400,7 +400,7 @@ x_I2C_init_std_message:
 #endif
 
 //  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
-  journal.jprintf(">>> Web interface source: ");
+  journal.jprintf("Web interface source: ");
   switch (HP.get_SourceWeb())
   {
      case pMIN_WEB:   journal.jprintf("internal\n"); break;

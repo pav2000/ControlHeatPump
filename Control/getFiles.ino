@@ -580,7 +580,6 @@ void get_txtSettings(uint8_t thread)
               strcat(Socket[thread].outBuf," - Аналоговое управление -\r\n");
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие частоте 0 гц (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL0,Socket[thread].outBuf);STR_END; 
               strcat(Socket[thread].outBuf,"Отсчеты ЦАП соответсвующие максимальной частоте (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVEL100,Socket[thread].outBuf);STR_END; 
-              strcat(Socket[thread].outBuf,"Частота отключения инвертора  (отсчеты): ");  HP.dFC.get_paramFC((char*)fc_LEVELOFF,Socket[thread].outBuf);STR_END; 
           #else
              strcat(Socket[thread].outBuf," - Управление идет через Modbus - \r\n"); 
              strcat(Socket[thread].outBuf,"Блокировка инвертора: ");  HP.dFC.get_paramFC((char*)fc_BLOCK,Socket[thread].outBuf);STR_END; 

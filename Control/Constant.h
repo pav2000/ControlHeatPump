@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.029"				// Версия прошивки
+#define VERSION			"1.030"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -757,11 +757,10 @@ const char *fc_INFO1             = {"INFO1"};             // Первая стр
 const char *fc_cCURRENT          = {"cCURRENT"};          // Текущий ток (чтение)
 const char *fc_AUTO_RESET_FAULT  = {"ARSTFLT"};           // Флаг автоматического сброса не критичной ошибки инвертора
 const char *fc_LogWork		     = {"LOGW"};              // Флаг логировать во время работы
-const char *fc_ANALOG            = {"ANALOG"};            // Флаг аналогового управления
+const char *fc_ANALOG            = {"AN"};                // Флаг аналогового управления
 const char *fc_DAC               = {"DAC"};               // Получение текущего значения ЦАП
-const char *fc_LEVEL0            = {"LEVEL0"};            // Уровень частоты 0 в отсчетах ЦАП
-const char *fc_LEVEL100          = {"LEVEL100"};          // Уровень частоты 100% в  отсчетах ЦАП
-const char *fc_LEVELOFF          = {"LEVELOFF"};          // Уровень частоты в % при отключении
+const char *fc_LEVEL0            = {"L0"};                // Уровень частоты 0 в отсчетах ЦАП
+const char *fc_LEVEL100          = {"L100"};              // Уровень частоты 100% в  отсчетах ЦАП
 const char *fc_BLOCK             = {"BLOCK"};             // флаг глобальная ошибка инвертора - работа инвертора запрещена блокировку можно сбросить установив в 0
 const char *fc_ERROR             = {"ERROR"};             // Получить код ошибки
 const char *fc_UPTIME            = {"UPTIME"};            // Время обновления алгоритма пид регулятора (мсек) Основной цикл управления
