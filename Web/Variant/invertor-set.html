@@ -15,7 +15,7 @@
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-<h1>Настройки инвертора Omron MX2 <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+<h1>Настройки инвертора Omron MX2 <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'> <input type="submit" value="Программирование (1*)" onclick='loadParam("progFC")'></h1>
 
   <div class="row1">
    <table>
@@ -28,7 +28,7 @@
    <tbody>
     <tr><td>Время опроса инвертора (миллисекунд)</td><td id="get_pfc-tr"></td></tr>
     <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_pfc-logw" onchange="setParam('get_pFC(LOGW)');"></td></tr>
-    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>1</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
+    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>2</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
     <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_pfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STOP)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
@@ -59,7 +59,8 @@
 
    </tbody>
    </table>
-<br>1. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
+<br>1. Перед программированием надо выставить управление BLDC (b171=03) и инициализировать инвертор(b180=1). Установка регистров Omron MX2 под требуемые для НК, после программирования надо сделать автонастройку (H001=1).<br/>
+    2. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
   </div>
 
 <div name="hide_fcan" class="row1">

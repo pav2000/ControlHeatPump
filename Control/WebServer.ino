@@ -741,6 +741,15 @@ void parserGET(uint8_t thread, int8_t )
 			ADD_WEBDELIM(strReturn);
 			continue;
 		}
+		
+		if (strncmp(str, "progFC", 8) == 0)  // Функция progFC - программирование инвертора
+		{
+         #ifndef FC_VACON  // Omron
+           HP.dFC.progFC();
+         #endif 
+		}
+		
+		
 		if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strcmp(str+8, "_SCHDLR") == 0) {
