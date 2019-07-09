@@ -516,7 +516,7 @@ int8_t devVaconFC::stop_FC()
         set_Error(err, name); // Ошибка конфигурации
 #endif
 #ifdef FC_ANALOG_OFF_SET_0
-        analogWrite(pin, dac = 0);
+        analogWrite(pin, FC_target = dac = 0);
 #endif
     }
     SETBIT0(flags, fOnOff);
