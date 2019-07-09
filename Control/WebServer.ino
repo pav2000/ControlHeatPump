@@ -744,9 +744,16 @@ void parserGET(uint8_t thread, int8_t )
 		
 		if (strncmp(str, "progFC", 8) == 0)  // Функция progFC - программирование инвертора
 		{
-         #ifndef FC_VACON  // Omron
-           HP.dFC.progFC();
-         #endif 
+		if (!HP.dFC.get_present()) {
+					strcat(strReturn,"Инвертор отсутствует");
+		} else if (HP.get_modWork()==pOFF)  // Только на выключеном ТН
+				{
+			    strcat(strReturn,"Программирование инвертора, подробности смотри в журнале. Ожидайте 10 сек . . .");
+				HP.sendCommand(pPROG_FC);        // Послать команду
+				}
+				else strcat(strReturn,"The heat pump must be switched OFF");	
+         ADD_WEBDELIM(strReturn);
+         continue;
 		}
 		
 		

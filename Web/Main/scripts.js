@@ -605,7 +605,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 								} else if(values[0] == "test_SMS") {
 									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
-								} else if(values[0].indexOf("set_SAVE")==0) { 
+								} else if(values[0] == "progFC") {
+									alert(values[1]);
+								} else if(values[0].indexOf("set_SAVE")==0) {
 									if(values[1] >= 0) {
 										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
 										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!");
