@@ -1241,8 +1241,7 @@ enum SMS_SERVICE
   pSMS_RU,                       // Сервис sms.ru
   pSMSC_RU,                      // Сервис smsc.ru
   pSMSC_UA,                      // Сервис smsc.ua
-  pSMSCLUB_UA,                   // Сервис smsclub.mobi
-  pEND12
+  pSMSCLUB_UA                    // Сервис smsclub.mobi
 };
 
 //  Перечисляемый тип - тип фреона

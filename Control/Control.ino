@@ -427,12 +427,12 @@ x_I2C_init_std_message:
    
  // 12. Инициалазация уведомлений
    journal.jprintf("10. Message update IP from DNS . . .\n");
-   HP.message.dnsUpdateStart(); 
+   HP.message.dnsUpdate();
    
  // 13. Инициалазация MQTT
     #ifdef MQTT  
       journal.jprintf("11. Client MQTT update IP from DNS . . .\n");
-      HP.clMQTT.dnsUpdateStart();
+      HP.clMQTT.dnsUpdate();
     #else
       journal.jprintf("11. Client MQTT disabled by config\n");
     #endif 
@@ -633,7 +633,7 @@ void vWeb0(void *)
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
 #endif
-	static boolean active = true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
 	static boolean network_last_link = true;
 
 	HP.timeNTP = xTaskGetTickCount();        // В первый момент не обновляем
@@ -650,7 +650,7 @@ void vWeb0(void *)
 
 		active = HP.message.dnsUpdate();                                       // Обновить адреса через dns если надо Уведомления
 #ifdef MQTT
-		if (active) active=HP.clMQTT.dnsUpdate();                          // Обновить адреса через dns если надо MQTT
+		if(!active) active=HP.clMQTT.dnsUpdate();                          // Обновить адреса через dns если надо MQTT
 #endif
 		if(thisTime > xTaskGetTickCount()) thisTime = 0;                         // переполнение счетчика тиков
 		if(xTaskGetTickCount() - thisTime > 10 * 1000)                             // Делим частоту - период 10 сек

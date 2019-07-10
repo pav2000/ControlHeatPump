@@ -73,63 +73,48 @@ void Message::initMessage()
 }
 
 // Обновление IP адресов серверов через dns
-// возвращает true обновление не было false - прошло обновление или ошибка
+// возвращает false обновление не было, true - прошло обновление или ошибка
 boolean Message::dnsUpdate()
 {
-  boolean ret = true;
-  char buf[16];
-  if  (dnsUpadateSMTP) //надо обновлятся
-  {
-    dnsUpadateSMTP = false;
-    if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)  {
-      return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-    }
-    ret = check_address(messageSetting.smtp_server, messageSetting.smtp_serverIP);   // Получить адрес IP через DNS
-    SemaphoreGive(xWebThreadSemaphore);
-    _delay(20);
-    ret = false;
-  }
-  if  (dnsUpadateSMS) //надо обновлятся
-  {
-    switch (messageSetting.sms_service)
-    {
-      case pSMS_RU:     strcpy(buf, ADR_SMS_RU);  break;
-      case pSMSC_RU:    strcpy(buf, ADR_SMSC_RU); break;
-      case pSMSC_UA:    strcpy(buf, ADR_SMSC_UA); break;
-      case pSMSCLUB_UA: strcpy(buf, ADR_SMSCLUB_UA); break;
-      default:          strcpy(buf, ADR_SMS_RU);  break; // Этого не должно быть, но если будет то установить по умолчанию
-    }
-    dnsUpadateSMS = false;
-    if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)  {
-      return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-    }
-    ret = check_address((char*)buf, messageSetting.sms_serviceIP);
-    SemaphoreGive(xWebThreadSemaphore);
-    _delay(20);
-    ret = false;
-  }
-  return ret;
-}
-// Обновление IP адресов серверов через dns при СТАРТЕ!!!  вачдог сбрасывается т.к. может сеть не рабоать
-boolean Message::dnsUpdateStart()
-{ boolean ret = true;
-  char buf[16];
-  IPAddress zeroIP(0, 0, 0, 0);
-  switch (messageSetting.sms_service)
-  {
-    case pSMS_RU:      strcpy(buf, ADR_SMS_RU);  break;
-    case pSMSC_RU:     strcpy(buf, ADR_SMSC_RU); break;
-    case pSMSC_UA:     strcpy(buf, ADR_SMSC_UA); break;
-    case pSMSCLUB_UA:  strcpy(buf, ADR_SMSCLUB_UA); break;
-    default:           strcpy(buf, ADR_SMS_RU);  break; // Этого не должно быть, но если будет то установить по умолчанию
-  }
-  dnsUpadateSMS = false;
-  WDT_Restart(WDT);                                                               // Сбросить вачдог
-  if (messageSetting.sms_serviceIP == zeroIP) ret = check_address((char*)buf, messageSetting.sms_serviceIP);                // если адрес нулевой Получить адрес IP через DNS
-  dnsUpadateSMTP = false;
-  WDT_Restart(WDT);                                                              // Сбросить вачдог
-  if (messageSetting.smtp_serverIP == zeroIP) ret = check_address(messageSetting.smtp_server, messageSetting.smtp_serverIP); //  если адрес нулевой Получить адрес IP через DNS
-  return ret;
+	boolean ret = false;
+	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
+		dnsUpadateSMTP = dnsUpadateSMS = true;
+		WDT_Restart(WDT);
+	}
+	if(dnsUpadateSMTP) //надо обновлятся
+	{
+		dnsUpadateSMTP = false;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+		}
+		ret = check_address(messageSetting.smtp_server, messageSetting.smtp_serverIP);   // Получить адрес IP через DNS
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive(xWebThreadSemaphore);
+	}
+	if(dnsUpadateSMS) //надо обновлятся
+	{
+		dnsUpadateSMS = false;
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+				return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+			}
+		} else WDT_Restart(WDT);
+		switch(messageSetting.sms_service) {
+		case pSMS_RU:
+			ret = check_address((char*) ADR_SMS_RU, messageSetting.sms_serviceIP);
+			break;
+		case pSMSC_RU:
+			ret = check_address((char*) ADR_SMSC_RU, messageSetting.sms_serviceIP);
+			break;
+		case pSMSC_UA:
+			ret = check_address((char*) ADR_SMSC_UA, messageSetting.sms_serviceIP);
+			break;
+		case pSMSCLUB_UA:
+			ret = check_address((char*) ADR_SMSCLUB_UA, messageSetting.sms_serviceIP);
+			break;
+		}
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive(xWebThreadSemaphore);
+	}
+	return ret;
 }
 
 // Установить параметр Уведомления из строки

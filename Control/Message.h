@@ -91,7 +91,6 @@ class Message
      boolean setTestSMS();                                                  // Установить (сформировать) тестовое СМС, отправка sendMessage();  
      boolean sendMessage();                                                 // Послать уведомление согласно выбранных настроек cформированное setMessage
      boolean dnsUpdate();                                                   // Обновление IP адресов серверов через dns 
-     boolean dnsUpdateStart();                                              // Обновление IP адресов серверов через dns при СТАРТЕ!!! семафоры не используются
      
      boolean set_messageSetting(char *var, char *c);                        // Установить параметр Уведомления из строки
      char*   get_messageSetting(char *var, char *ret);                      // Получить параметр Уведомления по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
