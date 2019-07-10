@@ -1217,8 +1217,7 @@ enum TYPE_COMMAND
   pEND14                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-const char *hp_commands_names[] = { "EMPTY", "START", "AUTOSTART", "STOP", "RESET", "RESTART", "REPEAT", "NETWORK",
-		"JFORMAT", "SFORMAT", "SAVE", "WAIT", "RESUME",  "UNKNOWN"};
+const char *hp_commands_names[] = {"EMPTY", "START", "AUTOSTART", "STOP", "RESET", "RESTART", "REPEAT", "NETWORK", "JFORMAT", "SFORMAT", "SAVE", "WAIT", "RESUME", "PROG_FC", "UNKNOWN"};
 
 //  Перечисляемый тип -ТИПЫ уведомлений
 enum MESSAGE          
