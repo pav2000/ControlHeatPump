@@ -295,6 +295,9 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 	}
 #else // Аналоговое управление
 	FC_target = x;
+#ifdef FC_ANALOG_OFF_SET_0
+	if(!GETBIT(flags, fOnOff)) return err;
+#endif
 	dac = (int32_t)FC_target * (_data.level100 - _data.level0) / (100*100) + _data.level0;
 	switch (testMode) // РЕАЛЬНЫЕ Действия в зависимости от режима
 	{
@@ -442,13 +445,17 @@ xStarted:
         SETBIT1(flags, fErrFC);
         set_Error(err, name); // Ошибка конфигурации
 #endif
+#ifdef FC_ANALOG_OFF_SET_0
+        dac = (int32_t)FC_target * (_data.level100 - _data.level0) / (100*100) + _data.level0;
+        analogWrite(pin, dac);
+#endif
     }
 xStarted:
     SETBIT1(flags, fOnOff);
     startCompressor = rtcSAM3X8.unixtime();
     journal.jprintf(" %s ON\n", name);
-#endif
-#endif
+#endif //DEMO
+#endif //FC_ANALOG_CONTROL
     return err;
 }
 
