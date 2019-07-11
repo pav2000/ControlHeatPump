@@ -26,7 +26,7 @@
 
 #define FC_VACON_NAME "Vacon"
 #ifdef FC_VACON
-#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи.
+#define ERR_LINK_FC 0         	    // Состояние инертора - нет связи по Modbus
 #endif
 
 #define RECOVER_OIL_PERIOD_MUL		2  // Множитель периода
@@ -212,13 +212,6 @@ public:
 #ifdef FC_ANALOG_CONTROL
   // Аналоговое управление
   int16_t get_DAC(){return dac;};                  // Получить установленное значеие ЦАП
-  int16_t get_level0(){return level0;}             // Получить Отсчеты ЦАП соответсвующие 0   скорости
-  int16_t get_level100(){return level100;}         // Получить Отсчеты ЦАП соответсвующие максимальной скорости
-  int16_t get_levelOff(){return levelOff;}         // Получить Минимальная скорость при котором частотник отключается (ограничение минимальной мощности)
-  int8_t  set_level0(int16_t x);                    // Установить Отсчеты ЦАП соответсвующие 0   мощности
-  int8_t  set_level100(int16_t x);                  // Установить Отсчеты ЦАП соответсвующие 100 мощности
-  int8_t  set_levelOff(int16_t x);                  // Установить Минимальная мощность при котором частотник отключается (ограничение минимальной скорости)
-  uint8_t get_pinA(){return  pin;}                 // Ножка куда прицеплено FC
 #endif
   // Сервис
   TEST_MODE	get_testMode() {return testMode;}      // Получить текущий режим работы
@@ -256,7 +249,7 @@ public:
   int16_t maxFC;									// Максимальная скорость инвертора в 0.01 %
   uint32_t startCompressor;							// время старта компрессора
 
-#ifdef ANALOG_CONTROL
+#ifdef FC_ANALOG_CONTROL
   // Аналоговое управление
   int16_t dac;                                     // Текущее значение ЦАП
   uint8_t pin;                                     // Ножка куда прицеплено FC
@@ -286,15 +279,14 @@ public:
 	  int16_t stepFreqBoiler;         // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01 %
 	  int16_t dtTemp;                // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 	  int16_t dtTempBoiler;          // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
-	#ifdef FC_ANALOG_CONTROL
-	  int16_t  level0;                  // Отсчеты ЦАП соответсвующие 0   скорость
-	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
-	  int16_t  levelOff;                // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-	#endif
 	  uint16_t setup_flags;             // флаги настройки - см. define FC_SAVED_FLAGS
 	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
 	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
 	  int16_t ReturnOilEEV;				// Изменения позиции ЭРВ
+#ifdef FC_ANALOG_CONTROL
+	  int16_t  level0;                  // Отсчеты ЦАП соответсвующие 0   скорость
+	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
+#endif
    } _data;  // Структура для сохранения настроек
    uint16_t flags;  					// рабочие флаги
    int16_t ReturnOilTimer;

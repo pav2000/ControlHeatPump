@@ -222,7 +222,7 @@ class HeatPump
     inline TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
     void     set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
     boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
-    boolean  get_fSD() {return fSD;}     // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
+    boolean  get_fSD() {return fSD;}        // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
     void     set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
     boolean  get_fSPIFlash() {return fSPIFlash;}     // Получить флаг наличия РАБОТАЮЩЕГО флеш диска
     void     set_fSPIFlash(boolean f) {fSPIFlash=f;}    // Установить флаг наличия РАБОТАЮЩЕГО флеш диска
@@ -354,6 +354,8 @@ class HeatPump
    uint8_t  get_Beep() {return GETBIT(Option.flags,fBeep);};           // подача звуковых сигналов
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // получить флаг записи состояния
    uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
+   boolean  set_WebStoreOnSPIFlash(boolean f) {if(f)SETBIT1(Option.flags,fWebStoreOnSPIFlash);else SETBIT0(Option.flags,fWebStoreOnSPIFlash);return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// установить флаг хранения веб морды на флеш диске
+   
    
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //

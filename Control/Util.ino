@@ -512,9 +512,9 @@ boolean initSD(void)
 
 	// 2. Проверка наличия индексного файла
 	if(!card.exists(INDEX_FILE)) {
-		journal.jprintf((char*) " ERROR - Can't find %s file!\n", INDEX_FILE);
+		journal.jprintf((char*) " ERROR - Can't find %s file on SD card!\n", INDEX_FILE);
 		//   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
-		HP.message.setMessage(pMESSAGE_SD, (char*) "Начальный файл не найден на SD карте", 0); // сформировать уведомление
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SD карте", 0); // сформировать уведомление
 		SPI_switchW5200();
 		return false;
 	} // стартовый файл не найден
@@ -543,8 +543,8 @@ boolean initSD(void)
 	return true;
 }
 
-// Инициализация SPI диска, параметр true - вывод инфо в журнал false молча проверяем состояние
-// Возврат true - если успешно, false - диск не рабоатет
+// Инициализация SPI диска и проверка наличия веб морды (файл индекс), параметр true - вывод инфо в журнал false молча проверяем состояние
+// Возврат true - если морда есть на карте (готово к использованию), false - диск не рабоатет или нет морды (использовать нельзя)
 boolean initSpiDisk(boolean show)
 {
 #ifdef SPI_FLASH
@@ -561,7 +561,16 @@ boolean initSpiDisk(boolean show)
 			journal.jprintf(" Free: %d bytes\n", SerialFlash.free_size());
 			SerialFlash.readSerialNumber(id);
 			journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n", id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7]);
-		}
+	  	}
+			if (HP.get_WebStoreOnSPIFlash()) { // проверка наличия файла INDEX_FILE, если стоит флаг загрузки из флеша в настройках
+				if (!SerialFlash.exists((char*)INDEX_FILE)) { // файл не найден морды во флеше нет
+					HP.set_WebStoreOnSPIFlash(false); //  сбрасываем в оперативке (но не на флеше) флаг загрузки из флеш диска
+					if(show) journal.jprintf((char*) " ERROR - Can't find %s file on SPI flash!\n", INDEX_FILE);
+					HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SPI флеш диске", 0); // сформировать уведомление
+					return false; } 
+				else if(show) journal.jprintf((char*) " Found %s file\n", INDEX_FILE);	// файл найден
+			} // if HP.get_fSPIFlash()
+		
 		return true;
 	}
 #endif
@@ -950,4 +959,3 @@ int32_t round_div_int32(int32_t value, int16_t div)
 	}
 	return value;
 }
-

@@ -7,8 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcanalog,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
-		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
+		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(PIN),get_pFC(L0),get_pFC(L100)");
 		};
 	</script>
 </head>
@@ -69,25 +69,21 @@
 <br>1. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
   </div>
 
-<div name="hide_fcanalog" class="row1">
+<div name="hide_fcan" class="row1">
 	<h2>Аналоговое управление</h2>
 	<table>
 	<thead>
 		<tr>
-			<th>Использовать аналоговый выход</th>
 			<th>Значение DAC</th>
-			<th>pin</th>
-			<th>Уровень «0» (диск. ЦАП)</th>
-			<th>Уровень «100» (диск. ЦАП)</th>
-			<th>Уровень выключения %</th>
+			<th>Уровень «0» (ЦАП)</th>
+			<th>Уровень «100» (ЦАП)</th>
+			<th>Pin</th>
 		</tr>
 		<tr>
-			<td><input type="checkbox" name="get_pfc-analog" id="get_pfc-analog" onchange="setParam('get_pFC(ANALOG)');"></td>
 			<td id="get_pfc-dac"></td>
+			<td><input id="get_pfc-l0" type="number" min="0" max="4096" step="1"><input type="submit" value=">" onclick="setParam('get_pFC(L0)');"></td>
+			<td><input id="get_pfc-l100" type="number" min="0" max="4096" step="1"><input  type="submit" value=">" onclick="setParam('get_pFC(L100)');"></td>
 			<td id="get_pfc-pin"></td> 
-			<td><input id="get_pfc-level0" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_pfc-level02"  type="submit" value=">"  onclick="setParam('get_pFC(LEVEL0)');"></td>
-			<td><input id="get_pfc-level100" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_pfc-level1002" type="submit" value=">"  onclick="setParam('get_pFC(LEVEL100)');"></td>
-			<td><input id="get_pfc-leveloff" type="number"  min="0" max="100" step="1" value="-1"><input id="get_pfc-leveloff2" type="submit" value=">"  onclick="setParam('get_pFC(LEVELOFF)');"></td>
 		</tr>		
 	</thead>
 	<tbody>

@@ -46,10 +46,10 @@ extern void  noCsvStatistic(uint8_t thread);
 // Названия режимов теста
 const char *noteTestMode[] =   {"NORMAL","SAFE_TEST","TEST","HARD_TEST"};
 // Описание режима теста
-static const char *noteRemarkTest[] = {"Тестирование отключено. Основной режим работы",
-                                       "Значения датчиков берутся из соответвующих полей ""Тест"", работа исполнительны устройств эмулируется. Безопасно.",
-                                       "Значения датчиков берутся из соответвующих полей ""Тест"", исполнительные устройства работают за исключениме компрессора (FC и RCOMP). Почти безопасно.",
-                                       "Значения датчиков берутся из соответвующих полей ""Тест"", все исполнительные устройства работают. Внимание! Может быть поврежден компрессор!."};
+static const char *noteRemarkTest[] = {"Тестирование отключено, основной режим работы.",
+                                       "Значения датчиков берутся из полей 'Тест', работа исполнительных устройств эмулируется - Безопасно.",
+                                       "Значения датчиков берутся из полей 'Тест', исполнительные устройства работают за исключением компрессора (FC и RCOMP) - Почти безопасно.",
+                                       "Значения датчиков берутся из полей 'Тест', все исполнительные устройства работают. Внимание! Может быть поврежден компрессор!"};
                                
                                
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
@@ -741,6 +741,22 @@ void parserGET(uint8_t thread, int8_t )
 			ADD_WEBDELIM(strReturn);
 			continue;
 		}
+		
+		if (strncmp(str, "progFC", 8) == 0)  // Функция progFC - программирование инвертора
+		{
+		if (!HP.dFC.get_present()) {
+					strcat(strReturn,"Инвертор отсутствует");
+		} else if (HP.get_modWork()==pOFF)  // Только на выключеном ТН
+				{
+			    strcat(strReturn,"Программирование инвертора, подробности смотри в журнале. Ожидайте 10 сек . . .");
+				HP.sendCommand(pPROG_FC);        // Послать команду
+				}
+				else strcat(strReturn,"The heat pump must be switched OFF");	
+         ADD_WEBDELIM(strReturn);
+         continue;
+		}
+		
+		
 		if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
 			if(strcmp(str+8, "_SCHDLR") == 0) {
@@ -991,7 +1007,7 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 		if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
 			str += 5;
-			if(strcmp(str, "fcanalog") == 0) {
+			if(strcmp(str, "fcan") == 0) {
 #ifdef FC_ANALOG_CONTROL
 				strcat(strReturn,"0");
 #else
@@ -2637,7 +2653,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	} //if (strcmp(nameFile,"*SETTINGS*")==0)
 
 	// загрузка вебморды
-	else if(HP.get_fSPIFlash()) { // если флеш диска присутвует
+	  else if(SerialFlash.ready()) { // если флеш диск присутвует на плате (морда может отсутствовать)
 		STORE_DEBUG_INFO(53);
 		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
 
@@ -2650,7 +2666,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				vTaskDelay(1000/ portTICK_PERIOD_MS);
 				if(SemaphoreTake(xWebThreadSemaphore, (3*W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) { // получить семафор веб морды
 				journal.jprintf("%s: Socket %d %s\n",(char*) __FUNCTION__, Socket[thread].sock, MutexWebThreadBuzy);	
-				return pLOAD_ERR;} // если не удается то ошибка и выход
+				return pLOAD_ERR;} // если не удается захватить мютекс, то ошибка и выход
 				journal.jprintf(".");
 			}
 			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());

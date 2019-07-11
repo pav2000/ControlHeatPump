@@ -2106,8 +2106,12 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 	} else {
 	// Инвертор ПИД
-		if(FEED>Prof.Boiler.tempIn) {
-			Status.ret=pBp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__); return pCOMP_OFF;  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет
+#if defined(SUPERBOILER) && defined(PCON)
+		if(PressToTemp(PCON) > Prof.Boiler.tempIn) {
+#else
+ 		if(FEED>Prof.Boiler.tempIn) {
+#endif
+			Status.ret=pBp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__); return pCOMP_OFF;  // Достижение максимальной температуры подачи
 		}
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
@@ -3179,6 +3183,11 @@ int8_t HeatPump::runCommand()
 //				Stats.Format();                                    // Послать команду форматирование статистики
 //			#endif
 //			break;
+		case pPROG_FC:                                             // Программировать инвертор первоначальными данными (настройка инвертора)
+		    #ifndef FC_VACON  // Omron , если в ваком будет определен метод progFC этот дефайн убрать
+            dFC.progFC();
+            #endif
+			break;
 		case pSAVE:                                                      // Сохранить настройки
 			_delay(2000);              				      		 // задержка что бы вывести сообщение в консоль и на веб морду
 			save();                                            // сохранить настройки

@@ -365,23 +365,8 @@ x_I2C_init_std_message:
    digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
    digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
 
-// 7. Инициализация СД карты и запоминание результата 3 попытки
-   journal.jprintf("4. Init SD card . . .\n");
-   HP.set_fSD(initSD());
-   WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
-   digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
-   //_delay(100);
-
-// 8. Инициализация spi флеш диска
-#ifdef SPI_FLASH
-  journal.jprintf("5. Init SPI flash disk . . .\n");
-  HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
-#else
-  journal.jprintf("5. No SPI flash in config.\n");
-#endif
-
-// 9. Чтение ЕЕПРОМ
-   journal.jprintf("6. Load data from I2C memory . . .\n");
+// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
+   journal.jprintf("4. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
 	  journal.jprintf("I2C memory is empty, a default settings will be used!\n");
@@ -394,12 +379,28 @@ x_I2C_init_std_message:
 	  }
   }
   HP.Schdlr.load();							// Загрузка настроек расписания
-
   // обновить хеш для пользователей
   HP.set_hashUser();
   HP.set_hashAdmin();
+
+
+// 7. Инициализация СД карты и запоминание результата 3 попытки
+   journal.jprintf("5. Init SD card . . .\n");
+   HP.set_fSD(initSD());
+   WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
+   digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
+   //_delay(100);
+
+// 8. Инициализация spi флеш диска
+#ifdef SPI_FLASH
+  journal.jprintf("6. Init SPI flash disk . . .\n");
+  HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
+#else
+  journal.jprintf("6. No SPI flash in config.\n");
+#endif
+
 //  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
-  journal.jprintf(" Web interface source: ");
+  journal.jprintf("Web interface source: ");
   switch (HP.get_SourceWeb())
   {
      case pMIN_WEB:   journal.jprintf("internal\n"); break;
@@ -426,12 +427,12 @@ x_I2C_init_std_message:
    
  // 12. Инициалазация уведомлений
    journal.jprintf("10. Message update IP from DNS . . .\n");
-   HP.message.dnsUpdateStart(); 
+   HP.message.dnsUpdate();
    
  // 13. Инициалазация MQTT
     #ifdef MQTT  
       journal.jprintf("11. Client MQTT update IP from DNS . . .\n");
-      HP.clMQTT.dnsUpdateStart();
+      HP.clMQTT.dnsUpdate();
     #else
       journal.jprintf("11. Client MQTT disabled by config\n");
     #endif 
@@ -632,7 +633,7 @@ void vWeb0(void *)
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
 #endif
-	static boolean active = true;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
 	static boolean network_last_link = true;
 
 	HP.timeNTP = xTaskGetTickCount();        // В первый момент не обновляем
@@ -649,7 +650,7 @@ void vWeb0(void *)
 
 		active = HP.message.dnsUpdate();                                       // Обновить адреса через dns если надо Уведомления
 #ifdef MQTT
-		if (active) active=HP.clMQTT.dnsUpdate();                          // Обновить адреса через dns если надо MQTT
+		if(!active) active=HP.clMQTT.dnsUpdate();                          // Обновить адреса через dns если надо MQTT
 #endif
 		if(thisTime > xTaskGetTickCount()) thisTime = 0;                         // переполнение счетчика тиков
 		if(xTaskGetTickCount() - thisTime > 10 * 1000)                             // Делим частоту - период 10 сек

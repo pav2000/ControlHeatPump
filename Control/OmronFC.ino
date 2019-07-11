@@ -117,44 +117,73 @@ int8_t devOmronMX2::initFC()
         default:err=ERR_MODBUS_STATE;set_Error(err,name);  break;             // Подъем ошибки на верх и останов ТН
       }
       if (err!=OK) return err;
-
-       // Программирование инвертора Запись различных переменных
-      # ifdef  FC_FULL_INIT            // Полная инициализация инвертора
-         journal.jprintf(" Full init %s . . .\r\n",name);
-         // 1. Источник команды  A001=03  по умолчанию 01
-        if ((err=write_0x06_16(MX2_SOURCE_FR, 0x03))==OK)           journal.jprintf(" Setting frequency source (A001) %s: 0x03\r\n",name);
-        else                                                        journal.jprintf(" Error setting frequency source (A001) %s code %d\r\n",name,err);
-        // 2. Источник задания частоты A002=03  по умолчанию 01
-        if ((err=write_0x06_16(MX2_SOURCE_CMD, 0x03))==OK)          journal.jprintf(" Setting run command source (A002) %s: 0x03\r\n",name);
-        else                                                        journal.jprintf(" Error setting run command source (A002) %s code %d\r\n",name,err);
-        // 3. A003=60  основная частота
-        if ((err=write_0x06_16(MX2_BASE_FR, FC_BASE_FREQ/10))==OK) journal.jprintf(" Setting base frequency (A003) %s: %.2f [Hz]\r\n",name,FC_BASE_FREQ);
-        else                                                        journal.jprintf(" Error setting base frequency (A003) %s code %d\r\n",name,err);
-         // 4. установка максимальной частоты
-        if ((err=write_0x06_16(MX2_MAX_FR, maxFreq/10))==OK)   journal.jprintf(" Setting maximum frequency (A004) %s: %.2f [Hz]\r\n",name,maxFreq/100.0);
-        else                                                        journal.jprintf(" Error setting maximum frequency (A004) %s code %d\r\n",name,err);
-        // 5. Время разгона
-        if( write_0x10_32(MX2_ACCEL_TIME,FC_ACCEL_TIME)==OK)          journal.jprintf(" Setting acceleration time (F002) %s: %.2f [sec]\r\n",name,FC_ACCEL_TIME/100.0);
-        else                                                        journal.jprintf(" Error setting acceleration time (F002) %s code %d\r\n",name,err);
-        // 6. Торможения разгона
-        if( write_0x10_32(MX2_DEACCEL_TIME,FC_DEACCEL_TIME)==OK)        journal.jprintf(" Setting deacceleration time (F003) %s: %.2f [sec]\r\n",name,FC_DEACCEL_TIME/100.0);
-        else                                                        journal.jprintf(" Error setting deacceleration time (F003) %s code %d\r\n",name,err);
-        // 7.  Разрешение торможения постоянным током A051=0
-      //  if ((err=write_0x06_16(MX2_DC_BRAKING, 0x01))==OK)          journal.jprintf(" Setting DC braking enable (A051) %s: 0x01\r\n",name);
-      //  else                                                        journal.jprintf(" Error setting DC braking enable (A051) %s code %d\r\n",name,err); 
-        // 8. Выбор режима ПЧ b171=03
-      //  if ((err=write_0x06_16(MX2_MODE, 0x03))==OK)                journal.jprintf(" Setting inverter mode selection (b171) %s: 0x03\r\n",name);
-      //  else                                                        journal.jprintf(" Error setting inverter mode selection (b171) %s code %d\r\n",name,err); 
-        // 9. B091=01 Выбор способа остановки
-        if ((err=write_0x06_16(MX2_STOP_MODE, 0x01))==OK)           journal.jprintf(" Setting stop mode selection (b091) %s: 0x01\r\n",name);
-        else                                                        journal.jprintf(" Error setting stop mode selection (b091) %s code %d\r\n",name,err);   
-      #endif
-
-#endif  // #ifndef FC_ANALOG_CONTROL
-  // 10.Установить стартовую частоту
+   #endif  // #ifndef FC_ANALOG_CONTROL
+  // Установить стартовую частоту
   set_target(_data.startFreq,true,_data.minFreqUser ,_data.maxFreqUser);       // режим н знаем по этому границы развигаем
   return err;                       
 }
+
+#define progOK  " Register %s to %d\r\n"  // Строка вывода сообщения о удачном программировании регистра
+#define progErr " Error setting register %s\r\n"  // Строка вывода сообщения о не удачном программировании регистра
+// Программирование отдельного регистра инвертора
+// adrReg - адрес регистра
+// nameReg - имя регистра
+// valReg - значение регистра
+int8_t devOmronMX2::progReg16(uint16_t adrReg, char* nameReg, uint16_t valReg)   
+{ 
+	_delay(50);	
+	if ((err=write_0x06_16(adrReg, valReg))==OK)  journal.jprintf(progOK,nameReg,valReg);
+	else                                          journal.jprintf(progErr,nameReg);
+	return err;
+}
+int8_t devOmronMX2::progReg32(uint16_t adrReg, char* nameReg, uint32_t valReg)   
+{ 
+	_delay(50);	
+	if ((err=write_0x10_32(adrReg, valReg))==OK)  journal.jprintf(progOK,nameReg,valReg);
+	else                                          journal.jprintf(progErr,nameReg);
+	return err;
+}
+
+// Программирование инвертора под конкретный компрессор
+int8_t devOmronMX2::progFC() 
+{
+	journal.jprintf("Programming %s . . .\r\n",name);
+	// Настройка инвертора под конкретный компрессор Регистры Hxxx Двигатель с постоянными магнитами (PM-двигатель)
+	progReg16(MX2_b171,"b171",0x03);   // b171 Выбор режима ПЧ b171 чт./зап. 0 (выключено), 1 (режим IM), 2 (режим высокой частоты), 3 (режим PM) =03 
+	progReg16(MX2_b180,"b180",0x01);   // b180 Запуск процесса инициализации
+    //	while(read_0x03_16(MX2_H102)==1) _delay(100); // Задержка на инициализацию инвертора - ждем пока появится регистр Р102
+	journal.jprintf("Wait initialization . . .\r\n"); 
+    _delay(7000);
+	progReg16(MX2_H102,"H102",valH102);      // H102 Установка кода PM-двигателя  00 (стандартные данные Omron) 01 (данные автонастройки) = 1
+	progReg16(MX2_H103,"H103",valH103);      // H103 Мощность PM-двигателя (0,1/0,2/0,4/0,55/0,75/1,1/1,5/2,2/3,0/3,7/4,0/5,5/7,5/11,0/15,0/18,5) = 7
+	progReg16(MX2_H104,"H104",valH104);      // H104 Установка числа полюсов PM двигателя = 4
+	progReg16(MX2_H105,"H105",valH105);      // H105 Номинальный ток PM-двигателя = 1000 (это 11А)
+	progReg16(MX2_H106,"H106",valH106);      // H106 Константа R PM-двигателя От 0,001 до 65,535 Ом =0.55 *1000
+	progReg16(MX2_H107,"H107",valH107);      // H107 Константа Ld PM-двигателя От 0,01 до 655,35 мГн =2.31*100
+	progReg16(MX2_H108,"H108",valH108);      // H108 Константа Lq PM-двигателя От 0,01 до 655,35 мГн =2.7*100
+	progReg16(MX2_H109,"H109",valH109);      // H109 Константа Ke PM-двигателя 0,0001...6,5535 Вмакс./(рад/с) =750 надо подбирать влияет на потребление и шум
+    progReg32(MX2_H110,"H110",valH110);      // H110 Константа J PM-двигателя От 0,001 до 9999,000 кг/мІ =0.01
+	progReg16(MX2_H119,"H119",valH119);      // H119 Постоянная стабилизации PM двигателя От 0 до 120% с =100
+	progReg16(MX2_H121,"H121",valH121);      // H121 Минимальная частота PM двигателя От 0,0 до 25,5%  =10 (default)
+	progReg16(MX2_H122,"H122",valH122);      // H122 Ток холостого хода PM двигателя От 0,00 до 100,00%   =50 (default)
+	#ifndef DEMO   // для демо не надо термозащиты настраивать иначе вечная ошибка Е35.1
+	progReg16(MX2_C005,"C005",valC005);      // C005 Функция входа [5] [также вход «PTC»]   = 19 PTC Термистор с положительным ТКС для тепловой защиты (только C005)
+	#endif
+	progReg16(MX2_b091,"b091",valb091);      // b091 Выбор способа остановки 0 (торможение до полной остановки),1 (остановка выбегом)=1
+	progReg16(MX2_b021,"b021",valb021);      // b021 Режим работы при ограничении перегрузки =1
+	progReg16(MX2_b022,"b022",valb022);      // b022 Уровень ограничения перегрузки  200...2000 (0.1%) =                                      
+	progReg16(MX2_b023,"b023",valb023);      // b023  Время торможения при ограничении перегрузки (0.1 сек)=10
+	progReg16(MX2_A001,"A001",valA001);      // A001 Источник задания частоты =03
+	progReg16(MX2_A002,"A002",valA002);      // A002 Источник команды «Ход» 
+	progReg16(MX2_A003,"A003",FC_BASE_FREQ/10);    // A003 основная частота
+    progReg16(MX2_A004,"A004",DEF_FC_MAX_FREQ/10); // A004 установка максимальной частоты
+    progReg32(MX2_F002,"F002",FC_ACCEL_TIME);      // F002 Время разгона
+    progReg32(MX2_F002,"F003",FC_DEACCEL_TIME);    // F003 Торможения разгона
+    journal.jprintf(". . . OK\r\n");
+	return err;
+ }
+
+
 
 // Установить целевую частоту
 // параметр показывать сообщение сообщение или нет, два оставшихся параметра границы

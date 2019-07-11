@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.029"				// Версия прошивки
+#define VERSION			"1.030"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -345,8 +345,8 @@ const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax
 #define SUPC_MR_BODDIS_ENABLE (0x0u << 13) /**< \brief (SUPC_MR) the core brownout detector is enabled. */
 #define SUPC_MR_BODDIS_DISABLE (0x1u << 13) /**< \brief (SUPC_MR) the core brownout detector is disabled. */
 
-// GPBR  - 8 32x битных регистров не обнуляющиеся при сбросе, Энергозависимы!
-// адереса - 0x90-0xDC General Purpose Backup Register GPBR   
+// GPBR  - восемь 32x битных регистров не обнуляющиеся при сбросе, Энергозависимы!
+// адреса - 0x90-0xDC General Purpose Backup Register GPBR   
 // The System Controller embeds Eight general-purpose backup registers.
 // Карта использования GPBR в НК
 // GPBR->SYS_GPBR[0] текущую задача (сдвиг на 8 влево) +  номера ошибки RTOS 
@@ -757,11 +757,10 @@ const char *fc_INFO1             = {"INFO1"};             // Первая стр
 const char *fc_cCURRENT          = {"cCURRENT"};          // Текущий ток (чтение)
 const char *fc_AUTO_RESET_FAULT  = {"ARSTFLT"};           // Флаг автоматического сброса не критичной ошибки инвертора
 const char *fc_LogWork		     = {"LOGW"};              // Флаг логировать во время работы
-const char *fc_ANALOG            = {"ANALOG"};            // Флаг аналогового управления
+const char *fc_ANALOG            = {"AN"};                // Флаг аналогового управления
 const char *fc_DAC               = {"DAC"};               // Получение текущего значения ЦАП
-const char *fc_LEVEL0            = {"LEVEL0"};            // Уровень частоты 0 в отсчетах ЦАП
-const char *fc_LEVEL100          = {"LEVEL100"};          // Уровень частоты 100% в  отсчетах ЦАП
-const char *fc_LEVELOFF          = {"LEVELOFF"};          // Уровень частоты в % при отключении
+const char *fc_LEVEL0            = {"L0"};                // Уровень частоты 0 в отсчетах ЦАП
+const char *fc_LEVEL100          = {"L100"};              // Уровень частоты 100% в  отсчетах ЦАП
 const char *fc_BLOCK             = {"BLOCK"};             // флаг глобальная ошибка инвертора - работа инвертора запрещена блокировку можно сбросить установив в 0
 const char *fc_ERROR             = {"ERROR"};             // Получить код ошибки
 const char *fc_UPTIME            = {"UPTIME"};            // Время обновления алгоритма пид регулятора (мсек) Основной цикл управления
@@ -1214,11 +1213,11 @@ enum TYPE_COMMAND
   pSAVE,                         // 10 запись настроек ТН
   pWAIT,                         // 11 перевод в режим ожидания ТН (пустое расписание)
   pRESUME,                       // 12 Восстановление работы из режима ожидания
+  pPROG_FC,                      // 13 Первоначальное программирование частотного преобразователя
   pEND14                         // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 
-const char *hp_commands_names[] = { "EMPTY", "START", "AUTOSTART", "STOP", "RESET", "RESTART", "REPEAT", "NETWORK",
-		"JFORMAT", "SFORMAT", "SAVE", "WAIT", "RESUME",  "UNKNOWN"};
+const char *hp_commands_names[] = {"EMPTY", "START", "AUTOSTART", "STOP", "RESET", "RESTART", "REPEAT", "NETWORK", "JFORMAT", "SFORMAT", "SAVE", "WAIT", "RESUME", "PROG_FC", "UNKNOWN"};
 
 //  Перечисляемый тип -ТИПЫ уведомлений
 enum MESSAGE          
@@ -1241,8 +1240,7 @@ enum SMS_SERVICE
   pSMS_RU,                       // Сервис sms.ru
   pSMSC_RU,                      // Сервис smsc.ru
   pSMSC_UA,                      // Сервис smsc.ua
-  pSMSCLUB_UA,                   // Сервис smsclub.mobi
-  pEND12
+  pSMSCLUB_UA                    // Сервис smsclub.mobi
 };
 
 //  Перечисляемый тип - тип фреона

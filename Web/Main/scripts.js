@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.029";
+var VER_WEB = "1.030";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -605,7 +605,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
 								} else if(values[0] == "test_SMS") {
 									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
-								} else if(values[0].indexOf("set_SAVE")==0) { 
+								} else if(values[0] == "progFC") {
+									alert(values[1]);
+								} else if(values[0].indexOf("set_SAVE")==0) {
 									if(values[1] >= 0) {
 										if(values[0].match(/SCHDLR$/)) alert("Настройки расписаний сохранены!");
 										else if(values[0].match(/STATS$/)) alert("Статистика сохранена!");

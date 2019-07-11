@@ -7,15 +7,15 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcanalog,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
-		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
+		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(L0),get_pFC(L100),get_pFC(LOFF)");
 		};
 	</script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-<h1>Настройки инвертора Omron MX2 <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+<h1>Настройки инвертора Omron MX2 <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'> <input type="submit" value="Программирование (1*)" onclick='loadParam("progFC")'></h1>
 
   <div class="row1">
    <table>
@@ -28,7 +28,7 @@
    <tbody>
     <tr><td>Время опроса инвертора (миллисекунд)</td><td id="get_pfc-tr"></td></tr>
     <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_pfc-logw" onchange="setParam('get_pFC(LOGW)');"></td></tr>
-    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>1</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
+    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>2</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
     <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_pfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STOP)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
@@ -59,28 +59,26 @@
 
    </tbody>
    </table>
-<br>1. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
+<br>1. Установка регистров (программирование) Omron MX2 под требования НК, после программирования надо сделать автонастройку (H001=1).<br/>
+       При программировании считается что установлены параметры связи по умолчанию (С071=5, С072=1, С074=0, С075=1, С076=2, С077=0, С078=0).<br/>
+    2. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД.<br/>
   </div>
 
-<div name="hide_fcanalog" class="row1">
+<div name="hide_fcan" class="row1">
 	<h2>Аналоговое управление</h2>
 	<table>
 	<thead>
 		<tr>
-			<th>Использовать аналоговый выход</th>
 			<th>Значение DAC</th>
-			<th>pin</th>
-			<th>Уровень «0» (диск. ЦАП)</th>
-			<th>Уровень «100» (диск. ЦАП)</th>
-			<th>Уровень выключения %</th>
+			<th>Уровень «0» (ЦАП)</th>
+			<th>Уровень «100» (ЦАП)</th>
+			<th>Pin</th>
 		</tr>
 		<tr>
-			<td><input type="checkbox" name="get_pfc-analog" id="get_pfc-analog" onchange="setParam('get_pFC(ANALOG)');"></td>
 			<td id="get_pfc-dac"></td>
+			<td><input id="get_pfc-l0" type="number" min="0" max="4096" step="1"><input type="submit" value=">" onclick="setParam('get_pFC(L0)');"></td>
+			<td><input id="get_pfc-l100" type="number" min="0" max="4096" step="1"><input  type="submit" value=">" onclick="setParam('get_pFC(L100)');"></td>
 			<td id="get_pfc-pin"></td> 
-			<td><input id="get_pfc-level0" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_pfc-level02"  type="submit" value=">"  onclick="setParam('get_pFC(LEVEL0)');"></td>
-			<td><input id="get_pfc-level100" type="number"  min="0" max="4096" step="1" value="-1"><input id="get_pfc-level1002" type="submit" value=">"  onclick="setParam('get_pFC(LEVEL100)');"></td>
-			<td><input id="get_pfc-leveloff" type="number"  min="0" max="100" step="1" value="-1"><input id="get_pfc-leveloff2" type="submit" value=">"  onclick="setParam('get_pFC(LEVELOFF)');"></td>
 		</tr>		
 	</thead>
 	<tbody>
