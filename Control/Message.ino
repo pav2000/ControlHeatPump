@@ -78,7 +78,7 @@ boolean Message::dnsUpdate()
 {
 	boolean ret = false;
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
-		dnsUpadateSMTP = dnsUpadateSMS = true;
+		dnsUpadateSMTP = dnsUpadateSMS = true; 
 		WDT_Restart(WDT);
 	}
 	if(dnsUpadateSMTP) //надо обновлятся
