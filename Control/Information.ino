@@ -1289,7 +1289,7 @@ boolean clientMQTT::dnsUpdate()
 {
 	boolean ret = false;
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
-		dnsUpadateSMTP = dnsUpadateSMS = true;
+		dnsUpadateMQTT =dnsUpadateNARMON = true;  // Обновляться надо
 		WDT_Restart(WDT);
 	}
 	if(dnsUpadateMQTT) //надо обновлятся
