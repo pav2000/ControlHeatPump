@@ -17,7 +17,7 @@ $(document).ready(function(){
 <body class="log">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Журнал  <a href="/journal.txt" download=""><button>Загрузить</button></a> <a href="#" onclick="updatelog();return false"><button>Обновить</button></a> <input type="submit" value="Очистить"  onclick='loadParam("RESET_JOURNAL",true)'></h1>
+	<h1>Журнал <a href="/journal.txt" download=""><button>Загрузить</button></a> <a href="#" onclick="updatelog();return false"><button>Обновить</button></a> <input type="submit" value="Очистить" onclick='loadParam("RESET_JOURNAL",true)'> <input type="submit" value="?" onclick='window.open("log-help.html")' style="float:right;margin-right:10px;"></h1>
 	<div class="row1">
 		<textarea wrap="off" readonly="readonly" id="textarea"></textarea>
 	</div>

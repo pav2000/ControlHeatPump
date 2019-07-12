@@ -1219,97 +1219,113 @@ void parserGET(uint8_t thread, int8_t )
 			continue;
 		} // end CONST1
 
-		if (strcmp(str,"get_sysInfo")==0)  // Функция вывода системной информации для разработчика
+		if(strncmp(str, "get_sys", 7) == 0)
 		{
+			str += 7;
 			STORE_DEBUG_INFO(26);
-			strcat(strReturn,"Источник загрузкки web интерфейса |");
-			switch (HP.get_SourceWeb())
-			{
-			case pMIN_WEB:   strcat(strReturn,"internal;"); break;
-			case pSD_WEB:    strcat(strReturn,"SD card;"); break;
-			case pFLASH_WEB: strcat(strReturn,"SPI Flash;"); break;
-			default:         strcat(strReturn,"unknown;"); break;
+			if(strcmp(str, "Info") == 0) { // "get_sysInfo" - Функция вывода системной информации для разработчика
+				strcat(strReturn,"Источник загрузкки web интерфейса |");
+				switch (HP.get_SourceWeb())
+				{
+				case pMIN_WEB:   strcat(strReturn,"internal;"); break;
+				case pSD_WEB:    strcat(strReturn,"SD card;"); break;
+				case pFLASH_WEB: strcat(strReturn,"SPI Flash;"); break;
+				default:         strcat(strReturn,"unknown;"); break;
+				}
+
+				strcat(strReturn,"Входное напряжение питания контроллера (В): |");
+	#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
+				_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
+	#else
+				m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
+	#endif
+				m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
+				//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
+				//getIDchip(strReturn); strcat(strReturn,";");
+				//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
+
+	#ifdef DRV_EEV_L9333          // Контроль за работой драйвера ЭРВ
+				strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
+				if (digitalReadDirect(PIN_STEP_DIAG))  strcat(strReturn,"Error L9333;"); else strcat(strReturn,"Normal;");
+	#endif
+				m_snprintf(strReturn+strlen(strReturn), 256, "Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|0x%04X;", lastErrorFreeRtosCode);
+
+				startSupcStatusReg |= SUPC->SUPC_SR;                                  // Копим изменения
+				m_snprintf(strReturn += strlen(strReturn), 256, "Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|0x%08X %08X %08X", SUPC->SUPC_SMMR, SUPC->SUPC_MR, startSupcStatusReg);  // Регистры состояния контроллера питания
+				if((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT) strcat(strReturn," bad VDDIN!");
+				strcat(strReturn,";");
+
+				// Вывод строки статуса
+				STORE_DEBUG_INFO(46);
+				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
+				for(i = 0; i < RNUMBER; i++) strReturn += m_snprintf(strReturn, 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
+				//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
+				//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
+				strcat(strReturn,";");
+
+				STORE_DEBUG_INFO(47);
+				strcat(strReturn,"<b> Времена</b>|;");
+				strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
+				strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Время текущего состояния ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
+
+				strcat(strReturn,"<b> Счетчики ошибок</b>|;");
+				strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
+				if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
+				strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>3</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины SPI|");_itoa(HP.num_resMutexSPI,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины I2C|");_itoa(HP.num_resMutexI2C,strReturn);strcat(strReturn,";");
+	#ifdef MQTT
+				strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
+	#endif
+				strcat(strReturn,"Счетчик неудачных ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
+	#ifdef USE_ELECTROMETER_SDM
+				strcat(strReturn,"Счетчик числа ошибок чтения электро-счетчика|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
+	#endif
+				if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
+
+				strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
+				strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE1() / 1000.0, 2);strcat(strReturn,";");
+	#ifdef  FLOWCON
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+	#endif
+				strcat(strReturn,"<b> Сезонные счетчики</b>|;");
+				strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE2() / 1000.0, 2);strcat(strReturn,";");
+	#ifdef  FLOWCON
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+	#endif
+
+				STORE_DEBUG_INFO(48);
+				strcat(strReturn,"<b> Статистика за день</b>|;");
+				strReturn += strlen(strReturn);
+				Stats.StatsWebTable(strReturn);
+
+			} else if(strcmp(str, "Err") == 0) { // "get_sysErr" - Описание всех ошибок
+				strReturn += strlen(strReturn);
+				for(i = 0; i >= ERR_ERRMAX; i--) {
+					strReturn += m_snprintf(strReturn, 256, "%d|%s;", i, noteError[abs(i)]);
+					if(strReturn >= Socket[thread].outBuf + sizeof(Socket[thread].outBuf) - 256) {
+						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) {
+							journal.jprintf("$Error send buf:  %s\n", (char*) Socket[thread].inBuf);
+							break;
+						}
+						strReturn = Socket[thread].outBuf;
+						strReturn[0] = '\0';
+					}
+				}
 			}
-
-			strcat(strReturn,"Входное напряжение питания контроллера (В): |");
-#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
-			_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
-#else
-			m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
-#endif
-			m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
-			//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
-			//getIDchip(strReturn); strcat(strReturn,";");
-			//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
-
-#ifdef DRV_EEV_L9333          // Контроль за работой драйвера ЭРВ
-			strcat(strReturn,"Контроль за работой драйвера ЭРВ |");
-			if (digitalReadDirect(PIN_STEP_DIAG))  strcat(strReturn,"Error L9333;"); else strcat(strReturn,"Normal;");
-#endif
-			m_snprintf(strReturn+strlen(strReturn), 256, "Состояние FreeRTOS при старте (task+err_code) <sup>2</sup>|0x%04X;", lastErrorFreeRtosCode);
-
-			startSupcStatusReg |= SUPC->SUPC_SR;                                  // Копим изменения
-			m_snprintf(strReturn += strlen(strReturn), 256, "Регистры контроллера питания (SUPC) SAM3X8E [SUPC_SMMR SUPC_MR SUPC_SR]|0x%08X %08X %08X", SUPC->SUPC_SMMR, SUPC->SUPC_MR, startSupcStatusReg);  // Регистры состояния контроллера питания
-			if((startSupcStatusReg|SUPC_SR_SMS)==SUPC_SR_SMS_PRESENT) strcat(strReturn," bad VDDIN!");
-			strcat(strReturn,";");
-
-			// Вывод строки статуса
-			STORE_DEBUG_INFO(46);
-			strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s]", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()]);
-			for(i = 0; i < RNUMBER; i++) strReturn += m_snprintf(strReturn, 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
-			//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
-			//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
-			strcat(strReturn,";");
-
-			STORE_DEBUG_INFO(47);
-			strcat(strReturn,"<b> Времена</b>|;");
-			strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
-			strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Время текущего состояния ТН|");DecodeTimeDate(HP.get_command_completed(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Время старта компрессора|");DecodeTimeDate(HP.get_startCompressor(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Время останова компрессора|");DecodeTimeDate(HP.get_stopCompressor(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Время сохранения текущих настроек ТН|");DecodeTimeDate(HP.get_saveTime(),strReturn);strcat(strReturn,";");
-
-			strcat(strReturn,"<b> Счетчики ошибок</b>|;");
-			strcat(strReturn,"Счетчик текущего числа повторных попыток пуска ТН|");
-			if(HP.get_State()==pWORK_HP) { _itoa(HP.num_repeat,strReturn);strcat(strReturn,";");} else strcat(strReturn,"0;");
-			strcat(strReturn,"Счетчик \"Потеря связи с "); strcat(strReturn,nameWiznet);strcat(strReturn,"\", повторная инициализация  <sup>3</sup>|");_itoa(HP.num_resW5200,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины SPI|");_itoa(HP.num_resMutexSPI,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Счетчик числа сбросов мютекса захвата шины I2C|");_itoa(HP.num_resMutexI2C,strReturn);strcat(strReturn,";");
-#ifdef MQTT
-			strcat(strReturn,"Счетчик числа повторных соединений MQTT клиента|");_itoa(HP.num_resMQTT,strReturn);strcat(strReturn,";");
-#endif
-			strcat(strReturn,"Счетчик неудачных ping|");_itoa(HP.num_resPing,strReturn);strcat(strReturn,";");
-#ifdef USE_ELECTROMETER_SDM
-			strcat(strReturn,"Счетчик числа ошибок чтения электро-счетчика|");_itoa(HP.dSDM.get_numErr(),strReturn);strcat(strReturn,";");
-#endif
-			if (HP.dFC.get_present()) strcat(strReturn,"Счетчик числа ошибок чтения частотного преобразователя (RS485)|");_itoa(HP.dFC.get_numErr(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
-
-			strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
-			strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
-			strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE1() / 1000.0, 2);strcat(strReturn,";");
-#ifdef  FLOWCON
-			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
-#endif
-			strcat(strReturn,"<b> Сезонные счетчики</b>|;");
-			strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
-			strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
-			strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE2() / 1000.0, 2);strcat(strReturn,";");
-#ifdef  FLOWCON
-			if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
-#endif
-
-			STORE_DEBUG_INFO(48);
-			strcat(strReturn,"<b> Статистика за день</b>|;");
-			strReturn += strlen(strReturn);
-			Stats.StatsWebTable(strReturn);
-
-			ADD_WEBDELIM(strReturn) ;    continue;
-		} // sisInfo
+			ADD_WEBDELIM(strReturn); continue;
+		}
 		STORE_DEBUG_INFO(27);
 
 		if (strcmp(str,"test_Mail")==0)  // Функция test_mail

@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.030"				// Версия прошивки
+#define VERSION			"1.031"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -461,6 +461,7 @@ const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax
 #define ERR_SD_WRITE		-90			// ошибка записи на SD карту
 #define ERR_FC_RCOMP		-91			// Не возможно остановить инвертор с помошью RCOMP
 
+#define ERR_ERRMAX			-91 		// Последняя ошибка
 
 // Предупреждения
 #define WARNING_VALUE        1         // Попытка установить значение за границами диапазона запрос типа SET
