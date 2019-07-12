@@ -478,6 +478,7 @@ const char *cYes= {"Да" };
 const char *cNo = {"Нет"};
 const char *cOne= {"1"  };
 const char *cZero={"0"  };
+const char *cOk=  {"Ok" };
 const char *cError={"error"};
 const char *cInvalid={"invalid"};
 const char *cStrEnd={"\n"};

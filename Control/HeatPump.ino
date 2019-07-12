@@ -1692,28 +1692,40 @@ if(b && (get_modWork() & pBOILER)){
   	Pump_HeatFloor(b); 				  				// насос ТП
 
 }
-// Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки
+// Сброс инвертора если он стоит в ошибке, проверяется наличие инвертора и проверка ошибки после сброса
 // Проводится различный сброс в зависимости от конфигурации
 int8_t HeatPump::ResetFC()
 {
-	if(!dFC.get_present()) return OK;                                                 // Инвертора нет выходим
+	if(!dFC.get_present()) return OK;                                       // Инвертора нет выходим
+// 1. Проверка наличия ошибки	
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
-	if (sInput[SERRFC].get_lastErr()==OK) return OK;                          // Инвертор сбрасывать не надо
+    sInput[SERRFC].Read();                                                  // Обновить значение
+	if (sInput[SERRFC].get_lastErr()==OK) {                                 // Инвертор сбрасывать не надо
+	#ifdef DEBUG_MODWORK
+	journal.jprintf("%s: OK, no inverter reset required\r\n",sInput[SERRFC].get_name());
+	#endif
+	return OK; }
 #else
 	if(dFC.get_err() == OK) return OK;
 #endif
+// 2. Собственно сброс
 #ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
-	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();// Подать импульс сброса
-	journal.jprintf("Reset %s use RRESET\r\n",dFC.get_name());
+	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();         // Подать импульс сброса
+	journal.jprintf("Reset %s use RRESET: ",dFC.get_name());
 #else
-	dFC.reset_FC();                                                       // подать команду на сброс по модбас
-	if(dFC.get_blockFC()) return ERR_RESET_FC;                            // Инвертор блокирован
+	dFC.reset_FC();                                                         // подать команду на сброс по модбас
+    journal.jprintf("Reset %s use Modbus: ",dFC.get_name()); 
+//	if(dFC.get_blockFC()) return ERR_RESET_FC;                              // Инвертор блокирован
 #endif
+// 3. Проверка результатов сброса
+_delay(100);
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
-	_delay(100);
 	sInput[SERRFC].Read();
-	if (sInput[SERRFC].get_lastErr()==OK) return OK;// Инвертор сброшен
-	else return ERR_RESET_FC;// Сброс не прошел
+	if (sInput[SERRFC].get_lastErr()==OK) {journal.jprintf("%s\r\n",cOk);return OK;}// Инвертор сброшен
+	else {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
+#else
+   if(dFC.get_blockFC()) {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;};  // Инвертор блокирован	
+   else                  {journal.jprintf("%s\r\n",cOk);return OK;}                 // Инвертор сброшен
 #endif
 	return OK;
 }
@@ -1760,7 +1772,13 @@ int8_t HeatPump::StartResume(boolean start)
 	{
 		if((get_State() == pWORK_HP) || (get_State() == pSTOPING_HP) || (get_State() == pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf(pP_DATE, "  Start . . .\n");
-		eraseError();                                      // Обнулить ошибку
+		//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
+		if((ResetFC()) != OK)                                // Сброс инвертора если нужно
+		{
+			set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
+			return error;
+		}
+		eraseError();                                      // Обнулить ошибку только после сброса инвертора! иначе она может повторно возникнет при ошибке инвертора
 		//lastEEV=-1;                                      // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  не было)
 	} else {
 		if(get_State() != pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
@@ -1789,7 +1807,7 @@ int8_t HeatPump::StartResume(boolean start)
 		set_Error(ERR_NO_WORK, (char*) __FUNCTION__);
 		return error;
 	}
-
+    if(get_State() != pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 #ifdef EEV_DEF
 	if((!sADC[PEVA].get_present()) && (dEEV.get_ruleEEV() == TEVAOUT_PEVA))  //  Отсутвует датчик давления, и выбран алгоритм ЭРВ который его использует",
 	{
@@ -1849,20 +1867,18 @@ int8_t HeatPump::StartResume(boolean start)
 
 	//  set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке для проверки EEV
 
-	// 5. Конфигурируем ТН -----------------------------------------------------------------------
-	if(get_State() != pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 
-	// 6. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
+	// 5. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
 	if(!start)  // Команда Resume
 		while(check_compressor_pause()) {
 			_delay(100 * 1000);
 			if(get_State() != pSTARTING_HP) return error;
 		}    // Могли нажать кнопку стоп, выход из процесса запуска
 
-	//  7. Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
+	//  6. Конфигурируем 3 и 4-х клапаны и включаем насосы ПАУЗА после включения насосов
 	if(!configHP(Status.modWork)) return error;
 
-	// 9. Включение компрессора и запуск обновления EEV -----------------------------------------------------
+	// 7. Включение компрессора и запуск обновления EEV -----------------------------------------------------
 	if(get_State() != pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
 	if(is_next_command_stop()) return error;			    // следующая команда останов, выходим
 #ifdef USE_ELECTROMETER_SDM
@@ -1886,11 +1902,11 @@ int8_t HeatPump::StartResume(boolean start)
 			}
 		}
 #endif
-		if((ResetFC()) != OK)                         // Сброс инвертора если нужно
-		{
-			set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
-			return error;
-		}
+	//	if((ResetFC()) != OK)                         // Сброс инвертора если нужно
+	//	{
+	//		set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
+	//		return error;
+	//	}
 		compressorON(); // Компрессор включить если нет ошибок и надо включаться
 	}
 
