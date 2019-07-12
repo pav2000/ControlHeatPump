@@ -1724,7 +1724,7 @@ _delay(100);
 	if (sInput[SERRFC].get_lastErr()==OK) {journal.jprintf("%s\r\n",cOk);return OK;}// Инвертор сброшен
 	else {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
 #else
-   if(dFC.get_blockFC()) {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;};  // Инвертор блокирован	
+   if(dFC.get_blockFC()) {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}   // Инвертор блокирован
    else                  {journal.jprintf("%s\r\n",cOk);return OK;}                 // Инвертор сброшен
 #endif
 	return OK;
@@ -1933,7 +1933,13 @@ void HeatPump::resetPID()
 {
 #ifdef PID_FORMULA2
 	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
-	pidw.pre_err = ((Status.modWork & pHEAT) ? Prof.Heat.tempPID : (Status.modWork & pBOILER) ? Prof.Boiler.tempPID : Prof.Cool.tempPID) - FEED;
+	pidw.pre_err = Status.modWork & pHEAT ? Prof.Heat.tempPID - FEED : Status.modWork & pBOILER ?
+#ifdef SUPERBOILER
+			Prof.Boiler.tempPID - PressToTemp(PCON)
+#else
+			Prof.Boiler.tempPID - FEED
+#endif
+			: Prof.Cool.tempPID - FEED;
 	pidw.sum = dFC.get_target() * 1000;
 	pidw.min = dFC.get_minFreq() * 1000;
 	pidw.max = dFC.get_maxFreq() * 1000;
@@ -2220,7 +2226,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		updatePidBoiler=xTaskGetTickCount();
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
-        int16_t newFC = updatePID((Prof.Boiler.tempPID-PressToTemp(PCON)), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
+        int16_t newFC = updatePID((Prof.Boiler.tempPID - PressToTemp(PCON)), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #else
 		Status.ret=pBp12;
 		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
