@@ -2647,11 +2647,11 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 // ========================== P A R S E R  P O S T =================================
 #define emptyStr			WEB_HEADER_END  		 // пустая строка после которой начинаются данные
 #define MAX_FILE_LEN		64  	                 // максимальная длина имени файла
-const char Title[]          = {"Title: "};           // где лежит имя файла
-const char Length[]         = {"Content-Length: "};  // где лежит длина файла
-const char SETTINGS[]       = {"*SETTINGS*"};        // Идентификатор передачи настроек (лежит в Title:)
-const char LOAD_START[]     = {"*SPI_FLASH*"};       // Идентификатор начала загрузки веб морды (лежит в Title:)
-const char LOAD_END[]       = {"*SPI_FLASH_END*"};   // Идентификатор колнца загрузки веб морды (лежит в Title:)
+const char Title[]          = "Title: ";           // где лежит имя файла
+const char Length[]         = "Content-Length: ";  // где лежит длина файла
+const char SETTINGS[]       = "*SETTINGS*";        // Идентификатор передачи настроек (лежит в Title:)
+const char LOAD_START[]     = "*SPI_FLASH*";       // Идентификатор начала загрузки веб морды (лежит в Title:)
+const char LOAD_END[]       = "*SPI_FLASH_END*";   // Идентификатор колнца загрузки веб морды (лежит в Title:)
 
 uint16_t numFilesWeb=0;                   // Число загруженных файлов
 boolean  settingNow=false;                // признак начала загрузки настроек
@@ -2660,96 +2660,115 @@ boolean  settingNow=false;                // признак начала заг�
 // Возврат тип ответа (потом берется из массива строк)
 TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 {
-	static byte *ptr,*pStart;
+	static byte *ptr, *pStart;
 	char *nameFile;      // указатель имя файла
-	uint8_t  i=0;
-	int32_t len, full_len=0, lenFile;
-	//journal.jprintf("POST >%s\n",Socket[thread].inPtr);
+	int32_t len, full_len = 0, lenFile;
+
+	//journal.printf(" POST =>"); journal.printf("%s\n", Socket[thread].inPtr); if(strlen(Socket[thread].inPtr) >= PRINTF_BUF) journal.printf("%s\n", Socket[thread].inPtr + PRINTF_BUF - 1);
 	STORE_DEBUG_INFO(51);
 
 	// Поиски во входном буфере: данных, имени файла и длинны файла
-	ptr = (byte*) strstr((char*)Socket[thread].inPtr,emptyStr)+strlen(emptyStr);                // поиск начала даных
+	ptr = (byte*) strstr(Socket[thread].inPtr, emptyStr) + sizeof(emptyStr) - 1;    // поиск начала даных
 
-	if((nameFile=strstr((char*)Socket[thread].inPtr,Title)+strlen((char*)Title)) == 0) {journal.jprintf("Upload: Name file not found\n");return pLOAD_ERR;} // Имя файла не найдено, запрос не верен, выходим
-	for(i=0;i<MAX_FILE_LEN;i++) {     // поиск окончания имени файла
-		if (*(nameFile+i)==13) {*(nameFile+i)=0;break;}
+	if((nameFile = strstr(Socket[thread].inPtr, Title)) == NULL) { // Имя файла не найдено, запрос не верен, выходим
+		journal.jprintf("Upload: Name not found!\n");
+		return pLOAD_ERR;
 	}
-	if (strlen(nameFile)>=MAX_FILE_LEN-1){ // проверка длины имени файла
-		journal.jprintf("Upload: file name %s is longer than %d bytes.\n",nameFile,MAX_FILE_LEN-1); return pLOAD_ERR; }
-	urldecode((char*)Socket[thread].outBuf,nameFile,128);
-	nameFile=(char*)Socket[thread].outBuf;
-
-
-	if((pStart=(byte*)strstr((char*)Socket[thread].inPtr, Length)+strlen((char*)Length)) == 0) {journal.jprintf("Upload: Size %s not found\n",nameFile);return pLOAD_ERR;} // Размер файла не найден, запрос не верен, выходим
-	lenFile=atoi((char*)pStart);	// получить длину
-	if ((lenFile==0)&&((strcmp(nameFile,LOAD_START)!=0)&&(strcmp(nameFile,LOAD_END)!=0))) {journal.jprintf("Upload: Length %s is zero\n",nameFile); return pLOAD_ERR; }
-
+	nameFile += sizeof(Title) - 1;
+	char *tmp = strchr(nameFile, '\r');
+	if(tmp == NULL || tmp - nameFile >= MAX_FILE_LEN) {
+		nameFile[MAX_FILE_LEN] = '\0';
+		journal.jprintf("Upload: %s name length > %d bytes!\n", nameFile, MAX_FILE_LEN - 1);
+		return pLOAD_ERR;
+	}
+	pStart = (byte*) strstr(Socket[thread].inPtr, Length);
+	if(pStart == NULL) { // Размер файла не найден, запрос не верен, выходим
+		journal.jprintf("Upload: %s - length not found!\n", nameFile);
+		return pLOAD_ERR;
+	}
+	pStart += sizeof(Length) - 1;
+	*tmp = '\0';
+	urldecode(Socket[thread].outBuf, nameFile, 128);
+	nameFile = Socket[thread].outBuf;
+	tmp = strchr((char*) pStart, '\r');
+	if(tmp) {
+		*tmp = '\0';
+		lenFile = atoi((char*) pStart);	// получить длину
+	} else lenFile = 0;
+	if((lenFile == 0) && ((strcmp(nameFile, LOAD_START) != 0) && (strcmp(nameFile, LOAD_END) != 0))) {
+		journal.jprintf("Upload: %s length = %s!\n", nameFile, pStart);
+		return pLOAD_ERR;
+	}
 	// все нашлось, можно обрабатывать
 	//    if (lenFile>0) journal.jprintf("-POST- file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
-
-	full_len=size-(ptr - (byte *)Socket[thread].inBuf);                                           // длина (остаток) данных (файла) в буфере
-
+	full_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
-	if (strcmp(nameFile,SETTINGS)==0){  // Чтение настроек
+	if(strcmp(nameFile, SETTINGS) == 0) {  // Чтение настроек
 		STORE_DEBUG_INFO(52);
 		// Определение начала данных (поиск HEADER_BIN)
-		if((strstr((char*) ptr,HEADER_BIN)) == NULL) {  // Заголовок не найден
-			journal.jprintf("Upload: Wrong save format: %s\n",nameFile);
+		if((strstr((char*) ptr, HEADER_BIN)) == NULL) {  // Заголовок не найден
+			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
 			return pSETTINGS_ERR;
 		}
-		full_len=size-(ptr - (byte *)Socket[thread].inBuf); // определяем размер данных в пакете
-		memcpy(Socket[thread].outBuf,ptr,full_len);         // копируем начало данных в буфер
+		full_len = size - (ptr - (byte *) Socket[thread].inBuf); // определяем размер данных в пакете
+		memcpy(Socket[thread].outBuf, ptr, full_len);         // копируем начало данных в буфер
 
-		while (full_len<lenFile)  // Чтение остальных данных по сети
+		while(full_len < lenFile)  // Чтение остальных данных по сети
 		{
 			_delay(10);
-			len=Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-			if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                               // Ограничить размером в максимальный размер пакета w5200
-			Socket[thread].client.read(Socket[thread].inBuf,len);                      // прочитать буфер
-			if (full_len+len>=(int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
-			memcpy(Socket[thread].outBuf+full_len,Socket[thread].inBuf,len);           // Добавить пакет в буфер
-			full_len=full_len+len;                                                     // определить размер данных
+			len = Socket[thread].client.get_ReceivedSizeRX();                          // получить длину входного пакета
+			if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
+			Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+			if(full_len + len >= (int32_t) sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
+			memcpy(Socket[thread].outBuf + full_len, Socket[thread].inBuf, len);           // Добавить пакет в буфер
+			full_len = full_len + len;                                                     // определить размер данных
 		}
-		ptr =(byte*)Socket[thread].outBuf + sizeof(HEADER_BIN)-1;                     // отрезать заголовок в данных
-		journal.jprintf("Loading %s, length %d bytes:\n",SETTINGS, full_len);
+		ptr = (byte*) Socket[thread].outBuf + sizeof(HEADER_BIN) - 1;                     // отрезать заголовок в данных
+		journal.jprintf("Loading %s, length %d bytes:\n", SETTINGS, full_len);
 		// Чтение настроек из ptr
 		len = HP.load(ptr, 1);
 		if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
 		boolean ret = true;
 		// Чтение профиля
 		ptr += len;
-		if(HP.Prof.loadFromBuf(0, ptr)!= OK) ret = false;   // чтение профиля
+		if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;   // чтение профиля
 		if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;  // чтения расписания
 		HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
-		if (ret) return pSETTINGS_OK; else return pSETTINGS_ERR;
+		if(ret) return pSETTINGS_OK;
+		else return pSETTINGS_ERR;
 	} //if (strcmp(nameFile,"*SETTINGS*")==0)
 
 	// загрузка вебморды
 	  else if(SerialFlash.ready()) { // если флеш диск присутвует на плате (морда может отсутствовать)
 		STORE_DEBUG_INFO(53);
-		if (strcmp(nameFile,LOAD_START)==0){  // начало загрузки вебморды
+		if(strcmp(nameFile, LOAD_START) == 0) {  // начало загрузки вебморды
 
-			if (SemaphoreTake(xLoadingWebSemaphore,10)!=pdPASS) {journal.jprintf("%s: Upload already started\n",(char*) __FUNCTION__);SemaphoreGive(xLoadingWebSemaphore);return pLOAD_ERR;} // Cемафор не был захвачен,?????? очень странно
-			numFilesWeb=0;
-			journal.jprintf(pP_TIME,"Start upload, erase SPI disk ");
+			if(SemaphoreTake(xLoadingWebSemaphore, 10) != pdPASS) {
+				journal.jprintf("%s: Upload already started\n", (char*) __FUNCTION__);
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_ERR;
+			} // Cемафор не был захвачен,?????? очень странно
+			numFilesWeb = 0;
+			journal.jprintf(pP_TIME, "Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
-			while (SerialFlash.ready() == false) {
-		    	xSemaphoreGive (xWebThreadSemaphore); // отдать семафор вебморды, что бы обработались другие потоки веб морды	
-				vTaskDelay(1000/ portTICK_PERIOD_MS);
-				if(SemaphoreTake(xWebThreadSemaphore, (3*W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) { // получить семафор веб морды
-				journal.jprintf("%s: Socket %d %s\n",(char*) __FUNCTION__, Socket[thread].sock, MutexWebThreadBuzy);	
-				return pLOAD_ERR;} // если не удается захватить мютекс, то ошибка и выход
+			while(SerialFlash.ready() == false) {
+				xSemaphoreGive(xWebThreadSemaphore); // отдать семафор вебморды, что бы обработались другие потоки веб морды
+				vTaskDelay(1000 / portTICK_PERIOD_MS);
+				if(SemaphoreTake(xWebThreadSemaphore, (3 * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) { // получить семафор веб морды
+					journal.jprintf("%s: Socket %d %s\n", (char*) __FUNCTION__, Socket[thread].sock, MutexWebThreadBuzy);
+					return pLOAD_ERR;
+				} // если не удается захватить мютекс, то ошибка и выход
 				journal.jprintf(".");
 			}
 			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
 			return pNULL;
-		} else  if (strcmp(nameFile,LOAD_END)==0){  // Окончание загрузки вебморды
+		} else if(strcmp(nameFile, LOAD_END) == 0) {  // Окончание загрузки вебморды
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
-				journal.jprintf(pP_TIME,"Ok, %d files uploaded, free %d bytes\n", numFilesWeb, SerialFlash.free_size());
+				journal.jprintf(pP_TIME, "Ok, %d files uploaded, free %d bytes\n", numFilesWeb,	SerialFlash.free_size());
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_OK;
 			} else { 	// семафор БЫЛ не захвачен, ошибка, отдать обратно
-				journal.jprintf("%s: Unable to finish upload\n", (char*) __FUNCTION__);
+				journal.jprintf("%s: Unable to finish upload!\n", (char*) __FUNCTION__);
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_ERR;
 			}
@@ -2765,13 +2784,16 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			} else { // семафор БЫЛ не захвачен, ошибка, отдать обратно
 				uint8_t ip[4];
 				W5100.readSnDIPR(Socket[thread].sock, ip);
-				journal.jprintf("Unable to upload file %s (%d.%d.%d.%d)\n", nameFile, ip[0], ip[1], ip[2], ip[3]);
+				journal.jprintf("Unable to upload file %s (%d.%d.%d.%d)!\n", nameFile, ip[0], ip[1], ip[2], ip[3]);
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_ERR;
 			}
 		}
+	} else {
+		journal.jprintf("%s: Upload: No SPI flash!\n", (char*) __FUNCTION__);
+		SemaphoreGive (xLoadingWebSemaphore);
+		return pNO_DISK;
 	}
-	else { journal.jprintf("%s: Upload: No SPI flash\n",(char*)__FUNCTION__);SemaphoreGive(xLoadingWebSemaphore); return pNO_DISK;}
 	return pPOST_ERR; // До сюда добегать не должны
 }
 // Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
