@@ -437,7 +437,7 @@ void parserGET(uint8_t thread, int8_t )
 #endif
 	char *str,*x,*y,*z;
 	float pm=0;
-	int8_t i;
+	int16_t i;
 	// переменные для удаленных датчиков
 #ifdef SENSOR_IP                           // Получение данных удаленного датчика
 	char *ptr;
@@ -2042,12 +2042,8 @@ void parserGET(uint8_t thread, int8_t )
 			//////////////////////////////////////////// массивы датчиков ////////////////////////////////////////////////
 			STORE_DEBUG_INFO(40);
 
-			if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
-				strcat(strReturn, "E04");
-				ADD_WEBDELIM(strReturn);
-				continue;
-			} else { // Массивы датчиков
-				int16_t p = -1;
+			{ // Массивы датчиков
+				int p = -1;
 				// Датчики температуры смещение
 				if(strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
 				{
@@ -2163,6 +2159,11 @@ x_get_aTemp:
 						// ---- SET ----------------- Для температурных датчиков - запросы на УСТАНОВКУ парметров
 						} else if(strncmp(str,"set_", 4)==0) {              // Функция set_
 							str += 4;
+							if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
+								strcat(strReturn, "E04");
+								ADD_WEBDELIM(strReturn);
+								continue;
+							}
 							if(strncmp(str, "test", 4)==0)           // Функция set_testTemp
 							{ 	if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
 									{ _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn);  continue;  }
@@ -2189,7 +2190,6 @@ x_get_aTemp:
 									if(n == 0) HP.sTemp[p].set_address(NULL, 0);   // Сброс адреса
 									else if(OW_scanTable) HP.sTemp[p].set_address(OW_scanTable[n-1].address, OW_scanTable[n-1].bus);
 								}
-								//      strcat(strReturn,int2str(pm)); ADD_WEBDELIM(strReturn); continue;}   // вернуть номер
 								goto x_get_aTemp;
 							}  // вернуть адрес
 						}
@@ -2229,6 +2229,11 @@ x_get_aTemp:
 						// ---- SET ----------------- Для реле - запросы на УСТАНОВКУ парметров
 						} else if(strncmp(str,"set_", 4)==0) {              // Функция set_
 							str += 4;
+							if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
+								strcat(strReturn, "E04");
+								ADD_WEBDELIM(strReturn);
+								continue;
+							}
 							if(strncmp(str, "Relay", 5) == 0)           // Функция set_Relay
 							{
 								if(HP.dRelay[p].set_Relay(pm == 0 ? fR_StatusAllOff : fR_StatusManual) == OK) // Установить значение
@@ -2323,6 +2328,11 @@ x_get_aTemp:
 						// ---- SET ----------------- Для аналоговых  датчиков - запросы на УСТАНОВКУ парметров
 						} else if(strncmp(str,"set_", 4)==0) {              // Функция set_
 							str += 4;
+							if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
+								strcat(strReturn, "E04");
+								ADD_WEBDELIM(strReturn);
+								continue;
+							}
 							if(strncmp(str, "test", 4) == 0)           // Функция set_testPress
 							{
 								if(HP.sADC[p].set_testPress(rd(pm, 100)) == OK)    // Установить значение
@@ -2368,7 +2378,7 @@ x_get_aTemp:
 				} //if ((strstr(str,"Press")>0)
 
 				// Частотные датчики ДАТЧИКИ ПОТОКА
-				if (strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
+				if(strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
 				{
 					STORE_DEBUG_INFO(43);
 					for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=i; break;} // Частотные датчики
@@ -2434,6 +2444,11 @@ x_get_aTemp:
 						// ---- SET ----------------- Для частотных  датчиков - запросы на УСТАНОВКУ парметров
 						} else if(strncmp(str, "set_", 4)==0) {              // Функция set_
 							str += 4;
+							if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
+								strcat(strReturn, "E04");
+								ADD_WEBDELIM(strReturn);
+								continue;
+							}
 							if(strncmp(str, "min", 3)==0) {           // Функция set_minFlow
 								HP.sFrequency[p].set_minValue(pm);
 								_ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); ADD_WEBDELIM(strReturn); continue;
@@ -2465,7 +2480,7 @@ x_get_aTemp:
 				} //if ((strstr(str,"Flow")>0)
 
 				//  Датчики сухой контакт
-				if (strstr(str,"Input"))          // Проверка для запросов содержащих Input
+				if(strstr(str,"Input"))          // Проверка для запросов содержащих Input
 				{
 					STORE_DEBUG_INFO(42);
 					for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=i; break;} // Поиск среди имен
@@ -2523,7 +2538,11 @@ x_get_aTemp:
 					// ---- SET ----------------- Для датчиков сухой контакт - запросы на УСТАНОВКУ парметров
 						} else if(strncmp(str,"set_", 4)==0) {              // Функция set_
 							str += 4;
-
+							if(pm == ATOF_ERROR) {   // Ошибка преобразования для чисел - завершить запрос с ошибкой
+								strcat(strReturn, "E04");
+								ADD_WEBDELIM(strReturn);
+								continue;
+							}
 							if(strncmp(str, "test", 4)==0)           // Функция set_testInput
 							{ if (HP.sInput[p].set_testInput((int16_t)pm)==OK)    // Установить значение
 								{ if (HP.sInput[p].get_testInput()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn); continue; }
@@ -2544,7 +2563,7 @@ x_get_aTemp:
 			} // Массивы датчиков
 
 			// ------------------------ конец разбора -------------------------------------------------
-			x_FunctionNotFound:
+x_FunctionNotFound:
 			strcat(strReturn,"E01");                             // функция не найдена ошибка
 			ADD_WEBDELIM(strReturn) ;
 			continue;
