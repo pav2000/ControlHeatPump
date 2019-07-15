@@ -703,20 +703,6 @@ const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинг
 const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
 const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
 
-/*// Статистика
-const char *stat_NONE      = {"none"};
-const char *stat_TIN       = {"Tin"};              // средняя темпеартура дома
-const char *stat_TOUT      = {"Tout"};             // средняя темпеартура улицы
-const char *stat_TBOILER   = {"Tboiler"};          // средняя температура бойлера
-const char *stat_HOUR      = {"Hour"};             // число накопленных часов должно быть 24
-const char *stat_HMOTO     = {"Hmoto"};            // моточасы за сутки
-const char *stat_ENERGYCO  = {"EnergyCO"};         // выработанная энергия
-const char *stat_ENERGY220 = {"Energy220"};        // потраченная энергия
-const char *stat_COP       = {"COP"};              // КОП
-const char *stat_POWERCO   = {"PowerCO"};          // средння мощность СО
-const char *stat_POWER220  = {"Power220"};         // средняя потребляемая мощность
-*/
-
 // Описание имен параметров Графиков для функций get_Chart ЕСЛИ нет совпадения с именами объектов
 const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
 const char *chart_posEEV    = {"posEEV"};                    // позиция ЭРВ
@@ -979,7 +965,7 @@ const char *noteError[] = {"Ok",                                                
                            "Указано FNUMBER (количество частотных датчиков) более трех штук",                   //-73
                            "Поток в ПТО ниже установленного уровня (проблема - насос, фильтр)",                 //-74
                            "Слишком большое напряжение сети",                                                   //-75
-                           "Слишком большая портебляемая мощность",                                             //-76
+                           "Слишком большая потребляемая мощность",                                             //-76
                            "Modbus требуется, но отсутвует в конфигурации",                                      //-77
                            "Не удалось сбросить инвертор после ошибки",                               			//-78
                            "Отсутствует проток в испарителе (срабатывание SEVA)",                               //-79
