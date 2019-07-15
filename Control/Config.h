@@ -2644,6 +2644,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define RADIO_SENSORS_PSPEED	115200			// Скорость порта
 	#define RADIO_SENSORS_PCONFIG	SERIAL_8N1		// Конфигурация порта
 
+	#define USE_SERIAL4								// Использовать порт Serial4 на D52(RXD2) и A11/D62(TXD2)
+
 	#define FORMAT_DATE_STR_CUSTOM
     const char *FORMAT_DATE_STR	 = { "%02d.%02d.%04d" };
 	#define HTTP_TIME_REQUEST	// Запрос времени по HTTP протоколу с собственного сервера (текстовый файл формата: "<время UTC>;").
