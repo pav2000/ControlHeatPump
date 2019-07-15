@@ -628,7 +628,7 @@ boolean devOmronMX2::reset_FC()
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   write_0x05_bit(MX2_RESET, true);               // подать команду на сброс по модбас
-  journal.jprintf("Reset %s use Modbus\r\n",name);  
+//  journal.jprintf("Reset %s use Modbus\r\n",name);  
 #endif
 if (err==OK) return true;  else return false;                          
 }

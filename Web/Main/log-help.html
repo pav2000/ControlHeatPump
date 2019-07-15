@@ -1,0 +1,27 @@
+<html>
+<head>
+	<title>Журнал. Народный контроллер ТН</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src='scripts.js'></script>
+	<script type="text/javascript">
+		window.onload = function() {
+		updateParam("get_sysErr");
+	};
+	</script>
+</head>
+<body class="log">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>Ошибки</h1>
+<div class="row1">
+<table style="font-size: small">
+	<thead><tr><th width="10">Номер</th><th>Описание</th></tr></thead>
+	<tbody id="get_syserr">
+	</tbody>
+</table>
+</div>
+</div>
+</body>
+</html>
