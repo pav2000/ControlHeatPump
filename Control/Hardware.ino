@@ -348,24 +348,24 @@ int8_t sensorDiditalInput::set_alarmInput( int16_t i)
 // Число импульсов рассчитывается за базовый период (BASE_TIME), т.к частоты малы период надо савить не менее 5 сек
 
 // Обработчики прерываний для подсчета частоты
-void InterruptFLOWCON()  
-{
-#ifdef FLOWCON  
-  HP.sFrequency[FLOWCON].InterruptHandler();
-#endif  
-}
-void InterruptFLOWEVA()  
-{
-#ifdef FLOWEVA   
-  HP.sFrequency[FLOWEVA].InterruptHandler();
-#endif  
-}
-#ifdef FLOWPCON  
-void InterruptFLOWPCON() 
-{
-  HP.sFrequency[FLOWPCON].InterruptHandler();
-}
-#endif  
+#if FNUMBER > 0
+void InterruptFreq0() { HP.sFrequency[0].InterruptHandler(); }
+#if FNUMBER > 1
+void InterruptFreq1() { HP.sFrequency[1].InterruptHandler(); }
+#if FNUMBER > 2
+void InterruptFreq2() { HP.sFrequency[2].InterruptHandler(); }
+#if FNUMBER > 3
+void InterruptFreq3() { HP.sFrequency[3].InterruptHandler(); }
+#if FNUMBER > 4
+void InterruptFreq4() { HP.sFrequency[4].InterruptHandler(); }
+#if FNUMBER > 5
+	#error FNUMBER is too big! Maximum 5 allowed!
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
 
 // Инициализация частотного датчика, на входе номер сенсора по порядку
 void sensorFrequency::initFrequency(int sensor)                     
@@ -392,14 +392,21 @@ void sensorFrequency::initFrequency(int sensor)
    //   CHANGE прерывание вызывается при смене значения на порту, с LOW на HIGH и наоборот
    //   RISING прерывание вызывается только при смене значения на порту с LOW на HIGH
    //   FALLING прерывание вызывается только при смене значения на порту с HIGH на LOW
-        if (sensor==FLOWCON)  attachInterrupt(pin,InterruptFLOWCON,CHANGE); 
-#ifdef FLOWEVA        
-   else if (sensor==FLOWEVA)  attachInterrupt(pin,InterruptFLOWEVA,CHANGE); 
-#endif   
-#ifdef FLOWPCON   
-   else if (sensor==FLOWPCON) attachInterrupt(pin,InterruptFLOWPCON,CHANGE);
-#endif     
-   else err=ERR_NUM_FREQUENCY;
+#if FNUMBER > 0
+   if(pin == 0) attachInterrupt(pin, InterruptFreq0, CHANGE);
+#if FNUMBER > 1
+   else if(pin == 1) attachInterrupt(pin, InterruptFreq1, CHANGE);
+#if FNUMBER > 2
+   else if(pin == 2) attachInterrupt(pin, InterruptFreq2, CHANGE);
+#if FNUMBER > 3
+   else if(pin == 3) attachInterrupt(pin, InterruptFreq3, CHANGE);
+#if FNUMBER > 4
+   else if(pin == 4) attachInterrupt(pin, InterruptFreq4, CHANGE);
+#endif
+#endif
+#endif
+#endif
+#endif
 }
 
 // Получить (точнее обновить) значение датчика, возвращает 1, если новое значение рассчитано

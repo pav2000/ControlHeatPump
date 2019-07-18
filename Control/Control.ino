@@ -190,7 +190,7 @@ void setup() {
 
 #ifdef SPI_FLASH
   pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
-  pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти (ВРЕМЕННО, пока нет реализации)
+  pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти
 #endif
   SPI_switchAllOFF();                         // Выключить все устройства на SPI
 

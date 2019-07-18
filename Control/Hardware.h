@@ -174,7 +174,7 @@ class sensorFrequency
 public:
   void initFrequency(int sensor);                   // Инициализация частотного датчика
   void reset(void);									// Сброс счетчика
-  __attribute__((always_inline)) inline void InterruptHandler(){count++;} // обработчик перываний
+  __attribute__((always_inline)) inline void InterruptHandler(){count++;} // обработчик прерываний
   int8_t  Read();                                         // Чтение датчика (точнее расчет значения) возвращает ошибку или ОК
   __attribute__((always_inline)) inline uint32_t get_Frequency(){return Frequency;}   // Получить ЧАСТОТУ датчика при последнем чтении
   __attribute__((always_inline)) inline uint16_t get_Value(){return Value;}           // Получить Значение датчика при последнем чтении, литры в час
