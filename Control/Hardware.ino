@@ -393,15 +393,15 @@ void sensorFrequency::initFrequency(int sensor)
    //   RISING прерывание вызывается только при смене значения на порту с LOW на HIGH
    //   FALLING прерывание вызывается только при смене значения на порту с HIGH на LOW
 #if FNUMBER > 0
-   if(pin == 0) attachInterrupt(pin, InterruptFreq0, CHANGE);
+   if(sensor == 0) attachInterrupt(pin, InterruptFreq0, CHANGE);
 #if FNUMBER > 1
-   else if(pin == 1) attachInterrupt(pin, InterruptFreq1, CHANGE);
+   else if(sensor == 1) attachInterrupt(pin, InterruptFreq1, CHANGE);
 #if FNUMBER > 2
-   else if(pin == 2) attachInterrupt(pin, InterruptFreq2, CHANGE);
+   else if(sensor == 2) attachInterrupt(pin, InterruptFreq2, CHANGE);
 #if FNUMBER > 3
-   else if(pin == 3) attachInterrupt(pin, InterruptFreq3, CHANGE);
+   else if(sensor == 3) attachInterrupt(pin, InterruptFreq3, CHANGE);
 #if FNUMBER > 4
-   else if(pin == 4) attachInterrupt(pin, InterruptFreq4, CHANGE);
+   else if(sensor == 4) attachInterrupt(pin, InterruptFreq4, CHANGE);
 #endif
 #endif
 #endif
