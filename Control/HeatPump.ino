@@ -241,6 +241,31 @@ void HeatPump::set_testMode(TEST_MODE b)
 //  eraseError();
 }
 
+// Получить источник загрузки веб морды
+TYPE_SOURSE_WEB HeatPump::get_SourceWeb()
+{
+	if(get_WebStoreOnSPIFlash()) {
+		switch (get_fSPIFlash())
+		{
+		case 0:
+			if(get_fSD() == 2) return pSD_WEB;
+			break;
+		case 2:
+			return pFLASH_WEB;
+		}
+		return pMIN_WEB;
+	} else {
+		switch (get_fSD())
+		{
+		case 0:
+			if(get_fSPIFlash() == 2) return pFLASH_WEB;
+			break;
+		case 2:
+			return pSD_WEB;
+		}
+		return pMIN_WEB;
+	}
+}
 
 // -------------------------------------------------------------------------
 // СОХРАНЕНИЕ ВОССТАНОВЛЕНИЕ  ----------------------------------------------

@@ -2645,16 +2645,20 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 }
 
 // ========================== P A R S E R  P O S T =================================
-#define emptyStr			WEB_HEADER_END  		 // пустая строка после которой начинаются данные
-#define MAX_FILE_LEN		64  	                 // максимальная длина имени файла
-const char Title[]          = "Title: ";           // где лежит имя файла
-const char Length[]         = "Content-Length: ";  // где лежит длина файла
-const char SETTINGS[]       = "*SETTINGS*";        // Идентификатор передачи настроек (лежит в Title:)
-const char LOAD_START[]     = "*SPI_FLASH*";       // Идентификатор начала загрузки веб морды (лежит в Title:)
-const char LOAD_END[]       = "*SPI_FLASH_END*";   // Идентификатор колнца загрузки веб морды (лежит в Title:)
+#define emptyStr			WEB_HEADER_END  	   // пустая строка после которой начинаются данные
+#define MAX_FILE_LEN		64  	              // максимальная длина имени файла
+const char Title[]          = "Title: ";          // где лежит имя файла
+const char Length[]         = "Content-Length: "; // где лежит длина файла
+const char SETTINGS[]       = "*SETTINGS*";       // Идентификатор передачи настроек (лежит в Title:)
+const char LOAD_FLASH_START[]= "*SPI_FLASH*";     // Идентификатор начала загрузки веб морды в SPI Flash (лежит в Title:)
+const char LOAD_FLASH_END[]  = "*SPI_FLASH_END*"; // Идентификатор колнца загрузки веб морды в SPI Flash (лежит в Title:)
+const char LOAD_SD_START[]   = "*SD_CARD*";       // Идентификатор начала загрузки веб морды в SD (лежит в Title:)
+const char LOAD_SD_END[]     = "*SD_CARD_END*";   // Идентификатор колнца загрузки веб морды в SD (лежит в Title:)
 
-uint16_t numFilesWeb=0;                   // Число загруженных файлов
-boolean  settingNow=false;                // признак начала загрузки настроек
+uint16_t numFilesWeb = 0;                   // Число загруженных файлов
+uint8_t  fUploadFilesTo = 0;                // Куда грузим файлы: 1 - SPI flash, 2 - SD card
+uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf);
+uint32_t loadFileToSD(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf);
 // Разбор и обработка POST запроса inPtr входная строка использует outBuf для хранения файла настроек!
 // Сейчас реализована загрузка настроек и загрузка веб морды в спи диск
 // Возврат тип ответа (потом берется из массива строк)
@@ -2695,18 +2699,13 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		*tmp = '\0';
 		lenFile = atoi((char*) pStart);	// получить длину
 	} else lenFile = 0;
-	if((lenFile == 0) && ((strcmp(nameFile, LOAD_START) != 0) && (strcmp(nameFile, LOAD_END) != 0))) {
-		journal.jprintf("Upload: %s length = %s!\n", nameFile, pStart);
-		return pLOAD_ERR;
-	}
 	// все нашлось, можно обрабатывать
-	//    if (lenFile>0) journal.jprintf("-POST- file %s size %d bytes\n",nameFile,lenFile);  // Все получилось, начало и конец загрузки не выводим
 	full_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
 	if(strcmp(nameFile, SETTINGS) == 0) {  // Чтение настроек
 		STORE_DEBUG_INFO(52);
 		// Определение начала данных (поиск HEADER_BIN)
-		if((strstr((char*) ptr, HEADER_BIN)) == NULL) {  // Заголовок не найден
+		if((strstr((char*) ptr, HEADER_BIN)) == NULL || lenFile == 0) {  // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
 			return pSETTINGS_ERR;
 		}
@@ -2739,10 +2738,10 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	} //if (strcmp(nameFile,"*SETTINGS*")==0)
 
 	// загрузка вебморды
-	  else if(SerialFlash.ready()) { // если флеш диск присутвует на плате (морда может отсутствовать)
+	  else if(HP.get_fSPIFlash() || HP.get_fSD())  { // если есть куда писать
 		STORE_DEBUG_INFO(53);
-		if(strcmp(nameFile, LOAD_START) == 0) {  // начало загрузки вебморды
-
+		if(HP.get_fSPIFlash() && strcmp(nameFile, LOAD_FLASH_START) == 0) {  // начало загрузки вебморды в SPI Flash
+			fUploadFilesTo = 1;
 			if(SemaphoreTake(xLoadingWebSemaphore, 10) != pdPASS) {
 				journal.jprintf("%s: Upload already started\n", (char*) __FUNCTION__);
 				SemaphoreGive (xLoadingWebSemaphore);
@@ -2762,7 +2761,18 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			}
 			journal.jprintf(" Ok, free %d bytes\n", SerialFlash.free_size());
 			return pNULL;
-		} else if(strcmp(nameFile, LOAD_END) == 0) {  // Окончание загрузки вебморды
+		} else if(HP.get_fSD() && strcmp(nameFile, LOAD_SD_START) == 0) {  // начало загрузки вебморды в SD
+			fUploadFilesTo = 2;
+			if(SemaphoreTake(xLoadingWebSemaphore, 10) != pdPASS) {
+				journal.jprintf("%s: Upload already started\n", (char*) __FUNCTION__);
+				SemaphoreGive (xLoadingWebSemaphore);
+				return pLOAD_ERR;
+			}
+			numFilesWeb = 0;
+			journal.jprintf(pP_TIME, "Start upload to SD.\n");
+			return pNULL;
+		} else if(strcmp(nameFile, LOAD_FLASH_END) == 0 || strcmp(nameFile, LOAD_SD_END) == 0) {  // Окончание загрузки вебморды
+			fUploadFilesTo = 0;
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Семафор не захвачен (был захвачен ранее) все ок
 				journal.jprintf(pP_TIME, "Ok, %d files uploaded, free %d bytes\n", numFilesWeb,	SerialFlash.free_size());
 				SemaphoreGive (xLoadingWebSemaphore);
@@ -2774,12 +2784,26 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			}
 		} else { // загрузка отдельных файлов веб морды
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) != pdPASS) { // Cемафор  захвачен загрузка файла
-				if(loadFileToSpi(nameFile, lenFile, thread, ptr, full_len)) {
-					numFilesWeb++;
-					return pNULL;
-				} else {
-					SemaphoreGive (xLoadingWebSemaphore);
+				if(lenFile == 0) {
+					journal.jprintf("Upload: %s length = %s!\n", nameFile, pStart);
 					return pLOAD_ERR;
+				}
+				if(fUploadFilesTo == 1) {
+					if(loadFileToSpi(nameFile, lenFile, thread, ptr, full_len)) {
+						numFilesWeb++;
+						return pNULL;
+					} else {
+						SemaphoreGive (xLoadingWebSemaphore);
+						return pLOAD_ERR;
+					}
+				} else if(fUploadFilesTo == 2) {
+					if(loadFileToSD(nameFile, lenFile, thread, ptr, full_len)) {
+						numFilesWeb++;
+						return pNULL;
+					} else {
+						SemaphoreGive (xLoadingWebSemaphore);
+						return pLOAD_ERR;
+					}
 				}
 			} else { // семафор БЫЛ не захвачен, ошибка, отдать обратно
 				uint8_t ip[4];
@@ -2796,8 +2820,8 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	}
 	return pPOST_ERR; // До сюда добегать не должны
 }
-// Загрузка файла в спай память возвращает число записанных байт на диск 0 если ошибка
-// Файл может лежать во множестве пакетов. Считается что spi диск отформатирован и ожидает запись файлов с "нуля"
+// Загрузка файла в память возвращает число записанных байт на диск 0 если ошибка
+// Файл может лежать во множестве пакетов. Если в SPI Flash, то считается что spi диск отформатирован и ожидает запись файлов с "нуля"
 // Входные параметры:
 // nameFile - имя файла
 // lenFile - общая длина файла
@@ -2824,7 +2848,9 @@ uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* 
 			{
 				_delay(2);                                                                 // время на приход данных
 				len = Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-				if(len == 0) continue;
+				if(len == 0) {
+					if(Socket[thread].client.connected()) continue; else break;
+				}
 				//      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
 				Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
 				loadLen = loadLen + ff.write(Socket[thread].inBuf, len);                        // записать
@@ -2841,6 +2867,52 @@ uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* 
 				loadLen = 0;
 			}
 		} else journal.jprintf("Error open!\n");
+	} else journal.jprintf("Error create!\n");
+	return loadLen;
+}
+
+uint32_t loadFileToSD(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf)
+{
+	uint32_t loadLen = 0; // Обработанная (загруженная) длина
+	SdFile sdfile;
+	fname_t open_fname;
+
+	STORE_DEBUG_INFO(54);
+	journal.jprintf("%s - ", nameFile);
+	if(sdfile.opens(filename, O_WRONLY | O_TRUNC, &open_fname)) {
+		loadLen = sdfile.write(ptr, sizeBuf);
+		if(loadLen <= 0) {
+			journal.jprintf("Error wrote file %s!\n", nameFile);
+		} else {
+			uint16_t numPoint = 0;
+			while(loadLen < lenFile)  // Чтение остальных пакетов из сети
+			{
+				_delay(2);                                                                 // время на приход данных
+				int len = Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
+				if(len == 0) {
+					if(Socket[thread].client.connected()) continue; else break;
+				}
+				Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+				int wrote = sdfile.write(Socket[thread].inBuf, len);                        // записать
+				if(wrote <= 0) {
+					journal.jprintf("Error wrote file %s!\n", nameFile);
+					break;
+				}
+				loadLen += wrote;
+				numPoint++;
+				if(numPoint >= 10) {
+					numPoint = 0;
+					journal.jprintf(".");
+				}                       // точка на 15 кб приема (10 пакетов по 1540)
+			}
+		}
+		sdfile.sync();
+		sdfile.close();
+		if(loadLen == lenFile) journal.jprintf("%d\n", loadLen);
+		else { // Длины не совпали
+			journal.jprintf("%db, Error length!\n", loadLen);
+			loadLen = 0;
+		}
 	} else journal.jprintf("Error create!\n");
 	return loadLen;
 }
