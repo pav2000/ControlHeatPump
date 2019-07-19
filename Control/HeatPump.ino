@@ -241,6 +241,31 @@ void HeatPump::set_testMode(TEST_MODE b)
 //  eraseError();
 }
 
+// Получить источник загрузки веб морды
+TYPE_SOURSE_WEB HeatPump::get_SourceWeb()
+{
+	if(get_WebStoreOnSPIFlash()) {
+		switch (get_fSPIFlash())
+		{
+		case 0:
+			if(get_fSD() == 2) return pSD_WEB;
+			break;
+		case 2:
+			return pFLASH_WEB;
+		}
+		return pMIN_WEB;
+	} else {
+		switch (get_fSD())
+		{
+		case 0:
+			if(get_fSPIFlash() == 2) return pFLASH_WEB;
+			break;
+		case 2:
+			return pSD_WEB;
+		}
+		return pMIN_WEB;
+	}
+}
 
 // -------------------------------------------------------------------------
 // СОХРАНЕНИЕ ВОССТАНОВЛЕНИЕ  ----------------------------------------------
@@ -1702,7 +1727,7 @@ int8_t HeatPump::ResetFC()
     sInput[SERRFC].Read();                                                  // Обновить значение
 	if (sInput[SERRFC].get_lastErr()==OK) {                                 // Инвертор сбрасывать не надо
 	#ifdef DEBUG_MODWORK
-	journal.jprintf("%s: OK, no inverter reset required\r\n",sInput[SERRFC].get_name());
+	journal.jprintf(" %s: OK, no inverter reset required\r\n",sInput[SERRFC].get_name());
 	#endif
 	return OK; }
 #else
@@ -1711,10 +1736,10 @@ int8_t HeatPump::ResetFC()
 // 2. Собственно сброс
 #ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
 	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();         // Подать импульс сброса
-	journal.jprintf("Reset %s use RRESET: ",dFC.get_name());
+	journal.jprintf(" Reset %s use RRESET: ",dFC.get_name());
 #else
 	dFC.reset_FC();                                                         // подать команду на сброс по модбас
-    journal.jprintf("Reset %s use Modbus: ",dFC.get_name()); 
+    journal.jprintf(" Reset %s use Modbus: ",dFC.get_name()); 
 //	if(dFC.get_blockFC()) return ERR_RESET_FC;                              // Инвертор блокирован
 #endif
 // 3. Проверка результатов сброса

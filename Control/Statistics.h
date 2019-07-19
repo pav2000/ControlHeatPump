@@ -106,6 +106,7 @@ const char stats_csv_file_ext[] = ".csv";
 const char history_file_start[] = "hist_";
 uint8_t stats_buffer[SD_BLOCK];
 uint8_t history_buffer[SD_BLOCK];
+static fname_t open_fname;
 
 class Statistics
 {

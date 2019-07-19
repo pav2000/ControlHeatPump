@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.031"				// Версия прошивки
+#define VERSION			"1.032"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -302,6 +302,7 @@ const char* HEADER_FILE_NOT_FOUND = {"HTTP/1.1 404 Not Found\r\n\r\n<html>\r\n<h
 const char* HEADER_FILE_WEB       = {"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: keep-alive\r\nCache-Control: max-age=3600, must-revalidate\r\n\r\n"}; // КЕШ ИСПОЛЬЗУЕМ
 const char* HEADER_FILE_CSS       = {"HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nConnection: keep-alive\r\nCache-Control: max-age=3600, must-revalidate\r\n\r\n"}; // КЕШ ИСПОЛЬЗУЕМ
 const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};  // начало ответа на запрос
+static uint8_t  fWebUploadingFilesTo = 0;                // Куда грузим файлы: 1 - SPI flash, 2 - SD card
 
 // Константы регистров контроллера питания SOPC SAM3x ---------------------------------------
 // Регистр SMMR
@@ -441,7 +442,7 @@ const char* HEADER_ANSWER         = {"HTTP/1.1 200 OK\r\nContent-Type: text/ajax
 #define ERR_OPEN_I2C_JOURNAL -70       // Ошибка открытия журнала в I2C памяти (инициализация чипа)
 #define ERR_READ_I2C_JOURNAL -71       // Ошибка чтения журнала в I2C памяти
 #define ERR_WRITE_I2C_JOURNAL -72      // Ошибка записи журнала в I2C памяти
-#define ERR_NUM_FREQUENCY   -73        // Указано FNUMBER (количество частотных датчиков) более трех штук
+//#define ERR_   			-73        //
 #define ERR_MIN_FLOW        -74        // Поток в ПТО ниже установленного уровня
 #define ERR_MAX_VOLTAGE     -75        // Слишком большое напряжение сети
 #define ERR_MAX_POWER       -76        // Слишком большая портебляемая мощность
@@ -703,20 +704,6 @@ const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинг
 const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
 const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
 
-/*// Статистика
-const char *stat_NONE      = {"none"};
-const char *stat_TIN       = {"Tin"};              // средняя темпеартура дома
-const char *stat_TOUT      = {"Tout"};             // средняя темпеартура улицы
-const char *stat_TBOILER   = {"Tboiler"};          // средняя температура бойлера
-const char *stat_HOUR      = {"Hour"};             // число накопленных часов должно быть 24
-const char *stat_HMOTO     = {"Hmoto"};            // моточасы за сутки
-const char *stat_ENERGYCO  = {"EnergyCO"};         // выработанная энергия
-const char *stat_ENERGY220 = {"Energy220"};        // потраченная энергия
-const char *stat_COP       = {"COP"};              // КОП
-const char *stat_POWERCO   = {"PowerCO"};          // средння мощность СО
-const char *stat_POWER220  = {"Power220"};         // средняя потребляемая мощность
-*/
-
 // Описание имен параметров Графиков для функций get_Chart ЕСЛИ нет совпадения с именами объектов
 const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
 const char *chart_posEEV    = {"posEEV"};                    // позиция ЭРВ
@@ -976,10 +963,10 @@ const char *noteError[] = {"Ok",                                                
                            "Ошибка открытия журнала в I2C (инициализация чипа)", 		                        //-70
                            "Ошибка чтения журнала из I2C памяти",                                               //-71
                            "Ошибка записи журнала в I2C память",                                                //-72
-                           "Указано FNUMBER (количество частотных датчиков) более трех штук",                   //-73
+                           "",                   //-73
                            "Поток в ПТО ниже установленного уровня (проблема - насос, фильтр)",                 //-74
                            "Слишком большое напряжение сети",                                                   //-75
-                           "Слишком большая портебляемая мощность",                                             //-76
+                           "Слишком большая потребляемая мощность",                                             //-76
                            "Modbus требуется, но отсутвует в конфигурации",                                      //-77
                            "Не удалось сбросить инвертор после ошибки",                               			//-78
                            "Отсутствует проток в испарителе (срабатывание SEVA)",                               //-79

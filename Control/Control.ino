@@ -98,9 +98,21 @@ static HeatPump HP;                                                      // Кл
 static devModbus Modbus;                                                 // Класс модбас - управление инвертором
 SdFat card;                                                              // Карта памяти
 #ifdef NEXTION   
-  Nextion myNextion;                                                     // Дисплей
+Nextion myNextion;                                                     // Дисплей
 #endif
 
+// Use the Arduino core to set-up the unused USART2 on Serial4 (without serial events)
+#ifdef USE_SERIAL4
+RingBuffer rx_buffer5;
+RingBuffer tx_buffer5;
+USARTClass Serial4(USART2, USART2_IRQn, ID_USART2, &rx_buffer5, &tx_buffer5);
+//void serialEvent4() __attribute__((weak));
+//void serialEvent4() { }
+void USART2_Handler(void)   // Interrupt handler for UART2
+{
+	Serial4.IrqHandler();     // In turn calls on the Serial2 interrupt handler
+}
+#endif
 
 // Структура для хранения одного сокета, нужна для организации многопотоковой обработки
 #define fABORT_SOCK   0                     // флаг прекращения передачи (произошел сброс сети)
@@ -178,7 +190,7 @@ void setup() {
 
 #ifdef SPI_FLASH
   pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
-  pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти (ВРЕМЕННО, пока нет реализации)
+  pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти
 #endif
   SPI_switchAllOFF();                         // Выключить все устройства на SPI
 
@@ -347,6 +359,11 @@ x_I2C_init_std_message:
 	  _delay(5);
 	  check_radio_sensors();
   }
+#endif
+
+#ifdef USE_SERIAL4
+	PIO_Configure(PIOB, PIO_PERIPH_A, PIO_PB20A_TXD2 | PIO_PB21A_RXD2, PIO_DEFAULT);
+	//Serial4.begin(115200);
 #endif
 
 // 4. Инициализировать основной класс
@@ -657,7 +674,7 @@ void vWeb0(void *)
 		{
 			thisTime = xTaskGetTickCount();                                      // Запомнить тики
 			// 1. Проверка захваченого семафора сети ожидаем  3 времен W5200_TIME_WAIT если мютекса не получаем то сбрасывае мютекс
-			if(SemaphoreTake(xWebThreadSemaphore, (3 * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			if(SemaphoreTake(xWebThreadSemaphore, ((3 + (fWebUploadingFilesTo != 0) * 30) * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 				SemaphoreGive(xWebThreadSemaphore);
 				journal.jprintf(pP_TIME, "UNLOCK mutex xWebThread\n");
 				active = false;

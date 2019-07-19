@@ -234,6 +234,7 @@ int32_t Journal::send_Data(uint8_t thread)
 			return 0;
 		}
 		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0;        // передать пакет, при ошибке выйти
+		_delay(2);
 		sum = sum + len;                                                                        // сколько байт передано
 		if(sum >= available()) break;                                                           // Все передано уходим
 		num = num + len;                                                                        // Указатель на переданные данные
@@ -250,6 +251,7 @@ int32_t Journal::send_Data(uint8_t thread)
 			if (bufferTail-num>=W5200_MAX_LEN) len=W5200_MAX_LEN; else len=bufferTail-num; // Контроль достижения хвоста журнала
 		}
 		if(sendPacketRTOS(thread,(byte*)_data+num,len,0)==0) return 0;          // передать пакет, при ошибке выйти
+		_delay(2);
 		sum=sum+len;// сколько байт передано
 		if (sum>=available()) break;// Все передано уходим
 		num=num+len;// Указатель на переданные данные

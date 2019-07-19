@@ -211,7 +211,9 @@ int8_t  devOmronMX2::set_target(int16_t x,boolean show, int16_t _min, int16_t _m
             }
             
           if(err==OK)  { FC=x; if(show) journal.jprintf(" Set %s: %.2f [Hz]\r\n",name,FC/100.0);return err;} // установка частоты OK  - вывод сообщения если надо
-          else {state=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
+          else {err=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
+          // Проверка на установку частоты и адекватность инвертора
+          if( x!=read_0x03_32(MX2_TARGET_FR)) ({err=ERR_FC_ERROR; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}) 
    #else  // Аналоговое управление
          FC=x;
          dac=((level100-level0)*FC-0*level100)/(100-0);

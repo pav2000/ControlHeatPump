@@ -488,7 +488,7 @@ char * get_Schedule(uint32_t *sh)
 
 // Инициализация СД карты
 // возврат true - если успешно, false - карты нет работаем без нее
-boolean initSD(void)
+uint8_t initSD(void)
 {
 	boolean success = false;   // флаг успешности инициализации
 	journal.jprintf("Initializing SD card... ");
@@ -510,23 +510,13 @@ boolean initSD(void)
 		return false;
 	}
 
-	// 2. Проверка наличия индексного файла
-	if(!card.exists(INDEX_FILE)) {
-		journal.jprintf((char*) " ERROR - Can't find %s file on SD card!\n", INDEX_FILE);
-		//   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
-		HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SD карте", 0); // сформировать уведомление
-		SPI_switchW5200();
-		return false;
-	} // стартовый файл не найден
-	journal.jprintf((char*) " Found %s file\n", INDEX_FILE);
-
-	// 3. Вывод инфо о карте
+	// 2. Вывод инфо о карте
 	cid_t cid;
 	if(!card.card()->readCID(&cid)) {
 		journal.jprintf((char*) "$ERROR - readCID SD card failed!\n");
 		HP.message.setMessage(pMESSAGE_SD, (char*) "Ошибка чтения информации о карте (readCID)", 0); // сформировать уведомление
 		SPI_switchW5200();
-		return false;
+		return 0;
 	}
 	// вывод информации о карте
 	journal.jprintf((char*) "SD card info\n");
@@ -536,16 +526,25 @@ boolean initSD(void)
 	journal.jprintf((char*) " Volume is FAT%d\n", int(card.vol()->fatType()));
 	journal.jprintf((char*) " blocksPerCluster: %d\n", int(card.vol()->blocksPerCluster()));
 	journal.jprintf((char*) " clusterCount: %d\n", card.vol()->clusterCount());
-	uint32_t volFree = card.vol()->freeClusterCount();
-	float fs = 0.000512 * volFree * card.vol()->blocksPerCluster();
-	journal.jprintf((char*) " freeSpace: %.2f Mb\n", fs);
+	journal.jprintf((char*) " freeSpace: %.2f Mb\n", (float) 0.000512 * card.vol()->freeClusterCount() * card.vol()->blocksPerCluster());
+
+	// 3. Проверка наличия индексного файла
+	if(!card.exists(INDEX_FILE)) {
+		journal.jprintf((char*) " ERROR - Can't find %s file on SD card!\n", INDEX_FILE);
+		//   set_Error(ERR_SD_INDEX,"SD card");   // Уведомить об ошибке
+		HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SD карте", 0); // сформировать уведомление
+		SPI_switchW5200();
+		return 1;
+	} // стартовый файл не найден
+	journal.jprintf((char*) " Found %s file\n", INDEX_FILE);
+
 	SPI_switchW5200();
-	return true;
+	return 2;
 }
 
 // Инициализация SPI диска и проверка наличия веб морды (файл индекс), параметр true - вывод инфо в журнал false молча проверяем состояние
 // Возврат true - если морда есть на карте (готово к использованию), false - диск не рабоатет или нет морды (использовать нельзя)
-boolean initSpiDisk(boolean show)
+uint8_t initSpiDisk(boolean show)
 {
 #ifdef SPI_FLASH
 	unsigned char id[8];
@@ -561,17 +560,17 @@ boolean initSpiDisk(boolean show)
 			journal.jprintf(" Free: %d bytes\n", SerialFlash.free_size());
 			SerialFlash.readSerialNumber(id);
 			journal.jprintf(" Serial number: 0x%02x%02x%02x%02x%02x%02x%02x%02x\n", id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7]);
-	  	}
-			if (HP.get_WebStoreOnSPIFlash()) { // проверка наличия файла INDEX_FILE, если стоит флаг загрузки из флеша в настройках
-				if (!SerialFlash.exists((char*)INDEX_FILE)) { // файл не найден морды во флеше нет
-					HP.set_WebStoreOnSPIFlash(false); //  сбрасываем в оперативке (но не на флеше) флаг загрузки из флеш диска
-					if(show) journal.jprintf((char*) " ERROR - Can't find %s file on SPI flash!\n", INDEX_FILE);
-					HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SPI флеш диске", 0); // сформировать уведомление
-					return false; } 
-				else if(show) journal.jprintf((char*) " Found %s file\n", INDEX_FILE);	// файл найден
-			} // if HP.get_fSPIFlash()
-		
-		return true;
+		}
+		if (HP.get_WebStoreOnSPIFlash()) { // проверка наличия файла INDEX_FILE, если стоит флаг загрузки из флеша в настройках
+			if (!SerialFlash.exists((char*)INDEX_FILE)) { // файл не найден морды во флеше нет
+				HP.set_WebStoreOnSPIFlash(false);//  сбрасываем в оперативке (но не на флеше) флаг загрузки из флеш диска
+				if(show) journal.jprintf((char*) " ERROR - Can't find %s file on SPI flash!\n", INDEX_FILE);
+				HP.message.setMessage(pMESSAGE_SD, (char*) "Файл индекса не найден на SPI флеш диске", 0);// сформировать уведомление
+				return 1;
+			} else if(show) journal.jprintf((char*) " Found %s file\n", INDEX_FILE);	// файл найден
+		} // if HP.get_fSPIFlash()
+
+		return 2;
 	}
 #endif
 }

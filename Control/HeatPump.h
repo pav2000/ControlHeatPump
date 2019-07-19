@@ -222,15 +222,11 @@ class HeatPump
     inline TEST_MODE get_testMode(){return testMode;} // Получить текущий режим работы
     void     set_testMode(TEST_MODE t);    // Установить значение текущий режим работы
     boolean  get_onBoiler(){return onBoiler;} // Получить состояние трехходового точнее если true то идет нагрев бойлера
-    boolean  get_fSD() {return fSD;}        // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
-    void     set_fSD(boolean f) {fSD=f;}    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
-    boolean  get_fSPIFlash() {return fSPIFlash;}     // Получить флаг наличия РАБОТАЮЩЕГО флеш диска
-    void     set_fSPIFlash(boolean f) {fSPIFlash=f;}    // Установить флаг наличия РАБОТАЮЩЕГО флеш диска
-    TYPE_SOURSE_WEB get_SourceWeb()                    // Получить источник загрузки веб морды
-              { // return pMIN_WEB;                       // отладка минимальной морды
-                 if (get_WebStoreOnSPIFlash()){if(get_fSPIFlash()) return pFLASH_WEB; else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;}}
-                 else {if (get_fSD()) return pSD_WEB; else return pMIN_WEB;} return pERR_WEB;}
-      
+    uint8_t  get_fSD() { return fSD;}        // Получить флаг наличия РАБОТАЮЩЕЙ СД карты
+    void     set_fSD(uint8_t f) { fSD=f; }    // Установить флаг наличия РАБОТАЮЩЕЙ СД карты
+    uint8_t  get_fSPIFlash() { return fSPIFlash;}     // Получить флаг наличия РАБОТАЮЩЕГО флеш диска
+    void     set_fSPIFlash(uint8_t f) {fSPIFlash=f;}    // Установить флаг наличия РАБОТАЮЩЕГО флеш диска
+    TYPE_SOURSE_WEB get_SourceWeb();                    // Получить источник загрузки веб морды
     uint32_t get_errorReadDS18B20();    // Получить число ошибок чтения датчиков температуры
     void     Reset_TempErrors();		// Сбросить счетчик ошибок всех датчиков
     void     resetPID();				// Инициализировать переменные ПИД регулятора
@@ -543,8 +539,8 @@ class HeatPump
     int8_t error;                         // Код ошибки
     char   source_error[16];              // источник ошибки
     char   note_error[160+1];             // Строка c описанием ошибки формат "время источник:описание"
-    boolean fSD;                          // Признак наличия РАБОТАЮЩЕЙ SD карты
-    boolean fSPIFlash;                    // Признак наличия (физического) spi диска
+    uint8_t fSD;                          // Признак наличия SD карты: 0 - нет, 1 - есть, но пустая, 2 - есть, веб в наличии
+    uint8_t fSPIFlash;                    // Признак наличия (физического) SPI флеш: 0 - нет, 1 - есть, но пустая, 2 - есть, веб в наличии
     boolean startWait;                    // Начало работы с ожидания
      
     // Различные времена
