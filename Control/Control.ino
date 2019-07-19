@@ -674,7 +674,7 @@ void vWeb0(void *)
 		{
 			thisTime = xTaskGetTickCount();                                      // Запомнить тики
 			// 1. Проверка захваченого семафора сети ожидаем  3 времен W5200_TIME_WAIT если мютекса не получаем то сбрасывае мютекс
-			if(SemaphoreTake(xWebThreadSemaphore, (3 * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			if(SemaphoreTake(xWebThreadSemaphore, ((3 + (fWebUploadingFilesTo != 0) * 30) * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 				SemaphoreGive(xWebThreadSemaphore);
 				journal.jprintf(pP_TIME, "UNLOCK mutex xWebThread\n");
 				active = false;

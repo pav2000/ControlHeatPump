@@ -24,7 +24,6 @@
 
 #define temp_initbuf Socket[0].outBuf
 char filename[sizeof(stats_file_start)-1 + 4 + sizeof(stats_file_ext)];
-static fname_t open_fname;
 
 // what: 0 - Stats, 1 - History, Return: OK or Error
 int8_t Statistics::CreateOpenFile(uint8_t what)
@@ -57,7 +56,7 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 		newfile = 1;
 	}
 	if(!StatsFile.contiguousRange(what ? &HistoryBlockStart : &BlockStart, what ? &HistoryBlockEnd : &BlockEnd)) {
-		journal.jprintf("Error get blocks %s!\n", filename);
+		Error("get blocks", what);
 	} else {
 		journal.jprintf("[%u..%u] ", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
 		if(newfile) {
