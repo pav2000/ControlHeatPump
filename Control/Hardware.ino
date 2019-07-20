@@ -28,24 +28,29 @@
 // Старт считывания АЦП
 void start_ADC()
 {
-	adc_setup();                                       // setup ADC
-	pmc_enable_periph_clk(TC_INTERFACE_ID + 0 * 3 + 0);    // clock the TC0 channel 0
-
+	adc_setup();                                        // setup ADC
+#if ADC_TC0_CHA0
+	pmc_enable_periph_clk(TC_INTERFACE_ID + 0);         // clock TC0_CHA0 (WARNING: interfere with PWM2 output - analogWrite(2,n)
 	TcChannel * t = &(TC0->TC_CHANNEL)[0];              // pointer to TC0 registers for its channel 0
+	const uint32_t cprs = TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |// set clear and set from RA and RC compares
+						  TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
+#else
+	pmc_enable_periph_clk(TC_INTERFACE_ID + 3);         // clock TC1_CHA3
+	TcChannel * t = &(TC1->TC_CHANNEL)[0];              // pointer to TC1 registers for its channel 0
+	const uint32_t cprs = TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |// set clear and set from RA and RC compares
+						  TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
+#endif
 	t->TC_CCR = TC_CCR_CLKDIS;                          // disable internal clocking while setup regs
 	t->TC_IDR = 0xFFFFFFFF;                             // disable interrupts
 	t->TC_SR;                                           // read int status reg to clear pending
-	t->TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 |             // use TCLK1 (prescale by 2, = 42MHz)
-			TC_CMR_WAVE |                            // waveform mode
-			TC_CMR_WAVSEL_UP_RC |                    // count-up PWM using RC as threshold
-			TC_CMR_EEVT_XC0 |                        // Set external events from XC0 (this setup TIOB as output)
-			TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |    // set clear and set from RA and RC compares
-			TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
-
-	t->TC_RC = SystemCoreClock / 2 / ADC_FREQ;        // counter resets on RC, so sets period in terms of 42MHz clock
-	t->TC_RA = SystemCoreClock / 2 / ADC_FREQ / 2;     // roughly square wave
-	t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;  // re-enable local clocking and switch to hardware trigger source.
-
+	t->TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK1 |            // use TCLK1 (prescale by 2, = 42MHz)
+			TC_CMR_WAVE |                               // waveform mode
+			TC_CMR_WAVSEL_UP_RC |                       // count-up PWM using RC as threshold
+			TC_CMR_EEVT_XC0 |                           // Set external events from XC0 (this setup TIOB as output)
+			cprs;
+	t->TC_RC = SystemCoreClock / 2 / ADC_FREQ;          // counter resets on RC, so sets period in terms of 42MHz clock
+	t->TC_RA = SystemCoreClock / 2 / ADC_FREQ / 2;      // roughly square wave
+	t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;            // re-enable local clocking and switch to hardware trigger source.
 }
 
 // Установка АЦП
