@@ -2854,6 +2854,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				} else if(fWebUploadingFilesTo == 2) { // Запись на SD,
 					STORE_DEBUG_INFO(54);
 					journal.jprintf("%s (%d) ", nameFile, lenFile);
+					for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
 					if(wFile.opens(nameFile, O_CREAT | O_TRUNC | O_RDWR, &wfname)) {
 						wFile.timestamp(T_CREATE | T_ACCESS | T_WRITE, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 						if((int32_t)wFile.write(ptr, buf_len) != buf_len) {
@@ -2869,6 +2870,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 								}
 								Socket[thread].client.read(Socket[thread].inBuf, buf_len);                      // прочитать буфер
 								STORE_DEBUG_INFO(56);
+								for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
 								if((int32_t)wFile.write(Socket[thread].inBuf, buf_len) != buf_len) {
 									journal.jprintf("Error write file %s (%d,%d)!\n", nameFile, card.cardErrorCode(), card.cardErrorData());
 									break;
@@ -2884,7 +2886,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 						if(!wFile.close()) {
 							journal.jprintf("Error close file (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 						}
-						if(lenFile == 0) journal.jprintf("Ok\n"); else journal.jprintf("Error length %d!\n", lenFile);
+						if(lenFile == 0) journal.jprintf("Ok\n"); else journal.jprintf("Error - rest %d!\n", lenFile);
 					} else journal.jprintf("Error create (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 					if(lenFile == 0) {
 						numFilesWeb++;

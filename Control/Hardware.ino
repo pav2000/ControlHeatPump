@@ -29,17 +29,8 @@
 void start_ADC()
 {
 	adc_setup();                                        // setup ADC
-#if ADC_TC0_CHA0
-	pmc_enable_periph_clk(TC_INTERFACE_ID + 0);         // clock TC0_CHA0 (WARNING: interfere with PWM2 output - analogWrite(2,n)
-	TcChannel * t = &(TC0->TC_CHANNEL)[0];              // pointer to TC0 registers for its channel 0
-	const uint32_t cprs = TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |// set clear and set from RA and RC compares
-						  TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
-#else
-	pmc_enable_periph_clk(TC_INTERFACE_ID + 3);         // clock TC1_CHA3
-	TcChannel * t = &(TC1->TC_CHANNEL)[0];              // pointer to TC1 registers for its channel 0
-	const uint32_t cprs = TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |// set clear and set from RA and RC compares
-						  TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
-#endif
+	pmc_enable_periph_clk(TC_INTERFACE_ID + 2);         // clock TC0_CHA2, WARNING: interfere with output - analogWrite(58[AD4],n)
+	TcChannel * t = TC0->TC_CHANNEL + 2;                // pointer to TC0 registers for its channel 2
 	t->TC_CCR = TC_CCR_CLKDIS;                          // disable internal clocking while setup regs
 	t->TC_IDR = 0xFFFFFFFF;                             // disable interrupts
 	t->TC_SR;                                           // read int status reg to clear pending
@@ -47,7 +38,8 @@ void start_ADC()
 			TC_CMR_WAVE |                               // waveform mode
 			TC_CMR_WAVSEL_UP_RC |                       // count-up PWM using RC as threshold
 			TC_CMR_EEVT_XC0 |                           // Set external events from XC0 (this setup TIOB as output)
-			cprs;
+			TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET |		// set clear and set from RA and RC compares
+			TC_CMR_BCPB_NONE | TC_CMR_BCPC_NONE;
 	t->TC_RC = SystemCoreClock / 2 / ADC_FREQ;          // counter resets on RC, so sets period in terms of 42MHz clock
 	t->TC_RA = SystemCoreClock / 2 / ADC_FREQ / 2;      // roughly square wave
 	t->TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;            // re-enable local clocking and switch to hardware trigger source.
@@ -79,8 +71,8 @@ void adc_setup()
 	ADC->ADC_CHER = adcMask;         // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
 	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
 	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
-	// 12bit, 14MHz, trig source TIO from TC0
-	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG1 | ADC_MR_TRGEN;
+	// 12bit, 14MHz, trig source TIOA Output of the Timer Counter Channel 2
+	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG3 | ADC_MR_TRGEN;
 	adc_set_bias_current(ADC, 0);    // for sampling frequency: 0 - below 500 kHz, 1 - between 500 kHz and 1 MHz.
 }
 
