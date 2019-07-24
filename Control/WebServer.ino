@@ -2662,14 +2662,14 @@ uint16_t numFilesWeb = 0;                   // Число загруженных
 // Возврат тип ответа (потом берется из массива строк)
 TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 {
-	static byte *ptr, *pStart;
+	byte *ptr, *pStart;
 	char *nameFile;      // указатель имя файла
-	int32_t len, buf_len = 0, lenFile;
+	int32_t buf_len, lenFile;
 
 	//journal.printf(" POST =>"); journal.printf("%s\n", Socket[thread].inPtr); if(strlen(Socket[thread].inPtr) >= PRINTF_BUF) journal.printf("%s\n", Socket[thread].inPtr + PRINTF_BUF - 1);
 	STORE_DEBUG_INFO(51);
 
-	// Поиски во входном буфере: данных, имени файла и длинны файла
+	// Поиски во входном буфере: данных, имени файла и длины файла
 	ptr = (byte*) strstr(Socket[thread].inPtr, emptyStr) + sizeof(emptyStr) - 1;    // поиск начала даных
 
 	if((nameFile = strstr(Socket[thread].inPtr, Title)) == NULL) { // Имя файла не найдено, запрос не верен, выходим
@@ -2702,6 +2702,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	// В зависимости от имени файла (Title)
 	if(strcmp(nameFile, SETTINGS) == 0) {  // Чтение настроек
 		STORE_DEBUG_INFO(52);
+		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
 		if((strstr((char*) ptr, HEADER_BIN)) == NULL || lenFile == 0) {  // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
@@ -2709,7 +2710,6 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		}
 		buf_len = size - (ptr - (byte *) Socket[thread].inBuf); // определяем размер данных в пакете
 		memcpy(Socket[thread].outBuf, ptr, buf_len);         // копируем начало данных в буфер
-
 		while(buf_len < lenFile)  // Чтение остальных данных по сети
 		{
 			_delay(10);
@@ -2797,8 +2797,54 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 					journal.jprintf("Upload: %s length = %s!\n", nameFile, pStart);
 					return pLOAD_ERR;
 				}
+				// Файл может лежать во множестве пакетов. Если в SPI Flash, то считается что spi диск отформатирован и ожидает запись файлов с "нуля"
+				// Входные параметры:
+				// nameFile - имя файла
+				// lenFile - общая длина файла
+				// thread - поток веб сервера,котрый обрабатывает post запрос
+				// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr.
+				// buf_len - размер данных в буфере ptr (по сети осталось принять lenFile-buf_len)
 				if(fWebUploadingFilesTo == 1) {
-					if(loadFileToSpi(nameFile, lenFile, thread, ptr, buf_len)) {
+					uint16_t numPoint = 0;
+					int32_t loadLen; // Обработанная (загруженная) длина
+					STORE_DEBUG_INFO(54);
+					journal.jprintf("%s ", nameFile);
+					loadLen = SerialFlash.free_size();
+					if(lenFile > loadLen) {
+						journal.jprintf("Not enough space, free: %d\n", loadLen);
+						loadLen = 0;
+					} else {
+						loadLen = 0;
+						if(SerialFlash.create(nameFile, lenFile)) {
+							SerialFlashFile ff = SerialFlash.open(nameFile);
+							if(ff) {
+								if(buf_len > 0) loadLen = ff.write(ptr, buf_len); // первый пакет упаковали если он не нулевой
+								while(loadLen < lenFile)  // Чтение остальных пакетов из сети
+								{
+									_delay(2);                                                 // время на приход данных
+									buf_len = Socket[thread].client.get_ReceivedSizeRX(); // получить длину входного пакета
+									if(buf_len == 0) {
+										if(Socket[thread].client.connected()) continue;	else break;
+									}
+									//      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
+									Socket[thread].client.read(Socket[thread].inBuf, buf_len);        // прочитать буфер
+									loadLen = loadLen + ff.write(Socket[thread].inBuf, buf_len);             // записать
+									numPoint++;
+									if(numPoint >= 20) {                   // точка на 30 кб приема (20 пакетов по 1540)
+										numPoint = 0;
+										journal.jprintf(".");
+									}
+								}
+								ff.close();
+								if(loadLen == lenFile) journal.jprintf("%d\n", loadLen);
+								else { // Длины не совпали
+									journal.jprintf("%db, Error length!\n", loadLen);
+									loadLen = 0;
+								}
+							} else journal.jprintf("Error open!\n");
+						} else journal.jprintf("Error create!\n");
+					}
+					if(loadLen == lenFile) {
 						numFilesWeb++;
 						return pNULL;
 					} else {
@@ -2808,27 +2854,24 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				} else if(fWebUploadingFilesTo == 2) { // Запись на SD,
 					STORE_DEBUG_INFO(54);
 					journal.jprintf("%s (%d) ", nameFile, lenFile);
-					SPI_switchSD();
+					for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
 					if(wFile.opens(nameFile, O_CREAT | O_TRUNC | O_RDWR, &wfname)) {
 						wFile.timestamp(T_CREATE | T_ACCESS | T_WRITE, rtcSAM3X8.get_years(), rtcSAM3X8.get_months(), rtcSAM3X8.get_days(), rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
-						int32_t wrote = wFile.write(ptr, buf_len);
-						if(wrote != buf_len) {
+						if((int32_t)wFile.write(ptr, buf_len) != buf_len) {
 							journal.jprintf("Error write file %s (%d,%d)!\n", nameFile, card.cardErrorCode(), card.cardErrorData());
 						} else {
 							uint16_t numPoint = 0;
-							while((lenFile -= wrote) > 0)  // Чтение остальных пакетов из сети
+							while((lenFile -= buf_len) > 0)  // Чтение остальных пакетов из сети
 							{
 								_delay(2);                                                                 // время на приход данных
-								SPI_switchW5200();
-								int32_t len = Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-								if(len == 0) {
+								buf_len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
+								if(buf_len == 0) {
 									if(Socket[thread].client.connected()) continue; else break;
 								}
-								Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
+								Socket[thread].client.read(Socket[thread].inBuf, buf_len);                      // прочитать буфер
 								STORE_DEBUG_INFO(56);
-								SPI_switchSD();
-								wrote = wFile.write(Socket[thread].inBuf, len);                        // записать
-								if(wrote != len) {
+								for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
+								if((int32_t)wFile.write(Socket[thread].inBuf, buf_len) != buf_len) {
 									journal.jprintf("Error write file %s (%d,%d)!\n", nameFile, card.cardErrorCode(), card.cardErrorData());
 									break;
 								}
@@ -2840,11 +2883,10 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 							}
 						}
 						STORE_DEBUG_INFO(58);
-						SPI_switchSD();
 						if(!wFile.close()) {
 							journal.jprintf("Error close file (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 						}
-						if(lenFile == 0) journal.jprintf("Ok\n"); else journal.jprintf("Error length %d!\n", lenFile);
+						if(lenFile == 0) journal.jprintf("Ok\n"); else journal.jprintf("Error - rest %d!\n", lenFile);
 					} else journal.jprintf("Error create (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 					if(lenFile == 0) {
 						numFilesWeb++;
@@ -2868,54 +2910,4 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		return pNO_DISK;
 	}
 	return pPOST_ERR; // До сюда добегать не должны
-}
-// Загрузка файла в память возвращает число записанных байт на диск 0 если ошибка
-// Файл может лежать во множестве пакетов. Если в SPI Flash, то считается что spi диск отформатирован и ожидает запись файлов с "нуля"
-// Входные параметры:
-// nameFile - имя файла
-// lenFile - общая длина файла
-// thread - поток веб сервера,котрый обрабатывает post запрос
-// ptr - указатель на начало данных (файла) в буфере Socket[thread].inPtr.
-// sizeBuf - размер данных в буфере ptr (по сети осталось принять lenFile-sizeBuf)
-uint32_t loadFileToSpi(char * nameFile, uint32_t lenFile, uint8_t thread, byte* ptr, uint16_t sizeBuf)
-{
-	uint16_t numPoint = 0;
-	uint32_t loadLen; // Обработанная (загруженная) длина
-
-	STORE_DEBUG_INFO(54);
-	journal.jprintf("%s ", nameFile);
-	loadLen = SerialFlash.free_size();
-	if(lenFile > loadLen) {
-		journal.jprintf("Not enough space, free: %d\n", loadLen);
-		loadLen = 0;
-	} else if(SerialFlash.create(nameFile, lenFile)) {
-		loadLen = 0;
-		SerialFlashFile ff = SerialFlash.open(nameFile);
-		if(ff) {
-			if(sizeBuf > 0) loadLen = ff.write(ptr, sizeBuf);  // первый пакет упаковали если он не нулевой
-			while(loadLen < lenFile)  // Чтение остальных пакетов из сети
-			{
-				_delay(2);                                                                 // время на приход данных
-				sizeBuf = Socket[thread].client.get_ReceivedSizeRX();                            // получить длину входного пакета
-				if(sizeBuf == 0) {
-					if(Socket[thread].client.connected()) continue; else break;
-				}
-				//      if(len>W5200_MAX_LEN-1) len=W5200_MAX_LEN-1;                             // Ограничить размером в максимальный размер пакета w5200
-				Socket[thread].client.read(Socket[thread].inBuf, sizeBuf);                      // прочитать буфер
-				loadLen = loadLen + ff.write(Socket[thread].inBuf, sizeBuf);                        // записать
-				numPoint++;
-				if(numPoint >= 20) {// точка на 30 кб приема (20 пакетов по 1540)
-					numPoint = 0;
-					journal.jprintf(".");
-				}
-			}
-			ff.close();
-			if(loadLen == lenFile) journal.jprintf("%d\n", loadLen);
-			else { // Длины не совпали
-				journal.jprintf("%db, Error length!\n", loadLen);
-				loadLen = 0;
-			}
-		} else journal.jprintf("Error open!\n");
-	} else journal.jprintf("Error create!\n");
-	return loadLen;
 }

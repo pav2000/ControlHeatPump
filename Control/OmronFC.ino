@@ -166,9 +166,12 @@ int8_t devOmronMX2::progFC()
 	progReg16(MX2_H119,"H119",valH119);      // H119 Постоянная стабилизации PM двигателя От 0 до 120% с =100
 	progReg16(MX2_H121,"H121",valH121);      // H121 Минимальная частота PM двигателя От 0,0 до 25,5%  =10 (default)
 	progReg16(MX2_H122,"H122",valH122);      // H122 Ток холостого хода PM двигателя От 0,00 до 100,00%   =50 (default)
+    progReg16(MX2_C001,"C001",valC001);      // C001 Функция входа [1] 0 (FW: ход вперед) =0
+    progReg16(MX2_C004,"C004",valC004);      // C004 Функция входа [4] 18 (RS: сброс) =18
 	#ifndef DEMO   // для демо не надо термозащиты настраивать иначе вечная ошибка Е35.1
 	progReg16(MX2_C005,"C005",valC005);      // C005 Функция входа [5] [также вход «PTC»]   = 19 PTC Термистор с положительным ТКС для тепловой защиты (только C005)
 	#endif
+    progReg16(MX2_C026,"C026",valC026);      // C026  Функция релейного выхода 5 (AL: сигнал ошибки) =05
 	progReg16(MX2_b091,"b091",valb091);      // b091 Выбор способа остановки 0 (торможение до полной остановки),1 (остановка выбегом)=1
 	progReg16(MX2_b021,"b021",valb021);      // b021 Режим работы при ограничении перегрузки =1
 	progReg16(MX2_b022,"b022",valb022);      // b022 Уровень ограничения перегрузки  200...2000 (0.1%) =                                      
@@ -213,7 +216,7 @@ int8_t  devOmronMX2::set_target(int16_t x,boolean show, int16_t _min, int16_t _m
           if(err==OK)  { FC=x; if(show) journal.jprintf(" Set %s: %.2f [Hz]\r\n",name,FC/100.0);return err;} // установка частоты OK  - вывод сообщения если надо
           else {err=ERR_LINK_FC; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}                 // генерация ошибки
           // Проверка на установку частоты и адекватность инвертора
-          if( x!=read_0x03_32(MX2_TARGET_FR)) ({err=ERR_FC_ERROR; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}) 
+          if( x!=read_0x03_32(MX2_TARGET_FR)) {err=ERR_FC_ERROR; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}
    #else  // Аналоговое управление
          FC=x;
          dac=((level100-level0)*FC-0*level100)/(100-0);
