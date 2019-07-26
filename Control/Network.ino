@@ -274,31 +274,29 @@ x_TryStaticIP:
 }
 // DNS -------------------------------------------------------------------------------------------
 // Используется системный сокет!! W5200_SOCK_SYS
-// Проверить и преобразовать тип адреса (буквы или цифры) и если это буквы то резольвить через dns
-// Задача определить  IP адрес. Если на входе был также IP то он и возвращается,
-// При не удаче возвращается 0, при удаче 1 - нашли сразу, 2 - был запрос к DNS
+// Определить IP адрес через DNS, если на входе не IP адрес.
+// Переменная adr - должна быть расположена в ОЗУ!
+// При не удаче возвращается 0, при удаче: 1 - IP на входе, 2 - был запрос к DNS
 uint8_t check_address(char *adr, IPAddress &ip)
 {
+	// Задача определить  IP адрес. Если на входе был также IP то он и возвращается,
 	IPAddress tempIP(0, 0, 0, 0);
 	DNSClient dns;
 	int8_t ret = 0;
 	// 1. Попытка преобразовать строку в IP (цифры, нам повезло DNS не нужен)
 	if(parseIPAddress(adr, '.', tempIP)) {
-		//        journal.jprintf("Input string is address %s\n",adr);  // Сообщение что ДНС не требуется, входная строка и так является адресом
 		ip = tempIP;
 		return 1;
 	} // Удачно выходим
 	// 2. Это буквы, нужен dns
 	dns.begin(Ethernet.dnsServerIP());    // только запоминаем dnsServerIP ничего больше не делаем с сокетом
-	ret = dns.getHostByName(adr, tempIP, W5200_SOCK_SYS); // вот тут с сокетами начинаем работать
-	if(ret == 1)  // Адрес получен
-	{
-		journal.jprintf(" %s", adr);
-		journal.jprintf(" resolved by %s to %d.%d.%d.%d\n", dns.get_protocol() ? "TCP" : "UDP", tempIP[0], tempIP[1], tempIP[2], tempIP[3]);
+	ret = dns.getHostByName(adr, tempIP, W5200_SOCK_SYS); // adr должен быть в ОЗУ!
+	if(ret == 1) { // Адрес получен
+		journal.jprintf(" Resolved %s by %s as %d.%d.%d.%d\n", adr, dns.get_protocol() ? "TCP" : "UDP", tempIP[0], tempIP[1], tempIP[2], tempIP[3]);
 		ip = tempIP;
 		return 2;
 	} else {
-		journal.jprintf(" %s DNS lookup by %s failed! Code: %d\n", adr, dns.get_protocol() ? "TCP" : "UDP", ret);
+		journal.jprintf(" DNS lookup %s by %s failed! Code: %d\n", adr, dns.get_protocol() ? "TCP" : "UDP", ret);
 		ip = tempIP;
 		return 0;
 	}

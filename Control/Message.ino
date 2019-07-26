@@ -83,35 +83,32 @@ boolean Message::dnsUpdate()
 	}
 	if(dnsUpadateSMTP) //надо обновлятся
 	{
-		dnsUpadateSMTP = false;
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
-			return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-		}
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		ret = check_address(messageSetting.smtp_server, messageSetting.smtp_serverIP);   // Получить адрес IP через DNS
+		dnsUpadateSMTP = false;
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive(xWebThreadSemaphore);
 	}
 	if(dnsUpadateSMS) //надо обновлятся
 	{
-		dnsUpadateSMS = false;
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
-				return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-			}
+			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		} else WDT_Restart(WDT);
 		switch(messageSetting.sms_service) {
 		case pSMS_RU:
-			ret = check_address((char*) ADR_SMS_RU, messageSetting.sms_serviceIP);
+			ret = strcpy(tempBuf, ADR_SMS_RU);
 			break;
 		case pSMSC_RU:
-			ret = check_address((char*) ADR_SMSC_RU, messageSetting.sms_serviceIP);
+			ret = strcpy(tempBuf, ADR_SMSC_RU);
 			break;
 		case pSMSC_UA:
-			ret = check_address((char*) ADR_SMSC_UA, messageSetting.sms_serviceIP);
+			ret = strcpy(tempBuf, ADR_SMSC_UA);
 			break;
 		case pSMSCLUB_UA:
-			ret = check_address((char*) ADR_SMSCLUB_UA, messageSetting.sms_serviceIP);
+			ret = strcpy(tempBuf, ADR_SMSCLUB_UA);
 			break;
 		}
+		ret = check_address(tempBuf, messageSetting.sms_serviceIP);
+		dnsUpadateSMS = false;
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive(xWebThreadSemaphore);
 	}
 	return ret;

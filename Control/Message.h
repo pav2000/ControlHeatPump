@@ -24,10 +24,10 @@
 #include "Constant.h"                       // Вся конфигурация и константы проекта Должен быть первым !!!!
 
 // Константы 
-#define ADR_SMS_RU       "sms.ru"
-#define ADR_SMSC_RU      "smsc.ru"
-#define ADR_SMSC_UA      "smsc.ua"
-#define ADR_SMSCLUB_UA   "gate.smsclub.mobi"
+const char ADR_SMS_RU[]     = "sms.ru";
+const char ADR_SMSC_RU[]    = "smsc.ru";
+const char ADR_SMSC_UA[]    = "smsc.ua";
+const char ADR_SMSCLUB_UA[] = "gate.smsclub.mobi";
 #define LEN_TEMPBUF      250                // Длина рабочего буфера используемого для работы уведомлений
 #define LEN_RETMAIL      100                // Длина ответа почты
 #define LEN_RETSMS       64                 // Длина ответа sms
