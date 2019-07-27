@@ -2346,8 +2346,8 @@ MODE_COMP HeatPump::UpdateHeat()
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
-		else if(t1>target)                       { Status.ret=pHp3; return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
+		if(t1>target)     { Status.ret=pHp3; return pCOMP_OFF;}    // Достигнута целевая температура  ВЫКЛ
+		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
@@ -2491,8 +2491,8 @@ MODE_COMP HeatPump::UpdateCool()
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
 
-		if(onBoiler) { Status.ret=pCp12; return pCOMP_NONE; } // Переключение с бойлера на охлаждение
-		else if(t1<target)                     { Status.ret=pCp3; return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
+		if(t1<target)     { Status.ret=pCp3; return pCOMP_OFF;}    // Достигнута целевая температура  ВЫКЛ
+		else if(onBoiler) { Status.ret=pCp12; return pCOMP_NONE; } // Переключение с бойлера на охлаждение
 		else if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет
 		//  else if ((t1<target-Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                        // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
 		//             else if ((t1>target+Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                          // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
