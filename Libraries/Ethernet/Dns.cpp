@@ -55,12 +55,13 @@
 #define START_UDP_ERROR    -6
 #define INVALID_RESPONSE   -7
 #define INVALID_ANSWER_CNT -8
-#define INVALID_RESPONSE2  -9
+#define INVALID_RESPONSE2  -9	// TRUNCATION_FLAG
 #define INVALID_RESPONSE3 -10
 #define INVALID_RESPONSE4 -11
 #define INVALID_RESPONSE5 -12
 #define INVALID_RESPONSE6 -13
 #define TRUNCATED2        -14
+#define INVALID_RESPONSE_MASK -20 // -20..-25 (= -20 - RESP_* error number)
 
 void DNSClient::begin(const IPAddress& aDNSServer)
 {
@@ -74,7 +75,7 @@ int8_t DNSClient::getHostByName(const char* aHostname, IPAddress& aResult)
 	return getHostByName(aHostname, aResult, MAX_SOCK_NUM);
 }
 
-//  использовать конкретный сокет для запроса dns
+//  использовать конкретный сокет для запроса dns, aHostname в ОЗУ!
 int8_t DNSClient::getHostByName(const char* aHostname, IPAddress& aResult, uint8_t sock)
 {
     int8_t ret = 0;
@@ -183,11 +184,13 @@ int8_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
             // although we don't do anything to get round these
             // Проверяем любые ошибки в ответе (или в нашем запросе)
             // хотя мы ничего не делаем, чтобы обойти эти ошибки
-            // TRUNCATION_FLAG=9 RESP_MASK=15
-            if ( (header_flags & TRUNCATION_FLAG) || (header_flags & RESP_MASK) )
+            // TRUNCATION_FLAG=9
+            if ( (header_flags & TRUNCATION_FLAG) )
             {
                 // Mark the entire packet as read
             	ret = INVALID_RESPONSE2;
+            } else if(header_flags & RESP_MASK) {  // RESP_MASK=15
+            	ret = INVALID_RESPONSE_MASK - (header_flags & RESP_MASK);
             } else {
                 // And make sure we've got (at least) one answer
                 // И убедитесь, что у нас есть (по крайней мере) один ответ

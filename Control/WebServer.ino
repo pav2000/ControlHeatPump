@@ -2138,7 +2138,7 @@ x_get_aTemp:
 									i = HP.sTemp[p].get_radio_received_idx();
 									if(i >= 0) {
 										m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
-										if(str[9] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
+										if(str[5] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
 									} else strcat(strReturn, " \xF0\x9F\x93\xB6");
 								}
 	#endif
@@ -2152,7 +2152,7 @@ x_get_aTemp:
 							}
 
 							if(strncmp(str, "fTemp", 5)==0){  // get_fTempX(N): X - номер флага fTEMP_* (1..), N - имя датчика (flag)
-								_itoa(HP.sTemp[p].get_setup_flag(str[9] - '0' - 1 + fTEMP_ignory_errors), strReturn);
+								_itoa(HP.sTemp[p].get_setup_flag(str[5] - '0' - 1 + fTEMP_ignory_errors), strReturn);
 								ADD_WEBDELIM(strReturn);  continue;
 							}
 
@@ -2176,7 +2176,7 @@ x_get_aTemp:
 							}
 
 							if(strncmp(str, "fTemp", 5) == 0) {   // set_fTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика (flag)
-								i = str[9] - '0' - 1 + fTEMP_ignory_errors;
+								i = str[5] - '0' - 1 + fTEMP_ignory_errors;
 								HP.sTemp[p].set_setup_flag(i, int(pm));
 								_itoa(HP.sTemp[p].get_setup_flag(i), strReturn);
 								ADD_WEBDELIM(strReturn); continue;

@@ -1297,9 +1297,7 @@ boolean clientMQTT::dnsUpdate()
 	if(dnsUpadateMQTT) //надо обновлятся
 	{
 		dnsUpadateMQTT = false;   // сбросить флаг
-		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
-			return false;
-		} // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		ret = check_address(mqttSettintg.mqtt_server, mqttSettintg.mqtt_serverIP); // Получить адрес IP через DNS
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
 	}
@@ -1307,9 +1305,7 @@ boolean clientMQTT::dnsUpdate()
 	{
 		dnsUpadateNARMON = false;   // сбросить флаг
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
-				return false;
-			} // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		} else WDT_Restart(WDT);
 		ret = check_address(mqttSettintg.narodMon_server, mqttSettintg.narodMon_serverIP);                          // Получить адрес IP через DNS
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
