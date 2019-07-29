@@ -276,7 +276,7 @@ x_TryStaticIP:
 // Используется системный сокет!! W5200_SOCK_SYS
 // Определить IP адрес через DNS, если на входе не IP адрес.
 // Переменная adr - должна быть расположена в ОЗУ!
-// При не удаче возвращается 0, при удаче: 1 - IP на входе, 2 - был запрос к DNS
+// При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 uint8_t check_address(char *adr, IPAddress &ip)
 {
 	// Задача определить  IP адрес. Если на входе был также IP то он и возвращается,
@@ -647,10 +647,8 @@ const char* MQTTDebugStr={" %s %s,"};  // вывод информации при
 boolean sendNarodMon(boolean debug)
 {
  uint8_t i;
-     
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon ignore: Wrong MAC address, change MAC from default.\n"); return false;}
      journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
-
      strcpy(root,"");  // Формирование строки корня, куда потом пишутся топики
      HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON,root);
      strcat(root,"/");
@@ -662,7 +660,6 @@ boolean sendNarodMon(boolean debug)
      strcat(topic,HP.sTemp[TOUT].get_name());
      ftoa(temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
      if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
-    
      strcpy(topic,root);
      strcat(topic,HP.sTemp[TIN].get_name());
      ftoa(temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1);

@@ -1285,30 +1285,33 @@ char*   clientMQTT::get_paramMQTT(char *var, char *ret)
 }
 
 
-// Обновление IP адресов MQTT через dns
-// возвращает false обновление не было, true - прошло обновление или ошибка
+// Обновление IP адресов серверов через dns
+// Возврат - флаг использования дополнительного сокета и времени (нужен для разгрузки 0 потока сервера)
+// возвращает true обновление не было (можно нагружать), false - прошло обновление или ошибка (нагружать не надо до следующего цикла)
 boolean clientMQTT::dnsUpdate()
 {
-	boolean ret = false;
+	boolean ret = true; // по умолчанию преобразование не было
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
 		dnsUpadateMQTT =dnsUpadateNARMON = true;  // Обновляться надо
 		WDT_Restart(WDT);
 	}
-	if(dnsUpadateMQTT) //надо обновлятся
-	{
+	if(dnsUpadateMQTT) //надо обновлятся MQTT
+	{   
 		dnsUpadateMQTT = false;   // сбросить флаг
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-		ret = check_address(mqttSettintg.mqtt_server, mqttSettintg.mqtt_serverIP); // Получить адрес IP через DNS
+		check_address(mqttSettintg.mqtt_server, mqttSettintg.mqtt_serverIP); // Получить адрес IP через DNS При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
+		ret = false;  // вызов обновления был
 	}
-	if(dnsUpadateNARMON) //надо обновлятся
+	if(dnsUpadateNARMON) //надо обновлятся NARMON
 	{
-		dnsUpadateNARMON = false;   // сбросить флаг
+     	dnsUpadateNARMON = false;   // сбросить флаг
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
 			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		} else WDT_Restart(WDT);
-		ret = check_address(mqttSettintg.narodMon_server, mqttSettintg.narodMon_serverIP);                          // Получить адрес IP через DNS
+		check_address(mqttSettintg.narodMon_server, mqttSettintg.narodMon_serverIP);// Получить адрес IP через DNS При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
+		ret = false;  // вызов обновления был
 	}
 	return ret;
 }
