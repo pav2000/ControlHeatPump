@@ -20,16 +20,24 @@
 extern void get_mailState(EthernetClient client, char *tempBuf);
 
 // Инициализация
-// Уведомления по умолчанию настройка на gmail без шифрования
-void Message::initMessage()
+// Уведомления по умолчанию настройка на gmail без шифрования 
+// параметр - номер потока сервера в котором запускается отправка уведомлений
+void Message::initMessage(uint8_t web_task)
 {
+  // инициализации рабочих буферов MQTT
+  tempBuf=Socket[web_task].outBuf+0;
+  tempBuf[0]=0x00; // Стереть строку
+  retMail=Socket[web_task].outBuf+LEN_TEMPBUF;
+  retMail[0]=0x00;
+  retSMS=Socket[web_task].outBuf+LEN_TEMPBUF+LEN_RETMAIL;
+  retSMS[0]=0x00;
+//  retTest=Socket[web_task].outBuf+LEN_TEMPBUF+LEN_RETMAIL+LEN_RETSMS;// Хранится отдельно!
+  retTest[0]=0x00;
+  // Инициализация переменных 	
   IPAddress zeroIP(0, 0, 0, 0);
   lastmessageSetting = pMESSAGE_NONE;                                              // последнее отправленное уведомление
   dnsUpadateSMS = false;                                                           // Флаг необходимости обновления через dns IP адреса для смс
   dnsUpadateSMTP = false;                                                          // Флаг необходимости обновления через dns IP адреса для smtp
-  strcpy(retTest, "");                                                             // обнулить ответ от посылки тестового письма
-  strcpy(retMail, "");                                                             // обнулить ошибку от посылки тестового письма
-  strcpy(retSMS, "");                                                              // обнулить ошибку от посылки тестового SMS
   sendTime = 0;                                                                    // отправок уведомлений не было
 
   SETBIT0(messageSetting.flags, fMail );                                           // флаг уведомления скидывать на почту
@@ -75,7 +83,7 @@ void Message::initMessage()
 // Обновление IP адресов серверов через dns
 // Возврат - флаг использования дополнительного сокета и времени (нужен для разгрузки 0 потока сервера)
 // возвращает true обновление не было (можно нагружать), false - прошло обновление или ошибка (нагружать не надо до следующего цикла)
-boolean Message::dnsUpdate()
+boolean Message::dnsUpdate() // запускается 0 потоке вебсервера
 {
 	boolean ret = true; // по умолчанию преобразование не было
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
@@ -544,7 +552,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
 // Установить уведомление (сформировать для отправки но НЕ ОТПРАВЛЯТЬ)
 // Проверяется необходимость отправки уведомления в зависимости от установленных флагов
 // true - сообщение принято (или запрещено), false - сообщение отвергнуто т.к оно уже посылалось (дубль) или внутренняя ошибка
-boolean Message::setMessage(MESSAGE ms, char *c, int p1)
+boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запускаться из любого потока!!
 {
   // Проверка на необходимость посылки сообщения
   if (!(((GETBIT(messageSetting.flags, fMail)) || (GETBIT(messageSetting.flags, fSMS))) && ((messageData.ms != pMESSAGE_TESTMAIL) || (messageData.ms != pMESSAGE_TESTSMS)))) return true;	// посылать ненадо
@@ -577,22 +585,18 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1)
     _ftoa(messageData.data, (float)p1 / 100.0, 1);
   }
   messageData.p1 = p1;
-  // очистить ответы
-  strcpy(retTest, "");            // обнулить ответ от посылки тестового письма
-  strcpy(retMail, "");            // обнулить ошибку от посылки тестового письма
-  strcpy(retSMS, "");             // обнулить ошибку от посылки тестового SMS
   waitSend = true;                // выставить флаг необходимости отправки Уведомления
   return true;
 }
 
 // Установить (сформировать) тестовое письмо, отправка sendMessage();
-boolean Message::setTestMail()
+boolean Message::setTestMail() // может запускаться из любого потока!!
 {
   return setMessage(pMESSAGE_TESTMAIL, (char*)"Тестовое уведомление, для проверки почты", 0);
 }
 
 //Установить (сформировать) тестовое СМС, отправка sendMessage();
-boolean Message::setTestSMS()
+boolean Message::setTestSMS() // может запускаться из любого потока!!
 {
   return setMessage(pMESSAGE_TESTSMS, (char*)"Тестовое уведомление, для проверки SMS", 0);
 }
@@ -600,7 +604,7 @@ boolean Message::setTestSMS()
 // Послать уведомление согласно выбранных настроек cформированное setMessage
 // проверяется наличие неоправленныхуведомлений
 // true - уведомление отправлено или его не было false - при отправке произошли ошибки
-boolean Message::sendMessage()
+boolean Message::sendMessage()  // запуск из 0 потока
 {
   uint16_t i;
 
@@ -610,7 +614,7 @@ boolean Message::sendMessage()
     _delay(200);  // Прошло мало времени после старта возможно инет еще не поднят
     return true;
   }
-
+  clearBuf(); // очистка рабочих буферов
   // Отправка Уведомления. Все таки отправлять придется -))
   if ((GETBIT(messageSetting.flags, fMail)) && (messageData.ms != pMESSAGE_TESTSMS)) // Разрешены уведомления по почте и не тест SMS
   {
@@ -867,6 +871,7 @@ boolean Message::sendMail()
 }
 
 // Отправить SMS sms.ru ----------------------------------------------------------------------------------
+// true - была отправка смс false - не было отправки смс
 boolean Message::sendSMS()
 {
   uint16_t i;
@@ -963,13 +968,13 @@ boolean Message::sendSMS()
         thisByte = clientMessage.read();
         if (thisByte == 0x0a)
         {
-          i = clientMessage.read((byte*)retSMS, sizeof(retSMS) - 1); // получаем код ответа
+          i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
           retSMS[i] = 0;                                         // обрезаем строку
           for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
           journal.jprintf("sms.ru return: %s \n", retSMS);
           clientMessage.stop();
           SemaphoreGive(xWebThreadSemaphore);
-
+          return true; // смс отправлено
         }
       }
     }
@@ -1095,9 +1100,7 @@ boolean Message::sendSMSC()
 
   while (clientMessage.available())
   {
-
-
-    i = clientMessage.read((byte*)retSMS, sizeof(retSMS) - 1); // получаем код ответа
+    i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
     retSMS[i] = 0;                                         // обрезаем строку
     for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
     journal.jprintf("server return: %s \n", retSMS);
@@ -1221,7 +1224,7 @@ boolean Message::sendSMSCLUB()
           thisByte = clientMessage.read();
           if (thisByte == 0x61)
           {
-            i = clientMessage.read((byte*)retSMS, sizeof(retSMS) - 1); // получаем код ответа
+            i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
             retSMS[i] = 0;                                         // обрезаем строку
             for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
             journal.jprintf("server return: %s \n", retSMS);
