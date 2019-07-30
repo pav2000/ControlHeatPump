@@ -121,7 +121,7 @@ void HeatPump::initHeatPump()
 #endif
 	message.initMessage();                                  // Инициализация Уведомлений
 #ifdef MQTT
-	clMQTT.initMQTT();                                      // Инициализация MQTT
+	clMQTT.initMQTT(MQTT_WEB_TASK);                         // Инициализация MQTT
 #endif
 	resetSettingHP();                                          // все переменные
 }

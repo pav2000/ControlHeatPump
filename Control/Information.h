@@ -283,6 +283,10 @@ class Profile                         // Класс профиль
 #define fNarodMonUse     5                   // флаг отправки данных на народный мониторинг
 #define fNarodMonBig     6                   // флаг отправки данных на народный мониторингбольшая версия
 #define fTSUse           7                   // флаг использования ThingSpeak
+// Размеры рабочих буферов MQTT
+#define LEN_ROOT          100                // максимальная длина корня топика
+#define LEN_TOPIC         200                // максимальная длина данных топика
+
 enum TYPE_STATE_MQTT
 {
  pMQTT_OK,             // Последняя передача была удачна
@@ -324,7 +328,7 @@ struct type_mqtt                             // настройки MQTT клие
 class clientMQTT                              // Класс клиент MQTT
  {
  public: 
-    void initMQTT();                            // инициализация MQTT
+    void initMQTT(uint8_t web_task);            // инициализация MQTT параметр - номер потока сервера в котором зупускается MQTT
     uint8_t *get_save_addr(void) { return (uint8_t *)&mqttSettintg; } // Адрес структуры сохранения
     uint16_t get_save_size(void) { return sizeof(mqttSettintg); } // Размер структуры сохранения
     int32_t save(int32_t adr);                  // Записать MQTT в еепром под номерм num
@@ -334,7 +338,7 @@ class clientMQTT                              // Класс клиент MQTT
       
     boolean dnsUpdate();                        // Обновление IP адресов MQTT через dns
     boolean dnsUpdateStart();                   // Обновление IP адресов MQTT через dns при СТАРТЕ!!! семафоры не используются
-    boolean sendTopic(char * t,char *p,boolean NM, boolean debug, boolean link_close);// Внутренная функция послать один топик
+    boolean sendTopic(boolean NM, boolean debug, boolean link_close);// Внутренная функция послать один топик
  
     uint16_t updateErrMQTT(boolean NM);         // Еще одна ошибка отправки на MQTT параметр тип сервера true - народный мониторинг false MQTT
     void resetErrMQTT(boolean NM){if(NM)numErrNARMON=0;else numErrMQTT=0;}  // Сброс числа ошибок отправки на MQTT параметр тип сервера true - народный мониторинг false MQTT
@@ -365,6 +369,14 @@ class clientMQTT                              // Класс клиент MQTT
     IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
     char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
     uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
+    void clearBuf() {root[0]=0x00;topic[0]=0x00;temp[0]=0x00;};                  // очистка рабочих буферов
+    // Рабочие буфера для отправки MQTT
+    // Для экономии места используется выходной буфер MQTT_WEB_TASK потока веб сервера Socket[MQTT_WEB_TASK].outBuf[3*W5200_MAX_LEN] (в этом потоке ДОЛЖЕН проводится запуск MQTT и буфер гарантированно не используется другими задачами)
+    // Размер выходного буфера char outBuf[3*W5200_MAX_LEN] - 6 кБ - хватит на все. Распределение памяти в выходном буфере:
+    //  смещение 0 -                        root[LEN_ROOT]  - корень топика, длина до LEN_ROOT 
+    //  смещение 100 (LEN_ROOT) -           topic[LEN_TOPIC] - сам топик, длина до  LEN_TOPIC 
+    //  смещение 300 (LEN_ROOT+LEN_TOPIC) - temp[16] - временный буфер для получения строки флоат  
+    char *root,*topic, *temp;                                                      // указатели на рабочие буфера
   
  private:
    boolean connect(boolean NM);                 // Попытаться соеденится с сервером МЮТЕКС уже захвачен!!
@@ -375,8 +387,7 @@ class clientMQTT                              // Класс клиент MQTT
    uint16_t numErrMQTT;                         // число ошибок отправки на MQTT
    TYPE_STATE_MQTT stateNARMON;                 // Состояние передачи что надо делать
    TYPE_STATE_MQTT stateMQTT;                   // Состояние передачи что надо делать
-   
-   type_mqtt mqttSettintg;                      // настройки клиента
+   type_mqtt mqttSettintg;                      // настройки клиента   
  } ;
 
 #endif

@@ -1121,10 +1121,17 @@ int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 //  MQTT клиент ТН -----------------------------------------------------------------
 // ---------------------------------------------------------------------------------
 #ifdef MQTT
-// инициализация MQTT
-void clientMQTT::initMQTT()
+// инициализация MQTT параметр - номер потока сервера в котором зупускается MQTT
+void clientMQTT::initMQTT(uint8_t web_task)
 {
-  
+ // инициализации рабочих буферов MQTT
+ root=Socket[web_task].outBuf+0;
+ root[0]=0x00; // Стереть строку
+ topic=Socket[web_task].outBuf+LEN_ROOT;
+ topic[0]=0x00;
+ temp=Socket[web_task].outBuf+LEN_ROOT+LEN_TOPIC;
+ temp[0]=0x00;
+ // Установка настроек 	 
  IPAddress zeroIP(0,0,0,0);   
  mqttSettintg.flags=0x00;                                 // Бинарные флага настроек
  SETBIT0(mqttSettintg.flags,fMqttUse);                    // флаг использования MQTT
@@ -1382,12 +1389,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 } */
 
 // Внутренная функция послать один топик, возврат удачно или нет послан топик, при не удаче запись в журнал
-// t - название топика
-// p - значение топика
 // NM - true народный мониторинг, false обычный сервер
 // debug - выводить отладочные сообщения
 // link_close  = true - по завершению закрывать связь  false по завершению не закрывать связь (отсылка нескольких топиков)
-boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolean link_close)
+boolean clientMQTT::sendTopic(boolean NM, boolean debug, boolean link_close)
 {
   TYPE_STATE_MQTT state; 
   IPAddress tempIP;
@@ -1432,7 +1437,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
 //if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
          if (connect(NM))                                        // Попытка соедиениея
           {
-           w5200_MQTT.publish(t,p);                              // Посылка данных топика
+           w5200_MQTT.publish(topic,temp);                              // Посылка данных топика
            if (link_close) w5200_MQTT.disconnect();              // отсоединение если надо
            if (debug) ShowSockRegisters(W5200_SOCK_SYS);         // выводим состояние регистров ЕСЛИ ОТЛАДКА
          
