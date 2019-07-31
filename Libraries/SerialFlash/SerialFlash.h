@@ -52,8 +52,8 @@ public:
 	static void eraseBlock(uint32_t addr);
 
 	static SerialFlashFile open(const char *filename);
-	static bool create(const char *filename, uint32_t length, uint32_t align = 0);
-	static bool createErasable(const char *filename, uint32_t length) {
+	static int8_t create(const char *filename, uint32_t length, uint32_t align = 0);
+	static int8_t createErasable(const char *filename, uint32_t length) {
 		return create(filename, length, blockSize());
 	}
 	static bool exists(const char *filename);

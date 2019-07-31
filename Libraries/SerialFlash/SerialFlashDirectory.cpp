@@ -277,7 +277,8 @@ uint32_t SerialFlashChip::free_size(void)
 	return Capacity - address;
 }
 
-bool SerialFlashChip::create(const char *filename, uint32_t length, uint32_t align)
+// Return 0 on success, negative value on error
+int8_t SerialFlashChip::create(const char *filename, uint32_t length, uint32_t align)
 {
 	uint32_t maxfiles, stringsize;
 	uint32_t index, buf[3];
@@ -285,17 +286,17 @@ bool SerialFlashChip::create(const char *filename, uint32_t length, uint32_t ali
 	SerialFlashFile file;
 
 	// check if the file already exists
-	if (exists(filename)) return false;
+	if (exists(filename)) return -1;
 
 	// first, get the filesystem parameters
 	maxfiles = check_signature();
-	if (!maxfiles) return false;
+	if (!maxfiles) return -2;
 	stringsize = (maxfiles & 0xFFFF0000) >> 14;
 	maxfiles &= 0xFFFF;
 
 	// find the first unused slot for this file
 	index = find_first_unallocated_file_index(maxfiles);
-	if (index >= maxfiles) return false;
+	if (index >= maxfiles) return -3;
 	 //Serial.printf("index = %u\n", index);
 	// compute where to store the filename and actual data
 	straddr = 8 + maxfiles * 12;
@@ -336,7 +337,7 @@ bool SerialFlashChip::create(const char *filename, uint32_t length, uint32_t ali
 	// TODO: check for enough string space for filename
 	uint8_t id[5];
 	SerialFlash.readID(id);
-	if (address + length > SerialFlash.capacity(id)) return false;
+	if (address + length > SerialFlash.capacity(id)) return -4;
 
 	SerialFlash.write(straddr, filename, len+1);
 	buf[0] = address;
@@ -345,13 +346,20 @@ bool SerialFlashChip::create(const char *filename, uint32_t length, uint32_t ali
 	SerialFlash.write(8 + maxfiles * 2 + index * 10, buf, 10);
 	 //Serial.printf("  write %u: ", 8 + maxfiles * 2 + index * 10);
 	 //pbuf(buf, 10);
-	while (!SerialFlash.ready()) ;  // TODO: timeout
+	uint32_t tm = millis();
+	while (!SerialFlash.ready()) {
+		if(millis() - tm > 5000) return -5; // Timeout
+	}
 	 
 	buf[0] = filename_hash(filename);
 	 //Serial.printf("hash = %04X\n", buf[0]);
 	SerialFlash.write(8 + index * 2, buf, 2);
-	while (!SerialFlash.ready()) ;  // TODO: timeout
-	return true;
+	tm = millis();
+	while (!SerialFlash.ready()) {
+		if(millis() - tm > 5000) return -6; // Timeout
+	}
+
+	return 0;
 }
 
 bool SerialFlashChip::readdir(char *filename, uint32_t strsize, uint32_t &filesize)

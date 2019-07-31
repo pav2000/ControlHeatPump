@@ -2808,14 +2808,14 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 					uint16_t numPoint = 0;
 					int32_t loadLen; // Обработанная (загруженная) длина
 					STORE_DEBUG_INFO(54);
-					journal.jprintf("%s ", nameFile);
+					journal.jprintf("%s (%d) ", nameFile, lenFile);
 					loadLen = SerialFlash.free_size();
 					if(lenFile > loadLen) {
 						journal.jprintf("Not enough space, free: %d\n", loadLen);
 						loadLen = 0;
 					} else {
-						loadLen = 0;
-						if(SerialFlash.create(nameFile, lenFile)) {
+						loadLen = SerialFlash.create(nameFile, lenFile);
+						if(loadLen == 0) {
 							SerialFlashFile ff = SerialFlash.open(nameFile);
 							if(ff) {
 								if(buf_len > 0) loadLen = ff.write(ptr, buf_len); // первый пакет упаковали если он не нулевой
@@ -2836,13 +2836,13 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 									}
 								}
 								ff.close();
-								if(loadLen == lenFile) journal.jprintf("%d\n", loadLen);
+								if(loadLen == lenFile) journal.jprintf("Ok\n");
 								else { // Длины не совпали
 									journal.jprintf("%db, Error length!\n", loadLen);
 									loadLen = 0;
 								}
-							} else journal.jprintf("Error open!\n");
-						} else journal.jprintf("Error create!\n");
+							} else journal.jprintf("Error Open!\n");
+						} else journal.jprintf("Error Create %d!\n", loadLen);
 					}
 					if(loadLen == lenFile) {
 						numFilesWeb++;
