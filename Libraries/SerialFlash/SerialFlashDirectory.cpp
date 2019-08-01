@@ -76,7 +76,10 @@ static uint32_t check_signature(void)
 		sig[0] = 0xFA96554C;
 		sig[1] = ((uint32_t)(DEFAULT_STRINGS_SIZE/4) << 16) | DEFAULT_MAXFILES;
 		SerialFlash.write(0, sig, 8);
-		while (!SerialFlash.ready()) ; // TODO: timeout
+		uint32_t tm = millis();
+		while (!SerialFlash.ready()) {
+			if(millis() - tm > 5000) return 0; // Timeout
+		}
 		SerialFlash.read(0, sig, 8);
 		if (sig[0] == 0xFA96554C) return sig[1];
 	}
@@ -198,7 +201,10 @@ bool SerialFlashChip::remove(SerialFlashFile &file)
 	 //Serial.printf("remove hash %04X at %d index\n", hash, file.dirindex);
 	hash ^= 0xFFFF;  // write zeros to all ones
 	SerialFlash.write(8 + file.dirindex * 2, &hash, 2);
-	while (!SerialFlash.ready()) ; // wait...  TODO: timeout
+	uint32_t tm = millis();
+	while (!SerialFlash.ready()) {
+		if(millis() - tm > 5000) return false; // Timeout
+	}
 	SerialFlash.read(8 + file.dirindex * 2, &hash, 2);
 	if (hash != 0)  {
 		 //Serial.printf("remove failed, hash %04X\n", hash);
