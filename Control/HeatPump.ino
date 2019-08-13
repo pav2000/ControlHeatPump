@@ -91,13 +91,13 @@ void HeatPump::initHeatPump()
 #ifdef SENSOR_IP
 	for(i=0;i<IPNUMBER;i++) sIP[i].initIP(i);               // Инициализация удаленных датчиков
 #endif
-	sADC[PEVA].initSensorADC(PEVA, ADC_SENSOR_PEVA, FILTER_SIZE);          // Инициализация аналогово датчика PEVA
-	sADC[PCON].initSensorADC(PCON, ADC_SENSOR_PCON, FILTER_SIZE);          // Инициализация аналогово датчика TCON
+	sADC[PEVA].initSensorADC(PEVA, ADC_SENSOR_PEVA, FILTER_SIZE);          // Инициализация аналогового датчика PEVA
+	sADC[PCON].initSensorADC(PCON, ADC_SENSOR_PCON, FILTER_SIZE);          // Инициализация аналогового датчика TCON
 #ifdef PGEO
-	sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика PGEO
+	sADC[PGEO].initSensorADC(PGEO, ADC_SENSOR_PGEO, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика PGEO
 #endif
 #ifdef POUT
-	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогово датчика POUT
+	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
 #endif
 
 	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
@@ -110,18 +110,18 @@ void HeatPump::initHeatPump()
 
 	// Инициалаизация модбаса  перед частотником и счетчиком
 	journal.jprintf("Init Modbus RTU via RS485:");
-	if(Modbus.initModbus() == OK) journal.jprintf(" OK\r\n");                //  выводим сообщение об установлении связи
+	if(Modbus.initModbus() == OK) journal.jprintf(" OK\r\n");  //  выводим сообщение об установлении связи
 	else {
 		journal.jprintf(" not present config\r\n");
 	}         //  нет в конфигурации
 
 	dFC.initFC();                                              // Инициализация FC
 #ifdef USE_ELECTROMETER_SDM
-	dSDM.initSDM();                                           // инициалаизация счетчика
+	dSDM.initSDM();                                            // инициалаизация счетчика
 #endif
-	message.initMessage();                                  // Инициализация Уведомлений
+	message.initMessage(MAIN_WEB_TASK);                        // Инициализация Уведомлений, параметр - номер потока сервера в котором идет отправка
 #ifdef MQTT
-	clMQTT.initMQTT();                                      // Инициализация MQTT
+	clMQTT.initMQTT(MAIN_WEB_TASK);                            // Инициализация MQTT, параметр - номер потока сервера в котором идет отправка
 #endif
 	resetSettingHP();                                          // все переменные
 }

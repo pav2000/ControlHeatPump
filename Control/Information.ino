@@ -1121,10 +1121,17 @@ int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 //  MQTT клиент ТН -----------------------------------------------------------------
 // ---------------------------------------------------------------------------------
 #ifdef MQTT
-// инициализация MQTT
-void clientMQTT::initMQTT()
+// инициализация MQTT параметр - номер потока сервера в котором зупускается MQTT
+void clientMQTT::initMQTT(uint8_t web_task)
 {
-  
+ // инициализации рабочих буферов MQTT
+ root=Socket[web_task].outBuf+0;
+ root[0]=0x00; // Стереть строку
+ topic=Socket[web_task].outBuf+LEN_ROOT;
+ topic[0]=0x00;
+ temp=Socket[web_task].outBuf+LEN_ROOT+LEN_TOPIC;
+ temp[0]=0x00;
+ // Установка настроек 	 
  IPAddress zeroIP(0,0,0,0);   
  mqttSettintg.flags=0x00;                                 // Бинарные флага настроек
  SETBIT0(mqttSettintg.flags,fMqttUse);                    // флаг использования MQTT
@@ -1285,30 +1292,33 @@ char*   clientMQTT::get_paramMQTT(char *var, char *ret)
 }
 
 
-// Обновление IP адресов MQTT через dns
-// возвращает false обновление не было, true - прошло обновление или ошибка
+// Обновление IP адресов серверов через dns
+// Возврат - флаг использования дополнительного сокета и времени (нужен для разгрузки 0 потока сервера)
+// возвращает true обновление не было (можно нагружать), false - прошло обновление или ошибка (нагружать не надо до следующего цикла)
 boolean clientMQTT::dnsUpdate()
 {
-	boolean ret = false;
+	boolean ret = true; // по умолчанию преобразование не было
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
 		dnsUpadateMQTT =dnsUpadateNARMON = true;  // Обновляться надо
 		WDT_Restart(WDT);
 	}
-	if(dnsUpadateMQTT) //надо обновлятся
-	{
+	if(dnsUpadateMQTT) //надо обновлятся MQTT
+	{   
 		dnsUpadateMQTT = false;   // сбросить флаг
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-		ret = check_address(mqttSettintg.mqtt_server, mqttSettintg.mqtt_serverIP); // Получить адрес IP через DNS
+		check_address(mqttSettintg.mqtt_server, mqttSettintg.mqtt_serverIP); // Получить адрес IP через DNS При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
+		ret = false;  // вызов обновления был
 	}
-	if(dnsUpadateNARMON) //надо обновлятся
+	if(dnsUpadateNARMON) //надо обновлятся NARMON
 	{
-		dnsUpadateNARMON = false;   // сбросить флаг
+     	dnsUpadateNARMON = false;   // сбросить флаг
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
 			if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 		} else WDT_Restart(WDT);
-		ret = check_address(mqttSettintg.narodMon_server, mqttSettintg.narodMon_serverIP);                          // Получить адрес IP через DNS
+		check_address(mqttSettintg.narodMon_server, mqttSettintg.narodMon_serverIP);// Получить адрес IP через DNS При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) SemaphoreGive (xWebThreadSemaphore);
+		ret = false;  // вызов обновления был
 	}
 	return ret;
 }
@@ -1379,12 +1389,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 } */
 
 // Внутренная функция послать один топик, возврат удачно или нет послан топик, при не удаче запись в журнал
-// t - название топика
-// p - значение топика
 // NM - true народный мониторинг, false обычный сервер
 // debug - выводить отладочные сообщения
 // link_close  = true - по завершению закрывать связь  false по завершению не закрывать связь (отсылка нескольких топиков)
-boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolean link_close)
+boolean clientMQTT::sendTopic(boolean NM, boolean debug, boolean link_close)
 {
   TYPE_STATE_MQTT state; 
   IPAddress tempIP;
@@ -1429,7 +1437,7 @@ boolean clientMQTT::sendTopic(char * t,char *p,boolean NM, boolean debug, boolea
 //if (debug){journal.jprintf((char*)">"); ShowSockRegisters(W5200_SOCK_SYS);}// выводим состояние регистров ЕСЛИ ОТЛАДКА
          if (connect(NM))                                        // Попытка соедиениея
           {
-           w5200_MQTT.publish(t,p);                              // Посылка данных топика
+           w5200_MQTT.publish(topic,temp);                              // Посылка данных топика
            if (link_close) w5200_MQTT.disconnect();              // отсоединение если надо
            if (debug) ShowSockRegisters(W5200_SOCK_SYS);         // выводим состояние регистров ЕСЛИ ОТЛАДКА
          

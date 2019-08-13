@@ -276,7 +276,7 @@ x_TryStaticIP:
 // Используется системный сокет!! W5200_SOCK_SYS
 // Определить IP адрес через DNS, если на входе не IP адрес.
 // Переменная adr - должна быть расположена в ОЗУ!
-// При не удаче возвращается 0, при удаче: 1 - IP на входе, 2 - был запрос к DNS
+// При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
 uint8_t check_address(char *adr, IPAddress &ip)
 {
 	// Задача определить  IP адрес. Если на входе был также IP то он и возвращается,
@@ -637,7 +637,6 @@ void pingW5200(boolean f)
 
 // =============================== M Q T T ==================================================
 #ifdef MQTT    // признак использования MQTT
-static char root[60],topic[140], temp[16];
 const char* MQTTpublish={">> %s "};
 const char* MQTTPublishOK={"OK\n"};
 const char* MQTTDebugStr={" %s %s,"};  // вывод информации при отладке
@@ -647,50 +646,49 @@ const char* MQTTDebugStr={" %s %s,"};  // вывод информации при
 boolean sendNarodMon(boolean debug)
 {
  uint8_t i;
-     
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon ignore: Wrong MAC address, change MAC from default.\n"); return false;}
+  
+     HP.clMQTT.clearBuf();   // очистить рабочие буфера
      journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
-
-     strcpy(root,"");  // Формирование строки корня, куда потом пишутся топики
-     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON,root);
-     strcat(root,"/");
-     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,root);  
-     strcat(root,"/");
+     strcpy(HP.clMQTT.root,"");  // Формирование строки корня, куда потом пишутся топики
+     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_NARMON,HP.clMQTT.root);
+     strcat(HP.clMQTT.root,"/");
+     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,HP.clMQTT.root);  
+     strcat(HP.clMQTT.root,"/");
      
      // посылка отдельных топиков
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TOUT].get_name());
-     ftoa(temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
-    
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TIN].get_name());
-     ftoa(temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TOUT].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TIN].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
      
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TBOILER].get_name());
-     ftoa(temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TBOILER].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
 
-     strcpy(topic,root);
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
      if(HP.dFC.get_present())
          {
-          strcat(topic,"FC");
-          ftoa(temp,(float)HP.dFC.get_frequency()/100.0,2);
-          if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+          strcat(HP.clMQTT.topic,"FC");
+          ftoa(HP.clMQTT.temp,(float)HP.dFC.get_frequency()/100.0,2);
+          if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          }
      else
          {
-         strcat(topic,HP.dRelay[RCOMP].get_name());
-         if (HP.dRelay[RCOMP].get_Relay()){ if (HP.clMQTT.sendTopic(topic,(char*)cOne,true,debug,false)) {if (debug) journal.jprintf(" %s 1\n", topic);}  else return false;  }    
-         else                             { if (HP.clMQTT.sendTopic(topic,(char*)cZero,true,debug,false)) {if (debug) journal.jprintf(" %s 0\n", topic);}  else return false;  } 
+         strcat(HP.clMQTT.topic,HP.dRelay[RCOMP].get_name());
+         if (HP.dRelay[RCOMP].get_Relay()){strcpy(HP.clMQTT.temp,(char*)cOne); if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf(" %s 1\n", HP.clMQTT.topic);}  else return false;  }    
+         else                             {strcpy(HP.clMQTT.temp,(char*)cZero); if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf(" %s 0\n", HP.clMQTT.topic);}  else return false;  } 
          } 
          
-         strcpy(topic,root);
-         strcat(topic,"ERROR");
-         itoa(HP.get_errcode(),temp,10);
-         if (HP.clMQTT.sendTopic(topic,temp,true,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"ERROR");
+         itoa(HP.get_errcode(),HP.clMQTT.temp,10);
+         if (HP.clMQTT.sendTopic(true,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          
         if (debug) journal.jprintf(cStrEnd);   
          
@@ -699,46 +697,46 @@ boolean sendNarodMon(boolean debug)
          {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("Additional data:");  
-         strcpy(topic,root);
-         strcat(topic,HP.sTemp[TCOMP].get_name());
-         ftoa(temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
-         if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;    
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,HP.sTemp[TCOMP].get_name());
+         ftoa(HP.clMQTT.temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
+         if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;    
 
-         strcpy(topic,root);
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
          #ifdef EEV_DEF
-         strcat(topic,"OWERHEAT");
-         ftoa(temp,(float)HP.dEEV.get_Overheat()/100.0,1);
+         strcat(HP.clMQTT.topic,"OWERHEAT");
+         ftoa(HP.clMQTT.temp,(float)HP.dEEV.get_Overheat()/100.0,1);
          #else
-          strcat(topic,HP.sTemp[TEVAOUTG].get_name());
-          if(HP.sTemp[TEVAOUTG].get_present()) ftoa(temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1);
+          strcat(HP.clMQTT.topic,HP.sTemp[TEVAOUTG].get_name());
+          if(HP.sTemp[TEVAOUTG].get_present()) ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1);
           else   strcat(topic,"skip1 0");
          #endif
-         if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
 
          for(i=0;i<ANUMBER;i++)
              if(HP.sADC[i].get_present()) 
              {
-                 strcpy(topic,root);
-                 strcat(topic,HP.sADC[i].get_name());
-                 ftoa(temp,(float)HP.sADC[i].get_Press()/100.0,2);
-                 if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;      
+                 strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+                 strcat(HP.clMQTT.topic,HP.sADC[i].get_name());
+                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Press()/100.0,2);
+                 if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;      
              }
          
-             strcpy(topic,root);
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
            #ifdef EEV_DEF   
-             strcat(topic,HP.dEEV.get_name());
-             itoa(HP.dEEV.get_EEV(),temp,10);
+             strcat(HP.clMQTT.topic,HP.dEEV.get_name());
+             itoa(HP.dEEV.get_EEV(),HP.clMQTT.temp,10);
            #else
-             strcat(topic,HP.sTemp[TEVAING].get_name());
-             if(HP.sTemp[TEVAING].get_present()) ftoa(temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1);
+             strcat(HP.clMQTT.topic,HP.sTemp[TEVAING].get_name());
+             if(HP.sTemp[TEVAING].get_present()) ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1);
              else   strcat(topic,"skip2 0");
            #endif  
-             if (HP.clMQTT.sendTopic(topic,temp,true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+             if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
             
-           strcpy(topic,root);
-           strcat(topic,"powerCO");
-           ftoa(temp,HP.powerCO,1);
-           if (HP.clMQTT.sendTopic(topic,temp,true,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+           strcat(HP.clMQTT.topic,"powerCO");
+           ftoa(HP.clMQTT.temp,HP.powerCO,1);
+           if (HP.clMQTT.sendTopic(true,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
            if (debug) journal.jprintf(cStrEnd);   
          }//  if (HP.clMQTT.get_NarodMonBig())
          if (!debug) journal.jprintf((char*)MQTTPublishOK);
@@ -751,44 +749,45 @@ boolean sendNarodMon(boolean debug)
 boolean sendMQTT(boolean debug)
 {
  uint8_t i; 
-     strcpy(root,"");  // Формирование строки корня, куда потом пишутся топики
+     HP.clMQTT.clearBuf();   // очистка рабочие буфера
+     strcpy(HP.clMQTT.root,"");  // Формирование строки корня, куда потом пишутся топики
      journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server()); //if (!debug) journal.jprintf(" OK\n"); 
-     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT,root);
-     strcat(root,"/");
+     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_MQTT,HP.clMQTT.root);
+     strcat(HP.clMQTT.root,"/");
      
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TOUT].get_name());
-     ftoa(temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TOUT].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
      
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TIN].get_name());
-     ftoa(temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TIN].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
      
-     strcpy(topic,root);
-     strcat(topic,HP.sTemp[TBOILER].get_name());
-     ftoa(temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);
-     if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+     strcat(HP.clMQTT.topic,HP.sTemp[TBOILER].get_name());
+     ftoa(HP.clMQTT.temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);
+     if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
 
-     strcpy(topic,root);
+     strcpy(HP.clMQTT.topic,HP.clMQTT.root);
      if(HP.dFC.get_present())
          {
-          strcat(topic,"FC");
-          ftoa(temp,(float)HP.dFC.get_frequency()/100.0,1);
-          if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+          strcat(HP.clMQTT.topic,"FC");
+          ftoa(HP.clMQTT.temp,(float)HP.dFC.get_frequency()/100.0,1);
+          if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          }
      else
          {
-         strcat(topic,HP.dRelay[RCOMP].get_name());
-         if (HP.dRelay[RCOMP].get_Relay()){if (HP.clMQTT.sendTopic(topic,(char*)cOne,true,debug,false)) {if (debug) journal.jprintf(" %s 1\n", topic);}  else return false;  }    
-         else                             {if (HP.clMQTT.sendTopic(topic,(char*)cZero,true,debug,false)) {if (debug) journal.jprintf(" %s 0\n", topic);}  else return false;  } 
+         strcat(HP.clMQTT.topic,HP.dRelay[RCOMP].get_name());
+         if (HP.dRelay[RCOMP].get_Relay()){strcpy(HP.clMQTT.temp,(char*)cOne); if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf(" %s 1\n", HP.clMQTT.topic);}  else return false;  }    
+         else                             {strcpy(HP.clMQTT.temp,(char*)cZero); if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf(" %s 0\n", HP.clMQTT.topic);}  else return false;  } 
          } 
          
-       strcpy(topic,root);
-       strcat(topic,"ERROR");
-       itoa(HP.get_errcode(),temp,10);
-       if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+       strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+       strcat(HP.clMQTT.topic,"ERROR");
+       itoa(HP.get_errcode(),HP.clMQTT.temp,10);
+       if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
        if (debug) journal.jprintf(cStrEnd);
          
      
@@ -799,71 +798,71 @@ boolean sendMQTT(boolean debug)
 
         if(HP.sTemp[TCOMP].get_present())
           {
-	         strcpy(topic,root);
-	         strcat(topic,HP.sTemp[TCOMP].get_name());
-	         ftoa(temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
-	         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+	         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+	         strcat(HP.clMQTT.topic,HP.sTemp[TCOMP].get_name());
+	         ftoa(HP.clMQTT.temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);
+	         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
           }        
 
          if(HP.sTemp[TCONING].get_present())
           {
-             strcpy(topic,root);
-             strcat(topic,HP.sTemp[TCONING].get_name());
-             ftoa(temp,(float)HP.sTemp[TCONING].get_Temp()/100.0,1);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;     
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,HP.sTemp[TCONING].get_name());
+             ftoa(HP.clMQTT.temp,(float)HP.sTemp[TCONING].get_Temp()/100.0,1);
+             if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;     
           }
 
           if(HP.sTemp[TCONOUTG].get_present())
           {
-             strcpy(topic,root);
-             strcat(topic,HP.sTemp[TCONOUTG].get_name());
-             ftoa(temp,(float)HP.sTemp[TCONOUTG].get_Temp()/100.0,1);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;       
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,HP.sTemp[TCONOUTG].get_name());
+             ftoa(HP.clMQTT.temp,(float)HP.sTemp[TCONOUTG].get_Temp()/100.0,1);
+             if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;       
           }
           
           if(HP.sTemp[TEVAOUTG].get_present())
           {
-             strcpy(topic,root);
-             strcat(topic,HP.sTemp[TEVAOUTG].get_name());
-             ftoa(temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;       
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,HP.sTemp[TEVAOUTG].get_name());
+             ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1);
+             if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;       
           }
           if(HP.sTemp[TEVAING].get_present())
           {
-             strcpy(topic,root);
-             strcat(topic,HP.sTemp[TEVAING].get_name());
-             ftoa(temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;       
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,HP.sTemp[TEVAING].get_name());
+             ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1);
+             if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;       
           }      
-         strcpy(topic,root);
-         strcat(topic,"OVERHEAT");
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"OVERHEAT");
          #ifdef EEV_DEF
-         ftoa(temp,(float)HP.dEEV.get_Overheat()/100.0,1);
+         ftoa(HP.clMQTT.temp,(float)HP.dEEV.get_Overheat()/100.0,1);
          #else
-         strcpy(temp,cZero);
+         strcpy(HP.clMQTT.temp,cZero);
          #endif
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
+         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
 
          for(i=0;i<ANUMBER;i++)
              if(HP.sADC[i].get_present()) 
              {
-                 strcpy(topic,root);
-                 strcat(topic,HP.sADC[i].get_name());
-                 ftoa(temp,(float)HP.sADC[i].get_Press()/100.0,2);
-                 if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;      
+                 strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+                 strcat(HP.clMQTT.topic,HP.sADC[i].get_name());
+                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Press()/100.0,2);
+                 if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;      
              }
              
              #ifdef EEV_DEF 
-             strcpy(topic,root);
-             strcat(topic,HP.dEEV.get_name());
-             itoa(HP.dEEV.get_EEV(),temp,10);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;   
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,HP.dEEV.get_name());
+             itoa(HP.dEEV.get_EEV(),HP.clMQTT.temp,10);
+             if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;   
              #endif
              
-             strcpy(topic,root);
-             strcat(topic,"powerCO");
-             ftoa(temp,HP.powerCO,1);
-             if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;   
+             strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+             strcat(HP.clMQTT.topic,"powerCO");
+             ftoa(HP.clMQTT.temp,HP.powerCO,1);
+             if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;   
              if (debug) journal.jprintf(cStrEnd);        
          }//  if (HP.clMQTT.get_MqttBig())
       
@@ -872,23 +871,23 @@ boolean sendMQTT(boolean debug)
         {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("SDM120 data:");   
-         strcpy(topic,root);
-         strcat(topic,"ACPOWER");
-         strcpy(temp,"");
-         HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,temp);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"ACPOWER");
+         strcpy(HP.clMQTT.temp,"");
+         HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,HP.clMQTT.temp);
+         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
 
-         strcpy(topic,root);
-         strcat(topic,"CURRENT");
-         strcpy(temp,"");
-         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,temp);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"CURRENT");
+         strcpy(HP.clMQTT.temp,"");
+         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,HP.clMQTT.temp);
+         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
 
-         strcpy(topic,root);
-         strcat(topic,"VOLTAGE");
-         strcpy(temp,"");
-         HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,temp);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"VOLTAGE");
+         strcpy(HP.clMQTT.temp,"");
+         HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,HP.clMQTT.temp);
+         if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          if (debug) journal.jprintf(cStrEnd);  
         }
         #endif
@@ -897,22 +896,22 @@ boolean sendMQTT(boolean debug)
         {
          _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
          if (debug) journal.jprintf("FC data:");  
-         strcpy(topic,root);
-         strcat(topic,"powerFC");
-         strcpy(temp,"");
-         HP.dFC.get_paramFC((char*)fc_cPOWER,temp);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"powerFC");
+         strcpy(HP.clMQTT.temp,"");
+         HP.dFC.get_paramFC((char*)fc_cPOWER,HP.clMQTT.temp);
+         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          
-         strcpy(topic,root);
-         strcat(topic,"freqFC");
-         strcpy(temp,"");
-         HP.dFC.get_paramFC((char*)fc_cFC,temp);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"freqFC");
+         strcpy(HP.clMQTT.temp,"");
+         HP.dFC.get_paramFC((char*)fc_cFC,HP.clMQTT.temp);
+         if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
 
-         strcpy(topic,root);
-         strcat(topic,"currentFC");
-         ftoa(temp,(float)HP.dFC.get_current()/100.0,1);
-         if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false; 
+         strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+         strcat(HP.clMQTT.topic,"currentFC");
+         ftoa(HP.clMQTT.temp,(float)HP.dFC.get_current()/100.0,1);
+         if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false; 
          if (debug) journal.jprintf(cStrEnd); 
         }
           
@@ -921,17 +920,17 @@ boolean sendMQTT(boolean debug)
           _delay(100);// пауза перед отправкой следующего пакета - разгружаем сервер и балансируем загрузку у себя
           if (debug) journal.jprintf("COP data:");     
           #ifdef USE_ELECTROMETER_SDM
-           strcpy(topic,root);
-           strcat(topic,"fullCOP");
-           ftoa(temp,(float)HP.fullCOP/100.0,2);
-           if (HP.clMQTT.sendTopic(topic,temp,false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
+           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+           strcat(HP.clMQTT.topic,"fullCOP");
+           ftoa(HP.clMQTT.temp,(float)HP.fullCOP/100.0,2);
+           if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
           #endif 
            if (HP.dFC.get_present())   
            {
-           strcpy(topic,root);
-           strcat(topic,"COP");
-           ftoa(temp,(float)HP.COP/100.0,2);
-           if (HP.clMQTT.sendTopic(topic,temp,false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, topic,temp);} else return false;  
+           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+           strcat(HP.clMQTT.topic,"COP");
+           ftoa(HP.clMQTT.temp,(float)HP.COP/100.0,2);
+           if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
            }        
            if (debug) journal.jprintf(cStrEnd);   
           }  
@@ -946,62 +945,63 @@ boolean sendMQTT(boolean debug)
 // При неудачной
 boolean  sendThingSpeak(boolean debug)
 {
- //uint8_t i;
+
+     HP.clMQTT.clearBuf();   // подготовить рабочие буфера
       // Готовим данные
-     strcpy(root,"channels/");  // Название топика едино посылаем одним запросом
-     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT,root);
-     strcat(root,"/publish/");
-     HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT,root);
+     strcpy(HP.clMQTT.root,"channels/");  // Название топика едино посылаем одним запросом
+     HP.clMQTT.get_paramMQTT((char*)mqtt_LOGIN_MQTT,HP.clMQTT.root);
+     strcat(HP.clMQTT.root,"/publish/");
+     HP.clMQTT.get_paramMQTT((char*)mqtt_PASSWORD_MQTT,HP.clMQTT.root);
     
      // Формируем данные и посылаем данные  сразу на много полей
-     strcpy(topic,"field1=");
-     strcat(topic,ftoa(temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1));
+     strcpy(HP.clMQTT.topic,"field1=");
+     strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TOUT].get_Temp()/100.0,1));
  
-     strcat(topic,"&field2=");
-     strcat(topic,ftoa(temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1));
+     strcat(HP.clMQTT.topic,"&field2=");
+     strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TIN].get_Temp()/100.0,1));
  
-     strcat(topic,"&field3=");
-     strcat(topic,ftoa(temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1));
+     strcat(HP.clMQTT.topic,"&field3=");
+     strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1));
 
-     strcat(topic,"&field4=");
+     strcat(HP.clMQTT.topic,"&field4=");
      if(HP.dFC.get_present())
          {
-          strcat(topic,ftoa(temp,(float)HP.dFC.get_frequency()/100.0,1));
+          strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.dFC.get_frequency()/100.0,1));
          }
      else
          {
-         if (HP.dRelay[RCOMP].get_Relay()) strcat(topic,cOne);   
-         else                              strcat(topic,cZero);  
+         if (HP.dRelay[RCOMP].get_Relay()) strcat(HP.clMQTT.topic,cOne);   
+         else                              strcat(HP.clMQTT.topic,cZero);  
          }
           
-     strcat(topic,"&field5=");
-     strcat(topic,ftoa(temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1));
+     strcat(HP.clMQTT.topic,"&field5=");
+     strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1));
          
-     strcat(topic,"&field6=");
+     strcat(HP.clMQTT.topic,"&field6=");
      #ifdef EEV_DEF 
-     strcat(topic,ftoa(temp,(float)HP.dEEV.get_Overheat()/100.0,1));
+     strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.dEEV.get_Overheat()/100.0,1));
      #else
-     if(HP.sTemp[TEVAOUTG].get_present()) strcat(topic,ftoa(temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1));
-     else   strcat(topic,cZero);
+     if(HP.sTemp[TEVAOUTG].get_present()) strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAOUTG].get_Temp()/100.0,1));
+     else   strcat(HP.clMQTT.topic,cZero);
      #endif
       
-     strcat(topic,"&field7=");
+     strcat(HP.clMQTT.topic,"&field7=");
      #ifdef EEV_DEF
-     _itoa(HP.dEEV.get_EEV(),topic);
+     _itoa(HP.dEEV.get_EEV(),HP.clMQTT.topic);
      #else  // Вместо положения ЭРВ посылаем тепературу гликоля
-     if(HP.sTemp[TEVAING].get_present()) strcat(topic,ftoa(temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1));
+     if(HP.sTemp[TEVAING].get_present()) strcat(HP.clMQTT.topic,ftoa(HP.clMQTT.temp,(float)HP.sTemp[TEVAING].get_Temp()/100.0,1));
      else   strcat(topic,cZero);
      #endif
      
-     strcat(topic,"&field8=");
-     _itoa(HP.get_errcode(),topic);
-     strcat(topic,(char*)"&status=MQTTPUBLISH");
+     strcat(HP.clMQTT.topic,"&field8=");
+     _itoa(HP.get_errcode(),HP.clMQTT.topic);
+     strcat(HP.clMQTT.topic,(char*)"&status=MQTTPUBLISH");
      // Проверка на длины
-     if((strlen(root)>=sizeof(root)-2)||(strlen(topic)>sizeof(topic)-2)) { journal.jprintf("$WARNING: Long topic or data string, is problem.\n"); return false;}
+       if((strlen(HP.clMQTT.root)>=LEN_ROOT-2)||(strlen(HP.clMQTT.topic)>LEN_TOPIC-2)) { journal.jprintf("$WARNING: Long topic or data string, is problem.\n"); return false;}
      // Отправка
      journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_mqtt_server());
      
-     if (HP.clMQTT.sendTopic(root,topic,false,debug,true)) { if (debug) journal.jprintf(" %s %s\n", root,topic);else journal.jprintf((char*)MQTTPublishOK);return true;} else return false;  
+     if (HP.clMQTT.sendTopic(false,debug,true)) { if (debug) journal.jprintf(" %s %s\n", HP.clMQTT.root,HP.clMQTT.topic);else journal.jprintf((char*)MQTTPublishOK);return true;} else return false;  
      return true;
 }
   

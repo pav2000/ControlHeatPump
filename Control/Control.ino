@@ -650,7 +650,7 @@ void vWeb0(void *)
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
 #endif
-	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку
+	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку, если действие проделано то active = false и новый цикл
 	static boolean network_last_link = true;
 
 	HP.timeNTP = xTaskGetTickCount();        // В первый момент не обновляем
@@ -664,10 +664,9 @@ void vWeb0(void *)
 
 		// СЕРВИС: Этот поток работает на любых настройках, по этому сюда ставим работу с сетью
 		HP.message.sendMessage();                                            // Отработать отсылку сообщений (внутри скрыта задержка после включения)
-
-		active = HP.message.dnsUpdate();                                       // Обновить адреса через dns если надо Уведомления
+		active = HP.message.dnsUpdate();                                     // Обновить адреса через dns если надо, dnsUpdate() возвращает true если обновления не было
 #ifdef MQTT
-		if(!active) active=HP.clMQTT.dnsUpdate();                          // Обновить адреса через dns если надо MQTT
+		if(active) active=HP.clMQTT.dnsUpdate();                             // Обновить адреса через dns если надо для MQTT если обновления не было то возвращает true
 #endif
 		if(thisTime > xTaskGetTickCount()) thisTime = 0;                         // переполнение счетчика тиков
 		if(xTaskGetTickCount() - thisTime > 10 * 1000)                             // Делим частоту - период 10 сек
@@ -745,6 +744,7 @@ void vWeb0(void *)
 			// 7. Отправка нанародный мониторинг
 			if ((HP.clMQTT.get_NarodMonUse())&&(thisTime-narmont>TIME_NARMON*1000UL)&&(active))// если нужно & время отправки пришло
 			{
+				STORE_DEBUG_INFO(55);
 				narmont=thisTime;
 				sendNarodMon(false);                       // отладка выключена
 				active=false;
@@ -753,6 +753,7 @@ void vWeb0(void *)
 			// 8. Отправка на MQTT сервер
 			if ((HP.clMQTT.get_MqttUse())&&(thisTime-mqttt>HP.clMQTT.get_ttime()*1000UL)&&(active))// если нужно & время отправки пришло
 			{
+				STORE_DEBUG_INFO(56);
 				mqttt=thisTime;
 				if(HP.clMQTT.get_TSUse()) sendThingSpeak(false);
 				else sendMQTT(false);
