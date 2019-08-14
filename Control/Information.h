@@ -348,8 +348,8 @@ class clientMQTT                              // Класс клиент MQTT
     boolean set_paramMQTT(char *var, char *c);    // Установить параметр из строки
     char*   get_paramMQTT(char *var, char *ret);  // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
      
-    void set_mqtt_serverIP(IPAddress x){mqttSettintg.mqtt_serverIP=x; }           // Установить IP Адрес серверa MQTT
-    void set_narodMon_serverIP(IPAddress x){mqttSettintg.narodMon_serverIP=x; }   // УстановитьIP Адрес сервера народного мониторинга
+    void set_mqtt_serverIP(IPAddress x){mqttSettintg.mqtt_serverIP=x; }          // Установить IP Адрес серверa MQTT
+    void set_narodMon_serverIP(IPAddress x){mqttSettintg.narodMon_serverIP=x; }  // УстановитьIP Адрес сервера народного мониторинга
     // чтение настоек
     boolean get_MqttUse() {return GETBIT(mqttSettintg.flags,fMqttUse);}          // Получить флаг отправки на сервер MQTT
     boolean get_TSUse() {return GETBIT(mqttSettintg.flags,fTSUse);}              // Получить флаг отправки на  ThingSpeak
@@ -369,7 +369,7 @@ class clientMQTT                              // Класс клиент MQTT
     IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
     char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
     uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
-    void clearBuf() {root[0]=0x00;topic[0]=0x00;temp[0]=0x00;};                  // очистка рабочих буферов
+    void clearBuf() {root[0]=0x00;topic[0]=0x00;temp[0]=0x00;};                  // очистка рабочих буферов перед отправкой
     // Рабочие буфера для отправки MQTT
     // Для экономии места используется выходной буфер MAIN_WEB_TASK потока веб сервера Socket[MAIN_WEB_TASK].outBuf[3*W5200_MAX_LEN] (в этом потоке ДОЛЖЕН проводится запуск MQTT и буфер гарантированно не используется другими задачами)
     // Размер выходного буфера char outBuf[3*W5200_MAX_LEN] - 6 кБ - хватит на все. Распределение памяти в выходном буфере:
