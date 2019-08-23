@@ -24,6 +24,7 @@
 #include "Hardware.h"
 #include "Message.h"
 #include "Information.h"
+#include "MQTT.h"
 #include "OmronFC.h"
 #include "VaconFC.h"
 #include "Scheduler.h"

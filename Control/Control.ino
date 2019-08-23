@@ -49,6 +49,7 @@
 #include "Nextion.h"
 #include "Message.h"
 #include "Information.h"
+#include "MQTT.h"
 #include "Statistics.h"
 
 void vUpdateStepperEEV(void *);

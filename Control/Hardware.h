@@ -26,6 +26,7 @@
 #include <ModbusMaster.h>                   // Используется МОДИФИЦИРОВАННАЯ либа ModbusMaster https://github.com/4-20ma/ModbusMaster
 #include "StepMotor.h" 
 #include "Information.h"
+#include "MQTT.h"
 #include "devOneWire.h" 
 
 // Флаги датчиков (единые для всех датчиков!!!!!)
