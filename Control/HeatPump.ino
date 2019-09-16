@@ -1476,7 +1476,7 @@ boolean HeatPump::boilerAddHeat()
 		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
 			startSallmonela = rtcSAM3X8.unixtime();
 			onSallmonela = true;
-			journal.jprintf(" Cycle start salmonella\n");
+			journal.jprintf(" Cycle start salmonella, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 		}
 		if(onSallmonela) {   // Обеззараживание нужно
 			if(startSallmonela + SALLMONELA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
@@ -1484,17 +1484,17 @@ boolean HeatPump::boilerAddHeat()
 #ifdef SALLMONELA_HARD
 				else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
 #else
-				else {  // Вариант работы только до достижение темпеартуы и сразу выключение
+				else {  // Вариант работы только до достижение темперaтуpы и сразу выключение
 					onSallmonela = false;
 					startSallmonela = 0;
-					journal.jprintf(" Salmonella cycle finished\n");
+					journal.jprintf(" Salmonella cycle finished, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 					return false;
 				}
 #endif
 			} else {  // Время вышло, выключаем, и идем дальше по алгоритму
 				onSallmonela = false;
 				startSallmonela = 0;
-				journal.jprintf(" Salmonella cycle timeout\n");
+				journal.jprintf(" Salmonella cycle end, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 			}
 		}
 	} else if(onSallmonela) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму
