@@ -1000,7 +1000,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				HP.save_motoHour();
 				Stats.SaveStats(0);
 				Stats.SaveHistory(0);
-				journal.jprintf(pP_DATE, "Power lost!\n");
+				journal.jprintf(pP_DATE, "POWER LOST!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
 					HP.NO_Power = 2;
@@ -1011,7 +1011,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			if(HP.NO_Power_delay) {
 				if(--HP.NO_Power_delay == 0) HP.sendCommand(pNETWORK);
 			} else {
-				journal.jprintf(pP_DATE, "Power restored!\n");
+				journal.jprintf(pP_DATE, "POWER RESTORED!\n");
 				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 						HP.NO_Power = 0;

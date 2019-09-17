@@ -751,7 +751,7 @@ void HeatPump::resetSettingHP()
 //Установить параметр из строки
 boolean HeatPump::set_network(char *var, char *c)
 { 
- uint8_t x;
+ int32_t x;
  float zp; 
  if (strcmp(c,cZero)==0) x=0;
  else if (strcmp(c,cOne)==0) x=1;
@@ -785,20 +785,22 @@ boolean HeatPump::set_network(char *var, char *c)
 			                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
 			                        default:                      return false; break;   
 			                       }                                          }else   
- if(strcmp(var,net_PASS)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
-                                    else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
+ if(strcmp(var,net_PASS)==0){        if (x == 0) { SETBIT0(Network.flags,fPass); return true;}
+                                    else if (x == 1) {SETBIT1(Network.flags,fPass);  return true;}
                                     else return false;  
                                     }else
  if(strcmp(var,net_PASSUSER)==0){    strcpy(Network.passUser,c);set_hashUser(); return true;   }else                 
- if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else  
+ if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else
+ if(strcmp(var, net_fWebLogError) == 0) { Network.flags = (Network.flags & ~(1<<fWebLogError)) | ((x == 1)<<fWebLogError); return true; } else
+ if(strcmp(var, net_fWebFullLog) == 0) { Network.flags = (Network.flags & ~(1<<fWebFullLog)) | ((x == 1)<<fWebFullLog); return true; } else
  if(strcmp(var,net_SIZE_PACKET)==0){ zp=my_atof(c);  
                                     if (zp==-9876543.00) return   false;    
                                     else if((zp<64)||(zp>2048)) return   false;   
                                     else Network.sizePacket=(int)zp; return true;
                                     }else  
  if(strcmp(var,net_INIT_W5200)==0){    // флаг Ежеминутный контроль SPI для сетевого чипа
-                       if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fInitW5200); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fInitW5200);  return true;}
+                       if (x == 0) { SETBIT0(Network.flags,fInitW5200); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fInitW5200);  return true;}
                        else return false;  
                        }else 
  if(strcmp(var,net_PORT)==0){        zp=my_atof(c);  
@@ -806,8 +808,8 @@ boolean HeatPump::set_network(char *var, char *c)
                        else if((zp<1)||(zp>65535)) return false;   
                        else Network.port=(int)zp; return  true;
                        }else     
- if(strcmp(var,net_NO_ACK)==0){      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoAck);  return true;}
+ if(strcmp(var,net_NO_ACK)==0){      if (x == 0) { SETBIT0(Network.flags,fNoAck); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fNoAck);  return true;}
                        else return false;  
                        }else  
  if(strcmp(var,net_DELAY_ACK)==0){   zp=my_atof(c);  
@@ -826,8 +828,8 @@ boolean HeatPump::set_network(char *var, char *c)
 			                        case 5: Network.pingTime=120*60;    return true;  break;
 			                        default:                           return false; break;   
 			                       }                                          }else   
- if(strcmp(var,net_NO_PING)==0){     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
+ if(strcmp(var,net_NO_PING)==0){     if (x == 0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
                        else return false;  
                        }else                                                                                                                                                                               
    return false;
@@ -856,6 +858,8 @@ char* HeatPump::get_network(char *var,char *ret)
 					Network.resW5200 == 60*60*24 ? 2 : 3);
   }else if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
                                     else      return  strcat(ret,(char*)cZero);               }else
+  if(strcmp(var, net_fWebLogError) == 0) { return strcat(ret, (char*)(Network.flags & (1<<fWebLogError) ? cOne : cZero)); } else
+  if(strcmp(var, net_fWebFullLog) == 0) { return strcat(ret, (char*)(Network.flags & (1<<fWebFullLog) ? cOne : cZero)); } else
   if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
   if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
   if(strcmp(var,net_SIZE_PACKET)==0){return _itoa(Network.sizePacket,ret);          }else   

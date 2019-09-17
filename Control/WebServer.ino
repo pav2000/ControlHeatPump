@@ -137,12 +137,18 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						uint8_t ip[4];
-						W5100.readSnDIPR(sock, ip);
-						journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
-						//for(int16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
-						for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
-						journal.jprintf("...\n");
+						if(HP.get_NetworkFlags() & ((1<<fWebLogError) | (1<<fWebFullLog))) {
+							uint8_t ip[4];
+							W5100.readSnDIPR(sock, ip);
+							journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
+							if(HP.get_NetworkFlags() & (1<<fWebFullLog)) {
+								for(int8_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
+								journal.jprintf("\n");
+							} else {
+								for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
+								journal.jprintf("...\n");
+							}
+						}
 #endif
 						//sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
 						break;
@@ -170,9 +176,11 @@ void web_server(uint8_t thread)
 						journal.jprintf("$RETURN: %s\n",Socket[thread].outBuf);
 #endif
 						if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) {
-							uint8_t ip[4];
-							W5100.readSnDIPR(sock, ip);
-							journal.jprintf("$Error send AJAX(%d.%d.%d.%d): %s\n", ip[0], ip[1], ip[2], ip[3], (char*) Socket[thread].inBuf);
+							if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+								uint8_t ip[4];
+								W5100.readSnDIPR(sock, ip);
+								journal.jprintf("$Error send AJAX(%d.%d.%d.%d): %s\n", ip[0], ip[1], ip[2], ip[3], (char*) Socket[thread].inBuf);
+							}
 						}
 						break;
 					}
@@ -182,9 +190,11 @@ void web_server(uint8_t thread)
                         strcpy(Socket[thread].outBuf, HEADER_ANSWER);
 						strcat(Socket[thread].outBuf, postRet[ret]);   // вернуть текстовый ответ, который надо вывести
                			if(sendBufferRTOS(thread, (byte*) (Socket[thread].outBuf), strlen(Socket[thread].outBuf)) == 0) {
-							uint8_t ip[4];
-							W5100.readSnDIPR(sock, ip);
-							journal.jprintf("$Error send POST(%d.%d.%d.%d): %s\n", ip[0], ip[1], ip[2], ip[3], (char*) Socket[thread].inBuf);
+							if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+								uint8_t ip[4];
+								W5100.readSnDIPR(sock, ip);
+								journal.jprintf("$Error send POST(%d.%d.%d.%d): %s\n", ip[0], ip[1], ip[2], ip[3], (char*) Socket[thread].inBuf);
+							}
                			}
 						break;
 					}
@@ -195,12 +205,13 @@ void web_server(uint8_t thread)
 						break;
 					}
 					case UNAUTHORIZED: {
-xUNAUTHORIZED:			journal.jprintf("$UNAUTHORIZED\n");
+xUNAUTHORIZED:
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$UNAUTHORIZED\n");
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
 					case BAD_LOGIN_PASS: {
-						journal.jprintf("$Wrong login or password\n");
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$Wrong login or password\n");
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
@@ -507,7 +518,11 @@ void parserGET(uint8_t thread, int8_t )
 				if(HP.get_State() == pOFF_HP) {
 					strcat(strReturn, MODE_HP_STR[0]);
 				} else if(HP.get_State() == pWAIT_HP) {
-					strcat(strReturn, "...");
+#ifdef USE_UPS
+					if(HP.NO_Power) strcat(strReturn,"No Power!");
+					else
+#endif
+						strcat(strReturn, "...");
 				} else if(HP.get_State() == pWORK_HP) {
 					if((HP.get_modWork() & pHEAT)) strcat(strReturn, MODE_HP_STR[1]);
 					else if((HP.get_modWork() & pCOOL)) strcat(strReturn, MODE_HP_STR[2]);
@@ -815,7 +830,12 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_Power220") == 0)
 		{
-			_ftoa(strReturn, HP.power220/1000.0,3); ADD_WEBDELIM(strReturn); continue;
+#ifdef USE_UPS
+			if(HP.NO_Power) strcat(strReturn,"*.***");
+			else
+#endif
+				_ftoa(strReturn, HP.power220/1000.0,3);
+			ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
 		{
@@ -1832,11 +1852,11 @@ void parserGET(uint8_t thread, int8_t )
 			}
 
 			//9.  Настройки сети -----------------------------------------------------------
-			if (strcmp(str,"get_Network")==0)           // Функция get_Network - получить значение параметра Network
+			if (strcmp(str,"get_Net")==0)           // Функция get_Network - получить значение параметра Network
 			{
 				HP.get_network(x,strReturn);
 				ADD_WEBDELIM(strReturn) ; continue;
-			} else if (strcmp(str,"set_Network")==0)           // Функция set_Network - установить значение паремтра Network
+			} else if (strcmp(str,"set_Net")==0)           // Функция set_Network - установить значение паремтра Network
 			{
 				if (HP.set_network(x,z))  HP.get_network(x,strReturn);     // преобразование удачно
 				else strcat(strReturn,"E15") ; // ошибка преобразования строки

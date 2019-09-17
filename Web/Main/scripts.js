@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.032";
+var VER_WEB = "1.035";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -120,7 +120,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|SOCKET|RES_W5200|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
+								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|SOCKET|RES|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
 								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
@@ -647,14 +647,14 @@ function loadParam(paramid, noretry, resultdiv) {
 
 function dhcp(dcb) {
 	var fl = document.getElementById(dcb).checked;
-	document.getElementById('get_network-ip').disabled = fl;
-	document.getElementById('get_network-subnet').disabled = fl;
-	document.getElementById('get_network-gateway').disabled = fl;
-	document.getElementById('get_network-dns').disabled = fl;
-	document.getElementById('get_network-ip2').disabled = fl;
-	document.getElementById('get_network-subnet2').disabled = fl;
-	document.getElementById('get_network-gateway2').disabled = fl;
-	document.getElementById('get_network-dns2').disabled = fl;
+	document.getElementById('get_net-ip').disabled = fl;
+	document.getElementById('get_net-subnet').disabled = fl;
+	document.getElementById('get_net-gateway').disabled = fl;
+	document.getElementById('get_net-dns').disabled = fl;
+	document.getElementById('get_net-ip2').disabled = fl;
+	document.getElementById('get_net-subnet2').disabled = fl;
+	document.getElementById('get_net-gateway2').disabled = fl;
+	document.getElementById('get_net-dns2').disabled = fl;
 }
 
 function validip(valip) {

@@ -155,6 +155,8 @@ struct type_DateTimeHP
 #define fInitW5200    2                  // флаг Ежеминутный контроль SPI для сетевого чипа
 #define fNoAck        4                  // флаг Не ожидать ответа ACK
 #define fNoPing       5                  // флаг Запрет пинга контроллера
+#define fWebLogError  6					// Логировать ошибки
+#define fWebFullLog   7					// Полный лог
 
 // Структура для хранения сетевых настроек, для удобного сохранения.
 struct type_NetworkHP
@@ -305,6 +307,7 @@ class HeatPump
     void set_subnet(IPAddress subnet) {Network.subnet=subnet;}  //  Установит subnet адрес
     void set_gateway(IPAddress gateway) {Network.gateway=gateway;}//  Установит gateway адрес
     uint16_t get_port() {return Network.port;}             //  получить порт вебсервера
+    __attribute__((always_inline)) inline uint16_t get_NetworkFlags() { return Network.flags; }
     boolean get_NoAck() { return GETBIT(Network.flags,fNoAck);}  //  Получить флаг Не ожидать ответа ACK
     uint8_t get_delayAck() {return Network.delayAck;}      //  получить задержку перед отсылкой следующего пакета
     uint16_t get_pingTime() {return Network.pingTime;}     //  получить вермя пингования сервера, 0 если не надо
