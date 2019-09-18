@@ -751,16 +751,7 @@ void HeatPump::resetSettingHP()
 //Установить параметр из строки
 boolean HeatPump::set_network(char *var, char *c)
 { 
- int32_t x;
- float zp; 
- if (strcmp(c,cZero)==0) x=0;
- else if (strcmp(c,cOne)==0) x=1;
- else if (strcmp(c,"2")==0) x=2;
- else if (strcmp(c,"3")==0) x=3;
- else if (strcmp(c,"4")==0) x=4;
- else if (strcmp(c,"5")==0) x=5;
- else if (strcmp(c,"6")==0) x=6;
- else x=-1;
+ int32_t x = atoi(c);
  if(strcmp(var,net_IP)==0){          return parseIPAddress(c, '.', Network.ip);                 }else  
  if(strcmp(var,net_DNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else
  if(strcmp(var,net_GATEWAY)==0){     return parseIPAddress(c, '.', Network.gateway);            }else                
@@ -793,29 +784,26 @@ boolean HeatPump::set_network(char *var, char *c)
  if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else
  if(strcmp(var, net_fWebLogError) == 0) { Network.flags = (Network.flags & ~(1<<fWebLogError)) | ((x == 1)<<fWebLogError); return true; } else
  if(strcmp(var, net_fWebFullLog) == 0) { Network.flags = (Network.flags & ~(1<<fWebFullLog)) | ((x == 1)<<fWebFullLog); return true; } else
- if(strcmp(var,net_SIZE_PACKET)==0){ zp=my_atof(c);  
-                                    if (zp==-9876543.00) return   false;    
-                                    else if((zp<64)||(zp>2048)) return   false;   
-                                    else Network.sizePacket=(int)zp; return true;
+ if(strcmp(var,net_SIZE_PACKET)==0){
+                                    if((x<64)||(x>2048)) return   false;
+                                    else Network.sizePacket=x; return true;
                                     }else  
  if(strcmp(var,net_INIT_W5200)==0){    // флаг Ежеминутный контроль SPI для сетевого чипа
                        if (x == 0) { SETBIT0(Network.flags,fInitW5200); return true;}
                        else if (x == 1) { SETBIT1(Network.flags,fInitW5200);  return true;}
                        else return false;  
                        }else 
- if(strcmp(var,net_PORT)==0){        zp=my_atof(c);  
-                       if (zp==-9876543.00) return        false;    
-                       else if((zp<1)||(zp>65535)) return false;   
-                       else Network.port=(int)zp; return  true;
+ if(strcmp(var,net_PORT)==0){
+                       if((x<1)||(x>65535)) return false;
+                       else Network.port=x; return  true;
                        }else     
  if(strcmp(var,net_NO_ACK)==0){      if (x == 0) { SETBIT0(Network.flags,fNoAck); return true;}
                        else if (x == 1) { SETBIT1(Network.flags,fNoAck);  return true;}
                        else return false;  
                        }else  
- if(strcmp(var,net_DELAY_ACK)==0){   zp=my_atof(c);  
-                       if (zp==-9876543.00) return            false;    
-                       else if((zp<1)||(zp>50)) return        false;   
-                       else Network.delayAck=(int)zp; return  true;
+ if(strcmp(var,net_DELAY_ACK)==0){
+                       if((x<1)||(x>50)) return        false;
+                       else Network.delayAck=x; return  true;
                        }else         
  if(strcmp(var,net_PING_ADR)==0){     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; }else    
  if(strcmp(var,net_PING_TIME)==0){switch (x)
