@@ -25,31 +25,31 @@
 		<tbody>
 		<tr>
 			<td>Использовать DHCP сервер</td>
-			<td><input type="checkbox" name="get_Net-dhcp" id="get_Net-dhcp" onchange="setParam('get_Net(DHCP)');dhcp('get_Net-dhcp')" ></td>
+			<td><input type="checkbox" id="get_net-dhcp" onchange="setParam('get_Net(DHCP)');dhcp('get_net-dhcp')" ></td>
 		</tr>
 		<tr>
 			<td>IP адрес контроллера</td>
-			<td nowrap><input id="get_Net-ip" type="text" ><input type="submit" value=">" onclick="validip('get_Net-ip');setParam('get_Net(IP)');"></td>
+			<td nowrap><input id="get_net-ip" type="text" ><input type="submit" value=">" onclick="validip('get_net-ip');setParam('get_Net(IP)');"></td>
 		</tr>
 		<tr>
 			<td>Маска подсети</td>
-			<td nowrap><input id="get_Net-subnet" type="text" ><input type="submit" value=">" onclick="validip('get_Net-subnet');setParam('get_Net(SUBNET)');"></td>
+			<td nowrap><input id="get_net-subnet" type="text" ><input type="submit" value=">" onclick="validip('get_net-subnet');setParam('get_Net(SUBNET)');"></td>
 		</tr>
 		<tr>
 			<td>Адрес шлюза</td>
-			<td nowrap><input id="get_Net-gateway" type="text" ><input type="submit" value=">" onclick="validip('get_Net-gateway');setParam('get_Net(GATEWAY)');"></td>
+			<td nowrap><input id="get_net-gateway" type="text" ><input type="submit" value=">" onclick="validip('get_net-gateway');setParam('get_Net(GATEWAY)');"></td>
 		</tr>
 		<tr>
 			<td>Адрес DNS сервера</td>
-			<td nowrap><input id="get_Net-dns" type="text" ><input type="submit" value=">" onclick="validip('get_Net-dns');setParam('get_Net(DNS)');"></td>
+			<td nowrap><input id="get_net-dns" type="text" ><input type="submit" value=">" onclick="validip('get_net-dns');setParam('get_Net(DNS)');"></td>
 		</tr>
 		<tr>
 			<td>Порт веб-сервера контроллера</td>
-			<td nowrap><input id="get_Net-port" type="number" min="1" max="65534"><input type="submit" value=">" onclick="setParam('get_Net(PORT)');"></td>
+			<td nowrap><input id="get_net-port" type="number" min="1" max="65534"><input type="submit" value=">" onclick="setParam('get_Net(PORT)');"></td>
 		</tr>								
 		<tr>
 			<td>Аппаратный mac адрес</td>
-			<td nowrap><input id="get_Net-mac" type="text" ><input type="submit" value=">" onclick="if(validmac('get_Net-mac')) setParam('get_Net(MAC)');"></td>
+			<td nowrap><input id="get_net-mac" type="text" ><input type="submit" value=">" onclick="if(validmac('get_net-mac')) setParam('get_Net(MAC)');"></td>
 		</tr>					
 <tr><td></td><td><input type="submit" value="Применить настройки (2)" onclick='loadParam("set_updateNet")'></td></tr>
 	</tbody>
@@ -64,27 +64,27 @@
 		<tbody>
 		<tr>
 			<td>Запрет пинга контроллера <sup>1</sup></td>
-			<td><input type="checkbox" name="get_Net-no_ping" id="get_Net-no_ping" onchange="setParam('get_Net(NO_PING)');" ></td>
+			<td><input type="checkbox" id="get_net-no_ping" onchange="setParam('get_Net(NO_PING)');" ></td>
 		</tr>				
 		<tr>
 			<td>Использование пароля для входа <sup>2</sup></td>
-			<td><input type="checkbox" name="get_Net-pass" id="get_Net-pass" onchange="setParam('get_Net(PASS)');" ></td>
+			<td><input type="checkbox" id="get_net-pass" onchange="setParam('get_Net(PASS)');" ></td>
 		</tr>			
 		<tr>
 			<td>Пароль пользователя</td>
-			<td nowrap><input id="get_Net-passuser" type="text" ><input type="submit" value=">" onclick="setParam('get_Net(PASSUSER)');"></td>
+			<td nowrap><input id="get_net-passuser" type="text" ><input type="submit" value=">" onclick="setParam('get_Net(PASSUSER)');"></td>
 		</tr>
 		<tr>
 			<td>Пароль администратора</td>
-			<td nowrap><input id="get_Net-passadmin" type="text" ><input type="submit" value=">" onclick="setParam('get_Net(PASSADMIN)');"></td>
+			<td nowrap><input id="get_net-passadmin" type="text" ><input type="submit" value=">" onclick="setParam('get_Net(PASSADMIN)');"></td>
 		</tr>
 		<tr>
 			<td>Логировать ошибки веб запросов</td>
-			<td><input type="checkbox" id="get_Net-wlog" onchange="setParam('get_Net(WLOG)');"></td>
+			<td><input type="checkbox" id="get_net-wlog" onchange="setParam('get_Net(WLOG)');"></td>
 		</tr>				
 		<tr>
 			<td> Детальный лог</td>
-			<td><input type="checkbox" id="get_Net-wflog" onchange="setParam('get_Net(WFLOG)');"></td>
+			<td><input type="checkbox" id="get_net-wflog" onchange="setParam('get_Net(WFLOG)');"></td>
 		</tr>				
 	</tbody>
 	</table>
@@ -97,35 +97,35 @@
 	<table>
 		<tr>
 			<td>Проверка ping до сервера, при отсутвии сброс сети</td>
-			<td><select id="get_Net-ping_time" onchange="setParam('get_Net(PING_TIME)','get_Net-ping_time');"></select></td>
+			<td><select id="get_net-ping_time" onchange="setParam('get_Net(PING_TIME)','get_net-ping_time');"></select></td>
 		</tr>
 		<tr>
 			<td>Адрес пингуемого сервера <sup>1</sup></td>
-			<td nowrap><input id="get_Net-ping_adr" type="text" ><input type="submit" value=">"  onclick="validip('get_Net-ping_adr');setParam('get_Net(PING_ADR)');"></td>
+			<td nowrap><input id="get_net-ping_adr" type="text" ><input type="submit" value=">"  onclick="validip('get_net-ping_adr');setParam('get_Net(PING_ADR)');"></td>
 		</tr> 		
 		<tr>
 			<td>Ежеминутный контроль связи с Wiznet W5xxx, и при необходимости его сброс</td>
-			<td><input type="checkbox" name="get_Net-init" id="get_Net-init" onchange="setParam('get_Net(INIT)');" ></td>
+			<td><input type="checkbox" id="get_net-init" onchange="setParam('get_Net(INIT)');" ></td>
 		</tr> 
 		<tr>
 			<td>Время сброса «зависших» сокетов</td>
-			<td><select id="get_Net-res_socket" onchange="setParam('get_Net(RES_SOCKET)','get_Net-res_socket');"></select></td>
+			<td><select id="get_net-res_socket" onchange="setParam('get_Net(RES_SOCKET)','get_net-res_socket');"></select></td>
 		</tr>
 		<tr>
 			<td>Время сброса сетевого чипа Wiznet W5xxx</td>
-			<td><select id="get_Net-res" onchange="setParam('get_Net(RES)','get_Net-res');"></select></td>
+			<td><select id="get_net-res" onchange="setParam('get_Net(RES)','get_net-res');"></select></td>
 		</tr>
 		<tr>
 			<td>Размер данных для передачи Wiznet W5xxx (MTU-40 байт)</td>
-			<td nowrap><input id="get_Net-size_packet" min="100" max="2048" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Net(SIZE_PACKET)');"></td>
+			<td nowrap><input id="get_net-size_packet" min="100" max="2048" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Net(SIZE_PACKET)');"></td>
 		</tr>
 		<tr>
 			<td>Не ожидать получения ACK при посылке следующего пакета <sup>2</sup></td>
-			<td><input type="checkbox" name="get_Net-no_ack" id="get_Net-no_ack" onchange="setParam('get_Net(NO_ACK)');" ></td>
+			<td><input type="checkbox" id="get_net-no_ack" onchange="setParam('get_Net(NO_ACK)');" ></td>
 		</tr> 
 		<tr>
 			<td>Пауза перед отправкой следующего пакета, если нет ожидания ACK (мсек) [1...50]<sup>3</sup></td>
-			<td nowrap><input id="get_Net-delay_ack" min="1" max="100" step="1" type="number" ><input type="submit" value=">"  onclick="setParam('get_Net(DELAY_ACK)');"></td>
+			<td nowrap><input id="get_net-delay_ack" min="1" max="100" step="1" type="number" ><input type="submit" value=">"  onclick="setParam('get_Net(DELAY_ACK)');"></td>
 		</tr>				
 	</table>
 	1. Желательно указывать IP адрес (8.8.8.8) а не доменное имя сервера (google.com), рекомендуется вводить IP шлюза<br/>
