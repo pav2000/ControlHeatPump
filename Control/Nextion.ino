@@ -99,7 +99,8 @@ void Nextion::init_display()
 	//_delay(10);
 	sendCommand("sendxy=0");
 	sendCommand("thup=1");
-	if(HP.Option.sleep > 0)   // установлено засыпание дисплея
+	if(HP.Option.sleep>0 && HP.get_errcode()==OK)   // установлено засыпание дисплея, при условии! нет ошибок...
+//	if(HP.Option.sleep > 0)   // установлено засыпание дисплея
 	{
 		strcpy(ntemp, "thsp=");
 		_itoa(HP.Option.sleep * 60, ntemp); // секунды
@@ -341,8 +342,10 @@ void Nextion::readCommand()
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
+	
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-		if(HP.is_compressor_on()) {
+    if(HP.is_compressor_on() || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
+	//	if(HP.is_compressor_on()) {
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("sleep=0");
 				_delay(NEXTION_BOOT_TIME);

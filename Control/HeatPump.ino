@@ -751,16 +751,7 @@ void HeatPump::resetSettingHP()
 //Установить параметр из строки
 boolean HeatPump::set_network(char *var, char *c)
 { 
- uint8_t x;
- float zp; 
- if (strcmp(c,cZero)==0) x=0;
- else if (strcmp(c,cOne)==0) x=1;
- else if (strcmp(c,"2")==0) x=2;
- else if (strcmp(c,"3")==0) x=3;
- else if (strcmp(c,"4")==0) x=4;
- else if (strcmp(c,"5")==0) x=5;
- else if (strcmp(c,"6")==0) x=6;
- else x=-1;
+ int32_t x = atoi(c);
  if(strcmp(var,net_IP)==0){          return parseIPAddress(c, '.', Network.ip);                 }else  
  if(strcmp(var,net_DNS)==0){        return parseIPAddress(c, '.', Network.sdns);               }else
  if(strcmp(var,net_GATEWAY)==0){     return parseIPAddress(c, '.', Network.gateway);            }else                
@@ -785,35 +776,34 @@ boolean HeatPump::set_network(char *var, char *c)
 			                        case 2: Network.resW5200=60*60*24; return true;  break;   // 24 часа
 			                        default:                      return false; break;   
 			                       }                                          }else   
- if(strcmp(var,net_PASS)==0){        if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fPass); return true;}
-                                    else if (strcmp(c,cOne)==0) {SETBIT1(Network.flags,fPass);  return true;}
+ if(strcmp(var,net_PASS)==0){        if (x == 0) { SETBIT0(Network.flags,fPass); return true;}
+                                    else if (x == 1) {SETBIT1(Network.flags,fPass);  return true;}
                                     else return false;  
                                     }else
  if(strcmp(var,net_PASSUSER)==0){    strcpy(Network.passUser,c);set_hashUser(); return true;   }else                 
- if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else  
- if(strcmp(var,net_SIZE_PACKET)==0){ zp=my_atof(c);  
-                                    if (zp==-9876543.00) return   false;    
-                                    else if((zp<64)||(zp>2048)) return   false;   
-                                    else Network.sizePacket=(int)zp; return true;
+ if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else
+ if(strcmp(var, net_fWebLogError) == 0) { Network.flags = (Network.flags & ~(1<<fWebLogError)) | ((x == 1)<<fWebLogError); return true; } else
+ if(strcmp(var, net_fWebFullLog) == 0) { Network.flags = (Network.flags & ~(1<<fWebFullLog)) | ((x == 1)<<fWebFullLog); return true; } else
+ if(strcmp(var,net_SIZE_PACKET)==0){
+                                    if((x<64)||(x>2048)) return   false;
+                                    else Network.sizePacket=x; return true;
                                     }else  
  if(strcmp(var,net_INIT_W5200)==0){    // флаг Ежеминутный контроль SPI для сетевого чипа
-                       if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fInitW5200); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fInitW5200);  return true;}
+                       if (x == 0) { SETBIT0(Network.flags,fInitW5200); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fInitW5200);  return true;}
                        else return false;  
                        }else 
- if(strcmp(var,net_PORT)==0){        zp=my_atof(c);  
-                       if (zp==-9876543.00) return        false;    
-                       else if((zp<1)||(zp>65535)) return false;   
-                       else Network.port=(int)zp; return  true;
+ if(strcmp(var,net_PORT)==0){
+                       if((x<1)||(x>65535)) return false;
+                       else Network.port=x; return  true;
                        }else     
- if(strcmp(var,net_NO_ACK)==0){      if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoAck); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoAck);  return true;}
+ if(strcmp(var,net_NO_ACK)==0){      if (x == 0) { SETBIT0(Network.flags,fNoAck); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fNoAck);  return true;}
                        else return false;  
                        }else  
- if(strcmp(var,net_DELAY_ACK)==0){   zp=my_atof(c);  
-                       if (zp==-9876543.00) return            false;    
-                       else if((zp<1)||(zp>50)) return        false;   
-                       else Network.delayAck=(int)zp; return  true;
+ if(strcmp(var,net_DELAY_ACK)==0){
+                       if((x<1)||(x>50)) return        false;
+                       else Network.delayAck=x; return  true;
                        }else         
  if(strcmp(var,net_PING_ADR)==0){     if (strlen(c)<sizeof(Network.pingAdr)) { strcpy(Network.pingAdr,c); return true;} else return false; }else    
  if(strcmp(var,net_PING_TIME)==0){switch (x)
@@ -826,8 +816,8 @@ boolean HeatPump::set_network(char *var, char *c)
 			                        case 5: Network.pingTime=120*60;    return true;  break;
 			                        default:                           return false; break;   
 			                       }                                          }else   
- if(strcmp(var,net_NO_PING)==0){     if (strcmp(c,cZero)==0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
-                       else if (strcmp(c,cOne)==0) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
+ if(strcmp(var,net_NO_PING)==0){     if (x == 0) { SETBIT0(Network.flags,fNoPing);      pingW5200(HP.get_NoPing()); return true;}
+                       else if (x == 1) { SETBIT1(Network.flags,fNoPing); pingW5200(HP.get_NoPing()); return true;}
                        else return false;  
                        }else                                                                                                                                                                               
    return false;
@@ -856,6 +846,8 @@ char* HeatPump::get_network(char *var,char *ret)
 					Network.resW5200 == 60*60*24 ? 2 : 3);
   }else if(strcmp(var,net_PASS)==0){      if (GETBIT(Network.flags,fPass)) return  strcat(ret,(char*)cOne);
                                     else      return  strcat(ret,(char*)cZero);               }else
+  if(strcmp(var, net_fWebLogError) == 0) { return strcat(ret, (char*)(Network.flags & (1<<fWebLogError) ? cOne : cZero)); } else
+  if(strcmp(var, net_fWebFullLog) == 0) { return strcat(ret, (char*)(Network.flags & (1<<fWebFullLog) ? cOne : cZero)); } else
   if(strcmp(var,net_PASSUSER)==0){  return strcat(ret,Network.passUser);                      }else                 
   if(strcmp(var,net_PASSADMIN)==0){ return strcat(ret,Network.passAdmin);                     }else   
   if(strcmp(var,net_SIZE_PACKET)==0){return _itoa(Network.sizePacket,ret);          }else   
@@ -1476,7 +1468,7 @@ boolean HeatPump::boilerAddHeat()
 		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
 			startSallmonela = rtcSAM3X8.unixtime();
 			onSallmonela = true;
-			journal.jprintf(" Cycle start salmonella\n");
+			journal.jprintf(" Cycle start salmonella, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 		}
 		if(onSallmonela) {   // Обеззараживание нужно
 			if(startSallmonela + SALLMONELA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
@@ -1484,17 +1476,17 @@ boolean HeatPump::boilerAddHeat()
 #ifdef SALLMONELA_HARD
 				else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
 #else
-				else {  // Вариант работы только до достижение темпеартуы и сразу выключение
+				else {  // Вариант работы только до достижение темперaтуpы и сразу выключение
 					onSallmonela = false;
 					startSallmonela = 0;
-					journal.jprintf(" Salmonella cycle finished\n");
+					journal.jprintf(" Salmonella cycle finished, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 					return false;
 				}
 #endif
 			} else {  // Время вышло, выключаем, и идем дальше по алгоритму
 				onSallmonela = false;
 				startSallmonela = 0;
-				journal.jprintf(" Salmonella cycle timeout\n");
+				journal.jprintf(" Salmonella cycle end, %.2fC°\n",HP.sTemp[TBOILER].get_Temp()/100.0);
 			}
 		}
 	} else if(onSallmonela) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму

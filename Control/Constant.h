@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.034"				// Версия прошивки
+#define VERSION			"1.035"				// Версия прошивки
 #define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -692,18 +692,20 @@ const char *net_SUBNET     = {"SUBNET"};           // Маска подсети
 const char *net_DHCP       = {"DHCP"};             // Флаг использования DHCP
 const char *net_MAC        = {"MAC"};              // МАС адрес чипа
 const char *net_RES_SOCKET = {"RES_SOCKET"};       // Время сброса зависших сокетов
-const char *net_RES_W5200  = {"RES_W5200"};        // Время регулярного сброса сетевого чипа
+const char *net_RES_W5200  = {"RES"};              // Время регулярного сброса сетевого чипа
 const char *net_PASS       = {"PASS"};             // Использование паролей (флаг)
 const char *net_PASSUSER   = {"PASSUSER"};         // Пароль пользователя 
 const char *net_PASSADMIN  = {"PASSADMIN"};        // Пароль администратора  
-const char *net_SIZE_PACKET= {"SIZE_PACKET"};      // размер пакета
-const char *net_INIT_W5200 = {"INIT_W5200"};       // Ежеминутный контроль SPI для сетевого чипа
+const char *net_SIZE_PACKET= {"SIZE"};             // размер пакета
+const char *net_INIT_W5200 = {"INIT"};             // Ежеминутный контроль SPI для сетевого чипа
 const char *net_PORT       = {"PORT"};             // Port веб сервера
 const char *net_NO_ACK     = {"NO_ACK"};           // Не ожидать ответа ack
 const char *net_DELAY_ACK  = {"DELAY_ACK"};        // Задержка перед посылкой следующего пакета
 const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинга
 const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
 const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
+const char *net_fWebLogError={"WLOG"};
+const char *net_fWebFullLog= {"WFLOG"};
 
 // Описание имен параметров Графиков для функций get_Chart ЕСЛИ нет совпадения с именами объектов
 const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
