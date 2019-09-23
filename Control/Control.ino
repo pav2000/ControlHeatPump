@@ -1064,9 +1064,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 #endif  // #ifndef SUPERBOILER 
 						if (HP.get_Circulation())                                               // Циркуляция разрешена
 						{
-							if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { HP.dRelay[RPUMPB].set_ON(); continue;} // идет нагрев ГВС включаем насос ГВС ВСЕГДА - улучшаем перемешивание
-							if (HP.get_CirculWork()==0) { HP.dRelay[RPUMPB].set_OFF(); continue;}   // В условиях стоит время работы 0 - выключаем насос ГВС
-							if (HP.get_CirculPause()==0) { HP.dRelay[RPUMPB].set_ON(); continue;}  // В условиях стоит время паузы 0 - включаем насос ГВС
+							if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { HP.dRelay[RPUMPB].set_ON(); goto delayTask;/* continue;*/} // идет нагрев ГВС включаем насос ГВС ВСЕГДА - улучшаем перемешивание
+							if (HP.get_CirculWork()==0) { HP.dRelay[RPUMPB].set_OFF(); goto delayTask;/* continue;*/}   // В условиях стоит время работы 0 - выключаем насос ГВС
+							if (HP.get_CirculPause()==0) { HP.dRelay[RPUMPB].set_ON(); goto delayTask;/* continue;*/}  // В условиях стоит время паузы 0 - включаем насос ГВС
 							if(HP.dRelay[RPUMPB].get_Relay())                                       // Насос включен Смотрим времена
 							{
 								if(((long)xTaskGetTickCount()-RPUMPBTick ) > HP.get_CirculWork()*configTICK_RATE_HZ)   // ждем время мсек
@@ -1089,10 +1089,11 @@ void vReadSensor_delay8ms(int16_t ms8)
 				else  HP.dRelay[RPUMPB].set_OFF() ;                                       // По расписанию выключено или бойлер запрещен,  насос выключаем
 #endif // #ifdef RPUMPB
 		} // НЕ РЕЖИМ ОЖИДАНИЕ if HP.get_State()==pWORK_HP)
+	
+		if(!HP.Task_vUpdate_run) goto delayTask;/* continue;*/
 
-		if(!HP.Task_vUpdate_run) continue;
-
-		// 3. Расписание проверка всегда
+		// 3. Расписание проверка всегда, доп скобки нужны для объявления внутри блока переменных и действия goto 
+		{  // error: jump to label [-fpermissive] GCC
 		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
@@ -1121,8 +1122,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 				}
 			}
 		}
-
+	}
 		// 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
+delayTask:	// чтобы задача отдавала часть времени другим
 		switch (HP.get_State())  // Состояние ТН
 		{
 		case pOFF_HP:                          // 0 ТН выключен

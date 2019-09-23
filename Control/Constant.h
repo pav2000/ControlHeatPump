@@ -704,8 +704,8 @@ const char *net_DELAY_ACK  = {"DELAY_ACK"};        // Задержка пере�
 const char *net_PING_ADR   = {"PING_ADR"};         // адрес для пинга
 const char *net_PING_TIME  = {"PING_TIME"};        // время пинга в секундах
 const char *net_NO_PING    = {"NO_PING"};          // запрет пинга контроллера
-const char *net_fWebLogError={"WLOG"};
-const char *net_fWebFullLog= {"WFLOG"};
+const char *net_fWebLogError={"WLOG"};             // логировать ошибки веб запросов
+const char *net_fWebFullLog= {"WFLOG"};            // выводить полный лог
 
 // Описание имен параметров Графиков для функций get_Chart ЕСЛИ нет совпадения с именами объектов
 const char *chart_NONE      = {"NONE"};                    // 0 ничего не показываем
@@ -777,9 +777,9 @@ const char *fc_MB_ERR		     = {"MB_ERR"};			  // Ошибок Modbus
 const char *fc_FC_TIME_READ      = {"TR"};				  // Время опроса
 const char *fc_fFC_RetOil	     = {"FRO"};               // Флаг возврат масла
 const char *fc_FC_RETOIL_FREQ	 = {"FRF"};				  // Частота
-const char *fc_ReturnOilPeriod   = {"ROP"};
-const char *fc_ReturnOilPerDivHz = {"ROPH"};
-const char *fc_ReturnOilEEV      = {"ROE"};
+const char *fc_ReturnOilPeriod   = {"ROP"};               // Время возварта масла
+const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота при которой возвращается масло
+const char *fc_ReturnOilEEV      = {"ROE"};               // Шаги ЭРВ при котором возвращается масло
 
 // Описание имен параметров опций ТН  для функций get_optionHP ("get_oHP") set_optionHP ("set_oHP")
 const char *option_ADD_HEAT           = {"ADD_HEAT"};           // использование дополнительного нагревателя (значения 1 и 0)
