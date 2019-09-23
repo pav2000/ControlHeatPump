@@ -1581,6 +1581,7 @@ boolean HeatPump::switchBoiler(boolean b)
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 			Pump_HeatFloor(true);
+			if (Status.modWork == pBOILER)  return onBoiler; // Идет сброс тепла паузу на переключение делать не надо
 		} else { // пауза ИЛИ работа дома не задействована - все выключить
 			Pump_HeatFloor(false);
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
@@ -2086,8 +2087,14 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 	if(GETBIT(Prof.Boiler.flags,fResetHeat))    // Стоит требуемая опция - Сброс тепла в СО
 	{
-		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
-		if ((FEED>Prof.Boiler.tempIn-100)||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-500))
+		
+		// Достигнута Температура конденсации - 0,5 градуса для (superbouler).
+		 #ifdef SUPERBOILER                       // Или температура нагнетания компрессора больше максимальной - 5 градусов
+		  if ((PressToTemp(PCON)>Prof.Boiler.tempIn-50)  // для SuperBouler
+		 #else
+		  if ((FEED>Prof.Boiler.tempIn-100)              // для Bouler
+		 #endif		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
+		    ||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-500))
 		{
 			journal.jprintf(" Discharge of excess heat %ds...\n", Prof.Boiler.Reset_Time);
 			switchBoiler(false);               // Переключится на ходу на отопление
