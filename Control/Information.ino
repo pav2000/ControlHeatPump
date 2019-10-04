@@ -21,6 +21,11 @@
 #include "Information.h"
 
 #define bufI2C Socket[0].outBuf
+#ifdef DEBUG_NATIVE_USB
+#define SerialDbg	SerialUSB
+#else
+#define SerialDbg	Serial
+#endif
 
 // --------------------------------------------------------------------------------------------------------------- 
 //  Класс системный журнал пишет в консоль и в память ------------------------------------------------------------
@@ -34,7 +39,9 @@ void Journal::Init()
 	full = false;                   // Буфер не полный
 	err = OK;
 #ifdef DEBUG
-	Serial.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#ifndef DEBUG_NATIVE_USB
+	SerialDbg.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#endif
 #endif
 
 #ifndef I2C_EEPROM_64KB     // журнал в памяти
@@ -51,7 +58,7 @@ void Journal::Init()
 	if ((eepStatus=eepromI2C.begin(I2C_SPEED)!=0))  // Инициализация памяти
 	{
 #ifdef DEBUG
-		Serial.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
+		SerialDbg.println("$ERROR - open I2C journal, check I2C chip!");   // ошибка открытия чипа
 #endif
 		err=ERR_OPEN_I2C_JOURNAL;
 		return;
@@ -60,7 +67,7 @@ void Journal::Init()
 	if (checkREADY()==false) // Проверка наличия журнал
 	{
 #ifdef DEBUG
-		Serial.print("I2C journal not found! ");
+		SerialDbg.print("I2C journal not found! ");
 #endif
 		Format(bufI2C);
 	}
@@ -69,12 +76,12 @@ void Journal::Init()
 	{
 		WDT_Restart(WDT);
 #ifdef DEBUG
-		Serial.print(".");
+		SerialDbg.print(".");
 #endif
 		if (readEEPROM_I2C(I2C_JOURNAL_START+i*W5200_MAX_LEN, (byte*)&bufI2C,W5200_MAX_LEN))
 		{	err=ERR_READ_I2C_JOURNAL;
 #ifdef DEBUG
-		Serial.print(errorReadI2C);
+		SerialDbg.print(errorReadI2C);
 #endif
 		break;};
 		if ((ptr=(char*)memchr(bufI2C,I2C_JOURNAL_HEAD,W5200_MAX_LEN))!=NULL) {bufferHead=i*W5200_MAX_LEN+(ptr-bufI2C);}
@@ -96,7 +103,7 @@ void Journal::writeREADY()
     if (writeEEPROM_I2C(I2C_JOURNAL_START-2, (byte*)&w,sizeof(w))) 
        { err=ERR_WRITE_I2C_JOURNAL; 
          #ifdef DEBUG
-         Serial.println(errorWriteI2C);
+         SerialDbg.println(errorWriteI2C);
          #endif
         }
 }
@@ -107,7 +114,7 @@ boolean Journal::checkREADY()
     if (readEEPROM_I2C(I2C_JOURNAL_START-2, (byte*)&w,sizeof(w))) 
        { err=ERR_READ_I2C_JOURNAL; 
          #ifdef DEBUG
-         Serial.print(errorReadI2C);
+         SerialDbg.print(errorReadI2C);
          #endif
         }
     if (w!=I2C_JOURNAL_READY) return false; else return true;
@@ -120,11 +127,11 @@ void Journal::Format(char *buf)
 	err = OK;
 	memset(buf, I2C_JOURNAL_FORMAT, W5200_MAX_LEN);
 	#ifdef DEBUG
-	Serial.print("Formating I2C journal ");
+	SerialDbg.print("Formating I2C journal ");
 	#endif
 	for(i = 0; i < JOURNAL_LEN / W5200_MAX_LEN; i++) {
 		#ifdef DEBUG
-		Serial.print("*");
+		SerialDbg.print("*");
 		#endif
 		if(i == 0) {
 			buf[0] = I2C_JOURNAL_HEAD;
@@ -136,7 +143,7 @@ void Journal::Format(char *buf)
 		if(writeEEPROM_I2C(I2C_JOURNAL_START + i * W5200_MAX_LEN, (byte*)&buf, W5200_MAX_LEN)) {
 			err = ERR_WRITE_I2C_JOURNAL;
 			#ifdef DEBUG
-			Serial.println(errorWriteI2C);
+			SerialDbg.println(errorWriteI2C);
 			#endif
 			break;
 		};
@@ -160,7 +167,7 @@ void Journal::printf(const char *format, ...)
 	va_start(ap, format);
 	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
 	va_end(ap);
-	Serial.print(pbuf);
+	SerialDbg.print(pbuf);
 #endif
 }
 
@@ -172,7 +179,7 @@ void Journal::jprintf(const char *format, ...)
 	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
 	va_end(ap);
 #ifdef DEBUG
-	Serial.print(pbuf);
+	SerialDbg.print(pbuf);
 #endif
 	// добавить строку в журнал
 	_write(pbuf);
@@ -193,7 +200,7 @@ void Journal::jprintf(type_promt pr,const char *format, ...)
 	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
 	va_end(ap);
 #ifdef DEBUG
-	Serial.print(pbuf);
+	SerialDbg.print(pbuf);
 #endif
 	_write(pbuf);   // добавить строку в журнал
 }   
@@ -229,7 +236,7 @@ int32_t Journal::send_Data(uint8_t thread)
 		{
 			err = ERR_READ_I2C_JOURNAL;
 #ifdef DEBUG
-			Serial.print(errorReadI2C);
+			SerialDbg.print(errorReadI2C);
 #endif
 			return 0;
 		}
@@ -274,7 +281,7 @@ int32_t Journal::available(void)
 // чтобы print рабоtал для это класса
 size_t Journal::write (uint8_t c)
   {
-  Serial.print(char(c));  
+  SerialDbg.print(char(c));
   return 1;   // one byte output
   }  // end of myOutputtingClass::write
          
@@ -297,7 +304,7 @@ void Journal::_write(char *dataPtr)
 		int32_t n;
 		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, n = JOURNAL_LEN - bufferTail)) {
 			#ifdef DEBUG
-				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+				if(err != ERR_WRITE_I2C_JOURNAL) SerialDbg.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
 		} else {
@@ -307,7 +314,7 @@ void Journal::_write(char *dataPtr)
 			if(eepromI2C.write(I2C_JOURNAL_START, (byte*) dataPtr, numBytes + 2)) {
 				err = ERR_WRITE_I2C_JOURNAL;
 				#ifdef DEBUG
-					Serial.print(errorWriteI2C);
+					SerialDbg.print(errorWriteI2C);
 				#endif
 			} else {
 				bufferTail = numBytes;
@@ -318,7 +325,7 @@ void Journal::_write(char *dataPtr)
 	} else {  // Запись в один прием Буфер не полный
 		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes + 1 + full)) {
 			#ifdef DEBUG
-				if(err != ERR_WRITE_I2C_JOURNAL) Serial.print(errorWriteI2C);
+				if(err != ERR_WRITE_I2C_JOURNAL) SerialDbg.print(errorWriteI2C);
 			#endif
 			err = ERR_WRITE_I2C_JOURNAL;
 		} else {
@@ -328,7 +335,7 @@ void Journal::_write(char *dataPtr)
 	}
 	SemaphoreGive(xI2CSemaphore);
 #else   // Запись в память
-	// Serial.print(">"); Serial.print(numBytes); Serial.println("<");
+	// SerialDbg.print(">"); SerialDbg.print(numBytes); SerialDbg.println("<");
 
 	if( numBytes >= JOURNAL_LEN ) numBytes = JOURNAL_LEN;// Ограничиваем размером журнала
 	// Запись в журнал
@@ -1066,7 +1073,7 @@ int8_t Profile::set_list(int8_t num)
 		adr = I2C_PROFILE_EEPROM + get_sizeProfile() * i;                                                // вычислить адрес начала профиля
 		if(readEEPROM_I2C(adr, (byte*) &xx, sizeof(magic))) continue;                                // прочитать заголовок
 		if(xx != 0xaa) continue;
-		//Serial.print("xx==0xaa ");Serial.println(i);
+		//SerialDbg.print("xx==0xaa ");SerialDbg.println(i);
 		adr = adr + sizeof(magic) + sizeof(crc16);                                                        // вычислить адрес начала данных
 		if(readEEPROM_I2C(adr, (byte*) &temp_prof, &temp_prof.flags - (uint8_t*)&temp_prof + sizeof(temp_prof.flags))) continue;
 		if((GETBIT(temp_prof.flags, fEnabled)) && (temp_prof.id == i))                 // Если разрешено использовать профиль  в  списке, и считанный номер совпадает с текущим (это должно быть всегда)
