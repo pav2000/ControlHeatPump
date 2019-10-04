@@ -117,7 +117,7 @@
 		</tr>
 		<tr>
 			<td>Размер данных для передачи Wiznet W5xxx (MTU-40 байт)</td>
-			<td nowrap><input id="get_net-size_packet" min="100" max="2048" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Net(SIZE_PACKET)');"></td>
+			<td nowrap><input id="get_net-size" min="64" max="2048" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Net(SIZE)');"></td>
 		</tr>
 		<tr>
 			<td>Не ожидать получения ACK при посылке следующего пакета <sup>2</sup></td>
@@ -125,7 +125,7 @@
 		</tr> 
 		<tr>
 			<td>Пауза перед отправкой следующего пакета, если нет ожидания ACK (мсек) [1...50]<sup>3</sup></td>
-			<td nowrap><input id="get_net-delay_ack" min="1" max="100" step="1" type="number" ><input type="submit" value=">"  onclick="setParam('get_Net(DELAY_ACK)');"></td>
+			<td nowrap><input id="get_net-delay_ack" min="1" max="50" step="1" type="number" ><input type="submit" value=">" onclick="setParam('get_Net(DELAY_ACK)');"></td>
 		</tr>				
 	</table>
 	1. Желательно указывать IP адрес (8.8.8.8) а не доменное имя сервера (google.com), рекомендуется вводить IP шлюза<br/>
