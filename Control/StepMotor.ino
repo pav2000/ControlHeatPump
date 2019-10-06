@@ -75,7 +75,7 @@ void StepMotor::step(int steps_to_move)
 void StepMotor::stepOne(int thisStep)
 {
 #if EEV_PHASE == PHASE_8s    // движение 8 фаз полушаг (pav2000)
- //  Serial.print("PHASE_8s ");
+ //  SerialDbg.print("PHASE_8s ");
     switch (thisStep) {
       case 0:  // 0001
         setPinMotor(motor_pin_1, LOW);
@@ -127,7 +127,7 @@ void StepMotor::stepOne(int thisStep)
       break;
     }
 #elif  EEV_PHASE == PHASE_8   // движение 8 фаз  
- //  Serial.print("PHASE_8 ");
+ //  SerialDbg.print("PHASE_8 ");
     switch (thisStep) {
       case 0:  // 1000
         setPinMotor(motor_pin_1, HIGH);
@@ -179,7 +179,7 @@ void StepMotor::stepOne(int thisStep)
       break;
     }   
 #elif EEV_PHASE == PHASE_4   // движение 4 фаз
-//   Serial.print("PHASE_4 ");
+//   SerialDbg.print("PHASE_4 ");
    switch (thisStep) {
       case 0:  // 1001
         setPinMotor(motor_pin_1, HIGH);
@@ -209,7 +209,7 @@ void StepMotor::stepOne(int thisStep)
 #else 
       #error "Wrong EVI_PHASE constant!"
 #endif    
- // Serial.print("thisStep ");   Serial.println(thisStep);    
+ // SerialDbg.print("thisStep ");   SerialDbg.println(thisStep);    
 }
 
 

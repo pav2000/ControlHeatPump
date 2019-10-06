@@ -338,7 +338,7 @@ float temp_DUE()
   adc_disable_ts(ADC);
   adc_disable_channel(ADC, ADC_TEMPERATURE_SENSOR);                                                // Disable the corresponding channel
  
-  //Serial.println(HP.AdcTempSAM3x);
+  //SerialDbg.println(HP.AdcTempSAM3x);
   return TEMP_FIXTEMP +((float)(ulValue*TEMP_TRANS)-TEMP_OFFSET)/TEMP_FACTOR;
  // return TEMP_FIXTEMP +((float)(HP.AdcTempSAM3x*TEMP_TRANS)-TEMP_OFFSET)/TEMP_FACTOR;
 }

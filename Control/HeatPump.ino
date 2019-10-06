@@ -733,7 +733,7 @@ void HeatPump::resetSettingHP()
 		if(strcmp(sFrequency[i].get_name(), "FLOWCON") == 0)                          // если есть датчик потока по конденсатору
 		{
 			ChartCOP.init(dFC.get_present() & sFrequency[i].get_present() & sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()); // Коэффициент преобразования
-			//   Serial.print("StatCOP="); Serial.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
+			//   SerialDbg.print("StatCOP="); SerialDbg.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
 		}
 
 	}
@@ -3378,8 +3378,8 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 	} else {
 		journal.printf(" modWork:%X[%s]", (int) get_modWork(), codeRet[Status.ret]);
 		for(i = 0; i < RNUMBER; i++) journal.printf(" %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
-		//Serial.print(" dEEV.stepperEEV.isBuzy():");  Serial.print(dEEV.stepperEEV.isBuzy());
-		//Serial.print(" dEEV.setZero: ");  Serial.print(dEEV.setZero);
+		//SerialDbg.print(" dEEV.stepperEEV.isBuzy():");  SerialDbg.print(dEEV.stepperEEV.isBuzy());
+		//SerialDbg.print(" dEEV.setZero: ");  SerialDbg.print(dEEV.setZero);
 		if(dFC.get_present()) journal.printf(" freqFC:%.2f", dFC.get_frequency() / 100.0);
 		if(dFC.get_present()) journal.printf(" Power:%.3f", dFC.get_power() / 1000.0);
 #ifdef EEV_DEF

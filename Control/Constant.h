@@ -29,6 +29,11 @@
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
+#ifdef DEBUG_NATIVE_USB
+#define SerialDbg	SerialUSB
+#else
+#define SerialDbg	Serial
+#endif
 //#define LOG                               // В последовательный порт шлет лог веб сервера (логируются запросы)
 #define FAST_LIB                            // использование допиленной библиотеки езернета Обычно используется
 #define TIME_ZONE         3                 // поправка на часовой пояс по ДЕФОЛТУ

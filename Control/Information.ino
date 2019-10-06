@@ -21,11 +21,6 @@
 #include "Information.h"
 
 #define bufI2C Socket[0].outBuf
-#ifdef DEBUG_NATIVE_USB
-#define SerialDbg	SerialUSB
-#else
-#define SerialDbg	Serial
-#endif
 
 // --------------------------------------------------------------------------------------------------------------- 
 //  Класс системный журнал пишет в консоль и в память ------------------------------------------------------------

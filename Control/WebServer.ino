@@ -1497,7 +1497,7 @@ void parserGET(uint8_t thread, int8_t )
 			if (strcmp(str,"set_sensorIP") == 0)           // Удаленные датчики - получить значения
 			{
 				// разбор строки формат "номер:температура:уровень_сигнала:питание:счетчик"
-				//     Serial.println(x);
+				//     SerialDbg.println(x);
 				ptr=strtok(x,":");
 				if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
@@ -1656,7 +1656,7 @@ void parserGET(uint8_t thread, int8_t )
 					if(HP.dEEV.set_EEV((int)pm)==0)
 						_itoa(pm,strReturn);  // если значение правильное его возвращаем сразу
 					else strcat(strReturn,"E12");
-					//           Serial.print("set_EEV ");    Serial.print(pm); Serial.print(" set "); Serial.println(int2str(HP.dEEV.get_EEV()));
+					//           SerialDbg.print("set_EEV ");    SerialDbg.print(pm); SerialDbg.print(" set "); SerialDbg.println(int2str(HP.dEEV.get_EEV()));
 					ADD_WEBDELIM(strReturn) ;    continue;
 				}
 #else
