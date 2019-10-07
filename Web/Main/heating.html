@@ -1,16 +1,21 @@
 <html>
 <head>
-	<title>Отопление. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
-	<script type="text/javascript">
-		window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
-		loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN)");
-		loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_TrgT,get_Cool(TP),get_Heat(TP)");
-	};
-	</script>
+<title>Отопление. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
+	loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN)");
+	loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_TrgT,get_Cool(TP),get_Heat(TP)");
+	loadParam("get_listDSR,get_tblDSH");
+};
+function setDS(v, i) {
+	setParam("get_Heat(DS" + v + i + "=" + document.getElementById("get_heat-ds" + v.toLowerCase() + i).value.replace(":","").substr(0,3) + ")");
+}
+
+</script>
 </head>
 <body class="test">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
@@ -136,35 +141,46 @@
 4. При использовании погодозависимости Целевая температура подачи указывается для уличной температуре 0 градусов<br/>
 5. Изменение целевой температуры подачи в зависимости от уличной температуры, доступно только для ПИД.<br/>
 6. Увеличении температуры подачи при уменьшении уличной температуры на 1 градус.
-	<div class="row1">
-		<h2>Защиты при работе теплового насоса</h2>
-	</div>	
-	<table>
-		<thead>
-		<tr>
-			<th>Параметр</th>
-			<th>Охлаждение</th>
-			<th>Отопление</th>
-		</tr>
-		</thead>			
-		<tbody>
-		<tr>
-			<td>Минимальная/максимальная температура подачи °C [0..30] [0..70]</td>
-			<td nowrap><input id="get_cool-temp_in" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_IN)');"></td>
-			<td nowrap><input id="get_heat-temp_in" type="number" min="0" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_IN)');"></td>
-		</tr>
-		<tr>
-			<td>Максимальная/минимальная температура обратки °C [0..35] [-10..70]]</td>
-			<td nowrap><input id="get_cool-temp_out" type="number" min="0" max="35" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_OUT)');"></td>
-			<td nowrap><input id="get_heat-temp_out" type="number" min="-10" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_OUT)');"></td>
-		</tr>
-		<tr>
-			<td>Максимальная разность температур на конденсаторе °C [0..40]</td>
-			<td nowrap><input id="get_cool-d_temp" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(D_TEMP)');"></td>
-			<td nowrap><input id="get_heat-d_temp" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(D_TEMP)');"></td>
-		</tr>
-		</tbody>
-	</table>
+
+<div class="row1"><h2>Ежесуточное включение реле в режиме Отопления</h2></div>	
+<table>
+	<thead><tr>
+		<th>Имя</th>
+		<th>Описание</th>
+		<th>Время включения</th>
+		<th>Время выключения</th>
+	</tr></thead>
+	<tbody id="get_tbldsh"></tbody>
+</table>
+<br>
+<div class="row1"><h2>Защиты при работе теплового насоса</h2></div>	
+<table>
+	<thead>
+	<tr>
+		<th>Параметр</th>
+		<th>Охлаждение</th>
+		<th>Отопление</th>
+	</tr>
+	</thead>			
+	<tbody>
+	<tr>
+		<td>Минимальная/максимальная температура подачи °C [0..30] [0..70]</td>
+		<td nowrap><input id="get_cool-temp_in" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_IN)');"></td>
+		<td nowrap><input id="get_heat-temp_in" type="number" min="0" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_IN)');"></td>
+	</tr>
+	<tr>
+		<td>Максимальная/минимальная температура обратки °C [0..35] [-10..70]]</td>
+		<td nowrap><input id="get_cool-temp_out" type="number" min="0" max="35" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_OUT)');"></td>
+		<td nowrap><input id="get_heat-temp_out" type="number" min="-10" max="70" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP_OUT)');"></td>
+	</tr>
+	<tr>
+		<td>Максимальная разность температур на конденсаторе °C [0..40]</td>
+		<td nowrap><input id="get_cool-d_temp" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(D_TEMP)');"></td>
+		<td nowrap><input id="get_heat-d_temp" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(D_TEMP)');"></td>
+	</tr>
+	</tbody>
+</table>
 </div>
+<select id="get_listdsr" hidden></select>
 </body>
 </html>

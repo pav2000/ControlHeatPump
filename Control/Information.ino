@@ -653,6 +653,19 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else                     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
+ if(strncmp(var, hp_DailySwitch, sizeof(hp_DailySwitch)-1) == 0) {
+	 var += sizeof(hp_DailySwitch)-1;
+	 uint8_t i = *(var + 1) - '0';
+	 if(i >= DAILY_SWITCH_MAX) return false;
+	 if(*var == hp_DailySwitchDevice) {
+		 Heat.DailySwitch[i].Device = x;
+	 } else if(*var == hp_DailySwitchOn) {
+		 Heat.DailySwitch[i].TimeOn = x;
+	 } else if(*var == hp_DailySwitchOff) {
+		 Heat.DailySwitch[i].TimeOff = x;
+	 }
+	 return true;
+ } else
  if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeather=rd(x, 1000); return true; }             // Коэффициент погодозависимости
  return false; 
 }
@@ -688,6 +701,25 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Heat.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Heat.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_targetPID)==0){_ftoa(ret,(float)HP.CalcTargetPID(Heat)/100,2); return ret;    } else
+   if(strncmp(var, hp_DailySwitch, sizeof(hp_DailySwitch)-1) == 0) {
+	 var += sizeof(hp_DailySwitch)-1;
+	 uint8_t i = *(var + 1) - '0';
+	 if(i >= DAILY_SWITCH_MAX) return false;
+	 if(*var == hp_DailySwitchDevice) {
+		 _itoa(Heat.DailySwitch[i].Device, ret);
+	 } else if(*var == hp_DailySwitchOn) {
+		 _itoa(Heat.DailySwitch[i].TimeOn / 10, ret);
+		 strcat(ret, ":");
+		 _itoa(Heat.DailySwitch[i].TimeOn % 10, ret);
+		 strcat(ret, "0");
+	 } else if(*var == hp_DailySwitchOff) {
+		 _itoa(Heat.DailySwitch[i].TimeOff / 10, ret);
+		 strcat(ret, ":");
+		 _itoa(Heat.DailySwitch[i].TimeOff % 10, ret);
+		 strcat(ret, "0");
+	 }
+	 return ret;
+   } else
    if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Heat.kWeather/1000,3); return ret;            }                 // Коэффициент погодозависимости
  return  strcat(ret,(char*)cInvalid);  
 }
@@ -795,6 +827,7 @@ char* Profile::get_boiler(char *var, char *ret)
    sizeof(Heat)  + \
    sizeof(Boiler)+ \
  */
+
 // static uint16_t crc= 0xFFFF;  // рабочее значение
  uint16_t  Profile::get_crc16_mem()  // Расчитать контрольную сумму
  {
@@ -839,7 +872,45 @@ int8_t  Profile::check_crc16_buf(int32_t adr, byte* buf)
   if (crc==readCRC) return OK; 
   else              return err=ERR_CRC16_EEPROM;
 }
- 
+
+int8_t  Profile::convert_to_new_version(void)
+{
+	/*
+	  char checker(int);
+	  char checkSizeOfInt1[sizeof(dataProfile)]={checker(&checkSizeOfInt1)};
+	  char checkSizeOfInt2[sizeof(SaveON)]={checker(&checkSizeOfInt2)};
+	  char checkSizeOfInt3[sizeof(Heat)]={checker(&checkSizeOfInt3)};
+	  char checkSizeOfInt4[sizeof(Boiler)]={checker(&checkSizeOfInt4)};
+	//*/
+	// v.135
+	#define CNVPROF_SIZE_dataProfile	120
+	#define CNVPROF_SIZE_SaveON		 	12
+	#define CNVPROF_SIZE_HeatCool		50
+	#define CNVPROF_SIZE_Boiler			80
+	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler)
+	if(HP.Option.ver <= 135) {
+		journal.jprintf("Converting Profiles to new version...\n");
+		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
+		for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {
+			uint8_t *addr = (uint8_t*)&Socket[0].outBuf + CNVPROF_SIZE_ALL * i;
+			if(*addr != 0xaa) continue;
+			addr += sizeof(magic) + sizeof(crc16);
+			memcpy(&dataProfile, addr, CNVPROF_SIZE_dataProfile <= sizeof(dataProfile) ? CNVPROF_SIZE_dataProfile : sizeof(dataProfile));
+			addr += CNVPROF_SIZE_dataProfile;
+			memcpy(&SaveON, addr, CNVPROF_SIZE_SaveON <= sizeof(SaveON) ? CNVPROF_SIZE_SaveON : sizeof(SaveON));
+			addr += CNVPROF_SIZE_SaveON;
+			memcpy(&Cool, addr, CNVPROF_SIZE_HeatCool <= sizeof(Cool) ? CNVPROF_SIZE_HeatCool : sizeof(Cool));
+			addr += CNVPROF_SIZE_HeatCool;
+			memcpy(&Heat, addr, CNVPROF_SIZE_HeatCool <= sizeof(Heat) ? CNVPROF_SIZE_HeatCool : sizeof(Heat));
+			addr += CNVPROF_SIZE_HeatCool;
+			memcpy(&Boiler, addr, CNVPROF_SIZE_Boiler <= sizeof(Boiler) ? CNVPROF_SIZE_Boiler : sizeof(Boiler));
+			if(save(i) < 0) return ERR_SAVE_EEPROM;
+		}
+		if(HP.save() < 0) return ERR_SAVE_EEPROM;
+	}
+	return OK;
+}
+
 // Записать профайл в еепром под номерм num
 // Возвращает число записанных байт или ошибку
 int16_t  Profile::save(int8_t num)
@@ -847,7 +918,7 @@ int16_t  Profile::save(int8_t num)
   magic=0xaa;                                   // Обновить заголовок
   dataProfile.len=get_sizeProfile();            // вычислить адрес начала данных
   dataProfile.saveTime=rtcSAM3X8.unixtime();    // запомнить время сохранения профиля
-  
+
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;
   
   if (writeEEPROM_I2C(adr, (byte*)&magic, sizeof(magic))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(magic);       // записать заголовок

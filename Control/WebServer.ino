@@ -618,6 +618,15 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
+			if(strcmp(str,"DSR")==0) {    // Функция get_listDSR
+				strcat(strReturn, "---;");
+				for(i = RCOMP + 1; i < RNUMBER; i++) if(HP.dRelay[i].get_present()) {
+					strcat(strReturn, HP.dRelay[i].get_name()); strcat(strReturn,";");
+				}
+				ADD_WEBDELIM(strReturn);
+				continue;
+			}
+
 			i = 0;
 			if(strcmp(str,"Stats")==0) i = 1;   // Функция get_listStats
 			else if(strcmp(str,"Hist")==0) i = 2;   // Функция get_listHist
@@ -1459,6 +1468,15 @@ void parserGET(uint8_t thread, int8_t )
 			} else if(strcmp(str,"Flow")==0)     // Функция get_tblFlow
 			{
 				for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
+			} else if(strcmp(str,"DSH")==0) {    // Функция get_tblDSH
+				for(i = 0; i < DAILY_SWITCH_MAX; i++) {
+					if(HP.Prof.Heat.DailySwitch[i].Device == 0) {
+						strcat(strReturn, "---;;00:00;00:00|");
+						break;
+					}
+					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.Heat.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.Heat.DailySwitch[i].Device].get_note(),
+							HP.Prof.Heat.DailySwitch[i].TimeOn / 10, HP.Prof.Heat.DailySwitch[i].TimeOn % 10, HP.Prof.Heat.DailySwitch[i].TimeOff / 10, HP.Prof.Heat.DailySwitch[i].TimeOff % 10);
+				}
 #ifdef CORRECT_POWER220
 			} else if(strcmp(str,"PwrC")==0) {    // Функция get_tblPwrC
 				for(i = 0; i < (int8_t)(sizeof(correct_power220)/sizeof(correct_power220[0])); i++) {

@@ -2617,7 +2617,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   6 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_6    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
 
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -2627,17 +2627,6 @@ const char *noteTemp[] = {"Температура улицы",
     #define UART_SPEED    250000	// Скорость отладочного порта
 	#define KEY_ON_OFF				// + KEY1 Наличие кнопки включения и переключения в safeNetwork (нажата при сбросе)
     #define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
-    #define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
-    #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
-	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
-	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
-    #define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
-	#ifdef ONEWIRE_DS2482_2WAY
-      const uint8_t ONEWIRE_2WAY = 0b1010; // На каких шинах (4|3|2|1) двух-проводные датчики, битовая маска
-	#else
-      const uint8_t ONEWIRE_2WAY = 0b0000;
-	#endif
-    #define ONEWIRE_DONT_CHG_RES    // Не записывать 9/12-битное разрешение в датчик при привязке, а просто устанавливать
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define CHART_ONLY_COMP_ON      // Накопление точек для графиков ТОЛЬКО если компрессор работает, иначе всегда (и в паузах тоже) когда ТН включен
 //   #define CLEAR_CHART_HP_ON      // Очистка графиков при страте ТН
@@ -2653,6 +2642,19 @@ const char *noteTemp[] = {"Температура улицы",
     #define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
 	#define STATS_USE_BUFFER_FOR_SAVING // Сохранять статистику только когда буфер (512 байт) заполнен, иначе каждый день
 	#define MIN_RAM_CHARTS
+
+	#define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
+	#define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
+	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
+	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
+	#define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
+	#ifdef ONEWIRE_DS2482_2WAY
+      const uint8_t ONEWIRE_2WAY = 0b1010; // На каких шинах (4|3|2|1) двух-проводные датчики, битовая маска
+	#else
+      const uint8_t ONEWIRE_2WAY = 0b0000;
+	#endif
+	#define ONEWIRE_DONT_CHG_RES    // Не записывать 9/12-битное разрешение в датчик при привязке, а просто устанавливать
+//	#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
 
 	#define USE_SUN_COLLECTOR			// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
 	#define SUN_TDELTA			300		// Дельта температур для включения, сотые градуса, по умолчанию
@@ -2687,6 +2689,12 @@ const char *noteTemp[] = {"Температура улицы",
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 //		#define DEBUG_PID				// Отладка ПИДа
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+		#undef ONEWIRE_DS2482
+		#undef ONEWIRE_DS2482_SECOND
+		#undef ONEWIRE_DS2482_THIRD
+		#undef ONEWIRE_DS2482_FOURTH
+		#undef ONEWIRE_DS2482_2WAY
+		#define PIN_ONE_WIRE_BUS   41   // нога с интерфейсом программный 1-Wire - ВСЕ температурные датчики
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 //		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
@@ -2716,20 +2724,20 @@ const char *noteTemp[] = {"Температура улицы",
      #define STACK_vWebX           180                              // Стек задачи веб морды один поток (потоков может быть 1-4)
 	
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
-	#ifndef  TEST_BOARD
+	#ifdef  TEST_BOARD
+		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
+		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
+		const boolean   defaultDHCP	=	false;
+		const IPAddress defaultIP		(192, 168, 0, 199);
+		const IPAddress defaultGateway	(192, 168, 0, 10);
+		const IPAddress defaultSDNS		(8, 8, 8, 8);
+	#else
 		uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		#define SD_CLOCK				28	// частота SPI для SD карты в МГц
 		const boolean   defaultDHCP	=	false;
-		const IPAddress defaultIP		(192, 168, 0,   7);
-		const IPAddress defaultSDNS		(  8,   8, 8,   8);
-		const IPAddress defaultGateway	(192, 168, 0,   1);
-	#else
-		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
-		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
-		const boolean   defaultDHCP	=	true;
-		const IPAddress defaultIP		(192, 168, 0, 199);
-		const IPAddress defaultSDNS		(192, 168, 0,   10);
-		const IPAddress defaultGateway	(192, 168, 0,   10);
+		const IPAddress defaultIP		(192, 168, 0, 7);
+		const IPAddress defaultGateway	(192, 168, 0, 1);
+		const IPAddress defaultSDNS		(8, 8, 8, 8);
 	#endif
 	const IPAddress defaultSubnet      (255, 255, 255, 0);
      //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
@@ -2790,7 +2798,6 @@ const char *noteTemp[] = {"Температура улицы",
    //#define PIN_DEVICE_PWM1       6  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
    //#define PIN_DEVICE_PWM1       7  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
     // датчики
-    //#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
  
     // Контактные датчики ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
     #define INUMBER             2   // Максимальное число контактных датчиков цифровые входы (то что поддерживается)

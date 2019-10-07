@@ -24,8 +24,8 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.035"				// Версия прошивки
-#define VER_SAVE		135					// Версия формата сохраняемых данных в I2C память
+#define VERSION			"1.036"				// Версия прошивки
+#define VER_SAVE		136					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
@@ -180,6 +180,7 @@ const uint16_t  defaultPort=80;
 	#define I2C_SCHEDULER_EEPROM	0x1A00		// Адрес внутри чипа eeprom для Расписаний
 	#define MAX_CALENDARS			9   		// максимум 9
 	#define TIMETABLES_MAXSIZE		500 		// bytes
+	#define DAILY_SWITCH_MAX		7			// Максимальное количество записей ежедневного включения устройств (DailySwitch). MAX=10
 	#define I2C_JOURNAL_EEPROM 		0x1FFE      // Адрес с которого начинается журнал в памяти i2c, внечале лежит признак форматирования журнала. Длина журнала JOURNAL_LEN
 	#define I2C_JOURNAL_START 		(I2C_JOURNAL_EEPROM + 2)      // Адрес с которого начинается ДАННЫЕ журнал в памяти i2c ВНИМАНИЕ - 2 байт лежит признак форматирования журнала
 	#define I2C_JOURNAL_EEPROM_NEXT (I2C_MEMORY_TOTAL * 1024 / 8) // Адрес после журнала = размер EEPROM
@@ -201,6 +202,7 @@ const uint16_t  defaultPort=80;
 	#define I2C_SCHEDULER_EEPROM	0xE60		// Адрес внутри чипа eeprom для Расписаний
 	#define MAX_CALENDARS			4   		// максимум 9
 	#define TIMETABLES_MAXSIZE		214 		// bytes
+	#define DAILY_SWITCH_MAX		5			// Максимальное количество записей ежедневного включения устройств (DailySwitch)
 	#define JOURNAL_LEN       		(2*W5200_MAX_LEN)   // Размер системного журнала ДОЛЖНО БЫТЬ кратно W5200_MAX_LEN, Увеличивать аккуратно, может не хвать памяти - виснет при загрузке
 #endif
 // Тип записи сохранения, 16bit
@@ -840,6 +842,10 @@ const char *hp_HEAT_FLOOR = {"HFL"};          	 // Использование т
 const char *hp_SUN 		 = {"SUN"};          	 // Использование солнечного коллектора
 const char *hp_K_WEATHER = {"KW"}; 		       // Коэффициент погодозависимости
 const char *hp_targetPID = {"TP"};       	 // Цель PID
+const char hp_DailySwitch[] = "DS";
+const char hp_DailySwitchDevice = 'D';
+const char hp_DailySwitchOn  = 'S';
+const char hp_DailySwitchOff = 'E';
 
 // Действуют для отопления и ГВС
 const char *ADD_DELTA_TEMP     = {"ADT"};		// Добавка температуры к установке, в градусах

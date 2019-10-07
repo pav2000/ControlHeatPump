@@ -391,6 +391,7 @@ x_I2C_init_std_message:
 	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
+	  HP.Prof.convert_to_new_version();
 	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
@@ -1337,6 +1338,7 @@ void vServiceHP(void *)
 {
 	static uint32_t NextionTick = 0;
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
+	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
 	static uint32_t timer_sec = GetTickCount();
 	static uint16_t restart_cnt;
 	static uint16_t pump_in_pause_timer = 0;
@@ -1355,6 +1357,18 @@ void vServiceHP(void *)
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
 					Stats.History();                                        // запись истории в файл
+				} else if(m != task_dailyswitch_countm) {
+					task_dailyswitch_countm = m;
+					uint16_t tt = rtcSAM3X8.get_hours() * 100 + m;
+					type_settingHP *sHP = (HP.get_modWork() & pHEAT) ? &HP.Prof.Heat : (HP.get_modWork() & pCOOL) ? &HP.Prof.Cool : NULL;
+					if(sHP) {
+						for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
+							if(sHP->DailySwitch[i].Device == 0) break;
+							uint16_t st = sHP->DailySwitch[i].TimeOn * 10;
+							uint16_t end = sHP->DailySwitch[i].TimeOff * 10;
+							HP.dRelay[sHP->DailySwitch[i].Device].set_Relay((end > st && tt >= st && tt < end) || (end < st && (tt >= st || tt < end)) ? fR_StatusDaily : -fR_StatusDaily);
+						}
+					}
 				}
 			}
 			if(HP.PauseStart) {
