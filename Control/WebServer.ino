@@ -1468,14 +1468,14 @@ void parserGET(uint8_t thread, int8_t )
 			} else if(strcmp(str,"Flow")==0)     // Функция get_tblFlow
 			{
 				for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
-			} else if(strcmp(str,"DSH")==0) {    // Функция get_tblDSH
+			} else if(strcmp(str,"PDS")==0) {    // Функция get_tblPDS
 				for(i = 0; i < DAILY_SWITCH_MAX; i++) {
-					if(HP.Prof.Heat.DailySwitch[i].Device == 0) {
+					if(HP.Prof.DailySwitch[i].Device == 0) {
 						strcat(strReturn, "---;;00:00;00:00|");
 						break;
 					}
-					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.Heat.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.Heat.DailySwitch[i].Device].get_note(),
-							HP.Prof.Heat.DailySwitch[i].TimeOn / 10, HP.Prof.Heat.DailySwitch[i].TimeOn % 10, HP.Prof.Heat.DailySwitch[i].TimeOff / 10, HP.Prof.Heat.DailySwitch[i].TimeOff % 10);
+					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
+							HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
 				}
 #ifdef CORRECT_POWER220
 			} else if(strcmp(str,"PwrC")==0) {    // Функция get_tblPwrC
@@ -1820,11 +1820,11 @@ void parserGET(uint8_t thread, int8_t )
 			STORE_DEBUG_INFO(32);
 
 			// 5.  Настройки профилей ---------------------------------------------------------
-			if(strcmp(str, "get_Profile") == 0)           // Функция получить настройки профиля
+			if(strcmp(str, "get_Prof") == 0)           // Функция получить настройки профиля
 			{
 				HP.Prof.get_paramProfile(x, strReturn);
 				ADD_WEBDELIM(strReturn); continue;
-			} else if(strcmp(str, "set_Profile") == 0)           // Функция записать настройки профиля
+			} else if(strcmp(str, "set_Prof") == 0)           // Функция записать настройки профиля
 			{
 				if(HP.Prof.set_paramProfile(x, z)) HP.Prof.get_paramProfile(x, strReturn); // преобразование удачно
 				else strcat(strReturn, "E28"); // ошибка преобразования строки

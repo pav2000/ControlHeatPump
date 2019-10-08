@@ -197,11 +197,10 @@ struct type_settingHP {
 	int16_t dt;                          // Максимальная разность температур конденсатора.
 	int16_t kWeather;                    // Коэффициент погодозависимости в ТЫСЯЧНЫХ градуса на градус (проблемы с преобраованием - округление)
 	int16_t dTempDay;                    // гистерезис целевой температуры днем
-	int16_t add_delta_temp;		      // Добавка температуры к установке отопления, в сотых градусах
-	uint8_t add_delta_hour;		      // Начальный Час добавки температуры к установке
-	uint8_t add_delta_end_hour; 		  // Конечный Час добавки температуры к установке
+	int16_t add_delta_temp;		         // Добавка температуры к установке отопления, в сотых градусах
+	uint8_t add_delta_hour;		         // Начальный Час добавки температуры к установке
+	uint8_t add_delta_end_hour; 		 // Конечный Час добавки температуры к установке
 	int16_t tempPID;                     // Целевая темперaтура ПИД
-	type_DailySwitch DailySwitch[DAILY_SWITCH_MAX]; // дневное периодическое включение
 };
 
 #define LEN_PROFILE_NAME       25     // Длина имени профиля
@@ -225,6 +224,7 @@ class Profile                         // Класс профиль
     type_settingHP Cool;                                    // Настройки для режима охлаждение
     type_settingHP Heat;                                    // Настройки для режима отопления
     type_boilerHP Boiler;                                   // Настройка бойлера
+	type_DailySwitch DailySwitch[DAILY_SWITCH_MAX]; 		// дневное периодическое включение
     
      // Функции работы с профилем
     void initProfile();                                     // инициализация профиля
@@ -269,7 +269,8 @@ class Profile                         // Класс профиль
            sizeof(SaveON) + \
            sizeof(Cool)  + \
            sizeof(Heat)  + \
-           sizeof(Boiler);
+           sizeof(Boiler) + \
+		   sizeof(DailySwitch);
    };
    uint16_t get_crc16_mem();                                 // Расчитать контрольную сумму
    int8_t   check_crc16_eeprom(int8_t num);   // Проверить контрольную сумму ПРОФИЛЯ в EEPROM для данных на выходе ошибка, длина определяется из заголовка

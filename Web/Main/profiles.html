@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-			loadParam("get_Profile(ID_PROFILE),get_Profile(NAME_PROFILE),get_Profile(DATE_PROFILE),get_Profile(CRC16_PROFILE),get_Profile(NOTE_PROFILE),get_Profile(ENABLE_PROFILE),get_Profile(NUM_PROFILE)");
+			loadParam("get_Prof(ID),get_Prof(NAME),get_Prof(DATE),get_Prof(CRC16),get_Prof(NOTE),get_Prof(ENABLE),get_Prof(NUM)");
 		};
 		function loadParam_after(paramid) {
 			if(paramid.match(/^eraseProfile|^loadProfile|^set_SAVE/)) location.reload();
@@ -20,8 +20,8 @@
 	<h1>Управление профилями</h1>
 	<div class="row1">
 		<h2>Текущий профиль
-			<input id="get_profile-id_profile" type="number" min="1">
-			<input id="get_profile-id_profile2" type="submit" value="Изменить номер *"  onclick="setParam('get_Profile(ID_PROFILE)');">
+			<input id="get_prof-id" type="number" min="1">
+			<input id="get_prof-id2" type="submit" value="Изменить номер *"  onclick="setParam('get_Prof(ID)');">
 			<input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'>
 		</h2>
 		* старый профиль с этим номером при сохранении будет заменен<br><br>
@@ -31,27 +31,27 @@
 		<tr>
 			<td>Имя профиля</td>
 			<td>
-				<input id="get_profile-name_profile" type="text">
-				<input id="get_profile-name_profile2" type="submit" value=">"  onclick="setParam('get_Profile(NAME_PROFILE)');">
+				<input id="get_prof-name" type="text">
+				<input id="get_prof-name2" type="submit" value=">"  onclick="setParam('get_Prof(NAME)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Использование профиля в списке (*)</td>
 			<td>
-				<input type="checkbox" name="get_profile-enable_profile" id="get_profile-enable_profile" onchange="setParam('get_Profile(ENABLE_PROFILE)');" >
+				<input type="checkbox" name="get_prof-enable" id="get_prof-enable" onchange="setParam('get_Prof(ENABLE)');" >
 			</td>
 		</tr>
 		<tr>
 			<td>Описание профиля</td>
 			<td>
-				<input id="get_profile-note_profile" type="text">
-				<input id="get_profile-note_profile2" type="submit" value=">"  onclick="setParam('get_Profile(NOTE_PROFILE)');">
+				<input id="get_prof-note" type="text">
+				<input id="get_prof-note2" type="submit" value=">"  onclick="setParam('get_Prof(NOTE)');">
 			</td>
 		</tr>
 		<tr>
 			<td>Последнее редактирование</td>
 			<td>
-				<span id="get_profile-date_profile"></span>
+				<span id="get_prof-date"></span>
 			</td>
 		</tr>							
 	</tbody>
@@ -68,7 +68,7 @@
 			<th>Действие</th>
 		</tr>
 		</thead>
-		<tbody id="get_profile-num_profile">
+		<tbody id="get_prof-num">
 		</tbody>
 	</table>		
 	</div>	
