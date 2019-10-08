@@ -655,14 +655,22 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
  if(strncmp(var, hp_DailySwitch, sizeof(hp_DailySwitch)-1) == 0) {
 	 var += sizeof(hp_DailySwitch)-1;
-	 uint8_t i = *(var + 1) - '0';
+	 uint32_t i = *(var + 1) - '0';
 	 if(i >= DAILY_SWITCH_MAX) return false;
 	 if(*var == hp_DailySwitchDevice) {
 		 Heat.DailySwitch[i].Device = x;
-	 } else if(*var == hp_DailySwitchOn) {
-		 Heat.DailySwitch[i].TimeOn = x;
-	 } else if(*var == hp_DailySwitchOff) {
-		 Heat.DailySwitch[i].TimeOff = x;
+	 } else {
+		 uint32_t b = x;
+		 uint32_t h = b / 10;
+		 if(h > 23) h = 23;
+		 uint32_t m = b % 10;
+		 if(m > 5) m = 5;
+		 b = h * 10 + m;
+		 if(*var == hp_DailySwitchOn) {
+			 Heat.DailySwitch[i].TimeOn = b;
+		 } else if(*var == hp_DailySwitchOff) {
+			 Heat.DailySwitch[i].TimeOff = b;
+		 }
 	 }
 	 return true;
  } else
@@ -708,15 +716,9 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
 	 if(*var == hp_DailySwitchDevice) {
 		 _itoa(Heat.DailySwitch[i].Device, ret);
 	 } else if(*var == hp_DailySwitchOn) {
-		 _itoa(Heat.DailySwitch[i].TimeOn / 10, ret);
-		 strcat(ret, ":");
-		 _itoa(Heat.DailySwitch[i].TimeOn % 10, ret);
-		 strcat(ret, "0");
+		 m_snprintf(ret + m_strlen(ret), 32, "%02d:%d0", Heat.DailySwitch[i].TimeOn / 10, Heat.DailySwitch[i].TimeOn % 10);
 	 } else if(*var == hp_DailySwitchOff) {
-		 _itoa(Heat.DailySwitch[i].TimeOff / 10, ret);
-		 strcat(ret, ":");
-		 _itoa(Heat.DailySwitch[i].TimeOff % 10, ret);
-		 strcat(ret, "0");
+		 m_snprintf(ret + m_strlen(ret), 32, "%02d:%d0", Heat.DailySwitch[i].TimeOff / 10, Heat.DailySwitch[i].TimeOff % 10);
 	 }
 	 return ret;
    } else

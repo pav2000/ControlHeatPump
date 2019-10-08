@@ -843,9 +843,9 @@ const char *hp_SUN 		 = {"SUN"};          	 // Использование сол
 const char *hp_K_WEATHER = {"KW"}; 		       // Коэффициент погодозависимости
 const char *hp_targetPID = {"TP"};       	 // Цель PID
 const char hp_DailySwitch[] = "DS";
-const char hp_DailySwitchDevice = 'D';
-const char hp_DailySwitchOn  = 'S';
-const char hp_DailySwitchOff = 'E';
+const char hp_DailySwitchDevice = 'D';		// DSD
+const char hp_DailySwitchOn  = 'S';			// DSS
+const char hp_DailySwitchOff = 'E';			// DSE
 
 // Действуют для отопления и ГВС
 const char *ADD_DELTA_TEMP     = {"ADT"};		// Добавка температуры к установке, в градусах

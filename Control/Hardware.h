@@ -231,7 +231,7 @@ private:
 #define fR_StatusSun		2			// b2: Состояние Вкл/Выкл Солнечного Коллектора
 #define fR_StatusManual		3			// b3: Состояние Вкл/Выкл Вручную
 #define fR_StatusDaily		4			// b3: Состояние Вкл/Выкл Дневное включение
-#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun)|(1<<fR_StatusManual)|(fR_StatusDaily))	// битовая маска
+#define fR_StatusMask		((1<<fR_StatusMain)|(1<<fR_StatusSun)|(1<<fR_StatusManual)|(1<<fR_StatusDaily))	// битовая маска
 #define fR_StatusAllOff		-127		// выключить по всем алгоритмам
 
 class devRelay

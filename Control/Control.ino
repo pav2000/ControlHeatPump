@@ -1360,13 +1360,13 @@ void vServiceHP(void *)
 				} else if(m != task_dailyswitch_countm) {
 					task_dailyswitch_countm = m;
 					uint16_t tt = rtcSAM3X8.get_hours() * 100 + m;
-					type_settingHP *sHP = (HP.get_modWork() & pHEAT) ? &HP.Prof.Heat : (HP.get_modWork() & pCOOL) ? &HP.Prof.Cool : NULL;
+					type_settingHP *sHP = HP.get_modeHouse() == pHEAT ? &HP.Prof.Heat : HP.get_modeHouse() == pCOOL ? &HP.Prof.Cool : NULL;
 					if(sHP) {
 						for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
 							if(sHP->DailySwitch[i].Device == 0) break;
 							uint16_t st = sHP->DailySwitch[i].TimeOn * 10;
 							uint16_t end = sHP->DailySwitch[i].TimeOff * 10;
-							HP.dRelay[sHP->DailySwitch[i].Device].set_Relay((end > st && tt >= st && tt < end) || (end < st && (tt >= st || tt < end)) ? fR_StatusDaily : -fR_StatusDaily);
+							HP.dRelay[sHP->DailySwitch[i].Device].set_Relay((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)) ? fR_StatusDaily : -fR_StatusDaily);
 						}
 					}
 				}
