@@ -29,7 +29,7 @@
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
-#ifdef DEBUG_NATIVE_USB
+#ifdef DEBUG_NATIVE_USB                    // Куда выводить отладку
 #define SerialDbg	SerialUSB
 #else
 #define SerialDbg	Serial
