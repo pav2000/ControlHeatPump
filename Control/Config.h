@@ -29,8 +29,8 @@
 //#define CONFIG_2             // sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3             // dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4             // dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
-//#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+//#define CONFIG_5               // pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_6             // vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // Определения нужные в этом файле ====================================================================================
 //  Перечисляемый тип -ТИПЫ датчиков сухой контакт
@@ -2627,17 +2627,6 @@ const char *noteTemp[] = {"Температура улицы",
     #define UART_SPEED    250000	// Скорость отладочного порта
 	#define KEY_ON_OFF				// + KEY1 Наличие кнопки включения и переключения в safeNetwork (нажата при сбросе)
     #define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
-    #define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
-    #define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
-	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
-	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
-    #define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
-	#ifdef ONEWIRE_DS2482_2WAY
-      const uint8_t ONEWIRE_2WAY = 0b1010; // На каких шинах (4|3|2|1) двух-проводные датчики, битовая маска
-	#else
-      const uint8_t ONEWIRE_2WAY = 0b0000;
-	#endif
-    #define ONEWIRE_DONT_CHG_RES    // Не записывать 9/12-битное разрешение в датчик при привязке, а просто устанавливать
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define CHART_ONLY_COMP_ON      // Накопление точек для графиков ТОЛЬКО если компрессор работает, иначе всегда (и в паузах тоже) когда ТН включен
 //   #define CLEAR_CHART_HP_ON      // Очистка графиков при страте ТН
@@ -2653,6 +2642,19 @@ const char *noteTemp[] = {"Температура улицы",
     #define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
 	#define STATS_USE_BUFFER_FOR_SAVING // Сохранять статистику только когда буфер (512 байт) заполнен, иначе каждый день
 	#define MIN_RAM_CHARTS
+
+	#define ONEWIRE_DS2482			// + Использование мастера i2c Onewire DS2482 (адрес AD1,0 = 0,0)
+	#define ONEWIRE_DS2482_SECOND	// второй мастер i2 Onewire DS2482 (адрес AD1,0 = 0,1)
+	#define ONEWIRE_DS2482_THIRD	// третий мастер i2 Onewire DS2482 (адрес AD1,0 = 1,0)
+	#define ONEWIRE_DS2482_FOURTH	// четвертый мастер i2 Onewire DS2482 (адрес AD1,0 = 1,1)
+	#define ONEWIRE_DS2482_2WAY  	// Используются 2-х проводные шины OneWire (паразитное питание)
+	#ifdef ONEWIRE_DS2482_2WAY
+      const uint8_t ONEWIRE_2WAY = 0b1010; // На каких шинах (4|3|2|1) двух-проводные датчики, битовая маска
+	#else
+      const uint8_t ONEWIRE_2WAY = 0b0000;
+	#endif
+	#define ONEWIRE_DONT_CHG_RES    // Не записывать 9/12-битное разрешение в датчик при привязке, а просто устанавливать
+//	#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
 
 	#define USE_SUN_COLLECTOR			// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
 	#define SUN_TDELTA			300		// Дельта температур для включения, сотые градуса, по умолчанию
@@ -2687,6 +2689,12 @@ const char *noteTemp[] = {"Температура улицы",
 //    	#define NEXTION_DEBUG 			// Отладка дисплея Nextion
 //		#define DEBUG_PID				// Отладка ПИДа
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
+		#undef ONEWIRE_DS2482
+		#undef ONEWIRE_DS2482_SECOND
+		#undef ONEWIRE_DS2482_THIRD
+		#undef ONEWIRE_DS2482_FOURTH
+		#undef ONEWIRE_DS2482_2WAY
+		#define PIN_ONE_WIRE_BUS   41   // нога с интерфейсом программный 1-Wire - ВСЕ температурные датчики
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 //		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
@@ -2716,20 +2724,20 @@ const char *noteTemp[] = {"Температура улицы",
      #define STACK_vWebX           180                              // Стек задачи веб морды один поток (потоков может быть 1-4)
 	
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
-	#ifndef  TEST_BOARD
+	#ifdef  TEST_BOARD
+		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
+		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
+		const boolean   defaultDHCP	=	false;
+		const IPAddress defaultIP		(192, 168, 0, 199);
+		const IPAddress defaultGateway	(192, 168, 0, 10);
+		const IPAddress defaultSDNS		(8, 8, 8, 8);
+	#else
 		uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		#define SD_CLOCK				28	// частота SPI для SD карты в МГц
 		const boolean   defaultDHCP	=	false;
-		const IPAddress defaultIP		(192, 168, 0,   7);
-		const IPAddress defaultSDNS		(  8,   8, 8,   8);
-		const IPAddress defaultGateway	(192, 168, 0,   1);
-	#else
-		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
-		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
-		const boolean   defaultDHCP	=	true;
-		const IPAddress defaultIP		(192, 168, 0, 199);
-		const IPAddress defaultSDNS		(192, 168, 0,   10);
-		const IPAddress defaultGateway	(192, 168, 0,   10);
+		const IPAddress defaultIP		(192, 168, 0, 7);
+		const IPAddress defaultGateway	(192, 168, 0, 1);
+		const IPAddress defaultSDNS		(8, 8, 8, 8);
 	#endif
 	const IPAddress defaultSubnet      (255, 255, 255, 0);
      //  #define SUPERBOILER               // Использование предкондесатора для нагрева ГВС
@@ -2790,7 +2798,6 @@ const char *noteTemp[] = {"Температура улицы",
    //#define PIN_DEVICE_PWM1       6  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
    //#define PIN_DEVICE_PWM1       7  // ++ управление насосом выход 0-10в (пока не поддерживается прошивкой)
     // датчики
-    //#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
  
     // Контактные датчики ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
     #define INUMBER             2   // Максимальное число контактных датчиков цифровые входы (то что поддерживается)
@@ -2870,7 +2877,7 @@ const char *noteTemp[] = {"Температура улицы",
 
    // Исполнительные устройства (реле и сухие контакты) ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
 	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
-    #define RNUMBER                    8        // Число исполнительных устройств (всех)
+    #define RNUMBER                    9        // Число исполнительных устройств (всех)
      // устройства DC 24V
     #define PIN_DEVICE_RCOMP           12 //[R_9(X1)3.3V] через FOD852(p1..4); X174.2->p2, X1.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
 //    #define PIN_FC_RESET             53 //[R_7] -> DI3(10) Выход для сброса инвертора
@@ -2884,6 +2891,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef USE_SUN_COLLECTOR
     	#define PIN_DEVICE_RSUN        46 //[R_1] Реле включения солнечного коллектора
 	#endif
+	#define PIN_DEVICE_BATH_HEATER     35 // X38.2(EEV24) -> Relay(-12V) -> подает DA9(5V) -> провод -> реле 5V -> пускатель нагревателя
 //  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 //  #define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
 //    #define PIN_DEVICE_R3WAY         13 //[R_10(X2)3.3V] 3-ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
@@ -2901,6 +2909,7 @@ const char *noteTemp[] = {"Температура улицы",
     #define R4WAY              5          // 4-ходовой реверсивный клапан (охлаждение)
     #define RPUMPFL            6          // Реле насоса Теплого Пола
 	#define RSUN			   7		  // Реле включения солнечного коллектора
+	#define RBATH              8          // Реле включения отопителя ванной
 //    #define RRESET             6          // Выход для сброса инвертора
 //   #define R3WAY              7          // Трех ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
 //                                         // Если заремарен, то конфигурация с двумя насосами RPUMPO и RPUMPB. Работают по-очередно.
@@ -2930,7 +2939,8 @@ const char *noteTemp[] = {"Температура улицы",
                                         PIN_DEVICE_RBOILER,     // ++ Включение ТЭНа бойлера
                                         PIN_DEVICE_R4WAY,    	// ++ 4-ходовой реверсивный клапан
 										PIN_DEVICE_RPUMPFL,      // Реле Теплого Пола
-										PIN_DEVICE_RSUN			// Реле включения солнечного коллектора
+										PIN_DEVICE_RSUN,			// Реле включения солнечного коллектора
+										PIN_DEVICE_BATH_HEATER
   //                                      PIN_FC_RESET,           // ++ Выход для сброса инвертора
   //                                      PIN_DEVICE_R3WAY        // - Трех ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
   //                                      PIN_DEVICE_RSUPERBOILER ,
@@ -2951,7 +2961,8 @@ const char *noteTemp[] = {"Температура улицы",
                                      "Реле включение ТЭНа бойлера",
                                      "Реверсивный клапан",
 									 "Реле насоса теплого пола",
-									 "Реле солнечного коллектора"
+									 "Реле солнечного коллектора",
+									 "Реле отопителя ванной"
 
   //                                   "Реле сброса ошибки инвертора",
   //                                   "Трех ходовой кран"
@@ -2969,7 +2980,8 @@ const char *noteTemp[] = {"Температура улицы",
                                      "RBOILER",        // Реле включение ТЭНа бойлера
                                      "R4WAY",           // 4-ходовой реверсивный клапан
                                      "RPUMPFL",	       // Реле насоса ТП
-									 "RSUN"				// Реле включения солнечного коллектора
+									 "RSUN",			// Реле включения солнечного коллектора
+									 "RBATH"
 
   //                                   "RRESET",         // ++ Выход для сброса инвертора
   //                                   "R3WAY"          // Трех ходовой кран, переключение ТН между отоплением и ГВС,

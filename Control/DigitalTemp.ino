@@ -98,7 +98,7 @@ int8_t sensorTemp::Read()
 					}
 				}
 				numErrorRead = 0; // Сброс счетчика ошибок
-				//Serial.print(rtcSAM3X8.get_seconds()); Serial.print('.'); Serial.print(name); Serial.print(':'); Serial.println(ttemp);
+				//SerialDbg.print(rtcSAM3X8.get_seconds()); SerialDbg.print('.'); SerialDbg.print(name); SerialDbg.print(':'); SerialDbg.println(ttemp);
 				// Защита от скачков
 				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
 					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
@@ -332,7 +332,7 @@ void radio_transmit(void)
 {
 	RADIO_SENSORS_SERIAL._pUart->UART_CR = US_CR_RXDIS; // Disables USART RX
 	RADIO_SENSORS_SERIAL.write(rs_serial_buf, rs_serial_idx);
-	// Пустой буфер: Serial.availableForWrite() == SERIAL_BUFFER_SIZE - 1
+	// Пустой буфер: SerialDbg.availableForWrite() == SERIAL_BUFFER_SIZE - 1
 	while(RADIO_SENSORS_SERIAL.availableForWrite() < SERIAL_BUFFER_SIZE - 1 || (RADIO_SENSORS_SERIAL._pUart->UART_SR & (UART_SR_TXEMPTY | UART_SR_TXRDY)) != (UART_SR_TXEMPTY | UART_SR_TXRDY))
 		_delay(1); // Ждем отправки
 	RADIO_SENSORS_SERIAL._pUart->UART_CR =  US_CR_RXEN; // Enables USART RX

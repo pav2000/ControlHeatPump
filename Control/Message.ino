@@ -433,7 +433,7 @@ char*   Message::get_messageSetting(char *var, char *ret)
 int32_t Message::save(int32_t adr)
 {
 
-  // Serial.print(messageSetting.GETBIT(fMessageReset));Serial.println("-1");
+  // SerialDbg.print(messageSetting.GETBIT(fMessageReset));SerialDbg.println("-1");
   if (writeEEPROM_I2C(adr, (byte*)&messageSetting, sizeof(messageSetting))) {
     set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
     return ERR_SAVE_EEPROM;
@@ -460,7 +460,7 @@ uint16_t Message::get_crc16(uint16_t crc)
 {
   uint16_t i;
   for (i = 0; i < sizeof(messageSetting); i++) crc = _crc16(crc, *((byte*)&messageSetting + i)); // CRC16 настройки уведомлений
-  // Serial.print("Message::get_crc16 0x");Serial.println(crc,HEX);
+  // SerialDbg.print("Message::get_crc16 0x");SerialDbg.println(crc,HEX);
   return crc;
 }
 
@@ -485,7 +485,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
   {
     //    clientMessage.println(tempBuf); // почемуто не отправляет????
     strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
-    //    Serial.print(">>");Serial.print(tempBuf);Serial.print("<< len=");Serial.println(strlen(tempBuf));
+    //    SerialDbg.print(">>");SerialDbg.print(tempBuf);SerialDbg.print("<< len=");SerialDbg.println(strlen(tempBuf));
     journal.jprintf("%s", tempBuf);
   }
 
@@ -519,7 +519,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
   while (clientMessage.available())  // чтение ответа
   {
     num = clientMessage.read((byte*)tempBuf, LEN_TEMPBUF - 1);  tempBuf[num] = 0; // Обрезать строку
-    //   Serial.print("num=");Serial.print(num);Serial.print(" >>"); Serial.print(tempBuf);
+    //   SerialDbg.print("num=");SerialDbg.print(num);SerialDbg.print(" >>"); SerialDbg.print(tempBuf);
     journal.jprintf("%s", tempBuf);
   }
 
@@ -527,8 +527,8 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
   if (respCode >= '4') // ошибка при общении с сервером, закрываем сессию
   {
     strncpy(retMail, tempBuf, LEN_RETMAIL); // запомнить ответ сервера при ошибке
-    //    Serial.print("retMail "); Serial.println(retMail);
-    //    Serial.print("answer "); Serial.println(answer);
+    //    SerialDbg.print("retMail "); SerialDbg.println(retMail);
+    //    SerialDbg.print("answer "); SerialDbg.println(answer);
     clientMessage.println("QUIT"); // Послать команду на закрытие сессии
     journal.jprintf("QUIT\n");
     while (!clientMessage.available()) // ожидание ответа 1 сек
@@ -556,7 +556,7 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запу�
 {
   // Проверка на необходимость посылки сообщения
   if (!(((GETBIT(messageSetting.flags, fMail)) || (GETBIT(messageSetting.flags, fSMS))) && ((messageData.ms != pMESSAGE_TESTMAIL) || (messageData.ms != pMESSAGE_TESTSMS)))) return true;	// посылать ненадо
-  //  Serial.print(c);Serial.print(" : ");Serial.print(ms);Serial.println("-5");
+  //  SerialDbg.print(c);SerialDbg.print(" : ");SerialDbg.print(ms);SerialDbg.println("-5");
   // Проверка необходимости отправки уведомления
   if (((GETBIT(messageSetting.flags, fMessageReset)) == 0) && (ms == pMESSAGE_RESET))       return true; // Попытка отправить не разрешенное сообщение, выходим без ошибок
   if (((GETBIT(messageSetting.flags, fMessageError)) == 0) && (ms == pMESSAGE_ERROR))       return true;
@@ -1185,7 +1185,7 @@ boolean Message::sendSMSCLUB()
   tempBuf[headerLength - 6] = tmp_buf[1];
   tempBuf[headerLength - 5] = tmp_buf[2];
   clientMessage.write(tempBuf, strlen(tempBuf));
-  //Serial.println(tempBuf);
+  //SerialDbg.println(tempBuf);
   //journal.jprintf("%s\n",tempBuf);
 
   // Ожидание и получение ответа

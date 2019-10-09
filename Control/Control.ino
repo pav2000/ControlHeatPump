@@ -387,11 +387,12 @@ x_I2C_init_std_message:
    journal.jprintf("4. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-	  journal.jprintf("I2C memory is empty, a default settings will be used!\n");
+	  journal.jprintf(" I2C memory is empty, a default settings will be used!\n");
 	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
-	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
+	  HP.Prof.convert_to_new_version();
+	  if(HP.Prof.load(HP.Option.numProf) < 0) journal.jprintf(" Error load profile #%d\n", HP.Option.numProf); // Загрузка текущего профиля
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
 	  }
@@ -612,8 +613,8 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 		//
 //		static uint8_t xxxx = 0;
 //		if(++xxxx > 3) {
-//			Serial.println(cpu_idle_max_count);
-//			Serial.println(HP.CPU_IDLE);
+//			SerialDbg.println(cpu_idle_max_count);
+//			SerialDbg.println(HP.CPU_IDLE);
 //			xxxx = 0;
 //		}
 	}
@@ -1246,13 +1247,13 @@ void vUpdateStepperEEV(void *)
 		pos = 0; // текущее суммарное движение - обнулится
 		start_pos = HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
 		//   step_number=HP.dEEV.EEV;
-		//  Serial.print("1. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV);
+		//  SerialDbg.print("1. step_number=");   SerialDbg.print(step_number); SerialDbg.print(" EEV=");   SerialDbg.println(HP.dEEV.EEV);
 		// 3. Движение
 		while(xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == pdPASS)    // Читаем очередь пока есть чего читать
 		{
 			pos = pos + (cmd - start_pos);                                            // Суммируем все приращения для получение итогового движения
 			start_pos = cmd;                                                      // итоговая абсолютная координата отдельной команды
-			//        Serial.print("2. Read Queu cmd: ");   Serial.println(cmd);
+			//        SerialDbg.print("2. Read Queu cmd: ");   SerialDbg.println(cmd);
 			//        if (HP.dEEV.setZero) { step_number=HP.dEEV.stepperEEV.number_of_steps;  break;}  // Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
 			// Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
 			if(HP.dEEV.setZero) {
@@ -1262,14 +1263,14 @@ void vUpdateStepperEEV(void *)
 		}
 
 		// if (pos==0) continue; // двигать нечего
-		//      Serial.print("3. Sum command=");   Serial.println(pos);
+		//      SerialDbg.print("3. Sum command=");   SerialDbg.println(pos);
 		// 2. Подготовка к движению
 		steps_left = abs(pos);                                    // Определить абсолютное число шагов движения он уменьшается до 0
 		// НАПРАВЛЕНИЕ determine direction based on whether steps_to_mode is + or -:
 		if(pos > 0) direction = true;
 		if(pos < 0) direction = false;
 
-		//    Serial.print("3. step_number=");   Serial.print(step_number); Serial.print(" EEV=");   Serial.println(HP.dEEV.EEV);
+		//    SerialDbg.print("3. step_number=");   SerialDbg.print(step_number); SerialDbg.print(" EEV=");   SerialDbg.println(HP.dEEV.EEV);
 		// 3. Движение
 		while(steps_left > 0) {
 			if(direction)  // направление в увеличение
@@ -1304,17 +1305,17 @@ void vUpdateStepperEEV(void *)
 			step_number = 0;
 			HP.dEEV.setZero = false;
 		}  // если стоит признак установки нуля, обнулить и сбросить признак
-		//   Serial.print("4. EEV=");   Serial.print(HP.dEEV.EEV); Serial.print("  step_number=");   Serial.println(step_number);
+		//   SerialDbg.print("4. EEV=");   SerialDbg.print(HP.dEEV.EEV); SerialDbg.print("  step_number=");   SerialDbg.println(step_number);
 
 		// 4. Остановить выполнение команад, если очередь пуста, но могли накидать пока двигались
 		if(xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) {
-			//     Serial.println("6. TaskSuspend ");
+			//     SerialDbg.println("6. TaskSuspend ");
 			if(!HP.dEEV.get_HoldMotor()) HP.dEEV.stepperEEV.off();                                   // выключить двигатель если нет удержания
 			HP.dEEV.stepperEEV.offBuzy();                                                            // признак Мотор остановлен
 			vTaskSuspend(NULL);               // Приостановить задучу vUpdateStepperEEV
 		}
 		// Дошли до сюда новая, очередь не пуста и новая итерация по разбору очереди
-		//    Serial.println("5. new command ");
+		//    SerialDbg.println("5. new command ");
 	} // for
 	vTaskDelete( NULL);
 }
@@ -1337,6 +1338,7 @@ void vServiceHP(void *)
 {
 	static uint32_t NextionTick = 0;
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
+	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
 	static uint32_t timer_sec = GetTickCount();
 	static uint16_t restart_cnt;
 	static uint16_t pump_in_pause_timer = 0;
@@ -1355,6 +1357,15 @@ void vServiceHP(void *)
 					HP.updateCount();                                       // Обновить счетчики моточасов
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
 					Stats.History();                                        // запись истории в файл
+				} else if(m != task_dailyswitch_countm) {
+					task_dailyswitch_countm = m;
+					uint16_t tt = rtcSAM3X8.get_hours() * 100 + m;
+					for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
+						if(HP.Prof.DailySwitch[i].Device == 0) break;
+						uint16_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
+						uint16_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
+						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)) ? fR_StatusDaily : -fR_StatusDaily);
+					}
 				}
 			}
 			if(HP.PauseStart) {

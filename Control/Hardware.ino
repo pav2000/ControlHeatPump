@@ -968,7 +968,7 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 			if ((abs(newEEV)>_data.pid_max)&&(_data.pid_max>0)) {if (newEEV>0) newEEV=EEV+_data.pid_max; else newEEV=EEV-_data.pid_max;} else newEEV+=EEV;   // Ограничение пида +  добавление предудущего значения
 #endif
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
-			//      Serial.print("errPID="); Serial.print(errPID,4);Serial.print(" newEEV=");Serial.print(newEEV);Serial.print(" EEV=");Serial.println(EEV);
+			//      SerialDbg.print("errPID="); SerialDbg.print(errPID,4);SerialDbg.print(" newEEV=");SerialDbg.print(newEEV);SerialDbg.print(" EEV=");SerialDbg.println(EEV);
 		}
 		break;
 #if defined(TEVAIN)
@@ -1469,7 +1469,7 @@ xErr:
 	}
 	if (err==OK)
 	{
-		// Serial.println((int)(Voltage*100));
+		// SerialDbg.println((int)(Voltage*100));
 		if ((settingSDM.maxVoltage>1)&&(settingSDM.maxVoltage< Voltage)) {err=ERR_MAX_VOLTAGE;set_Error(err,name);return err; }       // Контроль входного напряжения
 		if ((settingSDM.maxPower>1)&&(settingSDM.maxPower< AcPower))     {err=ERR_MAX_POWER;set_Error(err,name);return err; }         // Контроль мощности потребления
 		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени

@@ -282,13 +282,13 @@ return 0;
 
 /*
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
+  SerialDbg.print("Message arrived [");
+  SerialDbg.print(topic);
+  SerialDbg.print("] ");
   for (int i=0;i<length;i++) {
-    Serial.print((char)payload[i]);
+    SerialDbg.print((char)payload[i]);
   }
-  Serial.println();
+  SerialDbg.println();
 } */
 
 // Внутренная функция послать один топик, возврат удачно или нет послан топик, при не удаче запись в журнал

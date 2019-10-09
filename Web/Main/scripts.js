@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.035";
+var VER_WEB = "1.037";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -12,8 +12,8 @@ var urlupdate = 4010; // время обновления параметров в
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace("(", "-").replace(")", "");
-	var rec = new RegExp('et_listChart.?');
-	var res = new RegExp('et_slIP|et_listProfile|et_testMode|et_modeHP');
+	var rec = new RegExp('_listChart.?');
+	var res = new RegExp('_modeHP|_listProfile|_testMode|_slIP');
 	var elval, clear = true, equate = true;
 	var element;
 	if(paramid.indexOf("(SCHEDULER)")!=-1) {
@@ -61,6 +61,10 @@ function setParam(paramid, resultid) {
 		//if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
 	}
 	if(res.test(paramid)) {
+		if(paramid.indexOf("Profile")!=-1) {
+			elval = element.options[elval].innerHTML;
+			elval = Number(elval.substr(0, elval.indexOf('.'))) - 1;; 
+		}
 		var elsend = paramid.replace("get_", "set_").replace(")", "") + "(" + elval + ")";
 	} else if(rec.test(paramid)) {
 		var elsend = paramid.replace("get_listChart", "get_Chart(" + elval + ")");
@@ -71,6 +75,7 @@ function setParam(paramid, resultid) {
 			if(elsend.substr(-1) == ")") elsend = elsend.replace(")", "") + "=" + elval + ")"; else elsend += "=" + elval;
 		}
 	}
+	if(/[(]DSD\d/.test(paramid)) clear = false;
 	if(/et_slIP/.test(paramid)) elsend = elsend.replace("(", "=").replace("-", "(");
 	if(!resultid) resultid = elid.replace("set_", "get_").toLowerCase();
 	if(clear) {
@@ -121,7 +126,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
 								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|SOCKET|RES|SMS_SERVICE|PING_TIME|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
-								else if(/NUM_PROFILE|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
+								else if(/Prof[(]NUM|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
 								else if(values[0].indexOf("hide_")==0) { // clear
@@ -141,6 +146,8 @@ function loadParam(paramid, noretry, resultdiv) {
 									if((element = document.getElementById(s+"2"))) element.innerHTML = values[1];
 								} else if(values[0].indexOf("RELOAD")==0) { 
 									location.reload();
+								} else if(values[0].indexOf("(DSD")!=-1) {
+									loadParam("get_tblPDS");
 								} else {
 									if((element = document.getElementById(valueid + "-ONOFF"))) { // Надпись
 										element.innerHTML = values[1] == 1 ? "Вкл" : "Выкл";
@@ -279,63 +286,65 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 										element = document.getElementById(idsel);
 										if(element) {
-										  if(values[0].substr(-6, 5) == "_skip") {
-											var j2 = Number(values[0].substr(-1)) - 1;
-											for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
-										  } else element.innerHTML = "";
-										  var cont1 = values[1].split(';');
-										  if(element.tagName != "SPAN") {
-											for(var k = 0; k < cont1.length - 1; k++) {
-												var cont2 = cont1[k].split(':');
-												if(cont2[1] == 1) {
-													selected = true;
-													if(idsel == "get_cool-rule") {
-														var onoff = k == 0;
-														document.getElementById("get_cool-target").disabled = k == 2;
-														//document.getElementById("get_cool-dtemp").disabled = k == 1;
-														document.getElementById("get_cool-hp_pro").disabled = onoff;
-														document.getElementById("get_cool-hp_in").disabled = onoff;
-														document.getElementById("get_cool-hp_dif").disabled = onoff;
-														document.getElementById("get_cool-temp_pid").disabled = onoff;
-														document.getElementById("get_cool-w").disabled = onoff;
-														document.getElementById("get_cool-kw").disabled = onoff;
-														document.getElementById("get_cool-hp_time").disabled = onoff;
-													} else if(idsel == "get_heat-rule") {
-														var onoff = k == 0;
-														document.getElementById("get_heat-target").disabled = k == 2;
-														//document.getElementById("get_heat-dtemp").disabled = k == 1;
-														document.getElementById("get_heat-hp_pro").disabled = onoff;
-														document.getElementById("get_heat-hp_in").disabled = onoff;
-														document.getElementById("get_heat-hp_dif").disabled = onoff;
-														document.getElementById("get_heat-temp_pid").disabled = onoff;
-														document.getElementById("get_heat-w").disabled = onoff;
-														document.getElementById("get_heat-kw").disabled = onoff;
-														document.getElementById("get_heat-hp_time").disabled = onoff;
-													} else if(idsel == "get_cool-target") {
-														document.getElementById("get_cool-temp2").disabled = k == 0;
-														document.getElementById("get_cool-temp1").disabled = k != 0;
-													} else if(idsel == "get_heat-target") {
-														document.getElementById("get_heat-temp2").disabled = k == 0;
-														document.getElementById("get_heat-temp1").disabled = k != 0;
+											if(values[0].substr(-6, 5) == "_skip") {
+												var j2 = Number(values[0].substr(-1)) - 1;
+												for(var j = element.options.length - 1; j > j2; j--) element.options[j].remove();
+											} else if(/^\d+$/.test(values[1])) {
+												element.options[values[1]].selected = true;
+											} else element.innerHTML = "";
+											var cont1 = values[1].split(';');
+											if(element.tagName != "SPAN") {
+												for(var k = 0; k < cont1.length - 1; k++) {
+													var cont2 = cont1[k].split(':');
+													if(cont2[1] == 1) {
+														selected = true;
+														if(idsel == "get_cool-rule") {
+															var onoff = k == 0;
+															document.getElementById("get_cool-target").disabled = k == 2;
+															//document.getElementById("get_cool-dtemp").disabled = k == 1;
+															document.getElementById("get_cool-hp_pro").disabled = onoff;
+															document.getElementById("get_cool-hp_in").disabled = onoff;
+															document.getElementById("get_cool-hp_dif").disabled = onoff;
+															document.getElementById("get_cool-temp_pid").disabled = onoff;
+															document.getElementById("get_cool-w").disabled = onoff;
+															document.getElementById("get_cool-kw").disabled = onoff;
+															document.getElementById("get_cool-hp_time").disabled = onoff;
+														} else if(idsel == "get_heat-rule") {
+															var onoff = k == 0;
+															document.getElementById("get_heat-target").disabled = k == 2;
+															//document.getElementById("get_heat-dtemp").disabled = k == 1;
+															document.getElementById("get_heat-hp_pro").disabled = onoff;
+															document.getElementById("get_heat-hp_in").disabled = onoff;
+															document.getElementById("get_heat-hp_dif").disabled = onoff;
+															document.getElementById("get_heat-temp_pid").disabled = onoff;
+															document.getElementById("get_heat-w").disabled = onoff;
+															document.getElementById("get_heat-kw").disabled = onoff;
+															document.getElementById("get_heat-hp_time").disabled = onoff;
+														} else if(idsel == "get_cool-target") {
+															document.getElementById("get_cool-temp2").disabled = k == 0;
+															document.getElementById("get_cool-temp1").disabled = k != 0;
+														} else if(idsel == "get_heat-target") {
+															document.getElementById("get_heat-temp2").disabled = k == 0;
+															document.getElementById("get_heat-temp1").disabled = k != 0;
+														}
+													} else selected = false;
+													if(idsel == "get_listchart") {
+														var elems = document.getElementsByName("chrt_sel");
+														for(var j = 0; j < elems.length; j++) {
+															elems[j].add(new Option(cont2[0],cont2[0], false, selected), null); // "_"+
+														}
+													} else {
+														var opt = new Option(cont2[0], k, false, selected);
+														if(cont2[2] == 0) opt.disabled = true;
+														element.add(opt, null);
 													}
-												} else selected = false;
-												if(idsel == "get_listchart") {
-													var elems = document.getElementsByName("chrt_sel");
-													for(var j = 0; j < elems.length; j++) {
-														elems[j].add(new Option(cont2[0],cont2[0], false, selected), null); // "_"+
-													}
-												} else {
-													var opt = new Option(cont2[0], k, false, selected);
-													if(cont2[2] == 0) opt.disabled = true;
-													element.add(opt, null);
+												}
+											} else {
+												for(var k = 0; k < cont1.length - 1; k++) {
+													var cont2 = cont1[k].split(':');
+													if(cont2[1] == 1) { element.innerHTML = cont2[0]; break; } 
 												}
 											}
-										  } else {
-											for(var k = 0; k < cont1.length - 1; k++) {
-												var cont2 = cont1[k].split(':');
-												if(cont2[1] == 1) { element.innerHTML = cont2[0]; break; } 
-											}
-										  }
 										}
 									}
 								} else if(type == 'const') {
@@ -478,22 +487,32 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
 												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
 												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><select id="get_slip-' + j + '"  onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
+												content2 = content2 + '<td><select id="get_slip-' + j + '" onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
 											updateParam(upsens);
 											loadParam(loadsens);
-										} else if(values[0] == 'get_Profile(NUM_PROFILE)') {
+										} else if(values[0] == 'get_Prof(NUM)') {
 											var content = "", loadsens = "";
 											count = Number(values[1]);
 											for(var j = 0; j < count; j++) {
 												loadsens = loadsens + "infoProfile(" + j + "),";
-												content = content + '<tr id="get_profile-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
-												content = content + '<td nowrap><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" id="load-profile-' + j + '" type="submit" value="Загрузить"  onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
+												content = content + '<tr id="get_prof-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
+												content = content + '<td nowrap><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" type="submit" value="Загрузить" onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											loadParam(loadsens);
+										} else if(values[0] == 'get_tblPDS') {
+											var content = "";
+											var trows = values[1].split('|');
+											var elem = document.getElementById("get_listdsr");
+											for(var j = 0; j < trows.length - 1; j++) {
+												var tflds = trows[j].split(';');
+												content += '<tr><td><select id="get_prof-dsd' + j + '" onchange="setParam(\'get_Prof(DSD' + j + ')\')">' + elem.innerHTML.replace('>' + tflds[0] + '<', ' selected>' + tflds[0] + '<') + '<\select></td><td>' + tflds[1] 
+													+ '</td><td nowrap><input id="get_prof-dss' + j + '" type="text" size="6" value="' + tflds[2] + '"> <input type="submit" value=">" onclick="setDS(\'S\',' + j + ')"></td><td nowrap><input id="get_prof-dse' + j + '" type="text" size="6" value="' + tflds[3] + '"> <input type="submit" value=">" onclick="setDS(\'E\',' + j + ')"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
 										} else {
 											var content = values[1].replace(/</g, "&lt;").replace(/\:$/g, "").replace(/\:/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");
 											var element = document.getElementById(valueid);

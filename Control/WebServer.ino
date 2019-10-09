@@ -618,6 +618,15 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
+			if(strcmp(str,"DSR")==0) {    // Функция get_listDSR
+				strcat(strReturn, "---;");
+				for(i = RCOMP + 1; i < RNUMBER; i++) if(HP.dRelay[i].get_present()) {
+					strcat(strReturn, HP.dRelay[i].get_name()); strcat(strReturn,";");
+				}
+				ADD_WEBDELIM(strReturn);
+				continue;
+			}
+
 			i = 0;
 			if(strcmp(str,"Stats")==0) i = 1;   // Функция get_listStats
 			else if(strcmp(str,"Hist")==0) i = 2;   // Функция get_listHist
@@ -1459,6 +1468,15 @@ void parserGET(uint8_t thread, int8_t )
 			} else if(strcmp(str,"Flow")==0)     // Функция get_tblFlow
 			{
 				for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
+			} else if(strcmp(str,"PDS")==0) {    // Функция get_tblPDS
+				for(i = 0; i < DAILY_SWITCH_MAX; i++) {
+					if(HP.Prof.DailySwitch[i].Device == 0) {
+						strcat(strReturn, "---;;00:00;00:00|");
+						break;
+					}
+					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
+							HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
+				}
 #ifdef CORRECT_POWER220
 			} else if(strcmp(str,"PwrC")==0) {    // Функция get_tblPwrC
 				for(i = 0; i < (int8_t)(sizeof(correct_power220)/sizeof(correct_power220[0])); i++) {
@@ -1497,7 +1515,7 @@ void parserGET(uint8_t thread, int8_t )
 			if (strcmp(str,"set_sensorIP") == 0)           // Удаленные датчики - получить значения
 			{
 				// разбор строки формат "номер:температура:уровень_сигнала:питание:счетчик"
-				//     Serial.println(x);
+				//     SerialDbg.println(x);
 				ptr=strtok(x,":");
 				if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
@@ -1656,7 +1674,7 @@ void parserGET(uint8_t thread, int8_t )
 					if(HP.dEEV.set_EEV((int)pm)==0)
 						_itoa(pm,strReturn);  // если значение правильное его возвращаем сразу
 					else strcat(strReturn,"E12");
-					//           Serial.print("set_EEV ");    Serial.print(pm); Serial.print(" set "); Serial.println(int2str(HP.dEEV.get_EEV()));
+					//           SerialDbg.print("set_EEV ");    SerialDbg.print(pm); SerialDbg.print(" set "); SerialDbg.println(int2str(HP.dEEV.get_EEV()));
 					ADD_WEBDELIM(strReturn) ;    continue;
 				}
 #else
@@ -1802,11 +1820,11 @@ void parserGET(uint8_t thread, int8_t )
 			STORE_DEBUG_INFO(32);
 
 			// 5.  Настройки профилей ---------------------------------------------------------
-			if(strcmp(str, "get_Profile") == 0)           // Функция получить настройки профиля
+			if(strcmp(str, "get_Prof") == 0)           // Функция получить настройки профиля
 			{
 				HP.Prof.get_paramProfile(x, strReturn);
 				ADD_WEBDELIM(strReturn); continue;
-			} else if(strcmp(str, "set_Profile") == 0)           // Функция записать настройки профиля
+			} else if(strcmp(str, "set_Prof") == 0)           // Функция записать настройки профиля
 			{
 				if(HP.Prof.set_paramProfile(x, z)) HP.Prof.get_paramProfile(x, strReturn); // преобразование удачно
 				else strcat(strReturn, "E28"); // ошибка преобразования строки

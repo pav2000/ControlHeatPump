@@ -441,7 +441,7 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len, uint1
 
 	if(pause == 0) // Честно ждем ack
 	{
-		//   Serial.println("ask");
+		//   SerialDbg.println("ask");
 		do// Ожидание освобождения буфера
 		{
 			if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
@@ -467,7 +467,7 @@ uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len, uint1
 		} while(freesize < ret);
 	} else  // Не ждем ACK а просто делаем задержку
 	{
-		//  Serial.println("pause no ask");
+		//  SerialDbg.println("pause no ask");
 		SemaphoreGive (xWebThreadSemaphore);                                                             // Мютекс потока отдать
 		_delay(pause);                                                            // Ждем pause мсек
 		if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {

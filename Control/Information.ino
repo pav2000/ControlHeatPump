@@ -21,11 +21,6 @@
 #include "Information.h"
 
 #define bufI2C Socket[0].outBuf
-#ifdef DEBUG_NATIVE_USB
-#define SerialDbg	SerialUSB
-#else
-#define SerialDbg	Serial
-#endif
 
 // --------------------------------------------------------------------------------------------------------------- 
 //  Класс системный журнал пишет в консоль и в память ------------------------------------------------------------
@@ -789,29 +784,18 @@ char* Profile::get_boiler(char *var, char *ret)
  return strcat(ret,(char*)cInvalid);
 }
 
-// Порядок записи профиля
-/*
- * sizeof(magic) + \
-   sizeof(crc16) + \
-   // данные контрольная сумма считается с этого места
-   sizeof(dataProfile) + \
-   sizeof(SaveON) + \
-   sizeof(Cool)  + \
-   sizeof(Heat)  + \
-   sizeof(Boiler)+ \
- */
 // static uint16_t crc= 0xFFFF;  // рабочее значение
- uint16_t  Profile::get_crc16_mem()  // Расчитать контрольную сумму
- {
-  uint16_t i;
-  uint16_t crc= 0xFFFF;
-  for(i=0;i<sizeof(dataProfile);i++) crc=_crc16(crc,*((byte*)&dataProfile+i));           // CRC16 структуры  dataProfile
-  for(i=0;i<sizeof(SaveON);i++) crc=_crc16(crc,*((byte*)&SaveON+i));                     // CRC16 структуры  SaveON
-  for(i=0;i<sizeof(Cool);i++) crc=_crc16(crc,*((byte*)&Cool+i));                         // CRC16 структуры  Cool
-  for(i=0;i<sizeof(Heat);i++) crc=_crc16(crc,*((byte*)&Heat+i));                         // CRC16 структуры  Heat
-  for(i=0;i<sizeof(Boiler);i++) crc=_crc16(crc,*((byte*)&Boiler+i));                     // CRC16 структуры  Boiler
-  return crc;   
- }
+uint16_t Profile::get_crc16_mem()  // Расчитать контрольную сумму
+{
+	uint16_t crc = 0xFFFF;
+	crc = calc_crc16((uint8_t*)&dataProfile, sizeof(dataProfile), crc);
+	crc = calc_crc16((uint8_t*)&SaveON, sizeof(SaveON), crc);
+	crc = calc_crc16((uint8_t*)&Cool, sizeof(Cool), crc);
+	crc = calc_crc16((uint8_t*)&Heat, sizeof(Heat), crc);
+	crc = calc_crc16((uint8_t*)&Boiler, sizeof(Boiler), crc);
+	crc = calc_crc16((uint8_t*)&DailySwitch, sizeof(DailySwitch), crc);
+	return crc;
+}
 
 // Проверить контрольную сумму ПРОФИЛЯ в EEPROM для данных на выходе ошибка, длина определяется из заголовка
 int8_t Profile::check_crc16_eeprom(int8_t num)
@@ -844,7 +828,46 @@ int8_t  Profile::check_crc16_buf(int32_t adr, byte* buf)
   if (crc==readCRC) return OK; 
   else              return err=ERR_CRC16_EEPROM;
 }
- 
+
+int8_t  Profile::convert_to_new_version(void)
+{
+	/*
+	  char checker(int);
+	  char checkSizeOfInt1[sizeof(dataProfile)]={checker(&checkSizeOfInt1)};
+	  char checkSizeOfInt2[sizeof(SaveON)]={checker(&checkSizeOfInt2)};
+	  char checkSizeOfInt3[sizeof(Heat)]={checker(&checkSizeOfInt3)};
+	  char checkSizeOfInt4[sizeof(Boiler)]={checker(&checkSizeOfInt4)};
+	  char checkSizeOfInt5[sizeof(DailySwitch)]={checker(&checkSizeOfInt5)};
+	//*/
+	// v.135
+	#define CNVPROF_SIZE_dataProfile	120
+	#define CNVPROF_SIZE_SaveON		 	12
+	#define CNVPROF_SIZE_HeatCool		50
+	#define CNVPROF_SIZE_Boiler			80
+	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler)
+	if(HP.Option.ver <= 135) {
+		journal.jprintf("Converting Profiles to new version...\n");
+		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
+		for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {
+			uint8_t *addr = (uint8_t*)&Socket[0].outBuf + CNVPROF_SIZE_ALL * i;
+			if(*addr != 0xaa) continue;
+			addr += sizeof(magic) + sizeof(crc16);
+			memcpy(&dataProfile, addr, CNVPROF_SIZE_dataProfile <= sizeof(dataProfile) ? CNVPROF_SIZE_dataProfile : sizeof(dataProfile));
+			addr += CNVPROF_SIZE_dataProfile;
+			memcpy(&SaveON, addr, CNVPROF_SIZE_SaveON <= sizeof(SaveON) ? CNVPROF_SIZE_SaveON : sizeof(SaveON));
+			addr += CNVPROF_SIZE_SaveON;
+			memcpy(&Cool, addr, CNVPROF_SIZE_HeatCool <= sizeof(Cool) ? CNVPROF_SIZE_HeatCool : sizeof(Cool));
+			addr += CNVPROF_SIZE_HeatCool;
+			memcpy(&Heat, addr, CNVPROF_SIZE_HeatCool <= sizeof(Heat) ? CNVPROF_SIZE_HeatCool : sizeof(Heat));
+			addr += CNVPROF_SIZE_HeatCool;
+			memcpy(&Boiler, addr, CNVPROF_SIZE_Boiler <= sizeof(Boiler) ? CNVPROF_SIZE_Boiler : sizeof(Boiler));
+			if(save(i) < 0) return ERR_SAVE_EEPROM;
+		}
+		if(HP.save() < 0) return ERR_SAVE_EEPROM;
+	}
+	return OK;
+}
+
 // Записать профайл в еепром под номерм num
 // Возвращает число записанных байт или ошибку
 int16_t  Profile::save(int8_t num)
@@ -852,7 +875,7 @@ int16_t  Profile::save(int8_t num)
   magic=0xaa;                                   // Обновить заголовок
   dataProfile.len=get_sizeProfile();            // вычислить адрес начала данных
   dataProfile.saveTime=rtcSAM3X8.unixtime();    // запомнить время сохранения профиля
-  
+
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;
   
   if (writeEEPROM_I2C(adr, (byte*)&magic, sizeof(magic))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(magic);       // записать заголовок
@@ -863,6 +886,7 @@ int16_t  Profile::save(int8_t num)
   if (writeEEPROM_I2C(adr, (byte*)&Cool, sizeof(Cool))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(Cool);          // записать настройки охлаждения
   if (writeEEPROM_I2C(adr, (byte*)&Heat, sizeof(Heat))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(Heat);          // записать настройи отопления
   if (writeEEPROM_I2C(adr, (byte*)&Boiler, sizeof(Boiler))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(Boiler);    // записать настройки ГВС
+  if (writeEEPROM_I2C(adr, (byte*)&DailySwitch, sizeof(DailySwitch))) { set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return ERR_SAVE_PROFILE;}  adr=adr+sizeof(DailySwitch);    // записать настройки DailySwitch
   // запись контрольной суммы
   crc16=get_crc16_mem();
   if (writeEEPROM_I2C(adrCRC16, (byte*)&crc16, sizeof(crc16))) {set_Error(ERR_SAVE_PROFILE,(char*)nameHeatPump); return err=ERR_SAVE_PROFILE;} 
@@ -901,12 +925,14 @@ int32_t Profile::load(int8_t num)
   else if(readEEPROM_I2C(adr += sizeof(SaveON), (byte*) &Cool, sizeof(Cool))) err = ERR_LOAD_PROFILE; // прочитать настройки охлаждения
   else if(readEEPROM_I2C(adr += sizeof(Cool), (byte*) &Heat, sizeof(Heat))) err = ERR_LOAD_PROFILE; // прочитать настройки отопления
   else if(readEEPROM_I2C(adr += sizeof(Heat), (byte*) &Boiler, sizeof(Boiler))) err = ERR_LOAD_PROFILE; // прочитать настройки ГВС
+  else if(readEEPROM_I2C(adr += sizeof(Boiler), (byte*) &DailySwitch, sizeof(DailySwitch))) err = ERR_LOAD_PROFILE; // прочитать настройки DailySwitch
+  adr += sizeof(DailySwitch);
+
   if(x) xTaskResumeAll(); // Разрешение других задач
   if(err) {
 	  set_Error(err, (char*) nameHeatPump);
 	  return err;
   }
-  adr += sizeof(Boiler);     // прочитать настройки ГВС
  
 // ВСЕ ОК
    #ifdef LOAD_VERIFICATION
@@ -952,7 +978,8 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
    memcpy((byte*)&Cool,buf+adr,sizeof(Cool)); adr=adr+sizeof(Cool);                                                   // прочитать параметры охлаждения
    memcpy((byte*)&Heat,buf+adr,sizeof(Heat)); adr=adr+sizeof(Heat);                                                   // прочитать параметры отопления
    memcpy((byte*)&Boiler,buf+adr,sizeof(Boiler)); adr=adr+sizeof(Boiler);                                             // прочитать параметры бойлера
- 
+   memcpy((byte*)&DailySwitch,buf+adr,sizeof(DailySwitch)); adr=adr+sizeof(DailySwitch);                              // прочитать параметры DailySwitch
+
    #ifdef LOAD_VERIFICATION
     if (dataProfile.len!=adr-aStart)  {err=ERR_BAD_LEN_EEPROM;set_Error(ERR_BAD_LEN_EEPROM,(char*)nameHeatPump); return err;}    // Проверка длины
     journal.jprintf(" Load profile from file OK, read: %d bytes, crc: %04x\n",adr-aStart,i);                                                                    // ВСЕ ОК
@@ -971,7 +998,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
 // Профиль Установить параметры ТН из числа (float)
 boolean Profile::set_paramProfile(char *var, char *c)
 {
-	uint8_t x;
+	uint32_t x = atoi(c);
 	if(strcmp(var, prof_NAME_PROFILE) == 0) {
 		urldecode(dataProfile.name, c, sizeof(dataProfile.name));
 		return true;
@@ -984,7 +1011,6 @@ boolean Profile::set_paramProfile(char *var, char *c)
 			return true;
 		}
 	} else if(strcmp(var, prof_ID_PROFILE) == 0) {
-		x = atoi(c);
 		if(x == 0 || x > I2C_PROFIL_NUM) return false; // не верный номер профиля
 		dataProfile.id = x - 1;
 		return true;
@@ -992,6 +1018,25 @@ boolean Profile::set_paramProfile(char *var, char *c)
 		urldecode(dataProfile.note, c, sizeof(dataProfile.note));
 		return true;
 	} else if(strcmp(var, prof_DATE_PROFILE) == 0) {
+		return true;
+	} else if(strncmp(var, prof_DailySwitch, sizeof(prof_DailySwitch)-1) == 0) {
+		var += sizeof(prof_DailySwitch)-1;
+		uint32_t i = *(var + 1) - '0';
+		if(i >= DAILY_SWITCH_MAX) return false;
+		if(*var == prof_DailySwitchDevice) {
+			DailySwitch[i].Device = x;
+		} else {
+			uint32_t h = x / 10;
+			if(h > 23) h = 23;
+			uint32_t m = x % 10;
+			if(m > 5) m = 5;
+			x = h * 10 + m;
+			if(*var == prof_DailySwitchOn) {
+				DailySwitch[i].TimeOn = x;
+			} else if(*var == prof_DailySwitchOff) {
+				DailySwitch[i].TimeOff = x;
+			}
+		}
 		return true;
 	} else // параметры только чтение
 	if(strcmp(var, prof_CRC16_PROFILE) == 0) {
@@ -1004,15 +1049,28 @@ boolean Profile::set_paramProfile(char *var, char *c)
  // профиль Получить параметры по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
 char*   Profile::get_paramProfile(char *var, char *ret)
 {
-if(strcmp(var,prof_NAME_PROFILE)==0)   { return strcat(ret,dataProfile.name);                             }else    
-if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled)) return  strcat(ret,(char*)cOne);
-                                         else                                    return  strcat(ret,(char*)cZero);}else
-if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id + 1,ret);                            }else
-if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else    
-if(strcmp(var,prof_DATE_PROFILE)==0)   { return DecodeTimeDate(dataProfile.saveTime,ret);                 }else// параметры только чтение
-if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else  
-if(strcmp(var,prof_NUM_PROFILE)==0)    { return _itoa(I2C_PROFIL_NUM,ret);                                }else
-return  strcat(ret,(char*)cInvalid);              
+	if(strcmp(var,prof_NAME_PROFILE)==0)   { return strcat(ret,dataProfile.name);                             }else
+	if(strcmp(var,prof_ENABLE_PROFILE)==0) { if (GETBIT(dataProfile.flags,fEnabled)) return  strcat(ret,(char*)cOne);
+											 else                                    return  strcat(ret,(char*)cZero);}else
+	if(strcmp(var,prof_ID_PROFILE)==0)     { return _itoa(dataProfile.id + 1,ret);                            }else
+	if(strcmp(var,prof_NOTE_PROFILE)==0)   { return strcat(ret,dataProfile.note);                             }else
+	if(strcmp(var,prof_DATE_PROFILE)==0)   { return DecodeTimeDate(dataProfile.saveTime,ret);                 }else// параметры только чтение
+	if(strcmp(var,prof_CRC16_PROFILE)==0)  { return strcat(ret,uint16ToHex(crc16));                           }else
+	if(strcmp(var,prof_NUM_PROFILE)==0)    { return _itoa(I2C_PROFIL_NUM,ret);                                }else
+	if(strncmp(var, prof_DailySwitch, sizeof(prof_DailySwitch)-1) == 0) {
+		var += sizeof(prof_DailySwitch)-1;
+		uint8_t i = *(var + 1) - '0';
+		if(i >= DAILY_SWITCH_MAX) return false;
+		if(*var == prof_DailySwitchDevice) {
+		 _itoa(DailySwitch[i].Device, ret);
+		} else if(*var == prof_DailySwitchOn) {
+		 m_snprintf(ret + m_strlen(ret), 32, "%02d:%d0", DailySwitch[i].TimeOn / 10, DailySwitch[i].TimeOn % 10);
+		} else if(*var == prof_DailySwitchOff) {
+		 m_snprintf(ret + m_strlen(ret), 32, "%02d:%d0", DailySwitch[i].TimeOff / 10, DailySwitch[i].TimeOff % 10);
+		}
+		return ret;
+	} else
+		return  strcat(ret,(char*)cInvalid);
 }
 
 // Временные данные для профиля
@@ -1065,27 +1123,10 @@ char *Profile::get_list(char *c/*,int8_t num*/)
 // Устанавливает текущий профиль из номера списка, новый профиль;
 int8_t Profile::set_list(int8_t num)
 {
-	uint8_t xx, i, j = 0;
-	int32_t adr;
-
-	for(i = 0; i < I2C_PROFIL_NUM; i++)                                                                // перебор по всем профилям
-	{
-		adr = I2C_PROFILE_EEPROM + get_sizeProfile() * i;                                                // вычислить адрес начала профиля
-		if(readEEPROM_I2C(adr, (byte*) &xx, sizeof(magic))) continue;                                // прочитать заголовок
-		if(xx != 0xaa) continue;
-		//SerialDbg.print("xx==0xaa ");SerialDbg.println(i);
-		adr = adr + sizeof(magic) + sizeof(crc16);                                                        // вычислить адрес начала данных
-		if(readEEPROM_I2C(adr, (byte*) &temp_prof, &temp_prof.flags - (uint8_t*)&temp_prof + sizeof(temp_prof.flags))) continue;
-		if((GETBIT(temp_prof.flags, fEnabled)) && (temp_prof.id == i))                 // Если разрешено использовать профиль  в  списке, и считанный номер совпадает с текущим (это должно быть всегда)
-		{
-			if(num == j) { // надо проверить не выбран ли он , и если совпало загрузить профиль и выход
-				load(i);
-				break;
-			} else j++;                                                                                 // увеличить счетчик - двигаемся по списку
-		}
+	if(num != dataProfile.id) { // new
+		if(load(num) < 0) journal.jprintf(" Profile #%d not selected!\n", num);
 	}
-	//update_list(num); // <-- вызывается в load()!                                                 // обновить список
-	return dataProfile.id;                                                                          // вернуть текущий профиль
+	return dataProfile.id;
 }
 
 // обновить список имен профилей, зопоминается в строке list
