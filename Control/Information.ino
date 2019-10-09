@@ -784,31 +784,18 @@ char* Profile::get_boiler(char *var, char *ret)
  return strcat(ret,(char*)cInvalid);
 }
 
-// Порядок записи профиля
-/*
- * sizeof(magic) + \
-   sizeof(crc16) + \
-   // данные контрольная сумма считается с этого места
-   sizeof(dataProfile) + \
-   sizeof(SaveON) + \
-   sizeof(Cool)  + \
-   sizeof(Heat)  + \
-   sizeof(Boiler)+ \
- */
-
 // static uint16_t crc= 0xFFFF;  // рабочее значение
- uint16_t  Profile::get_crc16_mem()  // Расчитать контрольную сумму
- {
-  uint16_t i;
-  uint16_t crc= 0xFFFF;
-  for(i=0;i<sizeof(dataProfile);i++) crc=_crc16(crc,*((byte*)&dataProfile+i));           // CRC16 структуры  dataProfile
-  for(i=0;i<sizeof(SaveON);i++) crc=_crc16(crc,*((byte*)&SaveON+i));                     // CRC16 структуры  SaveON
-  for(i=0;i<sizeof(Cool);i++) crc=_crc16(crc,*((byte*)&Cool+i));                         // CRC16 структуры  Cool
-  for(i=0;i<sizeof(Heat);i++) crc=_crc16(crc,*((byte*)&Heat+i));                         // CRC16 структуры  Heat
-  for(i=0;i<sizeof(Boiler);i++) crc=_crc16(crc,*((byte*)&Boiler+i));                     // CRC16 структуры  Boiler
-  for(i=0;i<sizeof(DailySwitch);i++) crc=_crc16(crc,*((byte*)&DailySwitch+i));           // CRC16 структуры  DailySwitch
-  return crc;   
- }
+uint16_t Profile::get_crc16_mem()  // Расчитать контрольную сумму
+{
+	uint16_t crc = 0xFFFF;
+	crc = calc_crc16((uint8_t*)&dataProfile, sizeof(dataProfile), crc);
+	crc = calc_crc16((uint8_t*)&SaveON, sizeof(SaveON), crc);
+	crc = calc_crc16((uint8_t*)&Cool, sizeof(Cool), crc);
+	crc = calc_crc16((uint8_t*)&Heat, sizeof(Heat), crc);
+	crc = calc_crc16((uint8_t*)&Boiler, sizeof(Boiler), crc);
+	crc = calc_crc16((uint8_t*)&DailySwitch, sizeof(DailySwitch), crc);
+	return crc;
+}
 
 // Проверить контрольную сумму ПРОФИЛЯ в EEPROM для данных на выходе ошибка, длина определяется из заголовка
 int8_t Profile::check_crc16_eeprom(int8_t num)
@@ -938,14 +925,14 @@ int32_t Profile::load(int8_t num)
   else if(readEEPROM_I2C(adr += sizeof(SaveON), (byte*) &Cool, sizeof(Cool))) err = ERR_LOAD_PROFILE; // прочитать настройки охлаждения
   else if(readEEPROM_I2C(adr += sizeof(Cool), (byte*) &Heat, sizeof(Heat))) err = ERR_LOAD_PROFILE; // прочитать настройки отопления
   else if(readEEPROM_I2C(adr += sizeof(Heat), (byte*) &Boiler, sizeof(Boiler))) err = ERR_LOAD_PROFILE; // прочитать настройки ГВС
-  else if(readEEPROM_I2C(adr += sizeof(DailySwitch), (byte*) &DailySwitch, sizeof(DailySwitch))) err = ERR_LOAD_PROFILE; // прочитать настройки DailySwitch
+  else if(readEEPROM_I2C(adr += sizeof(Boiler), (byte*) &DailySwitch, sizeof(DailySwitch))) err = ERR_LOAD_PROFILE; // прочитать настройки DailySwitch
+  adr += sizeof(DailySwitch);
 
   if(x) xTaskResumeAll(); // Разрешение других задач
   if(err) {
 	  set_Error(err, (char*) nameHeatPump);
 	  return err;
   }
-  adr += sizeof(Boiler);     // прочитать настройки ГВС
  
 // ВСЕ ОК
    #ifdef LOAD_VERIFICATION

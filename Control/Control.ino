@@ -387,12 +387,12 @@ x_I2C_init_std_message:
    journal.jprintf("4. Load data from I2C memory . . .\n");
   if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
   {
-	  journal.jprintf("I2C memory is empty, a default settings will be used!\n");
+	  journal.jprintf(" I2C memory is empty, a default settings will be used!\n");
 	  HP.save_motoHour();
   } else {
 	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
 	  HP.Prof.convert_to_new_version();
-	  HP.Prof.load(HP.Option.numProf);				// Загрузка текущего профиля
+	  if(HP.Prof.load(HP.Option.numProf) < 0) journal.jprintf(" Error load profile #%d\n", HP.Option.numProf); // Загрузка текущего профиля
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
 	  }
