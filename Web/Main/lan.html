@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_Net(NO_PING),get_Net(PING_ADR),get_Net(PING_TIME),get_Net(NO_ACK),get_Net(DELAY_ACK),get_Net(SIZE),get_Net(MAC),get_Net(PORT),get_Net(IP),get_Net(SUBNET),get_Net(GATEWAY),get_Net(DNS),get_Net(DHCP),get_Net(PASS),get_Net(PASSADMIN),get_Net(PASSUSER),get_Net(INIT),get_Net(RES_SOCKET),get_Net(RES),get_Net(WLOG),get_Net(WFLOG)");
+		loadParam("get_Net(NO_PING),get_Net(PING),get_Net(NSLP),get_Net(NO_ACK),get_Net(DELAY_ACK),get_Net(SIZE),get_Net(MAC),get_Net(PORT),get_Net(IP),get_Net(SUBNET),get_Net(GATEWAY),get_Net(DNS),get_Net(DHCP),get_Net(PASS),get_Net(PASSADMIN),get_Net(PASSUSER),get_Net(INIT),get_Net(NSLR),get_Net(NSLS),get_Net(WLOG),get_Net(WFLOG)");
 		updateParam("get_socketInfo,get_socketRes");
 	};
 	</script>
@@ -97,11 +97,11 @@
 	<table>
 		<tr>
 			<td>Проверка ping до сервера, при отсутвии сброс сети</td>
-			<td><select id="get_net-ping_time" onchange="setParam('get_Net(PING_TIME)','get_net-ping_time');"></select></td>
+			<td><select id="get_net-nslp" onchange="setParam('get_Net(NSLP)','get_net-nslp');"></select></td>
 		</tr>
 		<tr>
 			<td>Адрес пингуемого сервера <sup>1</sup></td>
-			<td nowrap><input id="get_net-ping_adr" type="text" ><input type="submit" value=">"  onclick="validip('get_net-ping_adr');setParam('get_Net(PING_ADR)');"></td>
+			<td nowrap><input id="get_net-ping" type="text" ><input type="submit" value=">"  onclick="validip('get_net-ping');setParam('get_Net(PING)');"></td>
 		</tr> 		
 		<tr>
 			<td>Ежеминутный контроль связи с Wiznet W5xxx, и при необходимости его сброс</td>
@@ -109,11 +109,11 @@
 		</tr> 
 		<tr>
 			<td>Время сброса «зависших» сокетов</td>
-			<td><select id="get_net-res_socket" onchange="setParam('get_Net(RES_SOCKET)','get_net-res_socket');"></select></td>
+			<td><select id="get_net-nsls" onchange="setParam('get_Net(NSLS)','get_net-nsls');"></select></td>
 		</tr>
 		<tr>
 			<td>Время сброса сетевого чипа Wiznet W5xxx</td>
-			<td><select id="get_net-res" onchange="setParam('get_Net(RES)','get_net-res');"></select></td>
+			<td><select id="get_net-nslr" onchange="setParam('get_Net(NSLR)','get_net-nslr');"></select></td>
 		</tr>
 		<tr>
 			<td>Размер данных для передачи Wiznet W5xxx (MTU-40 байт)</td>

@@ -840,7 +840,7 @@ char* HeatPump::get_network(char *var,char *ret)
 				Network.resSocket == 30 ? 2 :
 				Network.resSocket == 90 ? 3 : 4);
  }else if(strcmp(var,net_RES_W5200)==0){
-	 	return web_fill_tag_select(ret, "never:0;10 sec:0;30 sec:0;90 sec:0;",
+	 	return web_fill_tag_select(ret, "never:0;6 hours:0;24 hours:0;",
 					Network.resW5200 == 0 ? 0 :
 					Network.resW5200 == 60*60*6 ? 1 :
 					Network.resW5200 == 60*60*24 ? 2 : 3);
