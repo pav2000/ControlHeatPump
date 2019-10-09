@@ -1359,11 +1359,11 @@ void vServiceHP(void *)
 					Stats.History();                                        // запись истории в файл
 				} else if(m != task_dailyswitch_countm) {
 					task_dailyswitch_countm = m;
-					uint16_t tt = rtcSAM3X8.get_hours() * 100 + m;
+					uint32_t tt = rtcSAM3X8.get_hours() * 100 + m;
 					for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
 						if(HP.Prof.DailySwitch[i].Device == 0) break;
-						uint16_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
-						uint16_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
+						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
+						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
 						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)) ? fR_StatusDaily : -fR_StatusDaily);
 					}
 				}
