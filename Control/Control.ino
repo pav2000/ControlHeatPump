@@ -1364,7 +1364,7 @@ void vServiceHP(void *)
 						if(HP.Prof.DailySwitch[i].Device == 0) break;
 						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
 						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
-						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)) ? fR_StatusDaily : -fR_StatusDaily);
+						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power ? fR_StatusDaily : -fR_StatusDaily);
 					}
 				}
 			}
