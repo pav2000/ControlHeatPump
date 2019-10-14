@@ -15,13 +15,13 @@
 		el.href = el.href.replace(/^.+:\/+.*\//i, urlcontrol + '/');
 	}
 	function send_files(id) {
-		var fs = document.getElementById("Files").files;
+		var fs = document.getElementById(id == 's' ? "Setup" : "Files").files;
 		if(fs.length == 0) return;
 		var mrk = {name:"*"+id+"*", toString: function(){return "";}};
 		upload_error = false;
-		if(id == "setup") fs[0].settings = 1; else upload(mrk);
+		if(id == 's') fs[0].settings = 1; else upload(mrk);
 		for(i = 0; i < fs.length && !upload_error; i++) upload(fs[i]);
-		if(id != "setup" && !upload_error) {
+		if(id != 's' && !upload_error) {
 			mrk.name = "*"+id+"_END*";
 			upload(mrk);
 		}
@@ -56,8 +56,8 @@
 			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
 				<td>
-					<input type="file" id="setup">
-					<p><input type="submit" value="Восстановить" onclick="send_files('setup')"></p>
+					<input type="file" id="Setup">
+					<p><input type="submit" value="Восстановить" onclick="send_files('s')"></p>
 				</td>
 			<tr><td><b>Web интерфейс контроллера</b></td></tr>
 			<tr><td>Выбор файлов для записи их в контроллер<sup>1</sup></td><td><input type="file" id="Files" multiple></td></tr>
