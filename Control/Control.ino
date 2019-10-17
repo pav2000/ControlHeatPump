@@ -1106,6 +1106,9 @@ void vReadSensor_delay8ms(int16_t ms8)
 						if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
 							MODE_HP currmode = HP.get_modWork();
 							uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_son.mode & (~pCONTINUE))); // Если направление работы ТН разное
+
+							journal.jprintf("** PROFILE. %d, %d, %d\n", currmode, _son.mode, frestart);
+
 							if(frestart) {
 								HP.sendCommand(pWAIT);
 								uint8_t i = DELAY_BEFORE_STOP_IN_PUMP + HP.Option.delayOffPump + 1;
