@@ -1162,6 +1162,6 @@ int8_t Profile::update_list(int8_t num)
 // Прочитать из EEPROM структуру: режим работы ТН (SaveON), возврат OK - успешно
 int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 {
-	return readEEPROM_I2C(I2C_PROFILE_EEPROM + dataProfile.len * dataProfile.id + sizeof(magic) + sizeof(crc16) + dataProfile.len, (byte*)_SaveOn, sizeof(SaveON)) ? ERR_LOAD_PROFILE : OK;
+	return readEEPROM_I2C(I2C_PROFILE_EEPROM + dataProfile.len * dataProfile.id + sizeof(magic) + sizeof(crc16) + sizeof(dataProfile), (byte*)_SaveOn, sizeof(SaveON)) ? ERR_LOAD_PROFILE : OK;
 }
 
