@@ -801,28 +801,27 @@ xCopyChar:
 
 // ---------------------------------------------------------------------------------------
 // Функции работы с шиной I2C под free RTOS   На шине висят 3 устройства и шину надо делить
-static byte _retEEPROM_I2C;
 // Запись в eeprom, 0 - успешно
 __attribute__((always_inline))  inline byte writeEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
-		return 0;
+		return 7;
 	}
-	_retEEPROM_I2C = eepromI2C.write(addr, values, nBytes);
+	uint32_t _ret = eepromI2C.write(addr, values, nBytes);
 	SemaphoreGive(xI2CSemaphore);
-	return _retEEPROM_I2C;
+	return _ret;
 }
 // Чтение в eeprom, 0 - успешно
 __attribute__((always_inline))   inline byte readEEPROM_I2C(unsigned long addr, byte *values, unsigned int nBytes)
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
-		return 0;
+		return 7;
 	}
-	_retEEPROM_I2C = eepromI2C.read(addr, values, nBytes);
+	uint32_t _ret = eepromI2C.read(addr, values, nBytes);
 	SemaphoreGive(xI2CSemaphore);
-	return _retEEPROM_I2C;
+	return _ret;
 }
 // ЧАСЫ  есть проблема - работают на прямую с i2c не через wire ----------------------------------
 // Часы на I2C   Чтение температуры
@@ -830,9 +829,9 @@ __attribute__((always_inline)) inline float getTemp_RtcI2C()
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
-		return 0;
+		return ERROR_TEMPERATURE;
 	}
-	static int16_t rtc_temp = rtcI2C.temperature();
+	int16_t rtc_temp = rtcI2C.temperature();
 	SemaphoreGive(xI2CSemaphore);
 	return (float) rtc_temp / 100.0;
 }
