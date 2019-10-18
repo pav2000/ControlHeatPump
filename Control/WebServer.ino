@@ -960,7 +960,7 @@ void parserGET(uint8_t thread, int8_t )
 			} else if (strcmp(str,"JOURNAL")==0)   // RESET_JOURNAL,  Команда очистки журнала (в зависимости от типа)
 			{
 #ifndef I2C_EEPROM_64KB     // журнал в памяти
-				strcat(strReturn,"Сброс системного журнала в RAM . . .");
+				strcat(strReturn,"Очистка системного журнала в RAM . . .");
 				journal.Clear();       // Послать команду на очистку журнала в памяти
 				journal.jprintf("Reset system RAM journal . . .\n");
 #else                      // Журнал в ЕЕПРОМ
@@ -975,13 +975,13 @@ void parserGET(uint8_t thread, int8_t )
 				HP.sendCommand(pRESET);        // Послать команду на сброс
 			} else if (strcmp(str,"COUNT")==0) // Команда RESET_COUNT
 			{
-				journal.jprintf("$RESET counter moto hour . . .\n");
-				strcat(strReturn,"Сброс счетчика моточасов за сезон");
+				journal.jprintf("$RESET Season Counters. . .\n");
+				strcat(strReturn,"Сброс счетчиков за сезон");
 				HP.resetCount(false);
 			} else if (strcmp(str,"ALL_COUNT")==0) // Команда RESET_ALL_COUNT
 			{
-				journal.jprintf("$RESET All counter moto hour . . .\n");
-				strcat(strReturn,"Сброс ВСЕХ счетчика моточасов");
+				journal.jprintf("$RESET All Сounters. . .\n");
+				strcat(strReturn,"Сброс ВСЕХ счетчиков");
 				HP.resetCount(true);  // Полный сброс
 			} else if (strcmp(str,"SETTINGS")==0) // RESET_SETTINGS, Команда сброса настроек HP
 			{

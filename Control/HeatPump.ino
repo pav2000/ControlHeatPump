@@ -3455,6 +3455,7 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 	else
   #endif
 	i = OneWireBus.PrepareTemp();
+	if(testMode != NORMAL) return 0;
 	if(i) {
 		for(uint8_t j = 0; j < TNUMBER; j++) {
 			if(sTemp[j].get_fAddress() && sTemp[j].get_bus() == bus) {

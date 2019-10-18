@@ -1095,35 +1095,36 @@ void vReadSensor_delay8ms(int16_t ms8)
 
 		// 3. Расписание проверка всегда, доп скобки нужны для объявления внутри блока переменных и действия goto 
 		{  // error: jump to label [-fpermissive] GCC
-		int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
-		if(_profile != SCHDLR_NotActive) {                 // Расписание активно
-			int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
-			if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
-				if(_profile == SCHDLR_Profile_off) {
-					HP.sendCommand(pWAIT);
-				} else if(HP.Prof.get_idProfile() != _profile) {
-					type_SaveON _son;
-					if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
-						MODE_HP currmode = HP.get_modWork();
-						uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_son.mode & (~pCONTINUE))); // Если направление работы ТН разное
-						if(frestart) {
-							HP.sendCommand(pWAIT);
-							uint8_t i = 10; while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
-							if(!HP.Task_vUpdate_run) continue;
+			int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
+			if(_profile != SCHDLR_NotActive) {                 // Расписание активно
+				int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;
+				if(_profile != _curr_profile && HP.isCommand() == pEMPTY) { // новый режим и ни чего не выполняется?
+					if(_profile == SCHDLR_Profile_off) {
+						HP.sendCommand(pWAIT);
+					} else if(HP.Prof.get_idProfile() != _profile) {
+						type_SaveON _son;
+						if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
+							MODE_HP currmode = HP.get_modWork();
+							uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_son.mode & (~pCONTINUE))); // Если направление работы ТН разное
+							if(frestart) {
+								HP.sendCommand(pWAIT);
+								uint8_t i = DELAY_BEFORE_STOP_IN_PUMP + HP.Option.delayOffPump + 1;
+								while(HP.isCommand()) {	_delay(1000); if(!--i) break; } // ждем отработки команды
+								if(!HP.Task_vUpdate_run) continue;
+							}
+							vTaskSuspendAll();	// без проверки
+							HP.Prof.load(_profile);
+							HP.set_profile();
+							xTaskResumeAll();
+							journal.jprintf(pP_TIME, "Profile changed to #%d\n", _profile);
+							if(frestart) HP.sendCommand(pRESUME);
 						}
-						vTaskSuspendAll();	// без проверки
-						HP.Prof.load(_profile);
-						HP.set_profile();
-						xTaskResumeAll();
-						journal.jprintf(pP_TIME, "Profile changed to #%d\n", _profile);
-						if(frestart) HP.sendCommand(pRESUME);
+					} else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {
+						HP.sendCommand(pRESUME);
 					}
-				} else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {
-					HP.sendCommand(pRESUME);
 				}
 			}
 		}
-	}
 		// 4. Отработка пауз всегда они разные в зависимости от состояния ТН!!
 delayTask:	// чтобы задача отдавала часть времени другим
 		switch (HP.get_State())  // Состояние ТН
@@ -1364,7 +1365,7 @@ void vServiceHP(void *)
 						if(HP.Prof.DailySwitch[i].Device == 0) break;
 						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
 						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
-						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)) ? fR_StatusDaily : -fR_StatusDaily);
+						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power ? fR_StatusDaily : -fR_StatusDaily);
 					}
 				}
 			}

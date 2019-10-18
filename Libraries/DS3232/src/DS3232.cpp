@@ -77,7 +77,7 @@ byte DS3232::read(tmElements_t &tm)
 
     Wire.beginTransmission(RTC_ADDR);
     Wire.write((uint8_t)RTC_SECONDS);
-    if((ret = Wire.endTransmission())) return ret;
+    if((ret = Wire.endTransmission(0))) return ret;
     //request 7 bytes (secs, min, hr, dow, date, mth, yr)
     if(Wire.requestFrom(RTC_ADDR, 7) != 7) return 1;
     tm.Second = bcd2dec(Wire.read() & ~_BV(RTC_DS1307_CH));
@@ -106,7 +106,7 @@ byte DS3232::write(tmElements_t &tm)
     Wire.write(dec2bcd(tm.Day));
     Wire.write(dec2bcd(tm.Month));
     Wire.write(dec2bcd(tm.Year) - 2000);
-    byte ret = Wire.endTransmission();
+    byte ret = Wire.endTransmission(0);
     if(ret == 0) {
     	int16_t s = readRTC(RTC_STATUS);        //read the status register
     	if(s != -1) writeRTC( RTC_STATUS, s & ~_BV(RTC_OSF) );  //clear the Oscillator Stop Flag
@@ -124,7 +124,7 @@ byte DS3232::setTime(uint8_t hour, uint8_t min, uint8_t sec)
       Wire.write(dec2bcd(sec));
       Wire.write(dec2bcd(min));
       Wire.write(dec2bcd(hour));         //sets 24 hour format (Bit 6 == 0)
-      byte ret = Wire.endTransmission();
+      byte ret = Wire.endTransmission(0);
       if(ret == 0) {
           int16_t s = readRTC(RTC_STATUS);        //read the status register
           if(s != -1 && (s & (1<<RTC_OSF))) {
@@ -145,7 +145,7 @@ byte DS3232::setDate(uint8_t date, uint8_t month, uint16_t year_NNNN)
       Wire.write(dec2bcd(date));
       Wire.write(dec2bcd(month));
       Wire.write(dec2bcd(year_NNNN - 2000));
-      return Wire.endTransmission();
+      return Wire.endTransmission(0);
 	} else return 255;
 }
 
@@ -171,7 +171,10 @@ byte DS3232::writeRTC(byte addr, byte *values, byte nBytes)
  *----------------------------------------------------------------------*/
 byte DS3232::writeRTC(byte addr, byte value)
 {
-    return ( writeRTC(addr, &value, 1) );
+	Wire.beginTransmission(RTC_ADDR);
+	Wire.write(addr);
+	Wire.write(value);
+    return Wire.endTransmission(0);
 }
 
 /*----------------------------------------------------------------------*
@@ -188,9 +191,8 @@ byte DS3232::readRTC(byte addr, byte *values, byte nBytes)
 //    if ( byte e = Wire.endTransmission() ) return e;
 //    Wire.requestFrom( (uint8_t)RTC_ADDR, nBytes );
 //    for (byte i=0; i<nBytes; i++) values[i] = Wire.read();
-    byte e;
-    if((e = Wire.endTransmissionReceive(values, nBytes, 0))) return e;
-    return 0;
+//    byte e;
+    return Wire.endTransmissionReceive(values, nBytes, 0);
 }
 
 /*----------------------------------------------------------------------*
@@ -199,10 +201,9 @@ byte DS3232::readRTC(byte addr, byte *values, byte nBytes)
  *----------------------------------------------------------------------*/
 int16_t DS3232::readRTC(byte addr)
 {
-    byte b;
-    
-    if(readRTC(addr, &b, 1)) return -1;
-    return b;
+    Wire.beginTransmission(RTC_ADDR);
+    Wire.write(addr);
+    if(!Wire.endTransmissionReceive(NULL, 1, 0)) return Wire.read(); else return -1;
 }
 
 /*----------------------------------------------------------------------*

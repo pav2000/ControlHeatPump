@@ -2891,7 +2891,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef USE_SUN_COLLECTOR
     	#define PIN_DEVICE_RSUN        46 //[R_1] Реле включения солнечного коллектора
 	#endif
-	#define PIN_DEVICE_BATH_HEATER     35 // X38.2(EEV24) -> Relay(-12V) -> подает DA9(5V) -> провод -> реле 5V -> пускатель нагревателя
+	#define PIN_DEVICE_BATH_HEATER     33 // X37.2(EEV24) -> Relay(-12V)(+12V=X38.1) -> подает DA9(5V) -> провод -> реле 5V -> пускатель нагревателя
 //  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 //  #define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
 //    #define PIN_DEVICE_R3WAY         13 //[R_10(X2)3.3V] 3-ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
