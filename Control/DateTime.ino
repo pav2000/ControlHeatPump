@@ -34,8 +34,13 @@ int8_t set_time(void)
 	journal.jprintf(" Init SAM3X8E RTC\n");
 	rtcSAM3X8.init();                             // Запуск внутренних часов
 	if(!(HP.get_updateNTP() && set_time_NTP())) { // Обновить время по NTP
-		rtcSAM3X8.set_clock(TimeToUnixTime(getTime_RtcI2C()));                // Установить внутренние часы по i2c
-		journal.jprintf(" Time updated from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+		uint32_t t = TimeToUnixTime(getTime_RtcI2C());
+		if(t) {
+			rtcSAM3X8.set_clock(t);                // Установить внутренние часы по i2c
+			journal.jprintf(" Time updated from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+		} else {
+			journal.jprintf("Error read I2C RTC\n");
+		}
 	}
 	
 	HP.set_uptime(TimeToUnixTime(getTime_RtcI2C()));                         // Запомнить время старта контроллера
@@ -47,6 +52,8 @@ int8_t set_time(void)
 // Ответ: "UTC time sec;"
 EthernetClient tTCP; // For get time
 char NTP_buffer[20];
+
+// True - OK
 boolean set_time_NTP(void)
 {
 	unsigned long secs = 0;
@@ -481,6 +488,7 @@ char*  StatDate(uint32_t idt,boolean forma,char *ret)
 static  const uint8_t dim[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
 unsigned long TimeToUnixTime(tmElements_t t) //[V]*
  {
+	if(t.Year == 0) return 0;
     uint16_t  dc;
     dc = t.Day;
     for (uint8_t i = 0; i<(t.Month-1); i++) dc += dim[i];
