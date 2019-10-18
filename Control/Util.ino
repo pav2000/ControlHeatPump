@@ -842,10 +842,11 @@ __attribute__((always_inline))   inline tmElements_t getTime_RtcI2C()
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf("getTime_RtcI2C %s", MutexI2CBuzy);
-		return ret_getTime_RtcI2C;
+		ret_getTime_RtcI2C.Year = 0;
+	} else {
+		if(rtcI2C.read(ret_getTime_RtcI2C)) ret_getTime_RtcI2C.Year = 0;
+		SemaphoreGive(xI2CSemaphore);
 	}
-	rtcI2C.read(ret_getTime_RtcI2C);
-	SemaphoreGive(xI2CSemaphore);
 	return ret_getTime_RtcI2C;
 }
 
