@@ -50,9 +50,7 @@ int8_t set_Error(int8_t _err, char *nam)
 	}
 	//   if ((HP.get_State()==pOFF_HP)&&(HP.error!=OK)) return HP.error;  // Если ТН НЕ работает, не стартует не останавливается и уже есть ошибка то останавливать нечего и выключать нечего выходим - ошибка не обновляется - важна ПЕРВАЯ ошибка
 
-	if(HP.error != OK) return HP.error;                              // Ошибка уже есть выходим
-	//   if((_err!=HP.error)||(strcmp(nam,HP.source_error)!=0))     // Если приходит ошибка отличная от предыдущей то запоминаем
-	{
+	if(HP.error == OK) {
 		HP.error = _err;
 		strcpy(HP.source_error, nam);
 		strcpy(HP.note_error, NowTimeToStr());       // Cтереть всю строку и поставить время
@@ -63,22 +61,22 @@ int8_t set_Error(int8_t _err, char *nam)
 		journal.jprintf(pP_TIME, "$ERROR source: %s, code: %d\n", nam, _err); //journal.jprintf(", code: %d\n",_err);
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) HP.save_DumpJournal(true); // вывод отладочной информации для начала  если запущена freeRTOS
 		HP.message.setMessage(pMESSAGE_ERROR, HP.note_error, 0);    // сформировать уведомление об ошибке
-	}
-	// Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
-	if(HP.get_State() != pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
-	{
-		if(HP.get_nStart() == 0) HP.sendCommand(pSTOP); // Послать команду на останов ТН  если нет попыток повторного пуск
-		else { // сюда ставить повторные пуски ТН при ошибке.
-			if(HP.num_repeat < HP.get_nStart())                    // есть еще попытки
-			{
-				HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
-			} else HP.sendCommand(pSTOP);                    // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
+		// Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
+		if(HP.get_State() != pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
+		{
+			if(HP.get_nStart() == 0) HP.sendCommand(pSTOP); // Послать команду на останов ТН  если нет попыток повторного пуск
+			else { // сюда ставить повторные пуски ТН при ошибке.
+				if(HP.num_repeat < HP.get_nStart())                    // есть еще попытки
+				{
+					HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
+				} else HP.sendCommand(pSTOP);                    // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
+			}
+			if(HP.get_State() == pSTARTING_HP) { // Ошибка во время старта
+				HP.set_HP_error_state();
+			}
 		}
-		if(HP.get_State() == pSTARTING_HP) { // Ошибка во время старта
-			HP.set_HP_error_state();
-		}
 	}
-	return HP.error;
+	return _err;
 }
 
 void HeatPump::initHeatPump()
@@ -297,7 +295,7 @@ int32_t HeatPump::save(void)
 	uint32_t addr = I2C_SETTING_EEPROM + 2; // +size all
 	Option.numProf = Prof.get_idProfile();      // Запомнить текущий профиль, его записываем ЭТО обязательно!!!! нужно для восстановления настроек
 	uint8_t tasks_suspended = TaskSuspendAll(); // Запрет других задач
-	if(error == ERR_SAVE_EEPROM) error = OK;
+	if(error == ERR_SAVE_EEPROM || error == ERR_LOAD_EEPROM || error == ERR_CRC16_EEPROM) error = OK;
 	journal.jprintf(" Save settings ");
 	DateTime.saveTime = rtcSAM3X8.unixtime();   // запомнить время сохранения настроек
 	while(1) {
@@ -356,7 +354,7 @@ int32_t HeatPump::save(void)
 	}
 	if(tasks_suspended) xTaskResumeAll(); // Разрешение других задач
 
-	if(error) {
+	if(error == ERR_SAVE_EEPROM || error == ERR_LOAD_EEPROM || error == ERR_CRC16_EEPROM) {
 		set_Error(error, (char*)__FUNCTION__);
 		return error;
 	}
