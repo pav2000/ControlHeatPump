@@ -938,9 +938,13 @@ void vReadSensor(void *)
 			{
 				oldTime = rtcSAM3X8.unixtime();
 				uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
-				HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
-				journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+				if(t) {
+					rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
+					HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
+					journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+				} else {
+					journal.jprintf("Error read I2C RTC\n");
+				}
 				oldTime = millis();
 			}
 		}
