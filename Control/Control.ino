@@ -1002,6 +1002,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		HP.sInput[SPOWER].Read(true);
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
+				HP.NO_Power = 1;
 				HP.save_motoHour();
 				Stats.SaveStats(0);
 				Stats.SaveHistory(0);
@@ -1009,7 +1010,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
 					HP.NO_Power = 2;
-				} else HP.NO_Power = 1;
+				}
 			}
 			HP.NO_Power_delay = NO_POWER_ON_DELAY_CNT;
 		} else if(HP.NO_Power) { // Включаемся

@@ -1758,8 +1758,11 @@ boolean HeatPump::CheckAvailableWork()
 // Параметр задает что делаем true-старт, false-возобновление
 int8_t HeatPump::StartResume(boolean start)
 {
-	volatile MODE_HP mod;
+	MODE_HP mod;
 
+#ifdef USE_UPS
+	if(HP.NO_Power) return OK;
+#endif
 	// Дана команда старт - но возможно надо переходить в ожидание
 	// Определяем что делать
 	int8_t profile = HP.Schdlr.calc_active_profile();
@@ -1788,18 +1791,18 @@ int8_t HeatPump::StartResume(boolean start)
 	{
 		if((get_State() == pWORK_HP) || (get_State() == pSTOPING_HP) || (get_State() == pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf(pP_DATE, "  Start . . .\n");
-		//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
-		if((ResetFC()) != OK)                                // Сброс инвертора если нужно
-		{
-			set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
-			return error;
-		}
-		eraseError();                                      // Обнулить ошибку только после сброса инвертора! иначе она может повторно возникнет при ошибке инвертора
 		//lastEEV=-1;                                      // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  не было)
 	} else {
 		if(get_State() != pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
 		journal.jprintf(pP_DATE, "  Resume . . .\n");
 	}
+	//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
+	if((ResetFC()) != OK)                                // Сброс инвертора если нужно
+	{
+		set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
+		return error;
+	}
+	eraseError();                                      // Обнулить ошибку только после сброса инвертора! иначе она может повторно возникнет при ошибке инвертора
 
 	setState(pSTARTING_HP);                              // Производится старт -  устанавливаем соответсвующее состояние
 	Status.ret = pNone;                                    // Состояние алгоритма
@@ -1901,13 +1904,8 @@ int8_t HeatPump::StartResume(boolean start)
 	if(!dSDM.get_link()) dSDM.uplinkSDM();
 #endif
 
-	if(get_errcode() != OK)                                 // ОШИБКА перед стартом
-	{
-		journal.jprintf(" Error before start compressor!\n");
-		set_Error(ERR_COMP_ERR, (char*) __FUNCTION__);
-		return error;
-	}
-	if(mod && mod <= pBOILER) { // pCOOL or pHEAT or pBOILER
+	bool start_compressor_now = mod && mod <= pBOILER; // pCOOL or pHEAT or pBOILER
+	if(start_compressor_now) {
 #ifndef DEMO   // проверка блокировки инвертора
 		if((dFC.get_present()) && (dFC.get_blockFC()))          // есть инвертор но он блокирован
 		{
@@ -1918,13 +1916,14 @@ int8_t HeatPump::StartResume(boolean start)
 			}
 		}
 #endif
-	//	if((ResetFC()) != OK)                         // Сброс инвертора если нужно
-	//	{
-	//		set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
-	//		return error;
-	//	}
-		compressorON(); // Компрессор включить если нет ошибок и надо включаться
 	}
+	if(get_errcode() != OK)                                 // ОШИБКА перед стартом
+	{
+		journal.jprintf(" Error %d before start compressor!\n", get_errcode());
+		set_Error(ERR_COMP_ERR, (char*) __FUNCTION__);
+		return error;
+	}
+	if(start_compressor_now) compressorON(); // Компрессор включить если нет ошибок и надо включаться
 
 	// 10. Сохранение состояния  -------------------------------------------------------------------------------
 	if(get_State() != pSTARTING_HP) return error;                   // Могли нажать кнопку стоп, выход из процесса запуска

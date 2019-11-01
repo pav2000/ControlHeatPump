@@ -75,48 +75,45 @@ function loadParam_after(paramid) {
 <div class="row1">
   <h2>Аналоговые датчики</h2>
     <table>
-    <thead>
-    <tr>
-      <th>Имя</th>
-      <th>Описание</th>
-      <th>Значение</th>
-      <th>Минимум</th>
-      <th>Максимум</th>
-      <th>"0" датчика</th>
-      <th>Коэффициент</th>
-      <th>Тест</th>
-      <th>Pin</th>
-      <th>ADC</th>
-      <th>Код ошибки</th>
-    </tr>
-    </thead>
+    <thead><tr>
+		<th>Имя</th>
+		<th>Описание</th>
+		<th>Значение</th>
+		<th>Минимум</th>
+		<th>Максимум</th>
+		<th>"0" датчика</th>
+		<th>Коэффициент</th>
+		<th>Тест</th>
+		<th>Pin</th>
+		<th>ADC</th>
+		<th>Код ошибки</th>
+    </tr></thead>
     <tbody id="get_listpress2"></tbody>
   </table> 
   <h3 style="">Калькулятор коэффициентов аналоговых датчиков <input style="float:right" type="submit" value="Расчёт коэффициентов"  onclick="toggletable('pcalc');"></h3>
     <table id="pcalc" style="display:none;">
-    <thead>
-    <tr>
-      <th> </th>
-      <th>АЦП [отсчеты]</th>
-      <th>Манометрическое давление [бар]</th>
-      <th> </th>
-      <th>Результат вычислений</th>
-      <th>Установить для:</th>
-    </tr>
-    <tbody> 
+    <thead><tr>
+		<th> </th>
+		<th>АЦП [отсчеты]</th>
+		<th>Манометрическое давление [бар]</th>
+		<th> </th>
+		<th>Результат вычислений</th>
+		<th>Установить для:</th>
+    </tr></thead>
+	<tbody> 
       <tr>
-        <td>Точка 1</td>
-        <td><input id="a1" type="number" min="0" max="4095" step="1" value="0"></td>
-        <td><input id="p1" type="number" min="0" max="100" step="0.01" value="0"></td>
-        <td rowspan="2"><input type="submit" value="Рассчитать коэффициенты"  onclick="calcacp();"></td>
-        <td>"0" датчика: <span id="k1"></span></td>
-        <td rowspan="2"><select id="get_listpress" onChange="setKanalog();"><option value="-" class="">--</option></select></td>
+		<td>Точка 1</td>
+		<td><input id="a1" type="number" min="0" max="4095" step="1" value="0"></td>
+		<td><input id="p1" type="number" min="0" max="100" step="0.01" value="0"></td>
+		<td rowspan="2"><input type="submit" value="Рассчитать коэффициенты"  onclick="calcacp();"></td>
+		<td>"0" датчика: <span id="k1"></span></td>
+		<td rowspan="2"><select id="get_listpress" onChange="setKanalog();"><option value="-" class="">--</option></select></td>
       </tr>
       <tr>
-        <td>Точка 2</td>
-        <td><input id="a2" type="number" min="0" max="4095" step="1" value="2500"></td>
-        <td><input id="p2" type="number" min="0" max="100" step="0.01" value="12"></td>
-        <td>Коэффициент: <span id="k2"></span></td>
+		<td>Точка 2</td>
+		<td><input id="a2" type="number" min="0" max="4095" step="1" value="2500"></td>
+		<td><input id="p2" type="number" min="0" max="100" step="0.01" value="12"></td>
+		<td>Коэффициент: <span id="k2"></span></td>
       </tr>     
     </tbody>
     </table>

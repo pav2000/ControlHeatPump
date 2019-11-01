@@ -1464,7 +1464,6 @@ xErr:
 		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
 			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, err);      // Выводим сообщение о повторном чтении
 		}
-		WDT_Restart(WDT);          // Сбросить вачдог
 		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
 	}
 	if (err==OK)
