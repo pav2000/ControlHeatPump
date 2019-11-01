@@ -565,7 +565,7 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Флаг удержания мотора шагового двигателя ЭРВ: ");  HP.dEEV.get_paramEEV((char*)eev_HOLD_MOTOR,Socket[thread].outBuf);STR_END; 
              strcat(Socket[thread].outBuf,"Закрытие ЭРВ при выключении компрессора: "); HP.dEEV.get_paramEEV((char*)eev_CLOSE,Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Всегда начинать работу ЭРВ со стратовой позиции: "); HP.dEEV.get_paramEEV((char*)eev_START,Socket[thread].outBuf);STR_END;
-             strcat(Socket[thread].outBuf,"Использование спецальную позицию ЭРВ при пуске компрессора: "); HP.dEEV.get_paramEEV((char*)eev_LIGHT_START,Socket[thread].outBuf);STR_END;
+             strcat(Socket[thread].outBuf,"Использовать спецальную позицию ЭРВ при пуске компрессора: "); HP.dEEV.get_paramEEV((char*)eev_LIGHT_START,Socket[thread].outBuf);STR_END;
          }
         #else 
             strcat(Socket[thread].outBuf,"\n  3.2 EEV absent \r\n");    
@@ -598,10 +598,10 @@ void get_txtSettings(uint8_t thread)
 	       strcat(Socket[thread].outBuf,"Стартовая частота инвертора ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_START_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
 	       
 	       strcat(Socket[thread].outBuf," - Минимальные частоты - \r\n");
-	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Mинимальная  частота инвертора при охлаждении (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_COOL,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора при нагреве ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_BOILER,Socket[thread].outBuf);STR_END; 
-	       strcat(Socket[thread].outBuf,"Минимальная  частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_USER,Socket[thread].outBuf);STR_END; 
+	       strcat(Socket[thread].outBuf,"Минимальная частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ,Socket[thread].outBuf);STR_END;
+	       strcat(Socket[thread].outBuf,"Mинимальная частота инвертора при охлаждении (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_COOL,Socket[thread].outBuf);STR_END;
+	       strcat(Socket[thread].outBuf,"Минимальная частота инвертора при нагреве ГВС (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_BOILER,Socket[thread].outBuf);STR_END;
+	       strcat(Socket[thread].outBuf,"Минимальная частота инвертора РУЧНОЙ РЕЖИМ (гц): ");  HP.dFC.get_paramFC((char*)fc_MIN_FREQ_USER,Socket[thread].outBuf);STR_END;
 	      
 	       strcat(Socket[thread].outBuf," - Максимальные частоты - \r\n");
 	       strcat(Socket[thread].outBuf,"Максимальная частота инвертора (гц): ");  HP.dFC.get_paramFC((char*)fc_MAX_FREQ,Socket[thread].outBuf);STR_END; 
@@ -1006,19 +1006,19 @@ int16_t x;
         } 
         else {strcpy(tempBuf,"FC absent");  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));}   
 
-       strcpy(tempBuf,"\n  8. Электросчетчик SDM120"); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+       strcpy(tempBuf,"\n  8. Электросчетчик"); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
          #ifdef USE_ELECTROMETER_SDM
            strcpy(tempBuf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_REPOWER,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Текущая потребляемая суммараная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Текущая потребляемая суммарная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-           strcpy(tempBuf,"Суммараная активная энергия [кВт*ч]: ");                     HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+           strcpy(tempBuf,"Суммарная активная энергия [кВт*ч]: ");                     HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
            strcpy(tempBuf,"Cостояние связи со счетчиком: ");                            HP.dSDM.get_paramSDM((char*)sdm_LINK,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
          #else
-           strcpy(tempBuf,"SDM120 absent");
+           strcpy(tempBuf,"SDM absent");
            strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));     
          #endif  
 

@@ -1761,7 +1761,10 @@ int8_t HeatPump::StartResume(boolean start)
 	MODE_HP mod;
 
 #ifdef USE_UPS
-	if(HP.NO_Power) return OK;
+	if(HP.NO_Power) {
+		HP.NO_Power = 2; // Resume after
+		return OK;
+	}
 #endif
 	// Дана команда старт - но возможно надо переходить в ожидание
 	// Определяем что делать
