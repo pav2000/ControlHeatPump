@@ -898,11 +898,11 @@ void parserGET(uint8_t thread, int8_t )
 					}
 				}
 			}
-			// "get_TrgT" -> "x.x / y.y", "get_TrgT1" -> "x.x"
+			// "get_TrgT" -> "x.x / y.y", "get_TrgT(1)" -> "x.x"
 			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
 			else {
 				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
-				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '1') {
+				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '(') {
 					strcat(strReturn, " / ");
 					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
 				}

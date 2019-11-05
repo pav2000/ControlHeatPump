@@ -7,7 +7,7 @@
 <script src='scripts.js'></script>
 <script>
 window.onload = function() {
-	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_TrgT1,get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG)");
+	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_TrgT(1),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG)");
 };
 </script>	
 </head>
@@ -27,7 +27,7 @@ window.onload = function() {
 	<dl>
 		<dt><nobr>На улице</nobr></dt><dd><span id="get_temp-tout">-</span>&deg;</dd>
 		<dt><nobr>В доме</nobr></dt><dd><span id="get_temp-tin">-</span>&deg;</dd>
-		<dt>Цель:</dt><dd><nobr><input id="get_trgt1" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_TrgT1');"></nobr></dd>
+		<dt>Цель:</dt><dd><nobr><input id="get_trgt-1" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_TrgT(1)');"></nobr></dd>
 	</dl>
 	<dl>
 		<dt><nobr>Из геоконтура</nobr></dt><dd><span id="get_temp-tevaing">-</span>&deg;</dd>
