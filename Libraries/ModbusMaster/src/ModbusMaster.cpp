@@ -526,7 +526,6 @@ uint8_t ModbusMaster::maskWriteRegister(uint16_t u16WriteAddress,
   return ModbusMasterTransaction(ku8MBMaskWriteRegister);
 }
 
-
 /**
 Modbus function 0x17 Read Write Multiple Registers.
 
@@ -574,8 +573,8 @@ uint8_t  ModbusMaster::LinkTestOmronMX2Only(uint16_t code)
   return ModbusMasterTransaction(ku8MBLinkTestOmronMX2Only);
 }
 
-
 /* _____PRIVATE FUNCTIONS____________________________________________________ */
+
 /**
 Modbus transaction engine.
 Sequence:  Последовательность:
@@ -584,11 +583,9 @@ Sequence:  Последовательность:
   - transmit request over selected serial port
   - wait for/retrieve response
   - evaluate/disassemble response
-  - return status (success/exception)
-
-@param u8MBFunction Modbus function (0x01..0xFF)
-@return 0 on success; exception number on failure
-*/
+  - return status (success/exception)*/
+// @param u8MBFunction Modbus function (0x01..0xFF)
+// @return 0 on success; exception number on failure
 uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
 {
   static uint8_t u8ModbusADU[128];      // буфер
@@ -700,6 +697,12 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
       u8ModbusADU[u8ModbusADUSize++] = highByte(_u16TransmitBuffer[1]);
       u8ModbusADU[u8ModbusADUSize++] = lowByte(_u16TransmitBuffer[1]);
       break;
+    case ku8MBCustomRequest:
+        for (i = 0; i < _u8TransmitBufferIndex; i++)
+        {
+        	u8ModbusADU[u8ModbusADUSize++] = _u16TransmitBuffer[i];
+        }
+    	break;
   }
   
    // вычисление контрольной суммы
@@ -739,85 +742,82 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
 
   // Цикл чтения из входного буфера пока нет ошибок и не прошло время ожидания
    u32StartTime = millis();   // время начала
-  // Ожидание и чтение ответа
-  while (u8BytesLeft && !u8MBStatus)
-  {
-    if (_serial->available())    // есть символы во входном буфере
-    {
+   // Ожидание и чтение ответа
+   while(u8BytesLeft && !u8MBStatus) {
+	   if(_serial->available())    // есть символы во входном буфере
+	   {
 #ifdef MODBUSMASTER_DEBUG
-    	if(u8ModbusADUSize == 0) { Serial.print("1: "); Serial.print(millis()); Serial.print(" "); }
+		   if(u8ModbusADUSize == 0) { Serial.print("1: "); Serial.print(millis()); Serial.print(" "); }
 #endif
-      u8ModbusADU[u8ModbusADUSize++] = _serial->read();
-      u8BytesLeft--;   // байт прочли уменьшили счетчик
-      u32StartTime = millis();   // время продолжения
-    } else {                        // нет символов во входном буфере
-    	if (_idle) {_idle(); }      // если разрешено - операция ожидания
-    }
+		   u8ModbusADU[u8ModbusADUSize++] = _serial->read();
+		   u8BytesLeft--;   // байт прочли уменьшили счетчик
+		   u32StartTime = millis();   // время продолжения
+	   } else {                        // нет символов во входном буфере
+		   if(_idle) {  _idle();  }      // если разрешено - операция ожидания
+	   }
 
-    // evaluate slave ID, function code once enough bytes have been read
-    // определение ID ведомого и кода функции - один байт
-    if (u8ModbusADUSize == 5) // Разбор заголовка
-    {
-      // verify response is for correct Modbus slave
-      // Сравнение ID с посланым в запросе
-      if (u8ModbusADU[0] != _u8MBSlave)
-      {
-        u8MBStatus = ku8MBInvalidSlaveID;
-        break;
-      }
-      
-      // verify response is for correct Modbus function code (mask exception bit 7)
-      // Сравнение кода функции с посланым в запросе
-      // маску обработать надо здесь!! для омрона ошибки !! маска 0х80!!!
-      else if ((u8ModbusADU[1] & 0x80) == 0x80)
-      {
-        u8MBStatus = ku8MBErrorOmronMX2+u8ModbusADU[2];  // найдена ошибка, кодируем код исключения омрона
-        break;
-      }
-      else if ((u8ModbusADU[1] & 0x7F) != u8MBFunction)
-      {
-        u8MBStatus = ku8MBInvalidFunction;
-        break;
-      }
-      
-      // check whether Modbus exception occurred; return Modbus Exception Code
-      else if (bitRead(u8ModbusADU[1], 7))
-      {
-        u8MBStatus = u8ModbusADU[2];
-        break;
-      }
-      
-      // evaluate returned Modbus function code
-      // Оценить в зависимости от функции требуемое число байт
-      if(u8MBStatus != ku8MBErrorOmronMX2) { // нет ошибки омрона
-    	  switch(u8ModbusADU[1])   // код функции
-    	  {
-    	  case ku8MBReadCoils:
-    	  case ku8MBReadDiscreteInputs:
-    	  case ku8MBReadInputRegisters:
-    	  case ku8MBReadHoldingRegisters:
-    	  case ku8MBReadWriteMultipleRegisters:
-    		  u8BytesLeft = u8ModbusADU[2];
-    		  break;
-    	  case ku8MBWriteSingleCoil:
-    	  case ku8MBWriteMultipleCoils:
-    	  case ku8MBWriteSingleRegister:
-    	  case ku8MBWriteMultipleRegisters:
-    		  u8BytesLeft = 3;
-    		  break;
-    	  case ku8MBMaskWriteRegister:
-    		  u8BytesLeft = 5;
-    		  break;
-    	  case ku8MBLinkTestOmronMX2Only:
-    		  u8BytesLeft = 3;
-    		  break;
-    	  }
-      } else  u8BytesLeft=3; // при ошибки омрона прочитать еще 3 байта
-    } // if (u8ModbusADUSize == 5)
+	   // evaluate slave ID, function code once enough bytes have been read
+	   // определение ID ведомого и кода функции - один байт
+	   if(u8ModbusADUSize == (u8MBFunction == ku8MBCustomRequest && _u8TransmitBufferIndex < 2 ? _u8TransmitBufferIndex + 3 : 5)) // Разбор заголовка
+	   {
+		   // verify response is for correct Modbus slave
+		   // Сравнение ID с посланым в запросе
+		   if(u8ModbusADU[0] != _u8MBSlave) {
+			   u8MBStatus = ku8MBInvalidSlaveID;
+			   break;
+		   }
 
-    // проверка привышения времени ожидания
-    if ((millis()-u32StartTime)>ku16MBResponseTimeout) {u8MBStatus = ku8MBResponseTimedOut;break;}
-  }   //Конец цикла приема while (u8BytesLeft && !u8MBStatus)
+		   // verify response is for correct Modbus function code (mask exception bit 7)
+		   else if((u8ModbusADU[1] & 0x80) == 0x80) {
+			   u8MBStatus = ku8MBExtendedError + u8ModbusADU[2];  // найдена ошибка, кодируем код исключения
+			   break;
+		   } else if((u8ModbusADU[1] & 0x7F) != u8MBFunction) {
+			   u8MBStatus = ku8MBInvalidFunction;
+			   break;
+		   }
+
+		   // check whether Modbus exception occurred; return Modbus Exception Code
+		   else if(bitRead(u8ModbusADU[1], 7)) {
+			   u8MBStatus = u8ModbusADU[2];
+			   break;
+		   }
+
+		   // evaluate returned Modbus function code
+		   // Оценить в зависимости от функции требуемое число байт
+		   switch(u8ModbusADU[1])   // код функции
+		   {
+		   case ku8MBReadCoils:
+		   case ku8MBReadDiscreteInputs:
+		   case ku8MBReadInputRegisters:
+		   case ku8MBReadHoldingRegisters:
+		   case ku8MBReadWriteMultipleRegisters:
+			   u8BytesLeft = u8ModbusADU[2];
+			   break;
+		   case ku8MBWriteSingleCoil:
+		   case ku8MBWriteMultipleCoils:
+		   case ku8MBWriteSingleRegister:
+		   case ku8MBWriteMultipleRegisters:
+			   u8BytesLeft = 3;
+			   break;
+		   case ku8MBMaskWriteRegister:
+			   u8BytesLeft = 5;
+			   break;
+		   case ku8MBLinkTestOmronMX2Only:
+			   u8BytesLeft = 3;
+			   break;
+		   default:
+			   if(u8MBFunction == ku8MBCustomRequest) {
+				   u8BytesLeft = _u8TransmitBufferIndex - (u8ModbusADUSize - 3);
+			   }
+		   }
+	   } // if (u8ModbusADUSize == 5)
+
+	   // проверка привышения времени ожидания
+	   if((millis() - u32StartTime) > ku16MBResponseTimeout) {
+		   u8MBStatus = ku8MBResponseTimedOut;
+		   break;
+	   }
+   }   //Конец цикла приема while (u8BytesLeft && !u8MBStatus)
 
   // verify response is large enough to inspect further
   // Проверить является ли длина ответ достаточно большой
@@ -841,7 +841,7 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
   // Разобрать ADU по словам  в буфер (данные готовы)
   if (!u8MBStatus)
   {
-    // Разбор даннх в зависимости от кода функции Modbus
+    // Разбор данных в зависимости от кода функции Modbus
     switch(u8ModbusADU[1])
     {
       case ku8MBReadCoils:
@@ -889,8 +889,9 @@ uint8_t ModbusMaster::ModbusMasterTransaction(uint8_t u8MBFunction)
         _u16ResponseBuffer[0] = word(u8ModbusADU[4], u8ModbusADU[5]);
         break;
     } //  switch(u8ModbusADU[1])
-  } //  if (!u8MBStatus)
-  else  _u16ResponseBuffer[0] = word(0,u8ModbusADU[2]); // ошибка омрона - записать код ошибки в буфер
+  } else {
+	  _u16ResponseBuffer[0] = word(0,u8ModbusADU[2]); // ошибка - записать код ошибки в буфер
+  }
 
   _u8TransmitBufferIndex = 0;
   u16TransmitBufferLength = 0;
