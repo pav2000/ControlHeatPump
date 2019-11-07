@@ -412,12 +412,7 @@ const char *noteFC_NONE = {" отсутствует в данной конфиг
 
 
 // Класс Электрический счетчик SDM -----------------------------------------------------------------------------------------------
-#ifdef USE_SDM630
-const char *nameSDM = {"SDM630"};                               // Имя счетчика
-#else
-const char *nameSDM = {"SDM120"};                               // Имя счетчика
-#endif
-const char *noteSDM = {"Электрический счетчик с modbus"};       // Описание счетчика
+const char *noteSDM = {"Электрический счетчик с Modbus"};       // Описание счетчика
 const char *noteSDM_NONE = {"Отсутствует в конфигурации"};      //
 
 // Флаги Электросчетчика
@@ -432,16 +427,33 @@ uint16_t minVoltage;                    // минимальное напряже
 uint16_t maxPower;                      // максимальная мощность (ватты) напряжение иначе ошибка если 0 то не работает
 };
 // Input register Function code 04 to read input parameters:
-#ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
+#ifdef USE_PZEM004T	// Использовать PZEM-004T v3 Modbus (UART)
+	const char *nameSDM = {"PZEM-004"};         // Имя счетчика
+	#define SDM_VOLTAGE          0x0000			// int16, 0.1V
+	#define SDM_CURRENT          0x0001			// int32, 0.001A
+	#define SDM_AC_POWER         0x0003			// int32, 0.1W
+	#define SDM_AC_ENERGY        0x0005			// int32, 1Wh
+	#define SDM_FREQUENCY        0x0007			// int16, 0.1Hz
+	#define SDM_POW_FACTOR       0x0008			// int16, 0.01
+	#define SDM_ALARM            0x0009			// 0xFFFF - Alarm, 0 - ok
+	// Holding Registers
+	#define SDM_ALARM_THRESHOLD  0x0001			// 1W
+	#define SDM_MODBUS_ADDR      0x0002			// 1..F7
+	// Special command
+	#define PWM_RESET_ENERGY	 0x42
+#else                                      // Регистры однофазного счетчика sdm120
+  #ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
+	const char *nameSDM = {"SDM630"};                               // Имя счетчика
 	// Адрес уже уменьшен на 1
-    #define SDM_VOLTAGE     42 
+    #define SDM_VOLTAGE     42
     #define SDM_CURRENT     48
     #define SDM_AC_POWER    52
     #define SDM_POWER       56
     #define SDM_RE_POWER    60
     #define SDM_POW_FACTOR  62
     #define SDM_PHASE       66
-#else                                      // Регистры однофазного счетчика sdm120
+  #else
+	const char *nameSDM = {"SDM120"};                               // Имя счетчика
     #define SDM_VOLTAGE          0x0000    // (2 слова 4 байта формат float) Line to neutral volts.  Напряжение
     #define SDM_CURRENT          0x0006    // (2 слова 4 байта формат float) Current.  Ток
     #define SDM_AC_POWER         0x000c    // (2 слова 4 байта формат float) Active power.  Активная мощность
@@ -449,29 +461,30 @@ uint16_t maxPower;                      // максимальная мощнос
     #define SDM_RE_POWER         0x0018    // (2 слова 4 байта формат float) Reactive power.  Реактивная мощность
     #define SDM_POW_FACTOR       0x001e    // (2 слова 4 байта формат float) Power factor. Коэффициент мощности
     #define SDM_PHASE            0x0024    // (2 слова 4 байта формат float) Phase angle Угол фазы
+  #endif
+	// Общие регистры
+	#define SDM_FREQUENCY        0x0046        // (2 слова 4 байта формат float) Frequency частота
+	#define SDM_IMPORT_AC_ENERGY 0x0048        // (2 слова 4 байта формат float) Import active energy Потребленная активная энергия
+	#define SDM_EXPORT_AC_ENERGY 0x004a        // (2 слова 4 байта формат float) Export active energy Переданная активная энергия
+	#define SDM_IMPORT_RE_ENERGY 0x004c        // (2 слова 4 байта формат float) Import reactive energy Потребленная реактивная энергия
+	#define SDM_EXPORT_RE_ENERGY 0x004e        // (2 слова 4 байта формат float) Export reactive energy Переданная реактивная энергия
+	#define SDM_ENERGY           0x0156        // (2 слова 4 байта формат float) Общая энергия
+
+	#define SDM_AC_ENERGY        0x0156        // (2 слова 4 байта формат float) Total active energy Суммараная активная энергия
+	#define SDM_RE_ENERGY        0x0158        // (2 слова 4 байта формат float) Total reactive energy Суммараная реактивная энергия
+
+	// Modbus Protocol Holding Registers and Digital meter set up
+	// Function code 10 to set holding parameter ,function code 03 to read holding parameter
+	#define SDM_WIDTH_RELAY      0x000c        // (2 слова 4 байта формат float) Write relay on period in Width milliseconds: 60, 100 or 200, Ширина импульса на импульстом выходе
+	#define SDM_PARITY_STOP      0x0012        // (2 слова 4 байта формат float) Write the network port parity/stop bits for MODBUS Protocol, where: 0 = One stop bit and no parity, Network Parity Stop default. 1 = One stop bit and even parity. 2 = One stop bit and odd parity.3 = Two stop bits and no parity. Requires a restart to become effective.
+	#define SDM_ADR_MODBUS       0x0014        // (2 слова 4 байта формат float) Адрес на шине модбас
+	#define SDM_BAUD_RATE        0x001C        // (2 слова 4 байта формат float) Write the network port baud rate for MODBUS Protocol, where:0 = 2400 bps. 1 = 4800 bps.2 = 9600 bps( default) 5=1200 bps Requires a restart to become effective Data Format:float
+	#define SDM_CT_CURRENT       0x0032        // (2 слова 4 байта формат float) CT Primary current Ranges from 1-2000, Default ID is 5
+	#define SDM_RELAY_MODE       0x0056        // (2 слова 4 байта формат HEX) 0001: Import active energy, 0002: Import + export active energy, 0004: Export active energy, (default). 0005: Import reactive energy, 0006: Import + export reactive energy, 0008: Export reactive energy,
+	#define SDM_TIME_SCROLL      0xf500        // (2 слова 4 байта формат BCD) Time of scroll display Data Format: BCD 0-30s Default 0:does not display in turns
+	#define SDM_RELAY_CONST      0xf910        // (2 слова 4 байта формат HEX) Pulse constant Data Format:Hex 0000: 0.001kwh(kvarh)/imp (default) 0001: 0.01kwh(kvarh)/imp 0002: 0.1kwh(kvarh)/imp 0003: 1kwh(kvarh)/imp
+	#define SDM_MEASURE_MODE     0xf920        // (2 слова 4 байта формат HEX) Measurement mode Data Format:Hex 0001:mode 1(total = import) 0002:mode 2 (total = import + export)(default) 0003:mode 3 (total = import - export)
 #endif
-// Общие регистры
-#define SDM_FREQUENCY        0x0046        // (2 слова 4 байта формат float) Frequency частота
-#define SDM_IMPORT_AC_ENERGY 0x0048        // (2 слова 4 байта формат float) Import active energy Потребленная активная энергия
-#define SDM_EXPORT_AC_ENERGY 0x004a        // (2 слова 4 байта формат float) Export active energy Переданная активная энергия
-#define SDM_IMPORT_RE_ENERGY 0x004c        // (2 слова 4 байта формат float) Import reactive energy Потребленная реактивная энергия
-#define SDM_EXPORT_RE_ENERGY 0x004e        // (2 слова 4 байта формат float) Export reactive energy Переданная реактивная энергия
-#define SDM_ENERGY           0x0156        // (2 слова 4 байта формат float) Общая энергия
-
-#define SDM_AC_ENERGY        0x0156        // (2 слова 4 байта формат float) Total active energy Суммараная активная энергия
-#define SDM_RE_ENERGY        0x0158        // (2 слова 4 байта формат float) Total reactive energy Суммараная реактивная энергия
-
-// Modbus Protocol Holding Registers and Digital meter set up
-// Function code 10 to set holding parameter ,function code 03 to read holding parameter
-#define SDM_WIDTH_RELAY      0x000c        // (2 слова 4 байта формат float) Write relay on period in Width milliseconds: 60, 100 or 200, Ширина импульса на импульстом выходе
-#define SDM_PARITY_STOP      0x0012        // (2 слова 4 байта формат float) Write the network port parity/stop bits for MODBUS Protocol, where: 0 = One stop bit and no parity, Network Parity Stop default. 1 = One stop bit and even parity. 2 = One stop bit and odd parity.3 = Two stop bits and no parity. Requires a restart to become effective.
-#define SDM_ADR_MODBUS       0x0014        // (2 слова 4 байта формат float) Адрес на шине модбас
-#define SDM_BAUD_RATE        0x001C        // (2 слова 4 байта формат float) Write the network port baud rate for MODBUS Protocol, where:0 = 2400 bps. 1 = 4800 bps.2 = 9600 bps( default) 5=1200 bps Requires a restart to become effective Data Format:float
-#define SDM_CT_CURRENT       0x0032        // (2 слова 4 байта формат float) CT Primary current Ranges from 1-2000, Default ID is 5
-#define SDM_RELAY_MODE       0x0056        // (2 слова 4 байта формат HEX) 0001: Import active energy, 0002: Import + export active energy, 0004: Export active energy, (default). 0005: Import reactive energy, 0006: Import + export reactive energy, 0008: Export reactive energy,
-#define SDM_TIME_SCROLL      0xf500        // (2 слова 4 байта формат BCD) Time of scroll display Data Format: BCD 0-30s Default 0:does not display in turns
-#define SDM_RELAY_CONST      0xf910        // (2 слова 4 байта формат HEX) Pulse constant Data Format:Hex 0000: 0.001kwh(kvarh)/imp (default) 0001: 0.01kwh(kvarh)/imp 0002: 0.1kwh(kvarh)/imp 0003: 1kwh(kvarh)/imp
-#define SDM_MEASURE_MODE     0xf920        // (2 слова 4 байта формат HEX) Measurement mode Data Format:Hex 0001:mode 1(total = import) 0002:mode 2 (total = import + export)(default) 0003:mode 3 (total = import - export)
 
 class devSDM
 {
@@ -527,6 +540,8 @@ class devModbus
   public:  
     int8_t initModbus();                                                                // Инициализация Modbus и проверка связи возвращает ошибку
      __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fModbus);} // Наличие Modbus в текущей конфигурации
+    int8_t readInputRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret);
+    int8_t readInputRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret);				   // LITTLE-ENDIAN!
     int8_t readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret);                  // Получить значение 2-x (Modbus function 0x04 Read Input Registers) регистров (4 байта) в виде float возвращает код ошибки данные кладутся в ret
     int8_t readHoldingRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret);                 // Получить значение регистра (2 байта) МХ2 в виде целого  числа возвращает код ошибки данные кладутся в ret
     int8_t readHoldingRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret);                // Получить значение 2-x регистров (4 байта) МХ2 в виде целого числа возвращает код ошибки данные кладутся в ret

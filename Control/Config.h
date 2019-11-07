@@ -2633,6 +2633,7 @@ const char *noteTemp[] = {"Температура улицы",
  	#define NEXTION                 // Разрешить использование дисплея. ЗАКОМЕНТИРУЙТЕ эту строку, что бы не использовать дисплей
     #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
     #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
+//	#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
     #define EXTERNAL_AREF     	  	// Использование внешней опоры для АЦП
     #ifdef EXTERNAL_AREF        	// Какая опора для АЦП используется
       #define SAM3X_ADC_REF  3.00   // Используется внешняя опора ADR4530ARZ

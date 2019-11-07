@@ -1379,10 +1379,21 @@ int8_t devSDM::initSDM()
 // Выводит сообщеиня в журнал и устанавливает флаг связи
 boolean devSDM::uplinkSDM()
 {
-	float band;
 	int8_t i;
 	for(i = 0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
+#ifdef USE_PZEM004T
+		uint16_t tmp;
+		if(Modbus.readHoldingRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp) == OK) {
+			SETBIT1(flags, fSDMLink);
+			journal.jprintf("%s, found, link OK, modbus address:%d\n", name, SDM_MODBUS_ADR);
+			return true;
+		} else {
+			SETBIT0(flags, fSDMLink);
+			journal.jprintf("%s, no c999onnect.\n", name);
+		}
+#else
+		float band;
 		if((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR, SDM_BAUD_RATE, &band) == OK) && (band == SDM_SPEED)) {
 			SETBIT1(flags, fSDMLink);
 			journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n", name, band, SDM_MODBUS_ADR);
@@ -1391,6 +1402,7 @@ boolean devSDM::uplinkSDM()
 			SETBIT0(flags, fSDMLink);
 			journal.jprintf("%s, no connect.\n", name);
 		}
+#endif
 		_delay(SDM_DELAY_REPEAD);
 		WDT_Restart(WDT);                                                            // Сбросить вачдог
 	}
@@ -1402,6 +1414,9 @@ boolean devSDM::uplinkSDM()
 // При программировании параметры сразу начинают рабоать
 boolean  devSDM::progConnect()
 {
+#ifdef USE_PZEM004T
+	return true;
+#else
   float band; 
   journal.jprintf("%s: Setting band rate and modbus address.\n",name); 
   // 1. Проверка
@@ -1426,12 +1441,20 @@ boolean  devSDM::progConnect()
   // 6. Вывод результатов
   if (err==OK) { journal.jprintf("%s: Programming is Ok\n",name); uplinkSDM(); return true;}  // Надо сбросить счетчик
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
+#endif
 }                           
 
 // Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
 {
+#ifdef USE_PZEM004T
+	static union {
+		uint32_t tmp;
+		uint16_t tmp16[2];
+	};
+#else
 	static float tmp;
+#endif
 	int8_t i;
 	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
 	// Чтение состояния счетчика,
@@ -1440,19 +1463,39 @@ int8_t devSDM::get_readState(uint8_t group)
 	{
 		// Читаем значения счетчика
 		if(group == 0) {
-			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE,&tmp);   // Напряжение
+#ifdef USE_PZEM004T
+			err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
+			if(err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
+#else
+			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp);   // Напряжение
 			if(err==OK) { Voltage=tmp; group = 1; } else goto xErr;
+#endif
 		}
 		if(group == 1) {
-			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER,&tmp);  // Активная мощность
+#ifdef USE_PZEM004T
+			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
+			if(err==OK) AcPower = tmp / 10; else goto xErr;
+#else
+			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
 			if(err==OK) AcPower=tmp; else goto xErr;
+#endif
 		} else if(group == 2) {
-			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT,&tmp);   // Ток
+#ifdef USE_PZEM004T
+			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
+			if(err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
+#else
+			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
 			if(err == OK) { Current=tmp; group = 3; } else goto xErr;
+#endif
 		}
 		if(group == 3) {
-			err=Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY,&tmp); // Суммарная активная энергия
+#ifdef USE_PZEM004T
+			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
 			if(err==OK) AcEnergy=tmp;
+#else
+			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
+			if(err==OK) AcEnergy=tmp;
+#endif
 		}
 		if(err == OK) break;
 xErr:
@@ -1483,7 +1526,14 @@ xErr:
 // Получить параметр счетчика в виде строки
 char* devSDM::get_paramSDM(char *var, char *ret)           
 {
+#ifdef USE_PZEM004T
+	static union {
+		uint32_t tmp;
+		uint16_t tmp16[2];
+	};
+#else
    static float tmp;
+#endif
 
    if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                         }else      // Имя счетчика
    if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                         }else      // Описание счетчика
@@ -1502,20 +1552,43 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 //			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
 //			   _ftoa(ret, tmp, 2);																			   }else       // Ток
 		   if(strcmp(var,sdm_REPOWER)==0){
+#ifdef USE_PZEM004T
+			   strcat(ret, "-");
+#else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
-			   _ftoa(ret, tmp, 2);                                     											}else      // Реактивная мощность
-		   if(strcmp(var,sdm_POWER)==0){
+			   _ftoa(ret, tmp, 2);
+#endif
+	   	   } else if(strcmp(var,sdm_POWER)==0){
+#ifdef USE_PZEM004T
+			   strcat(ret, "-");
+#else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
-			   _ftoa(ret, tmp, 2);																				}else      // Полная мощность
-		   if(strcmp(var,sdm_POW_FACTOR)==0){
+			   _ftoa(ret, tmp, 2);
+#endif
+	   	   } else if(strcmp(var,sdm_POW_FACTOR)==0){
+#ifdef USE_PZEM004T
+			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp16[0]);
+			   _ftoa(ret, tmp16[0] / 100, 2);
+#else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
-			   _ftoa(ret, tmp, 2);																				}else      // Коэффициент мощности
-		   if(strcmp(var,sdm_PHASE)==0){
+			   _ftoa(ret, tmp, 2);
+#endif
+   	   	   } else if(strcmp(var,sdm_PHASE)==0){
+#ifdef USE_PZEM004T
+			   strcat(ret, "-");
+#else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
-			   _ftoa(ret, tmp, 2);                                       										}else      // Угол фазы (градусы)
-		   if(strcmp(var,sdm_FREQ)==0){
+			   _ftoa(ret, tmp, 2);
+#endif
+		   } else if(strcmp(var,sdm_FREQ)==0){
+#ifdef USE_PZEM004T
+			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp16[0]);
+			   _ftoa(ret, tmp16[0] / 10, 2);
+#else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
-			   _ftoa(ret, tmp, 2);																				}         // Частота
+			   _ftoa(ret, tmp, 2);
+#endif
+   	   	   }
 	   }
 	   return ret;
    }
@@ -1608,6 +1681,47 @@ int8_t devModbus::readInputRegistersFloat(uint8_t id, uint16_t cmd, float *ret)
 		SemaphoreGive(xModbusSemaphore);
 		return err = translateErr(result);
 	}
+}
+
+int8_t devModbus::readInputRegisters16(uint8_t id, uint16_t cmd, uint16_t *ret)
+{
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		return err = ERR_485_BUZY;
+	}
+	RS485.set_slave(id);
+	uint8_t result = RS485.readInputRegisters(cmd, 1);
+	if(result == RS485.ku8MBSuccess) {
+		*ret = RS485.getResponseBuffer(0);
+		err = OK;
+	} else {
+		err = translateErr(result);
+	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
+}
+
+// LITTLE-ENDIAN! 0x04
+int8_t devModbus::readInputRegisters32(uint8_t id, uint16_t cmd, uint32_t *ret)
+{
+	// Если шедулер запущен то захватываем семафор
+	if(SemaphoreTake(xModbusSemaphore, (MODBUS_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) // Захват мютекса потока или ОЖИДАНИНЕ MODBUS_TIME_WAIT
+	{
+		journal.jprintf((char*) cErrorMutex, __FUNCTION__, MutexModbusBuzy);
+		return err = ERR_485_BUZY;
+	}
+	RS485.set_slave(id);
+	uint8_t result = RS485.readInputRegisters(cmd, 2);
+	if(result == RS485.ku8MBSuccess) {
+		*ret = (RS485.getResponseBuffer(1) << 16) | RS485.getResponseBuffer(0);
+		err = OK;
+	} else {
+		err = translateErr(result);
+	}
+	SemaphoreGive(xModbusSemaphore);
+	return err;
 }
 
 // Получить значение регистра (2 байта) в виде целого  числа возвращает код ошибки данные кладутся в ret
