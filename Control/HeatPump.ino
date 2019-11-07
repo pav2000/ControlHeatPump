@@ -1579,7 +1579,7 @@ boolean HeatPump::switchBoiler(boolean b)
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 			Pump_HeatFloor(true);
-			if (Status.modWork == pBOILER)  return onBoiler; // Идет сброс тепла паузу на переключение делать не надо
+		 
 		} else { // пауза ИЛИ работа дома не задействована - все выключить
 			Pump_HeatFloor(false);
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
@@ -2843,6 +2843,7 @@ boolean HeatPump::Switch_R4WAY(boolean fCool)
 //	journal.jprintf(" Pressure equalization...\n");
 //	_delay(Option.delayR4WAY * 1000);                                   // Пауза 120 секунд для выравнивания давлений
 #else // R4WAY
+    boolean ret = false; 
 	if(fCool) journal.jprintf("No 4-way valve avalilable!\n");
 #endif
 	return ret;
