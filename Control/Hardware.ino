@@ -735,7 +735,7 @@ int16_t devEEV::set_Overheat(boolean fHeating) // int16_t rto,int16_t out, int16
 	switch(_data.ruleEEV)  // определение доступности элемента
 	{
 #if defined(TEVAIN) && defined(TEVAOUT)
-	case TEVAOUT_TEVAIN:
+	case TEVAOUT_TEVAIN:  // используется TEVAOUT TEVAIN + TCONIN или TCOMPIN иначе ошибка
 		/* [xpik_nsk]:
 		 * Перегрев = Т2 - (Т1 - Т (дельта P на испарителе), где
 		 * Т2 - температура на выходе испарителя,
@@ -755,8 +755,8 @@ xTEVAOUT_TEVAIN:
 		}
 		break;
 #endif
-#if defined(TEVAIN) && defined(TCOMPIN)
-	case TCOMPIN_TEVAIN:
+#if defined(TEVAIN) && defined(TCOMPIN) 
+	case TCOMPIN_TEVAIN:   // используется TEVAIN TCOMPIN иначе ошибка
 		if((HP.sTemp[TCOMPIN].get_present())&&(HP.sTemp[TEVAIN].get_present())) {
 xTCOMPIN_TEVAIN:
 			Overheat = HP.sTemp[TCOMPIN].get_Temp() - (fHeating ? HP.sTemp[TEVAIN].get_Temp() : HP.sTemp[TCONOUT].get_Temp()) + _data.Correction;
@@ -766,7 +766,7 @@ xTCOMPIN_TEVAIN:
 		}
 		break;
 #endif
-	case TEVAOUT_PEVA:
+	case TEVAOUT_PEVA: // используется TEVAOUT PEVA + TCONIN или TCOMPIN иначе ошибка
 		if((HP.sTemp[TEVAOUT].get_present()) && tPEVA != -32767) {
 xTEVAOUT_PEVA:
 #if defined(TCONIN)
@@ -780,7 +780,7 @@ xTEVAOUT_PEVA:
 		}
 		break;
 #ifdef TCOMPIN
-	case TCOMPIN_PEVA:
+	case TCOMPIN_PEVA:// используется TCOMPIN PEVA иначе ошибка
 		if(HP.sTemp[TCOMPIN].get_present() && tPEVA != -32767) {
 xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - tPEVA + _data.Correction;
 		} else {
@@ -790,9 +790,9 @@ xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - tPEVA + _data.Correctio
 		break;
 #endif
 #if defined(TEVAIN)
-	case TABLE:
+	case TABLE: // используется TEVAIN иначе ошибка
 #endif
-	case MANUAL:
+	case MANUAL: // используется (TEVAOUT PEVA + TCONIN или TCOMPIN)или(TCOMPIN PEVA)или(TEVAOUT TEVAIN + TCONIN или TCOMPIN)или(TEVAIN TCOMPIN)  иначе перегрев 0
 	default:
 		if((HP.sTemp[TEVAOUT].get_present()) && tPEVA != -32767) goto xTEVAOUT_PEVA;
 		else
@@ -809,8 +809,9 @@ xTCOMPIN_PEVA: Overheat = HP.sTemp[TCOMPIN].get_Temp() - tPEVA + _data.Correctio
 		else
 #endif
 		{
-			err = ERR_TYPE_OVERHEAT;
-			set_Error(err, name);
+			//err = ERR_TYPE_OVERHEAT;
+			//set_Error(err, name);
+			Overheat = 0;  // Для мануала если нужных датчиков нет, перегрев устанавливается в 0 но ошибка не генерится
 		}
 		break;
 	}

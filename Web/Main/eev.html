@@ -210,7 +210,7 @@ window.onload = function() {
  <table>
  <thead>
   <tr>
-	<th>Формула перегрева</th>
+	<th>Формула перегрева<sup>1</sup></th>
 	<th>Положение, шаги</th>
 	<th>Текущий перегрев</th>
 	<th>Температура кипения</th>
@@ -232,7 +232,15 @@ window.onload = function() {
 	<td nowrap><input id="get_peev-manual" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_pEEV(MANUAL)')"></td>
   </tr>
  </tbody>
- </table>            
+ </table>
+ 	1. В зависимости от выбранной формулы нужны определенные датчики, иначе возникает ошибка ERR_TYPE_OVERHEAT (-38):<br/>
+         TEVAOUT_TEVAIN: нужно TEVAOUT TEVAIN + (TCONIN или TCOMPIN)<br/>
+         TCOMPIN_TEVAIN: нужно TCOMPIN TEVAIN<br/>
+         TEVAOUT_PEVA: нужно TEVAOUT PEVA + (TCONIN или TCOMPIN)<br/>
+         TCOMPIN_PEVA: нужно TCOMPIN PEVA<br/>
+         TABLE: нужно TEVAIN и (TEVAOUT PEVA + (TCONIN или TCOMPIN)) или (TCOMPIN PEVA) или (TEVAOUT TEVAIN + (TCONIN или TCOMPIN)) или (TEVAIN TCOMPIN)<br/>
+         MANUAL: нужно (TEVAOUT PEVA + (TCONIN или TCOMPIN)) или (TCOMPIN PEVA) или (TEVAOUT TEVAIN + (TCONIN или TCOMPIN)) или (TEVAIN TCOMPIN) иначе перегрев устанавливается в 0 <br/>
+
 <br>
 <h2 name="get_peev-dir-unhide">Параметры ПИД ЭРВ </h2><h2 name="get_peev-dir-hide">Прямое управление ЭРВ</h2>
 <input type="submit" value="?" onclick='location.assign("eev-sethelp.html")' style="float:right;">
