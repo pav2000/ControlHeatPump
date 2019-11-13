@@ -1562,7 +1562,7 @@ boolean HeatPump::switchBoiler(boolean b)
 	journal.printf(" swBoiler(%d): %X, mW:%d\n", b, onBoiler, get_modWork());
 #endif
 #ifdef R3WAY
-	dRelay[R3WAY].set_Relay(b);            // Установить в нужное полежение 3-х ходового
+	dRelay[R3WAY].set_Relay(b);            // Установить в нужное положение 3-х ходового
 	Pump_HeatFloor(b);
 #else // Нет трехходового - схема с двумя насосами
 	// ставим сюда код переключения ГВС/отопление в зависимости от onBoiler=true - ГВС
@@ -1585,7 +1585,7 @@ boolean HeatPump::switchBoiler(boolean b)
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
 		}
 	}
-#endif
+#endif // закрытие Нет трехходового - схема с двумя насосами
 	if(onBoiler && get_State() == pWORK_HP) { // Если грели бойлер и теперь ТН работает, то обеспечить дополнительное время (delayBoilerSW сек) для прокачивания гликоля - т.к разные уставки по температуре подачи
 		journal.jprintf(" Pause %ds, Boiler->House\n", HP.Option.delayBoilerSW);
 		_delay(HP.Option.delayBoilerSW * 1000); // выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
