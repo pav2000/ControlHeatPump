@@ -105,6 +105,8 @@ boolean  Charts_when_comp_on = false;
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
 #define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 #define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
+#define fBackupPower        14				// Использование резервного питания от генератора (ограничение мощности) 
+
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -133,6 +135,7 @@ struct type_optionHP
  int16_t  SunTDelta;					// Дельта температур для включения, сотые градуса
  int16_t  SunGTDelta;					// Дельта температур жидкости для выключения, сотые градуса
  int16_t  SunRegGeoTempGOff;			// Температура жидкости для выключения регенерации
+ uint16_t maxBackupPower;		     	// Максимальная мощность при питании от генератора (Вт)
 };// __attribute__((packed));
 
 
@@ -355,7 +358,7 @@ class HeatPump
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // получить флаг записи состояния
    uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
    boolean  set_WebStoreOnSPIFlash(boolean f) {if(f)SETBIT1(Option.flags,fWebStoreOnSPIFlash);else SETBIT0(Option.flags,fWebStoreOnSPIFlash);return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// установить флаг хранения веб морды на флеш диске
-   
+   uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
    
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
@@ -513,6 +516,7 @@ class HeatPump
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
     int8_t StopWait(boolean stop);        // Функция Останова/Ожидания ТН  - возвращает код ошибки
     int8_t ResetFC();                     // Сброс инвертора если он стоит в ошибке, провиряется наличие инвертора и прорверка ошибки
+    int16_t getPower(void);               // Получить мощность потребления ТН (нужно при ограничении мощности при питании от резерва)
 
     MODE_HP get_Work();                   // Что надо делать
     boolean configHP(MODE_HP conf);       // Концигурация 4-х, 3-х ходового крана и включение насосов, выход - разрешение запуска компрессора

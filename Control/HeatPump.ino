@@ -714,6 +714,8 @@ void HeatPump::resetSettingHP()
 	Option.SunTDelta = SUN_TDELTA;
 	Option.SunGTDelta = SUNG_TDELTA;
 #endif
+    SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
+	Option.maxBackupPower=1000;          // Максимальная мощность при питании от генератора (Вт)
 
 	// инициализация статистика дополнительно помимо датчиков
 	ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
@@ -1000,9 +1002,11 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((x>=0.0)&&(x<=6000.0)) {Option.delayRepeadStart=x; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
    if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOn=x; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
    if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOff=x; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-   if(strcmp(var,option_DELAY_R4WAY)==0)        {if ((x>=0.0)&&(x<=600.0)) {Option.delayR4WAY=x; return true;} else return false;}else           // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_R4WAY)==0)      {if ((x>=0.0)&&(x<=600.0)) {Option.delayR4WAY=x; return true;} else return false;}else         // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
    if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerSW=x; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   if(strcmp(var,option_fBackupPower)==0)     {if (x==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (x==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;}else // флаг Использование резервного питания от генератора (ограничение мощности) 
+   if(strcmp(var,option_maxBackupPower)==0)   {if ((x>=0)&&(x<=10000)) {Option.maxBackupPower=x; return true;} else return false;}else       // Максимальная мощность при питании от генератора
    return false; 
 }
 
@@ -1046,9 +1050,11 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_DELAY_REPEAD_START)==0){return _itoa(Option.delayRepeadStart,ret);}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
    if(strcmp(var,option_DELAY_DEFROST_ON)==0) {return _itoa(Option.delayDefrostOn,ret);}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
    if(strcmp(var,option_DELAY_DEFROST_OFF)==0){return _itoa(Option.delayDefrostOff,ret);}else   // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-   if(strcmp(var,option_DELAY_R4WAY)==0)        {return _itoa(Option.delayR4WAY,ret);}else          // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_R4WAY)==0)      {return _itoa(Option.delayR4WAY,ret);}else        // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
    if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return _itoa(Option.delayBoilerSW,ret);}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
-   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);} // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   if(strcmp(var,option_fBackupPower)==0)     {if(GETBIT(Option.flags,fBackupPower)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);}else // флаг Использование резервного питания от генератора (ограничение мощности) 
+   if(strcmp(var,option_maxBackupPower)==0)   {return _itoa(Option.maxBackupPower,ret);}else    // Максимальная мощность при питании от генератора
    return  strcat(ret,(char*)cInvalid);                
 }
 
@@ -1461,7 +1467,7 @@ boolean HeatPump::boilerAddHeat()
 {
 	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
 	int16_t T = sTemp[TBOILER].get_Temp();
-	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер
+	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella)) && (!GETBIT(Option.flags, fBackupPower))) // Сальмонелла не взирая на расписание если включен бойлер и не питание от резервного источника
 	{
 		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
 			startSallmonela = rtcSAM3X8.unixtime();
@@ -1492,20 +1498,23 @@ boolean HeatPump::boilerAddHeat()
 		startSallmonela = 0;
 		journal.jprintf(" Off salmonella\n");
 	}
-
+	
+	// Догрев бойлера
+	if (GETBIT(Option.flags,fBackupPower))  flagRBOILER = false;  // если переключение на ходу на резервный источник то сбросить догрев бойлера
+    
 	if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
-	{
+	{   
 		if(GETBIT(Prof.Boiler.flags, fTurboBoiler))  // Если турбо режим, то повторяем за Тепловым насосом (грет или не греть)
 		{
 			if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
-		}
+		} 
 		if(GETBIT(Prof.Boiler.flags, fAddHeating))  // Включен догрев
-		{
+		{ 
 			int16_t b_target = get_boilerTempTarget();
 			if((T < b_target - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
-				flagRBOILER = true;
+			    if (!GETBIT(Option.flags,fBackupPower)) flagRBOILER = true; else  flagRBOILER = false;    // Догрев только если нет питания от резервного источника
 				return false;
-			}
+			}  
 			if(!flagRBOILER || onBoiler) return false; // флажка нет или работет бойлер, но догрев не включаем
 			else {
 				if(T < b_target && (T >= Prof.Boiler.tempRBOILER || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
@@ -1572,6 +1581,7 @@ boolean HeatPump::switchBoiler(boolean b)
 #endif
 		Pump_HeatFloor(false);		 // выключить насос ТП
 		dRelay[RPUMPO].set_OFF();    // файнкойлы выключить
+		
 	} else { // Переключение с ГВС на Отопление/охлаждение идет анализ по режиму работы дома
 #ifdef RPUMPBH
 		if(!GETBIT(flags, fHP_BoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();    // ГВС надо выключить
@@ -1579,7 +1589,7 @@ boolean HeatPump::switchBoiler(boolean b)
 		if((Status.modWork != pOFF) && (get_modeHouse() != pOFF) && (get_State() != pSTOPING_HP)) { // Если не пауза И отопление/охлаждение дома НЕ выключено И нет процесса выключения ТН то надо включаться
 			dRelay[RPUMPO].set_ON();     // файнкойлы
 			Pump_HeatFloor(true);
-		 
+		//    if (Status.modWork == pBOILER)  return onBoiler; // Идет сброс тепла паузу на переключение делать не надо ***
 		} else { // пауза ИЛИ работа дома не задействована - все выключить
 			Pump_HeatFloor(false);
 			dRelay[RPUMPO].set_OFF();     // файнкойлы
@@ -2050,7 +2060,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			flagRBOILER = false;
 			return pCOMP_OFF;
 		}
-		dRelay[RBOILER].set_ON();
+	if (!GETBIT(Option.flags, fBackupPower)) dRelay[RBOILER].set_ON();  // Включение ТЭНа бойлера если не питание от резервного источника
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler)) return pCOMP_OFF;
 	} else {
 		if(dRelay[RBOILER].get_Relay()) set_HeatBoilerUrgently(false);
@@ -2178,7 +2188,20 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			Status.ret=pBp2; return pCOMP_ON; // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		} else if ((dFC.isfOnOff())&&(!(onBoiler))) return pCOMP_OFF;// компрессор рабатает но ГВС греть не надо  - уходим без изменения состояния
 		//    if (T<(TRG-Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;  }    // Температура ниже гистрезиса надо включаться!
+		
 		// ПИД ----------------------------------
+        // Питание от резервного источника - ограничение мощности потребления от источника - это жесткое ограничение, по этому оно первое
+        else if((GETBIT(Option.flags,fBackupPower))&&(getPower()>get_maxBackupPower())) { // Включено ограничение мощности и текущая мощность уже выше ограничения - надо менять частоту
+        #ifdef DEBUG_MODWORK
+		journal.jprintf("%s %.2f (BACKUP POWER: %.3f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,(float)getPower()/1000.0); // КИЛОВАТЫ
+        #endif
+    	if (dFC.get_target()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  { Status.ret=pBp29; return pCOMP_OFF; }   // Уменьшать дальше некуда, выключаем компрессор
+		Status.ret=pBp28;
+		dFC.set_target(dFC.get_target()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());  // Уменьшить частоту 
+		resetPID();
+		return pCOMP_NONE; 
+        }		
+        
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
 #if defined(SUPERBOILER) && defined(PCON)
 		else if ((dFC.isfOnOff())&&(PressToTemp(PCON)>Prof.Boiler.tempIn-dFC.get_dtTempBoiler())) // Ограничение, по температуре нагнетания для SUPERBOILER.
@@ -2245,6 +2268,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		//   else if (((TRG-Prof.Boiler.dTemp)>T)&&(!(dFC.isfOnOff())&&(Status.modWork!=pBOILER))) {Status.ret=7; return pCOMP_ON;} // Достигнут гистерезис и компрессор еще не рабоатет на ГВС - Старт бойлера
 		else if(!(dFC.isfOnOff())) {Status.ret=pBp5; return pCOMP_OFF; }                                                          // Если компрессор не рабоатет то ничего не делаем и выходим
 
+        
 		else if(xTaskGetTickCount()-updatePidBoiler<HP.get_timeBoiler()*1000)   {Status.ret=pBp11; return pCOMP_NONE;  }             // время обновления ПИДа еше не пришло
 		// Дошли до сюда - ПИД на подачу. Компресор работает
 		updatePidBoiler=xTaskGetTickCount();
@@ -2353,6 +2377,18 @@ MODE_COMP HeatPump::UpdateHeat()
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (бойлер нагрет) ВКЛ
 		else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }     // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
 //		else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(!get_onBoiler())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (компрессор работает, но это не бойлер) ВКЛ (в принципе это лишнее)
+       
+        // Питание от резервного источника - ограничение мощности потребления от источника - это жесткое ограничение, по этому оно первое
+	    else if((GETBIT(Option.flags,fBackupPower))&&(getPower()>get_maxBackupPower())) { // Включено ограничение мощности и текущая мощность уже выше ограничения - надо менять частоту
+        #ifdef DEBUG_MODWORK
+		journal.jprintf("%s %.2f (BACKUP POWER: %.3f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,(float)getPower()/1000.0); // КИЛОВАТЫ
+        #endif
+    	if (dFC.get_target()-dFC.get_stepFreq()<dFC.get_minFreq())  { Status.ret=pHp29; return pCOMP_OFF; }   // Уменьшать дальше некуда, выключаем компрессор
+		Status.ret=pHp28;
+		dFC.set_target(dFC.get_target()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq());  // Уменьшить частоту 
+		resetPID();
+		return pCOMP_NONE; 
+        }
 
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
 		else if ((dFC.isfOnOff())&&(FEED>Prof.Heat.tempIn-dFC.get_dtTemp()))         // Подача ограничение (в разделе защита)
@@ -2405,6 +2441,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 #endif		
 		else if(!(dFC.isfOnOff())) {Status.ret=pHp5; return pCOMP_NONE;  }                                               // Если компрессор не рабоатет то ничего не делаем и выходим
+        
 		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ){ Status.ret=pHp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
@@ -2498,6 +2535,19 @@ MODE_COMP HeatPump::UpdateCool()
 		//             else if ((t1>target+Prof.Cool.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pCp2; return pCOMP_ON;}  // Достигнут гистерезис (бойлер нагрет) ВКЛ
 		else if ((t1>target+Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                          // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
 //		else if ((t1>target+Prof.Cool.dTemp)&&(dFC.isfOnOff())&&(!get_onBoiler())) {Status.ret=pCp2; return pCOMP_ON;}             // Достигнут гистерезис (компрессор работает, но это не бойлер) ВКЛ  (это лишнее)
+
+        // Питание от резервного источника - ограничение мощности потребления от источника - это жесткое ограничение, по этому оно первое
+	    else if((GETBIT(Option.flags,fBackupPower))&&(getPower()>get_maxBackupPower())) { // Включено ограничение мощности и текущая мощность уже выше ограничения - надо менять частоту
+        #ifdef DEBUG_MODWORK
+		journal.jprintf("%s %.2f (BACKUP POWER: %.3f kW)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,(float)getPower()/1000.0); // КИЛОВАТЫ
+        #endif
+    	if (dFC.get_target()-dFC.get_stepFreq()<dFC.get_minFreqCool())  { Status.ret=pCp29; return pCOMP_OFF; }   // Уменьшать дальше некуда, выключаем компрессор
+		Status.ret=pCp28;
+		dFC.set_target(dFC.get_target()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool());  // Уменьшить частоту 
+		resetPID();
+		return pCOMP_NONE; 
+        }
+
 
 		// ЗАЩИТА Компресор работает, достигнута минимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
 		else if ((dFC.isfOnOff())&&(FEED<Prof.Cool.tempIn+dFC.get_dtTemp()))                  // Подача
@@ -2729,6 +2779,7 @@ MODE_HP HeatPump::get_Work()
 		break;
 	}
 #ifdef RHEAT  // Дополнительный тен для нагрева отопления
+if(!GETBIT(Option.flags,fBackupPower)) // Нет питания от резервного источника
 	if (GETBIT(Option.flags,fAddHeat))
 	{
 		if(!GETBIT(Option.flags,fTypeRHEAT)) // резерв
@@ -2742,6 +2793,7 @@ MODE_HP HeatPump::get_Work()
 			if ((sTemp[TOUT].get_Temp()<Option.tempRHEAT-HYSTERESIS_RHEAD)&&(!dRelay[RHEAT].get_Relay())&&(ret!=pOFF)) {journal.jprintf(" TOUT=%.2f, add heatting on . . .\n",sTemp[TOUT].get_Temp()/100.0); dRelay[RHEAT].set_ON();}
 		}
 	}
+else if(dRelay[RHEAT].get_Relay()) dRelay[RHEAT].set_OFF();// есть питание от резервного источника - запрет использования электрокотла, если надо выключаем
 #endif
 #ifdef DEBUG_MODWORK
 	journal.printf(" get_Work: %s, ret=%X\n", codeRet[Status.ret], ret);
@@ -3559,12 +3611,30 @@ void HeatPump::Sun_OFF(void)
 #endif
 }
 
+// Получить мощность потребления всего ТН (нужно при ограничении мощности при питании от резерва)
+// Предполагается что Электросчетчик стоит на входе ТН (ТЭН не включены) это наиболее точный метод определения мощности
+// Если электросчетчика нет, то пытаемся получить из частотного преобразователя.
+// если не получается определить мощность то функция возвращает 0
+#define SUM_POWER_PUMP 200   // Мощность потребления насосов (для добавления к мощности компрессора)
+int16_t HeatPump::getPower(void)
+{
+#ifdef USE_ELECTROMETER_SDM  // Пытаемся получить мощность по электросчетчику
+if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
+dSDM.uplinkSDM();	// Попытаемся реанимировать счетчик (связь по модбасу)
+if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
+#endif
+// Дошли до сюда - значит не получилось мощность по электросчетчику определить,	работаем с ПЧ
+if (dFC.get_present()) return dFC.get_power()+SUM_POWER_PUMP; 
+return 0; // Мощность не определилась
+}
+
 void HeatPump::set_HeatBoilerUrgently(boolean onoff)
 {
 	if(HeatBoilerUrgently != onoff) {
 		journal.jprintf("Boiler Urgent = %s\n", (HeatBoilerUrgently = onoff) ? "ON" : "OFF");
 	}
 }
+
 
 // Уравнение ПИД регулятора в конечных разностях.
 // errorPid - Ошибка ПИД = (Цель - Текущее состояние)  в СОТЫХ

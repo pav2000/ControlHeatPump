@@ -334,6 +334,8 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора (мин): "); HP.get_optionHP((char*)option_PAUSE,Socket[thread].outBuf);STR_END;
 
      strcat(Socket[thread].outBuf," - Дополнительное оборудование -\r\n");
+     strcat(Socket[thread].outBuf,"Использование резервного питания от генератора (ограничение мощности): ");  HP.get_optionHP((char*)option_fBackupPower,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Максимальная мощность при питании от генератора (вт.): "); HP.get_optionHP((char*)option_maxBackupPower,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Логировать не критичные ошибки электро-счетчика SDM: ");  HP.get_optionHP((char*)option_SDM_LOG_ERR,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Логировать обмен между беспроводными датчиками: "); HP.get_optionHP((char*)option_LogWirelessSensors,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Генерация звукового сигнала: "); HP.get_optionHP((char*)option_BEEP,Socket[thread].outBuf);STR_END;
@@ -1036,4 +1038,3 @@ int16_t x;
            }        
        
 }
-
