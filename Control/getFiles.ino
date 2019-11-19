@@ -265,30 +265,38 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Ускоренный нагрев ГВС (одновременное использование ТЭНа и ТН для нагрева): ");HP.Prof.get_boiler((char*)boil_TURBO_BOILER,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использование ТЭНа для догрева бойлера до высоких температур: ");HP.Prof.get_boiler((char*)boil_ADD_HEATING,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Значение температуры для включения догрева бойлера (C°): "); HP.Prof.get_boiler((char*)boil_TEMP_RBOILER,Socket[thread].outBuf) ;STR_END;
+     strcat(Socket[thread].outBuf,"Гистерезис температуры догрева бойлера, если догрев не по расписанию °C: "); HP.Prof.get_boiler((char*)boil_dAddHeat,Socket[thread].outBuf) ;STR_END;
+     strcat(Socket[thread].outBuf,"Включать догрев, если компрессор не нагрел бойлер до температуры догрева: ");HP.Prof.get_boiler((char*)boil_fAddHeatingForce,Socket[thread].outBuf);STR_END;
+     
      
      if (HP.dFC.get_present()) // Только для инвертора
          {
          strcat(Socket[thread].outBuf," - ПИД -\r\n");
+         strcat(Socket[thread].outBuf,"Использовать ПИД управление инвертором: ");HP.Prof.get_boiler((char*)boil_fBoilerPID,Socket[thread].outBuf);STR_END;  
          strcat(Socket[thread].outBuf,"Целевая температура подачи (C°): ");HP.Prof.get_boiler((char*)boil_BOIL_TEMP,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Постоянная интегрирования времени (сек.): ");HP.Prof.get_boiler((char*)boil_BOIL_TIME,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Пропорциональная составляющая: ");HP.Prof.get_boiler((char*)boil_BOIL_PRO,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Интегральная составляющая: ");HP.Prof.get_boiler((char*)boil_BOIL_IN,Socket[thread].outBuf);STR_END;
          strcat(Socket[thread].outBuf,"Дифференциальная составляющая: ");HP.Prof.get_boiler((char*)boil_BOIL_DIF,Socket[thread].outBuf);STR_END;
          }
-
+         
+     strcat(Socket[thread].outBuf," - Защиты при работе теплового насоса -\r\n");
+     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная (C°): ");HP.Prof.get_boiler((char*)boil_TEMP_MAX,Socket[thread].outBuf);STR_END;
+     
      strcat(Socket[thread].outBuf," - Опции -\r\n");
-     strcat(Socket[thread].outBuf,"Использование расписания: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ON,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Работа по расписанию только для ТЭНа: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ADDHEAT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Борьба с сальмонелой: ");HP.Prof.get_boiler((char*)boil_SALLMONELA,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Греть совместно с отоплением, если ТН работает на отопление: ");HP.Prof.get_boiler((char*)boil_TOGETHER_HEAT,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Профилактика сальмонеллы (1 раз в неделю): ");HP.Prof.get_boiler((char*)boil_SALLMONELA,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°): ");HP.Prof.get_boiler((char*)hp_SUN,Socket[thread].outBuf);STR_END; // hp_SUN это правильно
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: ");HP.Prof.get_boiler((char*)boil_CIRCULATION,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС (мин.): ");HP.Prof.get_boiler((char*)boil_CIRCUL_WORK,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза в работе насоса ГВС (мин.): ");HP.Prof.get_boiler((char*)boil_CIRCUL_PAUSE,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"При нагреве бойлера сбрасывать ""избыточное"" тепло систему отопления: ");HP.Prof.get_boiler((char*)boil_RESET_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время сброса тепла (мин.): ");HP.Prof.get_boiler((char*)boil_RESET_TIME,Socket[thread].outBuf);  STR_END;
      
-     strcat(Socket[thread].outBuf," - Защиты при работе теплового насоса -\r\n");
-     strcat(Socket[thread].outBuf,"Tемпература подачи максимальная (C°): ");HP.Prof.get_boiler((char*)boil_TEMP_MAX,Socket[thread].outBuf);STR_END;
+   
      strcat(Socket[thread].outBuf," - Расписание работы -\r\n");
+     strcat(Socket[thread].outBuf,"Использование расписания: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Работа по расписанию только для ТЭНа: ");HP.Prof.get_boiler((char*)boil_SCHEDULER_ADDHEAT,Socket[thread].outBuf);STR_END; 
      HP.Prof.get_boiler((char*)boil_SCHEDULER,Socket[thread].outBuf);STR_END;
      sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
 
@@ -304,10 +312,10 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Расположение файлов веб-сервера на SPI Flash (иначе на SD карте): "); HP.get_optionHP((char*)option_WebOnSPIFlash,Socket[thread].outBuf);STR_END; 
      strcat(Socket[thread].outBuf,"Сохранение состояния ТН в ЕЕПРОМ, для восстановления его после сброса: "); HP.get_optionHP((char*)option_SAVE_ON,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Число попыток пуска компрессора: "); HP.get_optionHP((char*)option_ATTEMPT,Socket[thread].outBuf);STR_END;
-    
-     strcat(Socket[thread].outBuf," - Настройка встроенных графиков -\r\n");
-     strcat(Socket[thread].outBuf,"Период накопления графиков (сек): "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Запись графиков на карту памяти: "); HP.get_optionHP((char*)option_History,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Интервал накопления точек графиков в памяти, сек.: "); HP.get_optionHP((char*)option_TIME_CHART,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Графики в памяти пишутся только во время работы компрессора: "); HP.get_optionHP((char*)option_Charts_when_comp_on,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Запись истории на SD карту (раз в минуту): "); HP.get_optionHP((char*)option_History,Socket[thread].outBuf);STR_END;
+     
 
      strcat(Socket[thread].outBuf," - Настройки контура отопления -\r\n");
      strcat(Socket[thread].outBuf,"Использование дополнительного ТЭНа отопления: "); HP.get_optionHP((char*)option_ADD_HEAT,Socket[thread].outBuf);STR_END;
@@ -318,21 +326,24 @@ void get_txtSettings(uint8_t thread)
      // Солнечный коллектор
      strcat(Socket[thread].outBuf," - Настройки солнечного коллектора -\r\n");
      strcat(Socket[thread].outBuf,"Использовать солнечный коллектор для регенерации геоконтура в простое: "); HP.get_optionHP((char*)option_SunRegGeo,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Температура начала регенерации геоконтура с помощью СК (+Δ) (°C): "); HP.get_optionHP((char*)option_SunRegGeoTemp,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Разница (Δ) температур для включения СК (°C): "); HP.get_optionHP((char*)option_SunTDelta,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Температура воздуха (TSUN) начала регенерации геоконтура с помощью СК (+Δ) °C: "); HP.get_optionHP((char*)option_SunRegGeoTemp,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Температура (TSUNOUTG) завершения регенерации геоконтура с помощью СК °C: "); HP.get_optionHP((char*)option_SunRegGeoTempGOff,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Разница (Δ) температур: TSUN и на выходе в геоконтур для включения СК °C: "); HP.get_optionHP((char*)option_SunTDelta,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Разница (Δ) температур на выходе из СК и на выходе в геоконтур для выключения СК °C: "); HP.get_optionHP((char*)option_SunGTDelta,Socket[thread].outBuf);STR_END;
 
      strcat(Socket[thread].outBuf," - Времена и задержки -\r\n");
+     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора (мин): "); HP.get_optionHP((char*)option_PAUSE,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка выключения насосов после выключения компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_OFF_PUMP,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения ТН после внезапного сброса контроллера (сек): "); HP.get_optionHP((char*)option_DELAY_START_RES,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка перед повторным включением ТН при ошибке (попытки пуска) (сек): "); HP.get_optionHP((char*)option_DELAY_REPEAD_START,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка после срабатывания датчика перед включением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_ON,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Задержка перед выключением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_OFF,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка между переключением реверсивного клапана и включением компрессора (сек): "); HP.get_optionHP((char*)option_DELAY_R4WAY,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза после переключение ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_SW,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время на сколько блокируются защиты при переходе с ГВС (сек): "); HP.get_optionHP((char*)option_DELAY_BOILER_OFF,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора (мин): "); HP.get_optionHP((char*)option_PAUSE,Socket[thread].outBuf);STR_END;
-
+     // Дополнительно нет на морде
+     strcat(Socket[thread].outBuf,"Задержка после срабатывания датчика перед включением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_ON,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Задержка перед выключением разморозки (сек): "); HP.get_optionHP((char*)option_DELAY_DEFROST_OFF,Socket[thread].outBuf);STR_END;
+  
      strcat(Socket[thread].outBuf," - Дополнительное оборудование -\r\n");
      strcat(Socket[thread].outBuf,"Использование резервного питания от генератора (ограничение мощности): ");  HP.get_optionHP((char*)option_fBackupPower,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Максимальная мощность при питании от генератора (вт.): "); HP.get_optionHP((char*)option_maxBackupPower,Socket[thread].outBuf);STR_END;
