@@ -1381,6 +1381,7 @@ int8_t devSDM::initSDM()
 boolean devSDM::uplinkSDM()
 {
 	int8_t i;
+//	if((GETBIT(flags,fSDM))&&(GETBIT(flags,fSDMLink))) return err;  // Если есть счетчик и есть связь выходим
 	for(i = 0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 #ifdef USE_PZEM004T
@@ -1407,7 +1408,7 @@ boolean devSDM::uplinkSDM()
 		_delay(SDM_DELAY_REPEAD);
 		WDT_Restart(WDT);                                                            // Сбросить вачдог
 	}
-	SETBIT0(flags, fSDMLink);                                                             // связи нет
+	SETBIT0(flags, fSDMLink);                                                        // связи нет
 	return false;
 }
 
@@ -1518,7 +1519,9 @@ xErr:
 		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
 		return err;                       // все прочиталось, выходим
 	}
+	#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи 
 	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
+	#endif
 	journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, err);
 	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
 	return err;

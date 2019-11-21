@@ -417,7 +417,7 @@ const char *noteSDM_NONE = {"Отсутствует в конфигурации"
 
 // Флаги Электросчетчика
 #define fSDM           0              // флаг наличие счетчика
-#define fSDMLink       1              //  флаг связь установлена
+#define fSDMLink       1              // флаг связь установлена
 
 // Структура для хранения настроек счетчика
 struct type_settingSDM
