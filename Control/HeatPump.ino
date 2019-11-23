@@ -1773,6 +1773,7 @@ int8_t HeatPump::StartResume(boolean start)
 #ifdef USE_UPS
 	if(HP.NO_Power) {
 		HP.NO_Power = 2; // Resume after
+		setState(pWAIT_HP);
 		return OK;
 	}
 #endif
@@ -2060,7 +2061,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			flagRBOILER = false;
 			return pCOMP_OFF;
 		}
-	if (!GETBIT(Option.flags, fBackupPower)) dRelay[RBOILER].set_ON();  // Включение ТЭНа бойлера если не питание от резервного источника
+		if(!GETBIT(Option.flags, fBackupPower)) {   // Включение ТЭНа бойлера если не питание от резервного источника
+			dRelay[RBOILER].set_ON();
+			if(!onBoiler && GETBIT(flags, fHP_BoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+			SETBIT0(flags, fHP_BoilerTogetherHeat);
+		}
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler)) return pCOMP_OFF;
 	} else {
 		if(dRelay[RBOILER].get_Relay()) set_HeatBoilerUrgently(false);

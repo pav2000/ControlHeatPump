@@ -7,9 +7,8 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO)");
-		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD),get_oHP(SCGO)");
-		loadParam("get_oHP(BPOW),get_oHP(MAXPOW)");
+		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(ADD_HEAT),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO),get_oHP(BPOW),get_oHP(MAXPOW)");
+		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD),get_oHP(SCGO),get_oHP(STO),get_oHP(STF)");
 	}; 
 	</script>
 </head>
@@ -79,6 +78,14 @@
 			<td><b>Солнечный Коллектор</b></td><td></td>
 		</tr>
 		<tr>
+			<td>Температура воздуха (TSUN) выше которой открывается СК °C</td>
+			<td nowrap><input type="number" id="get_ohp-sto" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(STO)');"></td>
+		</tr>	
+		<tr>
+			<td>Температура воздуха (TSUN) ниже которой закрывается СК °C</td>
+			<td nowrap><input type="number" id="get_ohp-stf" step="0.1"> <input type="submit" value=">" onclick="setParam('get_oHP(STF)');"></td>
+		</tr>	
+		<tr>
 			<td>Использовать СК для регенерации геоконтура в простое</td>
 			<td><input type="checkbox" id="get_ohp-scg" onchange="setParam('get_oHP(SCG)');"></td>
 		</tr>	
@@ -139,11 +146,11 @@
 			<td></td>
 		</tr>
 		<tr>
-			<td>Работа ТН от резервного источника питания<sup>9</sup></td>
+			<td>Работа ТН от резервного источника питания (ИБП)<sup>9</sup></td>
 			<td><input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></td>
 		</tr>
 		<tr>
-			<td>Максимальная мощность потребления ТН от резервного источника питания (вт.) [0..10000]</td>
+			<td>Максимальная мощность потребления ТН от резервного источника питания (Вт) [0..10000]</td>
 			<td nowrap><input id="get_ohp-maxpow" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(MAXPOW)');"></td>
 		</tr>
 		<tr>

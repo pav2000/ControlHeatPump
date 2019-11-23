@@ -1391,8 +1391,12 @@ boolean devSDM::uplinkSDM()
 			journal.jprintf("%s, found, link OK, modbus address:%d\n", name, SDM_MODBUS_ADR);
 			return true;
 		} else {
+#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи
 			SETBIT0(flags, fSDMLink);
-			journal.jprintf("%s, no c999onnect.\n", name);
+#else
+			SETBIT1(flags, fSDMLink);
+#endif
+			journal.jprintf("%s, no connect.\n", name);
 		}
 #else
 		float band;
@@ -1401,14 +1405,22 @@ boolean devSDM::uplinkSDM()
 			journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n", name, band, SDM_MODBUS_ADR);
 			return true;
 		} else {
+#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи
 			SETBIT0(flags, fSDMLink);
+#else
+			SETBIT1(flags, fSDMLink);
+#endif
 			journal.jprintf("%s, no connect.\n", name);
 		}
 #endif
 		_delay(SDM_DELAY_REPEAD);
 		WDT_Restart(WDT);                                                            // Сбросить вачдог
 	}
-	SETBIT0(flags, fSDMLink);                                                        // связи нет
+#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи
+	SETBIT0(flags, fSDMLink);
+#else
+	SETBIT1(flags, fSDMLink);
+#endif
 	return false;
 }
 

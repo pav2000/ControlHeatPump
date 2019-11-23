@@ -320,6 +320,7 @@ void Nextion::readCommand()
 		case 0x68:  // Touch Coordinate (sleep)
 			break;
 		case 0x86:  // Auto Entered Sleep Mode
+			flags &= ~((HP.is_compressor_on() || HP.get_errcode()!=OK)<<fSleep);
 			fUpdate = 0;
 			break;
 		case 0x87:   // выход из сна
@@ -344,8 +345,7 @@ void Nextion::Update()
 {
 	
 	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-    if(HP.is_compressor_on() || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
-	//	if(HP.is_compressor_on()) {
+		if(HP.is_compressor_on() || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
 			if(!GETBIT(flags, fSleep)) {
 				sendCommand("sleep=0");
 				_delay(NEXTION_BOOT_TIME);

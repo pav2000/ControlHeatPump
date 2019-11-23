@@ -758,7 +758,7 @@ int16_t devVaconFC::read_tempFC()
 int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 {
     uint8_t i;
-    int16_t result;
+    int16_t result = 0;
     if((!get_present()) || state == ERR_LINK_FC) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
@@ -782,7 +782,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 {
     uint8_t i;
-    uint32_t result;
+    uint32_t result = 0;
     if(!get_present() || state == ERR_LINK_FC) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
