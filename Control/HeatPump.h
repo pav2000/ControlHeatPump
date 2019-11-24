@@ -89,6 +89,8 @@ boolean  Charts_when_comp_on = false;
 // Рабочие флаги ТН
 #define fHP_SunActive 			0			// Солнечный контур активен
 #define fHP_BoilerTogetherHeat	1			// Идет нагрев бойлера вместе с отоплением
+#define fHP_SunReady			2			// Солнечный коллектор открыт
+#define fHP_SunSwitching		3			// Солнечный коллектор переключается
 
 //  Работа с отдельными флагами type_optionHP
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве

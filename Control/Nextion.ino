@@ -320,7 +320,7 @@ void Nextion::readCommand()
 		case 0x68:  // Touch Coordinate (sleep)
 			break;
 		case 0x86:  // Auto Entered Sleep Mode
-			flags &= ~((HP.is_compressor_on() || HP.get_errcode()!=OK)<<fSleep);
+			if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) flags &= ~((HP.is_compressor_on() || HP.get_errcode()!=OK)<<fSleep);
 			fUpdate = 0;
 			break;
 		case 0x87:   // выход из сна

@@ -995,7 +995,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SunRegGeoTempGOff)==0){ Option.SunRegGeoTempGOff = rd(x, 100); return true; }else
    if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
    if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
-   if(strcmp(var,option_PAUSE)==0) { if ((x>=0)&&(x<=60)) {Option.pause=x*60; return true;} else return false; }else                         // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else                         // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -1007,6 +1007,8 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    if(strcmp(var,option_fBackupPower)==0)     {if (x==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (x==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;}else // флаг Использование резервного питания от генератора (ограничение мощности) 
    if(strcmp(var,option_maxBackupPower)==0)   {if ((x>=0)&&(x<=10000)) {Option.maxBackupPower=x; return true;} else return false;}else       // Максимальная мощность при питании от генератора
+   if(strcmp(var,option_SunTempOn)==0)   	  { Option.SunTempOn = rd(x, 100); return true;} else
+   if(strcmp(var,option_SunTempOff)==0)   	  { Option.SunTempOff = rd(x, 100); return true;} else
    return false; 
 }
 
@@ -1055,7 +1057,9 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    if(strcmp(var,option_fBackupPower)==0)     {if(GETBIT(Option.flags,fBackupPower)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);}else // флаг Использование резервного питания от генератора (ограничение мощности) 
    if(strcmp(var,option_maxBackupPower)==0)   {return _itoa(Option.maxBackupPower,ret);}else    // Максимальная мощность при питании от генератора
-   return  strcat(ret,(char*)cInvalid);                
+   if(strcmp(var,option_SunTempOn)==0)        {return _itoa(Option.SunTempOn, ret); } else
+   if(strcmp(var,option_SunTempOff)==0)       {return _itoa(Option.SunTempOff, ret); } else
+   return strcat(ret,(char*)cInvalid);
 }
 
 
@@ -3594,11 +3598,22 @@ void HeatPump::Sun_ON(void)
 {
 #ifdef USE_SUN_COLLECTOR
 	if(time_Sun_OFF == 0 || millis() - time_Sun_OFF > SUN_MIN_PAUSE) { // ON
-		flags |= (1<<fHP_SunActive);
-		dRelay[RSUN].set_Relay(fR_StatusSun);
-		dRelay[PUMP_IN].set_Relay(fR_StatusSun);
-		time_Sun_ON = millis();
-		time_Sun_OFF = 0;
+		if(flags & (1<<fHP_SunReady)) {
+			flags |= (1<<fHP_SunActive);
+			dRelay[RSUN].set_Relay(fR_StatusSun);
+			dRelay[PUMP_IN].set_Relay(fR_StatusSun);
+			time_Sun_OFF = 0;
+			time_Sun_ON = millis();
+		} else {
+			if(!(flags & (1<<fHP_SunSwitching))) {
+				if(sTemp[TSUN].get_Temp() > Option.SunTempOn) {
+					flags |= (1<<fHP_SunSwitching);
+					dRelay[RSUNOFF].set_OFF();
+					dRelay[RSUNON].set_ON();
+					time_Sun_ON = millis();
+				}
+			}
+		}
 	}
 #endif
 }
