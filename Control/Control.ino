@@ -396,6 +396,12 @@ x_I2C_init_std_message:
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
 	  }
+	  if(HP.get_fMH_SUN_ON()) {
+		  HP.dRelay[RSUNOFF].set_OFF();
+		  HP.dRelay[RSUNON].set_ON();
+		  HP.flags |= (1<<fHP_SunReady) | (1<<fHP_SunSwitching);
+		  HP.time_Sun_ON = millis();
+	  }
   }
   HP.Schdlr.load();							// Загрузка настроек расписания
   // обновить хеш для пользователей
@@ -927,8 +933,8 @@ void vReadSensor(void *)
 		}
 #endif
 #ifdef SEVA  //Если определен лепестковый датчик протока - это переливная схема ТН - надо контролировать проток при работе
- 	if(dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
-		if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
+ 	if(HP.dRelay[RPUMPI].get_Relay())                                                                                             // Только если включен насос геоконтура  (PUMP_IN)
+		if (HP.sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
@@ -1002,6 +1008,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 		HP.sInput[SPOWER].Read(true);
 		if(HP.sInput[SPOWER].is_alarm()) { // Электричество кончилось
 			if(!HP.NO_Power) {
+				HP.NO_Power = 1;
 				HP.save_motoHour();
 				Stats.SaveStats(0);
 				Stats.SaveHistory(0);
@@ -1009,7 +1016,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
 					HP.NO_Power = 2;
-				} else HP.NO_Power = 1;
+				}
 			}
 			HP.NO_Power_delay = NO_POWER_ON_DELAY_CNT;
 		} else if(HP.NO_Power) { // Включаемся
@@ -1166,22 +1173,41 @@ delayTask:	// чтобы задача отдавала часть времени
 		if(!HP.Task_vUpdate_run) continue;
 		// Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
-		boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
-		if(((!HP.is_pause()	&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
-								|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
-			 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
-			if((HP.flags & (1<<fHP_SunActive))) {
-				if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME) {
-					if(fregen) {
-						if(HP.sTemp[TSUN].get_Temp() < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
-					} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
-				}
-			} else if(HP.sTemp[TSUN].get_Temp() >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + HP.Option.SunTDelta) {
-				HP.Sun_ON();
+		if(HP.flags & (1<<fHP_SunSwitching)) {
+			if(millis() - HP.time_Sun_ON > SUN_VALVE_SWITCH_TIME) {
+				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady)));
+				if(HP.dRelay[RSUNON].get_Relay()) {
+					HP.flags |= (1<<fHP_SunReady);
+					HP.set_fMH_SUN_ON();
+				} else HP.clear_fMH_SUN_ON();
+				HP.dRelay[RSUNON].set_OFF();
+				HP.dRelay[RSUNOFF].set_OFF();
 			}
 		} else {
-			HP.Sun_OFF();
-			HP.time_Sun_OFF = 0;	// выключить задержку последующего включения
+			boolean fregen = GETBIT(HP.get_flags(), fSunRegenerateGeo) && HP.is_pause();
+			int16_t tsun = HP.sTemp[TSUN].get_Temp();
+			if(((!HP.is_pause()	&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
+									|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
+				 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
+				if((HP.flags & (1<<fHP_SunActive))) {
+					if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME) {
+						if(fregen) {
+							if(tsun < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
+						} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
+					}
+				} else if(tsun >= (fregen ? HP.Option.SunRegGeoTemp : HP.sTemp[TEVAOUTG].get_Temp()) + HP.Option.SunTDelta) {
+					HP.Sun_ON();
+				}
+			} else {
+				HP.Sun_OFF();
+				HP.time_Sun_OFF = 0;	// выключить задержку последующего включения
+			}
+			if((HP.flags & ((1<<fHP_SunActive) | (1<<fHP_SunReady) | (1<<fHP_SunSwitching))) == (1<<fHP_SunReady) && tsun < HP.Option.SunTempOff) {
+				HP.flags |= (1<<fHP_SunSwitching);
+				HP.dRelay[RSUNON].set_OFF();
+				HP.dRelay[RSUNOFF].set_ON();
+				HP.time_Sun_ON = millis();
+			}
 		}
 #endif
 	}// for

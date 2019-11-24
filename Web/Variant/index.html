@@ -7,7 +7,7 @@
 <script src='scripts.js'></script>
 <script>
 window.onload = function() {
-	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_TrgT(1),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG),get_oHP(BPOW)");
+	updateParam("get_oHP(BPOW),get_oHP(MAXPOW),get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_TrgT(1),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG)");
 };
 </script>	
 </head>
@@ -20,7 +20,7 @@ window.onload = function() {
 		<dt>Расписание</dt><dd><span id="get_schdlr-an">-</span></dd>
 		<dt><nobr>Режим работы</nobr></dt><dd>&nbsp;<select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');" style="font-size:1em"></select></dd>
 		<dt>Показатели</dt><dd><span id="get_errcode">-</span></dd> <dd style="width:100%;"><span id="get_error">-</span></dd>
-		<dt><nobr>Работа от ИБП</nobr></dt><dd>&nbsp;<input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></dt>
+		<dt><nobr>Работа ТН от резервного источника питания (max мощность: <span id="get_ohp-maxpow"></span> Вт.)</nobr></dt><dd>&nbsp; <input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></nobr></dt>
 	</dl>
 </div>
 <div class="row2">

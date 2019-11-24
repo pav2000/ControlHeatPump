@@ -51,7 +51,8 @@ struct type_status
    int8_t ret;              // Точка выхода из алгоритма регулирования
 }; 
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
-#define fHP_ON    0         // флаг Включения ТН (пишется внутрь счетчиков flags)
+#define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
+#define fMH_SUN_ON	1		// флаг открытия СК
 
 struct type_motoHour
 {
@@ -89,6 +90,8 @@ boolean  Charts_when_comp_on = false;
 // Рабочие флаги ТН
 #define fHP_SunActive 			0			// Солнечный контур активен
 #define fHP_BoilerTogetherHeat	1			// Идет нагрев бойлера вместе с отоплением
+#define fHP_SunReady			2			// Солнечный коллектор открыт
+#define fHP_SunSwitching		3			// Солнечный коллектор переключается
 
 //  Работа с отдельными флагами type_optionHP
 #define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
@@ -105,6 +108,8 @@ boolean  Charts_when_comp_on = false;
 #define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
 #define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 #define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
+#define fBackupPower        14				// Использование резервного питания от генератора (ограничение мощности) 
+
  
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
@@ -133,6 +138,9 @@ struct type_optionHP
  int16_t  SunTDelta;					// Дельта температур для включения, сотые градуса
  int16_t  SunGTDelta;					// Дельта температур жидкости для выключения, сотые градуса
  int16_t  SunRegGeoTempGOff;			// Температура жидкости для выключения регенерации
+ uint16_t maxBackupPower;		     	// Максимальная мощность при питании от генератора (Вт)
+ int16_t  SunTempOn;					// Температура выше которой открывается СК
+ int16_t  SunTempOff;					// Температура ниже которой закрывается СК
 };// __attribute__((packed));
 
 
@@ -355,7 +363,7 @@ class HeatPump
    uint8_t  get_SaveON() {return GETBIT(Option.flags,fSaveON);}        // получить флаг записи состояния
    uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
    boolean  set_WebStoreOnSPIFlash(boolean f) {if(f)SETBIT1(Option.flags,fWebStoreOnSPIFlash);else SETBIT0(Option.flags,fWebStoreOnSPIFlash);return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// установить флаг хранения веб морды на флеш диске
-   
+   uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
    
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
@@ -363,9 +371,12 @@ class HeatPump
    void     updateNextion();                                          // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
-   inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
-   inline void  set_HP_ON(){SETBIT1(motoHour.flags,fHP_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
-   inline boolean  get_HP_ON() {return GETBIT(motoHour.flags,fHP_ON);}           // Получить значение флага включения ТН
+   inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fMH_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
+   inline void  set_HP_ON(){SETBIT1(motoHour.flags,fMH_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
+   inline bool  get_HP_ON() {return GETBIT(motoHour.flags,fMH_ON);}           // Получить значение флага включения ТН
+   inline void  set_fMH_SUN_ON() { SETBIT1(motoHour.flags, fMH_SUN_ON); }
+   inline void  clear_fMH_SUN_ON() { SETBIT0(motoHour.flags, fMH_SUN_ON); }
+   inline bool  get_fMH_SUN_ON() { return GETBIT(motoHour.flags, fMH_SUN_ON); }
 
    void     set_BoilerOFF(){SETBIT0(Prof.SaveON.flags,fBoilerON);}          // Выключить бойлер
    void     set_BoilerON() {SETBIT1(Prof.SaveON.flags,fBoilerON);}          // Включить бойлер
@@ -504,15 +515,16 @@ class HeatPump
 
     uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
     uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
-    uint8_t  NO_Power;					  // Нет питания основных узлов
+    uint8_t  NO_Power;					  // Нет питания основных узлов, 2 - нужно запустить после восстановления
     uint8_t  NO_Power_delay;
-    boolean  HeatBoilerUrgently;				// Срочно нужно ГВС
+    boolean  HeatBoilerUrgently;		  // Срочно нужно ГВС
     void     set_HeatBoilerUrgently(boolean onoff);
 
   private:
     int8_t StartResume(boolean start);    // Функция Запуска/Продолжения работы ТН - возвращает ок или код ошибки
     int8_t StopWait(boolean stop);        // Функция Останова/Ожидания ТН  - возвращает код ошибки
     int8_t ResetFC();                     // Сброс инвертора если он стоит в ошибке, провиряется наличие инвертора и прорверка ошибки
+    int16_t getPower(void);               // Получить мощность потребления ТН (нужно при ограничении мощности при питании от резерва)
 
     MODE_HP get_Work();                   // Что надо делать
     boolean configHP(MODE_HP conf);       // Концигурация 4-х, 3-х ходового крана и включение насосов, выход - разрешение запуска компрессора

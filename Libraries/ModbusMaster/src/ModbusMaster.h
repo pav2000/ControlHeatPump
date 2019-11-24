@@ -54,6 +54,24 @@ Arduino library for communicating with Modbus slaves over RS232/485 (via RTU pro
 
 #define MIN_TIME_BETWEEN_TRANSACTION	30 // ms
 
+// Коды функций Modbus
+// Modbus function codes for bit access
+#define ku8MBReadCoils                  0x01 ///< Modbus function 0x01 Read Coils
+#define ku8MBReadDiscreteInputs         0x02 ///< Modbus function 0x02 Read Discrete Inputs
+#define ku8MBWriteSingleCoil            0x05 ///< Modbus function 0x05 Write Single Coil
+#define ku8MBWriteMultipleCoils         0x0F ///< Modbus function 0x0F Write Multiple Coils
+
+// Modbus function codes for 16 bit access
+#define ku8MBReadHoldingRegisters       0x03 ///< Modbus function 0x03 Read Holding Registers
+#define ku8MBReadInputRegisters         0x04 ///< Modbus function 0x04 Read Input Registers
+#define ku8MBWriteSingleRegister        0x06 ///< Modbus function 0x06 Write Single Register
+#define ku8MBWriteMultipleRegisters     0x10 ///< Modbus function 0x10 Write Multiple Registers
+#define ku8MBMaskWriteRegister          0x16 ///< Modbus function 0x16 Mask Write Register
+#define ku8MBReadWriteMultipleRegisters 0x17 ///< Modbus function 0x17 Read Write Multiple Registers
+#define ku8MBLinkTestOmronMX2Only       0x08 ///< Modbus function 0x08 Тест связи с инвертром Omron MX2 функция только для него
+// 8 bit
+#define ku8MBCustomRequest				0x09 // Custom request, prepare send buffer - send(uint8_t) //vad7
+
 /**
 Arduino class library for communicating with Modbus slaves over 
 RS232/485 (via RTU protocol).
@@ -182,13 +200,13 @@ class ModbusMaster
     static const uint8_t ku8MBInvalidCRC                 = 0xE3;
 
 
-    // Обнаружена спицефическая ошибка Omron MX2
+    // Обнаружена спицефическая ошибка Omron MX2, счетчика PZEM-004T
     // В случае обнаружения ошибки в запросе (кроме ошибки связи)
     // преобразователь частоты возвращает в ответе сообщение об исключении и не выполняет никаких действий.
     // Ошибку можно найти по коду функции в ответе. Код функции для ответа с
     // сообщением об ошибке определяется как сумма кода функции запроса и числа 80h.
     // Для кодирования используется  ku8MBErrorOmronMX2+Код_исключения (третий байт пакета)
-    static const uint8_t ku8MBErrorOmronMX2              = 0x08;
+    static const uint8_t ku8MBExtendedError              = 0x08;
     
     uint16_t getResponseBuffer(uint8_t);
     void     clearResponseBuffer();
@@ -219,6 +237,9 @@ class ModbusMaster
     uint8_t  readWriteMultipleRegisters(uint16_t, uint16_t, uint16_t, uint16_t);
     uint8_t  readWriteMultipleRegisters(uint16_t, uint16_t);
     uint8_t  LinkTestOmronMX2Only(uint16_t);
+
+    // master function that conducts Modbus transactions
+    uint8_t ModbusMasterTransaction(uint8_t u8MBFunction);
     
   private:
     Stream* _serial;                                             ///< reference to serial port object
@@ -238,27 +259,8 @@ class ModbusMaster
     uint8_t _u8ResponseBufferLength;
     uint32_t last_transaction_time;
 
-    // Коды функций Modbus
-    // Modbus function codes for bit access
-    static const uint8_t ku8MBReadCoils                  = 0x01; ///< Modbus function 0x01 Read Coils
-    static const uint8_t ku8MBReadDiscreteInputs         = 0x02; ///< Modbus function 0x02 Read Discrete Inputs
-    static const uint8_t ku8MBWriteSingleCoil            = 0x05; ///< Modbus function 0x05 Write Single Coil
-    static const uint8_t ku8MBWriteMultipleCoils         = 0x0F; ///< Modbus function 0x0F Write Multiple Coils
-
-    // Modbus function codes for 16 bit access
-    static const uint8_t ku8MBReadHoldingRegisters       = 0x03; ///< Modbus function 0x03 Read Holding Registers
-    static const uint8_t ku8MBReadInputRegisters         = 0x04; ///< Modbus function 0x04 Read Input Registers
-    static const uint8_t ku8MBWriteSingleRegister        = 0x06; ///< Modbus function 0x06 Write Single Register
-    static const uint8_t ku8MBWriteMultipleRegisters     = 0x10; ///< Modbus function 0x10 Write Multiple Registers
-    static const uint8_t ku8MBMaskWriteRegister          = 0x16; ///< Modbus function 0x16 Mask Write Register
-    static const uint8_t ku8MBReadWriteMultipleRegisters = 0x17; ///< Modbus function 0x17 Read Write Multiple Registers
-    static const uint8_t ku8MBLinkTestOmronMX2Only       = 0x08; ///< Modbus function 0x08 Тест связи с инвертром Omron MX2 функция только для него
-    
     // Modbus timeout [milliseconds] Depend on serial speed
     static const uint16_t ku16MBResponseTimeout          = 100;   ///< Modbus timeout, every byte [milliseconds]
-    
-    // master function that conducts Modbus transactions
-    uint8_t ModbusMasterTransaction(uint8_t u8MBFunction);
     
     // idle callback function; gets called during idle time between TX and RX
     void (*_idle)();

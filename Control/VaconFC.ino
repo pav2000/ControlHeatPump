@@ -129,12 +129,11 @@ int16_t devVaconFC::CheckLinkStatus(void)
 {
 #ifndef FC_ANALOG_CONTROL // НЕ Аналоговое управление
     if(testMode == NORMAL || testMode == HARD_TEST){
-		for (uint8_t i = 0; i < FC_NUM_READ+1; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
+		for (uint8_t i = 0; i < FC_NUM_READ; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		{
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
 			if(err == OK) break; // Прочитали удачно
-			check_blockFC(); // проверить необходимость блокировки
-			if(GETBIT(flags, fErrFC)) break; // превысили кол-во ошибок
+			if(check_blockFC()) break; // проверить необходимость блокировки
 			_delay(FC_DELAY_REPEAT);
 		}
 		if(err != OK) state = ERR_LINK_FC;
@@ -317,32 +316,31 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 }
 
 // Установить запрет на использование инвертора если лимит ошибок исчерпан
-void devVaconFC::check_blockFC()
+// false - норм, true - ошибка
+bool devVaconFC::check_blockFC()
 {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
-    if((xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) && (err != OK)) // если не запущена free rtos то блокируем с первого раза
-    {
+    if((xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) && (err != OK)) { // если не запущена free rtos то блокируем с первого раза
         SETBIT1(flags, fErrFC); // Установить флаг
         note = (char*)noteFC_NO;
         set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
-        return;
+        return true;
     }
-    if(err != OK)
-        number_err++;
-    else {
+    if(err != OK) {
+		if(++number_err >= FC_NUM_READ) {// если превышено число ошибок то блокировка
+			//SemaphoreGive(xModbusSemaphore); // разблокировать семафор
+			SETBIT1(flags, fErrFC); // Установить флаг
+			note = (char*)noteFC_NO;
+			set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
+			return true;
+		}
+    } else {
     	SETBIT0(flags, fErrFC);
         number_err = 0;
         note = (char*)noteFC_OK; // Описание инвертора есть
-        return;
-    } // Увеличить счетчик ошибок
-    if(number_err > FC_NUM_READ) // если превышено число ошибок то блокировка
-    {
-        //SemaphoreGive(xModbusSemaphore); // разблокировать семафор
-        SETBIT1(flags, fErrFC); // Установить флаг
-        note = (char*)noteFC_NO;
-        set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
     }
 #endif
+    return false;
 }
 
 // Установить значение текущий режим работы
@@ -760,7 +758,7 @@ int16_t devVaconFC::read_tempFC()
 int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 {
     uint8_t i;
-    int16_t result;
+    int16_t result = 0;
     if((!get_present()) || state == ERR_LINK_FC) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
@@ -773,10 +771,9 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf("Modbus reg #%d - ", cmd);
         journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
-        //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
-    check_blockFC(); // проверить необходимость блокировки
     return result;
 }
 
@@ -785,7 +782,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
 {
     uint8_t i;
-    uint32_t result;
+    uint32_t result = 0;
     if(!get_present() || state == ERR_LINK_FC) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
@@ -793,10 +790,9 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
         if(err == OK) break; // Прочитали удачно
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
-        //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
-    check_blockFC(); // проверить необходимость блокировки
     return result;
 }
 
@@ -812,10 +808,9 @@ int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
         if(err == OK) break; // Записали удачно
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
-        //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
     }
-    check_blockFC(); // проверить необходимость блокировки
     return err;
 }
 #endif // FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ

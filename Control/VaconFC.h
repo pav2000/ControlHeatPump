@@ -204,7 +204,7 @@ public:
   int8_t	stop_FC();                                 // Команда стоп на инвертор
   boolean	isfOnOff(){return GETBIT(flags,fOnOff);} // получить состояние инвертора вкл или выкл
  
-  void		check_blockFC();                          // Установить запрет на использование инвертора
+  bool		check_blockFC();                          // Установить запрет на использование инвертора
   boolean	get_blockFC() { return GETBIT(flags, fErrFC); }    // Получить флаг блокировки инвертора
 
   const char *get_fault_str(uint8_t fault); // Возвращает название ошибки
