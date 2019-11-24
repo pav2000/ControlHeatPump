@@ -396,6 +396,12 @@ x_I2C_init_std_message:
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
 	  }
+	  if(HP.get_fMH_SUN_ON()) {
+		  HP.dRelay[RSUNOFF].set_OFF();
+		  HP.dRelay[RSUNON].set_ON();
+		  HP.flags |= (1<<fHP_SunReady) | (1<<fHP_SunSwitching);
+		  HP.time_Sun_ON = millis();
+	  }
   }
   HP.Schdlr.load();							// Загрузка настроек расписания
   // обновить хеш для пользователей
@@ -1169,7 +1175,11 @@ delayTask:	// чтобы задача отдавала часть времени
 #ifdef USE_SUN_COLLECTOR
 		if(HP.flags & (1<<fHP_SunSwitching)) {
 			if(millis() - HP.time_Sun_ON > SUN_VALVE_SWITCH_TIME) {
-				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady))) | (HP.dRelay[RSUNON].get_Relay()<<fHP_SunReady);
+				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady)));
+				if(HP.dRelay[RSUNON].get_Relay()) {
+					HP.flags |= (1<<fHP_SunReady);
+					HP.set_fMH_SUN_ON();
+				} else HP.clear_fMH_SUN_ON();
 				HP.dRelay[RSUNON].set_OFF();
 				HP.dRelay[RSUNOFF].set_OFF();
 			}

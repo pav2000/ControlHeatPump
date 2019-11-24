@@ -51,7 +51,8 @@ struct type_status
    int8_t ret;              // Точка выхода из алгоритма регулирования
 }; 
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
-#define fHP_ON    0         // флаг Включения ТН (пишется внутрь счетчиков flags)
+#define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
+#define fMH_SUN_ON	1		// флаг открытия СК
 
 struct type_motoHour
 {
@@ -370,9 +371,12 @@ class HeatPump
    void     updateNextion();                                          // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
-   inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fHP_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
-   inline void  set_HP_ON(){SETBIT1(motoHour.flags,fHP_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
-   inline boolean  get_HP_ON() {return GETBIT(motoHour.flags,fHP_ON);}           // Получить значение флага включения ТН
+   inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fMH_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
+   inline void  set_HP_ON(){SETBIT1(motoHour.flags,fMH_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
+   inline bool  get_HP_ON() {return GETBIT(motoHour.flags,fMH_ON);}           // Получить значение флага включения ТН
+   inline void  set_fMH_SUN_ON() { SETBIT1(motoHour.flags, fMH_SUN_ON); }
+   inline void  clear_fMH_SUN_ON() { SETBIT0(motoHour.flags, fMH_SUN_ON); }
+   inline bool  get_fMH_SUN_ON() { return GETBIT(motoHour.flags, fMH_SUN_ON); }
 
    void     set_BoilerOFF(){SETBIT0(Prof.SaveON.flags,fBoilerON);}          // Выключить бойлер
    void     set_BoilerON() {SETBIT1(Prof.SaveON.flags,fBoilerON);}          // Включить бойлер

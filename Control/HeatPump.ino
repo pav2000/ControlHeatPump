@@ -151,11 +151,11 @@ boolean HeatPump::setState(TYPE_STATE_HP st)
   if (st==Status.State) return false;     // Состояние не меняется
   switch (st)
   {
-  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(motoHour.flags,fHP_ON))   {SETBIT0(motoHour.flags,fHP_ON);save_motoHour();}  break;  // 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
+  case pOFF_HP:       Status.State=pOFF_HP; if(GETBIT(motoHour.flags,fMH_ON))   {SETBIT0(motoHour.flags,fMH_ON);save_motoHour();}  break;  // 0 ТН выключен, при необходимости записываем в ЕЕПРОМ
   case pSTARTING_HP:  Status.State=pSTARTING_HP; break;                                                                                    // 1 Стартует
   case pSTOPING_HP:   Status.State=pSTOPING_HP;  break;                                                                                    // 2 Останавливается
-  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 3 Работает, при необходимости записываем в ЕЕПРОМ
-  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(motoHour.flags,fHP_ON))) {SETBIT1(motoHour.flags,fHP_ON);save_motoHour();}  break; // 4 Ожидание, при необходимости записываем в ЕЕПРОМ
+  case pWORK_HP:      Status.State=pWORK_HP;if(!(GETBIT(motoHour.flags,fMH_ON))) {SETBIT1(motoHour.flags,fMH_ON);save_motoHour();}  break; // 3 Работает, при необходимости записываем в ЕЕПРОМ
+  case pWAIT_HP:      Status.State=pWAIT_HP;if(!(GETBIT(motoHour.flags,fMH_ON))) {SETBIT1(motoHour.flags,fMH_ON);save_motoHour();}  break; // 4 Ожидание, при необходимости записываем в ЕЕПРОМ
   case pERROR_HP:     Status.State=pERROR_HP;    break;                                                                                    // 5 Ошибка ТН
   case pERROR_CODE:                                                                                                                        // 6 - Эта ошибка возникать не должна!
   default:            Status.State=pERROR_HP;    break;                                                                                    // Обязательно должен быть последним, добавляем ПЕРЕД!!!
@@ -602,8 +602,7 @@ void HeatPump::resetSettingHP()
 	Status.State = pOFF_HP;                         // Сотояние ТН - выключен
 	Status.ret = pNone;                             // точка выхода алгоритма
 	motoHour.magic = 0xaa;                          // волшебное число
-	motoHour.flags = 0x00;
-	SETBIT0(motoHour.flags, fHP_ON);               // насос выключен
+	motoHour.flags = 0;								// насос выключен
 	motoHour.H1 = 0;                                // моточасы ТН ВСЕГО
 	motoHour.H2 = 0;                                // моточасы ТН сбрасываемый счетчик (сезон)
 	motoHour.C1 = 0;                                // моточасы компрессора ВСЕГО
@@ -1041,10 +1040,10 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	   }
    } else
    if(strcmp(var,option_SunRegGeo)==0)    	  {return _itoa(GETBIT(Option.flags, fSunRegenerateGeo), ret);}else
-   if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100.0,1); return ret; }else
-   if(strcmp(var,option_SunRegGeoTempGOff)==0){_ftoa(ret,(float)Option.SunRegGeoTempGOff/100.0,1); return ret; }else
-   if(strcmp(var,option_SunTDelta)==0)        {_ftoa(ret,(float)Option.SunTDelta/100.0,1); return ret; }else
-   if(strcmp(var,option_SunGTDelta)==0)       {_ftoa(ret,(float)Option.SunGTDelta/100.0,1); return ret; }else
+   if(strcmp(var,option_SunRegGeoTemp)==0)    {_ftoa(ret,(float)Option.SunRegGeoTemp/100,1); return ret; }else
+   if(strcmp(var,option_SunRegGeoTempGOff)==0){_ftoa(ret,(float)Option.SunRegGeoTempGOff/100,1); return ret; }else
+   if(strcmp(var,option_SunTDelta)==0)        {_ftoa(ret,(float)Option.SunTDelta/100,1); return ret; }else
+   if(strcmp(var,option_SunGTDelta)==0)       {_ftoa(ret,(float)Option.SunGTDelta/100,1); return ret; }else
    if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
@@ -1057,8 +1056,8 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    if(strcmp(var,option_fBackupPower)==0)     {if(GETBIT(Option.flags,fBackupPower)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);}else // флаг Использование резервного питания от генератора (ограничение мощности) 
    if(strcmp(var,option_maxBackupPower)==0)   {return _itoa(Option.maxBackupPower,ret);}else    // Максимальная мощность при питании от генератора
-   if(strcmp(var,option_SunTempOn)==0)        {return _itoa(Option.SunTempOn, ret); } else
-   if(strcmp(var,option_SunTempOff)==0)       {return _itoa(Option.SunTempOff, ret); } else
+   if(strcmp(var,option_SunTempOn)==0)        {_ftoa(ret,(float)Option.SunTempOn/100, 1); return ret; } else
+   if(strcmp(var,option_SunTempOff)==0)       {_ftoa(ret,(float)Option.SunTempOff/100, 1); return ret; } else
    return strcat(ret,(char*)cInvalid);
 }
 
@@ -2036,7 +2035,8 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
   SETBIT0(flags, fHP_BoilerTogetherHeat);
 
-  relayAllOFF();                                         // Все выключить, все  (на всякий случай)
+  // relayAllOFF();          // Все выключить, все (на всякий случай)
+  // случаи бывают разные - должно работать без костылей.
   if (stop)
   {
      //journal.jprintf(" statChart stop\n");
