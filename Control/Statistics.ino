@@ -355,6 +355,7 @@ void Statistics::Update()
 			Reset();
 			if(year != rtcSAM3X8.get_years()) NewYearFlag = 1; // waiting to switch a next year
 		}
+		journal.jprintf("=== %s\n", NowDateToStr()); // Новый день.
 	}
 	int32_t newval = 0;
 	if(HP.is_compressor_on()) {
