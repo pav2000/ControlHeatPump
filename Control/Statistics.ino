@@ -603,6 +603,7 @@ xSkipEmpty:
 		break;
 	default:
 		if(Stats_data[i].type == STATS_TYPE_TIME) int_to_dec_str(val, 60000, ret, 1);  // минуты;
+		else goto xSkipEmpty;
 		break;
 	}
 }
