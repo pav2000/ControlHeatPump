@@ -79,8 +79,8 @@ private:
 	Twi *twi;
 	uint8_t txAddress;
 	uint8_t _Buffer[BUFFER_LENGTH];
-	uint8_t _BufferIndex;
-	uint8_t _BufferLength;
+	uint32_t _BufferIndex;
+	uint32_t _BufferLength;
 	uint8_t *Buffer;
 	size_t BufferMax;
 	size_t BufferIndex;
