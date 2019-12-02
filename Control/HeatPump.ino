@@ -2035,8 +2035,10 @@ int8_t HeatPump::StopWait(boolean stop)
   #endif
   SETBIT0(flags, fHP_BoilerTogetherHeat);
 
-  // relayAllOFF();          // Все выключить, все (на всякий случай)
-  // случаи бывают разные - должно работать без костылей.
+  #ifdef CONFIG_5  // случаи бывают разные - должно работать без костылей.- но лучше перебдеть -))
+   relayAllOFF(); // Все выключить, все (на всякий случай)
+  #endif 
+ 
   if (stop)
   {
      //journal.jprintf(" statChart stop\n");
@@ -2067,7 +2069,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		}
 		if(!GETBIT(Option.flags, fBackupPower)) {   // Включение ТЭНа бойлера если не питание от резервного источника
 			dRelay[RBOILER].set_ON();
+			#ifdef RPUMPBH
 			if(!onBoiler && GETBIT(flags, fHP_BoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
+			#endif
 			SETBIT0(flags, fHP_BoilerTogetherHeat);
 		}
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler)) return pCOMP_OFF;
