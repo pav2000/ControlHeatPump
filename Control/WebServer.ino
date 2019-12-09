@@ -501,7 +501,7 @@ void parserGET(uint8_t thread, int8_t )
 			_itoa(100-HP.CPU_IDLE,strReturn);
 #if defined(WEB_STATUS_SHOW_OVERHEAT) && defined(EEV_DEF)
 			strcat(strReturn,"%|SO>");
-			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);
+			_dtoa(strReturn, HP.dEEV.get_Overheat(), 2);
 			strcat(strReturn,"°C|SF>");
 #else
 			strcat(strReturn,"%|SF>");
@@ -823,19 +823,19 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_tempDS3231")==0)  // Функция get_tempDS3231  - получение температуры DS3231
 		{
-			_ftoa(strReturn,getTemp_RtcI2C(),2); ADD_WEBDELIM(strReturn); continue;
+			_dtoa(strReturn, getTemp_RtcI2C(), 2); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_fullCOP")==0)  //  получение полного COP
 		{
-			if (HP.fullCOP!=-1000) _ftoa(strReturn,(float)HP.fullCOP/100.0,2); else strcat(strReturn,"-"); ADD_WEBDELIM(strReturn); continue;
+			if (HP.fullCOP!=-1000) _dtoa(strReturn, HP.fullCOP, 2); else strcat(strReturn,"-"); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_PowerCO") == 0)
 		{
-			_ftoa(strReturn, HP.powerCO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
+			_ftoa(strReturn, HP.powerCO/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_PowerGEO") == 0)
 		{
-			_ftoa(strReturn, HP.powerGEO/1000.0,3); ADD_WEBDELIM(strReturn); continue;
+			_ftoa(strReturn, HP.powerGEO/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_Power220") == 0)
 		{
@@ -843,7 +843,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(HP.NO_Power) strcat(strReturn,"*.***");
 			else
 #endif
-				_ftoa(strReturn, HP.power220/1000.0,3);
+				_ftoa(strReturn, HP.power220/1000.0f,3);
 			ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера
@@ -904,7 +904,8 @@ void parserGET(uint8_t thread, int8_t )
 				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
 				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '(') {
 					strcat(strReturn, " / ");
-					_ftoa(strReturn, (float) HP.CalcTargetPID(*HP.get_modeHouseSettings()) / 100, 1);
+					_dtoa(strReturn, HP.CalcTargetPID(*HP.get_modeHouseSettings()), 2);
+					*--strReturn = '\0';
 				}
 			}
 			ADD_WEBDELIM(strReturn); continue;
@@ -1172,8 +1173,8 @@ void parserGET(uint8_t thread, int8_t )
 			// Датчики
 			strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_ftoa(strReturn,(float)GAP_TEMP_VAL/100.0,2);strcat(strReturn,";");
-			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn,(float)MAX_TEMP_ERR/100.0,2);strcat(strReturn,";");
+			strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_dtoa(strReturn, GAP_TEMP_VAL, 2);strcat(strReturn,";");
+			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn, MAX_TEMP_ERR, 2);strcat(strReturn,";");
 			// Удаленные датчики
 			strcat(strReturn,"SENSOR_IP|Использование удаленных датчиков|");
 #ifdef SENSOR_IP
@@ -1190,7 +1191,7 @@ void parserGET(uint8_t thread, int8_t )
 			// SALLMONELA
 			strcat(strReturn,"SALLMONELA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALLMONELA_DAY,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"SALLMONELA_HOUR|Час когда начинаятся обеззарживание ГВС|");_itoa(SALLMONELA_HOUR,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"SALLMONELA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_ftoa(strReturn,(float)SALLMONELA_TEMP/100.0,2);strcat(strReturn,";");
+			strcat(strReturn,"SALLMONELA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_dtoa(strReturn, SALLMONELA_TEMP, 2);strcat(strReturn,";");
 			// ЭРВ
 #ifdef EEV_DEF
 			strcat(strReturn,"EEV_QUEUE|Длина очереди команд шагового двигателя ЭРВ|");_itoa(EEV_QUEUE,strReturn);strcat(strReturn,";");
@@ -1274,7 +1275,7 @@ void parserGET(uint8_t thread, int8_t )
 	#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 				_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
 	#else
-				m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1fV - сброс;", (float)((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) / 10 + 1.9);
+				m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1dV - сброс;", ((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) + 19);
 	#endif
 				m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
 				//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
@@ -1380,13 +1381,13 @@ void parserGET(uint8_t thread, int8_t )
 			continue;
 		}   // test_Mail
 		if(strcmp(str, "get_OverCool") == 0) {
-			_ftoa(strReturn, HP.get_overcool() / 100.0, 2);
+			_dtoa(strReturn, HP.get_overcool(), 2);
 			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 #ifdef EEV_DEF
 		if(strcmp(str, "get_OverHeat") == 0) { // Выводит 2 перегрева сразу
-			_ftoa(strReturn, (float)HP.dEEV.get_Overheat() / 100, 2);
+			_dtoa(strReturn, HP.dEEV.get_Overheat(), 2);
 #ifdef TCOMPIN
 #ifdef TCONIN
 			if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA) {
@@ -1394,7 +1395,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(HP.dEEV.get_ruleEEV() != TCOMPIN_PEVA && HP.is_heating()) {
 #endif
 				strcat(strReturn, " / ");
-				_ftoa(strReturn, (float)HP.dEEV.OverheatTCOMP / 100, 2);
+				_dtoa(strReturn, HP.dEEV.OverheatTCOMP, 2);
 			}
 #endif
 			ADD_WEBDELIM(strReturn);
@@ -1402,13 +1403,13 @@ void parserGET(uint8_t thread, int8_t )
 		}
 #endif
 		if(strcmp(str, "get_Evapor") == 0) {
-			if(HP.sADC[PEVA].get_present()) _ftoa(strReturn, HP.get_temp_evaporating() / 100.0, 2);
+			if(HP.sADC[PEVA].get_present()) _dtoa(strReturn, HP.get_temp_evaporating(), 2);
 			else strcat(strReturn,"-");
 			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if(strcmp(str, "get_TCOMP_TCON") == 0) { // Нагнетание - Конденсация
-			_ftoa(strReturn, (HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing()) / 100.0, 2);
+			_dtoa(strReturn, HP.sTemp[TCOMP].get_Temp() - HP.get_temp_condensing(), 2);
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
 		// ЭРВ запросы , те которые без параметра ------------------------------
@@ -2094,13 +2095,13 @@ void parserGET(uint8_t thread, int8_t )
 							if(strcmp(str,"Temp")==0)              // Функция get_Temp
 							{
 								if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sTemp[p].get_Temp()/100,2);
+									_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
 							}
 							if (strncmp(str,"raw",3)==0)           // Функция get_RawTemp
 							{ 	if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sTemp[p].get_rawTemp()/100,2);
+									_dtoa(strReturn, HP.sTemp[p].get_rawTemp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
 							}
@@ -2114,12 +2115,15 @@ void parserGET(uint8_t thread, int8_t )
 											&& (HP.sTemp[p].devIP->get_link() > -1)) // Удаленный датчик привязан к данному проводному датчику надо использовать
 									{
 										strcat(strReturn, " [");
-										_ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100, 2);
+										_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
 										strcat(strReturn, "]");
 									}
 	#else
 									if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
-									else _ftoa(strReturn, (float) HP.sTemp[p].get_Temp() / 100, HP.sTemp[p].get_fRadio() ? 1 : 2);
+									else {
+										_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
+										if(HP.sTemp[p].get_fRadio()) *--strReturn = '\0';
+									}
 	#endif
 								} else strcat(strReturn, "-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn);
@@ -2129,7 +2133,7 @@ void parserGET(uint8_t thread, int8_t )
 							if(strncmp(str, "min", 3)==0)           // Функция get_minTemp
 							{
 								if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sTemp[p].get_minTemp()/100,1);
+									_dtoa(strReturn, HP.sTemp[p].get_minTemp(), 2);
 								else strcat(strReturn,"-");              // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
 							}
@@ -2137,13 +2141,13 @@ void parserGET(uint8_t thread, int8_t )
 							if(strncmp(str, "max", 3)==0)           // Функция get_maxTemp
 							{
 								if (HP.sTemp[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sTemp[p].get_maxTemp()/100,1);
+									_dtoa(strReturn, HP.sTemp[p].get_maxTemp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
 							}
 
 							if(strncmp(str, "err", 3)==0)           // Функция get_errTemp
-							{ _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
+							{ _dtoa(strReturn, HP.sTemp[p].get_errTemp(), 2); ADD_WEBDELIM(strReturn); continue; }
 
 							if(strncmp(str, "aT", 2) == 0)           // Функция get_aTemp (address)
 							{
@@ -2155,7 +2159,7 @@ x_get_aTemp:
 							}
 
 							if(strncmp(str, "test", 4)==0)           // Функция get_testTemp
-							{ _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn); continue; }
+							{ _dtoa(strReturn, HP.sTemp[p].get_testTemp(), 2); ADD_WEBDELIM(strReturn); continue; }
 
 							if (strncmp(str, "eT", 2)==0)           // Функция get_eTemp (errcode)
 							{ _itoa(HP.sTemp[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
@@ -2176,7 +2180,7 @@ x_get_aTemp:
 									i = HP.sTemp[p].get_radio_received_idx();
 									if(i >= 0) {
 										m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));
-										if(str[5] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1fV", (float)radio_received[i].battery / 10.0);
+										if(str[5] == '2') m_snprintf(strReturn + strlen(strReturn), 20, ", %.1dV", radio_received[i].battery);
 									} else strcat(strReturn, " \xF0\x9F\x93\xB6");
 								}
 	#endif
@@ -2204,12 +2208,12 @@ x_get_aTemp:
 							}
 							if(strncmp(str, "test", 4)==0)           // Функция set_testTemp
 							{ 	if (HP.sTemp[p].set_testTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-									{ _ftoa(strReturn,(float)HP.sTemp[p].get_testTemp()/100,1); ADD_WEBDELIM(strReturn);  continue;  }
+									{ _dtoa(strReturn, HP.sTemp[p].get_testTemp(), 2); ADD_WEBDELIM(strReturn);  continue;  }
 								else { strcat(strReturn,"E05" WEBDELIM);  continue;}       // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 							}
 							if(strncmp(str, "err", 3)==0)           // Функция set_errTemp
 							{ 	if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
-									{ _ftoa(strReturn,(float)HP.sTemp[p].get_errTemp()/100,2); ADD_WEBDELIM(strReturn); continue; }
+									{ _dtoa(strReturn, HP.sTemp[p].get_errTemp(), 2); ADD_WEBDELIM(strReturn); continue; }
 								else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 							}
 
@@ -2305,10 +2309,10 @@ x_get_aTemp:
 							{
 								if(HP.sADC[p].get_present())         // Если датчик есть в конфигурации то выводим значение
 								{
-									_ftoa(strReturn,(float)HP.sADC[p].get_Press() / 100, 2);
+									_dtoa(strReturn, HP.sADC[p].get_Press(), 2);
 	#ifdef EEV_DEF
 									if(p < 2) {
-										m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2f°]", (float)PressToTemp(p) / 100);
+										m_snprintf(strReturn + m_strlen(strReturn), 20, " [%.2d°]", PressToTemp(p));
 									}
 	#endif
 								} else strcat(strReturn,"-");             // Датчика нет ставим прочерк
@@ -2319,22 +2323,26 @@ x_get_aTemp:
 							{ _itoa(HP.sADC[p].get_lastADC(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
 							if(strncmp(str, "min", 3)==0)           // Функция get_minPress
-							{ if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-								x_get_minPress: _ftoa(strReturn,(float)HP.sADC[p].get_minPress()/100.0,2);
-							else strcat(strReturn,"-");              // Датчика нет ставим прочерк
-							ADD_WEBDELIM(strReturn); continue; }
+							{
+								if (HP.sADC[p].get_present())          // Если датчик есть в конфигурации то выводим значение
+x_get_minPress: 					_dtoa(strReturn, HP.sADC[p].get_minPress(), 2);
+								else strcat(strReturn,"-");              // Датчика нет ставим прочерк
+								ADD_WEBDELIM(strReturn); continue;
+							}
 
 							if(strncmp(str, "max", 3)==0)           // Функция get_maxPress
-							{ if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
-								x_get_maxPress: _ftoa(strReturn,(float)HP.sADC[p].get_maxPress()/100.0,2);
-							else strcat(strReturn,"-");               // Датчика нет ставим прочерк
-							ADD_WEBDELIM(strReturn); continue; }
+							{
+								if (HP.sADC[p].get_present())           // Если датчик есть в конфигурации то выводим значение
+x_get_maxPress: 					_dtoa(strReturn, HP.sADC[p].get_maxPress(), 2);
+								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
+								ADD_WEBDELIM(strReturn); continue;
+							}
 
 							if(strncmp(str, "zero", 4)==0)           // Функция get_zeroPress
 							{ _itoa(HP.sADC[p].get_zeroPress(),strReturn); ADD_WEBDELIM(strReturn); continue; }
 
 							if(strncmp(str, "trans", 5)==0)           // Функция get_transPress
-							{ _ftoa(strReturn,(float)HP.sADC[p].get_transADC() / 1000, 3); ADD_WEBDELIM(strReturn); continue; }
+							{ _dtoa(strReturn, HP.sADC[p].get_transADC(), 3); ADD_WEBDELIM(strReturn); continue; }
 
 							if(strncmp(str, "pin", 3)==0)           // Функция get_pinPress
 							{
@@ -2350,7 +2358,7 @@ x_get_aTemp:
 							}
 
 							if(strncmp(str, "test", 4)==0)           // Функция get_testPress
-							{ _ftoa(strReturn,(float)HP.sADC[p].get_testPress()/100.0,2); ADD_WEBDELIM(strReturn); continue; }
+							{ _dtoa(strReturn, HP.sADC[p].get_testPress(), 2); ADD_WEBDELIM(strReturn); continue; }
 
 							if(strncmp(str, "eP", 2)==0)           // Функция get_ePress (errorcode)
 							{ _itoa(HP.sADC[p].get_lastErr(),strReturn); ADD_WEBDELIM(strReturn); continue; }
@@ -2375,7 +2383,7 @@ x_get_aTemp:
 							{
 								if(HP.sADC[p].set_testPress(rd(pm, 100)) == OK)    // Установить значение
 								{
-									_ftoa(strReturn, (float) HP.sADC[p].get_testPress() / 100.0, 2);
+									_dtoa(strReturn, HP.sADC[p].get_testPress(), 2);
 									ADD_WEBDELIM(strReturn); continue;
 								} else {// выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 									strcat(strReturn, "E05" WEBDELIM);	continue;
@@ -2392,7 +2400,7 @@ x_get_aTemp:
 
 							if(strncmp(str, "trans", 5)==0)           // Функция set_transPress float
 							{ if (HP.sADC[p].set_transADC(pm)==OK)    // Установить значение
-								{_ftoa(strReturn,(float)HP.sADC[p].get_transADC() / 1000, 3); ADD_WEBDELIM(strReturn); continue;}
+								{_dtoa(strReturn, HP.sADC[p].get_transADC(), 3); ADD_WEBDELIM(strReturn); continue;}
 								else { strcat(strReturn,"E05" WEBDELIM);  continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 							}
 
@@ -2428,28 +2436,28 @@ x_get_aTemp:
 							if(strncmp(str, "Flow", 4)==0)           // Функция get_Flow
 							{
 								if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sFrequency[p].get_Value()/1000.0,3);
+									_dtoa(strReturn, HP.sFrequency[p].get_Value(), 3);
 								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
 							if(strncmp(str, "frF", 3)==0)           // Функция get_frFlow
 							{
 								if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sFrequency[p].get_Frequency()/1000.0,3);
+									_dtoa(strReturn, HP.sFrequency[p].get_Frequency(), 3);
 								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
 							if(strncmp(str, "min", 3)==0)           // Функция get_minFlow
 							{
 								if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1);
+									_dtoa(strReturn, HP.sFrequency[p].get_minValue() / 100, 1);
 								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
 							if(strncmp(str, "kfF", 3)==0)           // Функция get_kfFlow
 							{
 								if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2);
+									_dtoa(strReturn, HP.sFrequency[p].get_kfValue(), 2);
 								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
@@ -2463,7 +2471,7 @@ x_get_aTemp:
 							if(strncmp(str, "test", 4)==0)           // Функция get_testFlow
 							{
 								if (HP.sFrequency[p].get_present())          // Если датчик есть в конфигурации то выводим значение
-									_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3);
+									_dtoa(strReturn, HP.sFrequency[p].get_testValue(), 3);
 								else strcat(strReturn,"-");               // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
@@ -2489,7 +2497,7 @@ x_get_aTemp:
 							}
 							if(strncmp(str, "min", 3)==0) {           // Функция set_minFlow
 								HP.sFrequency[p].set_minValue(pm);
-								_ftoa(strReturn,(float)HP.sFrequency[p].get_minValue()/1000.0,1); ADD_WEBDELIM(strReturn); continue;
+								_dtoa(strReturn, HP.sFrequency[p].get_minValue() / 100, 1); ADD_WEBDELIM(strReturn); continue;
 							}
 							if(strncmp(str, "check", 5)==0) {           // Функция set_checkFlow
 								HP.sFrequency[p].set_checkFlow(pm != 0);
@@ -2497,12 +2505,12 @@ x_get_aTemp:
 							}
 							if(strncmp(str, "test", 4)==0)           // Функция set_testFlow
 							{ if (HP.sFrequency[p].set_testValue(rd(pm, 1000))==OK)    // Установить значение
-								{_ftoa(strReturn,(float)HP.sFrequency[p].get_testValue()/1000.0,3); ADD_WEBDELIM(strReturn); continue; }
+								{_dtoa(strReturn, HP.sFrequency[p].get_testValue(), 3); ADD_WEBDELIM(strReturn); continue; }
 								else { strcat(strReturn,"E35" WEBDELIM); continue;}         // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 							}
 							if(strncmp(str, "kfF", 3)==0)           // Функция set_kfFlow float
 							{ HP.sFrequency[p].set_kfValue(rd(pm, 100));    // Установить значение
-								_ftoa(strReturn,(float)HP.sFrequency[p].get_kfValue()/100,2); ADD_WEBDELIM(strReturn); continue;
+								_dtoa(strReturn, HP.sFrequency[p].get_kfValue(), 2); ADD_WEBDELIM(strReturn); continue;
 							}
 							if(strncmp(str, "cF", 2)==0)           // Функция set_cFlow float (capacity)
 							{

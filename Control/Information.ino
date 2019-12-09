@@ -417,45 +417,64 @@ boolean statChart::get_boolPoint(uint16_t x,uint16_t mask)
  }
 }
 
-// получить строку в которой перечислены все точки в строковом виде через; при этом значения делятся на m
+// получить строку в которой перечислены все точки в строковом виде через; при этом значения делятся на 100
 // строка не обнуляется перед записью
-void statChart::get_PointsStr(uint16_t m, char *&b)
-{ 
-  if ((!present)||(num==0)) {
-	  //strcat(b, ";");
-	  return;
-  }
-  b += m_strlen(b);
-  for(uint16_t i = 0; i < num; i++) {
-    b += _ftoa(b, (float)get_Point(i)/m, 2);
-    *b++ = ';'; *b = '\0';
-  }
+void statChart::get_PointsStrDiv100(char *&b)
+{
+	if((!present) || (num == 0)) {
+		//strcat(b, ";");
+		return;
+	}
+	b += m_strlen(b);
+	for(uint16_t i = 0; i < num; i++) {
+		b = dptoa(b, get_Point(i), 2);
+		*b++ = ';';
+		*b = '\0';
+	}
 }
 
-void statChart::get_PointsStrSub(uint16_t m, char *&b, statChart *sChart)
+// получить строку в которой перечислены все точки в строковом виде через;
+// строка не обнуляется перед записью
+void statChart::get_PointsStr(char *&b)
 {
-  if (!present || num == 0 || !sChart->get_present() || sChart->get_num() == 0) {
-	  //strcat(b, ";");
-	  return;
-  }
-  b += m_strlen(b);
-  for(uint16_t i = 0; i < num; i++) {
-    b += _ftoa(b, (float)(get_Point(i) - sChart->get_Point(i))/m, 2);
-    *b++ = ';'; *b = '\0';
-  }
+	if((!present) || (num == 0)) {
+		//strcat(b, ";");
+		return;
+	}
+	b += m_strlen(b);
+	for(uint16_t i = 0; i < num; i++) {
+		b += m_itoa(get_Point(i), b, 10, 0);
+		*b++ = ';';
+		*b = '\0';
+	}
+}
+
+void statChart::get_PointsStrSubDiv100(char *&b, statChart *sChart)
+{
+	if(!present || num == 0 || !sChart->get_present() || sChart->get_num() == 0) {
+		//strcat(b, ";");
+		return;
+	}
+	b += m_strlen(b);
+	for(uint16_t i = 0; i < num; i++) {
+		b = dptoa(b, get_Point(i) - sChart->get_Point(i), 2);
+		*b++ = ';';
+		*b = '\0';
+	}
 }
 // Расчитать мощность на лету используется для графика потока, передаются указатели на графики температуры + теплоемкость
-void statChart::get_PointsStrPower(uint16_t m, char *&b, statChart *inChart,statChart *outChart, float kfCapacity)
+void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t Capacity)
 {
-  if (!present || num == 0 || !inChart->get_present() || inChart->get_num()==0 || !outChart->get_present() || outChart->get_num()== 0) {
-	  //strcat(b, ";");
-	  return;
-  }
-  b += m_strlen(b);
-  for(uint16_t i = 0; i < num; i++) {
-    b += _ftoa(b, float(abs(outChart->get_Point(i)-inChart->get_Point(i))*get_Point(i))/kfCapacity/m, 2);
-    *b++ = ';'; *b = '\0';
-  }
+	if(!present || num == 0 || !inChart->get_present() || inChart->get_num() == 0 || !outChart->get_present() || outChart->get_num() == 0) {
+		//strcat(b, ";");
+		return;
+	}
+	b += m_strlen(b);
+	for(uint16_t i = 0; i < num; i++) {
+		b = dptoa(b, abs(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * (3600L * 100 / Capacity), 3);
+		*b++ = ';';
+		*b = '\0';
+	}
 }
 
 // ---------------------------------------------------------------------------------
@@ -949,7 +968,7 @@ int32_t Profile::load(int8_t num)
   update_list(num); 
    
   #ifdef TBOILER // Изменение максимальной температуры при включенном режиме сальмонелла
-  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2f for salmonella\n",(float)(HP.sTemp[TBOILER].get_maxTemp()/100.0));} 
+  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2d for salmonella\n", HP.sTemp[TBOILER].get_maxTemp());}
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
   // Обнуляем ПИД errKp
@@ -991,7 +1010,7 @@ int8_t Profile::loadFromBuf(int32_t adr,byte *buf)
   #endif
   
   #ifdef TBOILER // Изменение максимальной температуры при включенном режиме сальмонелла
-  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2f for salmonella\n",(float)(HP.sTemp[TBOILER].get_maxTemp()/100.0));} 
+  if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALLMONELA_TEMP+300);journal.jprintf(" Set boiler max t=%.2d for salmonella\n",HP.sTemp[TBOILER].get_maxTemp());}
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
 

@@ -209,32 +209,40 @@ float my_atof(const char* s){
   return rez * fact;
 };
 
+// Decimal (дробное приведенное к целому) в строку, precision: 1..10000
+void _dtoa(char *outstr, int val, int precision)
+{
+    while(*outstr) outstr++;
+    dptoa(outstr, val, precision);
+}
+
 //float в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек -----------------------------------
 uint8_t _ftoa(char *outstr, float val, unsigned char precision)
 {
     while(*outstr) outstr++;
 	char *instr = outstr;
-	
+
 	// compute the rounding factor and fractional multiplier
-	float roundingFactor = 0.5;
+	float roundingFactor = 0.5f;
 	unsigned long mult = 1;
 	unsigned char padding = precision;
 	while(precision--) {
-		roundingFactor /= 10.0;
+		roundingFactor /= 10.0f;
 		mult *= 10;
 	}
-	if(val < 0.0){
+	if(val < 0.0f){
 		*outstr++ = '-';
 		val = -val;
 	}
 	val += roundingFactor;
-	outstr += m_itoa((long)val, outstr, 10, 0);
+	outstr += i10toa((long)val, outstr, 0);
 	if(padding > 0) {
 		*(outstr++) = '.';
-		outstr += m_itoa((val - (long)val) * mult, outstr, 10, padding);
+		outstr += i10toa((val - (long)val) * mult, outstr, padding);
 	}
 	return outstr - instr;
 }
+
 //int в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек radix=10
 char* _itoa( int value, char *string)
 {
@@ -251,8 +259,7 @@ char* _itoa( int value, char *string)
 
 	/* This builds the string back to front ... */
 	do {
-		unsigned char digit = value % 10;
-		*(pbuffer++) = (digit < 10 ? '0' + digit : 'a' + digit - 10);
+		*(pbuffer++) = '0' + value % 10;
 		value /= 10;
 	} while (value > 0);
 
@@ -263,8 +270,8 @@ char* _itoa( int value, char *string)
 
 	/* ... now we reverse it (could do it recursively but will
 	 * conserve the stack space) */
-	uint8_t len = (pbuffer - string);
-	for (uint8_t i = 0; i < len / 2; i++) {
+	uint32_t len = (pbuffer - string);
+	for (uint32_t i = 0; i < len / 2; i++) {
 		char j = string[i];
 		string[i] = string[len-i-1];
 		string[len-i-1] = j;
@@ -825,7 +832,7 @@ __attribute__((always_inline))   inline byte readEEPROM_I2C(unsigned long addr, 
 }
 // ЧАСЫ  есть проблема - работают на прямую с i2c не через wire ----------------------------------
 // Часы на I2C   Чтение температуры
-__attribute__((always_inline)) inline float getTemp_RtcI2C()
+__attribute__((always_inline)) inline int16_t getTemp_RtcI2C()
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
@@ -833,7 +840,7 @@ __attribute__((always_inline)) inline float getTemp_RtcI2C()
 	}
 	int16_t rtc_temp = rtcI2C.temperature();
 	SemaphoreGive(xI2CSemaphore);
-	return (float) rtc_temp / 100.0;
+	return rtc_temp;
 }
 
 // Часы на I2C   Чтение времени

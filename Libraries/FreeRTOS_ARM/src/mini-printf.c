@@ -166,7 +166,7 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 				case 'u':
 				case 'd':
 					if(b.buffer_len - (b.pbuffer - b.buffer) < (unsigned int)(zero_pad ? zero_pad+1 : 12)) break;
-					b.pbuffer += m_itoa(va_arg(va, unsigned int), b.pbuffer, 10, (ch=='u' ? f_unsigned : 0) + zero_pad);
+					b.pbuffer += m_itoa(va_arg(va, int), b.pbuffer, 10, (ch=='u' ? f_unsigned : 0) + zero_pad);
 //					len = mini_itoa(va_arg(va, unsigned int), 10, 0, (ch=='u'), bf, zero_pad);
 //					_puts(bf, len, &b);
 					break;
@@ -189,12 +189,15 @@ unsigned int m_vsnprintf(char *buffer, unsigned int buffer_len, const char *fmt,
 					break;
 
 #ifdef MINI_PRINTF_USE_FLOAT
-				case '.' :  // %.xf - float with decimal point, x - precision
-				    ch = *fmt;
-				    fmt += 2;
-					if(b.buffer_len - (b.pbuffer - b.buffer) < 16) break;
-					ftoa(b.pbuffer, (float)va_arg(va, double), ch - '0');
-					b.pbuffer += m_strlen(b.pbuffer);
+				case '.' :  // %.xf - float with decimal point, x - precision; %.xd - int32 with decimal point, divided by 10^x
+			    	if(b.buffer_len - (b.pbuffer - b.buffer) < 16) break;
+				    ch = *fmt++;
+				    if(*fmt++ == 'f') {
+				    	ftoa(b.pbuffer, (float)va_arg(va, double), ch - '0');
+				    	b.pbuffer += m_strlen(b.pbuffer);
+				    } else {
+				    	b.pbuffer = dptoa(b.pbuffer, va_arg(va, int), ch - '0');
+				    }
 					break;
 #endif
 				default:
@@ -225,14 +228,14 @@ char *ftoa(char *outstr, float val, unsigned char precision)
 {
 	char *ret = outstr;
 	// compute the rounding factor and fractional multiplier
-	float roundingFactor = 0.5;
+	float roundingFactor = 0.5f;
 	unsigned long mult = 1;
 	unsigned char padding = precision;
 	while(precision--) {
-		roundingFactor /= 10.0;
+		roundingFactor /= 10.0f;
 		mult *= 10;
 	}
-	if(val < 0.0){
+	if(val < 0.0f){
 		*outstr++ = '-';
 		val = -val;
 	}
@@ -244,4 +247,50 @@ char *ftoa(char *outstr, float val, unsigned char precision)
 	}
 	return ret;
 }
+
+// Decimal (fractional cast to integer) in string, precision: 1..10000
+char *dptoa(char *outstr, int val, unsigned int precision)
+{
+    //while(*outstr) outstr++;
+    int div;
+    switch(precision) {
+    	case 1: div = 10; break;
+    	case 2: div = 100; break;
+    	case 3: div = 1000; break;
+    	case 4: div = 10000; break;
+    	default: div = 1;
+    }
+    outstr += i10toa(val / div, outstr, 0);
+    if(precision > 0) {
+		*(outstr++) = '.';
+		outstr += i10toa(val % div, outstr, precision);
+    }
+    return outstr;
+}
+
+//int в *char в строку ДОБАВЛЯЕТСЯ значение экономим место и скорость и стек radix=10
+unsigned int i10toa(int value, char *string, unsigned int zero_pad)
+{
+	char *pbuffer = string;
+	unsigned char negative;
+	if(value < 0) {
+		negative = 1;
+		value = -value;
+	} else negative = 0;
+	do {
+		*(pbuffer++) = '0' + value % 10;
+		value /= 10;
+	} while (value > 0);
+	for(unsigned int i = (pbuffer - string); i < zero_pad; i++)	*(pbuffer++) = '0';
+	if(negative) *(pbuffer++) = '-';
+	*(pbuffer) = '\0';
+	unsigned int len = (pbuffer - string);
+	for(unsigned int i = 0; i < len / 2; i++) {
+		char j = string[i];
+		string[i] = string[len-i-1];
+		string[len-i-1] = j;
+	}
+	return len;
+}
+
 #endif

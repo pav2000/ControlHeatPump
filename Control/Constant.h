@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.043"				// Версия прошивки
+#define VERSION			"1.044"				// Версия прошивки
 #define VER_SAVE		137					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -602,7 +602,6 @@ const char *chart_posEEV    = {"posEEV"};                    // позиция �
 const char *chart_freqFC    = {"freqFC"};                    // Частота инвертора
 const char *chart_powerFC   = {"powerFC"};                   // Мощность инвертора
 const char *chart_currentFC = {"currentFC"};                 // Ток компрессора
-const char *chart_RCOMP     = {"RCOMP"};                     // включение компрессора
 const char *chart_OVERHEAT  = {"Overheat"};                  // перегрев текущий
 const char *chart_OVERHEAT2 = {"Overheat2"};       		  	 // перегрев2
 const char *chart_OVERCOOL  = {"Overcool"};       		  	 // переохлаждение
@@ -617,10 +616,7 @@ const char *chart_PowerGEO  = {"PowerGEO"};                  // Мощность
 const char *chart_COP       = {"COP"};                       // Коэффициент преобразования Холодильной машины (без насосов)
 const char *chart_VOLTAGE   = {"VOLTAGE"};                   // Статистика по напряжению
 const char *chart_CURRENT   = {"CURRENT"};                   // Статистика по току
-//const char *chart_acPOWER   = {"acPOWER"};                 // Статистика по активная мощность
-//const char *chart_rePOWER   = {"rePOWER"};                 // Статистика по Реактивная мощность
 const char *chart_fullPOWER = {"fullPOWER"};                 // Статистика по Полная мощность
-//const char *chart_kPOWER    = {"kPOWER"};                  // Статистика по Коэффициент мощности
 const char *chart_fullCOP   = {"fullCOP"};                   // Полный COP
 
 // Описание имен параметров инвертора  для функций get_paramFC ("get_pFC") set_paramFC ("set_pFC")
