@@ -1084,36 +1084,38 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	if(strcmp(var, eev_POS)==0) {
 		_itoa(EEV,ret);
 	} else if(strcmp(var, eev_POSp)==0){
-		_ftoa(ret,(float)get_EEV_percent() / 100, 1);
+		_dtoa(ret, get_EEV_percent(), 2);
+		*--ret = '\0';
 	} else if(strcmp(var, eev_POSpp)==0){
 		_itoa(EEV,ret);
 		strcat(ret," (");
-		_ftoa(ret, (float)get_EEV_percent() / 100, 1);
+		_dtoa(ret, get_EEV_percent(), 2);
+		*--ret = '\0';
 		strcat(ret,"%)");
 		if(stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
-		_ftoa(ret,(float)Overheat/100,2);
+		_dtoa(ret, Overheat, 2);
 	} else if(strcmp(var, eev_ERROR)==0){  _itoa(err,ret);
 	} else if(strcmp(var, eev_MIN)==0){    _itoa(_data.minSteps,ret);
 	} else if(strcmp(var, eev_MAX)==0){	   _itoa(_data.maxSteps,ret);
 	} else if(strcmp(var, eev_TIME)==0){   _itoa(_data.pid_time,ret);
-	} else if(strcmp(var, eev_TARGET)==0){ _ftoa(ret,(float)_data.tOverheat/100,2);
-	} else if(strcmp(var, eev_tOverheatTCOMP)==0){ _ftoa(ret,(float)_data.tOverheatTCOMP/100,2);
-	} else if(strcmp(var, eev_tOverheatTCOMP_delta)==0){ _ftoa(ret,(float)_data.tOverheatTCOMP_delta/100,2);
-	} else if(strcmp(var, eev_PID2_delta)==0){ _ftoa(ret, (float)_data.pid2_delta/100, 2);
-	} else if(strcmp(var, eev_KP)==0){     _ftoa(ret,(float)-_data.pid.Kp / 1000,3);
-	} else if(strcmp(var, eev_KP2)==0){    _ftoa(ret,(float)-_data.pid2.Kp / 1000,3);
-	} else if(strcmp(var, eev_KI2)==0){	   _ftoa(ret,(float)-_data.pid2.Ki / _data.pid_time / 1000,3);
-	} else if(strcmp(var, eev_KD2)==0){	   _ftoa(ret,(float)-_data.pid2.Kd * _data.pid_time / 1000,3);
+	} else if(strcmp(var, eev_TARGET)==0){ _dtoa(ret, _data.tOverheat, 2);
+	} else if(strcmp(var, eev_tOverheatTCOMP)==0){ _dtoa(ret, _data.tOverheatTCOMP, 2);
+	} else if(strcmp(var, eev_tOverheatTCOMP_delta)==0){ _dtoa(ret, _data.tOverheatTCOMP_delta, 2);
+	} else if(strcmp(var, eev_PID2_delta)==0){ _dtoa(ret, _data.pid2_delta, 2);
+	} else if(strcmp(var, eev_KP)==0){     _dtoa(ret, -_data.pid.Kp, 3);
+	} else if(strcmp(var, eev_KP2)==0){    _dtoa(ret, -_data.pid2.Kp, 3);
+	} else if(strcmp(var, eev_KI2)==0){	   _dtoa(ret, -_data.pid2.Ki / _data.pid_time, 3);
+	} else if(strcmp(var, eev_KD2)==0){	   _dtoa(ret, -_data.pid2.Kd * _data.pid_time, 3);
 #ifdef PID_FORMULA2
-	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)-_data.pid.Ki / _data.pid_time / 1000,3);
-	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)-_data.pid.Kd * _data.pid_time / 1000,3);
+	} else if(strcmp(var, eev_KI)==0){	   _dtoa(ret, -_data.pid.Ki / _data.pid_time, 3);
+	} else if(strcmp(var, eev_KD)==0){	   _dtoa(ret, -_data.pid.Kd * _data.pid_time, 3);
 #else
-	} else if(strcmp(var, eev_KI)==0){	   _ftoa(ret,(float)-_data.pid.Ki / 1000,3);
-	} else if(strcmp(var, eev_KD)==0){	   _ftoa(ret,(float)-_data.pid.Kd / 1000,3);
-	} else if(strcmp(var, eev_ERR_KP)==0){ 	_ftoa(ret, (float)_data.pid2_delta/100, 2);
+	} else if(strcmp(var, eev_KI)==0){	   _dtoa(ret, -_data.pid.Ki,3);
+	} else if(strcmp(var, eev_KD)==0){	   _dtoa(ret,-_data.pid.Kd,3);
+	} else if(strcmp(var, eev_ERR_KP)==0){ 	_dtoa(ret, _data.pid2_delta, 2);
 #endif
-	} else if(strcmp(var, eev_CONST)==0){  _ftoa(ret,(float)_data.Correction/100,2);
+	} else if(strcmp(var, eev_CONST)==0){  _dtoa(ret, _data.Correction,2);
 	} else if(strcmp(var, eev_MANUAL)==0){ _itoa(_data.manualStep,ret);
 	} else if(strcmp(var, eev_FREON)==0){
 		strcat(ret, noteFreon[FREON]);
@@ -1132,13 +1134,13 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_cCORRECT)==0){_itoa((_data.flags & (1<<fCorrectOverHeat)) != 0, ret);
 	} else if(strcmp(var, eev_cDELAY)==0){ 	_itoa(_data.OHCor_Delay, ret);
 	} else if(strcmp(var, eev_cPERIOD)==0){	_itoa(_data.OHCor_Period, ret);
-	} else if(strcmp(var, eev_cDELTA)==0){ 	_ftoa(ret, (float)_data.OHCor_TDIS_TCON/100, 2);
-	} else if(strcmp(var, eev_cOH_MIN)==0){	_ftoa(ret, (float)_data.OverheatMin/100, 2);
-	} else if(strcmp(var, eev_cOH_MAX)==0){	_ftoa(ret, (float)_data.OverheatMax/100, 2);
-	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OverHeatStart/100, 2);
-	} else if(strcmp(var, eev_cOH_TDELTA)==0){if(OHCor_tdelta) _ftoa(ret, (float)OHCor_tdelta/100, 2); else strcat(ret, "-");
-	} else if(strcmp(var, eev_cOH_START)==0){_ftoa(ret, (float)_data.OverHeatStart/100, 2);
-    } else if(strcmp(var, eev_cDELTA_Thr)==0){	_ftoa(ret, (float)(_data.OHCor_TDIS_TCON_Thr/100), 1);
+	} else if(strcmp(var, eev_cDELTA)==0){ 	_dtoa(ret, _data.OHCor_TDIS_TCON, 2);
+	} else if(strcmp(var, eev_cOH_MIN)==0){	_dtoa(ret, _data.OverheatMin, 2);
+	} else if(strcmp(var, eev_cOH_MAX)==0){	_dtoa(ret, _data.OverheatMax, 2);
+	} else if(strcmp(var, eev_cOH_START)==0){_dtoa(ret, _data.OverHeatStart, 2);
+	} else if(strcmp(var, eev_cOH_TDELTA)==0){if(OHCor_tdelta) _dtoa(ret, OHCor_tdelta, 2); else strcat(ret, "-");
+	} else if(strcmp(var, eev_cOH_START)==0){_dtoa(ret, _data.OverHeatStart/100, 2);
+    } else if(strcmp(var, eev_cDELTA_Thr)==0){	_dtoa(ret, _data.OHCor_TDIS_TCON_Thr, 2);
     } else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){	_itoa(_data.OHCor_TDIS_TCON_MAX, ret);
     } else if(strcmp(var, eev_PID_MAX)==0){	_itoa(_data.pid_max, ret); // ограничение ПИД в шагах ЭРВ
 	} else if(strcmp(var, eev_SPEED)==0){  	_itoa(_data.speedEEV, ret);
@@ -1159,7 +1161,7 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_fEEVStartPosByTemp)==0){ _itoa((_data.flags & (1<<fEEV_StartPosByTemp))!=0, ret);
 	} else if(strcmp(var, eev_fEEV_DirectAlgorithm)==0){ _itoa((_data.flags & (1<<fEEV_DirectAlgorithm))!=0, ret);
 	} else if(strcmp(var, eev_trend_threshold)==0){	_itoa(_data.trend_threshold, ret);
-	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_ftoa(ret, (float)_data.trend_mul_threshold/100, 2);
+	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_dtoa(ret, _data.trend_mul_threshold, 2);
 	} else strcat(ret,"E10");
 	return ret;
 }

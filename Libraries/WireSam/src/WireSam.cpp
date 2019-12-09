@@ -124,7 +124,7 @@ uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity) {
 }
 
 // Returns read bytes (quantity less or equal BUFFER_LENGTH)
-uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) {
+uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t) {
 	return requestFrom(address, NULL, quantity, 0);
 }
 
@@ -223,6 +223,7 @@ uint8_t TwoWire::endTransmissionReceive(uint8_t *buffer, size_t quantity, uint8_
 uint8_t TwoWire::endTransmissionReceive(uint8_t use_RTOS_delay)
 {
 	TWI_StartWrite(twi, txAddress, 0, 0, _BufferLength ? _Buffer[_BufferIndex++] : BufferLength ? Buffer[BufferIndex++] : 0); // iaddress = 0, isize = 0
+	if(_BufferIndex == _BufferLength) _BufferLength = 0;
 	TWI_EnableIt(twi, TWI_IER_TXRDY | TWI_IER_NACK);
 
 	if(use_RTOS_delay == 2) return 0; // non-blocking - exiting

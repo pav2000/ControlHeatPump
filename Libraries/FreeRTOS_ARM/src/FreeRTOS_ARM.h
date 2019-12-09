@@ -6,7 +6,7 @@
 #define FreeRTOS_ARM_h
 
 #ifndef PIN_LED_ERROR
-#define PIN_LED_ERROR  38    // pav2000 по умолчанию забивать 13
+#define PIN_LED_ERROR  13 // 38
 #endif
 
 #ifndef __arm__

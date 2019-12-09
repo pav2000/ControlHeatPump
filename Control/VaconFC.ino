@@ -206,7 +206,7 @@ int8_t devVaconFC::get_readState()
 					err = Modbus.get_err(); // Скопировать ошибку
 				}
 				if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-					journal.jprintf(pP_TIME, "FC: %Xh,%.2fHz,%.2fA,%.2f%%=%.3f\n", state, (float) FC_curr_freq / 100.0, (float) current / 100.0, (float) power / 100.0,	(float) get_power() / 1000.0);
+					journal.jprintf(pP_TIME, "FC: %Xh,%.2dHz,%.2dA,%.1d%%=%.3d\n", state, FC_curr_freq, current / 100.0, power,	get_power());
 				}
 			}
 		}
@@ -679,11 +679,11 @@ void devVaconFC::get_infoFC(char* buf)
 			get_infoFC_status(buf + m_strlen(buf), state);
 			buf += m_snprintf(buf += m_strlen(buf), 256, "|%Xh;", state);
 			if(err == OK) {
-				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2f%%;2108 (V1.1)|Выходная мощность: %.1f%% (кВт)|%.3f;", (float)read_0x03_16(FC_SPEED) / 100.0, (float)power / 10.0, (float)get_power()/1000.0);
+				buf += m_snprintf(buf, 256, "2103|Фактическая скорость|%.2d%%;2108 (V1.1)|Выходная мощность: %.1d%% (кВт)|%.3d;", read_0x03_16(FC_SPEED), power, get_power());
 				buf += m_snprintf(buf, 256, "2105 (V1.3)|Обороты (об/м)|%d;", (int16_t)read_0x03_16(FC_RPM));
-				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1f%%;", (float)(int16_t)read_0x03_16(FC_TORQUE) / 10.0);
+				buf += m_snprintf(buf, 256, "2107 (V1.5)|Крутящий момент|%.1d%%;", (int16_t)read_0x03_16(FC_TORQUE));
 				i = read_0x03_32(FC_VOLTAGE); // +FC_VOLTATE_DC (low word)
-				buf += m_snprintf(buf, 256, "2109 (V1.7)|Выходное напряжение (В)|%.1f;2110 (V1.8)|Напряжение шины постоянного тока (В)|%d;", (float)(i >> 16) / 10.0, i & 0xFFFF);
+				buf += m_snprintf(buf, 256, "2109 (V1.7)|Выходное напряжение (В)|%.1d;2110 (V1.8)|Напряжение шины постоянного тока (В)|%d;", i >> 16, i & 0xFFFF);
 				buf += m_snprintf(buf, 256, "0008 (V1.9)|Температура радиатора (°С)|%d;", read_tempFC());
 				i = read_0x03_32(FC_POWER_DAYS); // +FC_POWER_HOURS (low word)
 				buf += m_snprintf(buf, 256, "0828 (V3.3)|Время включения инвертора (дней:часов)|%d:%d;", i >> 16, i & 0xFFFF);

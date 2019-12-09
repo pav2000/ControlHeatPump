@@ -46,6 +46,8 @@ unsigned int m_snprintf(char* buffer, unsigned int buffer_len, const char *fmt, 
 unsigned int m_strlen(const char *s);
 unsigned int m_itoa(long value, char *buffer, unsigned char radix, unsigned char flags);
 char *ftoa(char *outstr, float val, unsigned char precision);
+char *dptoa(char *outstr, int val, unsigned int precision);
+unsigned int i10toa(int value, char *string, unsigned int zero_pad);
 
 #ifdef __cplusplus
 }

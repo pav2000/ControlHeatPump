@@ -580,7 +580,7 @@ boolean pingServer()
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
 	SemaphoreGive(xWebThreadSemaphore);                 // отдать семафор
 #ifndef DONT_LOG_SUCCESS_PING
-	journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
+	journal.jprintf(pP_TIME,"Ping[%d] ", echoReply.data.seq);
 #endif
 	if(echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
@@ -596,7 +596,7 @@ boolean pingServer()
 #ifdef DONT_LOG_SUCCESS_PING
 		journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: FAILED - ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
 #else
-		journal.jprintf("FAILED - ");                                 // Неудача, пинга нет
+		journal.jprintf("%d.%d.%d.%d: FAILED - ", ip[0], ip[1], ip[2], ip[3]);
 #endif
 		switch (echoReply.status)
 		{
@@ -605,10 +605,12 @@ boolean pingServer()
 		case BAD_RESPONSE: journal.jprintf( "bad reponse");        break;
 		default:           journal.jprintf( "error: %d", echoReply.status); break;
 		}
-		journal.jprintf(", Resetting %s...\n", nameWiznet);
-		HP.num_resPing++;
-		HP.sendCommand(pNETWORK);                                                // Если связь потеряна то подать команду на сброс сетевого чипа
-		//     HP.num_resW5200++;                                                       // Добавить счетчик инициализаций
+		if(!HP.NO_Power) {
+			journal.jprintf(", Resetting %s...\n", nameWiznet);
+			HP.num_resPing++;
+			HP.sendCommand(pNETWORK);                                                // Если связь потеряна то подать команду на сброс сетевого чипа
+			//     HP.num_resW5200++;                                                       // Добавить счетчик инициализаций
+		}
 		return false;
 	}
 	return false;

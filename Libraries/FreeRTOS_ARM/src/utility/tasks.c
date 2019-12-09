@@ -3724,17 +3724,17 @@ void vTaskList( char * pcWriteBuffer )
 //			char lastdelimiter;
 //			if(x == uxArraySize - 1) lastdelimiter = '\0'; else lastdelimiter = '\n';
 			ultoa(pxTaskStatusArray[ x ].xTaskNumber, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			strcat(pcWriteBuffer, pxTaskStatusArray[ x ].pcTaskName);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			strcat(pcWriteBuffer, cStatus);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			ultoa(pxTaskStatusArray[ x ].uxCurrentPriority, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			ultoa(pxTaskStatusArray[ x ].usStackHighWaterMark, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			ultoa(pxTaskStatusArray[ x ].ulRunTimeCounter, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
-			strcat(pcWriteBuffer, ":");
+			strcat(pcWriteBuffer, "|");
 			if( ulStatsAsPercentage > 0UL ) {
 				ultoa(ulStatsAsPercentage, pcWriteBuffer += m_strlen(pcWriteBuffer), 10);
 //				sprintf( pcWriteBuffer, ":%u:%u%%%c", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, lastdelimiter );

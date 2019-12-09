@@ -355,6 +355,7 @@ void Statistics::Update()
 			Reset();
 			if(year != rtcSAM3X8.get_years()) NewYearFlag = 1; // waiting to switch a next year
 		}
+		journal.jprintf("=== %s\n", NowDateToStr()); // Новый день.
 	}
 	int32_t newval = 0;
 	if(HP.is_compressor_on()) {
@@ -602,6 +603,7 @@ xSkipEmpty:
 		break;
 	default:
 		if(Stats_data[i].type == STATS_TYPE_TIME) int_to_dec_str(val, 60000, ret, 1);  // минуты;
+		else goto xSkipEmpty;
 		break;
 	}
 }
