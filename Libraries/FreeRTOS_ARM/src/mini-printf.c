@@ -263,7 +263,7 @@ char *dptoa(char *outstr, int val, unsigned int precision)
     outstr += i10toa(val / div, outstr, 0);
     if(precision > 0) {
 		*(outstr++) = '.';
-		outstr += i10toa(val % div, outstr, precision);
+		outstr += i10toa(abs(val) % div, outstr, precision);
     }
     return outstr;
 }
