@@ -397,6 +397,7 @@ void Statistics::Update()
 			break;
 		}
 		case STATS_OBJ_COP:
+			if(Stats_data[i].type == STATS_TYPE_AVG) continue;
 			if(Stats_data[i].number == OBJ_COP_Compressor) {
 				newval = HP.COP;
 			} else if(Stats_data[i].number == OBJ_COP_Full) {
@@ -428,8 +429,10 @@ void Statistics::Update()
 		case STATS_TYPE_MAX:
 			if(newval > Stats_data[i].value && !skip_value) Stats_data[i].value = newval;
 			break;
-		case STATS_TYPE_AVG:
 		case STATS_TYPE_SUM:
+			Stats_data[i].value += newval;
+			break;
+		case STATS_TYPE_AVG:
 			if(skip_value) newval = Stats_data[i].value / (Stats_data[i].when == STATS_WHEN_WORKD ? counts_work : counts);
 			Stats_data[i].value += newval;
 			break;
@@ -523,7 +526,8 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
 			strcat(ret, "Геоконтур, кВтч"); // хранится в Вт
 		} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
-			strcat(ret, "Потребление, кВтч"); // хранится в Вт
+			strcat(ret, "Потребление, кВт"); // хранится в Вт
+			if(Stats_data[i].type == STATS_TYPE_SUM) strcat(ret, "ч");
 		}
 		break;
 	case STATS_OBJ_COP:
@@ -553,7 +557,7 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		strcat(ret, " (Сред)");
 		break;
 	}
-	if(Stats_data[i].when == STATS_WHEN_WORKD) strcat(ret, "(W)");
+	if(Stats_data[i].when == STATS_WHEN_WORKD) strcat(ret, "(work)");
 }
 
 // Возвращает файл с заголовками полей, flag: +Axis char
@@ -599,7 +603,8 @@ xSkipEmpty:
 		}
 		break;
 	case STATS_OBJ_COP:
-		int_to_dec_str(val, 100, ret, 2);
+		if(Stats_data[i].type == STATS_TYPE_AVG) int_to_dec_str(Stats_data[Stats_data[i].when].value / Stats_data[Stats_data[i].number].value, 1000000, ret, 2);
+		else int_to_dec_str(val, 100, ret, 2);
 		break;
 	default:
 		if(Stats_data[i].type == STATS_TYPE_TIME) int_to_dec_str(val, 60000, ret, 1);  // минуты;
