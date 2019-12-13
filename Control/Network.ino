@@ -89,13 +89,13 @@ boolean linkStatusWiznet(boolean show)
 {
 #if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
 	uint8_t st = W5100.readPHYCFGR();
-	if(((show)||(!(st&W5500_LINK))){ // выводим инфо если вывод заказан ИЛИ если нет связи для информации в каком состоянии находится чип w5500
+	if(show){
 #ifdef W5500_LOG_FULL_INFO
 		if(st & W5500_SPEED) journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n");
-		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");
-		journal.jprintf(" Register PHYCFGR: 0x%02x\n", st);
+		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: Full\n"); else journal.jprintf(" Duplex Status: Half\n");
+		journal.jprintf(" Register PHYCFGR: 0x%02X\n", st);
 #else
-		journal.jprintf("PHYCFGR:0x%02x %s%c ", st, st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H');
+		journal.jprintf(" %s%c[%02X] ", st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H', st);
 #endif
 	}
 	if(st & W5500_LINK) return true;
@@ -574,7 +574,7 @@ boolean pingServer()
 {
 	IPAddress ip;
 	if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  {return false;}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-	if(!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong address ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
+	if(!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
  	// Адрес правильный
 	ping.setTimeout(W5200_TIME_PING);                   // время между попытками пинга мсек
 	WDT_Restart(WDT);                                   // Сбросить вачдог

@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.045"				// Версия прошивки
+#define VERSION			"1.046"				// Версия прошивки
 #define VER_SAVE		137					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -1255,6 +1255,8 @@ enum SMS_SERVICE
   pSMSC_UA,                      // Сервис smsc.ua
   pSMSCLUB_UA                    // Сервис smsclub.mobi
 };
+
+const char SMS_SERVICE_WEB_SELECT[] = "sms.ru:0;smsc.ru:0;smsc.ua:0;smsclub.mobi:0;";
 
 //  Перечисляемый тип - тип фреона
 //enum TYPEFREON

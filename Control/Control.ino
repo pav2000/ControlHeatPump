@@ -726,7 +726,7 @@ void vWeb0(void *)
 				if(!HP.NO_Power) {
 					boolean lst = linkStatusWiznet(false);
 					if(!lst || !network_last_link) {
-						if(!lst) journal.jprintf(pP_TIME, "%s no link, resetting . . .\n", nameWiznet);
+						if(!lst) journal.jprintf(pP_TIME, "%s no link[%02X], resetting . . .\n", nameWiznet, W5100.readPHYCFGR());
 						HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
 						HP.num_resW5200++;              // Добавить счетчик инициализаций
 						active = false;
