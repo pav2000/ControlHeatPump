@@ -717,9 +717,8 @@ boolean Message::sendMail()
     SemaphoreGive(xWebThreadSemaphore);
     return false;
   }
-  strcpy(tempBuf, "Subject: "); // Тема письма
-  strcat(tempBuf, "Controller ");
-  strcat(tempBuf, (char*)nameHeatPump);
+  // Тема письма
+  m_snprintf(tempBuf, 256, "Subject: Controller %s - ", nameHeatPump);
   switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
   {
     case pMESSAGE_NONE    : break;                                                                                          // Нет уведомлений
