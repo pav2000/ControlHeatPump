@@ -23,6 +23,7 @@
 // Работа с W5200 c поддержкой многопоточности и Free RTOS
 // по возможности работаем через сокеты
 // -------------------------------------------------------------------------------------------
+//#define W5500_LOG_FULL_INFO  // разрешить вывод полной отладочной информации по чипу w5xxx
 static unsigned long connectTime[MAX_SOCK_NUM];    // время соединения сокета, здесь по всем сокетам (и служебному)
 #define W5200_LINK        0x20                     // МАСКА регистра PHYSTATUS(W5200 PHY status Register) при котором считается что связь есть
 #define W5500_LINK        0x01                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] при котором считается что связь есть
@@ -88,13 +89,13 @@ boolean linkStatusWiznet(boolean show)
 {
 #if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
 	uint8_t st = W5100.readPHYCFGR();
-	if(show) {
+	if(((show)||(!(st&W5500_LINK))){ // выводим инфо если вывод заказан ИЛИ если нет связи для информации в каком состоянии находится чип w5500
 #ifdef W5500_LOG_FULL_INFO
 		if(st & W5500_SPEED) journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n");
 		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");
 		journal.jprintf(" Register PHYCFGR: 0x%02x\n", st);
 #else
-		journal.jprintf(" %s%c ", st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H');
+		journal.jprintf("PHYCFGR:0x%02x %s%c ", st, st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H');
 #endif
 	}
 	if(st & W5500_LINK) return true;
