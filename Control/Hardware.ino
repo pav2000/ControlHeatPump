@@ -1079,20 +1079,19 @@ void devEEV::after_load(void)
 
  // Получить параметр ЭРВ в виде строки
  // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
-char* devEEV::get_paramEEV(char *var, char *ret)
+void devEEV::get_paramEEV(char *var, char *ret)
 {
 	if(strcmp(var, eev_POS)==0) {
 		_itoa(EEV,ret);
 	} else if(strcmp(var, eev_POSp)==0){
-		_dtoa(ret, get_EEV_percent(), 2);
-		*--ret = '\0';
+		ret = dptoa(ret + m_strlen(ret), get_EEV_percent(), 2);
+		*(ret - 1) = '\0';
 	} else if(strcmp(var, eev_POSpp)==0){
 		_itoa(EEV,ret);
 		strcat(ret," (");
-		_dtoa(ret, get_EEV_percent(), 2);
-		*--ret = '\0';
-		strcat(ret,"%)");
-		if(stepperEEV.isBuzy())  strcat(ret,"⇔");  // признак движения
+		ret = dptoa(ret + m_strlen(ret), get_EEV_percent(), 2);
+		strcpy(ret - 1, "%)");
+		if(stepperEEV.isBuzy()) strcat(ret, "⇔");  // признак движения
 	} else if(strcmp(var, eev_OVERHEAT)==0){
 		_dtoa(ret, Overheat, 2);
 	} else if(strcmp(var, eev_ERROR)==0){  _itoa(err,ret);
@@ -1163,7 +1162,6 @@ char* devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_trend_threshold)==0){	_itoa(_data.trend_threshold, ret);
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_dtoa(ret, _data.trend_mul_threshold, 2);
 	} else strcat(ret,"E10");
-	return ret;
 }
 
 // Установить параметр ЭРВ из флоат параметр var

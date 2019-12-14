@@ -1447,10 +1447,10 @@ void HeatPump::getTargetTempStr(char *rstr)
 	switch(HP.get_modeHouse())   // проверка отопления
 	{
 	case pHEAT:
-		dptoa(rstr, HP.get_targetTempHeat(), 2);
+		rstr = dptoa(rstr, HP.get_targetTempHeat(), 2);
 		break;
 	case pCOOL:
-		dptoa(rstr, HP.get_targetTempCool(), 2);
+		rstr = dptoa(rstr, HP.get_targetTempCool(), 2);
 		break;
 	default:
 		strcpy(rstr, "-.-");
