@@ -18,9 +18,10 @@
 // Класс для уведомлений
 #include "Message.h"
 extern void get_mailState(EthernetClient client, char *tempBuf);
+#define JOURNAL(...) if(GETBIT(HP.get_NetworkFlags(), fWebFullLog)) journal.jprintf(__VA_ARGS__)
 
 // Инициализация
-// Уведомления по умолчанию настройка на gmail без шифрования 
+// Уведомления по умолчанию настройка на gmail без шифрования
 // параметр - номер потока сервера в котором запускается отправка уведомлений
 void Message::initMessage(uint8_t web_task)
 {
@@ -33,7 +34,7 @@ void Message::initMessage(uint8_t web_task)
   retSMS[0]=0x00;
 //  retTest=Socket[web_task].outBuf+LEN_TEMPBUF+LEN_RETMAIL+LEN_RETSMS;// Хранится отдельно!
   retTest[0]=0x00;
-  // Инициализация переменных 	
+  // Инициализация переменных
   IPAddress zeroIP(0, 0, 0, 0);
   lastmessageSetting = pMESSAGE_NONE;                                              // последнее отправленное уведомление
   dnsUpadateSMS = false;                                                           // Флаг необходимости обновления через dns IP адреса для смс
@@ -54,13 +55,13 @@ void Message::initMessage(uint8_t web_task)
   //  rtcSAM3X8.set_alarmtime(11, 17, 0);                                              // завести будильник для отправки сигнала жизни
   //  rtcSAM3X8.attachalarm(life_signal);
 
-  strcpy(messageSetting.smtp_server, "smtp.qip.ru");                               // Адрес сервера
+  strcpy(messageSetting.smtp_server, "smtp-devices.yandex.ru");                    // Адрес сервера без SSL/TSL
   messageSetting.smtp_serverIP = zeroIP;                                           // сделать адрес 0.0.0.0
   messageSetting.smtp_port = 25;                                                   // Адрес порта сервера
-  strcpy(messageSetting.smtp_login, "controlhp@qip.ru");                           // логин сервера если включена авторизация
-  strcpy(messageSetting.smtp_password, "2control");                                // пароль сервера если включена авторизация
-  strcpy(messageSetting.smtp_MailTo, "controlhp@qip.ru");                          // адрес отправителя
-  strcpy(messageSetting.smtp_RCPTTo, "controlhp@qip.ru");                          // адрес получателя
+  strcpy(messageSetting.smtp_login, "login");                                      // логин сервера если включена авторизация
+  strcpy(messageSetting.smtp_password, "password");                                // пароль сервера если включена авторизация
+  strcpy(messageSetting.smtp_MailTo, "MK@home");                                   // адрес отправителя
+  strcpy(messageSetting.smtp_RCPTTo, "");                                          // адрес получателя
 
   messageSetting.sms_service = pSMS_RU;                                            // Cервис отправки смс по умолчанию sms.ru
   messageSetting.sms_serviceIP = zeroIP;                                           // сделать адрес 0.0.0.0
@@ -87,7 +88,7 @@ boolean Message::dnsUpdate() // запускается 0 потоке вебсе
 {
 	boolean ret = true; // по умолчанию преобразование не было
 	if(xTaskGetSchedulerState() != taskSCHEDULER_RUNNING) {
-		dnsUpadateSMTP = dnsUpadateSMS = true; 
+		dnsUpadateSMTP = dnsUpadateSMS = true;
 		WDT_Restart(WDT);
 	}
 	if(dnsUpadateSMTP) //надо обновлятся
@@ -129,304 +130,209 @@ boolean Message::dnsUpdate() // запускается 0 потоке вебсе
 boolean Message::set_messageSetting(char *var, char *c)
 {
   float x;
-  if (strcmp(var, mess_MAIL) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMail);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMail);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MAIL_AUTH) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMailAUTH);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMailAUTH);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MAIL_INFO) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMailInfo);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMailInfo);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_RESET) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageReset);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageReset);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_ERROR) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageError);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageError);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_LIFE) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageLife);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageLife);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_TEMP) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageTemp);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageTemp);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_SD) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageSD);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageSD);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_MESS_WARNING) == 0) {
-    if (strcmp(c, cZero) == 0)      {
-      SETBIT0(messageSetting.flags, fMessageWarning);
-      return true;
-    }
-    else if (strcmp(c, cOne) == 0) {
-      SETBIT1(messageSetting.flags, fMessageWarning);
-      return true;
-    }
-    else return false;
-  } else if (strcmp(var, mess_SMTP_SERVER) == 0) {
-    if (strlen(c) == 0) return false;                                             // пустая строка
-    if (strlen(c) > sizeof(messageSetting.smtp_server) - 1) return false;         // слишком длиная строка
-    else // ок сохраняем
-    {
-      strcpy(messageSetting.smtp_server, c);
-      dnsUpadateSMTP = true;
-      //       check_address(messageSetting.smtp_server,&messageSetting.smtp_serverIP);      // Получить адрес IP через DNS
-      return true;
-    }
-  } else if (strcmp(var, mess_SMTP_IP) == 0) {
-    return true;
-  } else  //  Только на чтение. описание первого параметра для отправки смс
-    if (strcmp(var, mess_SMTP_PORT) == 0) {
-      x = my_atof(c);
-      if (x == ATOF_ERROR) return   false;
-      else if ((x <= 1) || (x >= 65535 - 1)) return   false;
-      else messageSetting.smtp_port = (int)x; return true;
-    } else if (strcmp(var, mess_SMTP_LOGIN) == 0) {
-      if (strlen(c) == 0) return false;
-      if (strlen(c) > sizeof(messageSetting.smtp_login) - 1) return false;
-      else {
-        strcpy(messageSetting.smtp_login, c);
-        return true;
-      }
-    } else if (strcmp(var, mess_SMTP_PASS) == 0) {
-      if (strlen(c) == 0) return false;
-      if (strlen(c) > sizeof(messageSetting.smtp_password) - 1) return false;
-      else {
-        strcpy(messageSetting.smtp_password, c);
-        return true;
-      }
-    } else if (strcmp(var, mess_SMTP_MAILTO) == 0) {
-      if (strlen(c) == 0) return false;
-      if (strlen(c) > sizeof(messageSetting.smtp_MailTo) - 1) return false;
-      else {
-        strcpy(messageSetting.smtp_MailTo, c);
-        return true;
-      }
-    } else if (strcmp(var, mess_SMTP_RCPTTO) == 0) {
-      if (strlen(c) == 0) return false;
-      if (strlen(c) > sizeof(messageSetting.smtp_RCPTTo) - 1) return false;
-      else {
-        strcpy(messageSetting.smtp_RCPTTo, c);
-        return true;
-      }
-    } else if (strcmp(var, mess_SMS) == 0) {
-      if (strcmp(c, cZero) == 0)      {
-        SETBIT0(messageSetting.flags, fSMS);
-        return true;
-      }
-      else if (strcmp(c, cOne) == 0) {
-        SETBIT1(messageSetting.flags, fSMS);
-        return true;
-      }
-      else return false;
-    } else if (strcmp(var, mess_SMS_SERVICE) == 0) {
-      x = my_atof(c);  // При смене сервиса определяем новый IP поле sms_serviceIP
-      if (x == ATOF_ERROR) return   false;
-      messageSetting.sms_service = (SMS_SERVICE)x;
-      dnsUpadateSMS = true;
-      return true;
-    } else if (strcmp(var, mess_SMS_IP) == 0) {
-      return true;
-    } else    // Только на чтение
-      if (strcmp(var, mess_SMS_PHONE) == 0) {
-        if (strlen(c) == 0) return false;
-        if (strlen(c) > sizeof(messageSetting.sms_phone) - 1) return false;
-        else {
-          strcpy(messageSetting.sms_phone, c);
-          return true;
-        }
-      } else if (strcmp(var, mess_SMS_P1) == 0) {
-        if (strlen(c) == 0) return false;       // первый параметр для отправки смс
-        if (strlen(c) > sizeof(messageSetting.sms_p1) - 1) return false;
-        else {
-          strcpy(messageSetting.sms_p1, c);
-          return true;
-        }
-      } else if (strcmp(var, mess_SMS_P2) == 0) {
-        if (strlen(c) == 0) return false;       // второй параметр для отправки смс
-        if (strlen(c) > sizeof(messageSetting.sms_p2) - 1) return false;
-        else {
-          strcpy(messageSetting.sms_p2, c);
-          return true;
-        }
-      } else if (strcmp(var, mess_SMS_NAMEP1) == 0) {
-        return true;
-      } else  //  Только на чтение. описание первого параметра для отправки смс
-        if (strcmp(var, mess_SMS_NAMEP2) == 0) {
-          return true;
-        } else  //  Только на чтение. описание второго параметра для отправки смс
-          if (strcmp(var, mess_MESS_TIN) == 0) {
-            x = my_atof(c);
-            if (x == ATOF_ERROR) return   false;
-            else messageSetting.mTIN = rd(x, 100); return true;
-          } else if (strcmp(var, mess_MESS_TBOILER) == 0) {
-            x = my_atof(c);
-            if (x == ATOF_ERROR) return   false;
-            else messageSetting.mTBOILER = rd(x, 100); return true;
-          } else if (strcmp(var, mess_MESS_TCOMP) == 0) {
-            x = my_atof(c);
-            if (x == ATOF_ERROR) return   false;
-            else messageSetting.mTCOMP = rd(x, 100); return true;
-          } else if (strcmp(var, mess_MAIL_RET) == 0) {
-            return true;
-          } else if (strcmp(var, mess_SMS_RET) == 0) {
-            return true;
-          } else
-            return false;
+  if (strcmp(var, mess_MAIL) == 0) { if (strcmp(c, cZero) == 0)      { SETBIT0(messageSetting.flags, fMail); return true;} else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMail);  return true;  } else return false;
+  } else if (strcmp(var, mess_MAIL_AUTH) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMailAUTH);  return true;  } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMailAUTH); return true; } else return false;
+  } else if (strcmp(var, mess_MAIL_INFO) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMailInfo);  return true;  } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMailInfo); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_RESET) == 0) { if (strcmp(c, cZero) == 0)  {  SETBIT0(messageSetting.flags, fMessageReset); return true; } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageReset); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_ERROR) == 0) { if (strcmp(c, cZero) == 0)  {  SETBIT0(messageSetting.flags, fMessageError); return true; } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageError); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_LIFE) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMessageLife);  return true; } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageLife); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_TEMP) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMessageTemp);  return true; } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageTemp); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_SD) == 0) { if (strcmp(c, cZero) == 0)     {  SETBIT0(messageSetting.flags, fMessageSD);  return true;  } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageSD); return true; } else return false;
+  } else if (strcmp(var, mess_MESS_WARNING) == 0) { if (strcmp(c, cZero) == 0) { SETBIT0(messageSetting.flags, fMessageWarning); return true; } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMessageWarning); return true; } else return false;
+  } else if(strcmp(var, mess_SMTP_SERVER) == 0) {
+	  if(strlen(c) == 0) return false;                                             // пустая строка
+	  if(strlen(c) > sizeof(messageSetting.smtp_server) - 1) return false;         // слишком длиная строка
+	  else // ок сохраняем
+	  {
+		  strcpy(messageSetting.smtp_server, c);
+		  dnsUpadateSMTP = true;
+		  //       check_address(messageSetting.smtp_server,&messageSetting.smtp_serverIP);      // Получить адрес IP через DNS
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMTP_PORT) == 0) {
+	  x = my_atof(c);
+	  if(x == ATOF_ERROR) return false;
+	  else if((x <= 1) || (x >= 65535 - 1)) return false;
+	  else messageSetting.smtp_port = (int) x;
+	  return true;
+  } else if(strcmp(var, mess_SMTP_LOGIN) == 0) {
+	  if(strlen(c) == 0) return false;
+	  if(strlen(c) > sizeof(messageSetting.smtp_login) - 1) return false;
+	  else {
+		  strcpy(messageSetting.smtp_login, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMTP_PASS) == 0) {
+	  if(strlen(c) == 0) return false;
+	  if(strlen(c) > sizeof(messageSetting.smtp_password) - 1) return false;
+	  else {
+		  strcpy(messageSetting.smtp_password, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMTP_MAILTO) == 0) {
+	  if(strlen(c) == 0) return false;
+	  if(strlen(c) > sizeof(messageSetting.smtp_MailTo) - 1) return false;
+	  else {
+		  strcpy(messageSetting.smtp_MailTo, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMTP_RCPTTO) == 0) {
+	  if(strlen(c) == 0) return false;
+	  if(strlen(c) > sizeof(messageSetting.smtp_RCPTTo) - 1) return false;
+	  else {
+		  strcpy(messageSetting.smtp_RCPTTo, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMS) == 0) {
+	  if(strcmp(c, cZero) == 0) {
+		  SETBIT0(messageSetting.flags, fSMS);
+		  return true;
+	  } else if(strcmp(c, cOne) == 0) {
+		  SETBIT1(messageSetting.flags, fSMS);
+		  return true;
+	  } else return false;
+  } else if(strcmp(var, mess_SMS_SERVICE) == 0) {
+	  x = my_atof(c);  // При смене сервиса определяем новый IP поле sms_serviceIP
+	  if(x == ATOF_ERROR) return false;
+	  messageSetting.sms_service = (SMS_SERVICE) x;
+	  dnsUpadateSMS = true;
+	  return true;
+  } else if(strcmp(var, mess_SMS_PHONE) == 0) {
+	  if(strlen(c) == 0) return false;
+	  if(strlen(c) > sizeof(messageSetting.sms_phone) - 1) return false;
+	  else {
+		  strcpy(messageSetting.sms_phone, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMS_P1) == 0) {
+	  if(strlen(c) == 0) return false;       // первый параметр для отправки смс
+	  if(strlen(c) > sizeof(messageSetting.sms_p1) - 1) return false;
+	  else {
+		  strcpy(messageSetting.sms_p1, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_SMS_P2) == 0) {
+	  if(strlen(c) == 0) return false;       // второй параметр для отправки смс
+	  if(strlen(c) > sizeof(messageSetting.sms_p2) - 1) return false;
+	  else {
+		  strcpy(messageSetting.sms_p2, c);
+		  return true;
+	  }
+  } else if(strcmp(var, mess_MESS_TIN) == 0) {
+	  x = my_atof(c);
+	  if(x == ATOF_ERROR) return false;
+	  else messageSetting.mTIN = rd(x, 100);
+	  return true;
+  } else if(strcmp(var, mess_MESS_TBOILER) == 0) {
+	  x = my_atof(c);
+	  if(x == ATOF_ERROR) return false;
+	  else messageSetting.mTBOILER = rd(x, 100);
+	  return true;
+  } else if(strcmp(var, mess_MESS_TCOMP) == 0) {
+	  x = my_atof(c);
+	  if(x == ATOF_ERROR) return false;
+	  else messageSetting.mTCOMP = rd(x, 100);
+	  return true;
+  } else if(strcmp(var, mess_MAIL_RET) == 0) {
+	  return true;
+  } else if(strcmp(var, mess_SMS_RET) == 0) {
+	  return true;
+  } else return false;
 
 }
 // Получить параметр Уведомления по имени var, результат ДОБАВОЯЕТСЯ в строку ret
-char*   Message::get_messageSetting(char *var, char *ret)
+char* Message::get_messageSetting(char *var, char *ret)
 {
-
-  if (strcmp(var, mess_MAIL) == 0) {
-    if (GETBIT(messageSetting.flags, fMail))           return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MAIL_AUTH) == 0) {
-    if (GETBIT(messageSetting.flags, fMailAUTH))       return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MAIL_INFO) == 0) {
-    if (GETBIT(messageSetting.flags, fMailInfo))       return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_SMS) == 0) {
-    if (GETBIT(messageSetting.flags, fSMS))            return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_RESET) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageReset))   return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_ERROR) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageError))   return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_LIFE) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageLife))    return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_TEMP) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageTemp))    return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_SD) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageSD))      return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_MESS_WARNING) == 0) {
-    if (GETBIT(messageSetting.flags, fMessageWarning)) return  strcat(ret, (char*)cOne);
-    else return strcat(ret, (char*)cZero);
-  } else if (strcmp(var, mess_SMTP_SERVER) == 0) {
-    return strcat(ret, messageSetting.smtp_server);
-  } else if (strcmp(var, mess_SMTP_IP) == 0) {
-    return strcat(ret, IPAddress2String(messageSetting.smtp_serverIP));
-  } else if (strcmp(var, mess_SMTP_PORT) == 0) {
-    return _itoa(messageSetting.smtp_port, ret);
-  } else if (strcmp(var, mess_SMTP_LOGIN) == 0) {
-    return strcat(ret, messageSetting.smtp_login);
-  } else if (strcmp(var, mess_SMTP_PASS) == 0) {
-    return strcat(ret, messageSetting.smtp_password);
-  } else if (strcmp(var, mess_SMTP_MAILTO) == 0) {
-    return strcat(ret, messageSetting.smtp_MailTo);
-  } else if (strcmp(var, mess_SMTP_RCPTTO) == 0) {
-    return strcat(ret, messageSetting.smtp_RCPTTo);
-  } else if (strcmp(var, mess_SMS_SERVICE) == 0) {
-    switch (messageSetting.sms_service)
-    {
-      case pSMS_RU:     return strcat(ret, (char*)"sms.ru:1;smsc.ua:0;smsc.ru:0;smsclub.mobi:0;");     break;
-      case pSMSC_RU:    return strcat(ret, (char*)"sms.ru:0;smsc.ru:1;smsc.ua:0;smsclub.mobi:0;");     break;
-      case pSMSC_UA:    return strcat(ret, (char*)"sms.ru:0;smsc.ru:0;smsc.ua:1;smsclub.mobi:0;");     break;
-      case pSMSCLUB_UA: return strcat(ret, (char*)"sms.ru:0;smsc.ru:0;smsc.ua:0;smsclub.mobi:1;");     break;
-      default: return strcat(ret, (char*)"sms.ru:1;smsc.ua:0;smsc.ru:0;smsclub.mobi:0;");           break; // Этого не должно быть, но если будет то установить по умолчанию
-    }
-  } else if (strcmp(var, mess_SMS_IP) == 0) {
-    return strcat(ret, IPAddress2String(messageSetting.sms_serviceIP));
-  } else if (strcmp(var, mess_SMS_PHONE) == 0) {
-    return strcat(ret, messageSetting.sms_phone);
-  } else if (strcmp(var, mess_SMS_P1) == 0) {
-    return strcat(ret, messageSetting.sms_p1);
-  } else  // первый параметр для отправки смс
-    if (strcmp(var, mess_SMS_P2) == 0) {
-      return strcat(ret, messageSetting.sms_p2);
-    } else  // второй параметр для отправки смс
-      if (strcmp(var, mess_SMS_NAMEP1) == 0) {
-        switch (messageSetting.sms_service)  // описание первого параметра для отправки смс
-        {
-          case pSMS_RU:     return strcat(ret, (char*)"API ID");  break;
-          default:       return strcat(ret, (char*)"Login");  break; // Этого не должно быть, но если будет то установить по умолчанию
-        }
-      } else if (strcmp(var, mess_SMS_NAMEP2) == 0) {
-        switch (messageSetting.sms_service)   // описание второго параметра для отправки смс
-        {
-          case pSMS_RU:     return strcat(ret, (char*)"none");      break;
-          default:       return strcat(ret, (char*)"Password");       break; // Этого не должно быть, но если будет то установить по умолчанию
-        }
-      } else if (strcmp(var, mess_MESS_TIN) == 0) {
-        _ftoa(ret, (float)messageSetting.mTIN / 100.0, 1);
-        return ret;
-      } else if (strcmp(var, mess_MESS_TBOILER) == 0) {
-        _ftoa(ret, (float)messageSetting.mTBOILER / 100.0, 1);
-        return ret;
-      } else if (strcmp(var, mess_MESS_TCOMP) == 0) {
-        _ftoa(ret, (float)messageSetting.mTCOMP / 100.0, 1);
-        return ret;
-      } else if (strcmp(var, mess_MAIL_RET) == 0) {
-        if (waitSend) return strcat(ret, (char*)"wait response...");                // В зависимости готов ответ или нет
-        else return strcat(ret, retTest);
-      } else if (strcmp(var, mess_SMS_RET) == 0) {
-        if (waitSend) return strcat(ret, (char*)"wait response...");                // В зависимости готов ответ или нет
-        else return strcat(ret, retTest);
-      } else
-        return strcat(ret, (char*)cInvalid);
+	if(strcmp(var, mess_MAIL) == 0) {
+		if(GETBIT(messageSetting.flags, fMail)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MAIL_AUTH) == 0) {
+		if(GETBIT(messageSetting.flags, fMailAUTH)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MAIL_INFO) == 0) {
+		if(GETBIT(messageSetting.flags, fMailInfo)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_SMS) == 0) {
+		if(GETBIT(messageSetting.flags, fSMS)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_RESET) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageReset)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_ERROR) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageError)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_LIFE) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageLife)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_TEMP) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageTemp)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_SD) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageSD)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_MESS_WARNING) == 0) {
+		if(GETBIT(messageSetting.flags, fMessageWarning)) return strcat(ret, (char*) cOne);
+		else return strcat(ret, (char*) cZero);
+	} else if(strcmp(var, mess_SMTP_SERVER) == 0) {
+		return strcat(ret, messageSetting.smtp_server);
+	} else if(strcmp(var, mess_SMTP_IP) == 0) {
+		return strcat(ret, IPAddress2String(messageSetting.smtp_serverIP));
+	} else if(strcmp(var, mess_SMTP_PORT) == 0) {
+		return _itoa(messageSetting.smtp_port, ret);
+	} else if(strcmp(var, mess_SMTP_LOGIN) == 0) {
+		return strcat(ret, messageSetting.smtp_login);
+	} else if(strcmp(var, mess_SMTP_PASS) == 0) {
+		return strcat(ret, messageSetting.smtp_password);
+	} else if(strcmp(var, mess_SMTP_MAILTO) == 0) {
+		return strcat(ret, messageSetting.smtp_MailTo);
+	} else if(strcmp(var, mess_SMTP_RCPTTO) == 0) {
+		return strcat(ret, messageSetting.smtp_RCPTTo);
+	} else if(strcmp(var, mess_SMS_SERVICE) == 0) {
+		return web_fill_tag_select(ret, SMS_SERVICE_WEB_SELECT, messageSetting.sms_service);
+	} else if(strcmp(var, mess_SMS_IP) == 0) {
+		return strcat(ret, IPAddress2String(messageSetting.sms_serviceIP));
+	} else if(strcmp(var, mess_SMS_PHONE) == 0) {
+		return strcat(ret, messageSetting.sms_phone);
+	} else if(strcmp(var, mess_SMS_P1) == 0) { // первый параметр для отправки смс
+		return strcat(ret, messageSetting.sms_p1);
+	} else if(strcmp(var, mess_SMS_P2) == 0) { // второй параметр для отправки смс
+		return strcat(ret, messageSetting.sms_p2);
+	} else if(strcmp(var, mess_SMS_NAMEP1) == 0) {
+		switch(messageSetting.sms_service)  // описание первого параметра для отправки смс
+		{
+		case pSMS_RU:
+			return strcat(ret, (char*) "API ID");
+			break;
+		default:
+			return strcat(ret, (char*) "Login");
+			break; // Этого не должно быть, но если будет то установить по умолчанию
+		}
+	} else if(strcmp(var, mess_SMS_NAMEP2) == 0) {
+		switch(messageSetting.sms_service)   // описание второго параметра для отправки смс
+		{
+		case pSMS_RU:
+			return strcat(ret, (char*) "none");
+			break;
+		default:
+			return strcat(ret, (char*) "Password");
+			break; // Этого не должно быть, но если будет то установить по умолчанию
+		}
+	} else if(strcmp(var, mess_MESS_TIN) == 0) {
+		_dtoa(ret, messageSetting.mTIN, 2);
+		return ret;
+	} else if(strcmp(var, mess_MESS_TBOILER) == 0) {
+		_dtoa(ret, messageSetting.mTBOILER, 2);
+		return ret;
+	} else if(strcmp(var, mess_MESS_TCOMP) == 0) {
+		_dtoa(ret, messageSetting.mTCOMP, 2);
+		return ret;
+	} else if(strcmp(var, mess_MAIL_RET) == 0) {
+		if(waitSend) return strcat(ret, (char*) "wait response...");                // В зависимости готов ответ или нет
+		else return strcat(ret, retTest);
+	} else if(strcmp(var, mess_SMS_RET) == 0) {
+		if(waitSend) return strcat(ret, (char*) "wait response...");                // В зависимости готов ответ или нет
+		else return strcat(ret, retTest);
+	} else return strcat(ret, (char*) cInvalid);
 
 }
 // Записать настройки в eeprom i2c на входе адрес с какого, на выходе конечный адрес, число меньше 0 это код ошибки
@@ -474,7 +380,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
 
   if (!clientMessage.connected())  // если клиент не соединен то это ошибка выходим
   {
-    journal.jprintf("Server no connected, abort send mail???\n");
+    JOURNAL("Server no connected, abort send mail???\n");
     return false;
   }
 
@@ -486,7 +392,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
     //    clientMessage.println(tempBuf); // почемуто не отправляет????
     strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
     //    SerialDbg.print(">>");SerialDbg.print(tempBuf);SerialDbg.print("<< len=");SerialDbg.println(strlen(tempBuf));
-    journal.jprintf("%s", tempBuf);
+    JOURNAL("%s", tempBuf);
   }
 
   // Необходимость ожидания и получения ответа
@@ -507,7 +413,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
     if (count > 25)
     {
       strncpy(retMail, "Server not answer . . .", LEN_RETMAIL);
-      journal.jprintf("%s\n", retMail);
+      JOURNAL("%s\n", retMail);
       //    clientMessage.stop();
       //    SemaphoreGive(xWebThreadSemaphore);
       return false;
@@ -520,7 +426,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
   {
     num = clientMessage.read((byte*)tempBuf, LEN_TEMPBUF - 1);  tempBuf[num] = 0; // Обрезать строку
     //   SerialDbg.print("num=");SerialDbg.print(num);SerialDbg.print(" >>"); SerialDbg.print(tempBuf);
-    journal.jprintf("%s", tempBuf);
+    JOURNAL("%s", tempBuf);
   }
 
   // Проверка на ошибки
@@ -530,7 +436,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
     //    SerialDbg.print("retMail "); SerialDbg.println(retMail);
     //    SerialDbg.print("answer "); SerialDbg.println(answer);
     clientMessage.println("QUIT"); // Послать команду на закрытие сессии
-    journal.jprintf("QUIT\n");
+    JOURNAL("QUIT\n");
     while (!clientMessage.available()) // ожидание ответа 1 сек
     {
       _delay(100);
@@ -540,9 +446,9 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
     while (clientMessage.available())
     {
       thisByte = clientMessage.read();
-      journal.jprintf("%c", thisByte);
+      JOURNAL("%c", thisByte);
     }
-    journal.jprintf("disconnected\n");
+    JOURNAL("disconnected\n");
     clientMessage.stop();
     return false;
   }
@@ -569,10 +475,10 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запу�
   // Проверка на дублирование сообщения. Тестовые сообщения и сообщения жизни  можно посылать многократно  подряд
   if ((rtcSAM3X8.unixtime() - sendTime < REPEAT_TIME) && (messageData.ms == ms) && ((ms != pMESSAGE_TESTMAIL) && (ms != pMESSAGE_TESTSMS) && (ms != pMESSAGE_LIFE))) //дублирующие сообщения полылаются с интервалом
   {
-    //journal.jprintf("Ignore repeat msg: #%d\n", ms);
+    //JOURNAL("Ignore repeat msg: #%d\n", ms);
     return false;
   } else {
-    journal.jprintf(pP_TIME, "MSG: #%d: %s\n", ms, c);
+    JOURNAL(pP_TIME, "MSG: #%d: %s\n", ms, c);
   }
 
   // Подготовить уведомление
@@ -582,7 +488,7 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запу�
   // в сообщение pMESSAGE_TEMP добавить значение температуры
   if (ms == pMESSAGE_TEMP) {
     strcat(messageData.data, " t=");
-    _ftoa(messageData.data, (float)p1 / 100.0, 1);
+    _dtoa(messageData.data, p1, 2);
   }
   messageData.p1 = p1;
   waitSend = true;                // выставить флаг необходимости отправки Уведомления
@@ -719,11 +625,11 @@ boolean Message::sendMail()
   // 1. Соединение по телнету
   if (clientMessage.connect(messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS))
   {
-    journal.jprintf("Connected server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
+    JOURNAL("Connected server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
   }
   else
   {
-    journal.jprintf("Connection failed server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
+    JOURNAL("Connection failed server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
     strncpy(retMail, "No connect", LEN_RETMAIL);
     SemaphoreGive(xWebThreadSemaphore);
     return false;
@@ -811,9 +717,8 @@ boolean Message::sendMail()
     SemaphoreGive(xWebThreadSemaphore);
     return false;
   }
-  strcpy(tempBuf, "Subject: "); // Тема письма
-  strcat(tempBuf, "Controller ");
-  strcat(tempBuf, (char*)nameHeatPump);
+  // Тема письма
+  m_snprintf(tempBuf, 256, "Subject: Controller %s - ", nameHeatPump);
   switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
   {
     case pMESSAGE_NONE    : break;                                                                                          // Нет уведомлений
@@ -865,7 +770,7 @@ boolean Message::sendMail()
     return false;
   }
   clientMessage.stop();
-  journal.jprintf("OK disconnected\n");
+  JOURNAL("OK disconnected\n");
   SemaphoreGive(xWebThreadSemaphore);
   return true;
 }
@@ -897,11 +802,11 @@ boolean Message::sendSMS()
   strcpy(retSMS, "");         // Обнулить ответ
   if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
   {
-    journal.jprintf("Connected server: %s", ADR_SMS_RU); journal.jprintf(" port: %d\n", 80);
+    JOURNAL("Connected server: %s", ADR_SMS_RU); JOURNAL(" port: %d\n", 80);
   }
   else
   {
-    journal.jprintf("Connection failed server: %s", ADR_SMS_RU); journal.jprintf(" port: %d\n", 80);
+    JOURNAL("Connection failed server: %s", ADR_SMS_RU); JOURNAL(" port: %d\n", 80);
     strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMS_RU);
     clientMessage.stop();
     SemaphoreGive(xWebThreadSemaphore);
@@ -932,7 +837,7 @@ boolean Message::sendSMS()
   strcat(tempBuf, messageData.data);                       // содержимое
   strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
 
-  //journal.jprintf("%s\n",tempBuf);
+  //JOURNAL("%s\n",tempBuf);
 
   // Ожидание и получение ответа
   while (!clientMessage.available()) // ожидание ответа 5 сек
@@ -946,7 +851,7 @@ boolean Message::sendSMS()
     if (count > 25)
     {
       strcpy(retSMS, "Server not answer . . .");
-      journal.jprintf("%s\n", retSMS);
+      JOURNAL("%s\n", retSMS);
       clientMessage.stop();
       SemaphoreGive(xWebThreadSemaphore);
       return false;
@@ -971,7 +876,7 @@ boolean Message::sendSMS()
           i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
           retSMS[i] = 0;                                         // обрезаем строку
           for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-          journal.jprintf("sms.ru return: %s \n", retSMS);
+          JOURNAL("sms.ru return: %s \n", retSMS);
           clientMessage.stop();
           SemaphoreGive(xWebThreadSemaphore);
           return true; // смс отправлено
@@ -1020,26 +925,26 @@ boolean Message::sendSMSC()
   if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
   {
     if ((messageSetting.sms_service) == pSMSC_RU) {
-      journal.jprintf("Connected server: %s", ADR_SMSC_RU);
-      journal.jprintf(" port: %d\n", 80);
+      JOURNAL("Connected server: %s", ADR_SMSC_RU);
+      JOURNAL(" port: %d\n", 80);
     }
     else {
-      journal.jprintf("Connected server: %s", ADR_SMSC_UA);
-      journal.jprintf(" port: %d\n", 80);
+      JOURNAL("Connected server: %s", ADR_SMSC_UA);
+      JOURNAL(" port: %d\n", 80);
     }
   }
   else
   {
     if ((messageSetting.sms_service) == pSMSC_RU)
     {
-      journal.jprintf("Connection failed server: %s", ADR_SMSC_RU); journal.jprintf(" port: %d\n", 80);
+      JOURNAL("Connection failed server: %s", ADR_SMSC_RU); JOURNAL(" port: %d\n", 80);
       strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSC_RU);
       clientMessage.stop();
       SemaphoreGive(xWebThreadSemaphore);
       return false;
     } else
     {
-      journal.jprintf("Connection failed server: %s", ADR_SMSC_UA); journal.jprintf(" port: %d\n", 80);
+      JOURNAL("Connection failed server: %s", ADR_SMSC_UA); JOURNAL(" port: %d\n", 80);
       strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSC_UA);
       clientMessage.stop();
       SemaphoreGive(xWebThreadSemaphore);
@@ -1073,7 +978,7 @@ boolean Message::sendSMSC()
   strcat(tempBuf, messageData.data);                       // содержимое
   strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
 
-  //journal.jprintf("%s\n",tempBuf);
+  //JOURNAL("%s\n",tempBuf);
 
   // Ожидание и получение ответа
   while (!clientMessage.available()) // ожидание ответа 5 сек
@@ -1087,7 +992,7 @@ boolean Message::sendSMSC()
     if (count > 25)
     {
       strcpy(retSMS, "Server not answer . . .");
-      journal.jprintf("%s\n", retSMS);
+      JOURNAL("%s\n", retSMS);
       clientMessage.stop();
       SemaphoreGive(xWebThreadSemaphore);
       return false;
@@ -1103,7 +1008,7 @@ boolean Message::sendSMSC()
     i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
     retSMS[i] = 0;                                         // обрезаем строку
     for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-    journal.jprintf("server return: %s \n", retSMS);
+    JOURNAL("server return: %s \n", retSMS);
     clientMessage.stop();
     SemaphoreGive(xWebThreadSemaphore);
     if (strstr(retSMS, "ERROR"))  return false; else return true;
@@ -1142,11 +1047,11 @@ boolean Message::sendSMSCLUB()
   strcpy(retSMS, "");         // Обнулить ответ
   if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
   {
-    journal.jprintf("Connected server: %s", ADR_SMSCLUB_UA); journal.jprintf(" port: %d\n", 80);
+    JOURNAL("Connected server: %s", ADR_SMSCLUB_UA); JOURNAL(" port: %d\n", 80);
   }
   else
   {
-    journal.jprintf("Connection failed server: %s", ADR_SMSCLUB_UA); journal.jprintf(" port: %d\n", 80);
+    JOURNAL("Connection failed server: %s", ADR_SMSCLUB_UA); JOURNAL(" port: %d\n", 80);
     strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSCLUB_UA);
     clientMessage.stop();
     SemaphoreGive(xWebThreadSemaphore);
@@ -1186,7 +1091,7 @@ boolean Message::sendSMSCLUB()
   tempBuf[headerLength - 5] = tmp_buf[2];
   clientMessage.write(tempBuf, strlen(tempBuf));
   //SerialDbg.println(tempBuf);
-  //journal.jprintf("%s\n",tempBuf);
+  //JOURNAL("%s\n",tempBuf);
 
   // Ожидание и получение ответа
   while (!clientMessage.available()) // ожидание ответа 5 сек
@@ -1200,7 +1105,7 @@ boolean Message::sendSMSCLUB()
     if (count > 25)
     {
       strcpy(retSMS, "Server not answer . . .");
-      journal.jprintf("%s\n", retSMS);
+      JOURNAL("%s\n", retSMS);
       clientMessage.stop();
       SemaphoreGive(xWebThreadSemaphore);
       return false;
@@ -1227,7 +1132,7 @@ boolean Message::sendSMSCLUB()
             i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
             retSMS[i] = 0;                                         // обрезаем строку
             for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-            journal.jprintf("server return: %s \n", retSMS);
+            JOURNAL("server return: %s \n", retSMS);
             clientMessage.stop();
             SemaphoreGive(xWebThreadSemaphore);
             if (strstr(retSMS, ">OK<"))  return true; else return false;
@@ -1256,11 +1161,11 @@ boolean Message::sendSMSCLUB()
   if (client.connect("http://sms.ru/sms/send",80))
   //     if (client.connect(smtp,messageSetting.smtp_port))
   {
-   journal.jprintf("Connected server: http://sms.ru/sms/send port:80\n");
+   JOURNAL("Connected server: http://sms.ru/sms/send port:80\n");
   }
   else
   {
-   journal.jprintf("Connection failed server: http://sms.ru/sms/send port:80\n");
+   JOURNAL("Connection failed server: http://sms.ru/sms/send port:80\n");
    return false;
   }
   client.println("GET api_id=[]&to=[номер получателя]&text=hello+world HTTP/1.1");

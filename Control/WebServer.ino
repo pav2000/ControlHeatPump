@@ -904,7 +904,7 @@ void parserGET(uint8_t thread, int8_t )
 				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
 				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '(') {
 					strcat(strReturn, " / ");
-					_dtoa(strReturn, HP.CalcTargetPID(*HP.get_modeHouseSettings()), 2);
+					strReturn = dptoa(strReturn + m_strlen(strReturn), HP.CalcTargetPID(*HP.get_modeHouseSettings()), 2);
 					*--strReturn = '\0';
 				}
 			}
@@ -2121,7 +2121,7 @@ void parserGET(uint8_t thread, int8_t )
 	#else
 									if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
 									else {
-										_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
+										strReturn = dptoa(strReturn + m_strlen(strReturn), HP.sTemp[p].get_Temp(), 2);
 										if(HP.sTemp[p].get_fRadio()) *--strReturn = '\0';
 									}
 	#endif

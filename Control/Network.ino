@@ -23,6 +23,7 @@
 // Работа с W5200 c поддержкой многопоточности и Free RTOS
 // по возможности работаем через сокеты
 // -------------------------------------------------------------------------------------------
+//#define W5500_LOG_FULL_INFO  // разрешить вывод полной отладочной информации по чипу w5xxx
 static unsigned long connectTime[MAX_SOCK_NUM];    // время соединения сокета, здесь по всем сокетам (и служебному)
 #define W5200_LINK        0x20                     // МАСКА регистра PHYSTATUS(W5200 PHY status Register) при котором считается что связь есть
 #define W5500_LINK        0x01                     // МАСКА регистра PHYCFGR  (W5500 PHY Configuration Register) [R/W] [0x002E] при котором считается что связь есть
@@ -88,13 +89,13 @@ boolean linkStatusWiznet(boolean show)
 {
 #if defined(W5500_ETHERNET_SHIELD) // Задание имени чипа для вывода сообщений
 	uint8_t st = W5100.readPHYCFGR();
-	if(show) {
+	if(show){
 #ifdef W5500_LOG_FULL_INFO
 		if(st & W5500_SPEED) journal.jprintf(" Speed Status: 100Mpbs\n"); else journal.jprintf(" Speed Status: 10Mpbs\n");
-		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: full duplex\n"); else journal.jprintf(" Duplex Status: half duplex\n");
-		journal.jprintf(" Register PHYCFGR: 0x%02x\n", st);
+		if(st & W5500_DUPLEX) journal.jprintf(" Duplex Status: Full\n"); else journal.jprintf(" Duplex Status: Half\n");
+		journal.jprintf(" Register PHYCFGR: 0x%02X\n", st);
 #else
-		journal.jprintf(" %s%c ", st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H');
+		journal.jprintf(" %s%c[%02X] ", st & W5500_SPEED ? "100" : "10", st & W5500_DUPLEX ? 'F' : 'H', st);
 #endif
 	}
 	if(st & W5500_LINK) return true;
@@ -573,7 +574,7 @@ boolean pingServer()
 {
 	IPAddress ip;
 	if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE)  {return false;}  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-	if(!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong address ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
+	if(!check_address(HP.get_pingAdr(), ip)) {journal.jprintf("Wrong ping server\n"); SemaphoreGive(xWebThreadSemaphore); return false;}  // адрес не верен, или DNS не работает - ничего не делаем
  	// Адрес правильный
 	ping.setTimeout(W5200_TIME_PING);                   // время между попытками пинга мсек
 	WDT_Restart(WDT);                                   // Сбросить вачдог
