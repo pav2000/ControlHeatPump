@@ -78,7 +78,7 @@ void Message::initMessage(uint8_t web_task)
   strcpy(messageData.data, "");      // Полезная информация
   messageData.p1 = 0;                // первый параметр
   messageData.number = 0;            // номер уведомления
-
+  WorkFlags = 0;
 }
 
 // Обновление IP адресов серверов через dns
@@ -413,7 +413,7 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
     if (count > 25)
     {
       strncpy(retMail, "Server not answer . . .", LEN_RETMAIL);
-      JOURNAL("%s\n", retMail);
+      if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("%s\n", retMail);
       //    clientMessage.stop();
       //    SemaphoreGive(xWebThreadSemaphore);
       return false;
@@ -422,11 +422,12 @@ boolean  Message::SendCommandSMTP(char *c, boolean wait)
   }
   // разбор ответа
   respCode = clientMessage.peek();   // первый байт - это старшая цифра ответа, по ней можно определить ошибки
+  if(!GETBIT(WorkFlags, fWF_MessageSendError) && respCode >= '4') journal.jprintf("Error send message: ");
   while (clientMessage.available())  // чтение ответа
   {
     num = clientMessage.read((byte*)tempBuf, LEN_TEMPBUF - 1);  tempBuf[num] = 0; // Обрезать строку
     //   SerialDbg.print("num=");SerialDbg.print(num);SerialDbg.print(" >>"); SerialDbg.print(tempBuf);
-    JOURNAL("%s", tempBuf);
+    if(!GETBIT(WorkFlags, fWF_MessageSendError) && respCode >= '4') journal.jprintf("%s", tempBuf);
   }
 
   // Проверка на ошибки
@@ -616,278 +617,311 @@ boolean Message::sendMessage()  // запуск из 0 потока
 // Отправить почту --------------------------------------------------------------------
 boolean Message::sendMail()
 {
-  strcpy(retMail, ""); // Обнулить ошибку
-  // Подготовка
-  if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)  {
-    return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-  }
+	strcpy(retMail, ""); // Обнулить ошибку
+	// Подготовка
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+		return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+	}
 
-  // 1. Соединение по телнету
-  if (clientMessage.connect(messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS))
-  {
-    JOURNAL("Connected server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
-  }
-  else
-  {
-    JOURNAL("Connection failed server: %s port: %d, sock: %d\n", messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS);
-    strncpy(retMail, "No connect", LEN_RETMAIL);
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
+	// 1. Соединение по телнету
+	if(clientMessage.connect(messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS)) {
+		JOURNAL("Connect server: %s port: %d\n", messageSetting.smtp_server, messageSetting.smtp_port);
+	} else {
+		if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("Connect failed: %s port: %d\n", messageSetting.smtp_server, messageSetting.smtp_port);
+		strncpy(retMail, "No connect", LEN_RETMAIL);
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
 
-  // 2. Общение с сервером, получаем приветствие при соединении
-  if (!SendCommandSMTP((char*)"", true))    {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    if (strlen(retMail) == 0) strncpy(retMail, (char*)"No answer", LEN_RETMAIL);
-    return false;
-  }
-  // 3. Авторизация
-  if (GETBIT(messageSetting.flags, fMailAUTH))                        // Требуется авторизация
-  {
-    if (!SendCommandSMTP((char*)"EHLO host", true))    {
-      clientMessage.stop();  // ответ содержит ошибки
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
-    if (!SendCommandSMTP((char*)"AUTH LOGIN", true))   {
-      clientMessage.stop();  // ответ содержит ошибки
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
-    strcpy(tempBuf, "");
-    base64_encode(tempBuf, messageSetting.smtp_login, strlen(messageSetting.smtp_login)); // Послать логин
-    if (!SendCommandSMTP(tempBuf, true))   {
-      clientMessage.stop();  // ответ содержит ошибки
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
-    strcpy(tempBuf, "");
-    base64_encode(tempBuf, messageSetting.smtp_password, strlen(messageSetting.smtp_password)); // Послать пароль
-    if (!SendCommandSMTP(tempBuf, true))   {
-      clientMessage.stop();  // ответ содержит ошибки
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
-  }
-  else                                                               // Авторизация не требуется
-  {
-    if (!SendCommandSMTP((char*)"HELO host", true))    {
-      clientMessage.stop();  // ответ содержит ошибки
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
-  }
+	// 2. Общение с сервером, получаем приветствие при соединении
+	if(!SendCommandSMTP((char*) "", true)) {
+		if(strlen(retMail) == 0) strncpy(retMail, (char*) "No answer", LEN_RETMAIL);
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	// 3. Авторизация
+	if(GETBIT(messageSetting.flags, fMailAUTH))                        // Требуется авторизация
+	{
+		if(!SendCommandSMTP((char*) "EHLO host", true)) {
+			clientMessage.stop();  // ответ содержит ошибки
+			SETBIT1(WorkFlags, fWF_MessageSendError);
+			SemaphoreGive (xWebThreadSemaphore);
+			return false;
+		}
+		if(!SendCommandSMTP((char*) "AUTH LOGIN", true)) {
+			clientMessage.stop();  // ответ содержит ошибки
+			SETBIT1(WorkFlags, fWF_MessageSendError);
+			SemaphoreGive (xWebThreadSemaphore);
+			return false;
+		}
+		strcpy(tempBuf, "");
+		base64_encode(tempBuf, messageSetting.smtp_login, strlen(messageSetting.smtp_login)); // Послать логин
+		if(!SendCommandSMTP(tempBuf, true)) {
+			clientMessage.stop();  // ответ содержит ошибки
+			SETBIT1(WorkFlags, fWF_MessageSendError);
+			SemaphoreGive (xWebThreadSemaphore);
+			return false;
+		}
+		strcpy(tempBuf, "");
+		base64_encode(tempBuf, messageSetting.smtp_password, strlen(messageSetting.smtp_password)); // Послать пароль
+		if(!SendCommandSMTP(tempBuf, true)) {
+			clientMessage.stop();  // ответ содержит ошибки
+			SETBIT1(WorkFlags, fWF_MessageSendError);
+			SemaphoreGive (xWebThreadSemaphore);
+			return false;
+		}
+	} else                                                               // Авторизация не требуется
+	{
+		if(!SendCommandSMTP((char*) "HELO host", true)) {
+			clientMessage.stop();  // ответ содержит ошибки
+			SETBIT1(WorkFlags, fWF_MessageSendError);
+			SemaphoreGive (xWebThreadSemaphore);
+			return false;
+		}
+	}
 
-  // 4. Формирование адресов
-  strcpy(tempBuf, "MAIL From: <"); strcat(tempBuf, messageSetting.smtp_MailTo);  strcat(tempBuf, ">");
-  if (!SendCommandSMTP(tempBuf, true))    {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  strcpy(tempBuf, "RCPT To: <");   strcat(tempBuf, messageSetting.smtp_RCPTTo);  strcat(tempBuf, ">");
-  if (!SendCommandSMTP(tempBuf, true))    {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
+	// 4. Формирование адресов
+	strcpy(tempBuf, "MAIL From: <");
+	strcat(tempBuf, messageSetting.smtp_MailTo);
+	strcat(tempBuf, ">");
+	if(!SendCommandSMTP(tempBuf, true)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	strcpy(tempBuf, "RCPT To: <");
+	strcat(tempBuf, messageSetting.smtp_RCPTTo);
+	strcat(tempBuf, ">");
+	if(!SendCommandSMTP(tempBuf, true)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
 
-  // 5. Заголовок сообщения
-  if (!SendCommandSMTP((char*)"DATA", true))   {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  strcpy(tempBuf, "To: <");      strcat(tempBuf, messageSetting.smtp_RCPTTo); strcat(tempBuf, ">");
-  if (!SendCommandSMTP(tempBuf, false))   {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  strcpy(tempBuf, "From: <");    strcat(tempBuf, messageSetting.smtp_MailTo); strcat(tempBuf, ">");
-  if (!SendCommandSMTP(tempBuf, false))    {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  strcpy(tempBuf, "Content-type: text/plain; charset=\"utf-8\"");             // Кодировка
-  if (!SendCommandSMTP(tempBuf, false))    {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  // Тема письма
-  m_snprintf(tempBuf, 256, "Subject: Controller %s - ", nameHeatPump);
-  switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
-  {
-    case pMESSAGE_NONE    : break;                                                                                          // Нет уведомлений
-    case pMESSAGE_TESTMAIL: strcat(tempBuf, "TESTMAIL\r\n"); break;                                                         // Тестовое почта
-    case pMESSAGE_TESTSMS : strcat(tempBuf, "TESTSMS\r\n");  break;                                                         // Тестовое смс
-    case pMESSAGE_RESET   : strcat(tempBuf, "RESET\r\n"); break;                                                            // Уведомление Сброс
-    case pMESSAGE_ERROR   : strcat(tempBuf, "ERROR\r\n"); break;                                                            // Уведомление Ошибка
-    case pMESSAGE_LIFE    : strcat(tempBuf, "LIFE\r\n"); break;                                                             // Уведомление Сигнал жизни
-    case pMESSAGE_TEMP    : strcat(tempBuf, "TEMP\r\n"); break;                                                             // Уведомление Достижение граничной температуры
-    case pMESSAGE_SD      : strcat(tempBuf, "ERROR SD\r\n"); break;                                                         // Уведомление "Проблемы с sd картой"
-    case pMESSAGE_WARNING : strcat(tempBuf, "WARNING\r\n"); break;                                                          // Уведомление "Прочие уведомления"
-    default               : strcat(tempBuf, "ERROR TYPE \r\n"); clientMessage.stop(); SemaphoreGive(xWebThreadSemaphore); return false; break; // ответ содержит ошибки
-  }
-  if (!SendCommandSMTP(tempBuf, false))    {
-    clientMessage.stop();  // послать тему письма
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
+	// 5. Заголовок сообщения
+	if(!SendCommandSMTP((char*) "DATA", true)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	strcpy(tempBuf, "To: <");
+	strcat(tempBuf, messageSetting.smtp_RCPTTo);
+	strcat(tempBuf, ">");
+	if(!SendCommandSMTP(tempBuf, false)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	strcpy(tempBuf, "From: <");
+	strcat(tempBuf, messageSetting.smtp_MailTo);
+	strcat(tempBuf, ">");
+	if(!SendCommandSMTP(tempBuf, false)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	strcpy(tempBuf, "Content-type: text/plain; charset=\"utf-8\"");             // Кодировка
+	if(!SendCommandSMTP(tempBuf, false)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	// Тема письма
+	m_snprintf(tempBuf, 256, "Subject: Controller %s - ", nameHeatPump);
+	switch((int) messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
+	{
+	case pMESSAGE_NONE:	break;                                                                                          // Нет уведомлений
+	case pMESSAGE_TESTMAIL:	strcat(tempBuf, "TESTMAIL\r\n"); break;                                                         // Тестовое почта
+	case pMESSAGE_TESTSMS:	strcat(tempBuf, "TESTSMS\r\n");	break;                                                         // Тестовое смс
+	case pMESSAGE_RESET:	strcat(tempBuf, "RESET\r\n");	break;                                                            // Уведомление Сброс
+	case pMESSAGE_ERROR:	strcat(tempBuf, "ERROR\r\n");	break;                                                            // Уведомление Ошибка
+	case pMESSAGE_LIFE:		strcat(tempBuf, "LIFE\r\n");	break;                                                             // Уведомление Сигнал жизни
+	case pMESSAGE_TEMP:		strcat(tempBuf, "TEMP\r\n");	break;                                                             // Уведомление Достижение граничной температуры
+	case pMESSAGE_SD:		strcat(tempBuf, "ERROR SD\r\n");break;                                                         // Уведомление "Проблемы с sd картой"
+	case pMESSAGE_WARNING:	strcat(tempBuf, "WARNING\r\n");	break;                                                          // Уведомление "Прочие уведомления"
+	default:
+		strcat(tempBuf, "ERROR TYPE \r\n");
+		clientMessage.stop();
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	if(!SendCommandSMTP(tempBuf, false)) {
+		clientMessage.stop();  // послать тему письма
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
 
-  // 6. Текст сообщения
-  strcpy(tempBuf, " ------ Народный контроллер теплового насоса ver. "); strcat(tempBuf, VERSION); strcat(tempBuf, " ------");
-  strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
+	// 6. Текст сообщения
+	clientMessage.write(tempBuf, m_snprintf(tempBuf, 256, " --- %s ver.%s ---%s", SendMessageTitle, VERSION, cStrEnd));
 
+	strcpy(tempBuf, "Конфигурация: ");
+	strcat(tempBuf, CONFIG_NAME);
+	strcat(tempBuf, " (");
+	strcat(tempBuf, CONFIG_NOTE);
+	strcat(tempBuf, ")");
+	strcat(tempBuf, cStrEnd);
+	clientMessage.write(tempBuf, strlen(tempBuf));
 
-  strcpy(tempBuf, "Конфигурация: "); strcat(tempBuf, CONFIG_NAME); strcat(tempBuf, " ("); strcat(tempBuf, CONFIG_NOTE ); strcat(tempBuf, ")");
-  strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
+	strcpy(tempBuf, "Создание уведомления: ");
+	strcat(tempBuf, NowDateToStr());
+	strcat(tempBuf, " ");
+	strcat(tempBuf, NowTimeToStr());
+	strcat(tempBuf, cStrEnd);
+	clientMessage.write(tempBuf, strlen(tempBuf));
 
+	strcat(messageData.data, cStrEnd);
+	clientMessage.write(messageData.data, strlen(messageData.data));
 
-  strcpy(tempBuf, "Создание уведомления: "); strcat(tempBuf, NowDateToStr()); strcat(tempBuf, " "); strcat(tempBuf, NowTimeToStr());
-  strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
+	// 7. Дополнительная информация если требуется добавляется в уведомление
+	if(GETBIT(messageSetting.flags, fMailInfo)) get_mailState(clientMessage, tempBuf);
 
-  strcat(messageData.data, cStrEnd);  clientMessage.write(messageData.data, strlen(messageData.data));
-
-
-  // 7. Дополнительная информация если требуется добавляется в уведомление
-  if (GETBIT(messageSetting.flags, fMailInfo))  get_mailState(clientMessage, tempBuf);
-
-
-  // 8. Завершение сессии  и отправка
-  if (!SendCommandSMTP((char*)".", true))      {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  strncpy(retMail, (char*)tempBuf, LEN_RETMAIL);                                                                  // Копирование сообщения сервера при удачной отправки
-  if (!SendCommandSMTP((char*)"QUIT", true))   {
-    clientMessage.stop();  // ответ содержит ошибки
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
-  clientMessage.stop();
-  JOURNAL("OK disconnected\n");
-  SemaphoreGive(xWebThreadSemaphore);
-  return true;
+	// 8. Завершение сессии  и отправка
+	if(!SendCommandSMTP((char*) ".", true)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	strncpy(retMail, (char*) tempBuf, LEN_RETMAIL);                                                                  // Копирование сообщения сервера при удачной отправки
+	if(!SendCommandSMTP((char*) "QUIT", true)) {
+		clientMessage.stop();  // ответ содержит ошибки
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	clientMessage.stop();
+	JOURNAL("OK disconnected\n");
+	SETBIT0(WorkFlags, fWF_MessageSendError);
+	SemaphoreGive (xWebThreadSemaphore);
+	return true;
 }
 
 // Отправить SMS sms.ru ----------------------------------------------------------------------------------
 // true - была отправка смс false - не было отправки смс
 boolean Message::sendSMS()
 {
-  uint16_t i;
-  uint8_t count = 0;
-  IPAddress zeroIP(0, 0, 0, 0);
+	uint16_t i;
+	uint8_t count = 0;
+	IPAddress zeroIP(0, 0, 0, 0);
 
-  if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)  {
-    return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-  }
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+		return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+	}
 
-  strcpy(retSMS, ADR_SMS_RU); // Используется как временный буфер check_address с констанатми не работает??
+	strcpy(retSMS, ADR_SMS_RU); // Используется как временный буфер check_address с констанатми не работает??
 
-  if (messageSetting.sms_serviceIP == zeroIP) // возможно днс надо всегда обновлять
-  {
-    //обновляем IP адрес сервера
-    if (!check_address(retSMS, messageSetting.sms_serviceIP)) {
-      strcpy(retSMS, ADR_SMS_RU);  // Обновить адрес
-      strcat(retSMS, " DNS lookup failed!");
-      return false;
-    }
-  }
+	if(messageSetting.sms_serviceIP == zeroIP) // возможно днс надо всегда обновлять
+	{
+		//обновляем IP адрес сервера
+		if(!check_address(retSMS, messageSetting.sms_serviceIP)) {
+			strcpy(retSMS, ADR_SMS_RU);  // Обновить адрес
+			strcat(retSMS, " DNS lookup failed!");
+			return false;
+		}
+	}
 
-  strcpy(retSMS, "");         // Обнулить ответ
-  if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
-  {
-    JOURNAL("Connected server: %s", ADR_SMS_RU); JOURNAL(" port: %d\n", 80);
-  }
-  else
-  {
-    JOURNAL("Connection failed server: %s", ADR_SMS_RU); JOURNAL(" port: %d\n", 80);
-    strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMS_RU);
-    clientMessage.stop();
-    SemaphoreGive(xWebThreadSemaphore);
-    return false;
-  }
+	strcpy(retSMS, "");         // Обнулить ответ
+	if(clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
+	{
+		JOURNAL("Connect server: %s port: %d\n", ADR_SMS_RU, 80);
+	} else {
+		if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("Connect failed: %s port: %d\n", ADR_SMS_RU, 80);
+		strcpy(retSMS, "No connect ");
+		strcat(retSMS, ADR_SMS_RU);
+		clientMessage.stop();
+		SETBIT1(WorkFlags, fWF_SMSSendError);
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
 
-  // посылка смс
-  strcpy(tempBuf, "GET http://sms.ru/sms/send?api_id=");                    // Начало
-  strcat(tempBuf, messageSetting.sms_p1);                                   // id
-  strcat(tempBuf, "&to=");
-  strcat(tempBuf, messageSetting.sms_phone);                                // номер
-  strcat(tempBuf, "&text=");
-  strcat(tempBuf, "Control+");
-  switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
-  {
-    case pMESSAGE_NONE    : break;                                                                                       // Нет уведомлений
-    case pMESSAGE_TESTMAIL: strcat(tempBuf, "TESTMAIL+"); break;                                                         // Тестовое почта
-    case pMESSAGE_TESTSMS : strcat(tempBuf, "TESTSMS+");  break;                                                         // Тестовое смс
-    case pMESSAGE_RESET   : strcat(tempBuf, "RESET+"); break;                                                            // Уведомление Сброс
-    case pMESSAGE_ERROR   : strcat(tempBuf, "ERROR+"); break;                                                            // Уведомление Ошибка
-    case pMESSAGE_LIFE    : strcat(tempBuf, "LIFE+"); break;                                                             // Уведомление Сигнал жизни
-    case pMESSAGE_TEMP    : strcat(tempBuf, "TEMP+"); break;                                                             // Уведомление Достижение граничной температуры
-    case pMESSAGE_SD      : strcat(tempBuf, "ERROR+SD+"); break;                                                         // Уведомление "Проблемы с sd картой"
-    case pMESSAGE_WARNING : strcat(tempBuf, "WARNING+"); break;                                                          // Уведомление "Прочие уведомления"
-    default               : strcat(tempBuf, "ERROR+TYPE+"); SemaphoreGive(xWebThreadSemaphore); return false; break;    // ответ содержит ошибки
-  }
-  for (i = 0; i < strlen(messageData.data); i++) if (messageData.data[i] == ' ') messageData.data[i] = '+'; // замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения
-  strcat(tempBuf, messageData.data);                       // содержимое
-  strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
+	// посылка смс
+	strcpy(tempBuf, "GET http://sms.ru/sms/send?api_id=");                    // Начало
+	strcat(tempBuf, messageSetting.sms_p1);                                   // id
+	strcat(tempBuf, "&to=");
+	strcat(tempBuf, messageSetting.sms_phone);                                // номер
+	strcat(tempBuf, "&text=");
+	strcat(tempBuf, SendSMSTitle);
+	strcat(tempBuf, "+");
+	switch((int) messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
+	{
+	case pMESSAGE_NONE:	break;                                                                                       // Нет уведомлений
+	case pMESSAGE_TESTMAIL:	strcat(tempBuf, "TESTMAIL+"); break;                                                         // Тестовое почта
+	case pMESSAGE_TESTSMS:	strcat(tempBuf, "TESTSMS+"); break;                                                         // Тестовое смс
+	case pMESSAGE_RESET:    strcat(tempBuf, "RESET+");	 break;                                                            // Уведомление Сброс
+	case pMESSAGE_ERROR:	strcat(tempBuf, "ERROR+");	break;                                                            // Уведомление Ошибка
+	case pMESSAGE_LIFE: 	strcat(tempBuf, "LIFE+");   break;                                                             // Уведомление Сигнал жизни
+	case pMESSAGE_TEMP:		strcat(tempBuf, "TEMP+");	break;                                                             // Уведомление Достижение граничной температуры
+	case pMESSAGE_SD:		strcat(tempBuf, "ERROR+SD+");	break;                                                         // Уведомление "Проблемы с sd картой"
+	case pMESSAGE_WARNING:	strcat(tempBuf, "WARNING+");  break;                                                          // Уведомление "Прочие уведомления"
+	default:
+		strcat(tempBuf, "ERROR+TYPE+");
+		SemaphoreGive (xWebThreadSemaphore);
+		return false;
+	}
+	for(i = 0; i < strlen(messageData.data); i++)
+		if(messageData.data[i] == ' ') messageData.data[i] = '+'; // замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения
+	strcat(tempBuf, messageData.data);                       // содержимое
+	strcat(tempBuf, cStrEnd);
+	clientMessage.write(tempBuf, strlen(tempBuf));
 
-  //JOURNAL("%s\n",tempBuf);
+	//JOURNAL("%s\n",tempBuf);
 
-  // Ожидание и получение ответа
-  while (!clientMessage.available()) // ожидание ответа 5 сек
-  {
-    SemaphoreGive(xWebThreadSemaphore);
-    _delay(200);
-    if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE)  {
-      return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-    }
-    count++;
-    if (count > 25)
-    {
-      strcpy(retSMS, "Server not answer . . .");
-      JOURNAL("%s\n", retSMS);
-      clientMessage.stop();
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
+	// Ожидание и получение ответа
+	while(!clientMessage.available()) // ожидание ответа 5 сек
+	{
+		SemaphoreGive (xWebThreadSemaphore);
+		_delay(200);
+		if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+		}
+		count++;
+		if(count > 25) {
+			strcpy(retSMS, "SMS server not responding!");
+			if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("%s\n", retSMS);
+			SETBIT1(WorkFlags, fWF_SMSSendError);
+			clientMessage.stop();
+			SemaphoreGive(xWebThreadSemaphore);
+			return false;
+		}
 
-  }
+	}
 
-  // разбор ответа
-  byte thisByte;
-  // режем заголовок, он отделен последовательностью 0x0a 0x0d 0x0a от ответа
-  while (clientMessage.available())
-  {
-    thisByte = clientMessage.read();
-    if (thisByte == 0x0a)
-    {
-      thisByte = clientMessage.read();
-      if (thisByte == 0x0d)
-      {
-        thisByte = clientMessage.read();
-        if (thisByte == 0x0a)
-        {
-          i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
-          retSMS[i] = 0;                                         // обрезаем строку
-          for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-          JOURNAL("sms.ru return: %s \n", retSMS);
-          clientMessage.stop();
-          SemaphoreGive(xWebThreadSemaphore);
-          return true; // смс отправлено
-        }
-      }
-    }
+	// разбор ответа
+	byte thisByte;
+	// режем заголовок, он отделен последовательностью 0x0a 0x0d 0x0a от ответа
+	while(clientMessage.available()) {
+		thisByte = clientMessage.read();
+		if(thisByte == 0x0a) {
+			thisByte = clientMessage.read();
+			if(thisByte == 0x0d) {
+				thisByte = clientMessage.read();
+				if(thisByte == 0x0a) {
+					i = clientMessage.read((byte*) retSMS, LEN_RETSMS/* sizeof(retSMS)*/- 1); // получаем код ответа
+					retSMS[i] = 0;                                         // обрезаем строку
+					for(i = 0; i < strlen(retSMS); i++)
+						if(retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
+					JOURNAL("sms.ru return: %s \n", retSMS);
+					clientMessage.stop();
+					SETBIT0(WorkFlags, fWF_SMSSendError);
+					SemaphoreGive (xWebThreadSemaphore);
+					return true; // смс отправлено
+				}
+			}
+		}
 
-  }
-  clientMessage.stop();
-  SemaphoreGive(xWebThreadSemaphore);
-  return false;
+	}
+	clientMessage.stop();
+	SemaphoreGive (xWebThreadSemaphore);
+	return false;
 }
 //Отправить SMS smsc.ru, smsc.ua------------------------------------------------------------
 
@@ -924,32 +958,16 @@ boolean Message::sendSMSC()
   strcpy(retSMS, "");         // Обнулить ответ
   if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
   {
-    if ((messageSetting.sms_service) == pSMSC_RU) {
-      JOURNAL("Connected server: %s", ADR_SMSC_RU);
-      JOURNAL(" port: %d\n", 80);
-    }
-    else {
-      JOURNAL("Connected server: %s", ADR_SMSC_UA);
-      JOURNAL(" port: %d\n", 80);
-    }
+	  JOURNAL("Connect server: %s port: %d\n", messageSetting.sms_service == pSMSC_RU ? ADR_SMS_RU : ADR_SMSC_UA, 80);
   }
   else
   {
-    if ((messageSetting.sms_service) == pSMSC_RU)
-    {
-      JOURNAL("Connection failed server: %s", ADR_SMSC_RU); JOURNAL(" port: %d\n", 80);
+	  if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("Connect failed: %s port: %d\n", messageSetting.sms_service == pSMSC_RU ? ADR_SMS_RU : ADR_SMSC_UA, 80);
       strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSC_RU);
       clientMessage.stop();
+      SETBIT1(WorkFlags, fWF_SMSSendError);
       SemaphoreGive(xWebThreadSemaphore);
       return false;
-    } else
-    {
-      JOURNAL("Connection failed server: %s", ADR_SMSC_UA); JOURNAL(" port: %d\n", 80);
-      strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSC_UA);
-      clientMessage.stop();
-      SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
   }
 
   // посылка смс
@@ -960,7 +978,8 @@ boolean Message::sendSMSC()
   strcat(tempBuf, "&phones=");
   strcat(tempBuf, messageSetting.sms_phone);                                // номер
   strcat(tempBuf, "&mes=");
-  strcat(tempBuf, "Control+");
+  strcat(tempBuf, SendSMSTitle);
+  strcat(tempBuf, "+");
   switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
   {
     case pMESSAGE_NONE    : break;                                                                                       // Нет уведомлений
@@ -991,9 +1010,10 @@ boolean Message::sendSMSC()
     count++;
     if (count > 25)
     {
-      strcpy(retSMS, "Server not answer . . .");
-      JOURNAL("%s\n", retSMS);
+      strcpy(retSMS, "SMS server not responding!");
+      if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("%s\n", retSMS);
       clientMessage.stop();
+      SETBIT1(WorkFlags, fWF_SMSSendError);
       SemaphoreGive(xWebThreadSemaphore);
       return false;
     }
@@ -1008,10 +1028,17 @@ boolean Message::sendSMSC()
     i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
     retSMS[i] = 0;                                         // обрезаем строку
     for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-    JOURNAL("server return: %s \n", retSMS);
     clientMessage.stop();
     SemaphoreGive(xWebThreadSemaphore);
-    if (strstr(retSMS, "ERROR"))  return false; else return true;
+    if (strstr(retSMS, "ERROR")) {
+    	if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("Error send SMS: %s\n", retSMS);
+    	SETBIT1(WorkFlags, fWF_SMSSendError);
+    	return false;
+    } else {
+        JOURNAL("server return: %s \n", retSMS);
+        SETBIT0(WorkFlags, fWF_SMSSendError);
+    	return true;
+    }
   }
 
   clientMessage.stop();
@@ -1047,13 +1074,14 @@ boolean Message::sendSMSCLUB()
   strcpy(retSMS, "");         // Обнулить ответ
   if (clientMessage.connect(messageSetting.sms_serviceIP, 80, W5200_SOCK_SYS)) // Соединение по HTTP
   {
-    JOURNAL("Connected server: %s", ADR_SMSCLUB_UA); JOURNAL(" port: %d\n", 80);
+    JOURNAL("Connect server: %s port: %d\n", ADR_SMSC_RU, 80);
   }
   else
   {
-    JOURNAL("Connection failed server: %s", ADR_SMSCLUB_UA); JOURNAL(" port: %d\n", 80);
-    strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSCLUB_UA);
+	if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("Connect failed: %s port: %d\n", ADR_SMSC_RU, 80);
+    strcpy(retSMS, "No connect "); strcat(retSMS, ADR_SMSC_RU);
     clientMessage.stop();
+    SETBIT1(WorkFlags, fWF_SMSSendError);
     SemaphoreGive(xWebThreadSemaphore);
     return false;
 
@@ -1068,7 +1096,9 @@ boolean Message::sendSMSCLUB()
   strcat(tempBuf, messageSetting.sms_p2);
   strcat(tempBuf, "]]></password>\r\n<from><![CDATA[infomir]]></from>\r\n<to><![CDATA[");
   strcat(tempBuf, messageSetting.sms_phone);
-  strcat(tempBuf, "]]></to>\r\n<text><![CDATA[Control+");
+  strcat(tempBuf, "]]></to>\r\n<text><![CDATA[");
+  strcat(tempBuf, SendSMSTitle);
+  strcat(tempBuf, "+");
 
   switch ((int)messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
   {
@@ -1104,9 +1134,10 @@ boolean Message::sendSMSCLUB()
     count++;
     if (count > 25)
     {
-      strcpy(retSMS, "Server not answer . . .");
-      JOURNAL("%s\n", retSMS);
+      strcpy(retSMS, "SMS server not responding!");
+      if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("%s\n", retSMS);
       clientMessage.stop();
+      SETBIT1(WorkFlags, fWF_SMSSendError);
       SemaphoreGive(xWebThreadSemaphore);
       return false;
     }
@@ -1132,10 +1163,17 @@ boolean Message::sendSMSCLUB()
             i = clientMessage.read((byte*)retSMS, LEN_RETSMS/* sizeof(retSMS)*/ - 1); // получаем код ответа
             retSMS[i] = 0;                                         // обрезаем строку
             for (i = 0; i < strlen(retSMS); i++) if (retSMS[i] == '=') retSMS[i] = ':'; // замена = на знак ":" веб морда глючит в ответах - обрезает по  =
-            JOURNAL("server return: %s \n", retSMS);
             clientMessage.stop();
             SemaphoreGive(xWebThreadSemaphore);
-            if (strstr(retSMS, ">OK<"))  return true; else return false;
+            if (strstr(retSMS, ">OK<")) {
+            	if(!GETBIT(WorkFlags, fWF_SMSSendError)) journal.jprintf("Error send SMS: %s\n", retSMS);
+            	SETBIT1(WorkFlags, fWF_SMSSendError);
+            	return false;
+            } else {
+                JOURNAL("server return: %s \n", retSMS);
+                SETBIT0(WorkFlags, fWF_SMSSendError);
+            	return true;
+            }
           }
         }
       }

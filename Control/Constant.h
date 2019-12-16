@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.047"				// Версия прошивки
+#define VERSION			"1.048"				// Версия прошивки
 #define VER_SAVE		137					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -379,6 +379,9 @@ const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
 const uint8_t save_end_marker[1] = { 0 };
 #define WEBDELIM	"\x7f" // ALT+127
+const char SendMessageTitle[]	= "Народный контроллер теплового насоса";
+const char SendSMSTitle[] 		= "Control";
+
 
 // Многозадачность, деление аппартных ресурсов
 const char *nameFREERTOS =     {"FreeRTOS"};           // Имя источника ошибки (нужно для передачи в функцию) - операционная система
@@ -1256,6 +1259,10 @@ enum SMS_SERVICE
   pSMSCLUB_UA                    // Сервис smsclub.mobi
 };
 
+const char ADR_SMS_RU[]     = "sms.ru";
+const char ADR_SMSC_RU[]    = "smsc.ru";
+const char ADR_SMSC_UA[]    = "smsc.ua";
+const char ADR_SMSCLUB_UA[] = "gate.smsclub.mobi";
 const char SMS_SERVICE_WEB_SELECT[] = "sms.ru:0;smsc.ru:0;smsc.ua:0;smsclub.mobi:0;";
 
 //  Перечисляемый тип - тип фреона
