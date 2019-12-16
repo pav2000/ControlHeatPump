@@ -114,8 +114,8 @@ boolean Message::dnsUpdate() // запускается 0 потоке вебсе
 		case pSMSC_UA:
 			ret = strcpy(tempBuf, ADR_SMSC_UA);
 			break;
-		case pSMSCLUB_UA:
-			ret = strcpy(tempBuf, ADR_SMSCLUB_UA);
+		case pSMSCLUB:
+			ret = strcpy(tempBuf, ADR_SMSCLUB);
 			break;
 		}
 		check_address(tempBuf, messageSetting.sms_serviceIP);// При не удаче возвращается 0, при удаче: 1 - IP на входе (были цифры, DNS не нужен), 2 - был запрос к DNS и адрес получен
@@ -589,7 +589,7 @@ boolean Message::sendMessage()  // запуск из 0 потока
         }
         break;
 
-      case pSMSCLUB_UA:
+      case pSMSCLUB:
         if (sendSMSCLUB())
         { // Удачно
           strcpy(retTest, "Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));

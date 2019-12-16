@@ -1256,13 +1256,13 @@ enum SMS_SERVICE
   pSMS_RU,                       // Сервис sms.ru
   pSMSC_RU,                      // Сервис smsc.ru
   pSMSC_UA,                      // Сервис smsc.ua
-  pSMSCLUB_UA                    // Сервис smsclub.mobi
+  pSMSCLUB                    // Сервис smsclub.mobi
 };
 
-const char ADR_SMS_RU[]     = "sms.ru";
-const char ADR_SMSC_RU[]    = "smsc.ru";
-const char ADR_SMSC_UA[]    = "smsc.ua";
-const char ADR_SMSCLUB_UA[] = "gate.smsclub.mobi";
+const char ADR_SMS_RU[]  = "sms.ru";
+const char ADR_SMSC_RU[] = "smsc.ru";
+const char ADR_SMSC_UA[] = "smsc.ua";
+const char ADR_SMSCLUB[] = "gate.smsclub.mobi";
 const char SMS_SERVICE_WEB_SELECT[] = "sms.ru:0;smsc.ru:0;smsc.ua:0;smsclub.mobi:0;";
 
 //  Перечисляемый тип - тип фреона
