@@ -965,9 +965,7 @@ void parserGET(uint8_t thread, int8_t )
 				journal.Clear();       // Послать команду на очистку журнала в памяти
 				journal.jprintf("Reset system RAM journal . . .\n");
 #else                      // Журнал в ЕЕПРОМ
-				journal.Format(strReturn);
-				//HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
-				strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
+				journal.Format();
 				strcat(strReturn,"OK");
 #endif
 			} else if (strcmp(str,"DUE")==0)   // RESET_DUE, Команда сброса контроллера
