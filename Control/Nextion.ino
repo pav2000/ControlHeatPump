@@ -427,8 +427,9 @@ void Nextion::Update()
 			}
 #endif
 #ifdef NEXTION_GENERATOR 
-            if((flags ^ Page1flags) & (1<<4))
+            if((flags ^ Page1flags) & (1<<4)) {
 		    if(flags & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от герератора	
+            }
 #else
 		    sendCommand("vis bt1,0"); // скрыть кнопку
 #endif

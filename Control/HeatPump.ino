@@ -2791,7 +2791,7 @@ MODE_HP HeatPump::get_Work()
 		break;
 	}
 #ifdef RHEAT  // Дополнительный тен для нагрева отопления
-if(!GETBIT(Option.flags,fBackupPower)) // Нет питания от резервного источника
+if(!GETBIT(Option.flags,fBackupPower)){ // Нет питания от резервного источника
 	if (GETBIT(Option.flags,fAddHeat))
 	{
 		if(!GETBIT(Option.flags,fTypeRHEAT)) // резерв
@@ -2805,6 +2805,7 @@ if(!GETBIT(Option.flags,fBackupPower)) // Нет питания от резер�
 			if ((sTemp[TOUT].get_Temp()<Option.tempRHEAT-HYSTERESIS_RHEAD)&&(!dRelay[RHEAT].get_Relay())&&(ret!=pOFF)) {journal.jprintf(" TOUT=%.2f, add heatting on . . .\n",sTemp[TOUT].get_Temp()/100.0); dRelay[RHEAT].set_ON();}
 		}
 	}
+}	
 else if(dRelay[RHEAT].get_Relay()) dRelay[RHEAT].set_OFF();// есть питание от резервного источника - запрет использования электрокотла, если надо выключаем
 #endif
 #ifdef DEBUG_MODWORK
