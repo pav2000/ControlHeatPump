@@ -38,6 +38,7 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 // Page Main
 #define NXTID_ONOFF			0x02
 #define NXTID_BOILER_URGENT	0x13
+#define NXTID_GENERATOR	    0x16
 // Page Heat
 #define NXTID_TEMP_PLUS		0x17
 #define NXTID_TEMP_MINUS	0x18
@@ -117,6 +118,9 @@ void Nextion::init_display()
 		 */
 	}
 	sendCommand("page 0");
+    #ifndef NEXTION_GENERATOR 
+    sendCommand("vis bt1,0"); // скрыть кнопку "Работа от генератора"
+    #endif
 }
 
 void Nextion::set_dim(uint8_t dim)
@@ -259,6 +263,11 @@ void Nextion::readCommand()
 						fUpdate = 2;
 						input_delay = NEXTION_INPUT_DELAY;
 					}
+				else if(cmd2 == NXTID_GENERATOR) { // Прочитать команду работа от генератора
+				        HP.set_BackupPower(!HP.get_BackupPower());
+			        	fUpdate = 2;
+				        input_delay = NEXTION_INPUT_DELAY;
+				}	
 				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
 					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
 						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == NXTID_TEMP_PLUS ? 20 : -20) / 100.0, 1));
@@ -393,6 +402,10 @@ void Nextion::Update()
 #ifdef RBOILER
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
 #endif
+#ifdef NEXTION_GENERATOR
+					| (HP.get_BackupPower() << 4)
+#endif
+
 					;
 		if(fUpdate == 2) Page1flags = ~flags;
 		if(flags != Page1flags) {
@@ -413,7 +426,13 @@ void Nextion::Update()
 				if(flags & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
 			}
 #endif
-			Page1flags = flags;
+#ifdef NEXTION_GENERATOR 
+            if((flags ^ Page1flags) & (1<<4))
+		    if(flags & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от герератора	
+#else
+		    sendCommand("vis bt1,0"); // скрыть кнопку
+#endif
+		 Page1flags = flags;  
 		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{

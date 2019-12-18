@@ -364,7 +364,9 @@ class HeatPump
    uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
    boolean  set_WebStoreOnSPIFlash(boolean f) {if(f)SETBIT1(Option.flags,fWebStoreOnSPIFlash);else SETBIT0(Option.flags,fWebStoreOnSPIFlash);return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// установить флаг хранения веб морды на флеш диске
    uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
-   
+   uint8_t  get_BackupPower() {return GETBIT(Option.flags,fBackupPower);}// получить флаг использования генератора (ограничение мощности)
+   boolean  set_BackupPower(boolean f) {if(f)SETBIT1(Option.flags,fBackupPower);else SETBIT0(Option.flags,fBackupPower);return GETBIT(Option.flags,fBackupPower);}// установить флаг использования генератора (ограничение мощности)
+
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
