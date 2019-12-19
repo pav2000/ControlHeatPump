@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav  
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.049";
+var VER_WEB = "1.050";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -88,6 +88,9 @@ function setParam(paramid, resultid) {
 	loadParam(encodeURIComponent(elsend), true, resultid);
 }
 
+var NeedLogin = sessionStorage.getItem("NeedLogin");
+var LPString = sessionStorage.getItem("LPString");
+
 function loadParam(paramid, noretry, resultdiv) {
 	var check_ready = 1;
 	var queue = 0;
@@ -103,8 +106,17 @@ function loadParam(paramid, noretry, resultdiv) {
 		var oneparamid = req_stek.shift();
 		check_ready = 0;
 		var request = new XMLHttpRequest();
-		var reqstr = oneparamid.replace(/,/g, '&');
-		request.open("GET", urlcontrol + "/&" + reqstr + "&&", true);
+		var reqstr = urlcontrol + "/&" + oneparamid.replace(/,/g, '&') + "&&";
+		if(NeedLogin) {
+			if(NeedLogin != 2) {
+				LPString = "!Z" + window.btoa(prompt("Login:") + ":" + prompt("Password:"));
+				NeedLogin = 2;
+				sessionStorage.setItem("NeedLogin", NeedLogin);
+				sessionStorage.setItem("LPString", LPString);
+			}
+			reqstr += LPString;
+		} 
+		request.open("GET", reqstr, true);
 		request.timeout = urltimeout;
 		request.send(null);
 		request.onreadystatechange = function() {
@@ -652,7 +664,9 @@ function loadParam(paramid, noretry, resultdiv) {
 						if(typeof window["loadParam_after"] == 'function') window["loadParam_after"](paramid);
 					} // end: if (request.responseText != null)
 				} // end: if (request.responseText != null)
-			} else if(noretry != true) {
+			} else if(request.status == 0) return;
+			else if(noretry != true) {
+				if(request.status == 401 && location.protocol == "file:") NeedLogin = 1;
 				console.log("request.status: " + request.status + " retry load...");
 				check_ready = 1;
 				setTimeout(function() {
@@ -734,7 +748,7 @@ function upload(file) {
 //	xhr.onload = xhr.onerror = function() {
 //		if(this.status == 200) { console.log("success"); } else { console.log("error " + this.status); }
 //	};
-	xhr.open("POST", urlcontrol, false);
+	xhr.open("POST", urlcontrol + (NeedLogin == 2 ? "/&&" + LPString : ""), false);
 	xhr.setRequestHeader('Title', file.settings ? "*SETTINGS*" : encodeURIComponent(file.name));
 	xhr.onreadystatechange = function() {
 		if(this.readyState != 4) return;

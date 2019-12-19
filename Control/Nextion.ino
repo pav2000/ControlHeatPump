@@ -118,9 +118,6 @@ void Nextion::init_display()
 		 */
 	}
 	sendCommand("page 0");
-    #ifndef NEXTION_GENERATOR 
-    sendCommand("vis bt1,0"); // скрыть кнопку "Работа от генератора"
-    #endif
 }
 
 void Nextion::set_dim(uint8_t dim)
@@ -262,12 +259,10 @@ void Nextion::readCommand()
 						HP.set_HeatBoilerUrgently(!HP.HeatBoilerUrgently);
 						fUpdate = 2;
 						input_delay = NEXTION_INPUT_DELAY;
-					}
-				else if(cmd2 == NXTID_GENERATOR) { // Прочитать команду работа от генератора
+					} else if(cmd2 == NXTID_GENERATOR) { // Прочитать команду работа от генератора
 				        HP.set_BackupPower(!HP.get_BackupPower());
-			        	fUpdate = 2;
-				        input_delay = NEXTION_INPUT_DELAY;
-				}	
+				        input_delay = NEXTION_INPUT_DELAY * 2;
+					}
 				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
 					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
 						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == NXTID_TEMP_PLUS ? 20 : -20) / 100.0, 1));
@@ -428,12 +423,11 @@ void Nextion::Update()
 #endif
 #ifdef NEXTION_GENERATOR 
             if((flags ^ Page1flags) & (1<<4)) {
-		    if(flags & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от герератора	
+            	sendCommand("vis bt1,1");
+            	if(flags & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от генератора
             }
-#else
-		    sendCommand("vis bt1,0"); // скрыть кнопку
 #endif
-		 Page1flags = flags;  
+            Page1flags = flags;
 		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{

@@ -322,7 +322,6 @@ class HeatPump
     char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
     char *  get_netMAC() {return MAC2String(Network.mac);}  //  получить мас адрес контроллера
-        
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
     byte *get_mac() { return Network.mac;}                 //  Получить mac адрес
     uint32_t socketRes() {return countResSocket;}          //  Получить число сбросов сокетов
@@ -331,6 +330,7 @@ class HeatPump
     uint32_t time_resW5200() {return Network.resW5200;}    //  Получить период сбросов W5200
     boolean get_fPass() { return GETBIT(Network.flags,fPass);}   //  Получить флаг необходимости идентификации
     boolean get_fInitW5200() { return GETBIT(Network.flags,fInitW5200);}  //  Получить флаг Контроля w5200
+	inline  char* get_passUser() { return Network.passUser; }
 
   // Параметры ТН
    boolean set_optionHP(char *var, float x);                // Установить опции ТН из числа (float)
