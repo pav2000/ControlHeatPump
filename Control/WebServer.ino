@@ -208,12 +208,20 @@ void web_server(uint8_t thread)
 					}
 					case UNAUTHORIZED: {
 xUNAUTHORIZED:
-						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$UNAUTHORIZED\n");
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+							uint8_t ip[4];
+							W5100.readSnDIPR(sock, ip);
+							journal.jprintf("$UNAUTHORIZED (%d.%d.%d.%d)\n", ip[0], ip[1], ip[2], ip[3]);
+						}
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
 					case BAD_LOGIN_PASS: {
-						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$Wrong login or password\n");
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+							uint8_t ip[4];
+							W5100.readSnDIPR(sock, ip);
+							journal.jprintf("$Wrong login or password (%d.%d.%d.%d)\n", ip[0], ip[1], ip[2], ip[3]);
+						}
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
