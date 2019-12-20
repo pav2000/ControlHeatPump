@@ -1375,7 +1375,9 @@ void vUpdateCommand(void *)
 // Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
 void vServiceHP(void *)
 {
+#ifdef NEXTION
 	static uint32_t NextionTick = 0;
+#endif
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
 	static uint32_t timer_sec = GetTickCount();

@@ -203,6 +203,24 @@ void HeatPump::scan_OneWire(char *result_str)
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}
 #endif
+#ifdef TNTC
+		journal.jprintf("\nNTC found: ");
+		for(uint8_t i = 0; i < TNTC; i++) {
+			if(TNTC_Value[i] > TNTC_Value_Max) continue;
+			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
+			OW_scanTable[OW_scanTableIdx].bus = 8;
+			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
+			OW_scanTable[OW_scanTableIdx].address[0] = tADC;
+			OW_scanTable[OW_scanTableIdx].address[1] = '0' + i;
+			char *p = result_str + strlen(result_str);
+			m_snprintf(p, 64, "%d:NTC:%.2d:AD%d:8;", OW_scanTable[OW_scanTableIdx].num, HP.sTemp->Read_NTC(TNTC_Value[i]), TADC[i]);
+			journal.jprintf("%s", p);
+			if(++OW_scanTableIdx >= OW_scanTable_max) break;
+		}
+#endif
+#ifdef TNTC_EXT
+
+#endif
 		journal.jprintf("\n");
 		OW_scan_flags = 0;
 	}
@@ -1624,15 +1642,17 @@ boolean HeatPump::checkEVI()
 }
 #endif
 
+#ifdef RPUMPFL
 void HeatPump::Pump_HeatFloor(boolean On)
 {
-#ifdef RPUMPFL
 	if(On) {
 		if(!(get_modWork() & pBOILER) && ((get_modeHouse() == pHEAT && GETBIT(Prof.Heat.flags, fHeatFloor)) || (get_modeHouse() == pCOOL && GETBIT(Prof.Cool.flags, fHeatFloor))))
 			dRelay[RPUMPFL].set_ON();
 	} else dRelay[RPUMPFL].set_OFF();
-#endif
 }
+#else
+void HeatPump::Pump_HeatFloor(boolean) { }
+#endif
 
 // Включить или выключить насосы контуров и то что требуется для ГВС (трех-ходовой или насос) первый параметр их желаемое состояние
 // Второй параметр параметр задержка после включения/выключения мсек. отдельного насоса (борьба с помехами)

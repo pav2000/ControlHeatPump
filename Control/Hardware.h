@@ -124,6 +124,14 @@ class sensorADC
     char *name;                                          // Имя датчика
 };
 
+#ifdef TNTC
+uint16_t TNTC_Value[TNTC];
+#define  TNTC_Value_Max 4090
+#endif
+#ifdef TNTC_EXT
+uint16_t TNTC_EXT_Value[TNTC_EXT];
+#endif
+
 // ------------------------------------------------------------------------------------------
 // Цифровые контактные датчики (есть 2 состяния 0 и 1) --------------------------------------
 class sensorDiditalInput

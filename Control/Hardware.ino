@@ -64,6 +64,13 @@ void adc_setup()
 			adcMask |= 1 << HP.sADC[i].get_pinA();
 		}
 	}
+#ifdef TNTC
+	for(uint8_t i = 0; i < TNTC; i++) {
+		if(max < TADC[i]) max = TADC[i];
+		adcMask |= 1 << TADC[i];
+	}
+#endif
+
 	NVIC_EnableIRQ(ADC_IRQn);        // enable ADC interrupt vector
 	ADC->ADC_IDR = 0xFFFFFFFF;       // disable interrupts IDR Interrupt Disable Register
 	ADC->ADC_IER = 1 << max;         // Самый старший канал
@@ -109,6 +116,9 @@ void ADC_Handler(void)
 			adc->adc_flagFull = true;
 		}
 	}
+#ifdef TNTC
+	for(uint8_t i = 0; i < TNTC; i++) TNTC_Value[i] = ADC->ADC_CDR[TADC[i]]; // get conversion result
+#endif
 	// if (ADC->ADC_ISR & (1<<ADC_TEMPERATURE_SENSOR))   // ensure there was an End-of-Conversion and we read the ISR reg
 	//            HP.AdcTempSAM3x =(unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR));   // если готов прочитать результат
 }
