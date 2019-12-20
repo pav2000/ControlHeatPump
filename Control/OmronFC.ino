@@ -125,6 +125,8 @@ int8_t devOmronMX2::initFC()
 
 #define progOK  " Register %s to %d\r\n"  // Строка вывода сообщения о удачном программировании регистра
 #define progErr " Error setting register %s\r\n"  // Строка вывода сообщения о не удачном программировании регистра
+
+#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
 // Программирование отдельного регистра инвертора
 // adrReg - адрес регистра
 // nameReg - имя регистра
@@ -143,10 +145,12 @@ int8_t devOmronMX2::progReg32(uint16_t adrReg, char* nameReg, uint32_t valReg)
 	else                                          journal.jprintf(progErr,nameReg);
 	return err;
 }
+#endif // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ	
 
 // Программирование инвертора под конкретный компрессор
 int8_t devOmronMX2::progFC() 
 {
+#ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ	
 	journal.jprintf("Programming %s . . .\r\n",name);
 	// Настройка инвертора под конкретный компрессор Регистры Hxxx Двигатель с постоянными магнитами (PM-двигатель)
 	progReg16(MX2_b171, (char*)"b171",0x03);   // b171 Выбор режима ПЧ b171 чт./зап. 0 (выключено), 1 (режим IM), 2 (режим высокой частоты), 3 (режим PM) =03 
@@ -183,10 +187,11 @@ int8_t devOmronMX2::progFC()
     progReg32(MX2_F002,(char*)"F002",FC_ACCEL_TIME);      // F002 Время разгона
     progReg32(MX2_F002,(char*)"F003",FC_DEACCEL_TIME);    // F003 Торможения разгона
     journal.jprintf(". . . OK\r\n");
+#else
+    journal.jprintf("Analog control - no support programm Omron MX2\r\n");
+#endif // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ	    
 	return err;
  }
-
-
 
 // Установить целевую частоту
 // параметр показывать сообщение сообщение или нет, два оставшихся параметра границы

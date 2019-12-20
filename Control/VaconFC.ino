@@ -429,6 +429,7 @@ xStarted:
 #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_ON(); // ПЛОХО через глобальную переменную
 #endif // FC_USE_RCOMP
+xStarted:
     SETBIT1(flags, fOnOff);
     startCompressor = rtcSAM3X8.unixtime();
     journal.jprintf(" %s ON\n", name);

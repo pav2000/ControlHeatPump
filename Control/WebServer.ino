@@ -54,6 +54,8 @@ static const char *noteRemarkTest[] = {"Тестирование отключе�
                                
 const char* file_types[] = {"text/html", "image/x-icon", "text/css", "application/javascript", "image/jpeg", "image/png", "image/gif", "text/plain", "text/ajax"};
 
+const char header_Authorization_1[] = "Authorization: Basic ";
+const char header_Authorization_2[] = "&&!Z";
 const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic real_m=Admin Zone\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n"};
 const char* NO_SUPPORT            = {"not supported"};
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
@@ -206,12 +208,20 @@ void web_server(uint8_t thread)
 					}
 					case UNAUTHORIZED: {
 xUNAUTHORIZED:
-						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$UNAUTHORIZED\n");
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+							uint8_t ip[4];
+							W5100.readSnDIPR(sock, ip);
+							journal.jprintf("$UNAUTHORIZED (%d.%d.%d.%d)\n", ip[0], ip[1], ip[2], ip[3]);
+						}
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
 					case BAD_LOGIN_PASS: {
-						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("$Wrong login or password\n");
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) {
+							uint8_t ip[4];
+							W5100.readSnDIPR(sock, ip);
+							journal.jprintf("$Wrong login or password (%d.%d.%d.%d)\n", ip[0], ip[1], ip[2], ip[3]);
+						}
 						sendConstRTOS(thread, pageUnauthorized);
 						break;
 					}
@@ -965,9 +975,7 @@ void parserGET(uint8_t thread, int8_t )
 				journal.Clear();       // Послать команду на очистку журнала в памяти
 				journal.jprintf("Reset system RAM journal . . .\n");
 #else                      // Журнал в ЕЕПРОМ
-				journal.Format(strReturn);
-				//HP.sendCommand(pJFORMAT);        // Послать команду форматирование журнала
-				strcpy(strReturn, HEADER_ANSWER);   // Начало ответа
+				journal.Format();
 				strcat(strReturn,"OK");
 #endif
 			} else if (strcmp(str,"DUE")==0)   // RESET_DUE, Команда сброса контроллера
@@ -2624,46 +2632,27 @@ x_FunctionNotFound:
 }
 
 // ===============================================================================================================
-const char *header_Authorization_="Authorization: Basic ";
-const char *header_POST_="Access-Control-Request-Method: POST";
 // Выделение имени файла (или содержания запроса) и типа файла и типа запроса клиента
 // thread - номер потока, возсращает тип запроса
 uint16_t GetRequestedHttpResource(uint8_t thread)
 {
-	char *str_token, *pass;
-	boolean user, admin;
-	uint8_t i;
-	uint16_t len;
 	STORE_DEBUG_INFO(50);
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
-		if(!(pass = strstr((char*) Socket[thread].inBuf, header_Authorization_))) return UNAUTHORIZED; // строка авторизации не найдена
-		else  // Строка авторизации найдена смотрим логин пароль
-		{
-			pass = pass + strlen(header_Authorization_);
-			user = true;
-			for(i = 0; i < HP.Security.hashUserLen; i++)
-				if(pass[i] != HP.Security.hashUser[i]) {
-					user = false;
-					break;
-				}
-			if(user != true) // это не пользователь
-			{
-				admin = true;
-				for(i = 0; i < HP.Security.hashAdminLen; i++)
-					if(pass[i] != HP.Security.hashAdmin[i]) {
-						admin = false;
-						break;
-					}
-				if(admin != true) return BAD_LOGIN_PASS; // Не верный логин или пароль
-			} //  if (user!=true)
-			else SETBIT1(Socket[thread].flags, fUser); // зашел простой пользователь
-		} // else
+		//Serial.print("\n"); Serial.print((char*)Socket[thread].inBuf); Serial.print("\n");
+		char *str = strstr((char*)Socket[thread].inBuf, header_Authorization_1);
+		if(str) str += sizeof(header_Authorization_1) - 1;
+		else if((str = strstr((char*)Socket[thread].inBuf, header_Authorization_2))) str += sizeof(header_Authorization_2) - 1;
+		if(str) {
+			if(strncmp(str, HP.Security.hashAdmin, HP.Security.hashAdminLen) == 0) goto x_ok;
+			else if(strncmp(str, HP.Security.hashUser, HP.Security.hashUserLen) == 0 || !*HP.get_passUser()) SETBIT1(Socket[thread].flags, fUser); else return BAD_LOGIN_PASS;
+		} else if(!*HP.get_passUser()) SETBIT1(Socket[thread].flags, fUser); else return UNAUTHORIZED;
 	}
+x_ok:
 
 	// Идентификация пройдена
 	//if(strstr((char*)Socket[thread].inBuf,"Access-Control-Request-Method: POST")) {request_type = HTTP_POST_; return request_type; }  //обработка предваритаельного запроса перед получением файла
-	char *tmpptr;
+	char *str_token, *tmpptr;
 	str_token = strtok_r((char*) Socket[thread].inBuf, " ", &tmpptr);    // Обрезаем по пробелам
 	if(strcmp(str_token, "GET") == 0)   // Ищем GET
 	{
@@ -2677,7 +2666,7 @@ uint16_t GetRequestedHttpResource(uint8_t thread)
 			Socket[thread].inPtr = (char*) (str_token + 1);   // Указатель на путь до мобильной морды
 			strcat(Socket[thread].inPtr, (char*) INDEX_MOB_FILE);
 			return HTTP_GET;
-		} else if((len = strlen(str_token)) <= W5200_MAX_LEN - 100)   // Проверка на длину запроса или имени файла
+		} else if(strlen(str_token) <= W5200_MAX_LEN - 100)   // Проверка на длину запроса или имени файла
 		{
 			Socket[thread].inPtr = (char*) (str_token + 1);       // Указатель на имя файла
 			if(Socket[thread].inPtr[0] == '&') return HTTP_REQEST;       // Проверка на аякс запрос

@@ -63,7 +63,7 @@ public:
   int8_t   get_err(void) { return err; };
   virtual size_t write (uint8_t c);                       // чтобы print работал для это класса
   #ifdef I2C_EEPROM_64KB                                  // Если журнал находится в i2c
-  void Format(char * buf);                               // форматирование журнала в еепром
+  void Format(void);                           		    // форматирование журнала в еепром
   #else
   void Clear(){bufferTail=0;bufferHead=0;full=false;err=OK;} // очистка журнала в памяти
   #endif

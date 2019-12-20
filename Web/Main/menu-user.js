@@ -10,10 +10,19 @@ document.write('\
 	<span id="SCH-PR"></span><br>\
 	<select id="get_listprofile" onchange="setParam(\'get_listProfile\',\'get_listprofile\');"></select>\
 </div>');
-document.write('<ul>\
+document.write('<ul class="cd-accordion-menu">\
 <li class="index"><a href="index.html"><i></i>Состояние</a></li>\
 <li class="plan"><a href="plan.html"><i></i>Схема ТН</a></li>\
+<li class="stats history has-children">\
+	<input type="checkbox" name="group-2" id="group-2">\
+	<label for="group-2"><i></i>Статистика</label>\
+	<ul>\
+		<li class="stats"><a href="stats.html">По дням</a></li>\
+		<li class="history"><a href="history.html">Детально</a></li>\
+	</ul>\
+</li>\
 <li class="about"><a href="about.html"><i></i>О контроллере</a></li>\
+<li class="login"><a href="lan.html" onclick="NeedLogin=1"><i></i>Логин</a></li>\
 </ul>');
 document.write('\
 <div class="dateinfo">\

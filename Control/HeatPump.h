@@ -322,7 +322,6 @@ class HeatPump
     char *  get_pingAdr() {return Network.pingAdr;}         //  получить адрес сервера для пингования
     boolean get_NoPing() { return GETBIT(Network.flags,fNoPing);} //  Получить флаг блокировки пинга
     char *  get_netMAC() {return MAC2String(Network.mac);}  //  получить мас адрес контроллера
-        
     boolean get_DHCP() { return GETBIT(Network.flags,fDHCP);}    //  Получить использование DHCP
     byte *get_mac() { return Network.mac;}                 //  Получить mac адрес
     uint32_t socketRes() {return countResSocket;}          //  Получить число сбросов сокетов
@@ -331,6 +330,7 @@ class HeatPump
     uint32_t time_resW5200() {return Network.resW5200;}    //  Получить период сбросов W5200
     boolean get_fPass() { return GETBIT(Network.flags,fPass);}   //  Получить флаг необходимости идентификации
     boolean get_fInitW5200() { return GETBIT(Network.flags,fInitW5200);}  //  Получить флаг Контроля w5200
+	inline  char* get_passUser() { return Network.passUser; }
 
   // Параметры ТН
    boolean set_optionHP(char *var, float x);                // Установить опции ТН из числа (float)
@@ -364,7 +364,9 @@ class HeatPump
    uint8_t  get_WebStoreOnSPIFlash() {return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// получить флаг хранения веб морды на флеш диске
    boolean  set_WebStoreOnSPIFlash(boolean f) {if(f)SETBIT1(Option.flags,fWebStoreOnSPIFlash);else SETBIT0(Option.flags,fWebStoreOnSPIFlash);return GETBIT(Option.flags,fWebStoreOnSPIFlash);}// установить флаг хранения веб морды на флеш диске
    uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
-   
+   uint8_t  get_BackupPower() {return GETBIT(Option.flags,fBackupPower);}// получить флаг использования генератора (ограничение мощности)
+   boolean  set_BackupPower(boolean f) {if(f)SETBIT1(Option.flags,fBackupPower);else SETBIT0(Option.flags,fBackupPower);return GETBIT(Option.flags,fBackupPower);}// установить флаг использования генератора (ограничение мощности)
+
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
