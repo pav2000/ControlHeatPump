@@ -2130,7 +2130,7 @@ void parserGET(uint8_t thread, int8_t )
 									if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
 									else {
 										strReturn = dptoa(strReturn + m_strlen(strReturn), HP.sTemp[p].get_Temp(), 2);
-										if(HP.sTemp[p].get_fRadio()) *--strReturn = '\0';
+										if(*HP.sTemp[p].get_address() == tRadio) *--strReturn = '\0';
 									}
 	#endif
 								} else strcat(strReturn, "-");             // Датчика нет ставим прочерк
@@ -2161,7 +2161,8 @@ void parserGET(uint8_t thread, int8_t )
 							{
 x_get_aTemp:
 								if(!HP.sTemp[p].get_fAddress()) strcat(strReturn, "не привязан");
-								else if(HP.sTemp[p].get_fRadio()) _itoa(*(uint32_t*)(HP.sTemp[p].get_address() + 1), strReturn);
+								else if(*HP.sTemp[p].get_address() == tRadio) _itoa(*(uint32_t*)(HP.sTemp[p].get_address() + 1), strReturn);
+								else if(*HP.sTemp[p].get_address() > tRadio) _itoa(*(HP.sTemp[p].get_address() + 1), strReturn);
 								else strcat(strReturn, addressToHex(HP.sTemp[p].get_address()));
 								ADD_WEBDELIM(strReturn); continue;
 							}
@@ -2184,7 +2185,7 @@ x_get_aTemp:
 							{
 								strcat(strReturn, HP.sTemp[p].get_note());
 	#ifdef RADIO_SENSORS
-								if(HP.sTemp[p].get_fRadio()) {
+								if(HP.sTemp[p].get_bus() == tRadio_Bus) {
 									i = HP.sTemp[p].get_radio_received_idx();
 									if(i >= 0) {
 										m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));

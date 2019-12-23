@@ -193,12 +193,12 @@ void HeatPump::scan_OneWire(char *result_str)
 		journal.jprintf("\nRadio found(%d): ", radio_received_num);
 		for(uint8_t i = 0; i < radio_received_num; i++) {
 			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
-			OW_scanTable[OW_scanTableIdx].bus = 7;
+			OW_scanTable[OW_scanTableIdx].bus = tRadio_Bus;
 			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
 			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
 			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
 			char *p = result_str + strlen(result_str);
-			m_snprintf(p, 64, "%d:RADIO %.1dV/%c:%.2d:%u:7;", OW_scanTable[OW_scanTableIdx].num, radio_received[i].battery, Radio_RSSI_to_Level(radio_received[i].RSSI), radio_received[i].Temp, radio_received[i].serial_num);
+			m_snprintf(p, 64, "%d:RADIO %.1dV/%c:%.2d:%u:%d;", OW_scanTable[OW_scanTableIdx].num, radio_received[i].battery, Radio_RSSI_to_Level(radio_received[i].RSSI), radio_received[i].Temp, radio_received[i].serial_num, tRadio_Bus+1);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}
@@ -208,12 +208,12 @@ void HeatPump::scan_OneWire(char *result_str)
 		for(uint8_t i = 0; i < TNTC; i++) {
 			if(TNTC_Value[i] > TNTC_Value_Max) continue;
 			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
-			OW_scanTable[OW_scanTableIdx].bus = 8;
+			OW_scanTable[OW_scanTableIdx].bus = tADC_Bus;
 			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
 			OW_scanTable[OW_scanTableIdx].address[0] = tADC;
 			OW_scanTable[OW_scanTableIdx].address[1] = '0' + i;
 			char *p = result_str + strlen(result_str);
-			m_snprintf(p, 64, "%d:NTC:%.2d:AD%d:8;", OW_scanTable[OW_scanTableIdx].num, HP.sTemp->Read_NTC(TNTC_Value[i]), TADC[i]);
+			m_snprintf(p, 64, "%d:NTC:%.2d:AD%d:%d;", OW_scanTable[OW_scanTableIdx].num, HP.sTemp->Read_NTC(TNTC_Value[i]), TADC[i], tADC_Bus+1);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}

@@ -1479,49 +1479,48 @@ int8_t devSDM::get_readState(uint8_t group)
 #else
 	static float tmp;
 #endif
-	int8_t i;
 	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
 	// Чтение состояния счетчика,
-	err=OK;
-	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
+	int8_t _err = OK;
+	for(int8_t i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 		// Читаем значения счетчика
 		if(group == 0) {
 #ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
-			if(err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
+			_err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
+			if(_err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
 #else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp);   // Напряжение
-			if(err==OK) { Voltage=tmp; group = 1; } else goto xErr;
+			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp);   // Напряжение
+			if(_err==OK) { Voltage=tmp; group = 1; } else goto xErr;
 #endif
 		}
 		if(group == 1) {
 #ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			if(err==OK) AcPower = tmp / 10; else goto xErr;
+			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
+			if(_err==OK) AcPower = tmp / 10; else goto xErr;
 #else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			if(err==OK) AcPower=tmp; else goto xErr;
+			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
+			if(_err==OK) AcPower=tmp; else goto xErr;
 #endif
 		} else if(group == 2) {
 #ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
-			if(err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
+			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
+			if(_err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
 #else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
-			if(err == OK) { Current=tmp; group = 3; } else goto xErr;
+			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
+			if(_err == OK) { Current=tmp; group = 3; } else goto xErr;
 #endif
 		}
 		if(group == 3) {
 #ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(err==OK) AcEnergy=tmp;
+			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
+			if(_err==OK) AcEnergy=tmp;
 #else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(err==OK) AcEnergy=tmp;
+			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
+			if(_err==OK) AcEnergy=tmp;
 #endif
 		}
-		if(err == OK) break;
+		if(_err == OK) break;
 xErr:
 #ifdef SPOWER
 		HP.sInput[SPOWER].Read(true);
@@ -1529,24 +1528,26 @@ xErr:
 #endif
 		numErr++;                  // число ошибок чтение по модбасу
 		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
-			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, err);      // Выводим сообщение о повторном чтении
+			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, _err);      // Выводим сообщение о повторном чтении
 		}
 		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
 	}
-	if (err==OK)
+	if(_err==OK)
 	{
 		// SerialDbg.println((int)(Voltage*100));
 		if ((settingSDM.maxVoltage>1)&&(settingSDM.maxVoltage< Voltage)) {err=ERR_MAX_VOLTAGE;set_Error(err,name);return err; }       // Контроль входного напряжения
 		if ((settingSDM.maxPower>1)&&(settingSDM.maxPower< AcPower))     {err=ERR_MAX_POWER;set_Error(err,name);return err; }         // Контроль мощности потребления
 		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
-		return err;                       // все прочиталось, выходим
+		return err = _err;                       // все прочиталось, выходим
 	}
 	#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи 
 	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
 	#endif
-	journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, err);
-	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
-	return err;
+	if(!err && _err) {
+		journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, _err);
+	}
+	// set_Error(_err,name);              // генерация ошибки    НЕТ счетчик не критичен
+	return err = _err;
 }
 
 // Получить параметр счетчика в виде строки

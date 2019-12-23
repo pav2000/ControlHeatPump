@@ -36,7 +36,6 @@
 #define fAddress      3               // флаг правильного адреса для температурного датчика
 #define fcheckRange	  4				  // флаг Проверка граничного значения
 #define fsensModbus	  5				  // флаг дистанционного датчика по Modbus
-#define fRadio	      6				  // флаг радио-датчика
 
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);

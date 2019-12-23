@@ -91,8 +91,11 @@ PubSubClient w5200_MQTT(ethClient);  	    // клиент MQTT
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
-//RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
+#ifdef USE_RC_CLOCK_SOURCE
+RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
+#else
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
+#endif
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
 static Journal  journal;                                                 // системный журнал, отдельно т.к. должен инициализоваться с начала старта
 static HeatPump HP;                                                      // Класс тепловой насос (в констукторе плохо проходит инициализация пинов????)

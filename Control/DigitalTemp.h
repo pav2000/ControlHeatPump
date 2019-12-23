@@ -31,7 +31,7 @@ enum TEMP_SETUP_FLAGS { // bit #
 	fTEMP_as_TIN_min,		// 6: Используется для расчета TIN в качестве минимальной температуры, между всеми датчиками с таким и "average" флагами
 	fTEMP_HeatFloor			// 7: Используется для управления реле теплого пола (RPUMPFL), если температура любого датчика с этим флагом меньше целевой - реле вкл, иначе - реле выкл.
 };
-#define fDS2482_bus_mask 3
+#define fDS2482_bus_mask	3
 
 // Удаленные датчики температуры -------------------------------------------------------------
 #ifdef SENSOR_IP
@@ -128,10 +128,9 @@ class sensorTemp
     void     set_address(byte *addr, byte bus);    		// Привязать адрес и номер шины
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
-    __attribute__((always_inline)) inline boolean get_fRadio(){return GETBIT(flags,fRadio);}
     uint8_t get_cfg_flags() { return SENSORTEMP[number]; } // Вернуть биты конфигурации (наличие, особенности отображения на веб страницах,)
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
-    __attribute__((always_inline)) inline uint8_t get_bus(){ return (GETBIT(flags, fRadio) ? 7 : (setup_flags & fDS2482_bus_mask)); } // Шина
+    uint8_t get_bus(void);									// Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     __attribute__((always_inline)) inline uint8_t get_setup_flags(void){ return setup_flags; }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }

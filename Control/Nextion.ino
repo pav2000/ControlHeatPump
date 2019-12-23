@@ -348,23 +348,21 @@ void Nextion::readCommand()
 void Nextion::Update()
 {
 	
-	if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) {
-		if(HP.is_compressor_on() || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
-			if(!GETBIT(flags, fSleep)) {
-				sendCommand("sleep=0");
-				_delay(NEXTION_BOOT_TIME);
-				sendCommand("thsp=0");
-				flags |= (1<<fSleep);
-				fUpdate = 2;
-			}
-		} else if(GETBIT(flags, fSleep)) {
-			flags &= ~(1<<fSleep);
-			if(HP.Option.sleep > 0) {  // установлено засыпание дисплея
-				strcpy(ntemp, "thsp=");      // sleep режим активировать
-				_itoa(HP.Option.sleep * 60, ntemp); // секунды
-				sendCommand(ntemp);
-				sendCommand("thup=1");
-			}
+	if((GETBIT(HP.Option.flags, fNextionOnWhileWork) && HP.is_compressor_on()) || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
+		if(!GETBIT(flags, fSleep)) {
+			sendCommand("sleep=0");
+			_delay(NEXTION_BOOT_TIME);
+			sendCommand("thsp=0");
+			flags |= (1<<fSleep);
+			fUpdate = 2;
+		}
+	} else if(GETBIT(flags, fSleep)) {
+		flags &= ~(1<<fSleep);
+		if(HP.Option.sleep > 0) {  // установлено засыпание дисплея
+			strcpy(ntemp, "thsp=");      // sleep режим активировать
+			_itoa(HP.Option.sleep * 60, ntemp); // секунды
+			sendCommand(ntemp);
+			sendCommand("thup=1");
 		}
 	}
 
@@ -390,7 +388,7 @@ void Nextion::Update()
 			strcat(ntemp, _xB0);
 			setComponentText("t1", ntemp);
 		}
-		uint8_t flags = (HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) | (HP.HeatBoilerUrgently << 1)
+		uint8_t fl = (HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) | (HP.HeatBoilerUrgently << 1)
 #ifdef USE_SUN_COLLECTOR
 					| (HP.dRelay[RSUN].get_Relay() << 2)
 #endif
@@ -402,32 +400,32 @@ void Nextion::Update()
 #endif
 
 					;
-		if(fUpdate == 2) Page1flags = ~flags;
-		if(flags != Page1flags) {
-			if((flags ^ Page1flags) & (1<<0)) {
-				if(flags & (1<<0)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
+		if(fUpdate == 2) Page1flags = ~fl;
+		if(fl != Page1flags) {
+			if((fl ^ Page1flags) & (1<<0)) {
+				if(fl & (1<<0)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 				else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
 			}
-			if((flags ^ Page1flags) & (1<<1)) {
-				if(flags & (1<<1)) sendCommand("vis g,1"); else sendCommand("vis g,0");
+			if((fl ^ Page1flags) & (1<<1)) {
+				if(fl & (1<<1)) sendCommand("vis g,1"); else sendCommand("vis g,0");
 			}
 #ifdef USE_SUN_COLLECTOR
-			if((flags ^ Page1flags) & (1<<2)) {
-				if(flags & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
+			if((fl ^ Page1flags) & (1<<2)) {
+				if(fl & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
 			}
 #endif
 #ifdef RBOILER
-			if((flags ^ Page1flags) & (1<<3)) {
-				if(flags & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
+			if((fl ^ Page1flags) & (1<<3)) {
+				if(fl & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
 			}
 #endif
 #ifdef NEXTION_GENERATOR 
-            if((flags ^ Page1flags) & (1<<4)) {
+            if((fl ^ Page1flags) & (1<<4)) {
             	sendCommand("vis bt1,1");
-            	if(flags & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от генератора
+            	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от генератора
             }
 #endif
-            Page1flags = flags;
+            Page1flags = fl;
 		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
 	{

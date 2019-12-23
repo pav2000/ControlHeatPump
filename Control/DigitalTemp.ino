@@ -101,7 +101,7 @@ int8_t sensorTemp::Read()
 			else lastTemp = testTemp; // Если датчик не привязан, то присвоить значение теста
 		} else {
 #ifdef RADIO_SENSORS
-			if(GETBIT(flags, fRadio)) {
+			if(*address == tRadio) {
 				err = OK;
 				int8_t i = get_radio_received_idx();
 				if(i >= 0) {
@@ -111,12 +111,12 @@ int8_t sensorTemp::Read()
 			} else
 #endif
 #ifdef TNTC
-			if(address[0] == tADC) {
+			if(*address == tADC) {
 				lastTemp = Read_NTC(TNTC_Value[address[1] - '0']);
 			} else
 #endif
 #ifdef TNTC_EXT
-			if(address[0] == tADS1115) {
+			if(*address == tADS1115) {
 				//...
 			} else
 #endif
@@ -214,6 +214,12 @@ int8_t sensorTemp::set_testTemp(int16_t t)
  if((t>=minTemp)&&(t<=maxTemp)) { testTemp=t; return OK;} else return WARNING_VALUE;
 }
 
+// Шина
+uint8_t sensorTemp::get_bus()
+{
+	return (*address < tRadio ? setup_flags & fDS2482_bus_mask : *address == tRadio ? tRadio_Bus : *address == tADC ? tADC_Bus: tADS1115_Bus );
+}
+
 void sensorTemp::set_onewire_bus_type()
 {
 	// Привязка шины к датчику
@@ -242,7 +248,6 @@ void sensorTemp::set_address(byte *addr, byte bus)
 	{
 		memset(address, 0, sizeof(address));	   // обнуление адресс датчика
 		SETBIT0(flags, fAddress);                  // Поставить флаг, что адрес не установлен
-		SETBIT0(flags, fRadio);
 		return;
 	}
 	for(i = 0; i < sizeof(address); i++) address[i] = addr[i];   // Скопировать адрес
@@ -256,8 +261,10 @@ void sensorTemp::after_load()
 	if(address[0] || address[1]) // Если адрес не пустой то Установить адрес датчика
 	{
 		SETBIT1(flags, fAddress);  // Поставить флаг что адрес установлен
-		if(address[0] == tRadio) {
-			SETBIT1(flags, fRadio);
+		if(HP.Option.ver <= 137) {
+			if(address[0] == 0x03) address[0] = tRadio;
+		}
+		if(address[0] >= tRadio) {
 			busOneWire = NULL;
 		} else set_onewire_bus_type();
 	}
