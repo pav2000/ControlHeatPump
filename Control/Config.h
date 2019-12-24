@@ -2623,8 +2623,9 @@ const char *noteTemp[] = {"Температура улицы",
     #define CONFIG_NOTE   "Частотник PWM, 1 фаза, 4 реле, ЭРВ, NTC"
     #define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define UART_SPEED    250000	// Скорость отладочного порта
-	#define KEY_ON_OFF				// + KEY1 Наличие кнопки включения и переключения в safeNetwork (нажата при сбросе)
-    #define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
+	#define KEY_ON_OFF				// KEY1 Наличие кнопки включения и переключения в safeNetwork (нажата при сбросе)
+    #define SPI_FLASH				// Наличие чипа флеш памяти на шине SPI
+	#define NO_SD_CARD				// SD карты нет
     #define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
     #define CHART_ONLY_COMP_ON      // Накопление точек для графиков ТОЛЬКО если компрессор работает, иначе всегда (и в паузах тоже) когда ТН включен
 //   #define CLEAR_CHART_HP_ON      // Очистка графиков при страте ТН
@@ -2632,7 +2633,7 @@ const char *noteTemp[] = {"Температура улицы",
     #ifdef 	NEXTION
 //   	#define NEXTION_GENERATOR   // Показ на nextion кнопки "Работа от генератора" (ограничение мощности потребления)
     #endif 
-    #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
+    #define USE_ELECTROMETER_SDM    // Наличие счетчика SDM
 //    #define USE_SDM630        	// Наличие счетчика SDM630 - 3 фазы
 	#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
 //    #define EXTERNAL_AREF     	  	// Использование внешней опоры для АЦП
@@ -2710,10 +2711,10 @@ const char *noteTemp[] = {"Температура улицы",
       // FREE RTOS  Размеры стеков задач -----------------------------------------------
     #define STACK_vUpdateCommand  180                              // Стек задачи выполнение команд управления (разбор очереди комманд)
     #define STACK_vWebX           180                              // Стек задачи веб морды один поток (потоков может быть 1-4)
-	
+
+	#define SD_CLOCK				28	// частота SPI для SD карты в МГц
     // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
-	#define SD_CLOCK				28	// частота SPI для SD карты в МГц
 	const boolean   defaultDHCP	=	false;
 	const IPAddress defaultIP		(192, 168, 0, 199);
 	const IPAddress defaultGateway	(192, 168, 0, 1);
@@ -2967,13 +2968,20 @@ const char *noteTemp[] = {"Температура улицы",
     const int16_t TESTTEMP[TNUMBER]= {  1000, 2200, 6000, 5000,  500,  100, 3000, 3500, -200, 3300, 2700, 3500, 2000, 2100 };
     // Ошибки датчиков (систематические) нужны для калибровки ОШИБКИ ДОБАВЛЯЮТСЯ!!! к значениям В СОТЫХ ГРАДУСА                                                                       
     const int16_t ERRTEMP[TNUMBER]=  {     0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 };
+
+    // NTC
+	#define TEMP_TABLE_START	-5500
+	#define TEMP_TABLE_STEP		500
 	#ifdef TNTC
-    const int8_t TADC[TNTC]       =  { 7, 6, 5, 4, 3, 2, 1, 0, 10 };
+    // NTC, 10K, B3435, Таблица сопротивлений через 5°, (-55..125°), резистор 15k
+    const uint16_t NTC_table[] = { 4008, 3972, 3924, 3863, 3784, 3688, 3570, 3432, 3272, 3094, 2898, 2690, 2475, 2257, 2042, 1835, 1638, 1456, 1288, 1136, 1000, 879, 773, 679, 597, 525, 463, 409, 361, 320, 284, 253, 226, 202, 181, 162, 146 };
+    const int8_t TADC[TNTC]    = { 7, 6, 5, 4, 3, 2, 1, 0, 10 };
 	#endif
 	#ifdef TNTC_EXT
-    const int8_t TADC_EXT[TNTC]   =  { 0, 1, 2, 3 };
+    const int8_t TADC_EXT[TNTC]= { 0, 1, 2, 3 };
 	#endif
-        // Имена датчиков
+
+    // Имена датчиков
     const char *nameTemp[TNUMBER] = {
         "TOUT",             // 0. Температура улицы
         "TIN",              // 1. Температура в доме
@@ -3327,17 +3335,18 @@ const char *noteTemp[] = {"Температура улицы",
      #define STACK_vUpdateCommand  180                              // Стек задачи выполнение команд управления (разбор очереди комманд)
      #define STACK_vWebX           180                              // Стек задачи веб морды один поток (потоков может быть 1-4)
 	
-    // СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
 	#ifdef  TEST_BOARD
-		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
+    	// СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
+		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		const boolean   defaultDHCP	=	false;
 		const IPAddress defaultIP		(192, 168, 0, 199);
 		const IPAddress defaultGateway	(192, 168, 0, 10);
 		const IPAddress defaultSDNS		(8, 8, 8, 8);
 	#else
-		uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		#define SD_CLOCK				28	// частота SPI для SD карты в МГц
+    	// СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
+		uint8_t SPI_RATE 			  = 2;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		const boolean   defaultDHCP	=	false;
 		const IPAddress defaultIP		(192, 168, 0, 7);
 		const IPAddress defaultGateway	(192, 168, 0, 1);

@@ -54,10 +54,6 @@ void sensorTemp::initTemp(int sensor)
  }
 
 #ifdef TNTC
-#define TEMP_TABLE_START	(-2500)
-#define TEMP_TABLE_STEP		(500)
-// NTC, 10K, B3435, Таблица сопротивлений через 5°, (-55..125°), резистор 14350
-const uint16_t NTC_table[] = { 4012, 3977, 3931, 3872, 3797, 3704, 3590, 3456, 3301, 3127, 2935, 2731, 2518, 2302, 2088, 1880, 1682, 1497, 1327, 1173, 1034, 910, 801, 704, 620, 546, 482, 425, 376, 333, 296, 264, 235, 210, 188, 169, 152 };
 int16_t sensorTemp::Read_NTC(uint16_t val)
 {
 	uint8_t r = sizeof(NTC_table) / sizeof(NTC_table[0]) - 1;

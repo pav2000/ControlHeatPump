@@ -413,13 +413,14 @@ x_I2C_init_std_message:
   HP.set_hashUser();
   HP.set_hashAdmin();
 
-
 // 7. Инициализация СД карты и запоминание результата 3 попытки
+#ifndef NO_SD_CARD
    journal.jprintf("5. Init SD card . . .\n");
    HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
-   digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
-   //_delay(100);
+#else
+   journal.jprintf("5. No SD card in config.\n");
+#endif
 
 // 8. Инициализация spi флеш диска
 #ifdef SPI_FLASH
@@ -428,6 +429,7 @@ x_I2C_init_std_message:
 #else
   journal.jprintf("6. No SPI flash in config.\n");
 #endif
+  digitalWriteDirect(PIN_LED_OK, LOW);        // Включить светодиод
 
 //  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
   journal.jprintf("Web interface source: ");
