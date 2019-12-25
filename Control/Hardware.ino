@@ -1645,6 +1645,7 @@ static inline void preTransmission() // Функция вызываемая ПЕ
       #ifdef PIN_MODBUS_RSE
       digitalWriteDirect(PIN_MODBUS_RSE, HIGH);
       #endif
+   //   _delay(10); // что бы слейв не терял первый бит
       Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus
     }
 static inline void postTransmission() // Функция вызываемая ПОСЛЕ окончания передачи

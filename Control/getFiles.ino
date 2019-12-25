@@ -146,7 +146,7 @@ void get_txtState(uint8_t thread, boolean header)
            strcat(Socket[thread].outBuf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,Socket[thread].outBuf); STR_END;
-           strcat(Socket[thread].outBuf,"Текущая потребляемая суммарная мощность ТН [ВА]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,Socket[thread].outBuf); STR_END;
+           strcat(Socket[thread].outBuf,"Текущая потребляемая суммарная мощность ТН [ВА]: ");         HP.dSDM.get_paramSDM((char*)sdm_POWER,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,Socket[thread].outBuf); STR_END;
            strcat(Socket[thread].outBuf,"Суммарная активная энергия [кВт/ч]: ");                     HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,Socket[thread].outBuf); STR_END;
@@ -164,9 +164,23 @@ void get_txtState(uint8_t thread, boolean header)
             else strcat(Socket[thread].outBuf," absent"); 
             STR_END;         
            }
-   
         
-  sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));   
+  sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
+   
+       strcpy(Socket[thread].outBuf,"\n  10. Сохраненные в ЕЕПРОМ значения внутренних счетчиков\r\n");
+       strcat(Socket[thread].outBuf,"Моточасы ТН ВСЕГО [ч]: ");                                       _itoa(HP.get_motoHourH1(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы ТН сбрасываемый счетчик (сезон) [ч]: ");                _itoa(HP.get_motoHourH2(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы компрессора ВСЕГО [ч]: ");                              _itoa(HP.get_motoHourC1(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы компрессора сбрасываемый счетчик (сезон) [ч]: ");       _itoa(HP.get_motoHourC2(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Потребленная энергия ВСЕГО [кВт*ч]: ");                          _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourE1() / 1000.0, 2); STR_END;
+       strcat(Socket[thread].outBuf,"Потребленная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourE2() / 1000.0, 2); STR_END;
+       strcat(Socket[thread].outBuf,"Дата сброса общих счетчиков: ");                                 DecodeTimeDate(HP.get_motoHourD1(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Дата сброса сезонных счетчиков: ");                              DecodeTimeDate(HP.get_motoHourD2(),Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Выработанная энергия ВСЕГО [кВт*ч]: ");                          _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourP1() / 1000.0, 2); STR_END;
+       strcat(Socket[thread].outBuf,"Выработанная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourP2() / 1000.0, 2); STR_END;
+ 
+  sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));     
+   
 }
 
 
