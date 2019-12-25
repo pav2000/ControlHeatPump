@@ -498,14 +498,14 @@ char * get_Schedule(uint32_t *sh)
 uint8_t initSD(void)
 {
 	boolean success = false;   // флаг успешности инициализации
-	journal.jprintf("Initializing SD card... ");
+	journal.jprintf("Init SD card: ");
 #ifdef NO_SD_CONTROL                // Если реализован механизм проверки наличия карты в слоте (выключатель в слоте карты)
 	pinMode(PIN_NO_SD_CARD, INPUT);     // ++ CD Программирование проверки наличия карты
-	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("No SD card!\n"); return false;}
+	if (digitalReadDirect(PIN_NO_SD_CARD)) {journal.jprintf("slot empty!\n"); return false;}
 #endif
 	// 1. Инициалазация карты
 	if(!card.begin(PIN_SPI_CS_SD, SD_SCK_MHZ(SD_CLOCK))) {
-		journal.jprintf("Init error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
+		journal.jprintf("Error %d,%d!\n", card.cardErrorCode(), card.cardErrorData());
 	} else success = true;  // Карта инициализирована с первого раза
 
 	if(success)  // Запоминаем результаты
