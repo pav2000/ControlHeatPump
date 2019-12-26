@@ -533,6 +533,8 @@ class devSDM
       float Current;								   // Ток
       float AcPower;                                   // активная мощность
       float AcEnergy;                                  // Суммарная активная энергия
+      uint32_t period;
+      float EnergyLast;
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание

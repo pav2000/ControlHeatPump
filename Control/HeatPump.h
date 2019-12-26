@@ -54,9 +54,10 @@ struct type_status
 #define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
 #define fMH_SUN_ON	1		// флаг открытия СК
 
+#define I2C_COUNT_EEPROM_HEADER 0xAA
 struct type_motoHour
 {
-  byte magic;       // признак данных, должно быть  0xaa  пока не используется!!!!!!!!!!
+  byte Header;      // признак данных
   uint8_t  flags;   // флаги
   uint32_t H1;      // моточасы ТН ВСЕГО
   uint32_t H2;      // моточасы ТН сбрасываемый счетчик (сезон)
@@ -548,6 +549,7 @@ class HeatPump
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
+    type_motoHour motoHour_saved;
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
     TYPE_COMMAND next_command;            // Следующая команда управления ТН

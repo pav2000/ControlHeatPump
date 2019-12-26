@@ -500,37 +500,57 @@ int8_t HeatPump::check_crc16_eeprom(int32_t addr, uint16_t size)
 }
 
 // СЧЕТЧИКИ -----------------------------------
- // запись счетчиков теплового насоса в I2C память
+// запись счетчиков теплового насоса в I2C память
 int8_t HeatPump::save_motoHour()
 {
-	uint8_t i;
-	uint8_t errcode;
-	motoHour.magic = 0xaa;   // заголовок
-
-	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
-	{
-		if(!(errcode = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR %d save counters #%d\n", errcode, i);
-		_delay(i * 50);
-	}
-	if(errcode) {
-		set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
-		return ERR_SAVE2_EEPROM;
-	}  // записать счетчики
-	//journal.jprintf("Counters saved\n");
+	motoHour.Header = I2C_COUNT_EEPROM_HEADER;
+	uint32_t ptr = 0;
+	do {
+		while(ptr < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptr] == ((uint8_t*)&motoHour_saved)[ptr]) ptr++; else break;
+		if(ptr == sizeof(motoHour)) break;
+		uint32_t ptre = ptr + 1;
+xNotEqual:
+		while(ptre < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptre] != ((uint8_t*)&motoHour_saved)[ptre]) ptre++; else break;
+		if(ptre < sizeof(motoHour)) {
+			uint32_t ptrz = ptre + 1;
+			while(ptrz < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptrz] == ((uint8_t*)&motoHour_saved)[ptrz]) ptrz++; else break;
+			if(ptrz < sizeof(motoHour)) {
+				if(ptrz - ptre <= 4) {
+					ptre = ptrz + 1;
+					goto xNotEqual;
+				}
+			}
+		}
+		uint8_t errcode;
+		if((errcode = writeEEPROM_I2C(I2C_COUNT_EEPROM + ptr, (byte*)&motoHour + ptr, ptre - ptr))) {
+			journal.jprintf(" ERROR %d save counters!\n", errcode);
+			set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
+			return ERR_SAVE2_EEPROM;
+		}
+		ptr = ptre;
+	} while(ptr < sizeof(motoHour));
+	memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
 	return OK;
 }
 
 // чтение счетчиков теплового насоса в ЕЕПРОМ
 int8_t HeatPump::load_motoHour()          
 {
- byte x=0xff;
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
- if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
- journal.jprintf(" Load counters OK, read: %d bytes\n",sizeof(motoHour));
- return OK; 
-
+	if(readEEPROM_I2C(I2C_COUNT_EEPROM, &motoHour.Header, sizeof(motoHour.Header))) { // прочитать заголовок
+		set_Error(ERR_LOAD2_EEPROM, (char*) __FUNCTION__);
+		return ERR_LOAD2_EEPROM;
+	}
+	if(motoHour.Header != I2C_COUNT_EEPROM_HEADER) { // заголовок плохой
+		journal.jprintf("Bad header counters, skip load\n");
+		return ERR_HEADER2_EEPROM;
+	}
+	if(readEEPROM_I2C(I2C_COUNT_EEPROM + sizeof(motoHour.Header), (byte*) &motoHour + sizeof(motoHour.Header), sizeof(motoHour) - sizeof(motoHour.Header))) { // прочитать счетчики
+		set_Error(ERR_LOAD2_EEPROM, (char*) __FUNCTION__);
+		return ERR_LOAD2_EEPROM;
+	}
+	memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
+	journal.printf(" Load counters OK, read: %d bytes\n", sizeof(motoHour));
+	return OK;
 }
 // Сборос сезонного счетчика моточасов
 // параметр true - сброс всех счетчиков
@@ -619,7 +639,7 @@ void HeatPump::resetSettingHP()
 	Status.modWork = pOFF;                          // Что сейчас делает ТН (7 стадий)
 	Status.State = pOFF_HP;                         // Сотояние ТН - выключен
 	Status.ret = pNone;                             // точка выхода алгоритма
-	motoHour.magic = 0xaa;                          // волшебное число
+	motoHour.Header = I2C_COUNT_EEPROM_HEADER;
 	motoHour.flags = 0;								// насос выключен
 	motoHour.H1 = 0;                                // моточасы ТН ВСЕГО
 	motoHour.H2 = 0;                                // моточасы ТН сбрасываемый счетчик (сезон)

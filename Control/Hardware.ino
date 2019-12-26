@@ -1345,10 +1345,11 @@ int8_t devSDM::initSDM()
 {
 	err = OK;                                        // Ошибок нет
 	numErr = 0;                                      // счетчик 0
-	Voltage = 0.0;                                   // Напряжение
-	Current = 0.0;                                   // Ток
-	AcPower = 0.0;                                   // активная мощность
-	AcEnergy = 0.0;                                  // Суммараная активная энергия
+	Voltage = 0.0f;                                   // Напряжение
+	Current = 0.0f;                                   // Ток
+	AcPower = 0.0f;                                   // активная мощность
+	AcEnergy = 0.0f;                                  // Суммараная активная энергия
+	EnergyLast = 0.0f;
 	flags = 0x00;
 	// Настройки
 	settingSDM.maxVoltage = SDM_MAX_VOLTAGE;         // максимальное напряжение (вольты) иначе ошибка если 0 то не работает
@@ -1496,28 +1497,22 @@ int8_t devSDM::get_readState(uint8_t group)
 		}
 		if(group == 1) {
 #ifdef USE_PZEM004T
-			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			if(_err==OK) AcPower = tmp / 10; else goto xErr;
+			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
 #else
-			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			if(_err==OK) AcPower=tmp; else goto xErr;
+			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
 #endif
+			if(_err==OK) {
+				AcPower = (tmp - AcEnergy) * 3600000.0f / (millis() - period);
+				AcEnergy = tmp;
+				period = millis();
+			}
 		} else if(group == 2) {
 #ifdef USE_PZEM004T
 			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
 			if(_err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
 #else
 			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
-			if(_err == OK) { Current=tmp; group = 3; } else goto xErr;
-#endif
-		}
-		if(group == 3) {
-#ifdef USE_PZEM004T
-			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(_err==OK) AcEnergy=tmp;
-#else
-			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(_err==OK) AcEnergy=tmp;
+			if(_err == OK) { Current=tmp; } else goto xErr;
 #endif
 		}
 		if(_err == OK) break;
