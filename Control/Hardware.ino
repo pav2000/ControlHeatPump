@@ -1348,7 +1348,7 @@ int8_t devSDM::initSDM()
 	Voltage = 0.0f;                                   // Напряжение
 	Current = 0.0f;                                   // Ток
 	AcPower = 0.0f;                                   // активная мощность
-	AcEnergy = 0.0f;                                  // Суммараная активная энергия
+	AcEnergy = -1.0f;                                 // Суммарная активная энергия
 	EnergyLast = 0.0f;
 	flags = 0x00;
 	// Настройки
@@ -1502,6 +1502,7 @@ int8_t devSDM::get_readState(uint8_t group)
 			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
 #endif
 			if(_err==OK) {
+				if(AcEnergy == -1.0f) AcEnergy = tmp;
 				AcPower = (tmp - AcEnergy) * 3600000.0f / (millis() - period);
 				AcEnergy = tmp;
 				period = millis();
