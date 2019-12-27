@@ -851,7 +851,7 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-		  HP.dSDM.get_readState(0); // Основная группа регистров напражение и Суммарная активная энергия
+		  HP.dSDM.get_readState(0); // Основная группа регистров напряжение и Суммарная активная энергия
 #endif
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока

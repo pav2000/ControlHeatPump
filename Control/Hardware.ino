@@ -1510,8 +1510,7 @@ int8_t devSDM::get_readState(uint8_t group)
 				AcEnergy = tmp;
 				period = millis();
 			}
-		}
-		else if(group == 2) {
+		} else if(group == 2) {
 #ifdef USE_PZEM004T
 			_err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
 			if(_err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
