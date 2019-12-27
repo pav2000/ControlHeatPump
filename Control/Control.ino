@@ -851,7 +851,7 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-		  HP.dSDM.get_readState(0); // Основная группа регистров
+		  HP.dSDM.get_readState(0); // Основная группа регистров напражение и Суммарная активная энергия
 #endif
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
@@ -893,7 +893,7 @@ void vReadSensor(void *)
 	#endif
 			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
 				readSDM=millis();
-				HP.dSDM.get_readState(2);     // Последняя группа регистров
+				HP.dSDM.get_readState(2);     // Последняя группа регистров ТОК
 			}
 #endif
 
