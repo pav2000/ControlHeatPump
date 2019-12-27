@@ -1566,7 +1566,16 @@ char* devSDM::get_paramSDM(char *var, char *ret)
    if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
    if(strcmp(var,sdm_VOLTAGE)==0){      _ftoa(ret,(float)Voltage,2); return ret;                         }else      // Напряжение
    if(strcmp(var,sdm_CURRENT)==0){      _ftoa(ret,(float)Current,2); return ret;                         }else      // Ток
-   if(strcmp(var,sdm_ACPOWER)==0){      _ftoa(ret,(float)AcPower,2);  return ret;                        }else      // Активная мощность
+   if(strcmp(var,sdm_ACPOWER)==0){// Активная мощность
+#ifdef USE_PZEM004T
+		Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);
+		_dtoa(ret, tmp, 1);
+#else
+		Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);
+	   _ftoa(ret, tmp, 2);
+#endif
+	   return ret;
+   }else
    if(strcmp(var,sdm_ACENERGY)==0){     _ftoa(ret,(float)AcEnergy,2); return ret;                        }else      // Суммарная активная энергия
    if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
    else {
@@ -1591,7 +1600,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 	   	   } else if(strcmp(var,sdm_POW_FACTOR)==0){
 #ifdef USE_PZEM004T
 			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp16[0]);
-			   _ftoa(ret, tmp16[0] / 100, 2);
+			   _dtoa(ret, tmp16[0], 2);
 #else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
 			   _ftoa(ret, tmp, 2);
@@ -1606,7 +1615,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 		   } else if(strcmp(var,sdm_FREQ)==0){
 #ifdef USE_PZEM004T
 			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp16[0]);
-			   _ftoa(ret, tmp16[0] / 10, 2);
+			   _dtoa(ret, tmp16[0], 1);
 #else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
 			   _ftoa(ret, tmp, 2);
