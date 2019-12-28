@@ -1575,7 +1575,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 		_dtoa(ret, tmp, 1);
 #else
 		Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);
-	   _ftoa(ret, tmp, 2);
+	   _ftoa(ret, tmp, 3);
 #endif
 	   return ret;
    }else
