@@ -1031,24 +1031,24 @@ void parserGET(uint8_t thread, int8_t )
 		if (strcmp(str,"get_infoESP") == 0)  // Удаленные датчики - запрос состояния контрола
 		{
 			// TIN, TOUT, TBOILER, ВЕРСИЯ, ПАМЯТЬ, ЗАГРУЗКА, АПТАЙМ, ПЕРЕГРЕВ, ОБОРОТЫ, СОСТОЯНИЕ.
-			_ftoa(strReturn,(float)HP.sTemp[TIN].get_Temp()/100.0,1);     strcat(strReturn,";");
-			_ftoa(strReturn,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);    strcat(strReturn,";");
-			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,";");
-			strcat(strReturn,VERSION);                                    strcat(strReturn,";");
-			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,";");
-			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,";");
-			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,";");
+			_ftoa(strReturn,(float)HP.sTemp[TIN].get_Temp()/100.0,1);     strcat(strReturn,"|");
+			_ftoa(strReturn,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);    strcat(strReturn,"|");
+			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,"|");
+			strcat(strReturn,VERSION);                                    strcat(strReturn,"|");
+			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,"|");
+			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,"|");
+			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,"|");
 #ifdef EEV_DEF
-			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,";");
+			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,"|");
 #else
 			strcat(strReturn,"-;");
 #endif
-			if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);    strcat(strReturn,";");} // В зависимости от наличия инвертора
-			else                      {strcat(strReturn," - ");                       strcat(strReturn,";");}
+			if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);    strcat(strReturn,"|");} // В зависимости от наличия инвертора
+			else                      {strcat(strReturn," - ");                       strcat(strReturn,"|");}
 			//  strcat(strReturn,HP.StateToStrEN());                                      strcat(strReturn,";");
 			if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStrEN());                   // Ошибок нет
 			else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-			strcat(strReturn,";");   ADD_WEBDELIM(strReturn) ;    continue;
+			strcat(strReturn,"|");   ADD_WEBDELIM(strReturn) ;    continue;
 		}
 #endif
 		if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"

@@ -531,8 +531,8 @@ class devSDM
        // Управление по 485
       float Voltage;                                   // Напряжение в вольтах
       float Current;								   // Ток
-      float AcPower;                                   // активная мощность
-      float AcEnergy;                                  // Суммарная активная энергия
+      float AcPower;                                   // активная мощность, Вт
+      float AcEnergy;                                  // Суммарная активная энергия, кВтч
       uint32_t period;
       float EnergyLast;
       

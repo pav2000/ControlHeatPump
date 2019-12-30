@@ -79,8 +79,8 @@ struct type_motoHour
   uint32_t Z2;      // Резервный параметр 2
 };
 
-int32_t motohour_OUT_work = 0; // рабочий для счетчиков - энергия отопления, мВт
-int32_t motohour_IN_work = 0;  // рабочий для счетчиков - энергия потребленная, мВт
+int32_t motohour_OUT_work = 0; // рабочий для счетчиков - энергия отопления, Вт
+int32_t motohour_IN_work = 0;  // рабочий для счетчиков - энергия потребленная, Вт
 uint16_t task_updstat_chars = 0;
 #ifdef CHART_ONLY_COMP_ON
 boolean  Charts_when_comp_on = true;	// Графики в памяти только во время работы компрессора

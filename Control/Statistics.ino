@@ -391,7 +391,7 @@ void Statistics::Update()
 			switch(Stats_data[i].type) {
 			case STATS_TYPE_SUM:
 			//case STATS_TYPE_AVG:
-				newval = newval * tm / 3600; // в мВт
+				newval = newval * tm / 3600; // в Втч
 				if(ptr) *ptr += newval; // для motoHour
 			}
 			break;

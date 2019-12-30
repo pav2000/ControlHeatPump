@@ -818,7 +818,9 @@ void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
 #ifdef USE_ELECTROMETER_SDM
+#if (SDM_READ_PERIOD > 0)
 	static unsigned long readSDM = 0;
+#endif
 #endif
 	static uint32_t ttime;
 	static uint32_t oldTime = millis();
@@ -847,14 +849,15 @@ void vReadSensor(void *)
 #endif     // не DEMO
 		}
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
+		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
+
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-		  HP.dSDM.get_readState(0); // Основная группа регистров напряжение и Суммарная активная энергия
+		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
-		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
-		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 		vReadSensor_delay8ms((cDELAY_DS1820 - (millis() - ttime)) / 8); 	// Ожидать время преобразования
 
@@ -888,6 +891,7 @@ void vReadSensor(void *)
 		}
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
+#if (SDM_READ_PERIOD > 0)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
@@ -895,6 +899,7 @@ void vReadSensor(void *)
 				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров ТОК
 			}
+#endif
 #endif
 
 		HP.calculatePower();  // Расчет мощностей и СОР
