@@ -548,6 +548,16 @@ int8_t HeatPump::load_motoHour()
 		set_Error(ERR_LOAD2_EEPROM, (char*) __FUNCTION__);
 		return ERR_LOAD2_EEPROM;
 	}
+	if(Option.ver <= 138) {
+		memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
+		type_motoHour_old *p = (type_motoHour_old*)&motoHour_saved;
+		motoHour.D1 = p->D1;
+		motoHour.D2 = p->D2;
+		motoHour.E1 = p->E1;
+		motoHour.E2 = p->E2;
+		motoHour.P1 = p->P1;
+		motoHour.P2 = p->P2;
+	}
 	memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
 	journal.printf(" Load counters OK, read: %d bytes\n", sizeof(motoHour));
 	return OK;
@@ -561,7 +571,6 @@ void HeatPump::resetCount(boolean full)
 		motoHour.H1 = 0;
 		motoHour.C1 = 0;
 		motoHour.P1 = 0;
-		motoHour.Z1 = 0;
 		motoHour.E1 = 0;
 		motoHour.D1 = rtcSAM3X8.unixtime();           // Дата сброса общих счетчиков
 	}
@@ -569,7 +578,6 @@ void HeatPump::resetCount(boolean full)
 	motoHour.H2 = 0;
 	motoHour.C2 = 0;
 	motoHour.P2 = 0;
-	motoHour.Z2 = 0;
 	motoHour.E2 = 0;
 	motoHour.D2 = rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
 	save_motoHour();  // записать счетчики
@@ -585,25 +593,23 @@ void HeatPump::updateCount()
 		motoHour.C1++;      // моточасы компрессора ВСЕГО
 		motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
 	}
+	if(get_State() == pWORK_HP) {
+		motoHour.H1++;          // моточасы ТН ВСЕГО
+		motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
+	}
 	int32_t p;
 	//taskENTER_CRITICAL();
 	p = motohour_IN_work;
 	motohour_IN_work = 0;
 	//taskEXIT_CRITICAL();
-	p /= 1000;
 	motoHour.E1 += p;
 	motoHour.E2 += p;
 	//taskENTER_CRITICAL();
 	p = motohour_OUT_work;
 	motohour_OUT_work = 0;
 	//taskEXIT_CRITICAL();
-	p /= 1000;
 	motoHour.P1 += p;
 	motoHour.P2 += p;
-	if(get_State() == pWORK_HP) {
-		motoHour.H1++;          // моточасы ТН ВСЕГО
-		motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
-	}
 }
 
 // После любого изменения часов необходимо пересчитать все времна которые используются

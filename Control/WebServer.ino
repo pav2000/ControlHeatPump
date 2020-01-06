@@ -1335,20 +1335,24 @@ void parserGET(uint8_t thread, int8_t )
 				strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
 				strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
-				strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE1() / 1000.0, 2);strcat(strReturn,";");
+				strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHour()->D1,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->H1/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->C1/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->E1 / 1000, 3);strcat(strReturn,";");
 	#ifdef  FLOWCON
-				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {
+					strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->P1 / 1000, 3);strcat(strReturn,";"); // Если есть оборудование
+				}
 	#endif
 				strcat(strReturn,"<b> Сезонные счетчики</b>|;");
-				strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE2() / 1000.0, 2);strcat(strReturn,";");
+				strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHour()->D2,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->H2/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->C2/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->E2 / 1000, 3);strcat(strReturn,";");
 	#ifdef  FLOWCON
-				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {
+					strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->P2 / 1000, 3);strcat(strReturn,";"); // Если есть оборудование
+				}
 	#endif
 
 				STORE_DEBUG_INFO(48);

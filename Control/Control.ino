@@ -595,7 +595,7 @@ journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
 //
 vTaskStartScheduler();              // СТАРТ !!
-journal.jprintf("CRASH FreeRTOS!!!\n");
+journal.jprintf("FreeRTOS FAILURE!\n");
 }
 
 
@@ -717,7 +717,7 @@ void vWeb0(void *)
 				resW5200 = xTaskGetTickCount();
 				if(timeResetW5200 == 0) timeResetW5200 = resW5200;      // Первая итерация не должна быть сразу
 				if(resW5200 - timeResetW5200 > HP.time_resW5200() * 1000UL) {
-					journal.jprintf(pP_TIME, "Resetting the chip %s by timer . . .\n", nameWiznet);
+					journal.jprintf(pP_TIME, "Reset %s by timer . . .\n", nameWiznet);
 					HP.sendCommand(pNETWORK);                          // Послать команду сброса и применения сетевых настроек
 					timeResetW5200 = resW5200;                         // Запомить время сброса
 					active = false;
@@ -1011,7 +1011,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			vTaskDelay(8*3);
 			ms8 -= 3;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
-				journal.jprintf("Press KEY_ON_OFF\n");
+				journal.jprintf("ON/OFF Key pressed!\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else {if((HP.get_State()==pWORK_HP)||(HP.get_State()==pWAIT_HP)) HP.sendCommand(pSTOP);}
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
@@ -1039,7 +1039,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 						HP.NO_Power = 0;
-						journal.jprintf("Resuming work\n");
+						journal.jprintf("Resuming work...\n");
 						HP.sendCommand(pRESUME);
 					}
 				}

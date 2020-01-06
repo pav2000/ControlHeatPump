@@ -3507,7 +3507,7 @@ const char *noteTemp[] = {"Температура улицы",
     	#define PIN_DEVICE_RSUN        46 //[R_1] Реле включения насоса солнечного коллектора
 		#define PIN_DEVICE_RSUN_ON     53 //[R_7] Реле включение шарового крана солнечного коллектора
 		#define PIN_DEVICE_RSUN_OFF    13 //[R_10] Реле выключение шарового крана солнечного коллектора, через доп реле.
-		#define SUN_VALVE_SWITCH_TIME  25000 // Время переключения крана, мсек
+		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
 	#define PIN_DEVICE_BATH_HEATER     33 // X37.2(EEV24) -> Relay(-12V)(+12V=X38.1) -> подает DA9(5V) -> провод -> реле 5V -> пускатель нагревателя
 //  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера

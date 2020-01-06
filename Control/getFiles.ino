@@ -168,16 +168,16 @@ void get_txtState(uint8_t thread, boolean header)
   sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));  
    
        strcpy(Socket[thread].outBuf,"\n  10. Сохраненные в ЕЕПРОМ значения внутренних счетчиков\r\n");
-       strcat(Socket[thread].outBuf,"Моточасы ТН ВСЕГО [ч]: ");                                       _itoa(HP.get_motoHourH1(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Моточасы ТН сбрасываемый счетчик (сезон) [ч]: ");                _itoa(HP.get_motoHourH2(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Моточасы компрессора ВСЕГО [ч]: ");                              _itoa(HP.get_motoHourC1(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Моточасы компрессора сбрасываемый счетчик (сезон) [ч]: ");       _itoa(HP.get_motoHourC2(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Потребленная энергия ВСЕГО [кВт*ч]: ");                          _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourE1() / 1000.0, 2); STR_END;
-       strcat(Socket[thread].outBuf,"Потребленная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourE2() / 1000.0, 2); STR_END;
-       strcat(Socket[thread].outBuf,"Дата сброса общих счетчиков: ");                                 DecodeTimeDate(HP.get_motoHourD1(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Дата сброса сезонных счетчиков: ");                              DecodeTimeDate(HP.get_motoHourD2(),Socket[thread].outBuf); STR_END;
-       strcat(Socket[thread].outBuf,"Выработанная энергия ВСЕГО [кВт*ч]: ");                          _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourP1() / 1000.0, 2); STR_END;
-       strcat(Socket[thread].outBuf,"Выработанная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _ftoa(Socket[thread].outBuf,(float)HP.get_motoHourP2() / 1000.0, 2); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы ТН ВСЕГО [ч]: ");                                       _itoa(HP.get_motoHour()->H1,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы ТН сбрасываемый счетчик (сезон) [ч]: ");                _itoa(HP.get_motoHour()->H2,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы компрессора ВСЕГО [ч]: ");                              _itoa(HP.get_motoHour()->C1,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Моточасы компрессора сбрасываемый счетчик (сезон) [ч]: ");       _itoa(HP.get_motoHour()->C2,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Потребленная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(Socket[thread].outBuf, HP.get_motoHour()->E1 / 1000, 3); STR_END;
+       strcat(Socket[thread].outBuf,"Потребленная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(Socket[thread].outBuf, HP.get_motoHour()->E2 / 1000, 3); STR_END;
+       strcat(Socket[thread].outBuf,"Дата сброса общих счетчиков: ");                                 DecodeTimeDate(HP.get_motoHour()->D1,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Дата сброса сезонных счетчиков: ");                              DecodeTimeDate(HP.get_motoHour()->D2,Socket[thread].outBuf); STR_END;
+       strcat(Socket[thread].outBuf,"Выработанная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(Socket[thread].outBuf, HP.get_motoHour()->P1 / 1000, 3); STR_END;
+       strcat(Socket[thread].outBuf,"Выработанная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(Socket[thread].outBuf, HP.get_motoHour()->P2 / 1000, 3); STR_END;
  
   sendBufferRTOS(thread,(byte*)Socket[thread].outBuf,strlen(Socket[thread].outBuf));     
    
