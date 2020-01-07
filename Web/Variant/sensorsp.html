@@ -120,6 +120,38 @@ function loadParam_after(paramid) {
 </div>  
   
 <div class="row1">
+  <h2>Электрический счётчик <span id="get_sdm-name"></span> Modbus <input type="submit" value="Программирование (3*)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (2*) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
+  <table>
+    <thead>
+    <tr>
+      <th>Напряжение (V)</th>
+      <th>Ток (А)</th>
+      <th>Активная мощность (W)</th>
+      <th>Реактивная мощность (VAr)</th>
+      <th>Полная мощность (VA)</th>
+      <th>Коэффициент мощности (cos φ)</th>
+      <th>Частота (Hz)</th>
+      <th>Активная энергия (kWh)</th>
+      <th>Ошибок</th>
+      <th>Связь</th>
+    </tr>
+    <tr>
+        <td id="get_sdm-volt"></td>
+        <td id="get_sdm-current"></td>
+        <td id="get_sdm-acpower"></td>
+        <td id="get_sdm-repower"></td>
+        <td id="get_sdm-power"></td>
+        <td id="get_sdm-pf"></td>
+        <td id="get_sdm-freq"></td>
+        <td id="get_sdm-acenergy"></td>
+        <td id="get_sdm-err"></td>
+        <td id="get_sdm-link"></td>
+      </tr>
+    </thead>
+  </table>
+</div>    
+
+<div class="row1">
   <h2>Датчики сухой контакт</h2>
   <table>
     <thead>
@@ -138,34 +170,6 @@ function loadParam_after(paramid) {
     </tbody>
   </table>            
 </div>
-
-<div class="row1">
-  <h2>Электрический счётчик <span id="get_sdm-name"></span> Modbus <input type="submit" value="Программирование (3*)"  onclick='loadParam("settingSDM")'  style="float:right;"> <input type="submit" value="Восстановление связи (2*) "  onclick='loadParam("uplinkSDM")'  style="float:right;margin-right:10px;"> </h2>
-  <table>
-    <thead>
-    <tr>
-      <th>Напряжение (V)</th>
-      <th>Ток (А)</th>
-      <th>Активная мощность (W)</th>
-      <th>Коэффициент мощности (cos φ)</th>
-      <th>Частота (Hz)</th>
-      <th>Активная энергия (kWh)</th>
-      <th>Ошибок</th>
-      <th>Связь</th>
-    </tr>
-    <tr>
-        <td id="get_sdm-volt"></td>
-        <td id="get_sdm-current"></td>
-        <td id="get_sdm-acpower"></td>
-        <td id="get_sdm-pf"></td>
-        <td id="get_sdm-freq"></td>
-        <td id="get_sdm-acenergy"></td>
-        <td id="get_sdm-err"></td>
-        <td id="get_sdm-link"></td>
-      </tr>
-    </thead>
-  </table>
-</div>    
 
 <div class="row1">
   <h2>Защиты по входному напряжению</h2>

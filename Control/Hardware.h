@@ -508,8 +508,10 @@ class devSDM
       float   get_power(){return AcPower;}
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
+#ifndef SDM_NO_USELESS_READ
        __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
        __attribute__((always_inline)) inline float get_Energy(){return AcEnergy;}          // Активная энергия
+#endif
 
       boolean uplinkSDM();                             // Проверить связь со счетчиком (связь дейстивтельно проверяется - чтение регистра скорости счетчика)
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
@@ -529,12 +531,14 @@ class devSDM
       uint16_t numErr;                                 // число ошибок чтение по модбасу
       byte flags;                                      // флаги  0 - наличие счетчика,
        // Управление по 485
-      float Voltage;                                   // Напряжение в вольтах
-      float Current;								   // Ток
       float AcPower;                                   // активная мощность, Вт
+      float Voltage;                                   // Напряжение в вольтах
+#ifndef SDM_NO_USELESS_READ
+      float Current;								   // Ток
       float AcEnergy;                                  // Суммарная активная энергия, кВтч
-      uint32_t period;
-      float EnergyLast;
+//      uint32_t period;
+//      float EnergyLast;
+#endif
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание
