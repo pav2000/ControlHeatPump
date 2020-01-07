@@ -54,22 +54,17 @@ struct type_status
 #define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
 #define fMH_SUN_ON	1		// флаг открытия СК
 
-struct type_motoHour
+#define I2C_COUNT_EEPROM_HEADER 0xAA
+struct type_motoHour_old
 {
-  byte magic;       // признак данных, должно быть  0xaa  пока не используется!!!!!!!!!!
+  byte Header;      // признак данных
   uint8_t  flags;   // флаги
   uint32_t H1;      // моточасы ТН ВСЕГО
   uint32_t H2;      // моточасы ТН сбрасываемый счетчик (сезон)
   uint32_t C1;      // моточасы компрессора ВСЕГО
   uint32_t C2;      // моточасы компрессора сбрасываемый счетчик (сезон)
-  union {
-  float    E1_f;	// ver <= 133
   uint32_t E1;		// Значение потребленной энергии ВСЕГО
-  };
-  union {
-  float    E2_f;	// ver <= 133
   uint32_t E2;		// Значение потребленной энергии в начале сезона
-  };
   uint32_t D1;      // Дата сброса общих счетчиков
   uint32_t D2;      // дата сброса сезонных счетчиков
   uint32_t P1;      // выработанное тепло  ВСЕГО
@@ -77,9 +72,24 @@ struct type_motoHour
   uint32_t Z1;      // Резервный параметр 1
   uint32_t Z2;      // Резервный параметр 2
 };
+struct type_motoHour
+{
+  byte Header;      // признак данных
+  uint8_t  flags;   // флаги
+  uint32_t H1;      // моточасы ТН ВСЕГО
+  uint32_t H2;      // моточасы ТН сбрасываемый счетчик (сезон)
+  uint32_t C1;      // моточасы компрессора ВСЕГО
+  uint32_t C2;      // моточасы компрессора сбрасываемый счетчик (сезон)
+  uint32_t D1;      // Дата сброса общих счетчиков
+  uint32_t D2;      // дата сброса сезонных счетчиков
+  uint64_t E1;		// Значение потребленной энергии ВСЕГО
+  uint64_t E2;		// Значение потребленной энергии в начале сезона
+  uint64_t P1;      // выработанное тепло  ВСЕГО
+  uint64_t P2;      // выработанное тепло  сбрасываемый счетчик (сезон)
+};
 
-int32_t motohour_OUT_work = 0; // рабочий для счетчиков - энергия отопления, мВт
-int32_t motohour_IN_work = 0;  // рабочий для счетчиков - энергия потребленная, мВт
+int32_t motohour_OUT_work = 0; // рабочий для счетчиков - энергия отопления, Вт
+int32_t motohour_IN_work = 0;  // рабочий для счетчиков - энергия потребленная, Вт
 uint16_t task_updstat_chars = 0;
 #ifdef CHART_ONLY_COMP_ON
 boolean  Charts_when_comp_on = true;	// Графики в памяти только во время работы компрессора
@@ -411,16 +421,7 @@ class HeatPump
    void set_stopCompressor() { stopCompressor = rtcSAM3X8.unixtime(); }
    uint32_t get_startTime(){return Prof.SaveON.startTime;} // Получить дату и время пуска ТН (не компрессора!)
    inline uint32_t get_command_completed(){ return command_completed; } // Время выполнения команды
-   uint32_t get_motoHourH1(){return motoHour.H1;}          // Получить моточасы ТН ВСЕГО
-   uint32_t get_motoHourH2(){return motoHour.H2;}          // Получить моточасы ТН сбрасываемый счетчик (сезон)
-   uint32_t get_motoHourC1(){return motoHour.C1;}          // моточасы компрессора ВСЕГО
-   uint32_t get_motoHourC2(){return motoHour.C2;}          // моточасы компрессора сбрасываемый счетчик (сезон)
-   uint32_t get_motoHourE1(){return motoHour.E1;}          // Значение потребленной энергии ВСЕГО
-   uint32_t get_motoHourE2(){return motoHour.E2;}          //Значение потребленной энергии за сезон
-   uint32_t get_motoHourD2(){return motoHour.D2;}          // дата сброса сезонных счетчиков
-   uint32_t get_motoHourD1(){return motoHour.D1;}          // Дата сброса общих счетчиков
-   uint32_t get_motoHourP2(){return motoHour.P2;}          // Выработанная энергия в вт/часах сезон
-   uint32_t get_motoHourP1(){return motoHour.P1;}          // Выработанная энергия в вт/часах общая
+   inline type_motoHour *get_motoHour(){ return &motoHour; }// Получить счетчики
      
    void resetCount(boolean full);                          // Сборос сезонного счетчика моточасов
    void updateCount();                                     // Обновление счетчиков моточасов
@@ -548,6 +549,7 @@ class HeatPump
     boolean setState(TYPE_STATE_HP st);   // установить состояние теплового насоса
           
     type_motoHour motoHour;               // Структура для хранения счетчиков запись каждый час
+    type_motoHour motoHour_saved;
     TEST_MODE testMode;                   // Значение режима тестирования
     TYPE_COMMAND command;                 // Текущая команда управления ТН
     TYPE_COMMAND next_command;            // Следующая команда управления ТН

@@ -193,15 +193,33 @@ void HeatPump::scan_OneWire(char *result_str)
 		journal.jprintf("\nRadio found(%d): ", radio_received_num);
 		for(uint8_t i = 0; i < radio_received_num; i++) {
 			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
-			OW_scanTable[OW_scanTableIdx].bus = 7;
+			OW_scanTable[OW_scanTableIdx].bus = tRadio_Bus;
 			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
 			OW_scanTable[OW_scanTableIdx].address[0] = tRadio;
 			memcpy(&OW_scanTable[OW_scanTableIdx].address[1], &radio_received[i].serial_num, sizeof(radio_received[0].serial_num));
 			char *p = result_str + strlen(result_str);
-			m_snprintf(p, 64, "%d:RADIO %.1dV/%c:%.2d:%u:7;", OW_scanTable[OW_scanTableIdx].num, radio_received[i].battery, Radio_RSSI_to_Level(radio_received[i].RSSI), radio_received[i].Temp, radio_received[i].serial_num);
+			m_snprintf(p, 64, "%d:RADIO %.1dV/%c:%.2d:%u:%d;", OW_scanTable[OW_scanTableIdx].num, radio_received[i].battery, Radio_RSSI_to_Level(radio_received[i].RSSI), radio_received[i].Temp, radio_received[i].serial_num, tRadio_Bus+1);
 			journal.jprintf("%s", p);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;
 		}
+#endif
+#ifdef TNTC
+		journal.jprintf("\nNTC found: ");
+		for(uint8_t i = 0; i < TNTC; i++) {
+			if(TNTC_Value[i] > TNTC_Value_Max) continue;
+			OW_scanTable[OW_scanTableIdx].num = OW_scanTableIdx + 1;
+			OW_scanTable[OW_scanTableIdx].bus = tADC_Bus;
+			memset(&OW_scanTable[OW_scanTableIdx].address, 0, sizeof(OW_scanTable[0].address));
+			OW_scanTable[OW_scanTableIdx].address[0] = tADC;
+			OW_scanTable[OW_scanTableIdx].address[1] = '0' + i;
+			char *p = result_str + strlen(result_str);
+			m_snprintf(p, 64, "%d:NTC:%.2d:AD%d:%d;", OW_scanTable[OW_scanTableIdx].num, HP.sTemp->Read_NTC(TNTC_Value[i]), TADC[i], tADC_Bus+1);
+			journal.jprintf("%s", p);
+			if(++OW_scanTableIdx >= OW_scanTable_max) break;
+		}
+#endif
+#ifdef TNTC_EXT
+
 #endif
 		journal.jprintf("\n");
 		OW_scan_flags = 0;
@@ -452,18 +470,18 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 	updateLinkIP();
 #endif
 	journal.jprintf("OK\n");
-	if(HP.Option.ver <= 133) {
-#ifdef USE_ELECTROMETER_SDM
-		if(dSDM.get_readState(3) == OK) {
-			motoHour.E1 = (dSDM.get_Energy() - motoHour.E1_f) * 1000;
-			motoHour.E2 = (dSDM.get_Energy() - motoHour.E2_f) * 1000;
-		} else
-#endif
-		{
-			motoHour.E1 = 0;
-			motoHour.E2 = 0;
-		}
-	}
+//	if(HP.Option.ver <= 133) {
+//#ifdef USE_ELECTROMETER_SDM
+//		if(dSDM.get_readState(3) == OK) {
+//			motoHour.E1 = (dSDM.get_Energy() - motoHour.E1_f) * 1000;
+//			motoHour.E2 = (dSDM.get_Energy() - motoHour.E2_f) * 1000;
+//		} else
+//#endif
+//		{
+//			motoHour.E1 = 0;
+//			motoHour.E2 = 0;
+//		}
+//	}
 	return size + sizeof(crc);
 }
 
@@ -482,37 +500,67 @@ int8_t HeatPump::check_crc16_eeprom(int32_t addr, uint16_t size)
 }
 
 // СЧЕТЧИКИ -----------------------------------
- // запись счетчиков теплового насоса в I2C память
+// запись счетчиков теплового насоса в I2C память
 int8_t HeatPump::save_motoHour()
 {
-	uint8_t i;
-	uint8_t errcode;
-	motoHour.magic = 0xaa;   // заголовок
-
-	for(i = 0; i < 5; i++)   // Делаем 5 попыток записи
-	{
-		if(!(errcode = writeEEPROM_I2C(I2C_COUNT_EEPROM, (byte*) &motoHour, sizeof(motoHour)))) break;   // Запись прошла
-		journal.jprintf(" ERROR %d save counters #%d\n", errcode, i);
-		_delay(i * 50);
-	}
-	if(errcode) {
-		set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
-		return ERR_SAVE2_EEPROM;
-	}  // записать счетчики
-	//journal.jprintf("Counters saved\n");
+	motoHour.Header = I2C_COUNT_EEPROM_HEADER;
+	uint32_t ptr = 0;
+	do {
+		while(ptr < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptr] == ((uint8_t*)&motoHour_saved)[ptr]) ptr++; else break;
+		if(ptr == sizeof(motoHour)) break;
+		uint32_t ptre = ptr + 1;
+xNotEqual:
+		while(ptre < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptre] != ((uint8_t*)&motoHour_saved)[ptre]) ptre++; else break;
+		if(ptre < sizeof(motoHour)) {
+			uint32_t ptrz = ptre + 1;
+			while(ptrz < sizeof(motoHour)) if(((uint8_t*)&motoHour)[ptrz] == ((uint8_t*)&motoHour_saved)[ptrz]) ptrz++; else break;
+			if(ptrz < sizeof(motoHour)) {
+				if(ptrz - ptre <= 4) {
+					ptre = ptrz + 1;
+					goto xNotEqual;
+				}
+			}
+		}
+		uint8_t errcode;
+		if((errcode = writeEEPROM_I2C(I2C_COUNT_EEPROM + ptr, (byte*)&motoHour + ptr, ptre - ptr))) {
+			journal.jprintf(" ERROR %d save counters!\n", errcode);
+			set_Error(ERR_SAVE2_EEPROM, (char*) __FUNCTION__);
+			return ERR_SAVE2_EEPROM;
+		}
+		ptr = ptre;
+	} while(ptr < sizeof(motoHour));
+	memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
 	return OK;
 }
 
 // чтение счетчиков теплового насоса в ЕЕПРОМ
 int8_t HeatPump::load_motoHour()          
 {
- byte x=0xff;
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&x, sizeof(x)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}                // прочитать заголовок
- if (x!=0xaa)  {journal.jprintf("Bad header counters, skip load\n"); return ERR_HEADER2_EEPROM;}                                                  // заголвок плохой выходим
- if (readEEPROM_I2C(I2C_COUNT_EEPROM,  (byte*)&motoHour, sizeof(motoHour)))  { set_Error(ERR_LOAD2_EEPROM,(char*)__FUNCTION__); return ERR_LOAD2_EEPROM;}   // прочитать счетчики
- journal.jprintf(" Load counters OK, read: %d bytes\n",sizeof(motoHour));
- return OK; 
-
+	if(readEEPROM_I2C(I2C_COUNT_EEPROM, &motoHour.Header, sizeof(motoHour.Header))) { // прочитать заголовок
+		set_Error(ERR_LOAD2_EEPROM, (char*) __FUNCTION__);
+		return ERR_LOAD2_EEPROM;
+	}
+	if(motoHour.Header != I2C_COUNT_EEPROM_HEADER) { // заголовок плохой
+		journal.jprintf("Bad header counters, skip load\n");
+		return ERR_HEADER2_EEPROM;
+	}
+	if(readEEPROM_I2C(I2C_COUNT_EEPROM + sizeof(motoHour.Header), (byte*) &motoHour + sizeof(motoHour.Header), sizeof(motoHour) - sizeof(motoHour.Header))) { // прочитать счетчики
+		set_Error(ERR_LOAD2_EEPROM, (char*) __FUNCTION__);
+		return ERR_LOAD2_EEPROM;
+	}
+	if(Option.ver <= 138) {
+		memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
+		type_motoHour_old *p = (type_motoHour_old*)&motoHour_saved;
+		motoHour.D1 = p->D1;
+		motoHour.D2 = p->D2;
+		motoHour.E1 = p->E1;
+		motoHour.E2 = p->E2;
+		motoHour.P1 = p->P1;
+		motoHour.P2 = p->P2;
+	}
+	memcpy(&motoHour_saved, &motoHour, sizeof(motoHour_saved));
+	journal.printf(" Load counters OK, read: %d bytes\n", sizeof(motoHour));
+	return OK;
 }
 // Сборос сезонного счетчика моточасов
 // параметр true - сброс всех счетчиков
@@ -523,7 +571,6 @@ void HeatPump::resetCount(boolean full)
 		motoHour.H1 = 0;
 		motoHour.C1 = 0;
 		motoHour.P1 = 0;
-		motoHour.Z1 = 0;
 		motoHour.E1 = 0;
 		motoHour.D1 = rtcSAM3X8.unixtime();           // Дата сброса общих счетчиков
 	}
@@ -531,7 +578,6 @@ void HeatPump::resetCount(boolean full)
 	motoHour.H2 = 0;
 	motoHour.C2 = 0;
 	motoHour.P2 = 0;
-	motoHour.Z2 = 0;
 	motoHour.E2 = 0;
 	motoHour.D2 = rtcSAM3X8.unixtime();             // дата сброса сезонных счетчиков
 	save_motoHour();  // записать счетчики
@@ -547,25 +593,23 @@ void HeatPump::updateCount()
 		motoHour.C1++;      // моточасы компрессора ВСЕГО
 		motoHour.C2++;      // моточасы компрессора сбрасываемый счетчик (сезон)
 	}
+	if(get_State() == pWORK_HP) {
+		motoHour.H1++;          // моточасы ТН ВСЕГО
+		motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
+	}
 	int32_t p;
 	//taskENTER_CRITICAL();
 	p = motohour_IN_work;
 	motohour_IN_work = 0;
 	//taskEXIT_CRITICAL();
-	p /= 1000;
 	motoHour.E1 += p;
 	motoHour.E2 += p;
 	//taskENTER_CRITICAL();
 	p = motohour_OUT_work;
 	motohour_OUT_work = 0;
 	//taskEXIT_CRITICAL();
-	p /= 1000;
 	motoHour.P1 += p;
 	motoHour.P2 += p;
-	if(get_State() == pWORK_HP) {
-		motoHour.H1++;          // моточасы ТН ВСЕГО
-		motoHour.H2++;          // моточасы ТН сбрасываемый счетчик (сезон)
-	}
 }
 
 // После любого изменения часов необходимо пересчитать все времна которые используются
@@ -601,7 +645,7 @@ void HeatPump::resetSettingHP()
 	Status.modWork = pOFF;                          // Что сейчас делает ТН (7 стадий)
 	Status.State = pOFF_HP;                         // Сотояние ТН - выключен
 	Status.ret = pNone;                             // точка выхода алгоритма
-	motoHour.magic = 0xaa;                          // волшебное число
+	motoHour.Header = I2C_COUNT_EEPROM_HEADER;
 	motoHour.flags = 0;								// насос выключен
 	motoHour.H1 = 0;                                // моточасы ТН ВСЕГО
 	motoHour.H2 = 0;                                // моточасы ТН сбрасываемый счетчик (сезон)
@@ -1624,15 +1668,17 @@ boolean HeatPump::checkEVI()
 }
 #endif
 
+#ifdef RPUMPFL
 void HeatPump::Pump_HeatFloor(boolean On)
 {
-#ifdef RPUMPFL
 	if(On) {
 		if(!(get_modWork() & pBOILER) && ((get_modeHouse() == pHEAT && GETBIT(Prof.Heat.flags, fHeatFloor)) || (get_modeHouse() == pCOOL && GETBIT(Prof.Cool.flags, fHeatFloor))))
 			dRelay[RPUMPFL].set_ON();
 	} else dRelay[RPUMPFL].set_OFF();
-#endif
 }
+#else
+void HeatPump::Pump_HeatFloor(boolean) { }
+#endif
 
 // Включить или выключить насосы контуров и то что требуется для ГВС (трех-ходовой или насос) первый параметр их желаемое состояние
 // Второй параметр параметр задержка после включения/выключения мсек. отдельного насоса (борьба с помехами)

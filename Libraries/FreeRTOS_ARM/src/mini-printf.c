@@ -252,6 +252,10 @@ char *ftoa(char *outstr, float val, unsigned char precision)
 char *dptoa(char *outstr, int val, unsigned int precision)
 {
     //while(*outstr) outstr++;
+	if(val < 0) {
+		*outstr++ = '-';
+		val = -val;
+	}
     int div;
     switch(precision) {
     	case 1: div = 10; break;
@@ -263,7 +267,7 @@ char *dptoa(char *outstr, int val, unsigned int precision)
     outstr += i10toa(val / div, outstr, 0);
     if(precision > 0) {
 		*(outstr++) = '.';
-		outstr += i10toa((val < 0 ? -val : val) % div, outstr, precision);
+		outstr += i10toa(val % div, outstr, precision);
     }
     return outstr;
 }

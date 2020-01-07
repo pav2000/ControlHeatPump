@@ -29,7 +29,9 @@
 #define tDS18S20 0x10
 #define tDS18B20 0x28
 #define tDS1822  0x22
-#define tRadio   0x03
+#define tRadio   0xA0
+#define tADC     0xA1
+#define tADS1115 0xA2
 // разрешение датчика температур
 #define DS18B20_p12BIT 0x7F
 #define DS18B20_p11BIT 0x5F
@@ -38,11 +40,15 @@
 
 #define ERROR_TEMPERATURE	-32768
 
+#define tRadio_Bus		4
+#define tADC_Bus		5
+#define tADS1115_Bus	6
+
 // Структура для хранения информации при сканировании температурных датчиков на шине OneWire
 struct type_scanOneWire
 {
   byte num;            // номер по списку
-  byte bus;       	   // номер шины: 0..3
+  byte bus;       	   // номер шины: 1-Wire = 0..3, t*_Bus = 4..
   byte address[8];     // адрес
 };
 

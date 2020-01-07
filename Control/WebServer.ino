@@ -1031,24 +1031,24 @@ void parserGET(uint8_t thread, int8_t )
 		if (strcmp(str,"get_infoESP") == 0)  // Удаленные датчики - запрос состояния контрола
 		{
 			// TIN, TOUT, TBOILER, ВЕРСИЯ, ПАМЯТЬ, ЗАГРУЗКА, АПТАЙМ, ПЕРЕГРЕВ, ОБОРОТЫ, СОСТОЯНИЕ.
-			_ftoa(strReturn,(float)HP.sTemp[TIN].get_Temp()/100.0,1);     strcat(strReturn,";");
-			_ftoa(strReturn,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);    strcat(strReturn,";");
-			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,";");
-			strcat(strReturn,VERSION);                                    strcat(strReturn,";");
-			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,";");
-			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,";");
-			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,";");
+			_ftoa(strReturn,(float)HP.sTemp[TIN].get_Temp()/100.0,1);     strcat(strReturn,"|");
+			_ftoa(strReturn,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);    strcat(strReturn,"|");
+			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,"|");
+			strcat(strReturn,VERSION);                                    strcat(strReturn,"|");
+			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,"|");
+			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,"|");
+			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,"|");
 #ifdef EEV_DEF
-			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,";");
+			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,"|");
 #else
 			strcat(strReturn,"-;");
 #endif
-			if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);    strcat(strReturn,";");} // В зависимости от наличия инвертора
-			else                      {strcat(strReturn," - ");                       strcat(strReturn,";");}
+			if (HP.dFC.get_present()) {HP.dFC.get_paramFC((char*)fc_FC,strReturn);    strcat(strReturn,"|");} // В зависимости от наличия инвертора
+			else                      {strcat(strReturn," - ");                       strcat(strReturn,"|");}
 			//  strcat(strReturn,HP.StateToStrEN());                                      strcat(strReturn,";");
 			if (HP.get_errcode()==OK)  strcat(strReturn,HP.StateToStrEN());                   // Ошибок нет
 			else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
-			strcat(strReturn,";");   ADD_WEBDELIM(strReturn) ;    continue;
+			strcat(strReturn,"|");   ADD_WEBDELIM(strReturn) ;    continue;
 		}
 #endif
 		if(strncmp(str, "hide_", 5) == 0) { // Удаление элементов внутри tag name="hide_*"
@@ -1335,20 +1335,24 @@ void parserGET(uint8_t thread, int8_t )
 				strcat(strReturn,"Счетчик числа ошибок чтения датчиков температуры (DS18x20)|");_itoa(HP.get_errorReadDS18B20(),strReturn);strcat(strReturn,";");
 
 				strcat(strReturn,"<b> Глобальные счетчики (Всего за весь период)</b>|;");
-				strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHourD1(),strReturn);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourH1()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHourC1()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE1() / 1000.0, 2);strcat(strReturn,";");
+				strcat(strReturn,"Время сброса счетчиков|");DecodeTimeDate(HP.get_motoHour()->D1,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->H1/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->C1/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->E1 / 1000, 3);strcat(strReturn,";");
 	#ifdef  FLOWCON
-				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) { strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourP1()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {
+					strcat(strReturn,"Выработанная энергия ТН (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->P1 / 1000, 3);strcat(strReturn,";"); // Если есть оборудование
+				}
 	#endif
 				strcat(strReturn,"<b> Сезонные счетчики</b>|;");
-				strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHourD2(),strReturn);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourH2()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHourC2()/60.0,1);strcat(strReturn,";");
-				strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, (float)HP.get_motoHourE2() / 1000.0, 2);strcat(strReturn,";");
+				strcat(strReturn,"Время сброса сезонных счетчиков ТН|");DecodeTimeDate(HP.get_motoHour()->D2,strReturn);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->H2/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Часы работы компрессора ТН за сезон (час)|");_ftoa(strReturn,(float)HP.get_motoHour()->C2/60.0f,1);strcat(strReturn,";");
+				strcat(strReturn,"Потребленная энергия ТН за сезон (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->E2 / 1000, 3);strcat(strReturn,";");
 	#ifdef  FLOWCON
-				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_ftoa(strReturn, HP.get_motoHourP2()/1000.0,2);strcat(strReturn,";");} // Если есть оборудование
+				if(HP.sTemp[TCONING].get_present() & HP.sTemp[TCONOUTG].get_present()) {
+					strcat(strReturn,"Выработанная энергия ТН за сезон (кВт*ч)|");_dtoa(strReturn, HP.get_motoHour()->P2 / 1000, 3);strcat(strReturn,";"); // Если есть оборудование
+				}
 	#endif
 
 				STORE_DEBUG_INFO(48);
@@ -1979,9 +1983,9 @@ void parserGET(uint8_t thread, int8_t )
 							} else if(*y == 'l') {
 								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&e)) == OK) _itoa(e, strReturn);
 							} else if(*y == 'i') {
-								if((i = Modbus.readInputRegistersFloat(id, par, &pm)) == OK) _ftoa(strReturn, pm, 2);
+								if((i = Modbus.readInputRegistersFloat(id, par, &pm)) == OK) _ftoa(strReturn, pm, 3);
 							} else if(*y == 'f') {
-								if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) _ftoa(strReturn, pm, 2);
+								if((i = Modbus.readHoldingRegistersFloat(id, par, &pm)) == OK) _ftoa(strReturn, pm, 3);
 							} else if(*y == 'c') {
 								if((i = Modbus.readCoil(id, par, (boolean *)&par)) == OK) _itoa(par, strReturn);
 							} else goto x_FunctionNotFound;
@@ -2130,7 +2134,7 @@ void parserGET(uint8_t thread, int8_t )
 									if(HP.sTemp[p].get_lastTemp() == STARTTEMP) strcat(strReturn, "-.-");
 									else {
 										strReturn = dptoa(strReturn + m_strlen(strReturn), HP.sTemp[p].get_Temp(), 2);
-										if(HP.sTemp[p].get_fRadio()) *--strReturn = '\0';
+										if(*HP.sTemp[p].get_address() == tRadio) *--strReturn = '\0';
 									}
 	#endif
 								} else strcat(strReturn, "-");             // Датчика нет ставим прочерк
@@ -2161,7 +2165,8 @@ void parserGET(uint8_t thread, int8_t )
 							{
 x_get_aTemp:
 								if(!HP.sTemp[p].get_fAddress()) strcat(strReturn, "не привязан");
-								else if(HP.sTemp[p].get_fRadio()) _itoa(*(uint32_t*)(HP.sTemp[p].get_address() + 1), strReturn);
+								else if(*HP.sTemp[p].get_address() == tRadio) _itoa(*(uint32_t*)(HP.sTemp[p].get_address() + 1), strReturn);
+								else if(*HP.sTemp[p].get_address() > tRadio) _itoa(*(HP.sTemp[p].get_address() + 1), strReturn);
 								else strcat(strReturn, addressToHex(HP.sTemp[p].get_address()));
 								ADD_WEBDELIM(strReturn); continue;
 							}
@@ -2184,7 +2189,7 @@ x_get_aTemp:
 							{
 								strcat(strReturn, HP.sTemp[p].get_note());
 	#ifdef RADIO_SENSORS
-								if(HP.sTemp[p].get_fRadio()) {
+								if(HP.sTemp[p].get_bus() == tRadio_Bus) {
 									i = HP.sTemp[p].get_radio_received_idx();
 									if(i >= 0) {
 										m_snprintf(strReturn + strlen(strReturn), 20, " \xF0\x9F\x93\xB6%c", Radio_RSSI_to_Level(radio_received[i].RSSI));

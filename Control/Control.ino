@@ -91,8 +91,11 @@ PubSubClient w5200_MQTT(ethClient);  	    // клиент MQTT
 
 // I2C eeprom Размер в килобитах, число чипов, страница в байтах, адрес на шине, тип памяти:
 extEEPROM eepromI2C(I2C_SIZE_EEPROM,I2C_MEMORY_TOTAL/I2C_SIZE_EEPROM,I2C_PAGE_EEPROM,I2C_ADR_EEPROM,I2C_FRAM_MEMORY);
-//RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
+#ifdef USE_RC_CLOCK_SOURCE
+RTC_clock rtcSAM3X8(RC);                                               // Внутренние часы, используется внутренний RC генератор
+#else
 RTC_clock rtcSAM3X8(XTAL);                                               // Внутренние часы, используется часовой кварц
+#endif
 DS3232  rtcI2C;                                                          // Часы 3231 на шине I2C
 static Journal  journal;                                                 // системный журнал, отдельно т.к. должен инициализоваться с начала старта
 static HeatPump HP;                                                      // Класс тепловой насос (в констукторе плохо проходит инициализация пинов????)
@@ -410,13 +413,14 @@ x_I2C_init_std_message:
   HP.set_hashUser();
   HP.set_hashAdmin();
 
-
 // 7. Инициализация СД карты и запоминание результата 3 попытки
+#ifndef NO_SD_CARD
    journal.jprintf("5. Init SD card . . .\n");
    HP.set_fSD(initSD());
    WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
-   digitalWriteDirect(PIN_LED_OK,LOW);        // Включить светодиод - признак того что сд карта инициализирована
-   //_delay(100);
+#else
+   journal.jprintf("5. No SD card in config.\n");
+#endif
 
 // 8. Инициализация spi флеш диска
 #ifdef SPI_FLASH
@@ -425,6 +429,7 @@ x_I2C_init_std_message:
 #else
   journal.jprintf("6. No SPI flash in config.\n");
 #endif
+  digitalWriteDirect(PIN_LED_OK, LOW);        // Включить светодиод
 
 //  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
   journal.jprintf("Web interface source: ");
@@ -590,7 +595,7 @@ journal.jprintf("READY ----------------------\n");
 eepromI2C.use_RTOS_delay = 1;       //vad711
 //
 vTaskStartScheduler();              // СТАРТ !!
-journal.jprintf("CRASH FreeRTOS!!!\n");
+journal.jprintf("FreeRTOS FAILURE!\n");
 }
 
 
@@ -712,7 +717,7 @@ void vWeb0(void *)
 				resW5200 = xTaskGetTickCount();
 				if(timeResetW5200 == 0) timeResetW5200 = resW5200;      // Первая итерация не должна быть сразу
 				if(resW5200 - timeResetW5200 > HP.time_resW5200() * 1000UL) {
-					journal.jprintf(pP_TIME, "Resetting the chip %s by timer . . .\n", nameWiznet);
+					journal.jprintf(pP_TIME, "Reset %s by timer . . .\n", nameWiznet);
 					HP.sendCommand(pNETWORK);                          // Послать команду сброса и применения сетевых настроек
 					timeResetW5200 = resW5200;                         // Запомить время сброса
 					active = false;
@@ -813,7 +818,9 @@ void vReadSensor(void *)
 { //const char *pcTaskName = "ReadSensor\r\n";
 	static unsigned long readFC = 0;
 #ifdef USE_ELECTROMETER_SDM
+#if (SDM_READ_PERIOD > 0)
 	static unsigned long readSDM = 0;
+#endif
 #endif
 	static uint32_t ttime;
 	static uint32_t oldTime = millis();
@@ -842,14 +849,15 @@ void vReadSensor(void *)
 #endif     // не DEMO
 		}
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
+		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
+
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
 		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
-		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
-		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 		vReadSensor_delay8ms((cDELAY_DS1820 - (millis() - ttime)) / 8); 	// Ожидать время преобразования
 
@@ -883,13 +891,15 @@ void vReadSensor(void *)
 		}
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
+#if (SDM_READ_PERIOD > 0)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
 			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
 				readSDM=millis();
-				HP.dSDM.get_readState(2);     // Последняя группа регистров
+				HP.dSDM.get_readState(2);     // Последняя группа регистров ТОК
 			}
+#endif
 #endif
 
 		HP.calculatePower();  // Расчет мощностей и СОР
@@ -1001,7 +1011,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			vTaskDelay(8*3);
 			ms8 -= 3;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
-				journal.jprintf("Press KEY_ON_OFF\n");
+				journal.jprintf("ON/OFF Key pressed!\n");
 				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else {if((HP.get_State()==pWORK_HP)||(HP.get_State()==pWAIT_HP)) HP.sendCommand(pSTOP);}
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
@@ -1029,7 +1039,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 						HP.NO_Power = 0;
-						journal.jprintf("Resuming work\n");
+						journal.jprintf("Resuming work...\n");
 						HP.sendCommand(pRESUME);
 					}
 				}
@@ -1375,7 +1385,9 @@ void vUpdateCommand(void *)
 // Графики в ОЗУ, счетчики моточасов, сохранение статистики, работа насосов в простое, дисплей Nextion
 void vServiceHP(void *)
 {
+#ifdef NEXTION
 	static uint32_t NextionTick = 0;
+#endif
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
 	static uint32_t timer_sec = GetTickCount();

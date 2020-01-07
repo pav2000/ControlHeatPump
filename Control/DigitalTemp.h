@@ -31,7 +31,7 @@ enum TEMP_SETUP_FLAGS { // bit #
 	fTEMP_as_TIN_min,		// 6: Используется для расчета TIN в качестве минимальной температуры, между всеми датчиками с таким и "average" флагами
 	fTEMP_HeatFloor			// 7: Используется для управления реле теплого пола (RPUMPFL), если температура любого датчика с этим флагом меньше целевой - реле вкл, иначе - реле выкл.
 };
-#define fDS2482_bus_mask 3
+#define fDS2482_bus_mask	3
 
 // Удаленные датчики температуры -------------------------------------------------------------
 #ifdef SENSOR_IP
@@ -108,6 +108,9 @@ class sensorTemp
     void     initTemp(int sensor);                      // Инициализация на входе номер датчика
     int8_t   PrepareTemp();                             // запуск преобразования
     int8_t   Read();                                    // чтение данных, возвращает код ошибки, делает все преобразования
+#ifdef TNTC
+    int16_t  Read_NTC(uint16_t val);
+#endif
     int16_t  get_minTemp(){return minTemp;}             // Минимальная темература датчика - нижняя граница диапазона, при выходе из него ошибка
     int16_t  get_maxTemp(){return maxTemp;}             // Максимальная темература датчика - верхняя граница диапазона, при выходе из него ошибка
     int16_t  set_maxTemp(int16_t t){return maxTemp=t;}  // Установить максимальную температуру датчика - верхняя граница диапазона, при выходе из него ошибка (изменение нужно для сальмонеллы)
@@ -125,10 +128,9 @@ class sensorTemp
     void     set_address(byte *addr, byte bus);    		// Привязать адрес и номер шины
     uint8_t* get_address(){return address;}  			// Получить адрес датчика
     __attribute__((always_inline)) inline boolean get_present(){return GETBIT(flags,fPresent);} // Наличие датчика в текущей конфигурации
-    __attribute__((always_inline)) inline boolean get_fRadio(){return GETBIT(flags,fRadio);}
     uint8_t get_cfg_flags() { return SENSORTEMP[number]; } // Вернуть биты конфигурации (наличие, особенности отображения на веб страницах,)
     __attribute__((always_inline)) inline boolean get_fAddress(){ return GETBIT(flags,fAddress); } // Датчик привязан
-    __attribute__((always_inline)) inline uint8_t get_bus(){ return (GETBIT(flags, fRadio) ? 7 : (setup_flags & fDS2482_bus_mask)); } // Шина
+    uint8_t get_bus(void);									// Шина
     __attribute__((always_inline)) inline boolean get_setup_flag(uint8_t bit){ return GETBIT(setup_flags, bit); }
     __attribute__((always_inline)) inline uint8_t get_setup_flags(void){ return setup_flags; }
     inline void set_setup_flag(uint8_t bit, uint8_t value){ setup_flags = (setup_flags & ~(1<<bit)) | ((value!=0)<<bit); }
@@ -159,7 +161,7 @@ class sensorTemp
    uint32_t sumErrorRead;                               // Cуммарный счечик ошибок чтения датчика - число ошибок датчика с момента перегрузки
    uint8_t nGap;                                        // Счечик "разорванных" данных  - требуется для фильтрации помехи
    // Кольцевой буфер для усреднения
-#if T_NUMSAMLES > 1
+#if (T_NUMSAMLES > 1)
    int32_t sum;                                         // Накопленная сумма
    uint8_t last;                                        // указатель на последнее (самое старое) значение в буфере диапазон от 0 до T_NUMSAMLES-1
    int16_t t[T_NUMSAMLES];                              // буфер для усреднения показаний температуры
@@ -169,7 +171,7 @@ class sensorTemp
    uint8_t number;  									// Номер датчика
    int16_t errTemp;                                     // статическая ошибка датчика
    int16_t testTemp;                                    // температура датчика в режиме тестирования
-   byte    address[8];                                  // текущий адресс датчика (при охлаждении не совпадает с основным) датчик всегда читается по этому адресу
+   byte    address[8];                                  // текущий адрес датчика
    	   	   	   	   	   	   	   	   	   	   	   	   	    // для радиодатчика, байты: 1 = tRadio, 4 - адрес
    uint8_t setup_flags;							    	// флаги настройки (TEMP_SETUP_FLAGS)
    } __attribute__((packed));// Save Group end, setup_flags

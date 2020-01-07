@@ -36,7 +36,6 @@
 #define fAddress      3               // флаг правильного адреса для температурного датчика
 #define fcheckRange	  4				  // флаг Проверка граничного значения
 #define fsensModbus	  5				  // флаг дистанционного датчика по Modbus
-#define fRadio	      6				  // флаг радио-датчика
 
 extern RTC_clock rtcSAM3X8;
 extern int8_t set_Error(int8_t err, char *nam);
@@ -123,6 +122,14 @@ class sensorADC
     char *note;                                          // Описание датчика
     char *name;                                          // Имя датчика
 };
+
+#ifdef TNTC
+uint16_t TNTC_Value[TNTC];
+#define  TNTC_Value_Max 4090
+#endif
+#ifdef TNTC_EXT
+uint16_t TNTC_EXT_Value[TNTC_EXT];
+#endif
 
 // ------------------------------------------------------------------------------------------
 // Цифровые контактные датчики (есть 2 состяния 0 и 1) --------------------------------------
@@ -524,8 +531,10 @@ class devSDM
        // Управление по 485
       float Voltage;                                   // Напряжение в вольтах
       float Current;								   // Ток
-      float AcPower;                                   // активная мощность
-      float AcEnergy;                                  // Суммарная активная энергия
+      float AcPower;                                   // активная мощность, Вт
+      float AcEnergy;                                  // Суммарная активная энергия, кВтч
+      uint32_t period;
+      float EnergyLast;
       
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание
