@@ -399,14 +399,6 @@ x_I2C_init_std_message:
 	  if(HP.Option.ver <= 133) {
 		  HP.save();
 	  }
-#ifdef USE_SUN_COLLECTOR
-	  if(HP.get_fMH_SUN_ON()) {
-		  HP.dRelay[RSUNOFF].set_OFF();
-		  HP.dRelay[RSUNON].set_ON();
-		  HP.flags |= (1<<fHP_SunReady) | (1<<fHP_SunSwitching);
-		  HP.time_Sun_ON = millis();
-	  }
-#endif
   }
   HP.Schdlr.load();							// Загрузка настроек расписания
   // обновить хеш для пользователей
@@ -1192,12 +1184,12 @@ delayTask:	// чтобы задача отдавала часть времени
 		// Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		if(HP.flags & (1<<fHP_SunSwitching)) {
-			if(millis() - HP.time_Sun_ON > SUN_VALVE_SWITCH_TIME) {
+			if(millis() - HP.time_Sun > SUN_VALVE_SWITCH_TIME) {
 				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady)));
 				if(HP.dRelay[RSUNON].get_Relay()) {
 					HP.flags |= (1<<fHP_SunReady);
-					HP.set_fMH_SUN_ON();
-				} else HP.clear_fMH_SUN_ON();
+					HP.time_Sun -= SUN_MIN_PAUSE;
+				}
 				HP.dRelay[RSUNON].set_OFF();
 				HP.dRelay[RSUNOFF].set_OFF();
 			}
@@ -1207,8 +1199,8 @@ delayTask:	// чтобы задача отдавала часть времени
 			if(((!HP.is_pause()	&& (((HP.get_modWork() & pHEAT) && GETBIT(HP.Prof.Heat.flags, fUseSun)) || ((HP.get_modWork() & pCOOL) && GETBIT(HP.Prof.Cool.flags, fUseSun))
 									|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 				 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
-				if((HP.flags & (1<<fHP_SunActive))) {
-					if(HP.time_Sun_ON && millis() - HP.time_Sun_ON > SUN_MIN_WORKTIME) {
+				if((HP.flags & (1<<fHP_SunWork))) {
+					if(millis() - HP.time_Sun > SUN_MIN_WORKTIME) {
 						if(fregen) {
 							if(tsun < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
 						} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
@@ -1218,13 +1210,14 @@ delayTask:	// чтобы задача отдавала часть времени
 				}
 			} else {
 				HP.Sun_OFF();
-				HP.time_Sun_OFF = 0;	// выключить задержку последующего включения
+				HP.time_Sun = millis() - SUN_MIN_PAUSE;	// выключить задержку последующего включения
 			}
-			if((HP.flags & ((1<<fHP_SunActive) | (1<<fHP_SunReady) | (1<<fHP_SunSwitching))) == (1<<fHP_SunReady) && tsun < HP.Option.SunTempOff) {
-				HP.flags |= (1<<fHP_SunSwitching);
+			uint8_t fl = HP.flags & ((1<<fHP_SunNotInited) | (1<<fHP_SunReady) | (1<<fHP_SunSwitching) | (1<<fHP_SunWork));
+			if((fl == (1<<fHP_SunReady) || fl == (1<<fHP_SunNotInited)) && tsun < HP.Option.SunTempOff) {
+				HP.flags = (HP.flags & ~((1<<fHP_SunReady) | (1<<fHP_SunNotInited))) | (1<<fHP_SunSwitching);
 				HP.dRelay[RSUNON].set_OFF();
 				HP.dRelay[RSUNOFF].set_ON();
-				HP.time_Sun_ON = millis();
+				HP.time_Sun = millis();
 			}
 		}
 #endif

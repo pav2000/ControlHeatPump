@@ -82,6 +82,8 @@ int8_t set_Error(int8_t _err, char *nam)
 void HeatPump::initHeatPump()
 {
 	uint8_t i;
+	NO_Power = 0;
+	flags = (1<<fHP_SunNotInited);
 	eraseError();
 
 	for(i = 0; i < TNUMBER; i++) sTemp[i].initTemp(i);            // Инициализация датчиков температуры
@@ -640,8 +642,6 @@ void HeatPump::resetSettingHP()
 	uint8_t i;
 	Prof.initProfile();                           // Инициализировать профиль по умолчанию
 
-	flags = 0;
-	NO_Power = 0;
 	Status.modWork = pOFF;                          // Что сейчас делает ТН (7 стадий)
 	Status.State = pOFF_HP;                         // Сотояние ТН - выключен
 	Status.ret = pNone;                             // точка выхода алгоритма
@@ -690,8 +690,7 @@ void HeatPump::resetSettingHP()
 	timeNTP = 0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
 	startSallmonela = 0;                            // время начала обеззараживания
 	command_completed = 0;
-	time_Sun_ON = 0;
-	time_Sun_OFF = 0;
+	time_Sun = 0;
 	compressor_in_pause = false;
 
 	safeNetwork = false;                            // режим safeNetwork
@@ -2053,7 +2052,7 @@ int8_t HeatPump::StopWait(boolean stop)
 	Task_vUpdate_run = false;					        // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
     journal.jprintf(" Stop task UpdateHP\n");
 	Sun_OFF();											// Выключить СК
-	time_Sun_OFF = 0;									// выключить задержку последующего включения
+	time_Sun = millis() - SUN_MIN_PAUSE;				// выключить задержку последующего включения
   }
     
   if(startPump)
@@ -3647,20 +3646,19 @@ if(is_compressor_on()){      // Если компрессор работает
 void HeatPump::Sun_ON(void)
 {
 #ifdef USE_SUN_COLLECTOR
-	if(time_Sun_OFF == 0 || millis() - time_Sun_OFF > SUN_MIN_PAUSE) { // ON
+	if(millis() - time_Sun > SUN_MIN_PAUSE) { // ON
 		if(flags & (1<<fHP_SunReady)) {
-			flags |= (1<<fHP_SunActive);
+			flags |= (1<<fHP_SunWork);
 			dRelay[RSUN].set_Relay(fR_StatusSun);
 			dRelay[PUMP_IN].set_Relay(fR_StatusSun);
-			time_Sun_OFF = 0;
-			time_Sun_ON = millis();
+			time_Sun = millis();
 		} else {
 			if(!(flags & (1<<fHP_SunSwitching))) {
 				if(sTemp[TSUN].get_Temp() > Option.SunTempOn) {
-					flags |= (1<<fHP_SunSwitching);
+					flags = (flags & ~(1<<fHP_SunNotInited)) | (1<<fHP_SunSwitching);
 					dRelay[RSUNOFF].set_OFF();
 					dRelay[RSUNON].set_ON();
-					time_Sun_ON = millis();
+					time_Sun = millis();
 				}
 			}
 		}
@@ -3671,12 +3669,11 @@ void HeatPump::Sun_ON(void)
 void HeatPump::Sun_OFF(void)
 {
 #ifdef USE_SUN_COLLECTOR
-	if(flags & (1<<fHP_SunActive)) {
+	if(flags & (1<<fHP_SunWork)) {
 		dRelay[RSUN].set_Relay(-fR_StatusSun);
 		dRelay[PUMP_IN].set_Relay(-fR_StatusSun);
-		flags &= ~(1<<fHP_SunActive);
-		time_Sun_ON = 0;
-		time_Sun_OFF = millis();
+		flags &= ~(1<<fHP_SunWork);
+		time_Sun = millis();
 	}
 #endif
 }

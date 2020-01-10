@@ -416,7 +416,7 @@ void Statistics::Update()
 			if(newval == 0) skip_value = 1;
 			break;
 		case STATS_OBJ_Sun:
-			if(!GETBIT(HP.flags, fHP_SunActive)) continue;
+			if(!GETBIT(HP.flags, fHP_SunWork)) continue;
 			break;
 		case STATS_OBJ_Compressor:
 			if(compressor_on_timer == 0) continue;

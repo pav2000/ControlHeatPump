@@ -52,7 +52,6 @@ struct type_status
 }; 
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
 #define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
-#define fMH_SUN_ON	1		// флаг открытия СК
 
 #define I2C_COUNT_EEPROM_HEADER 0xAA
 struct type_motoHour_old
@@ -98,27 +97,28 @@ boolean  Charts_when_comp_on = false;
 #endif
 
 // Рабочие флаги ТН
-#define fHP_SunActive 			0			// Солнечный контур активен
-#define fHP_BoilerTogetherHeat	1			// Идет нагрев бойлера вместе с отоплением
-#define fHP_SunReady			2			// Солнечный коллектор открыт
-#define fHP_SunSwitching		3			// Солнечный коллектор переключается
+#define fHP_BoilerTogetherHeat	0			// Идет нагрев бойлера вместе с отоплением
+#define fHP_SunNotInited		1			// Солнечный коллектор не инициализирован
+#define fHP_SunSwitching		2			// Солнечный коллектор переключается
+#define fHP_SunReady			3			// Солнечный коллектор открыт
+#define fHP_SunWork 			4			// Солнечный коллектор работает
 
 //  Работа с отдельными флагами type_optionHP
-#define fAddHeat            0               // флаг Использование дополнительного тена при нагреве
-#define fBeep               1               // флаг Использование звука
-#define fNextion            2               // флаг Использование nextion дисплея
-#define fHistory            3               // флаг записи истории на карту памяти
-#define fSaveON             4               // флаг записи в EEPROM включения ТН
-#define fTypeRHEAT          5               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
-#define fSDMLogErrors  		6               // флаг писать в лог нерегулярные ошибки счетчика SDM
-#define f1Wire2TSngl		7				// На 2-ой шине 1-Wire(DS2482) только один датчик
-#define f1Wire3TSngl		8				// На 3-ей шине 1-Wire(DS2482) только один датчик
-#define f1Wire4TSngl		9				// На 4-ей шине 1-Wire(DS2482) только один датчик
-#define fSunRegenerateGeo	10				// Использовать солнечный коллектор для регенерации геоконтура в простое
-#define fNextionOnWhileWork	11				// Включать дисплей, когда ТН работает
-#define fWebStoreOnSPIFlash 12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
-#define fLogWirelessSensors 13				// Логировать обмен между беспроводными датчиками
-#define fBackupPower        14				// Использование резервного питания от генератора (ограничение мощности) 
+#define fAddHeat				0               // флаг Использование дополнительного тена при нагреве
+#define fBeep					1               // флаг Использование звука
+#define fNextion				2               // флаг Использование nextion дисплея
+#define fHistory				3               // флаг записи истории на карту памяти
+#define fSaveON					4               // флаг записи в EEPROM включения ТН
+#define fTypeRHEAT				5               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
+#define fSDMLogErrors			6               // флаг писать в лог нерегулярные ошибки счетчика SDM
+#define f1Wire2TSngl			7				// На 2-ой шине 1-Wire(DS2482) только один датчик
+#define f1Wire3TSngl			8				// На 3-ей шине 1-Wire(DS2482) только один датчик
+#define f1Wire4TSngl			9				// На 4-ей шине 1-Wire(DS2482) только один датчик
+#define fSunRegenerateGeo		10				// Использовать солнечный коллектор для регенерации геоконтура в простое
+#define fNextionOnWhileWork		11				// Включать дисплей, когда ТН работает
+#define fWebStoreOnSPIFlash		12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
+#define fLogWirelessSensors		13				// Логировать обмен между беспроводными датчиками
+#define fBackupPower			14				// Использование резервного питания от генератора (ограничение мощности)
 
  
 // Структура для хранения опций теплового насоса.
@@ -386,9 +386,6 @@ class HeatPump
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fMH_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
    inline void  set_HP_ON(){SETBIT1(motoHour.flags,fMH_ON);Status.State=pWORK_HP;}// Установка флага включения ТН
    inline bool  get_HP_ON() {return GETBIT(motoHour.flags,fMH_ON);}           // Получить значение флага включения ТН
-   inline void  set_fMH_SUN_ON() { SETBIT1(motoHour.flags, fMH_SUN_ON); }
-   inline void  clear_fMH_SUN_ON() { SETBIT0(motoHour.flags, fMH_SUN_ON); }
-   inline bool  get_fMH_SUN_ON() { return GETBIT(motoHour.flags, fMH_SUN_ON); }
 
    void     set_BoilerOFF(){SETBIT0(Prof.SaveON.flags,fBoilerON);}          // Выключить бойлер
    void     set_BoilerON() {SETBIT1(Prof.SaveON.flags,fBoilerON);}          // Включить бойлер
@@ -516,8 +513,7 @@ class HeatPump
     // Настройки опций
     type_optionHP Option;                  // Опции теплового насоса
 
-    uint32_t time_Sun_ON;                 // тики включения солнечного коллектора
-    uint32_t time_Sun_OFF;                // тики выключения солнечного коллектора
+    uint32_t time_Sun;                    // тики солнечного коллектора
     uint8_t  NO_Power;					  // Нет питания основных узлов, 2 - нужно запустить после восстановления
     uint8_t  NO_Power_delay;
     boolean  HeatBoilerUrgently;		  // Срочно нужно ГВС
