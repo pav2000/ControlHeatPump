@@ -606,46 +606,40 @@ void loop() {}
 //extern "C" 
 //{
 static unsigned long cpu_idle_max_count = 0; // 1566594 // максимальное значение счетчика, вычисляется при калибровке и соответствует 100% CPU idle
+static bool Error_Beep_confirmed = false;
 
 extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 {
-	static boolean ledState = LOW;
 	static unsigned long countLastTick = 0;
 	static unsigned long countLED = 0;
-	static unsigned long ulIdleCycleCount = 0;                                    // наш трудяга счетчик
+	static unsigned long countBeep = 0;
+	static unsigned long ulIdleCycleCount = 0;
 
 	WDT_Restart(WDT);                                                            // Сбросить вачдог
 	ulIdleCycleCount++;                                                          // приращение счетчика
-
-	if(xTaskGetTickCount() - countLastTick >= 3000)		// мсек
+	register unsigned long ticks = GetTickCount();
+	if(ticks - countLastTick >= 3000)		// мсек
 	{
-		countLastTick = xTaskGetTickCount();                            // расчет нагрузки
+		countLastTick = ticks;                            // расчет нагрузки
 		if(ulIdleCycleCount > cpu_idle_max_count) cpu_idle_max_count = ulIdleCycleCount; // это калибровка запоминаем максимальные значения
 		HP.CPU_IDLE = (100 * ulIdleCycleCount) / cpu_idle_max_count;              // вычисляем текущую загрузку
 		ulIdleCycleCount = 0;
-		//
-//		static uint8_t xxxx = 0;
-//		if(++xxxx > 3) {
-//			SerialDbg.println(cpu_idle_max_count);
-//			SerialDbg.println(HP.CPU_IDLE);
-//			xxxx = 0;
-//		}
 	}
-
 	// Светодиод мигание в зависимости от ошибки и подача звукового сигнала при ошибке
-	if(xTaskGetTickCount() - countLED > TIME_LED_ERR) {
-		if(HP.get_errcode() != OK) {          // Ошибка
-			digitalWriteDirect(PIN_BEEP, HP.get_Beep() ? ledState : LOW); // звукового сигнала
-			ledState = !ledState;
-			digitalWriteDirect(PIN_LED_OK, ledState);
-			countLED = xTaskGetTickCount();
-		} else if(xTaskGetTickCount() - countLED > TIME_LED_OK)   // Ошибок нет и время пришло
-		{
-			digitalWriteDirect(PIN_BEEP, LOW);
-			ledState = !ledState;       // ОК
-			digitalWriteDirect(PIN_LED_OK, ledState);
-			countLED = xTaskGetTickCount();
+	if(HP.get_errcode() != OK) {          // Ошибка
+		if(ticks - countLED > TIME_LED_ERR) {
+			digitalWriteDirect(PIN_LED_OK, !digitalReadDirect(PIN_LED_OK));
+			countLED = ticks;
 		}
+		if(HP.get_Beep() && !Error_Beep_confirmed && ticks - countBeep > TIME_BEEP_ERR) {
+			digitalWriteDirect(PIN_BEEP, !digitalReadDirect(PIN_BEEP)); // звуковой сигнал
+			countBeep = ticks;
+		}
+	} else if(ticks - countLED > TIME_LED_OK) {   // Ошибок нет и время пришло
+		Error_Beep_confirmed = false;
+		digitalWriteDirect(PIN_BEEP, LOW);
+		digitalWriteDirect(PIN_LED_OK, !digitalReadDirect(PIN_LED_OK));
+		countLED = ticks;
 	}
 }
 
@@ -1012,7 +1006,13 @@ void vReadSensor_delay8ms(int16_t ms8)
 			ms8 -= 3;
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("ON/OFF Key pressed!\n");
-				if (HP.get_State()==pOFF_HP) HP.sendCommand(pSTART); else {if((HP.get_State()==pWORK_HP)||(HP.get_State()==pWAIT_HP)) HP.sendCommand(pSTOP);}
+				if(HP.get_errcode() && !Error_Beep_confirmed) {
+					Error_Beep_confirmed = true;
+				} else if(HP.get_State() == pOFF_HP) {
+					HP.sendCommand(pSTART);
+				} else if((HP.get_State() == pWORK_HP) || (HP.get_State() == pWAIT_HP)) {
+					HP.sendCommand(pSTOP);
+				}
 			}
 		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
 #endif

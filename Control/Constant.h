@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.053"				// Версия прошивки
+#define VERSION			"1.054"				// Версия прошивки
 #define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -152,6 +152,7 @@ const uint16_t  defaultPort=80;
 #define TIME_MESSAGE_TEMP 300			   // 1/10 секунды, Проверка граничных температур для уведомлений
 #define TIME_LED_OK       1500             // Период мигания светодиода при ОК (мсек)
 #define TIME_LED_ERR      200              // Период мигания светодиода при ошибке (мсек).
+#define TIME_BEEP_ERR     1000             // Период звукового сигнала при ошибке, мсек
 #define cDELAY_START_MESSAGE 60            // Задержка (сек) после старта на отправку сообщений
 #define UPDATE_HP_WAIT_PERIOD 5000			// Период вызова vUpdate во время ожидания или ошибки, мсек
 #define NO_POWER_ON_DELAY_CNT 10			// Задержка включения после появления питани, *TIME_READ_SENSOR
