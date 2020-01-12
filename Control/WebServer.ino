@@ -348,8 +348,8 @@ void readFileSD(char *filename, uint8_t thread)
 					WDT_Restart(WDT);
 				}
 				startTick = millis() - startTick;
-				journal.jprintf("read %d bytes, %d b/sec\n", size, size * 1000 / startTick);
 				webFile.close();
+				journal.jprintf("read %u bytes, %u b/sec\n", size, (uint64_t)size * 1000 / startTick);
 				/*/ check write!
 				if(!webFile.open(filename, O_RDWR)) journal.jprintf("Error open for writing!\n");
 				else {
