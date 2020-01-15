@@ -1488,7 +1488,16 @@ int8_t devSDM::get_readState(uint8_t group)
 #else
 	static float tmp;
 #endif
-	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
+	if(!GETBIT(flags,fSDM) || !GETBIT(flags,fSDMLink)
+
+#ifdef USE_UPS
+		|| !HP.NO_Power
+#endif
+		) {   // Если нет счетчика или нет связи выходим
+		AcPower = 0.0f;
+		Voltage = 0.0f;
+		return err;
+	}
 	// Чтение состояния счетчика
 	int8_t _err = OK;
 	for(int8_t i=0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
@@ -1517,7 +1526,7 @@ int8_t devSDM::get_readState(uint8_t group)
 */
 		}
 		if(group == 2) {
-#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE)
+#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE) || (SDM_READ_PERIOD > 0)
 #ifdef USE_PZEM004T
 			_err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
 			if(_err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
@@ -1577,7 +1586,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 	if(strcmp(var,sdm_ERRORS)==0){    	return _itoa(numErr,ret);				                                }else      // Ошибок modbus
 	if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
 	if(strcmp(var,sdm_VOLTAGE)==0){ // Напряжение
-#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE)
+#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE) || (SDM_READ_PERIOD > 0)
 		_ftoa(ret, Voltage, 2);
 #else
 #ifdef USE_PZEM004T

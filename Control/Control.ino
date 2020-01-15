@@ -839,9 +839,6 @@ void vReadSensor(void *)
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-	#ifdef USE_UPS
-		if(!HP.NO_Power)
-	#endif
 		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
 
@@ -878,9 +875,6 @@ void vReadSensor(void *)
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 #if (SDM_READ_PERIOD > 0)
-	#ifdef USE_UPS
-		if(!HP.NO_Power)
-	#endif
 			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
 				readSDM=millis();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров ТОК
