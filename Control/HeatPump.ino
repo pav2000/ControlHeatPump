@@ -2051,8 +2051,10 @@ int8_t HeatPump::StopWait(boolean stop)
   {
 	Task_vUpdate_run = false;					        // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
     journal.jprintf(" Stop task UpdateHP\n");
+    #ifdef USE_SUN_COLLECTOR
 	Sun_OFF();											// Выключить СК
 	time_Sun = millis() - SUN_MIN_PAUSE;				// выключить задержку последующего включения
+	#endif
   }
     
   if(startPump)
