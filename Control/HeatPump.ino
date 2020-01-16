@@ -1127,7 +1127,7 @@ void  HeatPump::updateChart()
 	for(i=PCON+1;i<ANUMBER;i++)
 #endif
 		if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
-	for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value() / 10); // Частотные датчики
+	for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value() / 10); // Частотные датчики 
 #ifdef EEV_DEF
 #ifdef EEV_PREFER_PERCENT
 	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
@@ -1156,7 +1156,9 @@ if(ChartTPCON.get_present()) ChartTPCON.addPoint(get_temp_condensing());
 #ifdef USE_ELECTROMETER_SDM
 #ifndef MIN_RAM_CHARTS
 	if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
+	#ifndef SDM_NO_USELESS_READ					// Не читать бесполезные регистры счетчика постоянно
 	if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
+	#endif	
 #endif
 	if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint((int32_t)power220 / 10);
 	//  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);
@@ -1331,13 +1333,13 @@ void HeatPump::get_Chart(char *var, char* str)
 		sTemp[TEVAING].Chart.get_PointsStrSubDiv100(str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
 	} else if(strcmp(var, chart_PowerCO) == 0) {
 #ifdef FLOWCON
-		sFrequency[FLOWCON].Chart.get_PointsStrPower(str, &sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_Capacity()); // считаем график на лету экономим оперативку
+		sFrequency[FLOWCON].Chart.get_PointsStrPower(str, &sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_kfCapacity()/*get_Capacity()*/); // считаем график на лету экономим оперативку (поток-десятки литров в час!)
 #else
 		strcat(str, ";");
 #endif
 	} else if(strcmp(var, chart_PowerGEO) == 0) {
 #ifdef FLOWEVA
-		sFrequency[FLOWEVA].Chart.get_PointsStrPower(str, &sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_Capacity()); // считаем график на лету экономим оперативку
+		sFrequency[FLOWEVA].Chart.get_PointsStrPower(str, &sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_kfCapacity()/*get_Capacity()*/); // считаем график на лету экономим оперативку (поток-десятки литров в час!)
 #else
 		strcat(str, ";");
 #endif
@@ -3589,12 +3591,13 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 }
 
 // Обновление расчетных величин мощностей и СОР
+// Вызывается из задачи чтения датчиков 
 void HeatPump::calculatePower()
 {
 	// Мощности контуров
 	if(is_heating()) {
 #ifdef  FLOWCON 
-		powerCO = (float)((FEED - RET) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
+ 		powerCO = (float)((FEED - RET) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
 #endif
 #ifdef  FLOWEVA
 		powerGEO = (float)((sTemp[TEVAING].get_Temp() - sTemp[TEVAOUTG].get_Temp()) * sFrequency[FLOWEVA].get_Value()) / sFrequency[FLOWEVA].get_kfCapacity();
