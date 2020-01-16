@@ -183,186 +183,186 @@ uint8_t TaskSuspendAll(void) {
 
 
 void setup() {
-// 1. Инициализация SPI
-// Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
-// https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
-// http://forum.arduino.cc/index.php?topic=243778.0;nowap
-  pinMode(PIN_SPI_SS0,INPUT_PULLUP);          // Eth Pin 77
-  pinMode(PIN_SPI_SS1,INPUT_PULLUP);          // SD Pin  87
-  pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
-  pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
+	// 1. Инициализация SPI
+	// Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
+	// https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
+	// http://forum.arduino.cc/index.php?topic=243778.0;nowap
+	pinMode(PIN_SPI_SS0,INPUT_PULLUP);          // Eth Pin 77
+	pinMode(PIN_SPI_SS1,INPUT_PULLUP);          // SD Pin  87
+	pinMode(PIN_SPI_CS_SD,INPUT_PULLUP);        // сигнал CS управление SD картой
+	pinMode(PIN_SPI_CS_W5XXX,INPUT_PULLUP);     // сигнал CS управление сетевым чипом
 
 #ifdef SPI_FLASH
-  pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
-  pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти
+	pinMode(PIN_SPI_CS_FLASH,INPUT_PULLUP);     // сигнал CS управление чипом флеш памяти
+	pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти
 #endif
-  SPI_switchAllOFF();                         // Выключить все устройства на SPI
+	SPI_switchAllOFF();                         // Выключить все устройства на SPI
 
-  #ifdef POWER_CONTROL                        // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
-    pinMode(PIN_POWER_ON,OUTPUT);  
-    digitalWriteDirect(PIN_POWER_ON, LOW);
-  #else
-    delay(10);
-  #endif
-  
-// Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
-  Recover_I2C_bus();
-  
-// 2. Инициализация журнала и в нем последовательный порт
-  journal.Init();
-  #ifdef POWER_CONTROL                     
-    delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
-  #endif 
-  #ifdef DEMO
-     journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n"); 
-  #endif 
-  #ifdef TEST_BOARD
-     journal.jprintf("\n---> TEST BOARD!!!\n\n");
-  #endif
-  journal.jprintf("Firmware version: %s\n",VERSION);
-  showID();                                                                  // информация о чипе
-  getIDchip((char*)Socket[0].inBuf);
-  journal.jprintf("Chip ID SAM3X8E: %s\n", Socket[0].inBuf);// информация об серийном номере чипа
-  if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
-  lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
-  journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
-  journal.jprintf("Last FreeRTOS task + error: 0x%04x", lastErrorFreeRtosCode);
-  if(GPBR->SYS_GPBR[4]) journal.jprintf(" (%d)", GPBR->SYS_GPBR[4]);
-  journal.jprintf("\n");
+#ifdef POWER_CONTROL                        // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
+	pinMode(PIN_POWER_ON,OUTPUT);
+	digitalWriteDirect(PIN_POWER_ON, LOW);
+#else
+	delay(10);
+#endif
 
-  #ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
-    pinMode(PIN_LED1,OUTPUT);  
-    digitalWriteDirect(PIN_LED1, HIGH);
-  #endif
-  #ifdef POWER_CONTROL
-    journal.jprintf("Power +5V, +3.3V on board: ON\n"); 
-  #endif
+	// Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
+	Recover_I2C_bus();
 
-  SupplyMonitorON(SUPC_SMMR_SMTH_3_0V);           // включение монитора питания
-   
-  #ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
-    pinMode(PIN_STEP_DIAG,INPUT_PULLUP); 
-    journal.jprintf("Control EEV driver L9333: ON \n"); 
-  #endif
+	// 2. Инициализация журнала и в нем последовательный порт
+	journal.Init();
+#ifdef POWER_CONTROL
+	delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
+#endif
+#ifdef DEMO
+	journal.jprintf("DEMO - DEMO - DEMO - DEMO - DEMO - DEMO - DEMO\n");
+#endif
+#ifdef TEST_BOARD
+	journal.jprintf("\n---> TEST BOARD!!!\n\n");
+#endif
+	journal.jprintf("Firmware version: %s\n",VERSION);
+	showID();                                                                  // информация о чипе
+	getIDchip((char*)Socket[0].inBuf);
+	journal.jprintf("Chip ID SAM3X8E: %s\n", Socket[0].inBuf);// информация об серийном номере чипа
+	if(GPBR->SYS_GPBR[0] & 0x80000000) GPBR->SYS_GPBR[0] = 0; else GPBR->SYS_GPBR[0] |= 0x80000000; // очистка старой причины
+	lastErrorFreeRtosCode = GPBR->SYS_GPBR[0] & 0x7FFFFFFF;         // Сохранение кода ошибки при страте (причину перегрузки)
+	journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
+	journal.jprintf("Last FreeRTOS task + error: 0x%04x", lastErrorFreeRtosCode);
+	if(GPBR->SYS_GPBR[4]) journal.jprintf(" (%d)", GPBR->SYS_GPBR[4]);
+	journal.jprintf("\n");
+
+#ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
+	pinMode(PIN_LED1,OUTPUT);
+	digitalWriteDirect(PIN_LED1, HIGH);
+#endif
+#ifdef POWER_CONTROL
+	journal.jprintf("Power +5V, +3.3V on board: ON\n");
+#endif
+
+	SupplyMonitorON(SUPC_SMMR_SMTH_3_0V);           // включение монитора питания
+
+#ifdef DRV_EEV_L9333                     // Контроль за работой драйвера ЭРВ
+	pinMode(PIN_STEP_DIAG,INPUT_PULLUP);
+	journal.jprintf("Control EEV driver L9333: ON \n");
+#endif
 
 #ifdef RADIO_SENSORS
-  RADIO_SENSORS_SERIAL.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
+	RADIO_SENSORS_SERIAL.begin(RADIO_SENSORS_PSPEED, RADIO_SENSORS_PCONFIG);
 #endif
 
-// 3. Инициализация и проверка шины i2c
-   journal.jprintf("1. Setting and checking I2C devices . . .\n");
- 
-    uint8_t eepStatus=0;
-	#ifdef I2C_EEPROM_64KB
+	// 3. Инициализация и проверка шины i2c
+	journal.jprintf("1. Setting and checking I2C devices . . .\n");
+
+	uint8_t eepStatus=0;
+#ifdef I2C_EEPROM_64KB
 	if(journal.get_err()) { // I2C память и журнал в ней уже пытались инициализировать
-	#endif
-	   Wire.begin();
-	   for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
-	   {
-		   if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на I2C_SPEED и пытаемся инициализировать
-		   {
-			   journal.jprintf("$ERROR - I2C mem failed, status = %d\n", eepStatus);
-	        #ifdef POWER_CONTROL
-			   digitalWriteDirect(PIN_POWER_ON, HIGH);
-			   digitalWriteDirect(PIN_LED1, LOW);
-			   _delay(2000);
-			   digitalWriteDirect(PIN_POWER_ON, LOW);
-			   digitalWriteDirect(PIN_LED1, HIGH);
-			   _delay(500);
-			   Wire.begin();
-	        #else
-		       Wire.begin();
-		       _delay(500);
-	        #endif
-		       WDT_Restart(WDT);                       // Сбросить вачдог
-		   }  else break;   // Все хорошо
-	   } // for
-	#ifdef I2C_EEPROM_64KB
-	 }
-	#endif
+#endif
+		Wire.begin();
+		for(uint8_t i=0; i<I2C_NUM_INIT; i++ )
+		{
+			if ((eepStatus=eepromI2C.begin(I2C_SPEED))>0)    // переходим на I2C_SPEED и пытаемся инициализировать
+			{
+				journal.jprintf("$ERROR - I2C mem failed, status = %d\n", eepStatus);
+#ifdef POWER_CONTROL
+				digitalWriteDirect(PIN_POWER_ON, HIGH);
+				digitalWriteDirect(PIN_LED1, LOW);
+				_delay(2000);
+				digitalWriteDirect(PIN_POWER_ON, LOW);
+				digitalWriteDirect(PIN_LED1, HIGH);
+				_delay(500);
+				Wire.begin();
+#else
+				Wire.begin();
+				_delay(500);
+#endif
+				WDT_Restart(WDT);                       // Сбросить вачдог
+			}  else break;   // Все хорошо
+		} // for
+#ifdef I2C_EEPROM_64KB
+	}
+#endif
 	if(eepStatus)  // если I2C память не инициализирована, делаем попытку запустится на малой частоте один раз!
 	{
-	   if((eepStatus=eepromI2C.begin(twiClock100kHz))>0) {
-		   journal.jprintf("$ERROR - I2C mem init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
-		   eepromI2C.begin(I2C_SPEED);
-		   goto x_I2C_init_std_message;
-	   } else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",twiClock100kHz/1000);
+		if((eepStatus=eepromI2C.begin(twiClock100kHz))>0) {
+			journal.jprintf("$ERROR - I2C mem init failed on speed %d kHz, status = %d\n",twiClock100kHz/1000,eepStatus);
+			eepromI2C.begin(I2C_SPEED);
+			goto x_I2C_init_std_message;
+		} else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",twiClock100kHz/1000);
 	} else {
-x_I2C_init_std_message:
-	   journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
+		x_I2C_init_std_message:
+		journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
 	}
 
-     // Сканирование шины i2c
-//    if (eepStatus==0)   // есть инициализация
-    {
-        byte error, address;
-        const byte start_address = 8;       // lower addresses are reserved to prevent conflicts with other protocols
-        const byte end_address = 119;       // higher addresses unlock other modes, like 10-bit addressing
-      
-        for(address = start_address; address < end_address; address++ )
-         {
-              #ifdef ONEWIRE_DS2482         // если есть мост
-              if(address == I2C_ADR_DS2482) {
-                  error = OneWireBus.Init();
-			    #ifdef ONEWIRE_DS2482_SECOND
-              } else if(address == I2C_ADR_DS2482_2) {
-                  error = OneWireBus2.Init();
-		        #endif
-				#ifdef ONEWIRE_DS2482_THIRD
-              } else if(address == I2C_ADR_DS2482_3) {
-                  error = OneWireBus3.Init();
-				#endif
-				#ifdef ONEWIRE_DS2482_FOURTH
-              } else if(address == I2C_ADR_DS2482_4) {
-                  error = OneWireBus4.Init();
-				#endif
-              } else
-			  #endif
-              {
-            	  Wire.beginTransmission(address); error = Wire.endTransmission();
-              }
-              if(error==0)
-              {
-               journal.jprintf("I2C device found at address %s",byteToHex(address));
-               switch (address)
-                    {
-					#ifdef ONEWIRE_DS2482
-               	   	case I2C_ADR_DS2482_4:
-               	   	case I2C_ADR_DS2482_3:
-               	   	case I2C_ADR_DS2482_2:
-                    case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d%s\n", address - I2C_ADR_DS2482 + 1, (ONEWIRE_2WAY & (1<<(address - I2C_ADR_DS2482))) ? " (2W)" : ""); break;
-					#endif
-                    #if I2C_FRAM_MEMORY == 1
-                    	case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
-						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
-                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
-						#endif
-					#else
-                    	case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24C%d\n", I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
-						#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
-                    	case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
-						#endif
-					#endif
-                    case I2C_ADR_RTC   :		journal.jprintf(" - RTC DS3231\n"); break; // 0x68
-                    default            :		journal.jprintf(" - Unknow\n"); break; // не определенный тип
-                    }
-              _delay(100);      
-              }
-          //    else journal.jprintf("I2C device bad endTransmission at address %s code %d",byteToHex(address), error);   
-          } // for
-    } //  (eepStatus==0) 
+	// Сканирование шины i2c
+	//    if (eepStatus==0)   // есть инициализация
+	{
+		byte error, address;
+		const byte start_address = 8;       // lower addresses are reserved to prevent conflicts with other protocols
+		const byte end_address = 119;       // higher addresses unlock other modes, like 10-bit addressing
 
-  #ifndef ONEWIRE_DS2482         // если нет моста
-  if(OneWireBus.Init()) journal.jprintf("Error init 1-Wire: %d\n", OneWireBus.GetLastErr());
-  else journal.jprintf("1-Wire init Ok\n");
-  #endif
+		for(address = start_address; address < end_address; address++ )
+		{
+#ifdef ONEWIRE_DS2482         // если есть мост
+			if(address == I2C_ADR_DS2482) {
+				error = OneWireBus.Init();
+#ifdef ONEWIRE_DS2482_SECOND
+			} else if(address == I2C_ADR_DS2482_2) {
+				error = OneWireBus2.Init();
+#endif
+#ifdef ONEWIRE_DS2482_THIRD
+			} else if(address == I2C_ADR_DS2482_3) {
+				error = OneWireBus3.Init();
+#endif
+#ifdef ONEWIRE_DS2482_FOURTH
+			} else if(address == I2C_ADR_DS2482_4) {
+				error = OneWireBus4.Init();
+#endif
+			} else
+#endif
+			{
+				Wire.beginTransmission(address); error = Wire.endTransmission();
+			}
+			if(error==0)
+			{
+				journal.jprintf("I2C device found at address %s",byteToHex(address));
+				switch (address)
+				{
+#ifdef ONEWIRE_DS2482
+				case I2C_ADR_DS2482_4:
+				case I2C_ADR_DS2482_3:
+				case I2C_ADR_DS2482_2:
+				case I2C_ADR_DS2482:  		journal.jprintf(" - OneWire DS2482-100 bus: %d%s\n", address - I2C_ADR_DS2482 + 1, (ONEWIRE_2WAY & (1<<(address - I2C_ADR_DS2482))) ? " (2W)" : ""); break;
+#endif
+#if I2C_FRAM_MEMORY == 1
+				case I2C_ADR_EEPROM:	journal.jprintf(" - FRAM FM24V%02d\n", I2C_MEMORY_TOTAL*10/1024); break;
+#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+				case I2C_ADR_EEPROM+1:	journal.jprintf(" - FRAM second 64k page\n"); break;
+#endif
+#else
+				case I2C_ADR_EEPROM:	journal.jprintf(" - EEPROM AT24C%d\n", I2C_SIZE_EEPROM);break; // 0x50 возможны варианты
+#if I2C_MEMORY_TOTAL != I2C_SIZE_EEPROM
+				case I2C_ADR_EEPROM+1:	journal.jprintf(" - EEPROM second 64k page\n"); break;
+#endif
+#endif
+				case I2C_ADR_RTC   :		journal.jprintf(" - RTC DS3231\n"); break; // 0x68
+				default            :		journal.jprintf(" - Unknow\n"); break; // не определенный тип
+				}
+				_delay(100);
+			}
+			//    else journal.jprintf("I2C device bad endTransmission at address %s code %d",byteToHex(address), error);
+		} // for
+	} //  (eepStatus==0)
+
+#ifndef ONEWIRE_DS2482         // если нет моста
+	if(OneWireBus.Init()) journal.jprintf("Error init 1-Wire: %d\n", OneWireBus.GetLastErr());
+	else journal.jprintf("1-Wire init Ok\n");
+#endif
 
 #ifdef RADIO_SENSORS
-  check_radio_sensors();
-  if(rs_serial_flag == RS_SEND_RESPONSE) {
-	  _delay(5);
-	  check_radio_sensors();
-  }
+	check_radio_sensors();
+	if(rs_serial_flag == RS_SEND_RESPONSE) {
+		_delay(5);
+		check_radio_sensors();
+	}
 #endif
 
 #ifdef USE_SERIAL4
@@ -370,224 +370,224 @@ x_I2C_init_std_message:
 	//Serial4.begin(115200);
 #endif
 
-// 4. Инициализировать основной класс
-  journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
-  HP.initHeatPump();                           // Основной класс
+	// 4. Инициализировать основной класс
+	journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
+	HP.initHeatPump();                           // Основной класс
 
-// 5. Установка сервисных пинов
-   
-   journal.jprintf("3. Read safe Network key . . .\n");
-   pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
-   HP.safeNetwork=!digitalReadDirect(PIN_KEY1); 
-   if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n"); 
-  
-   pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
-   pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
-   digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
-   digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+	// 5. Установка сервисных пинов
 
-// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
-   journal.jprintf("4. Load data from I2C memory . . .\n");
-  if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
-  {
-	  journal.jprintf(" I2C memory is empty, a default settings will be used!\n");
-	  HP.save_motoHour();
-  } else {
-	  HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
-	  HP.Prof.convert_to_new_version();
-	  if(HP.Prof.load(HP.Option.numProf) < 0) journal.jprintf(" Error load profile #%d\n", HP.Option.numProf); // Загрузка текущего профиля
-	  if(HP.Option.ver <= 133) {
-		  HP.save();
-	  }
-  }
-  HP.Schdlr.load();							// Загрузка настроек расписания
-  // обновить хеш для пользователей
-  HP.set_hashUser();
-  HP.set_hashAdmin();
+	journal.jprintf("3. Read safe Network key . . .\n");
+	pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
+	HP.safeNetwork=!digitalReadDirect(PIN_KEY1);
+	if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n");
 
-// 7. Инициализация СД карты и запоминание результата 3 попытки
+	pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
+	pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+	digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
+	digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+
+	// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
+	journal.jprintf("4. Load data from I2C memory . . .\n");
+	if(HP.load_motoHour()==ERR_HEADER2_EEPROM)           // Загрузить счетчики ТН,
+	{
+		journal.jprintf(" I2C memory is empty, a default settings will be used!\n");
+		HP.save_motoHour();
+	} else {
+		HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
+		HP.Prof.convert_to_new_version();
+		if(HP.Prof.load(HP.Option.numProf) < 0) journal.jprintf(" Error load profile #%d\n", HP.Option.numProf); // Загрузка текущего профиля
+		if(HP.Option.ver <= 133) {
+			HP.save();
+		}
+	}
+	HP.Schdlr.load();							// Загрузка настроек расписания
+	// обновить хеш для пользователей
+	HP.set_hashUser();
+	HP.set_hashAdmin();
+
+	// 7. Инициализация СД карты и запоминание результата 3 попытки
 #ifndef NO_SD_CARD
-   journal.jprintf("5. Init SD card . . .\n");
-   HP.set_fSD(initSD());
-   WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
+	journal.jprintf("5. Init SD card . . .\n");
+	HP.set_fSD(initSD());
+	WDT_Restart(WDT);                          // Сбросить вачдог  иногда карта долго инициализируется
 #else
-   journal.jprintf("5. No SD card in config.\n");
+	journal.jprintf("5. No SD card in config.\n");
 #endif
 
-// 8. Инициализация spi флеш диска
+	// 8. Инициализация spi флеш диска
 #ifdef SPI_FLASH
-  journal.jprintf("6. Init SPI flash disk . . .\n");
-  HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
+	journal.jprintf("6. Init SPI flash disk . . .\n");
+	HP.set_fSPIFlash(initSpiDisk(true));  // проверка диска с выводом инфо
 #else
-  journal.jprintf("6. No SPI flash in config.\n");
+	journal.jprintf("6. No SPI flash in config.\n");
 #endif
-  digitalWriteDirect(PIN_LED_OK, LOW);        // Включить светодиод
+	digitalWriteDirect(PIN_LED_OK, LOW);        // Включить светодиод
 
-//  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)   
-  journal.jprintf("Web interface source: ");
-  switch (HP.get_SourceWeb())
-  {
-     case pMIN_WEB:   journal.jprintf("internal\n"); break;
-     case pSD_WEB:    journal.jprintf("SD card\n"); break;
-     case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
-     default:         journal.jprintf("unknown\n"); break;
-  }
+	//  HP.set_optionHP((char*)option_WebOnSPIFlash,0);  // Установить принудительно загрузку морды с карточки (надо раскоментировать если грузится из флеш не надо)
+	journal.jprintf("Web interface source: ");
+	switch (HP.get_SourceWeb())
+	{
+	case pMIN_WEB:   journal.jprintf("internal\n"); break;
+	case pSD_WEB:    journal.jprintf("SD card\n"); break;
+	case pFLASH_WEB: journal.jprintf("SPI Flash\n"); break;
+	default:         journal.jprintf("unknown\n"); break;
+	}
 
-  journal.jprintf("7. Start read ADC sensors\n");
-  start_ADC(); // после инициализации HP
-  //journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
+	journal.jprintf("7. Start read ADC sensors\n");
+	start_ADC(); // после инициализации HP
+	//journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
 
-// 10. Сетевые настройки
-   journal.jprintf("8. Setting Network . . .\n");
-   if(initW5200(true)) {   // Инициализация сети с выводом инфы в консоль
-	   W5100.getMACAddress((uint8_t *)Socket[0].outBuf);
-   	   journal.jprintf(" MAC: %s\n", MAC2String((uint8_t *)Socket[0].outBuf));
-   }
-   digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
- 
-// 11. Разбираемся со всеми часами и синхронизацией
-   journal.jprintf("9. Setting time and clock . . .\n");
-   set_time();        
-   
- // 12. Инициалазация уведомлений
-   journal.jprintf("10. Message update IP from DNS . . .\n");
-   HP.message.dnsUpdate();
-   
- // 13. Инициалазация MQTT
-    #ifdef MQTT  
-      journal.jprintf("11. Client MQTT update IP from DNS . . .\n");
-      HP.clMQTT.dnsUpdate();
-    #else
-      journal.jprintf("11. Client MQTT disabled by config\n");
-    #endif 
+	// 10. Сетевые настройки
+	journal.jprintf("8. Setting Network . . .\n");
+	if(initW5200(true)) {   // Инициализация сети с выводом инфы в консоль
+		W5100.getMACAddress((uint8_t *)Socket[0].outBuf);
+		journal.jprintf(" MAC: %s\n", MAC2String((uint8_t *)Socket[0].outBuf));
+	}
+	digitalWriteDirect(PIN_BEEP,LOW);          // Выключить пищалку
 
-  // 14. Инициалазация Statistics
-   journal.jprintf("12. Statistics ");
-   if(HP.get_fSD()) {
-	   journal.jprintf("writing on SD card\n");
-	   Stats.Init();             // Инициализовать статистику
-   } else journal.jprintf("not available\n");
+	// 11. Разбираемся со всеми часами и синхронизацией
+	journal.jprintf("9. Setting time and clock . . .\n");
+	set_time();
 
-   int8_t _profile = HP.Schdlr.calc_active_profile();
-   if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
-	   HP.Prof.load(_profile);
-	   HP.set_profile();
-	   journal.jprintf("Profile changed to #%d\n", _profile);
-   }
+	// 12. Инициалазация уведомлений
+	journal.jprintf("10. Message update IP from DNS . . .\n");
+	HP.message.dnsUpdate();
 
-  if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
-  journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
-
-  #ifdef NEXTION   
-    journal.jprintf("14. Nextion display - ");
-    if(GETBIT(HP.Option.flags, fNextion)) {
-    	if(myNextion.init()) journal.jprintf("OK\n");
-    } else {
-    	journal.jprintf("Disabled\n");
-    }
-  #else
-    journal.jprintf("14. Nextion display is absent in config\n");
-  #endif
-
-  #ifdef TEST_BOARD
-  // Scan oneWire - TEST.
-  //HP.scan_OneWire(Socket[0].outBuf);
-  #endif
-
-  // Создание задач FreeRTOS  ----------------------
-    journal.jprintf("15. Create tasks FreeRTOS . . .\n");
-HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
-HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
-//HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
-
-// ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
-
-#ifdef EEV_DEF
-  if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",45,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*45; // 50, 100, 150, до обрезки стеков было 200
-  vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
-  HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
+	// 13. Инициалазация MQTT
+#ifdef MQTT
+	journal.jprintf("11. Client MQTT update IP from DNS . . .\n");
+	HP.clMQTT.dnsUpdate();
+#else
+	journal.jprintf("11. Client MQTT disabled by config\n");
 #endif
 
-// ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
-vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
+	// 14. Инициалазация Statistics
+	journal.jprintf("12. Statistics ");
+	if(HP.get_fSD()) {
+		journal.jprintf("writing on SD card\n");
+		Stats.Init();             // Инициализовать статистику
+	} else journal.jprintf("not available\n");
 
+	int8_t _profile = HP.Schdlr.calc_active_profile();
+	if(_profile > SCHDLR_Profile_off && _profile != HP.Prof.get_idProfile()) {
+		HP.Prof.load(_profile);
+		HP.set_profile();
+		journal.jprintf("Profile changed to #%d\n", _profile);
+	}
 
-// ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ, сервис
-if(xTaskCreate(vServiceHP, "ServiceHP", STACK_vUpdateCommand, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+	if(HP.get_SaveON()==0)  HP.set_HP_OFF();    // Сбросить флаг включение ТН если стоит соответсвующий флаг в опциях
+	journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
-vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
-if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-                    
-if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
-vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
-HP.Task_vUpdate_run = false;
+#ifdef NEXTION
+	journal.jprintf("14. Nextion display - ");
+	if(GETBIT(HP.Option.flags, fNextion)) {
+		if(myNextion.init()) journal.jprintf("OK\n");
+	} else {
+		journal.jprintf("Disabled\n");
+	}
+#else
+	journal.jprintf("14. Nextion display is absent in config\n");
+#endif
+
+#ifdef TEST_BOARD
+	// Scan oneWire - TEST.
+	//HP.scan_OneWire(Socket[0].outBuf);
+#endif
+
+	// Создание задач FreeRTOS  ----------------------
+	journal.jprintf("15. Create tasks FreeRTOS . . .\n");
+	HP.mRTOS=236;  //расчет памяти для задач 236 - размер данных шедуллера, каждая задача требует 64 байта+ стек (он в словах!!)
+	HP.mRTOS=HP.mRTOS+64+4*configMINIMAL_STACK_SIZE;  // задача бездействия
+	//HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
+
+	// ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
+	if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
 
 #ifdef EEV_DEF
-  if (xTaskCreate(vUpdateEEV,"UpdateEEV",100,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*100;
-  vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
+	if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",45,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*45; // 50, 100, 150, до обрезки стеков было 200
+	vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
+	HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
+#endif
+
+	// ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
+	if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+	vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
+
+
+	// ПРИОРИТЕТ 2 высокий - это управление ТН управление ЭРВ, сервис
+	if(xTaskCreate(vServiceHP, "ServiceHP", STACK_vUpdateCommand, NULL, 2, &HP.xHandleSericeHP)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+
+	vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
+	if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+
+	if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
+	vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
+	HP.Task_vUpdate_run = false;
+
+#ifdef EEV_DEF
+	if (xTaskCreate(vUpdateEEV,"UpdateEEV",100,NULL,2,&HP.xHandleUpdateEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*100;
+	vTaskSuspend(HP.xHandleUpdateEEV);                              // Остановить задачу обновление EEV
 #endif  
 
-// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
-// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
-  // 1 - поток
-  if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+10,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX+10;
+	// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
+	// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
+	// 1 - поток
+	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+10,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX+10;
 #if W5200_THREAD >= 2 // - потока
-  if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+	if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif
 #if W5200_THREAD >= 3 // - потока
-  if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+	if ( xTaskCreate(vWeb2,"Web2", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb2)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif
 #if W5200_THREAD >= 4 // - потока
-  if ( xTaskCreate(vWeb3,"Web3", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-  HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
+	if ( xTaskCreate(vWeb3,"Web3", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb3)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
 #endif
-vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
-if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-//xLoadingWebMutex=xSemaphoreCreateMutex();
+	vSemaphoreCreateBinary(xLoadingWebSemaphore);           // Создание семафора загрузки веб морды в spi память
+	if (xLoadingWebSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	//xLoadingWebMutex=xSemaphoreCreateMutex();
 
-vSemaphoreCreateBinary(xWebThreadSemaphore);               // Создание мютекса
-if (xWebThreadSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-vSemaphoreCreateBinary(xI2CSemaphore);                     // Создание мютекса
-if (xI2CSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-//vSemaphoreCreateBinary(xSPISemaphore);                     // Создание мютекса
-//if (xSPISemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS); 
-// Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
-if(Modbus.get_present())
-{  
- vSemaphoreCreateBinary(xModbusSemaphore);                       // Создание мютекса
- if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-}
+	vSemaphoreCreateBinary(xWebThreadSemaphore);               // Создание мютекса
+	if (xWebThreadSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	vSemaphoreCreateBinary(xI2CSemaphore);                     // Создание мютекса
+	if (xI2CSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	//vSemaphoreCreateBinary(xSPISemaphore);                     // Создание мютекса
+	//if (xSPISemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	// Дополнительные семафоры (почему то именно здесь) Создается когда есть модбас
+	if(Modbus.get_present())
+	{
+		vSemaphoreCreateBinary(xModbusSemaphore);                       // Создание мютекса
+		if (xModbusSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	}
 
-journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
+	journal.jprintf(" Create tasks - OK, size %d bytes\n",HP.mRTOS);
 
-if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
+	if(HP.get_HP_ON()>0)  HP.sendCommand(pRESTART);  // если надо запустить ТН - отложенный старт
 
-//journal.jprintf("16. Send a notification . . .\n");
-//HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
-journal.jprintf("17. Information:\n");
-freeRamShow();
-HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
-journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM); 
-journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE()); 
-journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C()); 
-//HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
-journal.jprintf("Start FreeRTOS scheduler :-))\n");
-journal.jprintf("READY ----------------------\n");
-eepromI2C.use_RTOS_delay = 1;       //vad711
-//
-vTaskStartScheduler();              // СТАРТ !!
-journal.jprintf("FreeRTOS FAILURE!\n");
+	//journal.jprintf("16. Send a notification . . .\n");
+	//HP.message.setMessage(pMESSAGE_RESET,(char*)"Контроллер теплового насоса был сброшен",0);    // сформировать уведомление о сбросе контролла
+	journal.jprintf("17. Information:\n");
+	freeRamShow();
+	HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
+	journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM);
+	journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE());
+	journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C());
+	//HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
+	journal.jprintf("Start FreeRTOS scheduler :-))\n");
+	journal.jprintf("READY ----------------------\n");
+	eepromI2C.use_RTOS_delay = 1;       //vad711
+	//
+	vTaskStartScheduler();              // СТАРТ !!
+	journal.jprintf("FreeRTOS FAILURE!\n");
 }
 
 
@@ -633,6 +633,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 		digitalWriteDirect(PIN_LED_OK, !digitalReadDirect(PIN_LED_OK));
 		countLED = ticks;
 	}
+	pmc_enable_sleepmode(0);
 }
 
 // --------------------------- W E B ------------------------
