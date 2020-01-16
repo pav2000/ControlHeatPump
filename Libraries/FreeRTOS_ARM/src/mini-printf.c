@@ -64,7 +64,7 @@ struct mini_buff {
 #define m_zero_pad	0x0F
 
 // flags: f_uppercase + f_unsigned + (zero_pad & m_zero_pad)
-unsigned int m_itoa(long value, char *buffer, unsigned char radix, unsigned char flags)
+unsigned int m_itoa(unsigned long value, char *buffer, unsigned char radix, unsigned char flags)
 {
 	char	*pbuffer = buffer;
 	unsigned char	negative = 0;
@@ -73,7 +73,7 @@ unsigned int m_itoa(long value, char *buffer, unsigned char radix, unsigned char
 	/* No support for unusual radixes. */
 	if (radix > 36 || radix <= 1) return 0;
 
-	if (value < 0 && !(flags & f_unsigned)) {
+	if (!(flags & f_unsigned) && (long)value < 0) {
 		negative = 1;
 		value = -value;
 	}

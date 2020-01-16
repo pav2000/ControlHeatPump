@@ -480,7 +480,7 @@ void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outC
 	}
 	b += m_strlen(b);
 	for(uint16_t i = 0; i < num; i++) {
-		b = dptoa(b, (int32_t) abs(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * 3600 * 100 / Capacity, 3);
+		b = dptoa(b, (int32_t)(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * Capacity / 360, 3);
 		*(b-1) = ';';
 		//*b = '\0';
 	}
