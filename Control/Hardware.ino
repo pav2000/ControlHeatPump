@@ -1475,7 +1475,7 @@ boolean  devSDM::progConnect()
 #endif
 }                           
 
-#ifdef SDM_NO_USELESS_READ
+#ifdef SDM_NO_USELESS_READ  // Если не читаем лишние регистры, переделано две функции get_readState get_paramSDM
 
 // Прочитать инфо с счетчика, group: 0 - основная (расчет мощности), 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
@@ -1488,7 +1488,16 @@ int8_t devSDM::get_readState(uint8_t group)
 #else
 	static float tmp;
 #endif
-	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
+	if(!GETBIT(flags,fSDM) || !GETBIT(flags,fSDMLink)
+
+#ifdef USE_UPS
+		|| !HP.NO_Power
+#endif
+		) {   // Если нет счетчика или нет связи выходим
+		AcPower = 0.0f;
+		Voltage = 0.0f;
+		return err;
+	}
 	// Чтение состояния счетчика
 	int8_t _err = OK;
 	for(int8_t i=0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
@@ -1517,7 +1526,7 @@ int8_t devSDM::get_readState(uint8_t group)
 */
 		}
 		if(group == 2) {
-#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE)
+#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE) || (SDM_READ_PERIOD > 0)
 #ifdef USE_PZEM004T
 			_err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
 			if(_err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
@@ -1577,7 +1586,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 	if(strcmp(var,sdm_ERRORS)==0){    	return _itoa(numErr,ret);				                                }else      // Ошибок modbus
 	if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
 	if(strcmp(var,sdm_VOLTAGE)==0){ // Напряжение
-#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE)
+#if defined(SDM_MAX_VOLTAGE) || defined(SDM_MIN_VOLTAGE) || (SDM_READ_PERIOD > 0)
 		_ftoa(ret, Voltage, 2);
 #else
 #ifdef USE_PZEM004T
@@ -1665,7 +1674,7 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 }
 
 #else // SDM_NO_USELESS_READ
-
+// Вариант  с чтением дополнительных регистров из счетчика
 // Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
 {
@@ -1699,7 +1708,11 @@ int8_t devSDM::get_readState(uint8_t group)
 			if(err==OK) AcPower = tmp / 10; else goto xErr;
 #else
 			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
+			#ifdef DEMO
+			if(err==OK) AcPower=1000; else goto xErr; // для демки 1 кВт для расчета КОП
+			#else
 			if(err==OK) AcPower=tmp; else goto xErr;
+			#endif
 #endif
 		} else if(group == 2) {
 #ifdef USE_PZEM004T
@@ -1775,21 +1788,21 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 //		   if(strcmp(var,sdm_CURRENT)==0){
 //			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
 //			   _ftoa(ret, tmp, 2);																			   }else       // Ток
-		   if(strcmp(var,sdm_REPOWER)==0){
+		   if(strcmp(var,sdm_REPOWER)==0){     // Реактивная мощность                                                               
 #ifdef USE_PZEM004T
 			   strcat(ret, "-");
 #else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
 			   _ftoa(ret, tmp, 2);
 #endif
-	   	   } else if(strcmp(var,sdm_POWER)==0){
+	   	   } else if(strcmp(var,sdm_POWER)==0){  // Полная мощность
 #ifdef USE_PZEM004T
 			   strcat(ret, "-");
 #else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
 			   _ftoa(ret, tmp, 2);
 #endif
-	   	   } else if(strcmp(var,sdm_POW_FACTOR)==0){
+	   	   } else if(strcmp(var,sdm_POW_FACTOR)==0){ // Коэффициент мощности
 #ifdef USE_PZEM004T
 			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp16[0]);
 			   _ftoa(ret, tmp16[0] / 100, 2);
@@ -1797,14 +1810,14 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
 			   _ftoa(ret, tmp, 2);
 #endif
-   	   	   } else if(strcmp(var,sdm_PHASE)==0){
+   	   	   } else if(strcmp(var,sdm_PHASE)==0){ // Угол фазы (градусы)
 #ifdef USE_PZEM004T
 			   strcat(ret, "-");
 #else
 			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
 			   _ftoa(ret, tmp, 2);
 #endif
-		   } else if(strcmp(var,sdm_FREQ)==0){
+		   } else if(strcmp(var,sdm_FREQ)==0){ // Частота
 #ifdef USE_PZEM004T
 			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp16[0]);
 			   _ftoa(ret, tmp16[0] / 10, 2);
