@@ -472,7 +472,9 @@ void statChart::get_PointsStrSubDiv100(char *&b, statChart *sChart)
 	}
 }
 // Расчитать мощность на лету используется для графика потока, передаются указатели на графики температуры + теплоемкость
-void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t Capacity)
+// График температур - сотые градуса, график потока это ДЕСЯТКИ литров в час
+// Теплоемкость kfCapacity =  (3600*100/Capacity)
+void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t kfCapacity)
 {
 	if(!present || num == 0 || !inChart->get_present() || inChart->get_num() == 0 || !outChart->get_present() || outChart->get_num() == 0) {
 		//strcat(b, ";");
@@ -480,7 +482,8 @@ void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outC
 	}
 	b += m_strlen(b);
 	for(uint16_t i = 0; i < num; i++) {
-		b = dptoa(b, (int32_t)(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * Capacity / 360, 3);
+	//	b = dptoa(b, (int32_t)(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * Capacity / (360 *100), 3);// выходная мощность в кВт
+		b = dptoa(b, (int32_t)(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * 10 / kfCapacity, 3);// выходная мощность в кВт, используем get_kfCapacity() 10 - поток в десятках дитров в час
 		*(b-1) = ';';
 		//*b = '\0';
 	}
@@ -1195,4 +1198,3 @@ int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
 {
 	return readEEPROM_I2C(I2C_PROFILE_EEPROM + dataProfile.len * dataProfile.id + sizeof(magic) + sizeof(crc16) + sizeof(dataProfile), (byte*)_SaveOn, sizeof(SaveON)) ? ERR_LOAD_PROFILE : OK;
 }
-

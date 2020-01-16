@@ -1708,7 +1708,11 @@ int8_t devSDM::get_readState(uint8_t group)
 			if(err==OK) AcPower = tmp / 10; else goto xErr;
 #else
 			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
+			#ifdef DEMO
+			if(err==OK) AcPower=1000; else goto xErr; // для демки 1 кВт для расчета КОП
+			#else
 			if(err==OK) AcPower=tmp; else goto xErr;
+			#endif
 #endif
 		} else if(group == 2) {
 #ifdef USE_PZEM004T
