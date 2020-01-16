@@ -123,6 +123,33 @@ void HeatPump::initHeatPump()
 #ifdef MQTT
 	clMQTT.initMQTT(MAIN_WEB_TASK);                            // Инициализация MQTT, параметр - номер потока сервера в котором идет отправка
 #endif
+
+	// инициализация статистика дополнительно помимо датчиков
+	ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
+#ifdef EEV_DEF
+	ChartOVERHEAT.init(true);                          // перегрев
+	ChartOVERHEAT2.init(true);                         // перегрев2
+	ChartTPEVA.init(sADC[PEVA].get_present());         // температура расчитанная из давления  кипения
+	if(sADC[PCON].get_present()) ChartTPCON.init(sADC[PCON].get_present());  // температура расчитанная из давления  конденсации
+	else ChartTPCON.init(sTemp[TCONOUTG].get_present());  // Если датчика высокого давления нет то конденсацию рассчитываем по формуле sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200;
+
+#endif
+
+	for(i = 0; i < FNUMBER; i++)   // По всем частотным датчикам
+	{
+		if(strcmp(sFrequency[i].get_name(), "FLOWCON") == 0)                          // если есть датчик потока по конденсатору
+		{
+			ChartCOP.init(dFC.get_present() & sFrequency[i].get_present() & sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()); // Коэффициент преобразования
+			//   SerialDbg.print("StatCOP="); SerialDbg.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
+		}
+
+	}
+#ifdef USE_ELECTROMETER_SDM
+#ifdef FLOWCON
+	if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) ChartFullCOP.init(true);  // ПОЛНЫЙ Коэффициент преобразования
+#endif
+#endif
+
 	resetSettingHP();                                          // все переменные
 }
 // Стереть последнюю ошибку
@@ -639,7 +666,6 @@ void HeatPump::updateDateTime(int32_t dTime)
 // Сброс настроек теплового насоса
 void HeatPump::resetSettingHP()
 {  
-	uint8_t i;
 	Prof.initProfile();                           // Инициализировать профиль по умолчанию
 
 	Status.modWork = pOFF;                          // Что сейчас делает ТН (7 стадий)
@@ -759,31 +785,6 @@ void HeatPump::resetSettingHP()
     SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
 	Option.maxBackupPower=1000;          // Максимальная мощность при питании от генератора (Вт)
 
-	// инициализация статистика дополнительно помимо датчиков
-	ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
-#ifdef EEV_DEF
-	ChartOVERHEAT.init(true);                          // перегрев
-	ChartOVERHEAT2.init(true);                         // перегрев2
-	ChartTPEVA.init(sADC[PEVA].get_present());         // температура расчитанная из давления  кипения
-	if(sADC[PCON].get_present()) ChartTPCON.init(sADC[PCON].get_present());  // температура расчитанная из давления  конденсации
-	else ChartTPCON.init(sTemp[TCONOUTG].get_present());  // Если датчика высокого давления нет то конденсацию рассчитываем по формуле sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200;
-
-#endif
-
-	for(i = 0; i < FNUMBER; i++)   // По всем частотным датчикам
-	{
-		if(strcmp(sFrequency[i].get_name(), "FLOWCON") == 0)                          // если есть датчик потока по конденсатору
-		{
-			ChartCOP.init(dFC.get_present() & sFrequency[i].get_present() & sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()); // Коэффициент преобразования
-			//   SerialDbg.print("StatCOP="); SerialDbg.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
-		}
-
-	}
-#ifdef USE_ELECTROMETER_SDM
-#ifdef FLOWCON
-	if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) ChartFullCOP.init(true);  // ПОЛНЫЙ Коэффициент преобразования
-#endif
-#endif
 }
 
 // --------------------------------------------------------------------
