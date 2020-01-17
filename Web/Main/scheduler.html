@@ -22,7 +22,7 @@
 			$( ".ui-selected", this ).each(function() {
 				if(shifted) this.innerHTML = "";
 				else {
-					var v, el = document.getElementById('get_listprofile2').options;
+					var v, el = document.getElementById('get_listprof2').options;
 					el = el[el.selectedIndex];
 					if(el.value == -2) {
 						v = 0;
@@ -42,10 +42,10 @@
 	</script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(lstNames),get_SCHDLR(Calendar),get_listProfile2_skip2");
+		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(n_list),get_SCHDLR(Calendar),get_listProf2_skip2");
 	};
 	function get_sch_index() {
-		return document.getElementById('get_schdlr-lstnames').options.selectedIndex;
+		return document.getElementById('get_schdlr-n_list').options.selectedIndex;
 	}
 	function process_calendar(save) {
 		var str = "get_SCHDLR(Calendar"+get_sch_index()+")";
@@ -56,13 +56,13 @@
 			var i = get_sch_index();
 			element = document.getElementById('get_schdlr-name');
 			if(i != -1 && document.activeElement != element) {
-				element.value = document.getElementById('get_schdlr-lstnames').options[i].innerHTML;
+				element.value = document.getElementById('get_schdlr-n_list').options[i].innerHTML;
 				$('#calendar .ui-selected').removeClass('ui-selected');
 			}
 		}
 	}
 	function SelectNewProfile() {
-		document.getElementById('delta_temp').hidden = document.getElementById('get_listprofile2').options.selectedIndex != 1;
+		document.getElementById('delta_temp').hidden = document.getElementById('get_listprof2').options.selectedIndex != 1;
 	}
 	</script>
 </head>
@@ -73,11 +73,11 @@
 	<div class="row1">
 		<table style="width: 50%;">
 		<tr><td style="width: 40%;">Работа по расписанию</td><td style="width: 60%;"><input type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');"></td></tr>
-		<tr><td>Текущее расписание: </td><td><select id="get_schdlr-lstnames" onchange='process_calendar(0);'></select>
+		<tr><td>Текущее расписание: </td><td><select id="get_schdlr-n_list" onchange='process_calendar(0);'></select>
 			<input type="submit" value=">" onclick="setParam('get_SCHDLR(Active='+get_sch_index()+')');"></td></tr>
-		<tr><td>Редактировать имя: </td><td><input id="get_schdlr-name" type="text" maxlength="30" size="15"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(Name'+get_sch_index()+')','get_schdlr-name'); loadParam('get_SCHDLR(lstNames)');"></td></tr>
+		<tr><td>Редактировать имя: </td><td><input id="get_schdlr-name" type="text" maxlength="30" size="15"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(Name'+get_sch_index()+')','get_schdlr-name'); loadParam('get_SCHDLR(n_list)');"></td></tr>
 		<tr height="20"><td></td><td></td></tr>
-		<tr><td>Установить профиль:</td><td width="200"><select id="get_listprofile2" onchange="SelectNewProfile()"><option value="-2">.. ТН выключен</option><option value="-1"> ± Температура:</option></select> <input id="delta_temp" type="number" min="-10.0" max="12.7" step="0.1" value="0.0" hidden></td></tr>
+		<tr><td>Установить профиль:</td><td width="200"><select id="get_listprof2" onchange="SelectNewProfile()"><option value="-2">.. ТН выключен</option><option value="-1"> ± Температура:</option></select> <input id="delta_temp" type="number" min="-10.0" max="12.7" step="0.1" value="0.0" hidden></td></tr>
 		</table>
 	</div>
 <table id="calendar">

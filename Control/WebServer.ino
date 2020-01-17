@@ -574,37 +574,37 @@ void parserGET(uint8_t thread, int8_t )
 		if (strcmp(str,"get_config")==0)  // Функция get_config
 		{
 			strcat(strReturn,CONFIG_NAME);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_configNote")==0)  // Функция get_configNote
 		{
 			strcat(strReturn,CONFIG_NOTE);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_freeRam")==0)  // Функция freeRam
 		{
 			_itoa(freeRam()+HP.startRAM,strReturn);
-			strcat(strReturn," b" WEBDELIM) ;
+			strcat(strReturn," b" WEBDELIM);
 			continue;
 		}
 		if (strcmp(str,"get_loadingCPU")==0)  // Функция freeRam
 		{
 			_itoa(100-HP.CPU_IDLE,strReturn);
-			strcat(strReturn,"%" WEBDELIM) ;
+			strcat(strReturn,"%" WEBDELIM);
 			continue;
 		}
 		if (strcmp(str,"get_socketInfo")==0)  // Функция  get_socketInfo
 		{
 			socketInfo(strReturn);    // Информация  о сокетах
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_socketRes")==0)  // Функция  get_socketRes
 		{
 			_itoa(HP.socketRes(),strReturn);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if(strncmp(str, "get_list", 8) == 0) // get_list*
@@ -613,13 +613,14 @@ void parserGET(uint8_t thread, int8_t )
 			if(strcmp(str,"Chart")==0)  // Функция get_listChart - получить список доступных графиков
 			{
 				HP.get_listChart(strReturn);  // строка добавляется
-				ADD_WEBDELIM(strReturn) ;
+				ADD_WEBDELIM(strReturn);
 				continue;
 			}
-			if(strncmp(str,"Profile", 7)==0)  // Функция get_listProfile - получить список доступных профилей
+			if(strncmp(str,"Prof", 4)==0)  // Функции get_listProf*
 			{
-				HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
-				ADD_WEBDELIM(strReturn) ;
+				if(*(str + 4) == '_') _itoa(HP.Prof.get_idProfile(), strReturn);  // get_listProf_ - текущий профиль
+				else HP.Prof.get_list(strReturn); // Функция get_listProf - получить список доступных профилей
+				ADD_WEBDELIM(strReturn);
 				continue;
 			}
 			if(strcmp(str,"Press")==0)     // Функция get_listPress
@@ -1106,6 +1107,12 @@ void parserGET(uint8_t thread, int8_t )
 				strcat(strReturn, GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? "1" : "0");
 #else
 				strcat(strReturn,"1");
+#endif
+			} else if(strcmp(str, "EEVU") == 0) { //  hide_EEVU
+#ifdef EEV_PREFER_PERCENT
+				strcat(strReturn, "%");
+#else
+				strcat(strReturn, "шаги");
 #endif
 			}
 			ADD_WEBDELIM(strReturn); continue;
@@ -1737,7 +1744,7 @@ void parserGET(uint8_t thread, int8_t )
 				}
 			}
 			// -----------------------------------------------------------------------------
-			if (strcmp(str,"set_listProfile")==0)  // Функция set_listProfil загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
+			if (strcmp(str,"set_listProf")==0)  // Функция set_listProf загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
 			{
 				if ((pm=my_atof(x))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
 				else {

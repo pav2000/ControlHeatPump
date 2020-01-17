@@ -1,31 +1,31 @@
-<html>
-<head>
-	<title>Уведомления теплового насоса. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
-	<script type="text/javascript">
-		window.onload = function() {
-		loadParam("get_Message(SMTP_IP),get_Message(SMS_IP),get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_P1),get_Message(SMS_P1),get_Message(SMS_SERVICE),get_Message(MESS_TEMP),get_Message(MESS_RESET),get_Message(MESS_ERROR),get_Message(MESS_LIFE),get_Message(MESS_TIN),get_Message(MESS_TBOILER),get_Message(MESS_TCOMP),get_Message(MESS_SD),get_Message(MESS_WARNING),get_Message(MAIL),get_Message(SMTP_SERVER),get_Message(SMTP_PORT),get_Message(MAIL_AUTH),get_Message(SMTP_LOGIN),get_Message(SMTP_PASS),get_Message(MAIL_INFO),get_Message(SMTP_MAILTO),get_Message(SMTP_RCPTTO),get_Message(SMS),get_Message(SMS_PHONE)");
-		//updateParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
-	}; 
-	</script>
+<html><head>
+<title>Уведомления теплового насоса. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type='text/javascript' src='scripts.js'></script>
+<script type="text/javascript">
+window.onload = function() {
+	loadParam("get_Message(SMTP_IP),get_Message(SMS_IP),get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_P1),get_Message(SMS_P1),get_Message(SMS_SERVICE),get_Message(MESS_TEMP),get_Message(MESS_RESET),get_Message(MESS_ERROR),get_Message(MESS_LIFE),get_Message(MESS_TIN),get_Message(MESS_TBOILER),get_Message(MESS_TCOMP),get_Message(MESS_SD),get_Message(MESS_WARNING),get_Message(MAIL),get_Message(SMTP_SERVER),get_Message(SMTP_PORT),get_Message(MAIL_AUTH),get_Message(SMTP_LOGIN),get_Message(SMTP_PASS),get_Message(MAIL_INFO),get_Message(SMTP_MAILTO),get_Message(SMTP_RCPTTO),get_Message(SMS),get_Message(SMS_PHONE)");
+}; 
+function loadParam_after(paramid) {
+	if(paramid.indexOf("get_message-smtp_server") != -1) {
+		loadParam("get_Message(SMTP_IP)");
+	} else if(paramid.indexOf("get_message-sms_service") != -1) {
+		loadParam("get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_IP)");
+	}
+}
+</script>
 </head>
 <body class="test">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Уведомления <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
-	<div class="row1">
-		<h2>Требуемые уведомления</h2>
-		<table>
-		<thead>
-		<tr>
-			<th>Описание</th>
-			<th>Значение</th>
-		</tr>
-		</thead>			
-		<tbody>
+<h1>Уведомления <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+<div class="row1">
+	<table>
+	<thead><tr><th>Описание</th><th>Значение</th></tr></thead>			
+	<tbody>
+		<tr><td><h2>Требуемые уведомления<sup></h2></td><td></td></tr>
 		<tr>
 			<td>Сброс контроллера</td>
 			<td>
@@ -83,20 +83,9 @@
 				<input type="checkbox" name="get_message-mess_warning" id="get_message-mess_warning" onchange="setParam('get_Message(MESS_WARNING)');" >
 			</td>
 		</tr>							
-	</tbody>
-	</table>
-</div>
 
-	<div class="row1">
-	<h2>Настройка отправки почты<sup>1</sup></h2>
-	<table>
-	<thead>
-		<tr>
-			<th>Описание</th>
-			<th>Значение</th>
-		</tr>
-		</thead>			
-		<tbody>
+	<tr><td><h2>Настройка отправки почты<sup>1</sup></h2></td><td></td></tr>
+
 		<tr>
 			<td>Посылать уведомления по почте</td>
 			<td>
@@ -156,62 +145,52 @@
 				<input id="get_message-smtp_rcptto" type="text" maxlength="31">
 				<input id="get_message-smtp_rcptto2" type="submit" value=">"  onclick="setParam('get_Message(SMTP_RCPTTO)');">
 			</td>
-		</tr>				
-	</tbody>
-	</table>
-	<p>1. Отправлять почту можно только через smtp сервер без шифрования ssl или tsl.</p>
-	<input type="submit" value="Отправить тестовое письмо"  onclick="loadParam('test_Mail')">
-	</div>
+		</tr>
+	<tr><td>
+	<p>1. Отправлять почту можно только через SMTP сервер без шифрования SSL или TSL.</p>
+	<input type="submit" value="Отправить тестовое письмо"  onclick="loadParam('test_Mail')"></td>
+	<td></td></tr>
 
-	<div class="row1">
-	<h2>Настройка отправки SMS</h2>
-	<table>
-	<thead>
-		<tr>
-			<th>Описание</th>
-			<th>Значение</th>
-		</tr>
-		</thead>			
-		<tbody>
-		<tr>
-			<td>Посылать уведомления по SMS</td>
-			<td>
-				<input type="checkbox" name="get_message-sms" id="get_message-sms" onchange="setParam('get_Message(SMS)');" >
-			</td>
-		</tr>
-		<tr>
-			<td>Сервис отправки SMS <span id="get_message-sms_ip"></span></td>
-			<td><select id="get_message-sms_service" onchange="setParam('get_Message(SMS_SERVICE)','get_message-sms_service'),loadParam('get_Message(SMS_IP)');"></select></td>
-		</tr>
-		<tr>
-			<td id="get_message-sms_namep1"></td>
-			<td>
-				<input id="get_message-sms_p1" type="text" maxlength="100">
-				<input id="get_message-sms_p12" type="submit" value=">"  onclick="setParam('get_Message(SMS_P1)');">
-			</td>
-		</tr>
-		<tr>
-			<td id="get_message-sms_namep2"></td>
-			<td>
-				<input id="get_message-sms_p2" type="text" maxlength="100">
-				<input id="get_message-sms_p22" type="submit" value=">"  onclick="setParam('get_Message(SMS_P2)');">
-			</td>
-		</tr>		
-		<tr>
-			<td>Телефон получателя (формат 79161234567)</td>
-			<td>
-				<input id="get_message-sms_phone" type="text" maxlength="20">
-				<input id="get_message-sms_phone2" type="submit" value=">"  onclick="setParam('get_Message(SMS_PHONE)');">
-			</td>
-		</tr>		
-		<tr>
-			<td><input type="submit" value="Отправить тестовое SMS" onclick="loadParam('test_SMS')"></td>
-			<td></td>
-		</tr>
-	</tbody>
-	</table>
-	
+	<tr><td><h2>Настройка отправки SMS</h2></td><td></td></tr>
+
+	<tr>
+		<td>Посылать уведомления по SMS</td>
+		<td>
+			<input type="checkbox" name="get_message-sms" id="get_message-sms" onchange="setParam('get_Message(SMS)');" >
+		</td>
+	</tr>
+	<tr>
+		<td>Сервис отправки SMS <span id="get_message-sms_ip"></span></td>
+		<td><select id="get_message-sms_service" onchange="setParam('get_Message(SMS_SERVICE)','get_message-sms_service'),loadParam('get_Message(SMS_IP)');"></select></td>
+	</tr>
+	<tr>
+		<td id="get_message-sms_namep1"></td>
+		<td>
+			<input id="get_message-sms_p1" type="text" maxlength="100">
+			<input id="get_message-sms_p12" type="submit" value=">"  onclick="setParam('get_Message(SMS_P1)');">
+		</td>
+	</tr>
+	<tr>
+		<td id="get_message-sms_namep2"></td>
+		<td>
+			<input id="get_message-sms_p2" type="text" maxlength="100">
+			<input id="get_message-sms_p22" type="submit" value=">"  onclick="setParam('get_Message(SMS_P2)');">
+		</td>
+	</tr>		
+	<tr>
+		<td>Телефон получателя (формат 79161234567)</td>
+		<td>
+			<input id="get_message-sms_phone" type="text" maxlength="20">
+			<input id="get_message-sms_phone2" type="submit" value=">"  onclick="setParam('get_Message(SMS_PHONE)');">
+		</td>
+	</tr>		
+	<tr>
+		<td><input type="submit" value="Отправить тестовое SMS" onclick="loadParam('test_SMS')"></td>
+		<td></td>
+	</tr>
+	</tbody></table>
 </div>
+<br><br>
 </div>
 </body>
 </html>

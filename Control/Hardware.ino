@@ -1160,13 +1160,11 @@ void devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_PRE_START_POS)==0){	_dtoa(ret, calc_percent(_data.preStartPos), 2);
 	} else if(strcmp(var, eev_START_POS)==0){    	_dtoa(ret, calc_percent(_data.StartPos), 2);
 	} else if(strcmp(var, eev_PosAtHighTemp)==0){ 	_dtoa(ret, calc_percent(_data.PosAtHighTemp), 2);
-	} else if(strcmp(var, eev_pos_unit)==0){		strcat(ret, "%");
 #else
 	} else if(strcmp(var, eev_MANUAL)==0){ 			_itoa(_data.manualStep, ret);
 	} else if(strcmp(var, eev_PRE_START_POS)==0){	_itoa(_data.preStartPos, ret);
 	} else if(strcmp(var, eev_START_POS)==0){    	_itoa(_data.StartPos, ret);
 	} else if(strcmp(var, eev_PosAtHighTemp)==0){ 	_itoa(_data.PosAtHighTemp, ret);
-	} else if(strcmp(var, eev_pos_unit)==0){		strcat(ret, "шаги");
 #endif
 	} else if(strcmp(var, eev_DELAY_ON_PID)==0){  	_itoa(_data.delayOnPid, ret);
 	} else if(strcmp(var, eev_DELAY_START_POS)==0){	_itoa(_data.DelayStartPos, ret);

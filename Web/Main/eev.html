@@ -188,7 +188,7 @@ function GetChart() {
 }
 window.onload = function() {
 	urlupdate = 2000;
-	loadParam("hide_EEVpid,hide_pid2,get_pEEV(DIR),get_oHP(TIME_CHART),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(P2D),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(TRG2),get_pEEV(TRG2D)");
+	loadParam("hide_EEVpid,hide_pid2,get_pEEV(DIR),get_oHP(TIME_CHART),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(TIME),get_pEEV(KP),get_pEEV(KI),get_pEEV(KD),get_pEEV(P2D),get_pEEV(KP2),get_pEEV(KI2),get_pEEV(KD2),get_pEEV(TRG2),get_pEEV(TRG2D),hide_EEVU");
 	updateParam("get_pEEV(POSpp),get_OverHeat,get_pEEV(ERROR),get_pEEV(TRG),get_TCOMP_TCON,get_pEEV(cTDELTA),get_Evapor");
 	GetChart();
 	$("#autoupdate").change(function(){
@@ -217,7 +217,7 @@ window.onload = function() {
 	<th>Разница: Нагнетание-Конденсация</th>
 	<th>Разница: Цель</th>
 	<th>Код ошибки</th>
-	<th>Установить, шаги</th>
+	<th>Установить, <span name="hide_eevu"></span></th>
   </tr>
  </thead>
  <tbody>

@@ -13,7 +13,7 @@ function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace("(", "-").replace(")", "");
 	var rec = new RegExp('_listChart.?');
-	var res = new RegExp('_modeHP|_listProfile|_testMode|_slIP');
+	var res = new RegExp('_modeHP|_listProf|_testMode|_slIP');
 	var elval, clear = true, equate = true;
 	var element;
 	if(paramid.indexOf("(SCHEDULER)")!=-1) {
@@ -61,9 +61,9 @@ function setParam(paramid, resultid) {
 		//if(typeof elval == 'string') elval = elval.replace(/[,=&]+/g, "");
 	}
 	if(res.test(paramid)) {
-		if(paramid.indexOf("Profile")!=-1) {
+		if(paramid.indexOf("Prof")!=-1) {
 			elval = element.options[elval].innerHTML;
-			elval = Number(elval.substr(0, elval.indexOf('.'))) - 1;; 
+			elval = Number(elval.substr(0, elval.indexOf('.'))) - 1; 
 		}
 		var elsend = paramid.replace("get_", "set_").replace(")", "") + "(" + elval + ")";
 	} else if(rec.test(paramid)) {
@@ -137,7 +137,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|NSL|SMS_SERVICE|et_slIP|SCHDLR[(]lst|[(]ADD_HEAT/.test(values[0])) type = "select"; // значения
+								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|NSL|SMS_SERVICE|et_slIP/.test(values[0])) type = "select"; // значения
 								else if(/Prof[(]NUM|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
@@ -145,6 +145,9 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(values[1] == 1) {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
+									} else {
+										var elements = document.getElementsByName(valueid);
+										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = values[1];
 									}
 									continue;
 								} else if(values[0].indexOf("get_Chart")==0) type = "chart"; // график
@@ -225,7 +228,15 @@ function loadParam(paramid, noretry, resultdiv) {
 										createChart(values, resultdiv);
 									}
 								} else if(type == 'scan') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									if(valueid == "get_message-scan_sms") {
+										if(values[1] == "wait response") {
+											setTimeout(loadParam('get_Message(scan_SMS)'), 3000);
+										} else alert(values[1]);
+									} else if(valueid == "get_message-scan_mail") {
+										if(values[1] == "wait response") {
+											setTimeout(loadParam('get_Message(scan_MAIL)'), 3000);
+										} else alert(values[1]);
+									} else if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										var content = "<tr><td>" + values[1].replace(/\:/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";
 										document.getElementById(values[0].toLowerCase()).innerHTML = content;
 										content = values[1].replace(/:[^;]+/g, "").replace(/;$/g, "");
@@ -241,10 +252,19 @@ function loadParam(paramid, noretry, resultdiv) {
 										}
 									}
 								} else if(type == 'select') {
-									if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
+									if(values[0] != null && values[0] != 0 && values[1] != null) {
 										var idsel = values[0].replace("set_", "get_").toLowerCase().replace(/\([0-9]\)/g, "").replace("(", "-").replace(")", "").replace(/_skip[1-9]$/,"");
+										if(idsel.substr(-1, 1) == '_') {
+											idsel = idsel.substring(0, idsel.length - 1);
+											element = document.getElementById(idsel);
+											if(element) {
+												var n = (Number(values[1]) + 1).toString();
+												for(var j = 0; j < element.options.length; j++) if(n == element.options[j].innerText.substring(0,1)) element.options[j].selected = true; 
+											}
+											continue;
+										}
 										if(idsel == 'get_slip') idsel = valueid;
-										if(idsel == "get_testmode") {
+										else if(idsel == "get_testmode") {
 											var element2 = document.getElementById("get_testmode2");
 											if(element2) {
 												var cont1 = values[1].split(';');
@@ -260,12 +280,6 @@ function loadParam(paramid, noretry, resultdiv) {
 													}
 												}
 											}
-										} else if(idsel == "get_message-smtp_server") {
-											loadParam("get_Message(SMTP_IP),get_Message(SMS_IP)");
-										} else if(idsel == "get_message-sms_service") {
-											loadParam("get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_IP)");
-										} else if(idsel == "get_message-sms_service") {
-											loadParam("get_Message(SMS_NAMEP1),get_Message(SMS_NAMEP2),get_Message(SMS_IP)");
 										} else if(idsel == "get_listpress") {
 											content = "";
 											content2 = "";
@@ -535,47 +549,24 @@ function loadParam(paramid, noretry, resultdiv) {
 										if(element) element.innerHTML = "";
 									}
 								} else if(type == 'values') {
-									var valuevar = values[1].toLowerCase().replace(/[^\w\d]/g, "");
-									if(valueid) {
-										if(valueid == "get_message-sms_ret") {
-											if(valuevar == "waitresponse") {
-												setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
-												console.log("wait response...");
-											} else alert(values[1]);
-										} else if(valueid == "get_message-mail_ret") {
-											if(valuevar == "waitresponse") {
-												setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
-												console.log("wait response...");
-											} else alert(values[1]);
-										} else if(valueid == "get_ohp-time_chart") {
-											window.time_chart = valuevar;
-										}
-										element3 = document.getElementById(valueid + "3");
-										if(element3) {
-											element3.value = values[1];
-											element3.innerHTML = values[1];
-										}
-										element = document.getElementById(valueid);
-										if(element) {
-											if(element.className == "charsw") {
-												element.innerHTML = element.title.substr(valuevar,1);
-											} else if(/^E\d+/.test(values[1])) {
-												if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
-												else element.placeholder = values[1];
-											} else if(element != document.activeElement) {
-												element.innerHTML = values[1];
-												element.value = element.type == "number" ? values[1].replace(/[^-0-9.,]/g, "") : values[1];
-											}
-										}
-										if((element = document.getElementById(valueid + "-div1000"))) {
-											element.innerHTML = element.value = (Number(values[1])/1000).toFixed(3);
+									if(valueid == "get_ohp-time_chart") window.time_chart = values[1].toLowerCase().replace(/[^\w\d]/g, "");
+									element3 = document.getElementById(valueid + "3");
+									if(element3) {
+										element3.value = values[1];
+										element3.innerHTML = values[1];
+									}
+									element = document.getElementById(valueid);
+									if(element) {
+										if(element.className == "charsw") {
+											element.innerHTML = element.title.substr(values[1].toLowerCase().replace(/[^\w\d]/g, ""), 1);
+										} else if(/^E\d+/.test(values[1])) {
+											if(element.getAttribute("type") == "submit") alert("Ошибка " + values[1]);
+											else element.placeholder = values[1];
+										} else if(element != document.activeElement) {
+											element.innerHTML = values[1];
+											element.value = element.type == "number" ? values[1].replace(/[^-0-9.,]/g, "") : values[1];
 										}
 									}
-									//if(/^get_mintemp/.test(valueid)) {
-									//	document.getElementById(valueid.replace(/get_min/g, "get_test")).min = values[1];
-									//} else if(/^get_maxtemp/.test(valueid)) {
-									//	document.getElementById(valueid.replace(/get_max/g, "get_test")).max = values[1];
-									//}
 								} else if(type == 'is') {
 									if(values[1] == 0 || values[1].substring(0,1) == 'E') {
 										if((element = document.getElementById(valueid))) element.className = "inactive";
@@ -611,7 +602,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(element) element.checked = onoff;
 									if((element=document.getElementById('set_zeroEEV'))) element.disabled = onoff;
 									if((element=document.getElementById('get_testmode'))) element.disabled = onoff;
-									//if((element=document.getElementById('get_listprofile'))) element.disabled = onoff;
+									//if((element=document.getElementById('get_listprof'))) element.disabled = onoff;
 									//if((element=document.getElementById('get_modehp'))) element.disabled = onoff;
 									if((element=document.getElementById('scan'))) element.disabled = onoff;
 									element = document.getElementById('manual_override'); if(element && element.checked) onoff = false;
@@ -633,9 +624,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0] == "get_errcode" && values[1] < 0) {
 									document.getElementById("get_errcode").innerHTML = "Ошибка";
 								} else if(values[0] == "test_Mail") {
-									setTimeout(loadParam('get_Message(MAIL_RET)'), 3000);
+									setTimeout(loadParam('get_Message(scan_MAIL)'), 3000);
 								} else if(values[0] == "test_SMS") {
-									setTimeout(loadParam('get_Message(SMS_RET)'), 3000);
+									setTimeout(loadParam('get_Message(scan_SMS)'), 3000);
 								} else if(values[0] == "progFC") {
 									alert(values[1]);
 								} else if(values[0].indexOf("set_SAVE")==0) {
