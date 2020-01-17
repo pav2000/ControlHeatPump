@@ -13,8 +13,8 @@ function createChart(values, resultdiv) {
 	var yizm = '';
 	if(/^(T|O|d)/g.test(title)) { yizm = "Температура, °C"; }
 	if(/^PE/g.test(title)) { yizm = "Давление, BAR"; }
-	if(/^pos/g.test(title)) { yizm = "Состояние реле"; }
-	if(/^R/g.test(title)) { yizm = "Позиция"; ytooltip = ""; }
+	if(/^pos/g.test(title)) { yizm = "Позиция"; ytooltip = ""; }
+	if(/^R/g.test(title)) { yizm = "Состояние реле"; }
 	if(/^Pow|pow/g.test(title)) { yizm = "Мощность, кВт"; }
 	var data = values[1].split(';');
 	var dataSeries1 = [];
