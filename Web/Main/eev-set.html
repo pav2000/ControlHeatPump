@@ -25,7 +25,7 @@ window.onload = function() {
 	<th>Описание</th>
 	<th>Поправка °С</th>
 	<th>Тип фреона</th>
-	<th>Открытие ЭРВ шаги</th>
+	<th>Открытие ЭРВ</th>
    </tr>
    </thead>
    <tbody>
@@ -34,7 +34,7 @@ window.onload = function() {
 	<td id="get_peev-remark"></td>
 	<td nowrap><input id="get_peev-const" type="number"  min="-5" max="5" step="0.1"><input id="get_peev-const2" type="submit" value=">" onclick="setParam('get_pEEV(CONST)');"></td>
 	<td id="get_peev-freon"></td>
-	<td nowrap><input id="get_peev-manual" type="number" step="1"><input id="get_peev-manual2" type="submit" value=">" onclick="setParam('get_pEEV(MANUAL)');"></td>
+	<td nowrap><input id="get_peev-manual" type="number"><input id="get_peev-manual2" type="submit" value=">" onclick="setParam('get_pEEV(MANUAL)');"></td>
    </tr>
    </tbody>
    </table>

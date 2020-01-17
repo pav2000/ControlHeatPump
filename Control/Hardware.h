@@ -294,9 +294,11 @@ public:
 
 	// Движение ЭРВ
 	__attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
-	int16_t get_EEV_percent(void) { return EEV > 0 ? (int32_t) EEV * 10000 / _data.maxSteps : 0; } //  % открытия ЭРВ, сотые
+	inline int16_t calc_pos(int16_t percent) { return (int32_t)_data.maxSteps * percent / 10000; } // пересчитать % -> шаги, сотые
+	inline int16_t calc_percent(int16_t pos) { return (int32_t) pos * 10000 / _data.maxSteps; } // пересчитать % -> шаги, сотые
 	int8_t  set_EEV(int16_t x);                             // Перейти на позицию абсолютную  возвращает код ошибки
 	int8_t  set_zero();                                    // Гарантированно (шагов больше чем диапазон) закрыть ЭРВ возвращает код ошибки
+
 
 	void get_paramEEV(char *var, char *ret);              // Получить параметр ЭРВ в виде строки
 	boolean set_paramEEV(char *var,float x);               // Установить параметр ЭРВ из строки
@@ -349,7 +351,7 @@ public:
 
 private:
 	boolean fPause;                                        // пауза алгоритма отслеживания true
-	__attribute__((always_inline)) inline int8_t jamp(int x){return set_EEV(EEV+x);} // Перейти на позицию относительную возвращает код ошибки
+	__attribute__((always_inline)) inline int8_t jump(int x){return set_EEV(EEV+x);} // Перейти на позицию относительную возвращает код ошибки
 	int8_t stepDown();                                     // 1 Шаг в минус возвращает код ошибки
 	int8_t stepUp();                                       // 1 Шаг в плюс возвращает код ошибки
 

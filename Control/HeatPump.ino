@@ -1130,7 +1130,7 @@ void  HeatPump::updateChart()
 	for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value() / 10); // Частотные датчики 
 #ifdef EEV_DEF
 #ifdef EEV_PREFER_PERCENT
-	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV_percent());
+	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.calc_percent(dEEV.get_EEV()));
 #else
 	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
 #endif
@@ -3000,13 +3000,26 @@ void HeatPump::compressorON()
 	journal.jprintf(EEV_go);
 	if(dEEV.get_LightStart()) { // Выйти на пусковую позицию
 		dEEV.set_EEV(dEEV.get_preStartPos());
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf("preStartPos: %.2d\n", dEEV.calc_percent(dEEV.get_preStartPos()));
+#else
 		journal.jprintf("preStartPos: %d\n", dEEV.get_preStartPos());
+#endif
 	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
 		dEEV.set_EEV(dEEV.get_StartPos());
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+#else
 		journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
+#endif
+
 	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
 		dEEV.set_EEV(lastEEV);
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf("lastEEV: %.2d\n", dEEV.calc_percent(lastEEV));
+#else
 		journal.jprintf("lastEEV: %d\n", lastEEV);
+#endif
 	}
 	if(lastEEV != -1 && dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
 		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
@@ -3105,11 +3118,19 @@ void HeatPump::compressorON()
 		journal.jprintf(EEV_go);
 		if((dEEV.get_StartFlagPos()) || ((lastEEV == -1))) {
 			dEEV.set_EEV(dEEV.get_StartPos());
+#ifdef EEV_PREFER_PERCENT
+			journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+#else
 			journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
+#endif
 		}    // если первая итерация или установлен соответсвующий флаг то на стартовую позицию
 		else { // установка последнего значения ЭРВ в противном случае
 			dEEV.set_EEV(lastEEV);
+#ifdef EEV_PREFER_PERCENT
+			journal.jprintf("lastEEV: %.2d\n", dEEV.calc_percent(lastEEV));
+#else
 			journal.jprintf("lastEEV: %d\n", lastEEV);
+#endif
 		}
 	}
 #endif
@@ -3484,7 +3505,11 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 		if(dFC.get_present()) journal.jprintf(" freqFC:%.2f", dFC.get_frequency() / 100.0);
 		if(dFC.get_present()) journal.jprintf(" Power:%.3f", dFC.get_power() / 1000.0);
 #ifdef EEV_DEF
-		if(dEEV.get_present()) journal.jprintf(" EEV:%d", dEEV.get_EEV());
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf(" EEV:%.2d", dEEV.calc_percent(dEEV.get_EEV()));
+#else
+		journal.jprintf(" EEV:%d", dEEV.get_EEV());
+#endif
 #endif
 		journal.jprintf(cStrEnd);
 		// Доп инфо
@@ -3499,7 +3524,11 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 		if(dFC.get_present()) journal.printf(" freqFC:%.2f", dFC.get_frequency() / 100.0);
 		if(dFC.get_present()) journal.printf(" Power:%.3f", dFC.get_power() / 1000.0);
 #ifdef EEV_DEF
+#ifdef EEV_PREFER_PERCENT
+		journal.printf(" EEV:%.2d", dEEV.calc_percent(dEEV.get_EEV()));
+#else
 		journal.printf(" EEV:%d", dEEV.get_EEV());
+#endif
 #endif
 		journal.printf(cStrEnd);
 
