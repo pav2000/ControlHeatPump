@@ -8,7 +8,7 @@ document.write('\
 <div class="menu-profiles">\
 	<span id="get_mode" style="color: red">-</span><br>\
 	<span id="SCH-PR"></span><br>\
-	<select id="get_listprofile" onchange="setParam(\'get_listProfile\',\'get_listprofile\');"></select>\
+	<select id="get_listprof" onchange="setParam(\'get_listProf\',\'get_listprof\');"></select>\
 </div>');
 document.write('<ul class="cd-accordion-menu">\
 <li class="index"><a href="index.html"><i></i>Состояние</a></li>\
@@ -36,4 +36,5 @@ if(!pathmath) {var activeli = document.body.className;} else {var activeli = pat
 var elements = document.getElementsByClassName(activeli);
 var countElements = elements.length;
 for(i=0;i<countElements;i++){document.getElementsByClassName(activeli)[i].classList.add("active");}
-updateParam("get_status,get_WORK,get_MODE,get_listProfile,get_SCHDLR(On)");
+loadParam("get_listProf");
+updateParam("get_status,get_WORK,get_MODE,get_SCHDLR(On),get_listProf_");

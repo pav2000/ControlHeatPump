@@ -464,7 +464,7 @@ void Nextion::Update()
 		setComponentText("syst4", HP.IsWorkingNow() ? itoa(HP.num_repeat, ntemp, 10) : (char*) _HP_OFF_8859);
 		setComponentText("syst5", ftoa(ntemp, (float) HP.get_motoHour()->H2 / 60.0, 1));
 		setComponentText("syst6", ftoa(ntemp, (float) HP.get_motoHour()->C2 / 60.0, 1));
-		setComponentText("syst7", itoa(100 - HP.CPU_IDLE, ntemp, 10));
+		setComponentText("syst7", itoa(HP.CPU_LOAD, ntemp, 10));
 		setComponentText("syst8", HP.get_errcode() == OK ? (char *)"-" : itoa(HP.get_errcode(), ntemp, 10));
 		if(HP.get_errcode() == OK) buffer[0] = '\0';
 		else Encode_UTF8_to_ISO8859_5(buffer, HP.get_lastErr(), sizeof(buffer)-1);

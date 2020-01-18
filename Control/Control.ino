@@ -288,7 +288,7 @@ void setup() {
 			goto x_I2C_init_std_message;
 		} else journal.jprintf("I2C bus low speed, init on %d kHz - OK\n",twiClock100kHz/1000);
 	} else {
-		x_I2C_init_std_message:
+x_I2C_init_std_message:
 		journal.jprintf("I2C init on %d kHz - OK\n",I2C_SPEED/1000);
 	}
 
@@ -590,33 +590,31 @@ void setup() {
 	journal.jprintf("FreeRTOS FAILURE!\n");
 }
 
-
 void loop() {}
 
 //  З А Д А Ч И -------------------------------------------------
 // Это и есть поток с минимальным приоритетом измеряем простой процессора
 //extern "C" 
 //{
-static unsigned long cpu_idle_max_count = 0; // 1566594 // максимальное значение счетчика, вычисляется при калибровке и соответствует 100% CPU idle
 static bool Error_Beep_confirmed = false;
 
 extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 {
-	static unsigned long countLastTick = 0;
 	static unsigned long countLED = 0;
 	static unsigned long countBeep = 0;
-	static unsigned long ulIdleCycleCount = 0;
 
 	WDT_Restart(WDT);                                                            // Сбросить вачдог
-	ulIdleCycleCount++;                                                          // приращение счетчика
 	register unsigned long ticks = GetTickCount();
-	if(ticks - countLastTick >= 3000)		// мсек
-	{
-		countLastTick = ticks;                            // расчет нагрузки
-		if(ulIdleCycleCount > cpu_idle_max_count) cpu_idle_max_count = ulIdleCycleCount; // это калибровка запоминаем максимальные значения
-		HP.CPU_IDLE = (100 * ulIdleCycleCount) / cpu_idle_max_count;              // вычисляем текущую загрузку
-		ulIdleCycleCount = 0;
-	}
+//	static unsigned long cpu_idle_max_count = 0; // 1566594 // максимальное значение счетчика, вычисляется при калибровке и соответствует 100% CPU idle
+//	static unsigned long ulIdleCycleCount = 0;
+//	ulIdleCycleCount++;                                                          // приращение счетчика
+//	if(ticks - countLastTick >= 3000)		// мсек
+//	{
+//		countLastTick = ticks;                            // расчет нагрузки
+//		if(ulIdleCycleCount > cpu_idle_max_count) cpu_idle_max_count = ulIdleCycleCount; // это калибровка запоминаем максимальные значения
+//		HP.CPU_IDLE = (100 * ulIdleCycleCount) / cpu_idle_max_count;              // вычисляем текущую загрузку
+//		ulIdleCycleCount = 0;
+//	}
 	// Светодиод мигание в зависимости от ошибки и подача звукового сигнала при ошибке
 	if(HP.get_errcode() != OK) {          // Ошибка
 		if(ticks - countLED > TIME_LED_ERR) {
@@ -1378,13 +1376,17 @@ void vServiceHP(void *)
 #endif
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
-	static uint32_t timer_sec = GetTickCount();
+	static TickType_t timer_sec = xTaskGetTickCount();
 	static uint16_t restart_cnt;
 	static uint16_t pump_in_pause_timer = 0;
 	for(;;) {
-		register uint32_t t = GetTickCount();
+		register uint32_t t = xTaskGetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
+			extern TickType_t xTickCountZero;
+			if(t < timer_sec) vTaskResetRunTimeCounters();
+			else HP.CPU_LOAD = 100 - (vTaskGetRunTimeCounter(xTaskGetIdleTaskHandle()) / ((t - xTickCountZero) / 100UL));
 			timer_sec = t;
+
 			if(HP.IsWorkingNow()) {
 				if(((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) && ++task_updstat_chars >= HP.get_tChart()) { // пришло время
 					task_updstat_chars = 0;

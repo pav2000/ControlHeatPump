@@ -426,7 +426,7 @@ class HeatPump
    void set_uptime(unsigned long ttime){timeON=ttime;}     // Установить текущее время как начало старта контроллера
   
     // Переменные
-    uint8_t CPU_IDLE;                                      // загрузка CPU
+    uint8_t CPU_LOAD;                                      // загрузка CPU
     uint32_t mRTOS;                                        // Память занимаемая задачами
     uint32_t startRAM;                                     // Свободная память при старте FREE Rtos - пытаемся определить свободную память при работе
        

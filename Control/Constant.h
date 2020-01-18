@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.056"				// Версия прошивки
+#define VERSION			"1.057"				// Версия прошивки
 #define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -451,10 +451,10 @@ const char *eev_LIGHT_START   =  {"LST"};           // флаг Облегчен
 const char *eev_START         =  {"START"};         // флаг Всегда начинать работу ЭРВ со стратовой позици
 const char *eev_PID_P_ON_M    =  {"POM"};           // флаг ПИД пропорционально измерению
 const char *eev_fEEVStartPosByTemp = {"SPT"};		// флаг fEEVStartPosByTemp
-const char *eev_PosAtHighTemp  = {"PHT"};			// PosAtHighTemp
+const char *eev_PosAtHighTemp =  {"PHT"};			// PosAtHighTemp
 const char *eev_fEEV_DirectAlgorithm = {"DIR"};		// флаг fEEV_DirectAlgorithm
-const char *eev_trend_threshold = {"TTH"};			//
-const char *eev_trend_mul_threshold = {"TMT"};		//
+const char *eev_trend_threshold ={"TTH"};
+const char *eev_trend_mul_threshold = {"TMT"};
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
@@ -540,8 +540,8 @@ const char *mess_SMS_NAMEP2   = {"SMS_NAMEP2"};          // описание в�
 const char *mess_MESS_TIN     = {"MESS_TIN"};            // Критическая температура в доме (если меньше то генерится уведомление)
 const char *mess_MESS_TBOILER = {"MESS_TBOILER"};        // Критическая температура бойлера (если меньше то генерится уведомление)
 const char *mess_MESS_TCOMP   = {"MESS_TCOMP"};          // Критическая температура компрессора (если больше то генериться уведомление)
-const char *mess_MAIL_RET     = {"MAIL_RET"};            // Ответ на тестовую почту
-const char *mess_SMS_RET      = {"SMS_RET"};             // Ответ на тестовую  sms
+const char *mess_MAIL_RET     = {"scan_MAIL"};           // Ответ на тестовую почту
+const char *mess_SMS_RET      = {"scan_SMS"};            // Ответ на тестовую  sms
 
 // Описание имен параметров бойлера для функций set_Boiler get_Boiler
 const char *boil_BOILER_ON    = {"ON"};                  // флаг Включения бойлера
@@ -674,7 +674,7 @@ const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота пр
 const char *fc_ReturnOilEEV      = {"ROE"};               // Шаги ЭРВ при котором возвращается масло
 
 // Описание имен параметров опций ТН  для функций get_optionHP ("get_oHP") set_optionHP ("set_oHP")
-const char *option_ADD_HEAT           = {"ADD_HEAT"};           // использование дополнительного нагревателя (значения 1 и 0)
+const char *option_ADD_HEAT           = {"HEAT_list"};              // использование дополнительного нагревателя (значения 1 и 0)
 const char *option_TEMP_RHEAT         = {"TEMP_RHEAT"};         // температура для управления RHEAT (градусы)
 const char *option_PUMP_WORK          = {"PUMP_WORK"};          // работа насоса конденсатора при выключенном компрессоре секунды
 const char *option_PUMP_PAUSE         = {"PUMP_PAUSE"};         // пауза между работой насоса конденсатора при выключенном компрессоре (секунды)

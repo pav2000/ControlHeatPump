@@ -327,10 +327,10 @@ char* Message::get_messageSetting(char *var, char *ret)
 		_dtoa(ret, messageSetting.mTCOMP, 2);
 		return ret;
 	} else if(strcmp(var, mess_MAIL_RET) == 0) {
-		if(waitSend) return strcat(ret, (char*) "wait response...");                // В зависимости готов ответ или нет
+		if(waitSend) return strcat(ret, (char*) "wait response");                // В зависимости готов ответ или нет
 		else return strcat(ret, retTest);
 	} else if(strcmp(var, mess_SMS_RET) == 0) {
-		if(waitSend) return strcat(ret, (char*) "wait response...");                // В зависимости готов ответ или нет
+		if(waitSend) return strcat(ret, (char*) "wait response");                // В зависимости готов ответ или нет
 		else return strcat(ret, retTest);
 	} else return strcat(ret, (char*) cInvalid);
 

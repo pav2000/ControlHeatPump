@@ -960,7 +960,7 @@ void Statistics::History()
 		case STATS_OBJ_EEV:
 			switch(HistorySetup[i].number) {
 			case STATS_EEV_Percent:
-				int_to_dec_str(HP.dEEV.get_EEV_percent(), 10, &buf, 0); // R
+				int_to_dec_str(HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 10, &buf, 0); // R
 				break;
 			 case STATS_EEV_Steps:
 			    int_to_dec_str(HP.dEEV.get_EEV()*10, 1, &buf, 0); // S

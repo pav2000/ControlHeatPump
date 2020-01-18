@@ -461,12 +461,12 @@ void parserGET(uint8_t thread, int8_t )
 	char *str,*x,*y,*z;
 	float pm=0;
 	int16_t i;
-	// переменные для удаленных датчиков
+	int32_t l_i32;
 #ifdef SENSOR_IP                           // Получение данных удаленного датчика
+	// переменные для удаленных датчиков
 	char *ptr;
 	int16_t a,b,c,d;
 #endif
-	int32_t e;
 
 	char *buf = Socket[thread].inPtr;
 	char *strReturn = Socket[thread].outBuf;
@@ -508,7 +508,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
 			else strcat(strReturn,"-");
 			strcat(strReturn,"|SI>");
-			_itoa(100-HP.CPU_IDLE,strReturn);
+			_itoa(HP.CPU_LOAD,strReturn);
 #if defined(WEB_STATUS_SHOW_OVERHEAT) && defined(EEV_DEF)
 			strcat(strReturn,"%|SO>");
 			_dtoa(strReturn, HP.dEEV.get_Overheat(), 2);
@@ -574,37 +574,37 @@ void parserGET(uint8_t thread, int8_t )
 		if (strcmp(str,"get_config")==0)  // Функция get_config
 		{
 			strcat(strReturn,CONFIG_NAME);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_configNote")==0)  // Функция get_configNote
 		{
 			strcat(strReturn,CONFIG_NOTE);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_freeRam")==0)  // Функция freeRam
 		{
 			_itoa(freeRam()+HP.startRAM,strReturn);
-			strcat(strReturn," b" WEBDELIM) ;
+			strcat(strReturn," b" WEBDELIM);
 			continue;
 		}
 		if (strcmp(str,"get_loadingCPU")==0)  // Функция freeRam
 		{
-			_itoa(100-HP.CPU_IDLE,strReturn);
-			strcat(strReturn,"%" WEBDELIM) ;
+			_itoa(HP.CPU_LOAD,strReturn);
+			strcat(strReturn,"%" WEBDELIM);
 			continue;
 		}
 		if (strcmp(str,"get_socketInfo")==0)  // Функция  get_socketInfo
 		{
 			socketInfo(strReturn);    // Информация  о сокетах
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if (strcmp(str,"get_socketRes")==0)  // Функция  get_socketRes
 		{
 			_itoa(HP.socketRes(),strReturn);
-			ADD_WEBDELIM(strReturn) ;
+			ADD_WEBDELIM(strReturn);
 			continue;
 		}
 		if(strncmp(str, "get_list", 8) == 0) // get_list*
@@ -613,13 +613,14 @@ void parserGET(uint8_t thread, int8_t )
 			if(strcmp(str,"Chart")==0)  // Функция get_listChart - получить список доступных графиков
 			{
 				HP.get_listChart(strReturn);  // строка добавляется
-				ADD_WEBDELIM(strReturn) ;
+				ADD_WEBDELIM(strReturn);
 				continue;
 			}
-			if(strncmp(str,"Profile", 7)==0)  // Функция get_listProfile - получить список доступных профилей
+			if(strncmp(str,"Prof", 4)==0)  // Функции get_listProf*
 			{
-				HP.Prof.get_list(strReturn /*,HP.Prof.get_idProfile()*/);  // текущий профиль
-				ADD_WEBDELIM(strReturn) ;
+				if(*(str + 4) == '_') _itoa(HP.Prof.get_idProfile(), strReturn);  // get_listProf_ - текущий профиль
+				else HP.Prof.get_list(strReturn); // Функция get_listProf - получить список доступных профилей
+				ADD_WEBDELIM(strReturn);
 				continue;
 			}
 			if(strcmp(str,"Press")==0)     // Функция get_listPress
@@ -644,9 +645,9 @@ void parserGET(uint8_t thread, int8_t )
 				str = (char*)(i == 1 ? stats_file_start : history_file_start);
 				i = 1;
 				x = strReturn;
-				for(e = rtcSAM3X8.get_years(); e > 2000; e--) {
+				for(l_i32 = rtcSAM3X8.get_years(); l_i32 > 2000; l_i32--) {
 					x += m_strlen(x);
-					m_snprintf(x, 8 + 4 + sizeof(stats_csv_file_ext), "%s%04d%s", str, e, stats_file_ext);
+					m_snprintf(x, 8 + 4 + sizeof(stats_csv_file_ext), "%s%04d%s", str, l_i32, stats_file_ext);
 					if(!wFile.opens(x, O_READ, &wfname)) {
 						*x = '\0';
 						break;
@@ -772,12 +773,12 @@ void parserGET(uint8_t thread, int8_t )
 					goto xSaveStats;
 				}
 			} else {
-				e = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-				if(e > 0) {
+				l_i32 = HP.save();   // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
+				if(l_i32 > 0) {
 					int16_t len2 = HP.Prof.save(HP.Prof.get_idProfile());
-					if(len2 > 0) e += len2; else e = len2;
+					if(len2 > 0) l_i32 += len2; else l_i32 = len2;
 				}
-				_itoa(e, strReturn); // сохранение настроек ВСЕХ!
+				_itoa(l_i32, strReturn); // сохранение настроек ВСЕХ!
 				HP.save_motoHour();
 			}
 			ADD_WEBDELIM(strReturn);
@@ -982,16 +983,34 @@ void parserGET(uint8_t thread, int8_t )
 			{
 				strcat(strReturn,"Сброс контроллера, подождите 10 секунд . . .");
 				HP.sendCommand(pRESET);        // Послать команду на сброс
-			} else if (strcmp(str,"COUNT")==0) // Команда RESET_COUNT
-			{
-				journal.jprintf("$RESET Season Counters. . .\n");
-				strcat(strReturn,"Сброс счетчиков за сезон");
-				HP.resetCount(false);
-			} else if (strcmp(str,"ALL_COUNT")==0) // Команда RESET_ALL_COUNT
-			{
-				journal.jprintf("$RESET All Сounters. . .\n");
-				strcat(strReturn,"Сброс ВСЕХ счетчиков");
-				HP.resetCount(true);  // Полный сброс
+			} else if(strncmp(str, "CNT_", 4) == 0) { // Команды RESET_CNT_*
+				str += 4;
+				if(strncmp(str, "VAR_", 4) == 0) {	// RESET_CNT_VAR_xx=n
+					str += 4;
+					*(str + 2) = '\0';
+					if((l_i32 = strtol(str + 3, NULL, 0)) != LONG_MAX) {
+						if(strcmp(str, 		"D1") == 0) HP.get_motoHour()->D1 = l_i32;
+						else if(strcmp(str, "D2") == 0) HP.get_motoHour()->D2 = l_i32;
+						else if(strcmp(str, "H1") == 0) HP.get_motoHour()->H1 = l_i32;
+						else if(strcmp(str, "H2") == 0) HP.get_motoHour()->H2 = l_i32;
+						else if(strcmp(str, "C1") == 0) HP.get_motoHour()->C1 = l_i32;
+						else if(strcmp(str, "C2") == 0) HP.get_motoHour()->C2 = l_i32;
+						else if(strcmp(str, "E1") == 0) HP.get_motoHour()->E1 = l_i32;
+						else if(strcmp(str, "E2") == 0) HP.get_motoHour()->E2 = l_i32;
+						else if(strcmp(str, "P1") == 0) HP.get_motoHour()->P1 = l_i32;
+						else if(strcmp(str, "P2") == 0) HP.get_motoHour()->P2 = l_i32;
+						else goto x_FunctionNotFound;
+						strcat(strReturn, "OK");
+					}
+				} else if(strcmp(str, "ALL") == 0) {	// RESET_CNT_ALL
+					journal.jprintf("$RESET All Сounters. . .\n");
+					strcat(strReturn,"Сброс ВСЕХ счетчиков");
+					HP.resetCount(true);  // Полный сброс
+				} else {								// RESET_CNT
+					journal.jprintf("$RESET Season Counters. . .\n");
+					strcat(strReturn,"Сброс счетчиков за сезон");
+					HP.resetCount(false);
+				}
 			} else if (strcmp(str,"SETTINGS")==0) // RESET_SETTINGS, Команда сброса настроек HP
 			{
 				if(HP.get_State() == pOFF_HP) {
@@ -1036,7 +1055,7 @@ void parserGET(uint8_t thread, int8_t )
 			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,"|");
 			strcat(strReturn,VERSION);                                    strcat(strReturn,"|");
 			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,"|");
-			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,"|");
+			_itoa(HP.CPU_LOAD,strReturn);                             strcat(strReturn,"|");
 			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,"|");
 #ifdef EEV_DEF
 			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,"|");
@@ -1088,6 +1107,12 @@ void parserGET(uint8_t thread, int8_t )
 				strcat(strReturn, GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm) ? "1" : "0");
 #else
 				strcat(strReturn,"1");
+#endif
+			} else if(strcmp(str, "EEVU") == 0) { //  hide_EEVU
+#ifdef EEV_PREFER_PERCENT
+				strcat(strReturn, "%");
+#else
+				strcat(strReturn, "шаги");
 #endif
 			}
 			ADD_WEBDELIM(strReturn); continue;
@@ -1551,14 +1576,14 @@ void parserGET(uint8_t thread, int8_t )
 
 				ptr=strtok(NULL,":");
 				if (ptr==NULL)                {strcat(strReturn,"E21" WEBDELIM);continue;}
-				e=atoi(ptr);
-				if (e<0)                      {strcat(strReturn,"E24" WEBDELIM);continue;}  // счетичк больше 0
+				l_i32=atoi(ptr);
+				if (l_i32<0)                      {strcat(strReturn,"E24" WEBDELIM);continue;}  // счетичк больше 0
 
 
 				// Дошли до сюда - ошибок нет, можно использовать данные
 				byte adr[4];
 				W5100.readSnDIPR(sock, adr);
-				HP.sIP[a-1].set_DataIP(a,b,c,d,e,BytesToIPAddress(adr));
+				HP.sIP[a-1].set_DataIP(a,b,c,d,l_i32,BytesToIPAddress(adr));
 				strcat(strReturn,"OK" WEBDELIM); continue;
 			}
 
@@ -1678,23 +1703,6 @@ void parserGET(uint8_t thread, int8_t )
 			}
 
 			// -----------------------------------------------------------------------------
-			if (strcmp(str,"set_EEV")==0)  // Функция set_EEV
-			{
-#ifdef EEV_DEF
-				if ((pm=my_atof(x))==ATOF_ERROR)  strcat(strReturn,"E09");      // Ошибка преобразования   - завершить запрос с ошибкой
-				else
-				{
-					if(HP.dEEV.set_EEV((int)pm)==0)
-						_itoa(pm,strReturn);  // если значение правильное его возвращаем сразу
-					else strcat(strReturn,"E12");
-					//           SerialDbg.print("set_EEV ");    SerialDbg.print(pm); SerialDbg.print(" set "); SerialDbg.println(int2str(HP.dEEV.get_EEV()));
-					ADD_WEBDELIM(strReturn) ;    continue;
-				}
-#else
-				strcat(strReturn,"-" WEBDELIM) ;    continue;
-#endif
-			}  //  if (strcmp(str,"set_set_EEV")==0)
-			// -----------------------------------------------------------------------------
 			// ПРОФИЛИ функции с одним параметром
 			// -----------------------------------------------------------------------------
 			if (strcmp(str,"saveProfile")==0)  // Функция saveProfile сохранение текущего профиля
@@ -1736,7 +1744,7 @@ void parserGET(uint8_t thread, int8_t )
 				}
 			}
 			// -----------------------------------------------------------------------------
-			if (strcmp(str,"set_listProfile")==0)  // Функция set_listProfil загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
+			if (strcmp(str,"set_listProf")==0)  // Функция set_listProf загрузить профиль из списка и сразу СОХРАНИТЬ !!!!!!
 			{
 				if ((pm=my_atof(x))==ATOF_ERROR)  strcat(strReturn,"E29");      // Ошибка преобразования   - завершить запрос с ошибкой
 				else {
@@ -1778,7 +1786,7 @@ void parserGET(uint8_t thread, int8_t )
 				HP.dEEV.get_paramEEV(x,strReturn);
 				ADD_WEBDELIM(strReturn);
 				continue;
-			} else if (strcmp(str,"set_pEEV")==0)    // Функция set_pEEV - установить значение паремтра ЭРВ
+			} else if (strcmp(str,"set_pEEV")==0)    // Функция set_pEEV - установить значение параметра ЭРВ
 			{
 				if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 					if (HP.dEEV.set_paramEEV(x,pm)) HP.dEEV.get_paramEEV(x,strReturn);
@@ -1981,7 +1989,7 @@ void parserGET(uint8_t thread, int8_t )
 							if(*y == 'w') {
 								if((i = Modbus.readHoldingRegisters16(id, par, &par)) == OK) _itoa(par, strReturn);
 							} else if(*y == 'l') {
-								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&e)) == OK) _itoa(e, strReturn);
+								if((i = Modbus.readHoldingRegisters32(id, par, (uint32_t *)&l_i32)) == OK) _itoa(l_i32, strReturn);
 							} else if(*y == 'i') {
 								if((i = Modbus.readInputRegistersFloat(id, par, &pm)) == OK) _ftoa(strReturn, pm, 3);
 							} else if(*y == 'f') {

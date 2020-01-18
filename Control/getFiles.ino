@@ -112,7 +112,13 @@ void get_txtState(uint8_t thread, boolean header)
              strcat(Socket[thread].outBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),Socket[thread].outBuf);STR_END;
              strcat(Socket[thread].outBuf,"Правило управления ЭРВ: ");
              HP.dEEV.get_ruleEEVtext(Socket[thread].outBuf); STR_END;
-             strcat(Socket[thread].outBuf,"\nТекущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"\nТекущее положение: ");
+#ifdef EEV_PREFER_PERCENT
+			_dtoa(Socket[thread].outBuf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
+#else
+			_itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf);
+#endif
+            STR_END;
        //      strcat(Socket[thread].outBuf,"Формула перегрева: ");
        //      if (HP.sADC[PEVA].get_present()) strcat(Socket[thread].outBuf,"TEVAOUT-T[PEVA]\r\n"); else strcat(Socket[thread].outBuf,"TEVAOUT-TEVAIN\r\n"); 
              strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");  _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Overheat()/100.0,2); STR_END;
@@ -569,7 +575,13 @@ void get_txtSettings(uint8_t thread)
              strcat(Socket[thread].outBuf,"Поправка (C°): ");  HP.dEEV.get_paramEEV((char*)eev_CONST, Socket[thread].outBuf); STR_END;
              strcat(Socket[thread].outBuf,"Используемый фреон: "); STR_END;
              strcat(Socket[thread].outBuf, noteFreon[HP.dEEV.get_typeFreon()]);
-             strcat(Socket[thread].outBuf,"Текущее положение (шаги): ");     _itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf); STR_END;
+             strcat(Socket[thread].outBuf,"Текущее положение: ");
+#ifdef EEV_PREFER_PERCENT
+			_dtoa(Socket[thread].outBuf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
+#else
+			_itoa(HP.dEEV.get_EEV(),Socket[thread].outBuf);
+#endif
+             STR_END;
              strcat(Socket[thread].outBuf,"Текущий перегрев (градусы): ");   _ftoa(Socket[thread].outBuf,(float)HP.dEEV.get_Overheat()/100.0,2); STR_END;
              strcat(Socket[thread].outBuf," - Корректировка перегрева -\r\n");
              strcat(Socket[thread].outBuf,"Флаг включения корректировки перегрева от разности температур конденсатора и испарителя: ");  HP.dEEV.get_paramEEV((char*)eev_cCORRECT,Socket[thread].outBuf);STR_END;
@@ -1005,7 +1017,12 @@ int16_t x;
 			strcpy(tempBuf,"Правило управления ЭРВ: ");
 			HP.dEEV.get_ruleEEVtext(tempBuf);
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-			strcpy(tempBuf,"Текущее положение (шаги): ");  _itoa(HP.dEEV.get_EEV(),tempBuf);
+			strcpy(tempBuf,"Текущее положение: ");
+#ifdef EEV_PREFER_PERCENT
+			_dtoa(tempBuf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
+#else
+			_itoa(HP.dEEV.get_EEV(),tempBuf);
+#endif
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 			strcpy(tempBuf,"Текущий перегрев (градусы): ");  _ftoa(tempBuf,(float)HP.dEEV.get_Overheat()/100.0,2);
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
