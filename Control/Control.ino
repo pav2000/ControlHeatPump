@@ -1382,8 +1382,9 @@ void vServiceHP(void *)
 	for(;;) {
 		register uint32_t t = xTaskGetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
+			extern TickType_t xTickCountZero;
 			if(t < timer_sec) vTaskResetRunTimeCounters();
-			else HP.CPU_LOAD = 100 - 100 / (t / vTaskGetRunTimeCounter(xTaskGetIdleTaskHandle()));
+			else HP.CPU_LOAD = 100 - (vTaskGetRunTimeCounter(xTaskGetIdleTaskHandle()) / ((t - xTickCountZero) / 100UL));
 			timer_sec = t;
 
 			if(HP.IsWorkingNow()) {

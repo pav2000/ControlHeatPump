@@ -145,7 +145,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									if(values[1] == '1') {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
-									} else values[1] != '0' {
+									} else if(values[1] != '0') {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = values[1];
 									}
