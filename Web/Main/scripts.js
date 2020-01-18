@@ -142,10 +142,10 @@ function loadParam(paramid, noretry, resultdiv) {
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
 								else if(values[0].indexOf("hide_")==0) { // clear
-									if(values[1] == 1) {
+									if(values[1] == '1') {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = "";
-									} else {
+									} else values[1] != '0' {
 										var elements = document.getElementsByName(valueid);
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = values[1];
 									}

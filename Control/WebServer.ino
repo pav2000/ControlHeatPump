@@ -508,7 +508,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(t) TimeIntervalToStr(rtcSAM3X8.unixtime() - t, strReturn, 1);
 			else strcat(strReturn,"-");
 			strcat(strReturn,"|SI>");
-			_itoa(100-HP.CPU_IDLE,strReturn);
+			_itoa(HP.CPU_LOAD,strReturn);
 #if defined(WEB_STATUS_SHOW_OVERHEAT) && defined(EEV_DEF)
 			strcat(strReturn,"%|SO>");
 			_dtoa(strReturn, HP.dEEV.get_Overheat(), 2);
@@ -591,7 +591,7 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_loadingCPU")==0)  // Функция freeRam
 		{
-			_itoa(100-HP.CPU_IDLE,strReturn);
+			_itoa(HP.CPU_LOAD,strReturn);
 			strcat(strReturn,"%" WEBDELIM);
 			continue;
 		}
@@ -1055,7 +1055,7 @@ void parserGET(uint8_t thread, int8_t )
 			_ftoa(strReturn,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1); strcat(strReturn,"|");
 			strcat(strReturn,VERSION);                                    strcat(strReturn,"|");
 			_itoa(freeRam()+HP.startRAM,strReturn);                       strcat(strReturn,"|");
-			_itoa(100-HP.CPU_IDLE,strReturn);                             strcat(strReturn,"|");
+			_itoa(HP.CPU_LOAD,strReturn);                             strcat(strReturn,"|");
 			TimeIntervalToStr(HP.get_uptime(),strReturn);                 strcat(strReturn,"|");
 #ifdef EEV_DEF
 			_ftoa(strReturn,(float)HP.dEEV.get_Overheat()/100,2);         strcat(strReturn,"|");

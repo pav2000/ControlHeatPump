@@ -1509,9 +1509,8 @@ int8_t devSDM::get_readState(uint8_t group)
 	static float tmp;
 #endif
 	if(!GETBIT(flags,fSDM) || !GETBIT(flags,fSDMLink)
-
 #ifdef USE_UPS
-		|| !HP.NO_Power
+		|| HP.NO_Power
 #endif
 		) {   // Если нет счетчика или нет связи выходим
 		AcPower = 0.0f;

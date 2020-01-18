@@ -1368,6 +1368,8 @@ void vTaskList( char * pcWriteBuffer ) PRIVILEGED_FUNCTION; /*lint !e971 Unquali
 // +vad7
 // Reset runtime stats - runtime counters
 void vTaskResetRunTimeCounters(void);
+TickType_t vTaskGetRunTimeCounter(TaskHandle_t xTask);
+//
 
 /**
  * task. h

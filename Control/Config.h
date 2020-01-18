@@ -3793,7 +3793,7 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
 		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
 		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "КОП" },
+		{ STATS_OBJ_COP, OBJ_COP_Full, "COP" },
 		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
 		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
 		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }

@@ -3787,6 +3787,13 @@ void vTaskResetRunTimeCounters(void)
 	xTaskResumeAll();
 }
 
+// Return runtime counter of the task
+TickType_t vTaskGetRunTimeCounter(TaskHandle_t xTask)
+{
+	return prvGetTCBFromHandle(xTask)->ulRunTimeCounter;
+}
+// -vad7
+
 #else //configGENERATE_RUN_TIME_STATS_TASKLIST
 
 	void vTaskList( char * pcWriteBuffer )
