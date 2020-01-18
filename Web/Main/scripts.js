@@ -258,8 +258,8 @@ function loadParam(paramid, noretry, resultdiv) {
 											idsel = idsel.substring(0, idsel.length - 1);
 											element = document.getElementById(idsel);
 											if(element) {
-												var n = (Number(values[1]) + 1).toString();
-												for(var j = 0; j < element.options.length; j++) if(n == element.options[j].innerText.substring(0,1)) element.options[j].selected = true; 
+												var n = (Number(values[1]) + 1).toString() + '.';
+												for(var j = 0; j < element.options.length; j++) if(n == element.options[j].innerText.substr(0, n.length)) { element.options[j].selected = true; break; }
 											}
 											continue;
 										}
