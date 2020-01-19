@@ -1376,17 +1376,25 @@ void vServiceHP(void *)
 #endif
 	static uint8_t  task_updstat_countm = rtcSAM3X8.get_minutes();
 	static uint8_t  task_dailyswitch_countm = task_updstat_countm;
-	static TickType_t timer_sec = xTaskGetTickCount();
+	static TickType_t timer_sec = xTaskGetTickCount(), timer_idle = 0, timer_total = 0;
 	static uint16_t restart_cnt;
 	static uint16_t pump_in_pause_timer = 0;
 	for(;;) {
 		register uint32_t t = xTaskGetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
 			extern TickType_t xTickCountZero;
-			if(t < timer_sec) vTaskResetRunTimeCounters();
-			else HP.CPU_LOAD = 100 - (vTaskGetRunTimeCounter(xTaskGetIdleTaskHandle()) / ((t - xTickCountZero) / 100UL));
+			TickType_t ttmpt = t - xTickCountZero - timer_total;
+			if(ttmpt > 5000) {
+				if(t < timer_sec) {
+					vTaskResetRunTimeCounters();
+					timer_idle = timer_total = 0;
+				} else {
+					TickType_t ttmp = timer_idle;
+					HP.CPU_LOAD = 100 - (((timer_idle = vTaskGetRunTimeCounter(xTaskGetIdleTaskHandle())) - ttmp) / (ttmpt / 100UL));
+					timer_total = t - xTickCountZero;
+				}
+			}
 			timer_sec = t;
-
 			if(HP.IsWorkingNow()) {
 				if(((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) && ++task_updstat_chars >= HP.get_tChart()) { // пришло время
 					task_updstat_chars = 0;
