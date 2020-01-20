@@ -1636,7 +1636,7 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			if (strcmp(str,"get_slIP") == 0)    // Удаленные датчики - список привязки удаленного датчика
+			if (strcmp(str,"get_listIP") == 0)    // Удаленные датчики - список привязки удаленного датчика
 			{
 				ptr=x;
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
@@ -2024,7 +2024,7 @@ void parserGET(uint8_t thread, int8_t )
 			// --- УДАЛЕННЫЕ ДАТЧИКИ ----------  кусок кода для удаленного датчика - установка параметров ответ - повторение запроса уже сделали
 #ifdef SENSOR_IP                           // Получение данных удаленного датчика
 
-			if (strcmp(str,"set_slIP") == 0)    // Удаленные датчики - привязка датчика
+			if (strcmp(str,"set_listIP") == 0)    // Удаленные датчики - привязка датчика
 			{
 				// первое число (имя удаленного датчика)
 				if ((x)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
