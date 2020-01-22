@@ -2752,15 +2752,18 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
-		if((strstr((char*) ptr, HEADER_BIN)) == NULL || lenFile == 0) {  // Заголовок не найден
+		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
+		if( pStart== NULL || lenFile == 0) {              // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
 			return pSETTINGS_ERR;
 		}
-		buf_len = size - (ptr - (byte *) Socket[thread].inBuf); // определяем размер данных в пакете
-		memcpy(Socket[thread].outBuf, ptr, buf_len);         // копируем начало данных в буфер
+		len=pStart+sizeof(HEADER_BIN) - (byte*) Socket[thread].inBuf-1;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные
+		buf_len = size - len;                                                   // определяем размер бинарных данных в первом пакете 
+		memcpy(Socket[thread].outBuf, pStart+sizeof(HEADER_BIN)-1, buf_len);    // копируем бинарные данные в буфер, без заголовка!
+	    lenFile=lenFile-len;                                                    // корректируем длину файла на длину заголовка (только бинарные данные)
 		while(buf_len < lenFile)  // Чтение остальных данных по сети
 		{
-			_delay(10);
+			_delay(15);
 			len = Socket[thread].client.get_ReceivedSizeRX();                          // получить длину входного пакета
 			if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
 			Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
@@ -2768,8 +2771,8 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 			memcpy(Socket[thread].outBuf + buf_len, Socket[thread].inBuf, len);           // Добавить пакет в буфер
 			buf_len = buf_len + len;                                                     // определить размер данных
 		}
-		ptr = (byte*) Socket[thread].outBuf + sizeof(HEADER_BIN) - 1;                     // отрезать заголовок в данных
-		journal.jprintf("Loading %s, length %d bytes:\n", SETTINGS, buf_len);
+	    ptr = (byte*) Socket[thread].outBuf;     
+		journal.jprintf("Loading %s, length data %d bytes:\n", SETTINGS, buf_len);
 		// Чтение настроек из ptr
 		len = HP.load(ptr, 1);
 		if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек

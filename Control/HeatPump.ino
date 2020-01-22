@@ -447,7 +447,7 @@ x_Error:
 	uint8_t *buffer_max = buffer + size;
 	size += 2;
 	load_struct(&Option, &buffer, sizeof(Option));
-	journal.jprintf(", v.%d ", Option.ver);
+	journal.jprintf(", v.%d ", Option.ver);  // вывести версию сохранения
 	load_struct(&DateTime, &buffer, sizeof(DateTime));
 	load_struct(&Network, &buffer, sizeof(Network));
 	load_struct(message.get_save_addr(), &buffer, message.get_save_size());
