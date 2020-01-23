@@ -2106,10 +2106,10 @@ void parserGET(uint8_t thread, int8_t )
 				if(strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
 				{
 					for(i=0; i<TNUMBER; i++) if(strcmp(x,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
-					if(p >= TNUMBER)  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
+					if((p<0)||(p>=TNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
 					{
-						if(strncmp(str,"get_", 4)==0) {              // Функция get_
+						 if(strncmp(str,"get_", 4)==0) {              // Функция get_
 							str += 4;
 							if(strcmp(str,"Temp")==0)              // Функция get_Temp
 							{
@@ -2117,9 +2117,9 @@ void parserGET(uint8_t thread, int8_t )
 									_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
-							}
+							} 
 							if (strncmp(str,"raw",3)==0)           // Функция get_RawTemp
-							{ 	if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
+							{ if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
 									_dtoa(strReturn, HP.sTemp[p].get_rawTemp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
@@ -2148,8 +2148,7 @@ void parserGET(uint8_t thread, int8_t )
 								ADD_WEBDELIM(strReturn);
 								continue;
 							}
-
-							if(strncmp(str, "min", 3)==0)           // Функция get_minTemp
+ 							if(strncmp(str, "min", 3)==0)           // Функция get_minTemp
 							{
 								if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
 									_dtoa(strReturn, HP.sTemp[p].get_minTemp(), 2);
