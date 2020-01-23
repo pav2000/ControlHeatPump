@@ -381,7 +381,7 @@ const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
 const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
 const uint8_t save_end_marker[1] = { 0 };
-#define WEBDELIM	"\x7f" // ALT+127
+#define WEBDELIM	"\x7f" // ALT+127 разделитель строки в вебе
 const char SendMessageTitle[]	= "Народный контроллер теплового насоса";
 const char SendSMSTitle[] 		= "Control";
 

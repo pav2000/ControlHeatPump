@@ -1612,27 +1612,26 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			if (strcmp(str,"get_sensorIP") == 0)    // Удаленные датчики - Получить параметры (ВСЕ) удаленного датчика в виде строки
+			if (strcmp(str,"get_sensorIP") == 0)    // Удаленные датчики - Получить параметры (ВСЕ) удаленного датчика в виде строки разделитель "|"
 			{
 				ptr=x;
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
 				if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
 				// Формируем строку
-				HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,":");
+				HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,"|");
 
-				if (HP.sIP[a-1].get_update()>UPDATE_IP)  strcat(strReturn,"-:") ;                       // Время просрочено, удаленный датчик не используем
-				else { HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_TEMP,strReturn);strcat(strReturn,":"); }
+				if (HP.sIP[a-1].get_update()>UPDATE_IP)  strcat(strReturn,"-|") ;                       // Время просрочено, удаленный датчик не используем
+				else { HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_TEMP,strReturn);strcat(strReturn,"|"); }
 
 				if (HP.sIP[a-1].get_count()>0)     // Если были пакеты то выводим данные по ним
 				{
-					HP.sIP[a-1].get_sensorIP((char*)ip_STIME,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_IP,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_RSSI,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_VCC,strReturn); strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_COUNT,strReturn); strcat(strReturn,":");
+					HP.sIP[a-1].get_sensorIP((char*)ip_STIME,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_IP,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_RSSI,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_VCC,strReturn); strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_COUNT,strReturn); //strcat(strReturn,"|");
 				}
-				else strcat(strReturn,"-:-:-:-:-:");  // После включения еще ни разу данные не поступали поэтому прочерки
-
+				else strcat(strReturn,"-|-|-|-|-");  // После включения еще ни разу данные не поступали поэтому прочерки
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
