@@ -700,7 +700,8 @@ uint16_t get_binSettings(uint8_t thread)
 	strcpy(Socket[thread].outBuf,"Ver. "); // Записать номер версии в которой делалось сохранение
     strcat(Socket[thread].outBuf, VERSION);
     strcat(Socket[thread].outBuf, " ");
-    strcat(Socket[thread].outBuf, HEADER_BIN); // Заголовок по которому определяется начало "полезных данных"
+    // Сюда можно запихивать текстовую информацию, при чтении бинарных данных она будет игнорироваться
+    strcat(Socket[thread].outBuf, HEADER_BIN); // Заголовок по которому определяется начало "бинарных данных"
     sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 
 //	sendConstRTOS(thread, HEADER_BIN); // Заголовок по которому определяется начало "полезных данных"
