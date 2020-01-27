@@ -110,7 +110,7 @@ boolean  Charts_when_comp_on = false;
 #define fHistory				3               // флаг записи истории на карту памяти
 #define fSaveON					4               // флаг записи в EEPROM включения ТН
 #define fTypeRHEAT				5               // флаг как используется дополнительный ТЭН для нагрева 0-резерв 1-бивалент
-#define fSDMLogErrors			6               // флаг писать в лог нерегулярные ошибки счетчика SDM
+#define f1Wire1TSngl			6				// На 1-ой шине 1-Wire только один датчик
 #define f1Wire2TSngl			7				// На 2-ой шине 1-Wire(DS2482) только один датчик
 #define f1Wire3TSngl			8				// На 3-ей шине 1-Wire(DS2482) только один датчик
 #define f1Wire4TSngl			9				// На 4-ей шине 1-Wire(DS2482) только один датчик
@@ -119,6 +119,7 @@ boolean  Charts_when_comp_on = false;
 #define fWebStoreOnSPIFlash		12				// флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 #define fLogWirelessSensors		13				// Логировать обмен между беспроводными датчиками
 #define fBackupPower			14				// Использование резервного питания от генератора (ограничение мощности)
+#define fSDMLogErrors			15              // флаг писать в лог нерегулярные ошибки счетчика SDM
 
  
 // Структура для хранения опций теплового насоса.
