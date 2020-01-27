@@ -198,7 +198,7 @@ public:
   int16_t	get_target() {return FC_target;}                    // Получить целевую скорость в сотых %
   int8_t	set_target(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
   int16_t	get_frequency() { return FC_curr_freq; }	// Получить текущую частоту в сотых Гц
-  uint32_t	get_startTime(){return startCompressor;}// Получить время старта компрессора
+  inline uint32_t get_startTime(){return startCompressor;}// Получить время старта компрессора
   int8_t	get_readState();                          // Прочитать (внутренние переменные обновляются) состояние Инвертора, возвращает или ОК или ошибку
   int8_t	start_FC();                                // Команда ход на инвертор (целевая скорость выставляется)
   int8_t	stop_FC();                                 // Команда стоп на инвертор

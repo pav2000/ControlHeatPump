@@ -29,8 +29,8 @@ const boolean _resume = false;  // Команда возобновления р�
 #define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_RELAY)               // Включить насосы
 #define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_RELAY)              // Выключить насосы
 // Макросы по работе с компрессором в зависимости от наличия инвертора
-#define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC();else dRelay[RCOMP].set_ON();   // Включить компрессор в зависимости от наличия инвертора
-#define COMPRESSOR_OFF    if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF();  // Выключить компрессор в зависимости от наличия инвертора
+#define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC(); else { dRelay[RCOMP].set_ON(); startCompressor=rtcSAM3X8.unixtime(); }  // Включить компрессор в зависимости от наличия инвертора
+#define COMPRESSOR_OFF  { if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF(); stopCompressor = rtcSAM3X8.unixtime(); } // Выключить компрессор в зависимости от наличия инвертора
 
 // Установка критической ошибки для класса ТН вызывает останов ТН
 // Возвращает ошибку останова ТН
@@ -3120,7 +3120,6 @@ void HeatPump::compressorON()
 	    command_completed = rtcSAM3X8.unixtime();
 	  	COMPRESSOR_ON;                                      // Включить компрессор
 		if(error || dFC.get_err()) return; // Ошибка - выходим
-		startCompressor=rtcSAM3X8.unixtime();   // Запомнить время включения компрессора оно используется для задержки работы ПИД ЭРВ! должно быть перед  vTaskResume(xHandleUpdateEEV) или  dEEV.Resume
 	} else { // if (get_errcode()==OK)
 		journal.jprintf(" EEV not set before start compressor!\n");
 		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);return;
@@ -3192,7 +3191,6 @@ void HeatPump::compressorOFF()
 
 	command_completed = rtcSAM3X8.unixtime();
 	COMPRESSOR_OFF;                                                     // Компрессор выключить
-	stopCompressor = rtcSAM3X8.unixtime();                                // Запомнить время выключения компрессора
 
 #ifdef REVI
 	checkEVI();                                                     // выключить ЭВИ
