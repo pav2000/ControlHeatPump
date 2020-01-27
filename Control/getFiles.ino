@@ -697,7 +697,14 @@ uint16_t get_binSettings(uint8_t thread)
     strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
     strcat(Socket[thread].outBuf, "settings.bin\"\r\n\r\n");
 	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
-	sendConstRTOS(thread, HEADER_BIN);
+	strcpy(Socket[thread].outBuf,"Ver. "); // Записать номер версии в которой делалось сохранение
+    strcat(Socket[thread].outBuf, VERSION);
+    strcat(Socket[thread].outBuf, " ");
+    // Сюда можно запихивать текстовую информацию, при чтении бинарных данных она будет игнорироваться
+    strcat(Socket[thread].outBuf, HEADER_BIN); // Заголовок по которому определяется начало "бинарных данных"
+    sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
+
+//	sendConstRTOS(thread, HEADER_BIN); // Заголовок по которому определяется начало "полезных данных"
 	
 	// 2. Запись настроек ТН
 	if((len = HP.save())<= 0) return 0; // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных

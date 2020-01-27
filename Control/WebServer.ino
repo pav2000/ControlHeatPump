@@ -1612,31 +1612,30 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			if (strcmp(str,"get_sensorIP") == 0)    // Удаленные датчики - Получить параметры (ВСЕ) удаленного датчика в виде строки
+			if (strcmp(str,"get_sensorIP") == 0)    // Удаленные датчики - Получить параметры (ВСЕ) удаленного датчика в виде строки разделитель "|"
 			{
 				ptr=x;
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
 				if ((a<1)||(a>IPNUMBER))      {strcat(strReturn,"E23" WEBDELIM);continue;}  // проверка диапазона номеров датчиков
 				// Формируем строку
-				HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,":");
+				HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_NUMBER,strReturn); strcat(strReturn,"|");
 
-				if (HP.sIP[a-1].get_update()>UPDATE_IP)  strcat(strReturn,"-:") ;                       // Время просрочено, удаленный датчик не используем
-				else { HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_TEMP,strReturn);strcat(strReturn,":"); }
+				if (HP.sIP[a-1].get_update()>UPDATE_IP)  strcat(strReturn,"-|") ;                       // Время просрочено, удаленный датчик не используем
+				else { HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_TEMP,strReturn);strcat(strReturn,"|"); }
 
 				if (HP.sIP[a-1].get_count()>0)     // Если были пакеты то выводим данные по ним
 				{
-					HP.sIP[a-1].get_sensorIP((char*)ip_STIME,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_IP,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_RSSI,strReturn);strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_VCC,strReturn); strcat(strReturn,":");
-					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_COUNT,strReturn); strcat(strReturn,":");
+					HP.sIP[a-1].get_sensorIP((char*)ip_STIME,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_IP,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_RSSI,strReturn);strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_VCC,strReturn); strcat(strReturn,"|");
+					HP.sIP[a-1].get_sensorIP((char*)ip_SENSOR_COUNT,strReturn); //strcat(strReturn,"|");
 				}
-				else strcat(strReturn,"-:-:-:-:-:");  // После включения еще ни разу данные не поступали поэтому прочерки
-
+				else strcat(strReturn,"-|-|-|-|-");  // После включения еще ни разу данные не поступали поэтому прочерки
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			if (strcmp(str,"get_slIP") == 0)    // Удаленные датчики - список привязки удаленного датчика
+			if (strcmp(str,"get_listIP") == 0)    // Удаленные датчики - список привязки удаленного датчика
 			{
 				ptr=x;
 				if ((a=atoi(ptr))==0)         {strcat(strReturn,"E22" WEBDELIM);continue;}  // если возвращен 0 то ошибка преобразования
@@ -2024,7 +2023,7 @@ void parserGET(uint8_t thread, int8_t )
 			// --- УДАЛЕННЫЕ ДАТЧИКИ ----------  кусок кода для удаленного датчика - установка параметров ответ - повторение запроса уже сделали
 #ifdef SENSOR_IP                           // Получение данных удаленного датчика
 
-			if (strcmp(str,"set_slIP") == 0)    // Удаленные датчики - привязка датчика
+			if (strcmp(str,"set_listIP") == 0)    // Удаленные датчики - привязка датчика
 			{
 				// первое число (имя удаленного датчика)
 				if ((x)==NULL)              {strcat(strReturn,"E21" WEBDELIM);continue;}
@@ -2107,10 +2106,10 @@ void parserGET(uint8_t thread, int8_t )
 				if(strstr(str,"Temp"))          // Проверка для запросов содержащих Temp
 				{
 					for(i=0; i<TNUMBER; i++) if(strcmp(x,HP.sTemp[i].get_name())==0) {p=i; break;} // Поиск среди имен  смещение 0
-					if(p >= TNUMBER)  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
+					if((p<0)||(p>=TNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
 					{
-						if(strncmp(str,"get_", 4)==0) {              // Функция get_
+						 if(strncmp(str,"get_", 4)==0) {              // Функция get_
 							str += 4;
 							if(strcmp(str,"Temp")==0)              // Функция get_Temp
 							{
@@ -2118,9 +2117,9 @@ void parserGET(uint8_t thread, int8_t )
 									_dtoa(strReturn, HP.sTemp[p].get_Temp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
-							}
+							} 
 							if (strncmp(str,"raw",3)==0)           // Функция get_RawTemp
-							{ 	if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
+							{ if(HP.sTemp[p].get_present() && HP.sTemp[p].get_Temp() != STARTTEMP)  // Если датчик есть в конфигурации то выводим значение
 									_dtoa(strReturn, HP.sTemp[p].get_rawTemp(), 2);
 								else strcat(strReturn,"-");             // Датчика нет ставим прочерк
 								ADD_WEBDELIM(strReturn); continue;
@@ -2149,8 +2148,7 @@ void parserGET(uint8_t thread, int8_t )
 								ADD_WEBDELIM(strReturn);
 								continue;
 							}
-
-							if(strncmp(str, "min", 3)==0)           // Функция get_minTemp
+ 							if(strncmp(str, "min", 3)==0)           // Функция get_minTemp
 							{
 								if (HP.sTemp[p].get_present()) // Если датчик есть в конфигурации то выводим значение
 									_dtoa(strReturn, HP.sTemp[p].get_minTemp(), 2);
@@ -2752,24 +2750,28 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
-		if((strstr((char*) ptr, HEADER_BIN)) == NULL || lenFile == 0) {  // Заголовок не найден
+		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
+		if( pStart== NULL || lenFile == 0) {              // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
 			return pSETTINGS_ERR;
 		}
-		buf_len = size - (ptr - (byte *) Socket[thread].inBuf); // определяем размер данных в пакете
-		memcpy(Socket[thread].outBuf, ptr, buf_len);         // копируем начало данных в буфер
-		while(buf_len < lenFile)  // Чтение остальных данных по сети
+		len=pStart+sizeof(HEADER_BIN) - (byte*) Socket[thread].inBuf-1;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные
+		buf_len = size - len;                                                   // определяем размер бинарных данных в первом пакете 
+		memcpy(Socket[thread].outBuf, pStart+sizeof(HEADER_BIN)-1, buf_len);    // копируем бинарные данные в буфер, без заголовка!
+	    lenFile=lenFile-len;                                                    // корректируем длину файла на длину заголовка (только бинарные данные)
+		while(buf_len < lenFile)  // Чтение остальных бинарных данных по сети
 		{
-			_delay(10);
-			len = Socket[thread].client.get_ReceivedSizeRX();                          // получить длину входного пакета
-			if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1; // Ограничить размером в максимальный размер пакета w5200
-			Socket[thread].client.read(Socket[thread].inBuf, len);                      // прочитать буфер
-			if(buf_len + len >= (int32_t) sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM; // проверить длину если не влезает то выходим
-			memcpy(Socket[thread].outBuf + buf_len, Socket[thread].inBuf, len);           // Добавить пакет в буфер
-			buf_len = buf_len + len;                                                     // определить размер данных
+			for(uint8_t i=0;i<20;i++) if(!Socket[thread].client.available()) _delay(1);else break; // ждем получние пакета до 20 мсек (может быть плохая связь)
+			if(!Socket[thread].client.available()) break;                                          // пакета нет - выходим
+			len = Socket[thread].client.get_ReceivedSizeRX();                                      // получить длину входного пакета
+			if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1;                                   // Ограничить размером в максимальный размер пакета w5200
+			Socket[thread].client.read(Socket[thread].inBuf, len);                                 // прочитать буфер
+			if(buf_len + len >= (int32_t) sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
+			memcpy(Socket[thread].outBuf + buf_len, Socket[thread].inBuf, len);                    // Добавить пакет в буфер
+			buf_len = buf_len + len;                                                               // определить размер данных
 		}
-		ptr = (byte*) Socket[thread].outBuf + sizeof(HEADER_BIN) - 1;                     // отрезать заголовок в данных
-		journal.jprintf("Loading %s, length %d bytes:\n", SETTINGS, buf_len);
+	    ptr = (byte*) Socket[thread].outBuf;     
+		journal.jprintf("Loading %s, length data %d bytes:\n", SETTINGS, buf_len);
 		// Чтение настроек из ptr
 		len = HP.load(ptr, 1);
 		if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек

@@ -547,22 +547,22 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
                                                 return true;            
                                                 } else  
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
-    if(strcmp(var,fc_PID_STOP)==0)              { if((x>50)&&(x<100)){_data.PidStop=x;return true; } else return false;  } else 
-    if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>1)&&(x<25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
+    if(strcmp(var,fc_PID_STOP)==0)              { if((x>=50)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else // % от цели
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>=1)&&(x<=25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
 
-	if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_START_FREQ)==0)            { if((x>20)&&(x<120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>20)&&(x<150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>20)&&(x<80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>20)&&(x<80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>20)&&(x<80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>20)&&(x<80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>40)&&(x<200)){_data.maxFreq=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>40)&&(x<200)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>40)&&(x<200)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>40)&&(x<200)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>0.2)&&(x<10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
-	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>0.2)&&(x<10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
+	if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<=5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_START_FREQ)==0)            { if((x>=20)&&(x<=120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=20)&&(x<=150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>=20)&&(x<=80)){_data.minFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if((x>=20)&&(x<=80)){_data.minFreqCool=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if((x>=20)&&(x<=80)){_data.minFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if((x>=20)&&(x<=80)){_data.minFreqUser=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>=40)&&(x<=240)){_data.maxFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=40)&&(x<=240)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=40)&&(x<=240)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=40)&&(x<=240)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>=0.2)&&(x<=10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>=0.2)&&(x<=10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
 
 	if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы

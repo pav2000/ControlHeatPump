@@ -13,7 +13,7 @@ function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
 	var elid = paramid.replace("(", "-").replace(")", "");
 	var rec = new RegExp('_listChart.?');
-	var res = new RegExp('_modeHP|_listProf|_testMode|_slIP');
+	var res = new RegExp('_modeHP|_listProf|_testMode|_listIP');
 	var elval, clear = true, equate = true;
 	var element;
 	if(paramid.indexOf("(SCHEDULER)")!=-1) {
@@ -76,7 +76,7 @@ function setParam(paramid, resultid) {
 		}
 	}
 	if(/[(]DSD\d/.test(paramid)) clear = false;
-	if(/et_slIP/.test(paramid)) elsend = elsend.replace("(", "=").replace("-", "(");
+	if(/et_listIP/.test(paramid)) elsend = elsend.replace("(", "=").replace("-", "(");
 	if(!resultid) resultid = elid.replace("set_", "get_").toLowerCase();
 	if(clear) {
 		element = document.getElementById(resultid);
@@ -137,7 +137,7 @@ function loadParam(paramid, noretry, resultdiv) {
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
-								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|NSL|SMS_SERVICE|et_slIP/.test(values[0])) type = "select"; // значения
+								else if(/_list|et_modeHP|[(]RULE|et_testMode|[(]TARGET|NSL/.test(values[0])) type = "select"; // значения
 								else if(/Prof[(]NUM|get_tbl|listRelay|sensorIP|get_numberIP|TASK_/.test(values[0])) type = "table"; 
 								else if(values[0].indexOf("get_is")==0) type = "is"; // наличие датчика в конфигурации
 								else if(values[0].indexOf("scan_")==0) type = "scan"; // ответ на сканирование
@@ -263,7 +263,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											}
 											continue;
 										}
-										if(idsel == 'get_slip') idsel = valueid;
+										if(idsel == 'get_listip') idsel = valueid;
 										else if(idsel == "get_testmode") {
 											var element2 = document.getElementById("get_testmode2");
 											if(element2) {
@@ -509,11 +509,11 @@ function loadParam(paramid, noretry, resultdiv) {
 											count = Number(values[1]);
 											for(var j = 1; j < count + 1; j++) {
 												upsens = upsens + "get_sensorIP(" + j + "),";
-												loadsens = loadsens + "get_slIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
+												loadsens = loadsens + "get_listIP(" + j + "),get_sensorRuleIP(" + j + "),get_sensorUseIP(" + j + "),";
 												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
 												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
 												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><select id="get_slip-' + j + '" onchange="setParam(\'get_slIP-' + j + '\',\'get_slip-' + j + '\');"></select></td></tr>';
+												content2 = content2 + '<td><select id="get_listIP-' + j + '" onchange="setParam(\'get_listIP-' + j + '\',\'get_listIP-' + j + '\');"></select></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
@@ -550,10 +550,10 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'values') {
 									if(valueid == "get_ohp-time_chart") window.time_chart = values[1].toLowerCase().replace(/[^\w\d]/g, "");
-									element3 = document.getElementById(valueid + "3");
-									if(element3) {
-										element3.value = values[1];
-										element3.innerHTML = values[1];
+									element = document.getElementById(valueid + "3");
+									if(element) {
+										element.value = values[1];
+										element.innerHTML = values[1];
 									}
 									element = document.getElementById(valueid);
 									if(element) {

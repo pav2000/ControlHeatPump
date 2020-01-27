@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.057"				// Версия прошивки
+#define VERSION			"1.059"				// Версия прошивки
 #define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -381,7 +381,7 @@ const char http_get_str3[] = "\r\nAccept: text/html\r\n\r\n";
 const char http_key_ok1[] = "HTTP/"; // "1.1"
 const char http_key_ok2[] = " 200 OK\r\n";
 const uint8_t save_end_marker[1] = { 0 };
-#define WEBDELIM	"\x7f" // ALT+127
+#define WEBDELIM	"\x7f" // ALT+127 разделитель строки в вебе
 const char SendMessageTitle[]	= "Народный контроллер теплового насоса";
 const char SendSMSTitle[] 		= "Control";
 
@@ -530,7 +530,7 @@ const char *mess_SMTP_LOGIN   = {"SMTP_LOGIN"};          // логин серв�
 const char *mess_SMTP_PASS    = {"SMTP_PASS"};           // пароль сервера если включена авторизация
 const char *mess_SMTP_MAILTO  = {"SMTP_MAILTO"};         // адрес отправителя
 const char *mess_SMTP_RCPTTO  = {"SMTP_RCPTTO"};         // адрес получателя
-const char *mess_SMS_SERVICE  = {"SMS_SERVICE"};         // сервис отправки смс
+const char *mess_SMS_SERVICE  = {"SMS_list"};            // сервис отправки смс
 const char *mess_SMS_IP       = {"SMS_IP"};              // IP Адрес сервера для отправки смс
 const char *mess_SMS_PHONE    = {"SMS_PHONE"};           // телефон куда отправляется смс
 const char *mess_SMS_P1       = {"SMS_P1"};              // первый параметр для отправки смс
