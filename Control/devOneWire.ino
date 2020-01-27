@@ -176,7 +176,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 	{
 		OneWireDrv.reset_search();
 		while(OneWireDrv.search(addr)) // до тех пор пока есть свободные адреса
-		{ // Цикл чтения одного датчика на DS2482 занимает 335 мс с define ONEWIRE_DONT_CHG_RES и 375 мс без нее.
+		{
 			WDT_Restart(WDT);
 			err = OK;
 			//  Датчик найден!
@@ -200,18 +200,18 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			// 5. Получение данных
 			if(!OneWireDrv.reset()) err = ERR_ONEWIRE;
 			if(err == OK) {
-#ifdef ONEWIRE_DS2482_SECOND
-				if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
-				else
-#endif
-					OneWireDrv.select(addr);
+				if(GETBIT(HP.get_flags(), f1Wire1TSngl + bus)) OneWireDrv.skip(); else OneWireDrv.select(addr);
 				OneWireDrv.write(0xBE);
 				for(i=0; i<9; i++) data[i] = OneWireDrv.read(); // Читаем данные, нам необходимо 9 байт
 				// конвертируем данные в фактическую температуру
 				int16_t t = CalcTemp(addr[0], data, 0);
 				if(OneWireDrv.crc8(data,8) != data[8] || t == ERROR_TEMPERATURE)  // Дополнительная проверка для DS18B20
 					strcat(result_str, "CRC");
-				else _ftoa(result_str, (float)t / 100.0, 2);
+				else _dtoa(result_str, t, 2);
+				strcat(result_str, "(");
+				_itoa(((data[4] & 0x60) >> 5) + 9, result_str);
+				strcat(result_str, "b)");
+				if(data[4] != DS18B20_p12BIT) if(SetResolution(addr, DS18B20_p12BIT, 1)) strcat(result_str, "!");
 			}
 			strcat(result_str, ":");
 			// 8. Адрес добавить
@@ -226,6 +226,16 @@ int8_t  deviceOneWire::Scan(char *result_str)
 			strcat(result_str, "1");
 #endif
 			strcat(result_str, ";");
+			release_I2C_bus();
+			journal.jprintf("%s Pad:%s\n", result_str, addressToHex(data));
+#ifdef ONEWIRE_DS2482
+			if(SemaphoreTake(xI2CSemaphore, (I2C_TIME_WAIT/portTICK_PERIOD_MS)) == pdFALSE) {
+				journal.printf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);
+				err = ERR_I2C_BUZY;
+				break;
+			}
+#endif
+			result_str += strlen(result_str);
 			if(++OW_scanTableIdx >= OW_scanTable_max) break;   // Следующий датчик
 		} // while по датчикам
 	} else {
@@ -246,10 +256,8 @@ int8_t  deviceOneWire::Read(byte *addr, int16_t &val)
 	byte data[9];
 
 	if((i = lock_I2C_bus_reset(0))) return i;
-#ifdef ONEWIRE_DS2482_SECOND
-	if(bus && GETBIT(HP.get_flags(), f1Wire2TSngl-1 + bus)) OneWireDrv.skip();
+	if(GETBIT(HP.get_flags(), f1Wire1TSngl + bus)) OneWireDrv.skip();
 	else
-#endif
 		OneWireDrv.select(addr);
 	OneWireDrv.write(0xBE); // Команда на чтение регистра температуры
 	for(i = 0; i < 9; i++) {
@@ -286,7 +294,6 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
     OneWireDrv.write(0x00);  // верх и низ для аварийных температур не используется
     OneWireDrv.write(0x00);
     OneWireDrv.write(rs);    // это разрядность конвертации 0x7f - 12бит 0x5f- 11бит 0x3f-10бит 0x1f-9 бит
-#ifndef ONEWIRE_DONT_CHG_RES
     if(rs == DS18B20_p12BIT) {
         if(!OneWireDrv.reset()){
         	err = ERR_ONEWIRE;
@@ -298,12 +305,13 @@ int8_t deviceOneWire::SetResolution(uint8_t *addr, uint8_t rs, uint8_t dont_lock
 		if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG | DS2482_CONFIG_SPU);
 #endif
     	OneWireDrv.write(0x48);  // Записать в чип разрешение на всякий случай
-    	_delay(12);
 #ifdef ONEWIRE_DS2482_2WAY
-		if((ONEWIRE_2WAY & (1<<bus))) OneWireDrv.configure(DS2482_CONFIG);
+		if((ONEWIRE_2WAY & (1<<bus))) {
+	    	_delay(12);
+			OneWireDrv.configure(DS2482_CONFIG);
+		}
 #endif
     }
-#endif
     if(!dont_lock_bus) release_I2C_bus();
     return err;
 }
