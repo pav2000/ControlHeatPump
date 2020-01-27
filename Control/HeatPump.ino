@@ -29,7 +29,7 @@ const boolean _resume = false;  // Команда возобновления р�
 #define PUMPS_ON          Pumps(true, DELAY_AFTER_SWITCH_RELAY)               // Включить насосы
 #define PUMPS_OFF         Pumps(false, DELAY_AFTER_SWITCH_RELAY)              // Выключить насосы
 // Макросы по работе с компрессором в зависимости от наличия инвертора
-#define COMPRESSOR_ON     if(dFC.get_present()) dFC.start_FC(); else { dRelay[RCOMP].set_ON(); startCompressor=rtcSAM3X8.unixtime(); }  // Включить компрессор в зависимости от наличия инвертора
+#define COMPRESSOR_ON   { if(dFC.get_present()) dFC.start_FC(); else dRelay[RCOMP].set_ON(); startCompressor = rtcSAM3X8.unixtime(); }  // Включить компрессор в зависимости от наличия инвертора
 #define COMPRESSOR_OFF  { if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF(); stopCompressor = rtcSAM3X8.unixtime(); } // Выключить компрессор в зависимости от наличия инвертора
 
 // Установка критической ошибки для класса ТН вызывает останов ТН
