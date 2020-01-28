@@ -116,7 +116,7 @@ boolean parseIPAddress(const char* str, char sep, IPAddress &ip)
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Функции ниже использовать только в WebServer или с семафором xWebThreadSemaphore!
-char _buf[18];
+char _buf[20];
 // IP адрес в строку
 char *IPAddress2String(IPAddress & ip) 
 {
@@ -372,27 +372,24 @@ void Software_Reset() {
 char* ResetCause(void)
 {
 	uint32_t resetCause = rstc_get_reset_cause(RSTC);
-	// strcpy(_buf,"");
-	switch ( resetCause )
-	{
-	case RSTC_GENERAL_RESET:  strcpy(_buf, "General");  break;
-	case RSTC_BACKUP_RESET:   strcpy(_buf, "Backup");   break;
-	case RSTC_WATCHDOG_RESET: strcpy(_buf, "Watchdog"); break;
-	case RSTC_SOFTWARE_RESET: strcpy(_buf, "Software"); break;
-	case RSTC_USER_RESET:     strcpy(_buf, "User");     break;
-	default:                  strcpy(_buf, "Unknown");  break;
+	switch ( resetCause ) {
+		case RSTC_GENERAL_RESET:  strcpy(_buf, "General");  break;
+		case RSTC_BACKUP_RESET:   strcpy(_buf, "Backup");   break;
+		case RSTC_WATCHDOG_RESET: strcpy(_buf, "Watchdog"); break;
+		case RSTC_SOFTWARE_RESET: strcpy(_buf, "Software"); break;
+		case RSTC_USER_RESET:     strcpy(_buf, "User");     break;
+		default:                  strcpy(_buf, "Unknown");  break;
 	}
 	if((resetCause = lastErrorFreeRtosCode & 0xFF)) { // FreeRTOS error
 		strcpy(_buf, "RTOS ");
-		switch(resetCause)
-		{
-		case 1: strcat(_buf, "CONFIG");  break;
-		case 2: strcat(_buf, "MALLOC");  break;
-		case 3: strcpy(_buf, "MEM "); strncat(_buf, (char *)&GPBR->SYS_GPBR[1], 11);  break;
-		case 4: strcat(_buf, "HARD FAULT");  break;
-		case 5: strcat(_buf, "BUS FAULT");  break;
-		case 6: strcat(_buf, "USAGE FAULT");  break;
-		case 7: strcat(_buf, "TASK #");  break;
+		switch(resetCause) {
+			case 1: strcat(_buf, "CONFIG");  break;
+			case 2: strcat(_buf, "MALLOC");  break;
+			case 3: strcpy(_buf, "MEM "); strncat(_buf, (char *)&GPBR->SYS_GPBR[1], 10);  break;
+			case 4: strcat(_buf, "HARD FAULT");  break;
+			case 5: strcat(_buf, "BUS FAULT");  break;
+			case 6: strcat(_buf, "USAGE FAULT");  break;
+			case 7: strcat(_buf, "TASK #");  break;
 		}
 	}
 	return _buf;

@@ -201,8 +201,6 @@ void setup() {
 #ifdef POWER_CONTROL                        // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
 	pinMode(PIN_POWER_ON,OUTPUT);
 	digitalWriteDirect(PIN_POWER_ON, LOW);
-#else
-	delay(10);
 #endif
 
 	// Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
