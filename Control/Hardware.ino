@@ -48,7 +48,8 @@ void start_ADC()
 // Установка АЦП
 void adc_setup()
 {
-	uint16_t adcMask = 0;
+	uint32_t adcMask = 0;
+	uint32_t adcGain = 0x55555555; // All gains set to x1 Channel Gain Register
 	uint8_t max = 0;
 #ifdef VCC_CONTROL                             // если разрешено чтение напряжение питания
 	adcMask |= (1<<PIN_ADC_VCC);               // Добавить маску контроля питания
@@ -60,8 +61,12 @@ void adc_setup()
 	// Расчет маски каналов
 	for(uint8_t i = 0; i < ANUMBER; i++) {   // по всем датчикам
 		if(HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) {
-			if(max < HP.sADC[i].get_pinA()) max = HP.sADC[i].get_pinA();
-			adcMask |= 1 << HP.sADC[i].get_pinA();
+			uint32_t ach = HP.sADC[i].get_pinA();
+			if(max < ach) max = ach;
+			adcMask |= 1 << ach;
+#ifdef ADC_GAIN
+			adcGain = (adcGain & ~(3 << (2 * ach))) | (ADC_GAIN[i] << (2 * ach));
+#endif
 		}
 	}
 #ifdef TNTC
@@ -76,10 +81,10 @@ void adc_setup()
 	ADC->ADC_IER = 1 << max;         // Самый старший канал
 	ADC->ADC_CHDR = 0xFFFF;          // Channel Disable Register CHDR disable all channels
 	ADC->ADC_CHER = adcMask;         // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
-	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
+	ADC->ADC_CGR = adcGain;
 	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
 	// 12bit, 14MHz, trig source TIOA Output of the Timer Counter Channel 2
-	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG3 | ADC_MR_TRGEN;
+	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG3 | ADC_MR_TRGEN | ADC_MR_ANACH;
 	adc_set_bias_current(ADC, 0);    // for sampling frequency: 0 - below 500 kHz, 1 - between 500 kHz and 1 MHz.
 }
 

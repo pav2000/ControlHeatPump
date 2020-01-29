@@ -3739,6 +3739,9 @@ const char *noteTemp[] = {"Температура улицы",
   const uint16_t TRANsADC[ANUMBER]  = { 373, 1380,  181,  181};
   // напряжение (отсчеты АЦП) соответсвующее cZero
   const uint16_t ZEROPRESS[ANUMBER] = { 290,  740,   70,   70};
+  // Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
+  // const uint8_t  ADC_GAIN[ANUMBER] = { 1,    1,    1,    1};
+
 
   const boolean SENSORPRESS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
   const int16_t MINPRESS[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения давления, в сотых бар
