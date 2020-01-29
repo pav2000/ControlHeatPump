@@ -141,7 +141,7 @@ int8_t  deviceOneWire::Scan(char *result_str)
 {
 #ifdef DEMO // В демо режиме выводим строку констант
 	// Строка которая выдается в демо режиме при сканировании onewire
-	strcat(result_str,"1:DS18B20:20.1:1111111111111111:1;2:DS18S20:-3.56:2222222222222222:1;3:DS1822:34.6:3333333333333333:2;");
+	strcat(result_str,"1:DS18B20:20.1:28FFC414B51605B3:1;2:DS18S20:-3.56:28FFDE93B3160321:1;3:DS1822:34.6:28FF2B18B5160514:2;");
 	OW_scanTable[0].num=1;OW_scanTable[1].num=2;OW_scanTable[2].num=3;
 	for (int i=0;i<8;i++)
 	{
@@ -227,7 +227,10 @@ int8_t  deviceOneWire::Scan(char *result_str)
 #endif
 			strcat(result_str, ";");
 			release_I2C_bus();
-			journal.jprintf("%s Pad:%s\n", result_str, addressToHex(data));
+			journal.jprintf("%s Pad:%s", result_str, addressToHex(data));   // подробнее о поддельных датчиках https://github.com/cpetrich/counterfeit_DS18B20
+			if (addr[5]!=0x00 || addr[6]!=0x00) journal.jprintf(" not Maxim's ROM address!");
+			if (data[5]!=0xff || data[6]!=0x0c || data[7]!=0x10 ) journal.jprintf(" bad scratchpad: fake sensor!");
+			journal.jprintf("\n");
 #ifdef ONEWIRE_DS2482
 			if(SemaphoreTake(xI2CSemaphore, (I2C_TIME_WAIT/portTICK_PERIOD_MS)) == pdFALSE) {
 				journal.printf((char*)cErrorMutex,__FUNCTION__,MutexI2CBuzy);
