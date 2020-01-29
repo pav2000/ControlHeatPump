@@ -2183,9 +2183,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		 #ifdef SUPERBOILER                       // Или температура нагнетания компрессора больше максимальной - 5 градусов
 		  if ((PressToTemp(PCON)>Prof.Boiler.tempIn-50)  // для SuperBouler
 		 #else
-		  if ((FEED>Prof.Boiler.tempIn-100)              // для Bouler
+		  if ((FEED>Prof.Boiler.tempIn-BOILER_TEMP_FEED_RESET)              // для Bouler 
 		 #endif		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
-		    ||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-500))
+		    ||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-BOILER_TEMP_COMP_RESET)) 
 		{
 			journal.jprintf(" Discharge of excess heat %ds...\n", Prof.Boiler.Reset_Time);
 			switchBoiler(false);               // Переключится на ходу на отопление
