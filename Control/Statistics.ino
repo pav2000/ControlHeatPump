@@ -532,10 +532,10 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		break;
 	case STATS_OBJ_COP:
 		if(flag) strcat(ret, "C"); // ось COP
-		if(Stats_data[i].number == OBJ_COP_Compressor) {
-			strcat(ret, "КОП");
-		} else if(Stats_data[i].number == OBJ_COP_Full) {
-			strcat(ret, "Полный КОП");
+		if(Stats_data[i].type == STATS_TYPE_AVG || Stats_data[i].number == OBJ_COP_Full) {
+			strcat(ret, "Полный COP");
+		} else if(Stats_data[i].number == OBJ_COP_Compressor) {
+			strcat(ret, "COP");
 		}
 		break;
 	case STATS_OBJ_Compressor:
@@ -603,7 +603,7 @@ xSkipEmpty:
 		}
 		break;
 	case STATS_OBJ_COP:
-		if(Stats_data[i].type == STATS_TYPE_AVG) int_to_dec_str(Stats_data[Stats_data[i].when].value / Stats_data[Stats_data[i].number].value, 1000000, ret, 2);
+		if(Stats_data[i].type == STATS_TYPE_AVG) int_to_dec_str(Stats_data[Stats_data[i].when].value / (Stats_data[Stats_data[i].number].value / 100), 100, ret, 2);
 		else int_to_dec_str(val, 100, ret, 2);
 		break;
 	default:
