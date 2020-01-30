@@ -788,7 +788,6 @@ uint16_t get_csvChart(uint8_t thread)
 #ifdef USE_ELECTROMETER_SDM
   #ifndef MIN_RAM_CHARTS
 	if(HP.dSDM.ChartVoltage.get_present())    strcat(Socket[thread].outBuf,"VOLTAGE;");
-	if(HP.dSDM.ChartCurrent.get_present())    strcat(Socket[thread].outBuf,"CURRENT;");
   #endif
 	//    if(HP.dSDM.sAcPower.get_present())    strcat(Socket[thread].outBuf,"acPOWER;");
 	//    if(HP.dSDM.sRePower.get_present())    strcat(Socket[thread].outBuf,"rePOWER;");
@@ -842,12 +841,8 @@ uint16_t get_csvChart(uint8_t thread)
 #ifdef USE_ELECTROMETER_SDM
 	#ifndef MIN_RAM_CHARTS
 		if(HP.dSDM.ChartVoltage.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartVoltage.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-		if(HP.dSDM.ChartCurrent.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartCurrent.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 	#endif
-		//   if(HP.dSDM.sAcPower.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dSDM.sAcPower.get_Point(i),2)); strcat(Socket[thread].outBuf,";"); }
-		//   if(HP.dSDM.sRePower.get_present())     { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dSDM.sRePower.get_Point(i),2)); strcat(Socket[thread].outBuf,";"); }
 		if(HP.dSDM.ChartPower.get_present())       { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartPower.get_Point(i),2); strcat(Socket[thread].outBuf,";"); }
-		//   if(HP.dSDM.ChartPowerFactor.get_present()) { strcat(Socket[thread].outBuf,ftoa(temp,(float)HP.dSDM.ChartPowerFactor.get_Point(i)/100.0,2)); strcat(Socket[thread].outBuf,";"); }
 		if(HP.ChartFullCOP.get_present())       { _ftoa(Socket[thread].outBuf,(float)HP.ChartFullCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
 #endif
 
@@ -1105,13 +1100,9 @@ void get_mailState(EthernetClient client,char *tempBuf)
 	strcpy(tempBuf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-#ifndef SDM_NO_USELESS_READ
-	strcpy(tempBuf,"Текущая потребляемая реактивная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_REPOWER,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Текущая потребляемая суммарная мощность ТН [Вт]: ");        HP.dSDM.get_paramSDM((char*)sdm_POWER,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-#endif
 	strcpy(tempBuf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Суммарная активная энергия [кВт*ч]: ");                     HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(tempBuf,"Суммарная активная энергия [кВт*ч]: ");                      HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Cостояние связи со счетчиком: ");                            HP.dSDM.get_paramSDM((char*)sdm_LINK,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 #else
 	strcpy(tempBuf,"SDM absent");

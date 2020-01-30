@@ -14,13 +14,13 @@ var ClcAvgSens;
 var ClcAvgSum;
 var ClcAvgSumCnt;
 var ClcAvgLast;
-urlupdate = 5000;     // читать реже что бы не нагружать шину 485
+urlupdate = 4000;
 window.onload = function() {
 	loadParam("get_tblFlow");
 	loadParam("get_tblInput");
 	loadParam("get_listPress");
 	loadParam("get_SDM(NAME),get_SDM(NOTE),get_SDM(LINK),get_SDM(MAXV),get_SDM(MINV),get_SDM(MAXP)");
-	updateParam("get_SDM(VOLT),get_SDM(CURRENT),get_SDM(REPOWER),get_SDM(ACPOWER),get_SDM(POWER),get_SDM(PF),get_SDM(PHASE),get_SDM(FREQ),get_SDM(ACENERGY),get_SDM(ERR),get_SDM(LINK)");
+	updateParam("get_SDM(VOLT),get_SDM(CURRENT),get_SDM(ACPOWER),get_SDM(PF),get_SDM(PHASE),get_SDM(FREQ),get_SDM(ACENERGY),get_SDM(ERR),get_SDM(LINK)");
 }
 function CalcAvgValue(sens) {
 	if(ClcAvgCnt > 0) return;
@@ -69,8 +69,8 @@ function loadParam_after(paramid) {
 	</thead>
 	<tbody id="get_tblflow">
 	</tbody>
-</table>
-</div>
+</table>            
+</div>       
 
 <div class="row1">
   <h2>Аналоговые датчики</h2>
@@ -114,11 +114,11 @@ function loadParam_after(paramid) {
 		<td><input id="a2" type="number" min="0" max="4095" step="1" value="2500"></td>
 		<td><input id="p2" type="number" min="0" max="100" step="0.01" value="12"></td>
 		<td>Коэффициент: <span id="k2"></span></td>
-      </tr>
+      </tr>     
     </tbody>
     </table>
-</div>
-
+</div>  
+  
 <div class="row1">
   <h2>Датчики сухой контакт</h2>
   <table>
@@ -136,7 +136,7 @@ function loadParam_after(paramid) {
     </thead>
     <tbody id="get_tblinput">
     </tbody>
-  </table>
+  </table>            
 </div>
 
 <div class="row1">
@@ -147,8 +147,6 @@ function loadParam_after(paramid) {
       <th>Напряжение (V)</th>
       <th>Ток (А)</th>
       <th>Активная мощность (W)</th>
-      <th>Реактивная мощность (VAr)</th>   <!-- Дополнительно -->
-      <th>Полная мощность (VA)</th>        <!-- Дополнительно -->
       <th>Коэффициент мощности (cos φ)</th>
       <th>Частота (Hz)</th>
       <th>Активная энергия (kWh)</th>
@@ -159,8 +157,6 @@ function loadParam_after(paramid) {
         <td id="get_sdm-volt"></td>
         <td id="get_sdm-current"></td>
         <td id="get_sdm-acpower"></td>
-        <td id="get_sdm-repower"></td>     <!-- Дополнительно -->
-        <td id="get_sdm-power"></td>       <!-- Дополнительно -->
         <td id="get_sdm-pf"></td>
         <td id="get_sdm-freq"></td>
         <td id="get_sdm-acenergy"></td>
@@ -170,7 +166,6 @@ function loadParam_after(paramid) {
     </thead>
   </table>
 </div>    
-
 
 <div class="row1">
   <h2>Защиты по входному напряжению</h2>

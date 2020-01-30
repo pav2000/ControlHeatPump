@@ -1175,9 +1175,6 @@ if(ChartTPCON.get_present()) ChartTPCON.addPoint(get_temp_condensing());
 #ifdef USE_ELECTROMETER_SDM
 #ifndef MIN_RAM_CHARTS
 	if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
-	#ifndef SDM_NO_USELESS_READ					// Не читать бесполезные регистры счетчика постоянно
-	if(dSDM.ChartCurrent.get_present())   dSDM.ChartCurrent.addPoint(dSDM.get_Current()*100);
-	#endif	
 #endif
 	if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint((int32_t)power220 / 10);
 	//  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);
@@ -1214,10 +1211,8 @@ void HeatPump::startChart()
  #ifdef USE_ELECTROMETER_SDM 
 #ifndef MIN_RAM_CHARTS
  dSDM.ChartVoltage.clear();                              // Статистика по напряжению
- dSDM.ChartCurrent.clear();                              // Статистика по току
 #endif
-// dSDM.sAcPower.clear();                              // Статистика по активная мощность
-// dSDM.sRePower.clear();                              // Статистика по Реактивная мощность
+
  dSDM.ChartPower.clear();                                // Статистика по Полная мощность
 // dSDM.ChartPowerFactor.clear();                          // Статистика по Коэффициент мощности
  ChartFullCOP.clear();                                     // Коэффициент преобразования
@@ -1273,7 +1268,7 @@ uint8_t i;
   #ifdef USE_ELECTROMETER_SDM 
 #ifndef MIN_RAM_CHARTS
  if(dSDM.ChartVoltage.get_present()) {   strcat(str,chart_VOLTAGE); strcat(str,":0;"); }
- if(dSDM.ChartCurrent.get_present()) {    strcat(str,chart_CURRENT); strcat(str,":0;"); }
+// if(dSDM.ChartCurrent.get_present()) {    strcat(str,chart_CURRENT); strcat(str,":0;"); }
 #endif
 // if(dSDM.sAcPower.get_present())     strcat(str,"acPOWER:0;");
 // if(dSDM.sRePower.get_present())     strcat(str,"rePOWER:0;");
@@ -1368,8 +1363,7 @@ void HeatPump::get_Chart(char *var, char* str)
 #ifndef MIN_RAM_CHARTS
 	} else if(strcmp(var, chart_VOLTAGE) == 0) {
 		dSDM.ChartVoltage.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_CURRENT) == 0) {
-		dSDM.ChartCurrent.get_PointsStrDiv100(str);
+	 
 #endif
 	} else if(strcmp(var, chart_fullPOWER) == 0) {
 		dSDM.ChartPower.get_PointsStrDiv100(str);
