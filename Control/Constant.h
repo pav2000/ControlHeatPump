@@ -106,7 +106,9 @@ const uint16_t  defaultPort=80;
 #define MODBUS_PORT_SPEED    9600           // Скорость порта куда прицеплен частотник и счетчик
 #define MODBUS_PORT_CONFIG   SERIAL_8N1     // Конфигурация порта куда прицеплен частотник и счетчик
 #define MODBUS_TIME_WAIT     2000           // Время ожидания захвата мютекса для modbus мсек
+#ifndef MODBUS_TIME_TRANSMISION
 #define MODBUS_TIME_TRANSMISION 4           // Пауза (msec) между запросом и ответом по модбас было 4
+#endif
 #endif
 //#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
 #if RADIO_SENSORS_PORT == 2
