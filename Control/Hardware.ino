@@ -48,7 +48,8 @@ void start_ADC()
 // Установка АЦП
 void adc_setup()
 {
-	uint16_t adcMask = 0;
+	uint32_t adcMask = 0;
+	uint32_t adcGain = 0x55555555; // All gains set to x1 Channel Gain Register
 	uint8_t max = 0;
 #ifdef VCC_CONTROL                             // если разрешено чтение напряжение питания
 	adcMask |= (1<<PIN_ADC_VCC);               // Добавить маску контроля питания
@@ -60,8 +61,12 @@ void adc_setup()
 	// Расчет маски каналов
 	for(uint8_t i = 0; i < ANUMBER; i++) {   // по всем датчикам
 		if(HP.sADC[i].get_present() && !HP.sADC[i].get_fmodbus()) {
-			if(max < HP.sADC[i].get_pinA()) max = HP.sADC[i].get_pinA();
-			adcMask |= 1 << HP.sADC[i].get_pinA();
+			uint32_t ach = HP.sADC[i].get_pinA();
+			if(max < ach) max = ach;
+			adcMask |= 1 << ach;
+#ifdef ADC_GAIN
+			adcGain = (adcGain & ~(3 << (2 * ach))) | (ADC_GAIN[i] << (2 * ach));
+#endif
 		}
 	}
 #ifdef TNTC
@@ -76,10 +81,10 @@ void adc_setup()
 	ADC->ADC_IER = 1 << max;         // Самый старший канал
 	ADC->ADC_CHDR = 0xFFFF;          // Channel Disable Register CHDR disable all channels
 	ADC->ADC_CHER = adcMask;         // Channel Enable Register CHER enable just A11  каналы здесь SAMX3!!
-	ADC->ADC_CGR = 0x15555555;       // //0x55555555 All gains set to x1 Channel Gain Register
+	ADC->ADC_CGR = adcGain;
 	ADC->ADC_COR = 0x00000000;       // All offsets off Channel Offset Register
 	// 12bit, 14MHz, trig source TIOA Output of the Timer Counter Channel 2
-	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG3 | ADC_MR_TRGEN;
+	ADC->ADC_MR = ADC_MR_PRESCAL(ADC_PRESCAL) | ADC_MR_LOWRES_BITS_12 | ADC_MR_USEQ_NUM_ORDER | ADC_MR_STARTUP_SUT16 | ADC_MR_TRACKTIM(16) | ADC_MR_SETTLING_AST17 | ADC_MR_TRANSFER(2) | ADC_MR_TRGSEL_ADC_TRIG3 | ADC_MR_TRGEN | ADC_MR_ANACH;
 	adc_set_bias_current(ADC, 0);    // for sampling frequency: 0 - below 500 kHz, 1 - between 500 kHz and 1 MHz.
 }
 
@@ -1371,11 +1376,6 @@ int8_t devSDM::initSDM()
 	numErr = 0;                                      // счетчик 0
 	Voltage = 0.0f;                                   // Напряжение
 	AcPower = 0.0f;                                   // активная мощность
-#ifndef SDM_NO_USELESS_READ
-	AcEnergy = 0.0f;                                 // Суммарная активная энергия
-	Current = 0.0f;                                   // Ток
-//	EnergyLast = 0.0f;
-#endif
 	flags = 0x00;
 	// Настройки
 #ifdef SDM_MAX_VOLTAGE
@@ -1408,7 +1408,6 @@ int8_t devSDM::initSDM()
 	// инициализация статистики
 #ifndef MIN_RAM_CHARTS
 	ChartVoltage.init(GETBIT(flags,fSDM));               // Статистика по напряжению
-	ChartCurrent.init(GETBIT(flags,fSDM));// Статистика по току
 #endif
 	//  sAcPower.init(GETBIT(flags,fSDM));               // Статистика по активная мощность
 	//  sRePower.init(GETBIT(flags,fSDM));               // Статистика по Реактивная мощность
@@ -1498,8 +1497,6 @@ boolean  devSDM::progConnect()
   else { journal.jprintf("%s: Programming is wrong, no link\n",name); return false; }
 #endif
 }                           
-
-#ifdef SDM_NO_USELESS_READ  // Если не читаем лишние регистры, переделано две функции get_readState get_paramSDM
 
 // Прочитать инфо с счетчика, group: 0 - основная (расчет мощности), 2 - через SDM_READ_PERIOD
 int8_t devSDM::get_readState(uint8_t group)
@@ -1695,167 +1692,6 @@ char* devSDM::get_paramSDM(char *var, char *ret)
 	}
 	return strcat(ret,(char*)cInvalid);
 }
-
-#else // SDM_NO_USELESS_READ
-// Вариант  с чтением дополнительных регистров из счетчика
-// Прочитать инфо с счетчика, group: 0 - основная (при каждом цикле); 2 - через SDM_READ_PERIOD
-int8_t devSDM::get_readState(uint8_t group)
-{
-#ifdef USE_PZEM004T
-	static union {
-		uint32_t tmp;
-		uint16_t tmp16[2];
-	};
-#else
-	static float tmp;
-#endif
-	int8_t i;
-	if((!GETBIT(flags,fSDM))||(!GETBIT(flags,fSDMLink))) return err;  // Если нет счетчика или нет связи выходим
-	// Чтение состояния счетчика,
-	err=OK;
-	for(i=0; i<SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
-	{
-		// Читаем значения счетчика
-		if(group == 0) {
-#ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp16[0]);   // Напряжение
-			if(err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
-#else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp);   // Напряжение
-			if(err==OK) { Voltage=tmp; group = 1; } else goto xErr;
-#endif
-		}
-		if(group == 1) {
-#ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			if(err==OK) AcPower = tmp / 10; else goto xErr;
-#else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);  // Активная мощность
-			#ifdef DEMO
-			if(err==OK) AcPower=1000; else goto xErr; // для демки 1 кВт для расчета КОП
-			#else
-			if(err==OK) AcPower=tmp; else goto xErr;
-			#endif
-#endif
-		} else if(group == 2) {
-#ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
-			if(err == OK) { Current = tmp / 1000; group = 3; } else goto xErr;
-#else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);   // Ток
-			if(err == OK) { Current=tmp; group = 3; } else goto xErr;
-#endif
-		}
-		if(group == 3) {
-#ifdef USE_PZEM004T
-			err = Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(err==OK) AcEnergy=tmp;
-#else
-			err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_ENERGY, &tmp); // Суммарная активная энергия
-			if(err==OK) AcEnergy=tmp;
-#endif
-		}
-		if(err == OK) break;
-xErr:
-#ifdef SPOWER
-		HP.sInput[SPOWER].Read(true);
-        if(HP.sInput[SPOWER].is_alarm()) return err;
-#endif
-		numErr++;                  // число ошибок чтение по модбасу
-		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
-			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, err);      // Выводим сообщение о повторном чтении
-		}
-		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
-	}
-	if (err==OK)
-	{
-		// SerialDbg.println((int)(Voltage*100));
-		if ((settingSDM.maxVoltage>1)&&(settingSDM.maxVoltage< Voltage)) {err=ERR_MAX_VOLTAGE;set_Error(err,name);return err; }       // Контроль входного напряжения
-		if ((settingSDM.maxPower>1)&&(settingSDM.maxPower< AcPower))     {err=ERR_MAX_POWER;set_Error(err,name);return err; }         // Контроль мощности потребления
-		if ((settingSDM.minVoltage>1)&&(settingSDM.minVoltage>Voltage) ) {HP.message.setMessage(pMESSAGE_WARNING,(char*)"Напряжение сети ниже нормы",(int)Voltage);return err; } // сформировать уведомление о низком напряжени
-		return err;                       // все прочиталось, выходим
-	}
-	#ifdef SDM_BLOCK                     // если стоит флаг блокировки связи
-	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
-	#endif
-	journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, err);
-	// set_Error(err,name);              // генерация ошибки    НЕТ счетчик не критичен
-	return err;
-}
-
-// Получить параметр счетчика в виде строки
-char* devSDM::get_paramSDM(char *var, char *ret)
-{
-#ifdef USE_PZEM004T
-	static union {
-		uint32_t tmp;
-		uint16_t tmp16[2];
-	};
-#else
-   static float tmp;
-#endif
-
-   if(strcmp(var,sdm_NAME)==0){         return strcat(ret,(char*)name);                                         }else      // Имя счетчика
-   if(strcmp(var,sdm_NOTE)==0){         return strcat(ret,(char*)note);                                         }else      // Описание счетчика
-   if(strcmp(var,sdm_ERRORS)==0){    	return _itoa(numErr,ret);				                                }else      // Ошибок modbus
-   if(strcmp(var,sdm_MAX_VOLTAGE)==0){  return _itoa(settingSDM.maxVoltage,ret);                                }else      // мах напряжение контроля напряжения
-   if(strcmp(var,sdm_MIN_VOLTAGE)==0){  return _itoa(settingSDM.minVoltage,ret);                                }else      // min напряжение контроля напряжения
-   if(strcmp(var,sdm_MAX_POWER)==0){    return _itoa(settingSDM.maxPower,ret);                                  }else      // максимальаня мощность контроля мощности
-   if(strcmp(var,sdm_VOLTAGE)==0){      _ftoa(ret,(float)Voltage,2); return ret;                         }else      // Напряжение
-   if(strcmp(var,sdm_CURRENT)==0){      _ftoa(ret,(float)Current,2); return ret;                         }else      // Ток
-   if(strcmp(var,sdm_ACPOWER)==0){      _ftoa(ret,(float)AcPower,2);  return ret;                        }else      // Активная мощность
-   if(strcmp(var,sdm_ACENERGY)==0){     _ftoa(ret,(float)AcEnergy,2); return ret;                        }else      // Суммарная активная энергия
-   if(strcmp(var,sdm_LINK)==0){         if (GETBIT(flags,fSDMLink)) return strcat(ret,(char*)cYes); else return strcat(ret,(char*)cNo);}       // Cостояние связи со счетчиком
-   else {
-	   if(GETBIT(flags,fSDMLink)) {
-//		   if(strcmp(var,sdm_CURRENT)==0){
-//			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_CURRENT, &tmp);
-//			   _ftoa(ret, tmp, 2);																			   }else       // Ток
-		   if(strcmp(var,sdm_REPOWER)==0){     // Реактивная мощность                                                               
-#ifdef USE_PZEM004T
-			   strcat(ret, "-");
-#else
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_RE_POWER, &tmp);
-			   _ftoa(ret, tmp, 2);
-#endif
-	   	   } else if(strcmp(var,sdm_POWER)==0){  // Полная мощность
-#ifdef USE_PZEM004T
-			   strcat(ret, "-");
-#else
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POWER, &tmp);
-			   _ftoa(ret, tmp, 2);
-#endif
-	   	   } else if(strcmp(var,sdm_POW_FACTOR)==0){ // Коэффициент мощности
-#ifdef USE_PZEM004T
-			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp16[0]);
-			   _ftoa(ret, tmp16[0] / 100, 2);
-#else
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_POW_FACTOR, &tmp);
-			   _ftoa(ret, tmp, 2);
-#endif
-   	   	   } else if(strcmp(var,sdm_PHASE)==0){ // Угол фазы (градусы)
-#ifdef USE_PZEM004T
-			   strcat(ret, "-");
-#else
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_PHASE, &tmp);
-			   _ftoa(ret, tmp, 2);
-#endif
-		   } else if(strcmp(var,sdm_FREQ)==0){ // Частота
-#ifdef USE_PZEM004T
-			   Modbus.readInputRegisters16(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp16[0]);
-			   _ftoa(ret, tmp16[0] / 10, 2);
-#else
-			   Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_FREQUENCY, &tmp);
-			   _ftoa(ret, tmp, 2);
-#endif
-   	   	   }
-	   }
-	   return ret;
-   }
-   return strcat(ret,(char*)cInvalid);
-}
-
-#endif // SDM_NO_USELESS_READ
 
 // Установить параметр счетчика в виде строки
 boolean devSDM::set_paramSDM(char *var, char *c)

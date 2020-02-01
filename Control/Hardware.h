@@ -109,7 +109,7 @@ class sensorADC
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
        
-    uint8_t pin;                                         // Ножка куда прицеплен датчик
+    uint8_t pin;                                         // Канал АЦП (AD*) куда прицеплен датчик
     int8_t  err;                                         // ошибка датчика (работа) при ошибке останов ТН
     byte 	flags;                                       // флаги  датчика
     // Кольцевой буфер для усреднения
@@ -510,10 +510,6 @@ class devSDM
       float   get_power(){return AcPower;}
        __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
        __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
-#ifndef SDM_NO_USELESS_READ
-       __attribute__((always_inline)) inline float get_Current(){return Current;}          // Ток
-       __attribute__((always_inline)) inline float get_Energy(){return AcEnergy;}          // Активная энергия
-#endif
 
       boolean uplinkSDM();                             // Проверить связь со счетчиком (связь дейстивтельно проверяется - чтение регистра скорости счетчика)
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
@@ -525,7 +521,7 @@ class devSDM
        // Графики из счетчика
 #ifndef MIN_RAM_CHARTS
       statChart ChartVoltage;                          // Статистика по напряжению
-      statChart ChartCurrent;                          // Статистика по току
+//      statChart ChartCurrent;                          // Статистика по току
 #endif
       statChart ChartPower;                            // Статистика по Полная мощность
   private:
@@ -535,13 +531,6 @@ class devSDM
        // Управление по 485
       float AcPower;                                   // активная мощность, Вт
       float Voltage;                                   // Напряжение в вольтах
-#ifndef SDM_NO_USELESS_READ
-      float Current;								   // Ток
-      float AcEnergy;                                  // Суммарная активная энергия, кВтч
-//      uint32_t period;
-//      float EnergyLast;
-#endif
-      
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание
       char *name;                                      // Имя

@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.059"				// Версия прошивки
+#define VERSION			"1.060"				// Версия прошивки
 #define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -106,7 +106,9 @@ const uint16_t  defaultPort=80;
 #define MODBUS_PORT_SPEED    9600           // Скорость порта куда прицеплен частотник и счетчик
 #define MODBUS_PORT_CONFIG   SERIAL_8N1     // Конфигурация порта куда прицеплен частотник и счетчик
 #define MODBUS_TIME_WAIT     2000           // Время ожидания захвата мютекса для modbus мсек
+#ifndef MODBUS_TIME_TRANSMISION
 #define MODBUS_TIME_TRANSMISION 4           // Пауза (msec) между запросом и ответом по модбас было 4
+#endif
 #endif
 //#define MODBUS_FREERTOS                     // Настроить либу на многозадачность определить надо в либе.
 #if RADIO_SENSORS_PORT == 2
@@ -261,10 +263,15 @@ const uint16_t  defaultPort=80;
 #define SALLMONELA_TEMP   (70*100)       // Температура которая поддерживается для обеззараживания (сотые градуса)
 #define SALLMONELA_TIME   (240*60)       // Максимальная продолжительность цикла (сек), что бы цикл не длился бесконечно при не возможности достижения SALLMONELA_TEMP
 //#define SALLMONELA_HARD                // Если определено то работает поддержание температуры SALLMONELA_TEMP до окончания времени SALLMONELA_TIME, если НЕ ОПРЕДЕЛЕНО то выключение сразу по достижению SALLMONELA_TEMP но цикл не более SALLMONELA_TIME 
-//#define NIGHT_START_HOUR  23             // Начало ночного тарифа
+//#define NIGHT_START_HOUR  23           // Начало ночного тарифа
 //#define NIGHT_END_HOUR	  7              // Окончание точного тарифа
-
-
+// Сброс тепла при нагреве ГВС
+#ifndef BOILER_TEMP_FEED_RESET
+#define BOILER_TEMP_FEED_RESET  100      // На сколько температура подачи превышает цель при нагреве ГВС, при которой происходит сброс тепла в систему отопления
+#endif
+#ifndef BOILER_TEMP_COMP_RESET
+#define BOILER_TEMP_COMP_RESET  500      // На сколько температура нагнетания (TCOMP) меньше максимальной при нагреве ГВС, при котрой происходит сброс тепла в систему отопления
+#endif
 // ------------------- SENSOR TEMP----------------------------------
 #ifndef T_NUMSAMLES
 #define T_NUMSAMLES       1              // Число значений для усреднения показаний температуры

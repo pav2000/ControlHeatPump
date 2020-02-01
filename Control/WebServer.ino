@@ -985,23 +985,25 @@ void parserGET(uint8_t thread, int8_t )
 				HP.sendCommand(pRESET);        // Послать команду на сброс
 			} else if(strncmp(str, "CNT_", 4) == 0) { // Команды RESET_CNT_*
 				str += 4;
-				if(strncmp(str, "VAR_", 4) == 0) {	// RESET_CNT_VAR_xx=n
+				if(strncmp(str, "VAR_", 4) == 0) {	// Изменение счетчиков: http://<ip:port>/&RESET_CNT_VAR_xx=n&&
 					str += 4;
 					*(str + 2) = '\0';
-					if((l_i32 = strtol(str + 3, NULL, 0)) != LONG_MAX) {
-						if(strcmp(str, 		"D1") == 0) HP.get_motoHour()->D1 = l_i32;
-						else if(strcmp(str, "D2") == 0) HP.get_motoHour()->D2 = l_i32;
-						else if(strcmp(str, "H1") == 0) HP.get_motoHour()->H1 = l_i32;
-						else if(strcmp(str, "H2") == 0) HP.get_motoHour()->H2 = l_i32;
-						else if(strcmp(str, "C1") == 0) HP.get_motoHour()->C1 = l_i32;
-						else if(strcmp(str, "C2") == 0) HP.get_motoHour()->C2 = l_i32;
-						else if(strcmp(str, "E1") == 0) HP.get_motoHour()->E1 = l_i32;
-						else if(strcmp(str, "E2") == 0) HP.get_motoHour()->E2 = l_i32;
-						else if(strcmp(str, "P1") == 0) HP.get_motoHour()->P1 = l_i32;
-						else if(strcmp(str, "P2") == 0) HP.get_motoHour()->P2 = l_i32;
+					uint32_t tmp = strtoul(str + 3, NULL, 0);
+					if(strcmp(str, 		"D1") == 0) HP.get_motoHour()->D1 = tmp;
+					else if(strcmp(str, "D2") == 0) HP.get_motoHour()->D2 = tmp;
+					else if(strcmp(str, "H1") == 0) HP.get_motoHour()->H1 = tmp;
+					else if(strcmp(str, "H2") == 0) HP.get_motoHour()->H2 = tmp;
+					else if(strcmp(str, "C1") == 0) HP.get_motoHour()->C1 = tmp;
+					else if(strcmp(str, "C2") == 0) HP.get_motoHour()->C2 = tmp;
+					else {
+						pm = my_atof(str + 3);
+						if(strcmp(str, "E1") == 0) HP.get_motoHour()->E1 = pm;
+						else if(strcmp(str, "E2") == 0) HP.get_motoHour()->E2 = pm;
+						else if(strcmp(str, "P1") == 0) HP.get_motoHour()->P1 = pm;
+						else if(strcmp(str, "P2") == 0) HP.get_motoHour()->P2 = pm;
 						else goto x_FunctionNotFound;
-						strcat(strReturn, "OK");
 					}
+					strcat(strReturn, "OK");
 				} else if(strcmp(str, "ALL") == 0) {	// RESET_CNT_ALL
 					journal.jprintf("$RESET All Сounters. . .\n");
 					strcat(strReturn,"Сброс ВСЕХ счетчиков");
