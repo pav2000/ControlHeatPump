@@ -725,7 +725,8 @@ boolean devVaconFC::reset_errorFC()
 // Сброс состояния связи инвертора через модбас
 boolean devVaconFC::reset_FC()
 {
-    number_err = 0;
+	reset_errorFC();
+	number_err = 0;
 #ifndef FC_ANALOG_CONTROL
     CheckLinkStatus();
     if(!err && state == ERR_LINK_FC) err = ERR_RESET_FC;

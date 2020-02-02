@@ -1790,31 +1790,31 @@ int8_t HeatPump::ResetFC()
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
     sInput[SERRFC].Read();                                                  // Обновить значение
 	if (sInput[SERRFC].get_lastErr()==OK) {                                 // Инвертор сбрасывать не надо
-	#ifdef DEBUG_MODWORK
-	journal.jprintf(" %s: OK, no inverter reset required\r\n",sInput[SERRFC].get_name());
-	#endif
+#ifdef DEBUG_MODWORK
+		journal.jprintf(" %s: OK, no inverter reset required\n",sInput[SERRFC].get_name());
+#endif
 	return OK; }
 #else
-	if(dFC.get_err() == OK) return OK;
+	if(dFC.get_err() == OK && !dFC.get_blockFC()) return OK;
 #endif
 // 2. Собственно сброс
 #ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
 	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();         // Подать импульс сброса
-	journal.jprintf(" Reset %s use RRESET: ",dFC.get_name());
+	journal.jprintf(" Reset %s by RRESET: ",dFC.get_name());
 #else
 	dFC.reset_FC();                                                         // подать команду на сброс по модбас
-    journal.jprintf(" Reset %s use Modbus: ",dFC.get_name()); 
+    journal.jprintf(" Reset %s by Modbus: ",dFC.get_name());
 //	if(dFC.get_blockFC()) return ERR_RESET_FC;                              // Инвертор блокирован
 #endif
 // 3. Проверка результатов сброса
-_delay(100);
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
+    _delay(100);
 	sInput[SERRFC].Read();
 	if (sInput[SERRFC].get_lastErr()==OK) {journal.jprintf("%s\r\n",cOk);return OK;}// Инвертор сброшен
-	else {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
+	else {journal.jprintf("%s\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
 #else
-   if(dFC.get_blockFC()) {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}   // Инвертор блокирован
-   else                  {journal.jprintf("%s\r\n",cOk);return OK;}                 // Инвертор сброшен
+   if(dFC.get_blockFC()) {journal.jprintf("%s\n",cError); return ERR_RESET_FC;}   // Инвертор блокирован
+   else                  {journal.jprintf("%s\n",cOk);return OK;}                 // Инвертор сброшен
 #endif
 	return OK;
 }
