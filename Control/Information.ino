@@ -41,7 +41,7 @@ void Journal::Init()
 	bufferHead = 0;
 	full = 0;                   // Буфер не полный
 	memset(_data, 0, JOURNAL_LEN);
-	jprintf("\nSTART ----\n");
+	jprintf("\nSTART ---\n");
 	jprintf("Init RAM journal, size %d . . .\n", JOURNAL_LEN);
 	return;
 #else                      // журнал во флеше
@@ -92,7 +92,7 @@ void Journal::Init()
 		if((bufferTail >= 0) && (bufferHead >= 0)) break;
 	}
 	if(bufferTail < bufferHead) full = 1;                   // Буфер полный
-	printf("\nSTART ---\n");
+	jprintf("\nSTART ---\n");
 	jprintf("Found I2C journal: size %d bytes, head=0x%x, tail=0x%x\n", JOURNAL_LEN, bufferHead, bufferTail);
 #endif //  #ifndef I2C_EEPROM_64KB     // журнал в памяти
 }
@@ -128,7 +128,7 @@ void Journal::Format(void)
 {
 	err = OK;
 	#ifdef DEBUG
-	SerialDbg.print("Formating I2C journal ");
+	printf("Formating I2C journal ");
 	#endif
 //	memset(buf, I2C_JOURNAL_FORMAT, W5200_MAX_LEN);
 //	for(uint32_t i = 0; i < JOURNAL_LEN / W5200_MAX_LEN; i++) {
@@ -172,6 +172,7 @@ void Journal::Format(void)
 void Journal::printf(const char *format, ...)             
 {
 #ifdef DEBUG
+	if(!Is_otg_vbus_high()) return;
 	va_list ap;
 	va_start(ap, format);
 	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
@@ -188,31 +189,43 @@ void Journal::jprintf(const char *format, ...)
 	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
 	va_end(ap);
 #ifdef DEBUG
-	SerialDbg.print(pbuf);
+	if(Is_otg_vbus_high()) SerialDbg.print(pbuf);
 #endif
 	// добавить строку в журнал
 	_write(pbuf);
 }
 
-//type_promt вставляется в начале журнала а далее печать в консоль и журнал возвращает число записанных байт с типом промта
-void Journal::jprintf(type_promt pr,const char *format, ...)
+// +Time, далее печать в консоль и журнал
+void Journal::jprintf_time(const char *format, ...)
 {
-	switch (pr)
-	{
-	case  pP_NONE: break;
-	case  pP_TIME: jprintf((char*)"%s ",NowTimeToStr()); break;                       // время
-	case  pP_DATE: jprintf((char*)"%s %s ",NowDateToStr(),NowTimeToStr()); break;     // дата и время
-	case  pP_USER: jprintf((char*)promtUser); break;                                  // константа определяемая пользователем
-	}
+	NowTimeToStr(pbuf);
+	pbuf[8] = ' ';
 	va_list ap;
 	va_start(ap, format);
-	m_vsnprintf(pbuf, PRINTF_BUF, format, ap);
+	m_vsnprintf(pbuf + 9, PRINTF_BUF - 9, format, ap);
 	va_end(ap);
 #ifdef DEBUG
-	SerialDbg.print(pbuf);
+	if(Is_otg_vbus_high()) SerialDbg.print(pbuf);
 #endif
 	_write(pbuf);   // добавить строку в журнал
 }   
+
+// +DateTime, далее печать в консоль и журнал
+void Journal::jprintf_date(const char *format, ...)
+{
+	NowDateToStr(pbuf);
+	pbuf[10] = ' ';
+	NowTimeToStr(pbuf + 11);
+	pbuf[19] = ' ';
+	va_list ap;
+	va_start(ap, format);
+	m_vsnprintf(pbuf + 20, PRINTF_BUF - 20, format, ap);
+	va_end(ap);
+#ifdef DEBUG
+	if(Is_otg_vbus_high()) SerialDbg.print(pbuf);
+#endif
+	_write(pbuf);   // добавить строку в журнал
+}
 
 // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
 void Journal::jprintf_only(const char *format, ...)

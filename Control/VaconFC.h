@@ -100,7 +100,7 @@ const char *FC_S_Z_str				= {"Stopped,"};
 #define FC_C_DIR		0x02	// 0 - По часовой стрелке, 1 - Против часовой стрелки
 #define FC_C_RST		0x04	// Сброс отказа
 
-const uint8_t FC_NonCriticalFaults[] = { 1, 2, 8, 9, 13, 14,/**/15, 17, 25, 34, 41 }; // Не критичные ошибки, которые можно сбросить
+const uint8_t FC_NonCriticalFaults[] = { 1, 2, 8, 9, 13, 14,/**/15, 16, 17, 25, 34, 41, 53 }; // Не критичные ошибки, которые можно сбросить
 
 const uint8_t FC_Faults_code[] = {
 	0,

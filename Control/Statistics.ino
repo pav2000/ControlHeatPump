@@ -60,7 +60,7 @@ int8_t Statistics::CreateOpenFile(uint8_t what)
 	} else {
 		journal.jprintf("[%u..%u] ", what ? HistoryBlockStart : BlockStart, what ? HistoryBlockEnd : BlockEnd);
 		if(newfile) {
-			journal.jprintf(pP_TIME, "Create ");
+			journal.jprintf_time("Create ");
 			uint32_t b;
 			if(what) {
 xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryCurrentBlock = HistoryBlockStart;
@@ -92,7 +92,7 @@ xContinue:		if(HistoryBlockCreating) b = HistoryBlockCreating; else b = HistoryC
 				}
 			}
 			if(what) HistoryBlockCreating = 0;
-			journal.jprintf(pP_TIME, "\n Ok\n");
+			journal.jprintf_time("\n Ok\n");
 			free(temp_buf);
 			return OK;
 		} else if(!FindEndPosition(what)) {

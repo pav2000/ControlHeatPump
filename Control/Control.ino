@@ -197,6 +197,11 @@ void setup() {
 	pinMode(PIN_SPI_CS_FLASH,OUTPUT);           // сигнал CS управление чипом флеш памяти
 #endif
 	SPI_switchAllOFF();                         // Выключить все устройства на SPI
+	// Отключить питание (VUSB) на Native USB
+	Set_bits(UOTGHS->UOTGHS_CTRL, UOTGHS_CTRL_VBUSHWC);
+	PIO_Configure(PIOB, PIO_OUTPUT_0, PIO_PB10A_UOTGVBOF, PIO_DEFAULT);
+	PIOB->PIO_CODR = PIO_PB10A_UOTGVBOF; // =0
+	//
 
 #ifdef POWER_CONTROL                        // Включение питания платы если необходимо НАДП здесь, иначе I2C память рабоать не будет
 	pinMode(PIN_POWER_ON,OUTPUT);
@@ -578,7 +583,8 @@ x_I2C_init_std_message:
 	HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 	journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM);
 	journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE());
-	journal.jprintf("Temperature DS2331: %.2f\n",getTemp_RtcI2C());
+	journal.jprintf("Temperature DS2331: %.2d\n",getTemp_RtcI2C());
+	if(Is_otg_vbus_high()) journal.jprintf("USB connected\n");
 	//HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
 	journal.jprintf("Start FreeRTOS scheduler :-))\n");
 	journal.jprintf("READY ----------------------\n");
@@ -673,7 +679,7 @@ void vWeb0(void *)
 			// 1. Проверка захваченого семафора сети ожидаем  3 времен W5200_TIME_WAIT если мютекса не получаем то сбрасывае мютекс
 			if(SemaphoreTake(xWebThreadSemaphore, ((3 + (fWebUploadingFilesTo != 0) * 30) * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 				SemaphoreGive(xWebThreadSemaphore);
-				journal.jprintf(pP_TIME, "UNLOCK mutex xWebThread\n");
+				journal.jprintf_time("UNLOCK mutex xWebThread\n");
 				active = false;
 				HP.num_resMutexSPI++;
 			} // Захват мютекса SPI или ОЖИДАНИНЕ 2 времен W5200_TIME_WAIT и его освобождение
@@ -682,7 +688,7 @@ void vWeb0(void *)
 			// Проверка и сброс митекса шины I2C  если мютекса не получаем то сбрасывае мютекс
 			if(SemaphoreTake(xI2CSemaphore, (3 * I2C_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 				SemaphoreGive(xI2CSemaphore);
-				journal.jprintf(pP_TIME, "UNLOCK mutex xI2CSemaphore\n");
+				journal.jprintf_time("UNLOCK mutex xI2CSemaphore\n");
 				HP.num_resMutexI2C++;
 			} // Захват мютекса I2C или ОЖИДАНИНЕ 3 времен I2C_TIME_WAIT  и его освобождение
 			else SemaphoreGive(xI2CSemaphore);
@@ -700,7 +706,7 @@ void vWeb0(void *)
 				resW5200 = xTaskGetTickCount();
 				if(timeResetW5200 == 0) timeResetW5200 = resW5200;      // Первая итерация не должна быть сразу
 				if(resW5200 - timeResetW5200 > HP.time_resW5200() * 1000UL) {
-					journal.jprintf(pP_TIME, "Reset %s by timer . . .\n", nameWiznet);
+					journal.jprintf_time("Reset %s by timer . . .\n", nameWiznet);
 					HP.sendCommand(pNETWORK);                          // Послать команду сброса и применения сетевых настроек
 					timeResetW5200 = resW5200;                         // Запомить время сброса
 					active = false;
@@ -714,7 +720,7 @@ void vWeb0(void *)
 				if(!HP.NO_Power) {
 					boolean lst = linkStatusWiznet(false);
 					if(!lst || !network_last_link) {
-						if(!lst) journal.jprintf(pP_TIME, "%s no link[%02X], resetting . . .\n", nameWiznet, W5100.readPHYCFGR());
+						if(!lst) journal.jprintf_time("%s no link[%02X], resetting . . .\n", nameWiznet, W5100.readPHYCFGR());
 						HP.sendCommand(pNETWORK);       // Если связь потеряна то подать команду на сброс сетевого чипа
 						HP.num_resW5200++;              // Добавить счетчик инициализаций
 						active = false;
@@ -1007,7 +1013,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 				HP.save_motoHour();
 				Stats.SaveStats(0);
 				Stats.SaveHistory(0);
-				journal.jprintf(pP_DATE, "POWER LOST!\n");
+				journal.jprintf_date( "POWER LOST!\n");
 				if(HP.get_State() == pSTARTING_HP || HP.get_State() == pWORK_HP) {
 					HP.sendCommand(pWAIT);
 					HP.NO_Power = 2;
@@ -1018,7 +1024,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 			if(HP.NO_Power_delay) {
 				if(--HP.NO_Power_delay == 0) HP.sendCommand(pNETWORK);
 			} else {
-				journal.jprintf(pP_DATE, "POWER RESTORED!\n");
+				journal.jprintf_date( "POWER RESTORED!\n");
 				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
 					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
 						HP.NO_Power = 0;
@@ -1128,7 +1134,7 @@ void vReadSensor_delay8ms(int16_t ms8)
 							HP.Prof.load(_profile);
 							HP.set_profile();
 							xTaskResumeAll();
-							journal.jprintf(pP_TIME, "Profile changed to #%d\n", _profile);
+							journal.jprintf_time("Profile changed to #%d\n", _profile);
 							if(frestart) HP.sendCommand(pRESUME);
 						}
 					} else if(HP.get_State() == pWAIT_HP && !HP.NO_Power) {

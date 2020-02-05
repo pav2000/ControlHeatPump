@@ -58,7 +58,7 @@ int8_t set_Error(int8_t _err, char *nam)
 		strcat(HP.note_error, nam);                  // Имя кто сгенерировал ошибку
 		strcat(HP.note_error, ": ");
 		strcat(HP.note_error, noteError[abs(_err)]); // Описание ошибки
-		journal.jprintf(pP_TIME, "$ERROR source: %s, code: %d\n", nam, _err); //journal.jprintf(", code: %d\n",_err);
+		journal.jprintf_time("$ERROR source: %s, code: %d\n", nam, _err); //journal.jprintf(", code: %d\n",_err);
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) HP.save_DumpJournal(true); // вывод отладочной информации для начала  если запущена freeRTOS
 		HP.message.setMessage(pMESSAGE_ERROR, HP.note_error, 0);    // сформировать уведомление об ошибке
 		// Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
@@ -1004,17 +1004,24 @@ boolean HeatPump::set_datetime(char *var, char *c)
 	return true;
 }
 // Получить параметр дата и время из строки
-char* HeatPump::get_datetime(char *var,char *ret)
+void HeatPump::get_datetime(char *var, char *ret)
 {
-if(strcmp(var,time_TIME)==0)  {return strcat(ret,NowTimeToStr1());                      }else  
-if(strcmp(var,time_DATE)==0)  {return strcat(ret,NowDateToStr());                       }else  
-if(strcmp(var,time_NTP)==0)   {return strcat(ret,DateTime.serverNTP);                   }else                
-if(strcmp(var,time_UPDATE)==0){if (GETBIT(DateTime.flags,fUpdateNTP)) return  strcat(ret,(char*)cOne);
-                               else                                   return  strcat(ret,(char*)cZero);}else  
-if(strcmp(var,time_TIMEZONE)==0){return  _itoa(DateTime.timeZone,ret);         }else  
-if(strcmp(var,time_UPDATE_I2C)==0){ if (GETBIT(DateTime.flags,fUpdateI2C)) return  strcat(ret,(char*)cOne);
-                                    else                                   return  strcat(ret,(char*)cZero); }else      
-return strcat(ret,(char*)cInvalid);
+	if(strcmp(var, time_TIME) == 0) {
+		ret += strlen(ret);
+		NowTimeToStr(ret);
+		ret[5] = '\0';
+	} else if(strcmp(var, time_DATE) == 0) {
+		strcat(ret, NowDateToStr());
+	} else if(strcmp(var, time_NTP) == 0) {
+		strcat(ret, DateTime.serverNTP);
+	} else if(strcmp(var, time_UPDATE) == 0) {
+		if(GETBIT(DateTime.flags, fUpdateNTP)) strcat(ret, (char*) cOne); else strcat(ret, (char*) cZero);
+	} else if(strcmp(var, time_TIMEZONE) == 0) {
+		_itoa(DateTime.timeZone, ret);
+	} else if(strcmp(var, time_UPDATE_I2C) == 0) {
+		if(GETBIT(DateTime.flags, fUpdateI2C)) strcat(ret, (char*) cOne);
+		else strcat(ret, (char*) cZero);
+	} else strcat(ret, (char*) cInvalid);
 }
 
 // Установить опции ТН из числа (float), "set_oHP"
@@ -1790,31 +1797,31 @@ int8_t HeatPump::ResetFC()
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
     sInput[SERRFC].Read();                                                  // Обновить значение
 	if (sInput[SERRFC].get_lastErr()==OK) {                                 // Инвертор сбрасывать не надо
-	#ifdef DEBUG_MODWORK
-	journal.jprintf(" %s: OK, no inverter reset required\r\n",sInput[SERRFC].get_name());
-	#endif
+#ifdef DEBUG_MODWORK
+		journal.jprintf(" %s: OK, no inverter reset required\n",sInput[SERRFC].get_name());
+#endif
 	return OK; }
 #else
-	if(dFC.get_err() == OK) return OK;
+	if(dFC.get_err() == OK && !dFC.get_blockFC()) return OK;
 #endif
 // 2. Собственно сброс
 #ifdef RRESET                                                               // Если есть вход от инвертора об ошибке
 	dRelay[RRESET].set_ON(); _delay(100); dRelay[RRESET].set_OFF();         // Подать импульс сброса
-	journal.jprintf(" Reset %s use RRESET: ",dFC.get_name());
+	journal.jprintf(" Reset %s by RRESET: ",dFC.get_name());
 #else
 	dFC.reset_FC();                                                         // подать команду на сброс по модбас
-    journal.jprintf(" Reset %s use Modbus: ",dFC.get_name()); 
+    journal.jprintf(" Reset %s by Modbus: ",dFC.get_name());
 //	if(dFC.get_blockFC()) return ERR_RESET_FC;                              // Инвертор блокирован
 #endif
 // 3. Проверка результатов сброса
-_delay(100);
 #ifdef SERRFC                                                               // Если есть вход от инвертора об ошибке
+    _delay(100);
 	sInput[SERRFC].Read();
 	if (sInput[SERRFC].get_lastErr()==OK) {journal.jprintf("%s\r\n",cOk);return OK;}// Инвертор сброшен
-	else {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
+	else {journal.jprintf("%s\n",cError); return ERR_RESET_FC;}                   // Сброс не прошел
 #else
-   if(dFC.get_blockFC()) {journal.jprintf("%s\r\n",cError); return ERR_RESET_FC;}   // Инвертор блокирован
-   else                  {journal.jprintf("%s\r\n",cOk);return OK;}                 // Инвертор сброшен
+   if(dFC.get_blockFC()) {journal.jprintf("%s\n",cError); return ERR_RESET_FC;}   // Инвертор блокирован
+   else                  {journal.jprintf("%s\n",cOk);return OK;}                 // Инвертор сброшен
 #endif
 	return OK;
 }
@@ -1846,7 +1853,7 @@ int8_t HeatPump::StartResume(boolean start)
 	if((profile != SCHDLR_NotActive) && (start)) { // расписание активно и дана команда
 		if(profile == SCHDLR_Profile_off) {
 			journal.jprintf(" Start task UpdateHP\n");
-			journal.jprintf(pP_TIME, "%s WAIT . . .\n", (char*) nameHeatPump);
+			journal.jprintf_time("%s WAIT . . .\n", (char*) nameHeatPump);
 			startWait = true;                    // Начало работы с ожидания=true;
 			setState(pWAIT_HP);
 			Task_vUpdate_run = true;
@@ -1867,11 +1874,11 @@ int8_t HeatPump::StartResume(boolean start)
 	if(start)  // Команда старт
 	{
 		if((get_State() == pWORK_HP) || (get_State() == pSTOPING_HP) || (get_State() == pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
-		journal.jprintf(pP_DATE, "  Start . . .\n");
+		journal.jprintf_date( "  Start . . .\n");
 		//lastEEV=-1;                                      // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  не было)
 	} else {
 		if(get_State() != pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
-		journal.jprintf(pP_DATE, "  Resume . . .\n");
+		journal.jprintf_date( "  Resume . . .\n");
 	}
 	//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
 	if((ResetFC()) != OK)                                // Сброс инвертора если нужно
@@ -2015,7 +2022,7 @@ int8_t HeatPump::StartResume(boolean start)
 	}
 
 	// 12. насос запущен -----------------------------------------------------------------------------------------
-	journal.jprintf(pP_TIME, "%s ON . . .\n", (char*) nameHeatPump);
+	journal.jprintf_time("%s ON . . .\n", (char*) nameHeatPump);
 
 	return error;
 }
@@ -2052,11 +2059,11 @@ int8_t HeatPump::StopWait(boolean stop)
   if (stop)
   {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)) return error;    // Если ТН выключен или выключается ничего не делаем
-    journal.jprintf(pP_DATE,"Stopping...\n");
+    journal.jprintf_date("Stopping...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   } else {
     if ((get_State()==pOFF_HP)||(get_State()==pSTOPING_HP)||(get_State()==pWAIT_HP)) return error;    // Если ТН выключен или выключается или ожидание ничего не делаем
-    journal.jprintf(pP_DATE,"Switch to waiting...\n");
+    journal.jprintf_date("Switch to waiting...\n");
     setState(pSTOPING_HP);  // Состояние выключения
   }
 
@@ -2105,12 +2112,12 @@ int8_t HeatPump::StopWait(boolean stop)
   {
      //journal.jprintf(" statChart stop\n");
      setState(pOFF_HP);
-     journal.jprintf(pP_TIME,"%s OFF . . .\n",(char*)nameHeatPump);
+     journal.jprintf_time("%s OFF . . .\n",(char*)nameHeatPump);
   }
   else
   {
      setState(pWAIT_HP);
-     journal.jprintf(pP_TIME,"%s WAIT . . .\n",(char*)nameHeatPump);
+     journal.jprintf_time("%s WAIT . . .\n",(char*)nameHeatPump);
   }
   return error;
 }
@@ -3006,7 +3013,7 @@ void HeatPump::compressorON()
 		// 1. Обеспечение минимальной паузы компрессора
 		if(compressor_in_pause) return;
 #ifdef DEBUG_MODWORK
-		journal.jprintf(pP_TIME,"compressorON > modWork:%X[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
+		journal.jprintf_time("compressorON > modWork:%X[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 #endif
 	}//get_fEEVStartPosByTemp()
 	// 2. Разбираемся с ЭРВ
@@ -3074,7 +3081,7 @@ void HeatPump::compressorON()
 #endif
 
 #ifdef DEBUG_MODWORK
-		journal.jprintf(pP_TIME, "Pause %d s before start compressor\n", Option.delayOnPump);
+		journal.jprintf_time("Pause %d s before start compressor\n", Option.delayOnPump);
 #endif
 		uint16_t d = Option.delayOnPump;
 #ifdef FLOW_CONTROL
@@ -3154,10 +3161,10 @@ void HeatPump::compressorON()
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Resume task UpdateEEV\n");
 		#ifdef DEFROST
-		 if(!(get_modWork() & pDEFROST)) journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
-		 else journal.jprintf(pP_TIME,"%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
+		 if(!(get_modWork() & pDEFROST)) journal.jprintf_time("%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+		 else journal.jprintf_time("%s DEFROST . . .\n",(char*)nameHeatPump);               // Сообщение о разморозке
 		#else
-		journal.jprintf(pP_TIME,"%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
+		journal.jprintf_time("%s WORK . . .\n",(char*)nameHeatPump);     // Сообщение о работе
 		#endif
 	}
 	else  // признак первой итерации
@@ -3206,7 +3213,7 @@ void HeatPump::compressorOFF()
 		journal.jprintf(" EEV closed\n");
 	}
 #endif
-	//journal.jprintf(pP_TIME,"%s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
+	//journal.jprintf_time("%s PAUSE . . .\n",(char*)nameHeatPump);    // Сообщение о паузе
 }
 
 // РАЗМОРОЗКА ВОЗДУШНИКА ----------------------------------------------------------
@@ -3623,7 +3630,7 @@ int8_t	 HeatPump::Prepare_Temp(uint8_t bus)
 			}
 		}
 		if(ret) {
-			journal.jprintf(pP_TIME, "Error %d PrepareTemp bus %d\n", i, bus+1);
+			journal.jprintf_time("Error %d PrepareTemp bus %d\n", i, bus+1);
 			if(ret == 2) set_Error(i, (char*) __FUNCTION__);
 		}
 	}

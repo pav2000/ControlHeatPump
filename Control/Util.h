@@ -33,5 +33,7 @@ char* _itoa( int value, char *string);
 uint32_t i32toa(int32_t value, char *string, uint8_t zero_pad);
 uint8_t _ftoa(char *outstr, float val, unsigned char precision);
 void _dtoa(char *outstr, int val, int precision);
+char* NowTimeToStr(char *buf = NULL);
+char* NowDateToStr(char *buf = NULL);
 
 #endif
