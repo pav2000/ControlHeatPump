@@ -316,7 +316,7 @@ class HeatPump
     
    // Дата время
     boolean set_datetime(char *var, char *c);              //  Установить параметр дата и время из строки
-    char*   get_datetime(char *var,char *ret);             //  Получить параметр дата и время из строки
+    void    get_datetime(char *var,char *ret);             //  Получить параметр дата и время из строки
     IPAddress get_ip() { return Network.ip;}               //  Получить ip адрес
     IPAddress get_sdns() { return Network.sdns;}           //  Получить sdns адрес
     IPAddress get_subnet() { return Network.subnet;}       //  Получить subnet адрес

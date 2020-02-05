@@ -33,14 +33,6 @@
 //  Если включена опция I2C_EEPROM_64KB то журнал пишется в I2C память. Должен быть устанвлен чип размером более 4кБ, адрес начала записи 0x0fff до I2C_STAT_EEPROM
 //  Размер журнала I2C_STAT_EEPROM-I2C_JOURNAL_START
 
-enum type_promt //  Перечисляемый тип - что идет в начале строки при выводе в журнал
-{
-    pP_NONE,        // ничего
-    pP_TIME,        // время
-    pP_DATE,        // дата и время
-    pP_USER         // константа определяемая пользователем
-};
-
 #define PRINTF_BUF 256                           // размер буфера для одной строки - большаяя длина нужна при отправке уведомлений, там длинные строки (видел 178)
 
 extern uint16_t sendPacketRTOS(uint8_t thread, const uint8_t * buf, uint16_t len,uint16_t pause);
@@ -56,8 +48,9 @@ public:
   void Init();                                            // Инициализация
   void printf(const char *format, ...) ;                  // Печать только в консоль
   void jprintf(const char *format, ...);                  // Печать в консоль и журнал возвращает число записанных байт
-  void jprintf(type_promt pr,const char *format, ...);    // Печать в консоль и журнал возвращает число записанных байт с типом промта
   void jprintf_only(const char *format, ...);             // Печать ТОЛЬКО в журнал возвращает число записанных байт для использования в критических секциях кода
+  void jprintf_time(const char *format, ...);			// +Time, далее печать в консоль и журнал
+  void jprintf_date(const char *format, ...);			// +DateTime, далее печать в консоль и журнал
   int32_t send_Data(uint8_t thread);                     // отдать журнал в сеть клиенту  Возвращает число записанных байт
   int32_t available(void);                               // Возвращает размер журнала
   int8_t   get_err(void) { return err; };

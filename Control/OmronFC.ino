@@ -302,7 +302,7 @@ err=OK;
         _delay(FC_DELAY_REPEAT); 
         journal.jprintf(cErrorRS485,name,__FUNCTION__,err);// Выводим сообщение о повторном чтении
         numErr++;                                          // число ошибок чтение по модбасу
- //       journal.jprintf(pP_TIME,cErrorRS485,name,err);     // Вывод кода ошибки в журнал
+ //       journal.jprintf_time(cErrorRS485,name,err);     // Вывод кода ошибки в журнал
       }
   if (err!=OK)                                              // Ошибка модбаса
       {
@@ -650,7 +650,7 @@ int16_t devOmronMX2::read_stateFC()
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
   state=read_0x03_16(MX2_STATE);  // прочитать состояние
   if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-			journal.jprintf(pP_TIME, "FC: %Xh, %.2fHz, %.2fA, %.2fkW\n", state, (float)freqFC/100.0, (float)current/100.0, (float)get_power()/1000.0);}
+			journal.jprintf_time("FC: %Xh, %.2fHz, %.2fA, %.2fkW\n", state, (float)freqFC/100.0, (float)current/100.0, (float)get_power()/1000.0);}
   return state;
 #else
   return 0;
@@ -682,7 +682,7 @@ int16_t devOmronMX2::read_tempFC()
          _delay(FC_DELAY_REPEAT);
          journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                // Выводим сообщение о повторном чтении
          numErr++;                                                          // число ошибок чтение по модбасу
- //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+ //        journal.jprintf_time(cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
          }
     
       check_blockFC();                                                     // проверить необходимость блокировки
@@ -703,7 +703,7 @@ int16_t devOmronMX2::read_tempFC()
             _delay(FC_DELAY_REPEAT);
              journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                // Выводим сообщение о повторном чтении
              numErr++;                                                          // число ошибок чтение по модбасу
-   //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+   //         journal.jprintf_time(cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
             }
             check_blockFC();                                                   // проверить необходимость блокировки
             return result;
@@ -725,7 +725,7 @@ int16_t devOmronMX2::read_tempFC()
           _delay(FC_DELAY_REPEAT);
           journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                 // Выводим сообщение о повторном чтении
           numErr++;                                                           // число ошибок чтение по модбасу
-    //       journal.jprintf(pP_TIME,cErrorRS485,name,err);                   // Вывод кода ошибки в журнал
+    //       journal.jprintf_time(cErrorRS485,name,err);                   // Вывод кода ошибки в журнал
           }
         check_blockFC();                                                      // проверить необходимость блокировки
         return result;
@@ -747,7 +747,7 @@ int16_t devOmronMX2::read_tempFC()
          _delay(FC_DELAY_REPEAT);
          journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                 // Выводим сообщение о повторном чтении
           numErr++;                                                          // число ошибок чтение по модбасу
-  //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+  //        journal.jprintf_time(cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
          }
       if (err==OK) // Для времен переставить местами слова (2 байта) т.е сначала идет старшие 2 байта потом младшие
       {
@@ -772,7 +772,7 @@ int16_t devOmronMX2::read_tempFC()
             _delay(FC_DELAY_REPEAT);
            journal.jprintf(cErrorRS485,name,__FUNCTION__,err);             // Выводим сообщение о повторном чтении
            numErr++;                                                       // число ошибок чтение по модбасу
-  //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                  // Вывод кода ошибки в журнал
+  //         journal.jprintf_time(cErrorRS485,name,err);                  // Вывод кода ошибки в журнал
          }
       check_blockFC();                                                    // проверить необходимость блокировки
       return err;
@@ -790,7 +790,7 @@ int16_t devOmronMX2::read_tempFC()
            _delay(FC_DELAY_REPEAT);
            journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                // Выводим сообщение о повторном чтении
            numErr++;                                                          // число ошибок чтение по модбасу
-   //        journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+   //        journal.jprintf_time(cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
          }
       check_blockFC();                                                      // проверить необходимость блокировки
       return err;
@@ -808,7 +808,7 @@ int16_t devOmronMX2::read_tempFC()
            _delay(FC_DELAY_REPEAT);
            journal.jprintf(cErrorRS485,name,__FUNCTION__,err);                // Выводим сообщение о повторном чтении
            numErr++;                                                          // число ошибок чтение по модбасу
-  //         journal.jprintf(pP_TIME,cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
+  //         journal.jprintf_time(cErrorRS485,name,err);                     // Вывод кода ошибки в журнал
          }
       check_blockFC();                                                       // проверить необходимость блокировки
       return err; 

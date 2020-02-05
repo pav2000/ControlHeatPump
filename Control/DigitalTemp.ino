@@ -123,7 +123,7 @@ int8_t sensorTemp::Read()
 					sumErrorRead++;
 					if(!(err == ERR_ONEWIRE_CRC && get_setup_flag(fTEMP_ignory_CRC))) {
 						if(!get_setup_flag(fTEMP_dont_log_errors)) {
-							journal.jprintf(pP_TIME, "%s: Error ", name);
+							journal.jprintf_time("%s: Error ", name);
 							if(err == ERR_ONEWIRE_CRC || err >= 0x40) { // Ошибка CRC или ошибка чтения, но успели прочитать температуру
 								journal.jprintf("%s (%d). t=%.2d, prev=%.2d\n", err == ERR_ONEWIRE_CRC ? "CRC" : "read", err >= 0x40 ? err - 0x40 : err, ttemp, lastTemp);
 							} else journal.jprintf("%s (%d)\n", err == ERR_ONEWIRE ? "RESET" : "read", err);
@@ -146,7 +146,7 @@ int8_t sensorTemp::Read()
 					   lastTemp = ttemp;
 				   }
 				   if(nGap == 0 || !get_setup_flag(fTEMP_dont_log_errors))
-					   journal.jprintf(pP_TIME, "GAP %s t=%.2d, %s\n", name, ttemp, nGap == 0 ? "accept" : "skip");
+					   journal.jprintf_time("GAP %s t=%.2d, %s\n", name, ttemp, nGap == 0 ? "accept" : "skip");
 				}
 			}
 		}

@@ -337,17 +337,16 @@ float temp_DUE()
  
   adc_enable_channel(ADC, ADC_TEMPERATURE_SENSOR);                                                 // Enable the corresponding channel
   adc_enable_ts(ADC);                                                                              // Enable the temperature sensor
+  _delay(1);		// min 20..40 us
   adc_start(ADC);                                                                                  // Start the ADC
-  //  while ((adc_get_status(ADC) & ADC_ISR_DRDY) != ADC_ISR_DRDY);                                // Wait for end of conversion
- while ((ADC->ADC_ISR & (0x1u << ADC_TEMPERATURE_SENSOR)) != (0x1u << ADC_TEMPERATURE_SENSOR));    // Wait for end of conversion
-//    ulValue = adc_get_latest_value(ADC);  // Read the value
+  //while ((adc_get_status(ADC) & ADC_ISR_DRDY) != ADC_ISR_DRDY);                                  // Wait for end of conversion
+  while ((ADC->ADC_ISR & (0x1u << ADC_TEMPERATURE_SENSOR)) != (0x1u << ADC_TEMPERATURE_SENSOR)) _delay(1);    // Wait for end of conversion
+  //ulValue = adc_get_latest_value(ADC);  // Read the value
   ulValue =  (unsigned int)(*(ADC->ADC_CDR+ADC_TEMPERATURE_SENSOR)) ;                              // Read the value
-  adc_disable_ts(ADC);
   adc_disable_channel(ADC, ADC_TEMPERATURE_SENSOR);                                                // Disable the corresponding channel
+  adc_disable_ts(ADC);
  
-  //SerialDbg.println(HP.AdcTempSAM3x);
   return TEMP_FIXTEMP +((float)(ulValue*TEMP_TRANS)-TEMP_OFFSET)/TEMP_FACTOR;
- // return TEMP_FIXTEMP +((float)(HP.AdcTempSAM3x*TEMP_TRANS)-TEMP_OFFSET)/TEMP_FACTOR;
 }
 
 // Включение монитора питания ---------------------------------------------------

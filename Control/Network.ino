@@ -250,7 +250,7 @@ x_TryStaticIP:
 		} else journal.jprintf((char*) NetworkError, nameWiznet);
 	} else   // Кратко выводим сообщение в журнал
 	{
-		if(EthernetOK) journal.jprintf(pP_TIME, "Reset %s . . . \n", nameWiznet);
+		if(EthernetOK) journal.jprintf_time("Reset %s . . . \n", nameWiznet);
 		else journal.jprintf((char*) NetworkError, nameWiznet);
 	}
 #else
@@ -267,7 +267,7 @@ x_TryStaticIP:
 		} else journal.jprintf(" ERROR: setting %s", nameWiznet);
 	} else   // Кратко выводим сообщение в журнал
 	{
-		if(EthernetOK) journal.jprintf(pP_TIME, "Reset %s Ok.\n", nameWiznet);
+		if(EthernetOK) journal.jprintf_time("Reset %s Ok.\n", nameWiznet);
 		else journal.jprintf(" ERROR: setting %s", nameWiznet);
 	}
 #endif
@@ -581,7 +581,7 @@ boolean pingServer()
 	ICMPEchoReply echoReply = ping(ip,W5200_NUM_PING);  // адрес и число попыток
 	SemaphoreGive(xWebThreadSemaphore);                 // отдать семафор
 #ifndef DONT_LOG_SUCCESS_PING
-	journal.jprintf(pP_TIME,"Ping[%d] ", echoReply.data.seq);
+	journal.jprintf_time("Ping[%d] ", echoReply.data.seq);
 #endif
 	if(echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
@@ -595,7 +595,7 @@ boolean pingServer()
 		return true;
 	} else {
 #ifdef DONT_LOG_SUCCESS_PING
-		journal.jprintf(pP_TIME,"Ping[%d] %d.%d.%d.%d: FAILED - ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
+		journal.jprintf_time("Ping[%d] %d.%d.%d.%d: FAILED - ", echoReply.data.seq, ip[0], ip[1], ip[2], ip[3]);
 #else
 		journal.jprintf("%d.%d.%d.%d: FAILED - ", ip[0], ip[1], ip[2], ip[3]);
 #endif

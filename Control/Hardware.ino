@@ -210,7 +210,7 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 				 _delay(ANALOG_MODBUS_ERR_DELAY);
 			 }
 			 if(err) {
-				 journal.jprintf(pP_TIME, "Error read %s by Modbus: %d\n", name, err);
+				 journal.jprintf_time("Error read %s by Modbus: %d\n", name, err);
 				 set_Error(ERR_READ_PRESS, name);
 				 return ERR_READ_PRESS;
 			 }
@@ -552,7 +552,7 @@ int8_t devRelay::set_Relay(int8_t r)
 	delay(RELAY_WAIT_SWITCH);
 	if(tasks_suspended) xTaskResumeAll();
 #endif
-	journal.jprintf(pP_TIME, "Relay %s: %s\n", name, Relay ? "ON" : "OFF");
+	journal.jprintf_time("Relay %s: %s\n", name, Relay ? "ON" : "OFF");
 	return OK;
 }
 
@@ -1564,7 +1564,7 @@ xErr:
 #endif
 		numErr++;                  // число ошибок чтение по модбасу
 		if(GETBIT(HP.Option.flags, fSDMLogErrors)) {
-			journal.jprintf(pP_TIME, "%s: Read #%d error %d, repeat...\n", name, group, _err);      // Выводим сообщение о повторном чтении
+			journal.jprintf_time("%s: Read #%d error %d, repeat...\n", name, group, _err);      // Выводим сообщение о повторном чтении
 		}
 		_delay(SDM_DELAY_REPEAD);  // Чтение не удачно, делаем паузу
 	}
@@ -1583,7 +1583,7 @@ xErr:
 	SETBIT0(flags,fSDMLink);             // связь со счетчиком потеряна
 #endif
 	if(!err && _err) {
-		journal.jprintf(pP_TIME, "%s: Read #%d error %d!\n", name, group, _err);
+		journal.jprintf_time("%s: Read #%d error %d!\n", name, group, _err);
 	}
 	// set_Error(_err,name);              // генерация ошибки    НЕТ счетчик не критичен
 	return err = _err;

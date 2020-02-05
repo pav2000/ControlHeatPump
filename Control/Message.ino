@@ -479,7 +479,7 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запу�
     //JOURNAL("Ignore repeat msg: #%d\n", ms);
     return false;
   } else {
-    JOURNAL(pP_TIME, "MSG: #%d: %s\n", ms, c);
+    JOURNAL("MSG: #%d: %s\n", ms, c);
   }
 
   // Подготовить уведомление

@@ -828,10 +828,10 @@ void parserGET(uint8_t thread, int8_t )
 		{
 			strcat(strReturn,HP.get_lastErr()); ADD_WEBDELIM(strReturn) ;    continue;
 		}
-		if (strcmp(str,"get_tempSAM3x")==0)  // Функция get_tempSAM3x  - получение температуры чипа sam3x
-		{
-			_ftoa(strReturn,temp_DUE(),2); ADD_WEBDELIM(strReturn); continue;
-		}
+//		if (strcmp(str,"get_tempSAM3x")==0)  // Функция get_tempSAM3x  - получение температуры чипа sam3x
+//		{
+//			_ftoa(strReturn,temp_DUE(),2); ADD_WEBDELIM(strReturn); continue;
+//		}
 		if (strcmp(str,"get_tempDS3231")==0)  // Функция get_tempDS3231  - получение температуры DS3231
 		{
 			_dtoa(strReturn, getTemp_RtcI2C(), 2); ADD_WEBDELIM(strReturn); continue;
@@ -1306,13 +1306,13 @@ void parserGET(uint8_t thread, int8_t )
 				default:         strcat(strReturn,"unknown;"); break;
 				}
 
-				strcat(strReturn,"Входное напряжение питания контроллера (В): |");
+				strcat(strReturn, "Входное напряжение питания контроллера, V:|");
 	#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 				_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
 	#else
-				m_snprintf(strReturn+strlen(strReturn), 256, "если ниже %.1dV - сброс;", ((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) + 19);
+				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "%sесли < %.1d - сброс;", Is_otg_vbus_high() ? ", +USB" : "", ((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) + 19);
 	#endif
-				m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
+				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
 				//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
 				//getIDchip(strReturn); strcat(strReturn,";");
 				//strcat(strReturn,"Значение регистра VERSIONR сетевого чипа WizNet (51-w5100, 3-w5200, 4-w5500)|");_itoa(W5200VERSIONR(),strReturn);strcat(strReturn,";");
@@ -2803,7 +2803,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				return pLOAD_ERR;
 			}
 			numFilesWeb = 0;
-			journal.jprintf(pP_TIME, "Start upload, erase SPI disk ");
+			journal.jprintf_time("Start upload, erase SPI disk ");
 			SerialFlash.eraseAll();
 			while(SerialFlash.ready() == false) {
 				xSemaphoreGive(xWebThreadSemaphore); // отдать семафор вебморды, что бы обработались другие потоки веб морды
@@ -2829,11 +2829,11 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				return pLOAD_ERR;
 			}
 			numFilesWeb = 0;
-			journal.jprintf(pP_TIME, "Start upload to SD.\n");
+			journal.jprintf_time("Start upload to SD.\n");
 			return pNULL;
 		} else if(strcmp(nameFile, LOAD_FLASH_END) == 0 || strcmp(nameFile, LOAD_SD_END) == 0) {  // Окончание загрузки вебморды
 			if(SemaphoreTake(xLoadingWebSemaphore, 0) == pdFALSE) { // Семафор не захвачен (был захвачен ранее) все ок
-				journal.jprintf(pP_TIME, "Ok, %d files uploaded, free %.1f KB\n", numFilesWeb, fWebUploadingFilesTo == 1 ? (float)SerialFlash.free_size() / 1024 : (float)card.vol()->freeClusterCount() * card.vol()->blocksPerCluster() * 512 / 1024);
+				journal.jprintf_time("Ok, %d files uploaded, free %.1f KB\n", numFilesWeb, fWebUploadingFilesTo == 1 ? (float)SerialFlash.free_size() / 1024 : (float)card.vol()->freeClusterCount() * card.vol()->blocksPerCluster() * 512 / 1024);
 				fWebUploadingFilesTo = 0;
 				SemaphoreGive (xLoadingWebSemaphore);
 				return pLOAD_OK;

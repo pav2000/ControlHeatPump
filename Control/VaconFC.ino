@@ -191,7 +191,7 @@ int8_t devVaconFC::get_readState()
 			}
 		} else if(state & FC_S_RUN) { // Привод работает, а не должен - останавливаем через модбас
 			if(rtcSAM3X8.unixtime() - HP.get_stopCompressor() > FC_DEACCEL_TIME / 100) {
-				journal.jprintf(pP_TIME, "Compressor running - stop via Modbus!\n");
+				journal.jprintf_time("Compressor running - stop via Modbus!\n");
 				err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
 				if(err) return err;
 			}
@@ -206,7 +206,7 @@ int8_t devVaconFC::get_readState()
 					err = Modbus.get_err(); // Скопировать ошибку
 				}
 				if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-					journal.jprintf(pP_TIME, "FC: %Xh,%.2dHz,%.2dA,%.1d%%=%.3d\n", state, FC_curr_freq, current / 100.0, power,	get_power());
+					journal.jprintf_time("FC: %Xh,%.2dHz,%.2dA,%.1d%%=%.3d\n", state, FC_curr_freq, current / 100.0, power,	get_power());
 				}
 			}
 		}
@@ -772,7 +772,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 #endif
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf("Modbus reg #%d - ", cmd);
-        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf_time(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
     }
@@ -791,7 +791,7 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
         err = Modbus.readHoldingRegisters32(FC_MODBUS_ADR, cmd - 1, (uint32_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
         numErr++; // число ошибок чтение по модбасу
-        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf_time(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
     }
@@ -809,7 +809,7 @@ int8_t devVaconFC::write_0x06_16(uint16_t cmd, uint16_t data)
         err = Modbus.writeHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, data); // послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Записали удачно
         numErr++; // число ошибок чтение по модбасу
-        journal.jprintf(pP_TIME, cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
+        journal.jprintf_time(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         if(check_blockFC()) break; // проверить необходимость блокировки
         _delay(FC_DELAY_REPEAT);
     }

@@ -261,7 +261,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrNARMON>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fNarodMonUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,get_narodMon_server());
+         journal.jprintf_time((char*)BlockService,get_narodMon_server());
          numErrNARMON=0;// сбросить счетчик
          }
       return numErrNARMON;
@@ -272,7 +272,7 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
      if (numErrMQTT>=MQTT_NUM_ERR_OFF)
          {
          SETBIT0(mqttSettintg.flags,fMqttUse);
-         journal.jprintf(pP_TIME,(char*)BlockService,get_mqtt_server());
+         journal.jprintf_time((char*)BlockService,get_mqtt_server());
          numErrMQTT=0;// сбросить счетчик
          }
       return numErrMQTT;

@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() { //clock();
-		updateParam("get_resetCause,get_uptime,get_tempSAM3x,get_tempDS3231,get_startDT,get_freeRam,get_sysInfo");
+		updateParam("get_resetCause,get_uptime,get_tempDS3231,get_startDT,get_freeRam,get_sysInfo");
 	};
 	</script>
 </head>
@@ -22,7 +22,6 @@
 		<tr><td>Время с последней перезагрузки</td><td id="get_uptime"></td></tr>
 		<tr><td>Последний сброс</td><td id="get_startdt"></td></tr>
 		<tr><td>Причина последнего сброса контроллера</td><td id="get_resetcause"></td></tr>
-		<tr><td>Температура чипа SAM3</td><td id="get_tempsam3x"></td></tr>
 		<tr><td>Температура платы</td><td id="get_tempds3231"></td></tr>
 		<tr><td>Свободная память</td><td id="get_freeram"></td></tr>
 	</tbody>	
