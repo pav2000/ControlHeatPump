@@ -643,16 +643,17 @@ void Nextion::Update()
 void Nextion::StatusLine()
 {
 	// Вычисление статуса
-	char *tm = NowTimeToStr1();
-	char *ss = HP.StateToStr();
+	char *tm = NowTimeToStr();
 	uint16_t newcrc = calc_crc16((uint8_t*)tm, 5);
 	newcrc = _crc16(newcrc, HP.get_errcode());
 	newcrc = _crc16(newcrc, HP.get_modeHouse());
 	newcrc = _crc16(newcrc, (HP.IsWorkingNow() << 1) | HP.get_BoilerON());
+	char *ss = HP.StateToStr();
 	newcrc = calc_crc16((uint8_t*)ss, strlen(ss), newcrc);
 	if(newcrc != StatusCrc || fUpdate > 1) { // поменялся
 		StatusCrc = newcrc;
 
+		tm[5] = '\0';
 		setComponentText("time", tm);  // Обновить время
 		// Ошибки
 		if(HP.get_errcode() == OK) {

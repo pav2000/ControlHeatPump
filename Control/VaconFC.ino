@@ -132,12 +132,12 @@ int16_t devVaconFC::CheckLinkStatus(void)
 		for (uint8_t i = 0; i < FC_NUM_READ; i++) // Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
 		{
 			err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, FC_STATUS - 1, (uint16_t *)&state); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
-			if(err == OK) break; // Прочитали удачно
 			if(check_blockFC()) break; // проверить необходимость блокировки
 			_delay(FC_DELAY_REPEAT);
 		}
 		if(err != OK) state = ERR_LINK_FC;
     } else {
+    	SETBIT0(flags, fErrFC);
     	state = FC_S_RDY;
     	err = OK;
     }
@@ -320,19 +320,12 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 bool devVaconFC::check_blockFC()
 {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
-    if((xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) && (err != OK)) { // если не запущена free rtos то блокируем с первого раза
-        SETBIT1(flags, fErrFC); // Установить флаг
-        note = (char*)noteFC_NO;
-        set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
-        return true;
-    }
     if(err != OK) {
-		if(++number_err >= FC_NUM_READ) {// если превышено число ошибок то блокировка
-			//SemaphoreGive(xModbusSemaphore); // разблокировать семафор
-			SETBIT1(flags, fErrFC); // Установить флаг
-			note = (char*)noteFC_NO;
-			set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
-			return true;
+        if(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED || ++number_err >= FC_NUM_READ) { // если не запущена free rtos то блокируем с первого раза
+            SETBIT1(flags, fErrFC); // Установить флаг
+            note = (char*)noteFC_NO;
+            set_Error(err, (char*)name); // Подъем ошибки на верх и останов ТН
+            return true;
 		}
     } else {
     	SETBIT0(flags, fErrFC);
