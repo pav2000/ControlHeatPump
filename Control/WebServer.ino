@@ -1209,7 +1209,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_dtoa(strReturn, GAP_TEMP_VAL, 2);strcat(strReturn,";");
-			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn, MAX_TEMP_ERR, 2);strcat(strReturn,";");
+			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn, MAX_TEMP_ERR/100.0, 2);strcat(strReturn,";");
 			// Удаленные датчики
 			strcat(strReturn,"SENSOR_IP|Использование удаленных датчиков|");
 #ifdef SENSOR_IP

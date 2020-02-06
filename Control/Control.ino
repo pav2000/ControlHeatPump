@@ -582,7 +582,7 @@ x_I2C_init_std_message:
 	freeRamShow();
 	HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 	journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM);
-	journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE());
+//	journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE());
 	journal.jprintf("Temperature DS2331: %.2d\n",getTemp_RtcI2C());
 	if(Is_otg_vbus_high()) journal.jprintf("USB connected\n");
 	//HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
