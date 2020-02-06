@@ -10,7 +10,8 @@
 <br>
 Подробное обсуждение проекта на форуме: <br>
 https://www.forumhouse.ru/threads/352693/ <br>
-https://www.forumhouse.ru/threads/437182/
+https://www.forumhouse.ru/threads/437182/ <br>
+https://www.forumhouse.ru/threads/492563/
 
 
 Скриншеты веб-интерфейса:
