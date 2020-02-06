@@ -34,6 +34,27 @@ void get_Header(uint8_t thread,char *name_file)
 	sendPrintfRTOS(thread, " ------ Народный контроллер теплового насоса ver. %s  сборка %s %s ------\r\nКонфигурация: %s: %s\r\nСоздание файла: %s %s \r\n\r\n", VERSION,__DATE__,__TIME__,CONFIG_NAME,CONFIG_NOTE,NowTimeToStr(),NowDateToStr());
 }
 
+// Сформировать значения счетиков в текстовый буфере (отсылки нет),
+// используется для получения состояния ТН в виде txt и получения сосирянмя при отсылке по почте
+void get_Counts(char *tempBuf)
+{
+
+       strcpy(tempBuf,"\n  Сохраненные в ЕЕПРОМ значения внутренних счетчиков\r\n");
+       strcat(tempBuf,"-- Глобальные счетчики (Всего за весь период) --\r\n");
+       strcat(tempBuf,"Дата сброса общих счетчиков: ");                                 DecodeTimeDate(HP.get_motoHour()->D1,tempBuf); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Моточасы ТН ВСЕГО [ч]: ");                                       _itoa(HP.get_motoHour()->H1/60,tempBuf);  strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Моточасы компрессора ВСЕГО [ч]: ");                              _itoa(HP.get_motoHour()->C1/60,tempBuf); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Потребленная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(tempBuf, HP.get_motoHour()->E1 / 1000000, 3); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Выработанная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(tempBuf, HP.get_motoHour()->P1 / 1000000, 3); strcat(tempBuf,"\r\n");
+
+       strcat(tempBuf,"-- Сезонные счетчики --\r\n");
+       strcat(tempBuf,"Дата сброса сезонных счетчиков: ");                              DecodeTimeDate(HP.get_motoHour()->D2,tempBuf); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Моточасы ТН сбрасываемый счетчик (сезон) [ч]: ");                _itoa(HP.get_motoHour()->H2/60,tempBuf);strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Моточасы компрессора сбрасываемый счетчик (сезон) [ч]: ");       _itoa(HP.get_motoHour()->C2/60,tempBuf); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Потребленная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(tempBuf, HP.get_motoHour()->E2 / 1000000, 3); strcat(tempBuf,"\r\n");
+       strcat(tempBuf,"Выработанная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(tempBuf, HP.get_motoHour()->P2 / 1000000, 3); strcat(tempBuf,"\r\n");
+}
+
 // Получить состояние теплового насоса
 // header - заголовок файла ставить или нет
 void get_txtState(uint8_t thread, boolean header)
@@ -1117,27 +1138,9 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 		}
 	}
-// счетчики	
-get_Counts(tempBuf);  client.write(tempBuf,strlen(tempBuf));
+	// счетчики
+	get_Counts(tempBuf);
+	client.write(tempBuf,strlen(tempBuf));
 
 }
-// Сформировать значения счетиков в текстовый буфере (отсылки нет),
-// используется для получения состояния ТН в виде txt и получения сосирянмя при отсылке по почте
-void get_Counts(char *tempBuf)
-{
-	 
-       strcpy(tempBuf,"\n  Сохраненные в ЕЕПРОМ значения внутренних счетчиков\r\n");
-       strcat(tempBuf,"-- Глобальные счетчики (Всего за весь период) --\r\n");
-       strcat(tempBuf,"Дата сброса общих счетчиков: ");                                 DecodeTimeDate(HP.get_motoHour()->D1,tempBuf); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Моточасы ТН ВСЕГО [ч]: ");                                       _itoa(HP.get_motoHour()->H1/60,tempBuf);  strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Моточасы компрессора ВСЕГО [ч]: ");                              _itoa(HP.get_motoHour()->C1/60,tempBuf); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Потребленная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(tempBuf, HP.get_motoHour()->E1 / 1000000, 3); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Выработанная энергия ВСЕГО [кВт*ч]: ");                          _dtoa(tempBuf, HP.get_motoHour()->P1 / 1000000, 3); strcat(tempBuf,"\r\n"); 
-    
-       strcat(tempBuf,"-- Сезонные счетчики --\r\n");
-       strcat(tempBuf,"Дата сброса сезонных счетчиков: ");                              DecodeTimeDate(HP.get_motoHour()->D2,tempBuf); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Моточасы ТН сбрасываемый счетчик (сезон) [ч]: ");                _itoa(HP.get_motoHour()->H2/60,tempBuf);strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Моточасы компрессора сбрасываемый счетчик (сезон) [ч]: ");       _itoa(HP.get_motoHour()->C2/60,tempBuf); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Потребленная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(tempBuf, HP.get_motoHour()->E2 / 1000000, 3); strcat(tempBuf,"\r\n"); 
-       strcat(tempBuf,"Выработанная энергия сбрасываемый счетчик (сезон) [кВт*ч]: ");   _dtoa(tempBuf, HP.get_motoHour()->P2 / 1000000, 3); strcat(tempBuf,"\r\n"); 
-}
+
