@@ -585,11 +585,11 @@ boolean pingServer()
 #endif
 	if(echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
-		//journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
+		//journal.jprintf("%dms TTL=%u\n", GetTickCount() - echoReply.data.time, echoReply.ttl);
 		if(ping.attempts()) {
-			journal.jprintf("%dms, lost: %d.\n", millis() - echoReply.data.time, ping.attempts());
+			journal.jprintf("%dms, lost: %d.\n", GetTickCount() - echoReply.data.time, ping.attempts());
 		} else {
-			journal.jprintf("%dms\n", millis() - echoReply.data.time);
+			journal.jprintf("%dms\n", GetTickCount() - echoReply.data.time);
 		}
 #endif
 		return true;

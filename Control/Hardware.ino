@@ -1539,9 +1539,9 @@ int8_t devSDM::get_readState(uint8_t group)
 #endif
 			if(_err == OK) {
 				if(AcEnergy == -1.0f) AcEnergy = tmp;
-				AcPower = (tmp - AcEnergy) * 3600000.0f / (millis() - period);
+				AcPower = (tmp - AcEnergy) * 3600000.0f / (GetTickCount() - period);
 				AcEnergy = tmp;
-				period = millis();
+				period = GetTickCount();
 			}
 */
 		}

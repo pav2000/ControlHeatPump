@@ -96,7 +96,7 @@ uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 radio_received_type radio_received[RADIO_SENSORS_MAX];
 uint8_t radio_received_num = 0;
 uint32_t radio_hub_serial = 0;
-uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
+uint32_t radio_timecnt = 0; // *TIME_READ_SENSOR
 char Radio_RSSI_to_Level(uint8_t RSSI);
 #endif
 

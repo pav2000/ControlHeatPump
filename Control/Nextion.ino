@@ -611,7 +611,7 @@ void Nextion::Update()
 		}
 	} else if(PageID == NXTID_PAGE_PROFILE) { // Обновление данных страницы 8 "Профили"
 #ifdef NEXTION_DEBUG
-		journal.printf("#: %u\n", millis());
+		journal.printf("#: %u\n", GetTickCount());
 #endif
 		if(HP.Schdlr.IsShedulerOn()) sendCommand("s.val=1"); else sendCommand("s.val=0");
 		if(fUpdate == 2) {
@@ -632,7 +632,7 @@ void Nextion::Update()
 			sendCommand("click z,0");
 		}
 #ifdef NEXTION_DEBUG
-		journal.printf("##: %u\n", millis());
+		journal.printf("##: %u\n", GetTickCount());
 #endif
 	}
 	StatusLine();

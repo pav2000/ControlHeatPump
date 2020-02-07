@@ -2076,7 +2076,7 @@ int8_t HeatPump::StopWait(boolean stop)
     journal.jprintf(" Stop task UpdateHP\n");
     #ifdef USE_SUN_COLLECTOR
 	Sun_OFF();											// Выключить СК
-	time_Sun = millis() - SUN_MIN_PAUSE;				// выключить задержку последующего включения
+	time_Sun = GetTickCount() - SUN_MIN_PAUSE;				// выключить задержку последующего включения
 	#endif
   }
     
@@ -3699,19 +3699,19 @@ if(is_compressor_on()){      // Если компрессор работает
 void HeatPump::Sun_ON(void)
 {
 #ifdef USE_SUN_COLLECTOR
-	if(millis() - time_Sun > SUN_MIN_PAUSE) { // ON
+	if(GetTickCount() - time_Sun > SUN_MIN_PAUSE) { // ON
 		if(flags & (1<<fHP_SunReady)) {
 			flags |= (1<<fHP_SunWork);
 			dRelay[RSUN].set_Relay(fR_StatusSun);
 			dRelay[PUMP_IN].set_Relay(fR_StatusSun);
-			time_Sun = millis();
+			time_Sun = GetTickCount();
 		} else {
 			if(!(flags & (1<<fHP_SunSwitching))) {
 				if(sTemp[TSUN].get_Temp() > Option.SunTempOn) {
 					flags = (flags & ~(1<<fHP_SunNotInited)) | (1<<fHP_SunSwitching);
 					dRelay[RSUNOFF].set_OFF();
 					dRelay[RSUNON].set_ON();
-					time_Sun = millis();
+					time_Sun = GetTickCount();
 				}
 			}
 		}
@@ -3726,7 +3726,7 @@ void HeatPump::Sun_OFF(void)
 		dRelay[RSUN].set_Relay(-fR_StatusSun);
 		dRelay[PUMP_IN].set_Relay(-fR_StatusSun);
 		flags &= ~(1<<fHP_SunWork);
-		time_Sun = millis();
+		time_Sun = GetTickCount();
 	}
 #endif
 }

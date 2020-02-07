@@ -928,12 +928,12 @@ void get_datTest(uint8_t thread)
    
    // Генерация файла используется выходной буфер
    memset(Socket[thread].outBuf,0x55,sizeof(Socket[thread].outBuf));   // Заполнение буфера
-   startTick=millis();                                      // Запомнить время старта
+   startTick=GetTickCount();                                      // Запомнить время старта
    for(j=0;j<SIZE_TEST/sizeof(Socket[thread].outBuf);j++)  
    {
     if (sendBufferRTOS(thread,(byte*)(Socket[thread].outBuf),sizeof(Socket[thread].outBuf))==0) break;
    }
-   startTick=millis()-startTick;
+   startTick=GetTickCount()-startTick;
    journal.jprintf("Download test.dat speed:%d bytes/sec\n",SIZE_TEST*1000/startTick);
 
 }

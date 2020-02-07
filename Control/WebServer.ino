@@ -337,17 +337,17 @@ void readFileSD(char *filename, uint8_t thread)
 			sendConstRTOS(thread, HEADER_FILE_WEB);
 			SPI_switchSD();
 			if(webFile.open(filename, O_READ)) {
-				uint32_t startTick = millis();
+				uint32_t startTick = GetTickCount();
 				uint32_t size = 0;
 				for(;;) {
 					int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
 					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 					if(n <= 0) break;
 					size += n;
-					if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
+					if(GetTickCount() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
 					WDT_Restart(WDT);
 				}
-				startTick = millis() - startTick;
+				startTick = GetTickCount() - startTick;
 				webFile.close();
 				journal.jprintf("read %u bytes, %u b/sec\n", size, (uint64_t)size * 1000 / startTick);
 				/*/ check write!
