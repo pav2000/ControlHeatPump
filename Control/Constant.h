@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмное обеспечение предназначено для управления
@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.062"				// Версия прошивки
+#define VERSION			"1.063"				// Версия прошивки
 #define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -142,7 +142,7 @@ const uint16_t  defaultPort=80;
     
 // ------------------- TIME & DELAY ----------------------------------
 // Времена и задержки
-#define cDELAY_DS1820     750             // мсек. Задержка для чтения DS1820 (время преобразования)
+#define cDELAY_DS1820     750              // мсек. Задержка для чтения DS1820 (время преобразования)
 #ifndef TIME_READ_SENSOR 
 #define TIME_READ_SENSOR  4000		       // мсек. Период опроса датчиков
 #endif

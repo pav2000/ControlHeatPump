@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -437,6 +437,7 @@ x_I2C_init_std_message:
 	}
 
 	journal.jprintf("7. Start read ADC sensors\n");
+	journal.jprintf("Temperature SAM3X8E: %.2f\n", temp_DUE());
 	start_ADC(); // после инициализации HP
 	//journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
 
@@ -582,7 +583,6 @@ x_I2C_init_std_message:
 	freeRamShow();
 	HP.startRAM=freeRam()-HP.mRTOS;   // оценка свободной памяти до пуска шедулера, поправка на 1054 байта
 	journal.jprintf("FREE MEMORY %d bytes\n",HP.startRAM);
-	journal.jprintf("Temperature SAM3X8E: %.2f\n",temp_DUE());
 	journal.jprintf("Temperature DS2331: %.2d\n",getTemp_RtcI2C());
 	if(Is_otg_vbus_high()) journal.jprintf("USB connected\n");
 	//HP.Stat.generate_TestData(STAT_POINT); // Сгенерировать статистику STAT_POINT точек только тестирование
@@ -812,14 +812,13 @@ void vReadSensor(void *)
 #endif
 #endif
 	static uint32_t ttime;
-	static uint32_t oldTime = millis();
+	static uint32_t oldTime = GetTickCount();
 	static uint8_t  prtemp = 0;
 	
 	for(;;) {
 		int8_t i;
-		WDT_Restart(WDT);
 
-		ttime = millis();
+		ttime = GetTickCount();
 #ifdef RADIO_SENSORS		
 		radio_timecnt++;
 #endif		
@@ -845,7 +844,7 @@ void vReadSensor(void *)
 		  HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
 
-		vReadSensor_delay8ms((cDELAY_DS1820 - (millis() - ttime)) / 8); 	// Ожидать время преобразования
+		vReadSensor_delay1ms(cDELAY_DS1820 - (int32_t)(GetTickCount() - ttime)); 	// Ожидать время преобразования
 
 		if(OW_scan_flags == 0) {
 			uint8_t flags = 0;
@@ -878,8 +877,8 @@ void vReadSensor(void *)
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
 #if (SDM_READ_PERIOD > 0)
-			if((HP.dSDM.get_present()) && (millis() - readSDM > SDM_READ_PERIOD)) {
-				readSDM=millis();
+			if((HP.dSDM.get_present()) && (GetTickCount() - readSDM > SDM_READ_PERIOD)) {
+				readSDM=GetTickCount();
 				HP.dSDM.get_readState(2);     // Последняя группа регистров ТОК
 			}
 #endif
@@ -888,7 +887,7 @@ void vReadSensor(void *)
 		HP.calculatePower();  // Расчет мощностей и СОР
 		Stats.Update();
 
-		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 2 / 8);     // 1. Ожидать время нужное для цикла чтения
+		vReadSensor_delay1ms((TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime)) / 2);     // 1. Ожидать время нужное для цикла чтения
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
 		// Режим работы определяется по состоянию четырехходового клапана при его отсутвии только нагрев
@@ -900,15 +899,15 @@ void vReadSensor(void *)
 	#ifdef USE_UPS
 		if(!HP.NO_Power)
 	#endif
-			if((HP.dFC.get_present()) && (millis() - readFC > FC_TIME_READ)) {
-				readFC = millis();
+			if((HP.dFC.get_present()) && (GetTickCount() - readFC > FC_TIME_READ)) {
+				readFC = GetTickCount();
 				HP.dFC.get_readState();
 			}
 
 #ifdef DRV_EEV_L9333  // Опрос состяния драйвера ЭРВ
 		if (digitalReadDirect(PIN_STEP_DIAG)) // Перечитываем два раза
 		{
-			vReadSensor_delay8ms(5);
+			vReadSensor_delay1ms(5);
 			if (digitalReadDirect(PIN_STEP_DIAG)) set_Error(ERR_DRV_EEV,(char*)__FUNCTION__); // Контроль за работой драйвера ЭРВ
 		}
 #endif
@@ -935,7 +934,7 @@ void vReadSensor(void *)
 		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
 		if(HP.get_updateI2C())  // если надо обновить часы из I2c
 		{
-			if(millis() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
+			if(GetTickCount() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
 			{
 				oldTime = rtcSAM3X8.unixtime();
 				uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
@@ -946,7 +945,7 @@ void vReadSensor(void *)
 				} else {
 					journal.jprintf("Error read I2C RTC\n");
 				}
-				oldTime = millis();
+				oldTime = GetTickCount();
 			}
 		}
 		// Проверка и сброс митекса шины I2C
@@ -975,24 +974,31 @@ void vReadSensor(void *)
 			last_life_h = hour;
 		}
 		//
-		vReadSensor_delay8ms((TIME_READ_SENSOR - (millis() - ttime)) / 8);     // Ожидать время нужное для цикла чтения
-		ttime = TIME_READ_SENSOR - (millis() - ttime);
-		if(ttime && ttime <= 8) vTaskDelay(ttime);
+		vReadSensor_delay1ms(TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime));     // Ожидать время нужное для цикла чтения
 
 	}  // for
 	vTaskDelete( NULL);
 }
 
 // Вызывается во время задержек в задаче чтения датчиков
-void vReadSensor_delay8ms(int16_t ms8)
+void vReadSensor_delay1ms(int32_t ms)
 {
+	if(ms <= 0) return;
+	if(ms < 10) {
+		vTaskDelay(ms);
+		return;
+	}
+	ms -= 10;
+	uint32_t tm = GetTickCount();
 	do {
-		if(ms8) vTaskDelay(8);
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
 		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
 		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
 			vTaskDelay(8*3);
-			ms8 -= 3;
+			ms -= 3;
+
+
+
 			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
 				journal.jprintf("ON/OFF Key pressed!\n");
 				if(HP.get_errcode() && !Error_Beep_confirmed) {
@@ -1039,7 +1045,13 @@ void vReadSensor_delay8ms(int16_t ms8)
 #ifdef RADIO_SENSORS
 		check_radio_sensors();
 #endif
-	} while(--ms8 > 0);
+		int32_t tm2 = GetTickCount() - tm;
+		if((tm2 -= ms) >= 0) {
+			if(tm2 < 10) vTaskDelay(10 - tm2);
+			break;
+		}
+		vTaskDelay(tm2 > -10 ? 3 : 10);
+	} while(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1181,7 +1193,7 @@ delayTask:	// чтобы задача отдавала часть времени
 		// Солнечный коллектор
 #ifdef USE_SUN_COLLECTOR
 		if(HP.flags & (1<<fHP_SunSwitching)) {
-			if(millis() - HP.time_Sun > SUN_VALVE_SWITCH_TIME) {
+			if(GetTickCount() - HP.time_Sun > SUN_VALVE_SWITCH_TIME) {
 				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady)));
 				if(HP.dRelay[RSUNON].get_Relay()) {
 					HP.flags |= (1<<fHP_SunReady);
@@ -1197,7 +1209,7 @@ delayTask:	// чтобы задача отдавала часть времени
 									|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 				 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 				if((HP.flags & (1<<fHP_SunWork))) {
-					if(millis() - HP.time_Sun > SUN_MIN_WORKTIME) {
+					if(GetTickCount() - HP.time_Sun > SUN_MIN_WORKTIME) {
 						if(fregen) {
 							if(tsun < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
 						} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
@@ -1207,14 +1219,14 @@ delayTask:	// чтобы задача отдавала часть времени
 				}
 			} else {
 				HP.Sun_OFF();
-				HP.time_Sun = millis() - SUN_MIN_PAUSE;	// выключить задержку последующего включения
+				HP.time_Sun = GetTickCount() - SUN_MIN_PAUSE;	// выключить задержку последующего включения
 			}
 			uint8_t fl = HP.flags & ((1<<fHP_SunNotInited) | (1<<fHP_SunReady) | (1<<fHP_SunSwitching) | (1<<fHP_SunWork));
 			if((fl == (1<<fHP_SunReady) || fl == (1<<fHP_SunNotInited)) && tsun < HP.Option.SunTempOff) {
 				HP.flags = (HP.flags & ~((1<<fHP_SunReady) | (1<<fHP_SunNotInited))) | (1<<fHP_SunSwitching);
 				HP.dRelay[RSUNON].set_OFF();
 				HP.dRelay[RSUNOFF].set_ON();
-				HP.time_Sun = millis();
+				HP.time_Sun = GetTickCount();
 			}
 		}
 #endif
@@ -1386,6 +1398,7 @@ void vServiceHP(void *)
 	for(;;) {
 		register uint32_t t = xTaskGetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
+			WDT_Restart(WDT);
 			extern TickType_t xTickCountZero;
 			TickType_t ttmpt = t - xTickCountZero - timer_total;
 			if(ttmpt > 5000) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -1539,9 +1539,9 @@ int8_t devSDM::get_readState(uint8_t group)
 #endif
 			if(_err == OK) {
 				if(AcEnergy == -1.0f) AcEnergy = tmp;
-				AcPower = (tmp - AcEnergy) * 3600000.0f / (millis() - period);
+				AcPower = (tmp - AcEnergy) * 3600000.0f / (GetTickCount() - period);
 				AcEnergy = tmp;
-				period = millis();
+				period = GetTickCount();
 			}
 */
 		}

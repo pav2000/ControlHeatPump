@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -484,7 +484,7 @@ uint16_t maxPower;                      // максимальная мощнос
 
 	// Modbus Protocol Holding Registers and Digital meter set up
 	// Function code 10 to set holding parameter ,function code 03 to read holding parameter
-	#define SDM_WIDTH_RELAY      0x000c        // (2 слова 4 байта формат float) Write relay on period in Width milliseconds: 60, 100 or 200, Ширина импульса на импульстом выходе
+	#define SDM_WIDTH_RELAY      0x000c        // (2 слова 4 байта формат float) Write relay on period in Width GetTickCounteconds: 60, 100 or 200, Ширина импульса на импульстом выходе
 	#define SDM_PARITY_STOP      0x0012        // (2 слова 4 байта формат float) Write the network port parity/stop bits for MODBUS Protocol, where: 0 = One stop bit and no parity, Network Parity Stop default. 1 = One stop bit and even parity. 2 = One stop bit and odd parity.3 = Two stop bits and no parity. Requires a restart to become effective.
 	#define SDM_ADR_MODBUS       0x0014        // (2 слова 4 байта формат float) Адрес на шине модбас
 	#define SDM_BAUD_RATE        0x001C        // (2 слова 4 байта формат float) Write the network port baud rate for MODBUS Protocol, where:0 = 2400 bps. 1 = 4800 bps.2 = 9600 bps( default) 5=1200 bps Requires a restart to become effective Data Format:float

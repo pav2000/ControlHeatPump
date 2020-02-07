@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмное обеспечение предназначено для управления
@@ -337,17 +337,17 @@ void readFileSD(char *filename, uint8_t thread)
 			sendConstRTOS(thread, HEADER_FILE_WEB);
 			SPI_switchSD();
 			if(webFile.open(filename, O_READ)) {
-				uint32_t startTick = millis();
+				uint32_t startTick = GetTickCount();
 				uint32_t size = 0;
 				for(;;) {
 					int n = webFile.read(Socket[thread].outBuf, sizeof(Socket[thread].outBuf));
 					if(n < 0) journal.jprintf("Read SD error (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 					if(n <= 0) break;
 					size += n;
-					if(millis() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
+					if(GetTickCount() - startTick > (3*W5200_TIME_WAIT/portTICK_PERIOD_MS) - 1000) break; // на секунду меньше, чем блок семафора
 					WDT_Restart(WDT);
 				}
-				startTick = millis() - startTick;
+				startTick = GetTickCount() - startTick;
 				webFile.close();
 				journal.jprintf("read %u bytes, %u b/sec\n", size, (uint64_t)size * 1000 / startTick);
 				/*/ check write!
@@ -1209,7 +1209,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"P_NUMSAMLES|Число значений для усреднения показаний давления|");_itoa(P_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"T_NUMSAMLES|Число значений для усреднения показаний температуры|");_itoa(T_NUMSAMLES,strReturn);strcat(strReturn,";");
 			strcat(strReturn,"GAP_TEMP_VAL|Допустимая разница показаний между двумя считываниями (°C)|");_dtoa(strReturn, GAP_TEMP_VAL, 2);strcat(strReturn,";");
-			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_ftoa(strReturn, MAX_TEMP_ERR, 2);strcat(strReturn,";");
+			strcat(strReturn,"MAX_TEMP_ERR|Максимальная систематическая ошибка датчика температуры (°C)|");_dtoa(strReturn, MAX_TEMP_ERR, 2);strcat(strReturn,";");
 			// Удаленные датчики
 			strcat(strReturn,"SENSOR_IP|Использование удаленных датчиков|");
 #ifdef SENSOR_IP

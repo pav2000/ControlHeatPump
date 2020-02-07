@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  *
  * "Народный контроллер" для тепловых насосов.
@@ -96,7 +96,7 @@ uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 radio_received_type radio_received[RADIO_SENSORS_MAX];
 uint8_t radio_received_num = 0;
 uint32_t radio_hub_serial = 0;
-uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
+uint32_t radio_timecnt = 0; // *TIME_READ_SENSOR
 char Radio_RSSI_to_Level(uint8_t RSSI);
 #endif
 
@@ -183,4 +183,3 @@ class sensorTemp
 };
 
 #endif
-

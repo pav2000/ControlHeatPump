@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -585,11 +585,11 @@ boolean pingServer()
 #endif
 	if(echoReply.status == SUCCESS) {
 #ifndef DONT_LOG_SUCCESS_PING
-		//journal.jprintf("%dms TTL=%u\n", millis() - echoReply.data.time, echoReply.ttl);
+		//journal.jprintf("%dms TTL=%u\n", GetTickCount() - echoReply.data.time, echoReply.ttl);
 		if(ping.attempts()) {
-			journal.jprintf("%dms, lost: %d.\n", millis() - echoReply.data.time, ping.attempts());
+			journal.jprintf("%dms, lost: %d.\n", GetTickCount() - echoReply.data.time, ping.attempts());
 		} else {
-			journal.jprintf("%dms\n", millis() - echoReply.data.time);
+			journal.jprintf("%dms\n", GetTickCount() - echoReply.data.time);
 		}
 #endif
 		return true;
