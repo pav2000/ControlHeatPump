@@ -31,7 +31,7 @@
 #define SAM_RTC_YEARS(_cdate) ((((_cdate >> 4) & 0x7) * 1000) + ((_cdate & 0xF) * 100) + (((_cdate >> 12) & 0xF) * 10) + ((_cdate >> 8) & 0xF))
 #define SAM_RTC_YEARS_SHORT(_cdate) (((_cdate >> (RTC_CALR_YEAR_Pos + 4)) & 0xF) * 10) + ((_cdate >> RTC_CALR_YEAR_Pos) & 0xF)
 #define SAM_RTC_MONTH(_cdate) ((((_cdate >> 20) & 1) * 10) + ((_cdate >> 16) & 0xF))
-#define SAM_RTC_DAYS(_cdate) ((((_cdate >> 20) & 1) * 10) + ((_cdate >> 16) & 0xF))
+#define SAM_RTC_DAYS(_cdate) ((((_cdate >> 28) & 0x3) * 10) + ((_cdate >> 24) & 0xF))
 
 class RTC_clock {
 public:

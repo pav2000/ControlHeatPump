@@ -195,15 +195,12 @@ uint8_t RTC_clock::get_years_short()
 
 uint8_t RTC_clock::get_months()
 {
-	return SAM_RTC_DAYS(current_date());
+	return SAM_RTC_MONTH(current_date());
 }
 
 uint8_t RTC_clock::get_days()
 {
-	uint32_t _cdate = current_date();
-
-	return ((((_cdate >> 28) & 0x3) * 10) + ((_cdate >> 24) & 0xF));
-	//  return RTC_CALR_DATE ( current_date() );
+	return SAM_RTC_DAYS(current_date());
 }
 
 uint8_t RTC_clock::get_day_of_week()
