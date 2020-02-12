@@ -838,7 +838,7 @@ __attribute__((always_inline)) inline int16_t getTemp_RtcI2C()
 
 // Часы на I2C   Чтение времени
 tmElements_t ret_getTime_RtcI2C;
-__attribute__((always_inline))   inline tmElements_t getTime_RtcI2C()
+__attribute__((always_inline))   inline tmElements_t *getTime_RtcI2C()
 {
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf("getTime_RtcI2C %s", MutexI2CBuzy);
@@ -847,7 +847,7 @@ __attribute__((always_inline))   inline tmElements_t getTime_RtcI2C()
 		if(rtcI2C.read(ret_getTime_RtcI2C)) ret_getTime_RtcI2C.Year = 0;
 		SemaphoreGive(xI2CSemaphore);
 	}
-	return ret_getTime_RtcI2C;
+	return &ret_getTime_RtcI2C;
 }
 
 // Часы на I2C   Установка времени

@@ -181,6 +181,16 @@ uint8_t TaskSuspendAll(void) {
 	return 0;
 }
 
+void vWeb0(void *) __attribute__((naked));
+void vWeb1(void *) __attribute__((naked));
+void vWeb2(void *) __attribute__((naked));
+void vWeb3(void *) __attribute__((naked));
+void vReadSensor(void *) __attribute__((naked));
+void vUpdate( void * ) __attribute__((naked));
+void vUpdateEEV(void *) __attribute__((naked));
+void vUpdateStepperEEV(void *) __attribute__((naked));
+void vUpdateCommand(void *) __attribute__((naked));
+void vServiceHP(void *) __attribute__((naked));
 
 void setup() {
 	// 1. Инициализация SPI
@@ -505,19 +515,19 @@ x_I2C_init_std_message:
 	//HP.mRTOS=HP.mRTOS+4*configTIMER_TASK_STACK_DEPTH;  // программные таймера (их теперь нет)
 
 	// ПРИОРИТЕТ 4 Высший приоритет датчики читаются всегда и шаговик ЭРВ всегда шагает если нужно
-	if (xTaskCreate(vReadSensor,"ReadSensor",150,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
+	if (xTaskCreate(vReadSensor,"ReadSensor",140,NULL,4,&HP.xHandleReadSensor)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*140;// 200, до обрезки стеков было 300
 
 #ifdef EEV_DEF
-	if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",45,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*45; // 50, 100, 150, до обрезки стеков было 200
+	if (xTaskCreate(vUpdateStepperEEV,"StepperEEV",40,NULL,4,&HP.dEEV.stepperEEV.xHandleStepperEEV)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)  set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*40; // 50, 100, 150, до обрезки стеков было 200
 	vTaskSuspend(HP.dEEV.stepperEEV.xHandleStepperEEV);                                 // Остановить задачу
 	HP.dEEV.stepperEEV.xCommandQueue = xQueueCreate( EEV_QUEUE, sizeof( int ) );  // Создать очередь комманд для ЭРВ
 #endif
 
 	// ПРИОРИТЕТ 3 Очень высокий приоритет Выполнение команд управления (разбор очереди комманд) - должен быть выше чем задачи обновления ТН и ЭРВ
-	if(xTaskCreate(vUpdateCommand,"CommandHP",STACK_vUpdateCommand,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*STACK_vUpdateCommand;// 200, до обрезки стеков было 300
+	if(xTaskCreate(vUpdateCommand,"CommandHP", 150,NULL,3,&HP.xHandleUpdateCommand)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)     set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*150;// 200, до обрезки стеков было 300
 	vTaskSuspend(HP.xHandleUpdateCommand);      // Остановить задачу разбор очереди комнад
 
 
@@ -528,8 +538,8 @@ x_I2C_init_std_message:
 	vSemaphoreCreateBinary(HP.xCommandSemaphore);                       // Создание семафора
 	if (HP.xCommandSemaphore==NULL) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 
-	if (xTaskCreate(vUpdate,"UpdateHP",170,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*170;// 200, до обрезки стеков было 350
+	if (xTaskCreate(vUpdate,"UpdateHP",160,NULL,2,&HP.xHandleUpdate)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY)    set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*160;// 200, до обрезки стеков было 350
 	vTaskSuspend(HP.xHandleUpdate);                                 // Остановить задачу обновление ТН
 	HP.Task_vUpdate_run = false;
 
@@ -542,8 +552,8 @@ x_I2C_init_std_message:
 	// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 	// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 	// 1 - поток
-	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+10,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX+10;
+	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+5,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+5);
 #if W5200_THREAD >= 2 // - потока
 	if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
@@ -1132,10 +1142,10 @@ void vReadSensor_delay1ms(int32_t ms)
 					if(_profile == SCHDLR_Profile_off) {
 						HP.sendCommand(pWAIT);
 					} else if(HP.Prof.get_idProfile() != _profile) {
-						type_SaveON _son;
-						if(HP.Prof.load_from_EEPROM_SaveON(&_son) == OK) {
+						int32_t _mode;
+						if((_mode = HP.Prof.load_from_EEPROM_SaveON_mode(_profile)) >= 0) {
 							MODE_HP currmode = HP.get_modWork();
-							uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_son.mode & (~pCONTINUE))); // Если направление работы ТН разное
+							uint8_t frestart = currmode != pOFF && ((currmode & (~pCONTINUE)) != (_mode & (~pCONTINUE))); // Если направление работы ТН разное
 							if(frestart) {
 								HP.sendCommand(pWAIT);
 								uint8_t i = DELAY_BEFORE_STOP_IN_PUMP + HP.Option.delayOffPump + 1;

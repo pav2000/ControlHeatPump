@@ -201,7 +201,7 @@ struct type_settingHP {
 #define fEnabled               0      // Разрешение данного профайла использоваться в коротком списке
 struct type_dataProfile               // Хранение общих данных
 {
-	int8_t id;                          // Номер профайла (1 элемент структуры!)
+	int8_t id;                          // Номер профайла 0..I2C_PROFIL_NUM-1 (1 элемент структуры!)
 	uint8_t flags;                      // Флаги профайла (2 элемент структуры!)
 	uint16_t len;                       // Длина данных
 	uint32_t saveTime;                  // Время сохранения профиля
@@ -244,7 +244,7 @@ class Profile                         // Класс профиль
     char*   get_paramHeatHP(char *var, char *ret,boolean fc);// отопление  Получить параметр  второй параметр - наличие частотника
     boolean set_boiler(char *var, char *c);                 // Установить параметр из строки
     char*   get_boiler(char *var, char *ret);               // Получить параметр из строки по имени var, результат ДОБАВЛЯЕТСЯ в строку ret
-    int8_t  load_from_EEPROM_SaveON(type_SaveON *_SaveOn);	// Прочитать из EEPROM структуру: режим работы ТН (SaveON)
+    int32_t load_from_EEPROM_SaveON_mode(int8_t id);	    // Прочитать из EEPROM режим работы ТН (SaveON)
  
     char list[I2C_PROFIL_NUM*(LEN_PROFILE_NAME+2)+1];         // текущий список конфигураций, не забывем про :1 (список)
  private:

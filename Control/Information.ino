@@ -1205,7 +1205,14 @@ int8_t Profile::update_list(int8_t num)
 }
 
 // Прочитать из EEPROM структуру: режим работы ТН (SaveON), возврат OK - успешно
-int8_t  Profile::load_from_EEPROM_SaveON(type_SaveON *_SaveOn)
+int32_t Profile::load_from_EEPROM_SaveON_mode(int8_t id)
 {
-	return readEEPROM_I2C(I2C_PROFILE_EEPROM + dataProfile.len * dataProfile.id + sizeof(magic) + sizeof(crc16) + sizeof(dataProfile), (byte*)_SaveOn, sizeof(SaveON)) ? ERR_LOAD_PROFILE : OK;
+	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
+		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
+		return ERR_LOAD_PROFILE;
+	} else {
+		MODE_HP _mode = eepromI2C.read(I2C_PROFILE_EEPROM + dataProfile.len * id + sizeof(SaveON.magic) + sizeof(crc16) + sizeof(dataProfile) + (&SaveON.mode - &SaveON.magic));
+		SemaphoreGive(xI2CSemaphore);
+		return _mode;
+	}
 }
