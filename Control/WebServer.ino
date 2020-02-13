@@ -902,8 +902,9 @@ void parserGET(uint8_t thread, int8_t )
 			if(*str == 's') {	// "set_TrgT"
 				if(HP.get_modeHouse() != pOFF) {
 					if((x = strchr(str, '='))) {
-						x++;
-						HP.setTargetTemp(rd(my_atof(x), 100) - (HP.get_modeHouse() == pCOOL ? HP.get_targetTempCool() : HP.get_targetTempHeat()));
+						if((y = strchr(++x, ')'))) *y = '\0';
+						pm = my_atof(x);
+						if(pm != ATOF_ERROR) HP.setTargetTemp(rd(pm, 100) - (HP.get_modeHouse() == pCOOL ? HP.get_targetTempCool() : HP.get_targetTempHeat()));
 						*x = '\0';
 						strcat(strReturn, str);
 					}

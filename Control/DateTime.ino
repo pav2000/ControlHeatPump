@@ -26,15 +26,15 @@
 #define NTP_PACKET_SIZE 48                  // временная отметка NTP находится в первых 48 байтах сообщения
 byte packetBuffer[NTP_PACKET_SIZE+1];       // буфер, в котором будут храниться входящие и исходящие пакеты
 
-// Установка веремени системы (сначала читаем из i2c часов)
+// Установка времени системы (сначала читаем из i2c часов)
 // Возвращает код ошибки
 int8_t set_time(void)
 {
 	journal.jprintf(" I2C RTC DS3232: %s\n", DecodeTimeDate(TimeToUnixTime(getTime_RtcI2C()),(char*) packetBuffer));   // Показать что i2c часы работают - показав текущее время
 	journal.jprintf(" Init SAM3X8E RTC\n");
 	rtcSAM3X8.init();                             // Запуск внутренних часов
+	uint32_t t = TimeToUnixTime(getTime_RtcI2C());
 	if(!(HP.get_updateNTP() && set_time_NTP())) { // Обновить время по NTP
-		uint32_t t = TimeToUnixTime(getTime_RtcI2C());
 		if(t) {
 			rtcSAM3X8.set_clock(t);                // Установить внутренние часы по i2c
 			journal.jprintf(" Time updated from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
@@ -43,7 +43,7 @@ int8_t set_time(void)
 		}
 	}
 	
-	HP.set_uptime(TimeToUnixTime(getTime_RtcI2C()));                         // Запомнить время старта контроллера
+	HP.set_uptime(t);                         // Запомнить время старта контроллера
 	return OK;
 }
 
@@ -484,13 +484,13 @@ char*  StatDate(uint32_t idt,boolean forma,char *ret)
 // Перевод формата времени Time в формат Unix (секунды с 1970 года)
 #define SEC_1970_TO_2000      946684800
 static  const uint8_t dim[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
-unsigned long TimeToUnixTime(tmElements_t t) //[V]*
- {
-	if(t.Year == 0) return 0;
-    uint16_t  dc;
-    dc = t.Day;
-    for (uint8_t i = 0; i<(t.Month-1); i++) dc += dim[i];
-    if ((t.Month > 2) && (((t.Year-2000) % 4) == 0))  ++dc;
-    dc = dc + (365 * (t.Year-2000)) + (((t.Year-2000) + 3) / 4) - 1;
-    return ((((((dc * 24L) + t.Hour) * 60) + t.Minute) * 60) + t.Second) + SEC_1970_TO_2000;
- } 
+unsigned long TimeToUnixTime(tmElements_t *t) //[V]*
+{
+	if(t->Year == 0) return 0;
+	uint16_t dc;
+	dc = t->Day;
+	for(uint8_t i = 0; i < (t->Month - 1); i++)	dc += dim[i];
+	if((t->Month > 2) && (((t->Year - 2000) % 4) == 0)) ++dc;
+	dc = dc + (365 * (t->Year - 2000)) + (((t->Year - 2000) + 3) / 4) - 1;
+	return ((((((dc * 24L) + t->Hour) * 60) + t->Minute) * 60) + t->Second) + SEC_1970_TO_2000;
+}
