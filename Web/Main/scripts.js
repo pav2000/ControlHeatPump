@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.062";
+var VER_WEB = "1.064";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -655,8 +655,8 @@ function loadParam(paramid, noretry, resultdiv) {
 						if(typeof window["loadParam_after"] == 'function') window["loadParam_after"](paramid);
 					} // end: if (request.responseText != null)
 				} // end: if (request.responseText != null)
-			} else if(request.status == 0) return;
-			else if(noretry != true) {
+//			} else if(request.status == 0) return;
+			} else if(noretry != true) {
 				if(request.status == 401 && location.protocol == "file:") NeedLogin = 1;
 				console.log("request.status: " + request.status + " retry load...");
 				check_ready = 1;
