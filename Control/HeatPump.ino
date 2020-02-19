@@ -393,7 +393,9 @@ int32_t HeatPump::save(void)
 		if(writeEEPROM_I2C(addr, (uint8_t *) &crc, sizeof(crc))) { error = ERR_SAVE_EEPROM; break; } // CRC
 		addr = addr + sizeof(crc) - (I2C_SETTING_EEPROM + 2);
 		if(writeEEPROM_I2C(I2C_SETTING_EEPROM, (uint8_t *) &addr, 2)) { error = ERR_SAVE_EEPROM; break; } // size all
-		if((error = check_crc16_eeprom(I2C_SETTING_EEPROM + 2, addr - 2)) != OK) {
+		int8_t _err;
+		if((_err = check_crc16_eeprom(I2C_SETTING_EEPROM + 2, addr - 2)) != OK) {
+			error = _err;
 			journal.jprintf("- Verify Error!\n");
 			break;
 		}
