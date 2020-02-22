@@ -1307,31 +1307,20 @@ void vUpdateStepperEEV(void *)
 		// 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
 		pos = 0; // текущее суммарное движение - обнулится
 		start_pos = HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
-		//   step_number=HP.dEEV.EEV;
-		//  SerialDbg.print("1. step_number=");   SerialDbg.print(step_number); SerialDbg.print(" EEV=");   SerialDbg.println(HP.dEEV.EEV);
 		// 3. Движение
 		while(xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == pdPASS)    // Читаем очередь пока есть чего читать
 		{
 			pos = pos + (cmd - start_pos);                                            // Суммируем все приращения для получение итогового движения
 			start_pos = cmd;                                                      // итоговая абсолютная координата отдельной команды
-			//        SerialDbg.print("2. Read Queu cmd: ");   SerialDbg.println(cmd);
-			//        if (HP.dEEV.setZero) { step_number=HP.dEEV.stepperEEV.number_of_steps;  break;}  // Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
 			// Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
-			if(HP.dEEV.setZero) {
-				step_number = (HP.dEEV.stepperEEV.number_of_steps / 8) * 8 + 32;/*pos=-530;*/
-				break;
-			} // Должно делится на 8 и 4 без остатка
+			if(HP.dEEV.setZero) break;
 		}
-
-		// if (pos==0) continue; // двигать нечего
-		//      SerialDbg.print("3. Sum command=");   SerialDbg.println(pos);
 		// 2. Подготовка к движению
 		steps_left = abs(pos);                                    // Определить абсолютное число шагов движения он уменьшается до 0
 		// НАПРАВЛЕНИЕ determine direction based on whether steps_to_mode is + or -:
 		if(pos > 0) direction = true;
 		if(pos < 0) direction = false;
 
-		//    SerialDbg.print("3. step_number=");   SerialDbg.print(step_number); SerialDbg.print(" EEV=");   SerialDbg.println(HP.dEEV.EEV);
 		// 3. Движение
 		while(steps_left > 0) {
 			if(direction)  // направление в увеличение
@@ -1358,12 +1347,9 @@ void vUpdateStepperEEV(void *)
 			//     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
 			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
 		}
-
-		//    vTaskDelay(500/portTICK_PERIOD_MS);               // -!            // пауза  0.5 секунда ОБЯЗАТЕЛЬНО, иначе не сбрасывается isBuzy() НЕПОНЯТНО
-
 		if(HP.dEEV.setZero) {
 			HP.dEEV.EEV = 0;
-			step_number = 0;
+			//step_number = 0;
 			HP.dEEV.setZero = false;
 		}  // если стоит признак установки нуля, обнулить и сбросить признак
 		//   SerialDbg.print("4. EEV=");   SerialDbg.print(HP.dEEV.EEV); SerialDbg.print("  step_number=");   SerialDbg.println(step_number);

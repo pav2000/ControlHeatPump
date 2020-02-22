@@ -19,28 +19,28 @@
 
 void StepMotor::initStepMotor(int number_of_steps, int motor_pin_1, int motor_pin_2, int motor_pin_3, int motor_pin_4)
 {
-  this->number_of_steps = number_of_steps; // total number of steps for this motor
-  this->pin_count = 4;
-  buzy=false;                              // мотор не двигается
+	this->number_of_steps = number_of_steps; // total number of steps for this motor
+	this->pin_count = 4;
+	buzy = false;                              // мотор не двигается
 
-  // Arduino pins for the motor control connection:
-  this->motor_pin_1 = motor_pin_1;
-  this->motor_pin_2 = motor_pin_2;
-  this->motor_pin_3 = motor_pin_3;
-  this->motor_pin_4 = motor_pin_4;
-  // setup the pins on the microcontroller:
-  pinMode(this->motor_pin_1, OUTPUT);
-  pinMode(this->motor_pin_2, OUTPUT);
-  pinMode(this->motor_pin_3, OUTPUT);
-  pinMode(this->motor_pin_4, OUTPUT);
-  off();                     // Снять напряжение
+	// Arduino pins for the motor control connection:
+	this->motor_pin_1 = motor_pin_1;
+	this->motor_pin_2 = motor_pin_2;
+	this->motor_pin_3 = motor_pin_3;
+	this->motor_pin_4 = motor_pin_4;
+	// setup the pins on the microcontroller:
+	pinMode(this->motor_pin_1, OUTPUT);
+	pinMode(this->motor_pin_2, OUTPUT);
+	pinMode(this->motor_pin_3, OUTPUT);
+	pinMode(this->motor_pin_4, OUTPUT);
+	off();                     // Снять напряжение
 }
 
 
 // Установить скорость поступления шагов
 void StepMotor::setSpeed(long whatSpeed)
 {
-step_delay=1000/whatSpeed; // пересчет на время одного шага в мсек
+	step_delay = 1000 / whatSpeed; // пересчет на время одного шага в мсек
 }
 
 
@@ -48,25 +48,24 @@ step_delay=1000/whatSpeed; // пересчет на время одного ша
 // На входе АБСОЛЮТНАЯ координата, в очередь уходит АБСОЛЮТНАЯ координата
 void StepMotor::step(int steps_to_move)
 {
-   if (xQueueSend( xCommandQueue, &steps_to_move,20/portTICK_PERIOD_MS)==errQUEUE_FULL)  // команду на движение в очередь
-          {
-          journal.jprintf("$ERROR - Command Queue is FULL! command step ignore \n");
-          return;
-          }
-     else  // В очередь команад попала
-      if (!buzy) {
-         buzy=true;                        // флаг начало движения	
-         vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
-      }
+	if(xQueueSend(xCommandQueue, &steps_to_move, 20 / portTICK_PERIOD_MS) == errQUEUE_FULL) // команду на движение в очередь
+	{
+		journal.jprintf("$ERROR - Step motor command queue is FULL!\n");
+		return;
+	} else  // В очередь команад попала
+		if(!buzy) {
+			buzy = true;                        // флаг начало движения
+			vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
+		}
 }
 
 // выставить один пин
- __attribute__((always_inline)) inline void StepMotor::setPinMotor(int pin, boolean val)                                                          
+__attribute__((always_inline)) inline void StepMotor::setPinMotor(int pin, boolean val)
 {
 #ifdef DRV_EEV_L9333                        // использование драйвера L9333 нужно инвертирование!!!
-  digitalWriteDirect(pin, !val);
+	digitalWriteDirect(pin, !val);
 #else
-  digitalWriteDirect(pin, val);
+	digitalWriteDirect(pin, val);
 #endif  
 }
 /*
