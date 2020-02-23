@@ -24,8 +24,8 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.065"				// Версия прошивки
-#define VER_SAVE		139					// Версия формата сохраняемых данных в I2C память
+#define VERSION			"1.066"				// Версия прошивки
+#define VER_SAVE		140					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
@@ -148,7 +148,8 @@ const uint16_t  defaultPort=80;
 #endif
 #define TIME_WEB_SERVER   2                // мсек. Период опроса web servera было 5
 #define TIME_CONTROL      (10*1000)        // мсек. Период управления тепловым насосом (цикл управления в режиме Гистерезис)
-#define TIME_EEV          (4*1000)         // мсек. Период задачи vUpdateEEV в переходных состояниях ТН
+#define TIME_EEV          (1*1000)         // мсек. Период задачи vUpdateEEV в переходных состояниях ТН
+#define TIME_EEV_BEFORE_PID (4*1000)       // мсек.
 #define TIME_COMMAND      500              // мсек. Период разбора команд управления ТН (скорее пауза перед обработкой команды)
 #define TIME_I2C_UPDATE   (60*60)*1000     // мсек. Время обновления внутренних часов по I2С часам (если конечно нужно)
 #define TIME_MESSAGE_TEMP 300			   // 1/10 секунды, Проверка граничных температур для уведомлений
@@ -412,8 +413,9 @@ const char *eev_MIN           =  {"MIN"};           // Минимум ЭРВ
 const char *eev_MAX           =  {"MAX"};           // Максимум ЭРВ
 const char *eev_TIME          =  {"TIME"};          // ПИД время в секундах ЭРВ СЕКУНДЫ
 const char *eev_TARGET        =  {"TRG"};        	// Перегрев ЦЕЛЬ (сотые градуса)
-const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев цель (сотые градуса)
-const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев цель (сотые градуса)
+const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев2 цель (сотые градуса)
+const char *eev_tOverheat2_low = {"T2L"};
+const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев2 дельта цель (сотые градуса)
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.   В ТЫСЯЧНЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0   В ТЫСЯЧНЫХ!!!
 const char *eev_KD            =  {"KD"};            // ПИД Коэф дифф.    В ТЫСЯЧНЫХ!!!
@@ -462,6 +464,7 @@ const char *eev_PosAtHighTemp =  {"PHT"};			// PosAtHighTemp
 const char *eev_fEEV_DirectAlgorithm = {"DIR"};		// флаг fEEV_DirectAlgorithm
 const char *eev_trend_threshold ={"TTH"};
 const char *eev_trend_mul_threshold = {"TMT"};
+const char *eev_DebugToLog    = {"DBG"};
 
 // Описание имен параметров MQTT для функций get_paramMQTT set_paramMQTT
 const char *mqtt_USE_TS           =  {"USE_TS"};         // флаг использования ThingSpeak - формат передачи для клиента
@@ -1333,9 +1336,9 @@ enum RULE_HP
 };
 
 struct PID_STRUCT {   		// Настройки ПИД регулятора
-	  int16_t Kp;           // ПИД Коэф. пропорц, в тысячных
-	  int16_t Ki;           // ПИД Коэф. интегральный, в тысячных
-	  int16_t Kd;           // ПИД Коэф. дифференциальный,в тысячных
+	  int16_t Kp;           // ПИД Коэф. пропорц, в тысячных (отриц)
+	  int16_t Ki;           // ПИД Коэф. интегральный, в тысячных (отриц)
+	  int16_t Kd;           // ПИД Коэф. дифференциальный,в тысячных (отриц)
 } __attribute__((packed));
 
 

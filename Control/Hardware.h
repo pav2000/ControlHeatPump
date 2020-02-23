@@ -361,6 +361,7 @@ private:
 	int16_t OHCor_tdelta_prev;							 // Расчитанная целевая дельта Нагнетание-Конденсации
 	TEST_MODE testMode;                                  // Значение режима тестирования
 	int8_t  err;                                         // ошибка ЭРВ (работа) при ошибке останов ТН
+	bool DebugToLog;
 
 	char *note;                                          // Описание
 	char *name;                                          // Имя
@@ -400,6 +401,7 @@ private:
 		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева2 TCOMPIN-T[PEVA]
 		int8_t   trend_threshold;				// Порог детектирования тренда
 		uint16_t trend_mul_threshold;			// Порог для *2, сотые градуса
+		int16_t  tOverheat2_low;				// Низкое значение перегрева 2 для быстрого открытия ЭРВ
 	} _data;                                    // Конец структуры для сохранения настроек
 };
 
