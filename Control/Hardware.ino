@@ -713,13 +713,15 @@ int8_t devEEV::set_zero()
  // Отрицательные значения ЛЮБЫЕ признак установки 0
 int8_t devEEV::set_EEV(int16_t x)
 {
-  err=OK;
-  if (!(GETBIT(_data.flags,fPresent)))  { err=ERR_DEVICE; return err;   }    // ЭРВ не установлен
-  if(x < EEV_CLOSE_STEP) x = EEV_CLOSE_STEP;
-  else if(x > _data.maxSteps) x = _data.maxSteps;
-  if(testMode!=SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
-  else EEV=x;                                                    // SAFE_TEST только координаты меняем
- return err;  
+	err = OK;
+	if(!(GETBIT(_data.flags, fPresent))) { // ЭРВ не установлен
+		err = ERR_DEVICE;
+		return err;
+	}
+	if(x < EEV_CLOSE_STEP) x = EEV_CLOSE_STEP; else if(x > _data.maxSteps) x = _data.maxSteps;
+	if(testMode != SAFE_TEST) stepperEEV.step(x);                   // не  SAFE_TEST - работаем
+	else EEV = x;                                                    // SAFE_TEST только координаты меняем
+	return err;
 }
 
 // Стартовая позиция ЭРВ
