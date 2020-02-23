@@ -1248,23 +1248,15 @@ delayTask:	// чтобы задача отдавала часть времени
 #ifdef EEV_DEF
 void vUpdateEEV(void *)
 { //const char *pcTaskName = "HP_UpdateEEV\r\n";
-	static int16_t cmd = 0;
 	for(;;) {
 		while(!(HP.get_startCompressor() && (rtcSAM3X8.unixtime() - HP.get_startCompressor() > HP.dEEV.get_delayOnPid() && HP.dEEV.get_delayOnPid() != 255))) { // ЭРВ контролирует если прошла задержка после включения компрессора (пауза перед началом работы ПИД) и задержка != 255
-			vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
+			vTaskDelay(TIME_EEV_BEFORE_PID / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
 			if(GETBIT(HP.dEEV.get_flags(), fEEV_StartPosByTemp)) { // Скорректировать ЭРВ по температуре подачи
 				HP.dEEV.set_EEV(HP.dEEV.get_StartPos());
 			}
 		}
 		HP.dEEV.resetPID();
 xContinue:
-		// Для большей надежности если очередь заданий на шаговик пуста поставить флаг отсутвия движения
-		// Если очередь пуста а флаг что есть движение - предупреждение потеря синхронизации ЭРВ  и сброс флага
-		if((xQueuePeek(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == errQUEUE_EMPTY) && (HP.dEEV.stepperEEV.isBuzy())) {
-			//     journal.jprintf("$WARNING! Loss of sync EEV\n");
-			HP.dEEV.stepperEEV.offBuzy();  // признак Мотор остановлен
-		}
-
 		if(!HP.is_compressor_on()) {
 			switch((uint8_t)HP.get_State()) {
 			case pOFF_HP:
@@ -1283,7 +1275,7 @@ xContinue:
 			vTaskDelay(HP.dEEV.get_PID_time() * 1000 / portTICK_PERIOD_MS);  // ПИД
 			goto xContinue;
 		}
-		vTaskDelay(TIME_EEV / portTICK_PERIOD_MS); // Период управления ЭРВ (цикл управления)
+		vTaskDelay(TIME_EEV / portTICK_PERIOD_MS);
 	} // for
 	vTaskDelete( NULL);
 }
@@ -1295,7 +1287,7 @@ void vUpdateStepperEEV(void *)
 { //const char *pcTaskName = "HP_UpdateStepperEEV\r\n";
   // Размер стека не позволяет использовать внутри jprintf.* !!!
 	static int16_t cmd = 0;
-	static int16_t steps_left = 0, step_number = 0, start_pos = 0, pos = 0;
+	static int16_t steps_left = 0, start_pos = 0, pos = 0;
 	static boolean direction = true;
 
 	for(;;) {
@@ -1307,13 +1299,17 @@ void vUpdateStepperEEV(void *)
 		// 1. Чтение очереди команд, для выяснения все таки куда надо двигаться, переходим на относительные координаты
 		pos = 0; // текущее суммарное движение - обнулится
 		start_pos = HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
+		if(start_pos < 0) start_pos = 0;
 		// 3. Движение
 		while(xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == pdPASS)    // Читаем очередь пока есть чего читать
 		{
 			pos = pos + (cmd - start_pos);                                            // Суммируем все приращения для получение итогового движения
 			start_pos = cmd;                                                      // итоговая абсолютная координата отдельной команды
 			// Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
-			if(HP.dEEV.setZero) break;
+			if(HP.dEEV.setZero) {
+				HP.dEEV.EEV = abs(cmd);
+				break;
+			}
 		}
 		// 2. Подготовка к движению
 		steps_left = abs(pos);                                    // Определить абсолютное число шагов движения он уменьшается до 0
@@ -1322,34 +1318,27 @@ void vUpdateStepperEEV(void *)
 		if(pos < 0) direction = false;
 
 		// 3. Движение
+		int16_t *step_number = &HP.dEEV.EEV;
 		while(steps_left > 0) {
-			if(direction)  // направление в увеличение
-			{
-				step_number++;
-				HP.dEEV.EEV++;
-			} else                      // направление в уменьшение
-			{
-				step_number--;
-				HP.dEEV.EEV--;
-			}
 			steps_left--;                                                      // уменьшить счетчик шагов
-			if((step_number < 0) && (!HP.dEEV.setZero)) {
+			if(direction) { // направление в увеличение
+				(*step_number)++;
+			} else {        // направление в уменьшение
+				(*step_number)--;
+			}
+			if(*step_number < 0 && !HP.dEEV.setZero) {
 				HP.dEEV.set_error(ERR_MIN_EEV);
 				break;
 			}
 #if EEV_PHASE==PHASE_4  // 4 фазы движения
-			HP.dEEV.stepperEEV.stepOne(abs(step_number % 4));                  // Сделать один шаг //
+			HP.dEEV.stepperEEV.stepOne(*step_number % 4);                  // Сделать один шаг //
 #else                     // остальные варианты  8 фаз движения
-			HP.dEEV.stepperEEV.stepOne(abs(step_number % 8));                   // Сделать один шаг //
-			//     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
+			HP.dEEV.stepperEEV.stepOne(*step_number % 8);                   // Сделать один шаг //
 #endif
-
-			//     HP.dEEV.stepperEEV.stepOne(abs(HP.dEEV.EEV % 8));                   // Дмитрий говорит что это не правильно устанавливает 0 (открывает????)
 			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
 		}
 		if(HP.dEEV.setZero) {
 			HP.dEEV.EEV = 0;
-			//step_number = 0;
 			HP.dEEV.setZero = false;
 		}  // если стоит признак установки нуля, обнулить и сбросить признак
 		//   SerialDbg.print("4. EEV=");   SerialDbg.print(HP.dEEV.EEV); SerialDbg.print("  step_number=");   SerialDbg.println(step_number);

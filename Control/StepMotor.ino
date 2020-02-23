@@ -52,11 +52,10 @@ void StepMotor::step(int steps_to_move)
 	{
 		journal.jprintf("$ERROR - Step motor command queue is FULL!\n");
 		return;
-	} else  // В очередь команад попала
-		if(!buzy) {
-			buzy = true;                        // флаг начало движения
-			vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
-		}
+	} else { // В очередь команад попала
+		buzy = true;                      // флаг начало движения
+		vTaskResume(xHandleStepperEEV);   // Запустить движение если его еще нет
+	}
 }
 
 // выставить один пин
