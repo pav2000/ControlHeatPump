@@ -918,7 +918,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				if(fast) journal.jprintf(",fast:%d", fast);
 			}
 			if(pidw.max) {
-				if(DebugToLog) journal.jprintf(" skip:%d\n", pidw.max);
+				if(DebugToLog) journal.jprintf(",skip:%d\n", pidw.max);
 				pidw.max--;
 			} else {	// Основной перегрев
 				if(diff < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
@@ -954,7 +954,7 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
 						if(OverheatTCOMP < _data.tOverheat2_low) {
 						    if(pidw.trend[trOH_TCOMP] < 0 || OverheatTCOMP <= 20) {
-								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / (pidw.trend[trOH_TCOMP] < -2 ? 2 : 3) - 1;
+								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / (pidw.trend[trOH_TCOMP] < -_data.trend_threshold ? 2 : 4) - 1;
 								pidw.max = 1;
 								pidw.trend[trOH_default] = 0;
 							}
@@ -1280,15 +1280,15 @@ boolean devEEV::set_paramEEV(char *var,float x)
 		if ((x>=5)&&(x<=120)) { _data.speedEEV=x; return true;} else return false;	// шаги в секунду
 #ifdef EEV_PREFER_PERCENT
 	} else if(strcmp(var, eev_MANUAL)==0){
-		_data.manualStep = rd(x, 100);
+		_data.manualStep = calc_pos(rd(x, 100));
 		if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep);
 		return true;
 	} else if(strcmp(var, eev_PRE_START_POS)==0){
-		_data.preStartPos = rd(x, 100); return true;
+		_data.preStartPos = calc_pos(rd(x, 100)); return true;
 	} else if(strcmp(var, eev_START_POS)==0){
-		_data.StartPos = rd(x, 100); return true;
+		_data.StartPos = calc_pos(rd(x, 100)); return true;
 	} else if(strcmp(var, eev_PosAtHighTemp)==0){
-		_data.PosAtHighTemp = rd(x, 100); return true;
+		_data.PosAtHighTemp = calc_pos(rd(x, 100)); return true;
 #else 	// шаги
 	} else if(strcmp(var, eev_MANUAL)==0){
 		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep = x; if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep); return true; } else return false;
