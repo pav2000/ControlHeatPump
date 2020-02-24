@@ -415,6 +415,7 @@ const char *eev_TIME          =  {"TIME"};          // ПИД время в се
 const char *eev_TARGET        =  {"TRG"};        	// Перегрев ЦЕЛЬ (сотые градуса)
 const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев2 цель (сотые градуса)
 const char *eev_tOverheat2_low = {"T2L"};
+const char *eev_tOverheat2_low_hyst = {"T2H"};
 const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев2 дельта цель (сотые градуса)
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.   В ТЫСЯЧНЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0   В ТЫСЯЧНЫХ!!!

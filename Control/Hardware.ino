@@ -893,18 +893,7 @@ int8_t devEEV::Update(void) //boolean fHeating)
 #endif
 		if(GETBIT(_data.flags, fEEV_DirectAlgorithm)) {
 #if defined(TCOMPIN)
-			int16_t diff = _data.tOverheatTCOMP - OverheatTCOMP;
-			int8_t fast = signm(pidw.pre_err2[0] - diff, _data.trend_mul_threshold); // 0, +-1, +-2
-			pidw.trend[trOH_TCOMP] += fast;
-			pidw.pre_err2[0] = diff;
-			if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) {
-				pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
-				fast--;
-			} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) {
-				pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
-				fast++;
-			} else fast = 0;
-			diff = _data.tOverheat - Overheat;
+			int16_t diff = _data.tOverheat - Overheat;
 			pidw.trend[trOH_default] += signm(pidw.pre_err - diff, _data.trend_mul_threshold); //sign_dif(pidw.pre_err - diff, pidw.trend[trOH_default]); // +1 - растет, -1 - падает
 			pidw.pre_err = diff;
 			if(pidw.trend[trOH_default] > _data.trend_threshold * 2) {
@@ -912,6 +901,16 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			} else if(pidw.trend[trOH_default] < -_data.trend_threshold * 2) {
 				pidw.trend[trOH_default] = -_data.trend_threshold * 2;
 			}
+			diff = _data.tOverheatTCOMP - OverheatTCOMP;
+			int8_t fast = signm(pidw.pre_err2[0] - diff, _data.trend_mul_threshold); // 0, +-1, +-2
+			pidw.trend[trOH_TCOMP] += fast;
+			if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) {
+				pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
+				fast--;
+			} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) {
+				pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
+				fast++;
+			} else fast = 0;
 			if(DebugToLog) {
 				journal.jprintf("EEV: %d/%d,", Overheat, pidw.trend[trOH_default]);
 				journal.jprintf("%d/%d", OverheatTCOMP, pidw.trend[trOH_TCOMP]);
@@ -921,9 +920,9 @@ int8_t devEEV::Update(void) //boolean fHeating)
 				if(DebugToLog) journal.jprintf(",skip:%d\n", pidw.max);
 				pidw.max--;
 			} else {	// Основной перегрев
-				if(diff < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
+				if(pidw.pre_err < -_data.pid2_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 					if(pidw.trend[trOH_default] >= _data.trend_threshold) {
-						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
+						newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
 						pidw.max = 1;
 						pidw.trend[trOH_default] = 0;
 						pidw.trend[trOH_TCOMP] = 0;
@@ -935,9 +934,9 @@ int8_t devEEV::Update(void) //boolean fHeating)
 						}
 						goto xSecond;
 					}
-				} else if(diff > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
+				} else if(pidw.pre_err > _data.pid2_delta) { // Перегрев меньше, проверка порога - закрыть ЭРВ
 					if(pidw.trend[trOH_default] <= -_data.trend_threshold) {
-						newEEV = (int32_t)diff * _data.pid.Kp / (100*1000);
+						newEEV = (int32_t)pidw.pre_err * _data.pid.Kp / (100*1000);
 						pidw.max = 1;
 						pidw.trend[trOH_default] = 0;
 						pidw.trend[trOH_TCOMP] = 0;
@@ -946,21 +945,28 @@ int8_t devEEV::Update(void) //boolean fHeating)
 						pidw.max = 1;
 					} else goto xSecond;
 				} else {	// Перегрев 2
-xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
+xSecond:			if(diff < -_data.tOverheatTCOMP_delta) { // Перегрев больше, проверка порога - открыть ЭРВ
 						if(pidw.trend[trOH_TCOMP] >= _data.trend_threshold) {
 							newEEV = 1;
 							pidw.trend[trOH_TCOMP] = 0;
 						}
-					} else if(pidw.pre_err2[0] > _data.tOverheatTCOMP_delta) {
+					} else if(diff > _data.tOverheatTCOMP_delta) {
 						if(OverheatTCOMP < _data.tOverheat2_low) {
-						    if(pidw.trend[trOH_TCOMP] < 0 || OverheatTCOMP <= 20) {
-								newEEV = (int32_t)pidw.pre_err2[0] * _data.pid.Kp / (100*1000) / (pidw.trend[trOH_TCOMP] < -_data.trend_threshold ? 2 : 4) - 1;
+							if(OverheatTCOMP < EEV_OVERHEAT2_CRITICAL && pidw.trend[trOH_TCOMP] <= 0) {
+								newEEV = (int32_t)diff * _data.pid.Kp / (100*1000) / newEEV;
+								pidw.max = 2;
+								pidw.trend[trOH_default] = 0;
+							} else if(pidw.trend[trOH_TCOMP] < 0) {
+						    	if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) newEEV = 2;
+						    	else if(abs(pidw.pre_err2[0] - diff) > _data.tOverheat2_low_hyst) newEEV = 4;
+						    	else goto xSecond_sub_1;
+								newEEV = (int32_t)diff * _data.pid.Kp / (100*1000) / newEEV - 1;
 								pidw.max = 1;
 								pidw.trend[trOH_default] = 0;
 							}
 						    pidw.trend[trOH_TCOMP] = 0;
 						} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold) {
-							newEEV = -1;
+xSecond_sub_1:				newEEV = -1;
 							pidw.trend[trOH_TCOMP] = 0;
 						}
 					} else if(fast) {
@@ -969,6 +975,7 @@ xSecond:			if(pidw.pre_err2[0] < -_data.tOverheatTCOMP_delta) { // Перегр�
 				}
 				if(DebugToLog) journal.jprintf("=%d\n", newEEV);
 			}
+			pidw.pre_err2[0] = diff;
 			if(newEEV > _data.pid_max) newEEV = _data.pid_max;
 			else if(newEEV < -_data.pid_max) newEEV = -_data.pid_max;
 			newEEV += EEV;
@@ -1184,6 +1191,7 @@ void devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_trend_threshold)==0){	_itoa(_data.trend_threshold, ret);
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_dtoa(ret, _data.trend_mul_threshold, 2);
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_dtoa(ret, _data.tOverheat2_low, 2);
+	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_dtoa(ret, _data.tOverheat2_low_hyst, 2);
 	} else if(strcmp(var, eev_DebugToLog)==0) { strcat(ret, (char*)(DebugToLog ? cOne : cZero));
 	} else strcat(ret,"E10");
 }
@@ -1328,6 +1336,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_trend_threshold)==0){	_data.trend_threshold = x; return true;
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_data.trend_mul_threshold = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_data.tOverheat2_low = rd(x, 100); return true;
+	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_data.tOverheat2_low_hyst = rd(x, 100); return true;
 	} else if(strcmp(var, eev_DebugToLog)==0){ DebugToLog = x; return true;
 	} else return false; // ошибочное имя параметра
 
