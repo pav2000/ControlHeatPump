@@ -594,11 +594,15 @@ void devEEV::initEEV()
  _data.StartPos = DEFAULT_START_POS;                 // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
  _data.minSteps = EEV_CLOSE_STEP;                    // Минимальное число шагов открытия ЭРВ
  _data.maxSteps = EEV_STEPS;                         // Максимальное число шагов ЭРВ (диапазон)
- _data.trend_threshold = 3;
+ _data.pid_max = 45;
+ _data.trend_threshold = 4;
  _data.tOverheatTCOMP = 850;
  _data.tOverheatTCOMP_delta = 300;
- _data.PosAtHighTemp = 10;
+ _data.PosAtHighTemp = 0;
  _data.pid2_delta = 070;
+ _data.trend_mul_threshold = 65;
+ _data.tOverheat2_low = 200;
+ _data.tOverheat2_low_hyst = 10;
 
   // ЭРВ Времена и задержки
  _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -621,38 +625,43 @@ void devEEV::initEEV()
   name=(char*)nameEEV;                  // Присвоить имя
   note=(char*)noteEEV;                  // Присвоить описание
   
+  InitStepper();
+  //journal.jprintf(" EEV init: OK\r\n");
+}
+
 // Инициализация шагового двигателя ЭРВ   ВАЖНО ПРАВИЛЬНОЕ ПОДКЛЮЧЕНИЕ!!!
 // Рабочие комбинации для подключения шаговика на 5 вольт 28BYJ-48
 // So in the end, four entries worked: (8,10,11,9), (9,11,8,10), (10,8,9,11), and (11,9,10,8).
 // http://www.utopiamechanicus.com/article/arduino-stepper-motor-setup-troubleshooting/
 // Подключение двигателя 28BYJ-48. Драйвер ULN-2003 схема (8,10,11,9)
 // http://42bots.com/tutorials/28byj-48-stepper-motor-with-uln2003-driver-and-arduino-uno/
-      // ШАГОВИК на 5 вольт 28BYJ-48 5V  -----------------
-      // нога 1 синий       - В
-      // нога 2 фиолетовый  + А
-      // нога 3 желтый      + В
-      // нога 4 оранжевый   - А
-      // нога 5 красный     + общий
-      // ЭРВ 12 вольт ------------------------------------
-      // нога 1 оранжевый  + А
-      // нога 2 красный    + В
-      // нога 3 желтый     - А
-      // нога 4 черный     - В
-      // нога 5 синий      + общий
-      // Распиновка LM9333 -------------------------------
-      // D24     нога 1
-      // D26     нога 2
-      // D25     нога 3
-      // D27     нога 4
-      // Распиновка ULN2003 -------------------------------
-      // D24     нога 1
-      // D25     нога 2
-      // D26     нога 3
-      // D27     нога 4
-      // Инициализация библиотеки порядок указания фаз в функции initStepMotor +A +B -A -B
-    
+// ШАГОВИК на 5 вольт 28BYJ-48 5V  -----------------
+// нога 1 синий       - В
+// нога 2 фиолетовый  + А
+// нога 3 желтый      + В
+// нога 4 оранжевый   - А
+// нога 5 красный     + общий
+// ЭРВ 12 вольт ------------------------------------
+// нога 1 оранжевый  + А
+// нога 2 красный    + В
+// нога 3 желтый     - А
+// нога 4 черный     - В
+// нога 5 синий      + общий
+// Распиновка LM9333 -------------------------------
+// D24     нога 1
+// D26     нога 2
+// D25     нога 3
+// D27     нога 4
+// Распиновка ULN2003 -------------------------------
+// D24     нога 1
+// D25     нога 2
+// D26     нога 3
+// D27     нога 4
+// Инициализация библиотеки порядок указания фаз в функции initStepMotor +A +B -A -B
+void devEEV::InitStepper(void)
+{
 #ifdef DEMO
-  stepperEEV.initStepMotor(_data.maxSteps, PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27,PIN_EEV1_D24);          // для тестирования  на шаговике 5 вольт вроде работает
+    stepperEEV.initStepMotor(_data.maxSteps, PIN_EEV3_D26,PIN_EEV2_D25,PIN_EEV4_D27,PIN_EEV1_D24);          // для тестирования  на шаговике 5 вольт вроде работает
 #else  
     #ifdef DRV_EEV_L9333                                                                          // использование драйвера L9333
       #ifdef  EEV_INVERT                                                                          // Признак инвертирования движения ЭРВ
@@ -668,8 +677,21 @@ void devEEV::initEEV()
       #endif
     #endif  // DRV_EEV_L9333
 #endif // DEMO   
-stepperEEV.setSpeed(_data.speedEEV);   // Установить скорость движения
-//journal.jprintf(" EEV init: OK\r\n"); 
+    stepperEEV.setSpeed(_data.speedEEV);   // Установить скорость движения
+}
+
+void devEEV::after_load(void)
+{
+	if(HP.Option.ver == 128) { // Конвертация флагов
+		_data.flags = _data.OHCor_TDIS_TCON_MAX;
+		_data.OHCor_TDIS_TCON_MAX = 50;
+	}
+#ifdef EEV_DEF
+	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
+#else
+	SETBIT0(_data.flags,fPresent);                      // отсутствие ЭРВ в текушей конфигурации
+#endif
+	InitStepper();
 }
 
 // Восстановление слежения ЭРВ, если конечно задача запущена
@@ -1086,19 +1108,6 @@ void devEEV::CorrectOverheatInit(void)
 	OHCor_tdelta = 0;
 }
 
-void devEEV::after_load(void)
-{
-	if(HP.Option.ver == 128) { // Конвертация флагов
-		_data.flags = _data.OHCor_TDIS_TCON_MAX;
-		_data.OHCor_TDIS_TCON_MAX = 50;
-	}
-#ifdef EEV_DEF
-	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
-#else
-	SETBIT0(_data.flags,fPresent);                      // отсутствие ЭРВ в текушей конфигурации
-#endif
-}
-
  // Получить параметр ЭРВ в виде строки
  // var - строка с параметром ret-выходная строка, ответ ДОБАВЛЯЕТСЯ
 void devEEV::get_paramEEV(char *var, char *ret)
@@ -1210,8 +1219,15 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_MIN)==0){
 		if ((x>=0)&&(x<_data.maxSteps)) { _data.minSteps=x; return true;} else return false;	// минимальное число шагов
 		return true;
-	} else if(strcmp(var, eev_MAX)==0){
-		if ((x>=_data.minSteps)&&(x<2000)) { _data.maxSteps=x; return true;} else return false;	// максимальное число шагов
+	} else if(strcmp(var, eev_MAX)==0){// максимальное число шагов
+		int16_t xx = x;
+		if((xx >= _data.minSteps) && (xx <= 8192)) {
+			if(xx != _data.maxSteps) {
+				_data.maxSteps = xx;
+				InitStepper();
+			}
+			return true;
+		} else return false;
 		return true;
 	} else if(strcmp(var, eev_TIME)==0){
 		if((x >= 1) && (x <= 1000)) {
@@ -1285,7 +1301,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_PID2_delta)==0){
 		_data.pid2_delta=rd(x, 100); return true; // сотые
 	} else if(strcmp(var, eev_SPEED)==0){
-		if ((x>=5)&&(x<=120)) { _data.speedEEV=x; return true;} else return false;	// шаги в секунду
+		if ((x>=5)&&(x<=120)) { stepperEEV.setSpeed(_data.speedEEV = x); return true;} else return false;	// шаги в секунду
 #ifdef EEV_PREFER_PERCENT
 	} else if(strcmp(var, eev_MANUAL)==0){
 		_data.manualStep = calc_pos(rd(x, 100));

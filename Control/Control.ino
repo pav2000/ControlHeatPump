@@ -1335,7 +1335,7 @@ void vUpdateStepperEEV(void *)
 #else                     // остальные варианты  8 фаз движения
 			HP.dEEV.stepperEEV.stepOne(*step_number % 8);                   // Сделать один шаг //
 #endif
-			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
+			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожидать step_delay для следующего шага.
 		}
 		if(HP.dEEV.setZero) {
 			*step_number = 0;
