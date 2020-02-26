@@ -206,7 +206,7 @@ int8_t devVaconFC::get_readState()
 					err = Modbus.get_err(); // Скопировать ошибку
 				}
 				if(GETBIT(_data.setup_flags,fLogWork) && GETBIT(flags, fOnOff)) {
-					journal.jprintf_time("FC: %Xh,%.2dHz,%.2dA,%.1d%%=%.3d\n", state, FC_curr_freq, current / 100.0, power,	get_power());
+					journal.jprintf_time("FC: %Xh,%.2dHz,%.2dA,%.1d%%=%.3d\n", state, FC_curr_freq, current, power,	get_power());
 				}
 			}
 		}

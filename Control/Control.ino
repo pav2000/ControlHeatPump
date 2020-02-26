@@ -1300,6 +1300,7 @@ void vUpdateStepperEEV(void *)
 		pos = 0; // текущее суммарное движение - обнулится
 		start_pos = HP.dEEV.get_EEV();  // получить текущее положение шаговика абсолютное в начале очереди
 		if(start_pos < 0) start_pos = 0;
+		int16_t *step_number = &HP.dEEV.EEV;
 		// 3. Движение
 		while(xQueueReceive(HP.dEEV.stepperEEV.xCommandQueue,&cmd,0) == pdPASS)    // Читаем очередь пока есть чего читать
 		{
@@ -1307,7 +1308,7 @@ void vUpdateStepperEEV(void *)
 			start_pos = cmd;                                                      // итоговая абсолютная координата отдельной команды
 			// Если выполняется команда установки 0 то все остальные команды игнорируются до ее выполнения.
 			if(HP.dEEV.setZero) {
-				HP.dEEV.EEV = abs(cmd);
+				*step_number = abs(cmd);
 				break;
 			}
 		}
@@ -1318,7 +1319,6 @@ void vUpdateStepperEEV(void *)
 		if(pos < 0) direction = false;
 
 		// 3. Движение
-		int16_t *step_number = &HP.dEEV.EEV;
 		while(steps_left > 0) {
 			steps_left--;                                                      // уменьшить счетчик шагов
 			if(direction) { // направление в увеличение
@@ -1338,7 +1338,7 @@ void vUpdateStepperEEV(void *)
 			vTaskDelay(HP.dEEV.stepperEEV.step_delay / portTICK_PERIOD_MS);      // Ожитать step_delay для следующего шага.
 		}
 		if(HP.dEEV.setZero) {
-			HP.dEEV.EEV = 0;
+			*step_number = 0;
 			HP.dEEV.setZero = false;
 		}  // если стоит признак установки нуля, обнулить и сбросить признак
 		//   SerialDbg.print("4. EEV=");   SerialDbg.print(HP.dEEV.EEV); SerialDbg.print("  step_number=");   SerialDbg.println(step_number);

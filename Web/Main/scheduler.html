@@ -69,7 +69,7 @@
 <body class="profiles">
 <div id="menu" class="menu" style="min-height: 100%;"><script src="menu.js"></script></div>
 <div class="content" style="min-height: 100%;">
-	<h1>Управление расписаниями<input type="submit" value="Считать" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input type="submit" value="Очистить" onclick='if(confirm("Очистить все календари?")) loadParam("set_SCHDLR(Clear),RELOAD");' style="margin-right:10px;"> <input type="submit" value="Записать" onclick='loadParam("set_SAVE_SCHDLR")' style="margin-right:10px;"></h1>
+	<h1>Управление расписаниями<input type="submit" value="Считать" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input type="submit" value="Очистить" onclick='if(confirm("Очистить все календари?")) loadParam("set_SCHDLR(Clear),RELOAD");' style="margin-right:10px;"> <input type="submit" value="Записать расписание" onclick='loadParam("set_SAVE_SCHDLR")' style="margin-right:10px;"></h1>
 	<div class="row1">
 		<table style="width: 50%;">
 		<tr><td style="width: 40%;">Работа по расписанию</td><td style="width: 60%;"><input type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');"></td></tr>
