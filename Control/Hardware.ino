@@ -928,11 +928,11 @@ int8_t devEEV::Update(void) //boolean fHeating)
 			pidw.trend[trOH_TCOMP] += fast;
 			if(pidw.trend[trOH_TCOMP] > _data.trend_threshold * 2) {
 				pidw.trend[trOH_TCOMP] = _data.trend_threshold * 2;
-				fast++;
+				if(fast) fast--; // = 0, 1
 			} else if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold * 2) {
 				pidw.trend[trOH_TCOMP] = -_data.trend_threshold * 2;
-				fast--;
-			} else fast = sign(fast) * (abs(fast) - 1); // 0, +-1
+				if(fast) fast++; // = -1, 0
+			} else fast = 0;
 			if(DebugToLog) {
 				journal.jprintf("EEV: %d/%d,", Overheat, pidw.trend[trOH_default]);
 				journal.jprintf("%d/%d", OverheatTCOMP, pidw.trend[trOH_TCOMP]);
