@@ -2975,7 +2975,7 @@ boolean HeatPump::Switch_R4WAY(boolean fCool)
 boolean HeatPump::check_compressor_pause()
 {
 	if(stopCompressor && rtcSAM3X8.unixtime() - stopCompressor < Option.pause) {
-		if(!compressor_in_pause) journal.jprintf(" Waiting compressor, pause %d s...\n", Option.pause - (rtcSAM3X8.unixtime() - stopCompressor));
+		if(!compressor_in_pause) journal.jprintf_time("Waiting compressor, pause %d s...\n", Option.pause - (rtcSAM3X8.unixtime() - stopCompressor));
 		return compressor_in_pause = true;
 	}
 	return compressor_in_pause = false;
