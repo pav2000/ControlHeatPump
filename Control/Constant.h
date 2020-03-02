@@ -244,6 +244,9 @@ const uint16_t  defaultPort=80;
 #ifndef EEV_SET_ZERO_OVERRIDE
 #define EEV_SET_ZERO_OVERRIDE	40			// Добавка к полному закрытию при установке нуля, шаги
 #endif
+#ifndef EEV_OVERHEAT2_CRITICAL
+#define EEV_OVERHEAT2_CRITICAL 30           // Критическое значение перегрева 2, сотые градуса
+#endif
 
 // ----------------------- EVI ------------------------------
 #define EVI_TEMP_CON      4000           // Температура кондесатора для включения EVI
