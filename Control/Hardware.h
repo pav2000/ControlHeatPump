@@ -282,6 +282,7 @@ class devEEV
 {
 public:
 	void initEEV();                                        // Инициализация ЭРВ
+	void InitStepper(void);
 	int8_t Start();                                        // Запуск ЭРВ - начало алгоритма отслеживания - параметр текущее время
 	void Pause(){fPause=true;}                             // Пауза ЭРВ - останов отслеживания
 	void Resume();                                         // Пауза ЭРВ - возобновление отслеживания
