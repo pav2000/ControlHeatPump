@@ -564,69 +564,69 @@ const char *nameEEV = {"EEV"} ;  //  Имя
 // Инициализация ЭРВ
 void devEEV::initEEV()
 {
-  EEV=-1;                               // шаговик в непонятном положении
-  setZero=false;                        // Признак процесса обнуления (шаговик ищет 0)
-  err=OK;                               // Ошибок нет
-  Resume(); 			                // Обнулить рабочие переменные
-  testMode=NORMAL;                      // Значение режима тестирования
-  DebugToLog = false;
+	EEV = -1;                               // шаговик в непонятном положении
+	setZero = false;                        // Признак процесса обнуления (шаговик ищет 0)
+	err = OK;                               // Ошибок нет
+	Resume(); 			                // Обнулить рабочие переменные
+	testMode = NORMAL;                      // Значение режима тестирования
+	DebugToLog = false;
 
-// Устновка настроек по умолчанию (структара данных _data)
- _data.tOverheat = DEFAULT_OVERHEAT;                 // Перегрев ЦЕЛЬ (сотые градуса)
- _data.pid_time = DEFAULT_EEV_TIME;                  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
- _data.pid.Kp =  -DEFAULT_EEV_Kp * 10;               // ПИД Коэф пропорц, в тысячных
- _data.pid.Ki =  -DEFAULT_EEV_Ki * 10;               // ПИД Коэф интегр.,  в тысячных
- _data.pid.Kd =  -DEFAULT_EEV_Kd * 10;               // ПИД Коэф дифф., в тысячных
- _data.Correction = 0;                               // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
- _data.manualStep = (EEV_STEPS-_data.minSteps)/2+_data.minSteps;  // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
- //_data.typeFreon = DEFAULT_FREON_TYPE;               // Тип фреона
- _data.ruleEEV = DEFAULT_RULE_EEV;                   // правило работы ЭРВ
+	// Устновка настроек по умолчанию (структара данных _data)
+	_data.tOverheat = DEFAULT_OVERHEAT;                 // Перегрев ЦЕЛЬ (сотые градуса)
+	_data.pid_time = DEFAULT_EEV_TIME;                  // Постоянная интегрирования времени в секундах ЭРВ СЕКУНДЫ
+	_data.pid.Kp = -DEFAULT_EEV_Kp * 10;               // ПИД Коэф пропорц, в тысячных
+	_data.pid.Ki = -DEFAULT_EEV_Ki * 10;               // ПИД Коэф интегр.,  в тысячных
+	_data.pid.Kd = -DEFAULT_EEV_Kd * 10;               // ПИД Коэф дифф., в тысячных
+	_data.Correction = 0; // 0.855 ПЕРЕДЕЛАНО  зона не чуствительности перегрева в "плюсе" в этой зоне на каждом шаге эрв закрывается на 1 шаг
+	_data.manualStep = (EEV_STEPS - _data.minSteps) / 2 + _data.minSteps; // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual» - половина диапазона ЭРВ
+	//_data.typeFreon = DEFAULT_FREON_TYPE;               // Тип фреона
+	_data.ruleEEV = DEFAULT_RULE_EEV;                   // правило работы ЭРВ
 #ifdef DEF_OHCor_OverHeatStart						 // Корректировка перегрева
- _data.OHCor_Delay = DEF_OHCor_Delay;			     // Задержка после старта компрессора, сек
- _data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		 // Температура нагнетания - конденсации при 30С и 0 конденсации
- _data.OverheatMin = DEF_OHCor_OverHeatMin;		     // Минимальный перегрев (сотые градуса)
- _data.OverheatMax = DEF_OHCor_OverHeatMax;		     // Максимальный перегрев (сотые градуса)
- _data.OverHeatStart = DEF_OHCor_OverHeatStart; 	 // Начальный перегрев (сотые градуса)
- _data.OHCor_Period = DEF_OHCor_Period;
+	_data.OHCor_Delay = DEF_OHCor_Delay;			     // Задержка после старта компрессора, сек
+	_data.OHCor_TDIS_TCON = DEF_OHCor_TDIS_TCON;		 // Температура нагнетания - конденсации при 30С и 0 конденсации
+	_data.OverheatMin = DEF_OHCor_OverHeatMin;		     // Минимальный перегрев (сотые градуса)
+	_data.OverheatMax = DEF_OHCor_OverHeatMax;		     // Максимальный перегрев (сотые градуса)
+	_data.OverHeatStart = DEF_OHCor_OverHeatStart; 	 // Начальный перегрев (сотые градуса)
+	_data.OHCor_Period = DEF_OHCor_Period;
 #endif
- _data.speedEEV = DEFAULT_SPEED_EEV;                 // Скорость шагового двигателя ЭРВ (импульсы в сек.)
- _data.preStartPos = DEFAULT_PRE_START_POS;          // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
- _data.StartPos = DEFAULT_START_POS;                 // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
- _data.minSteps = EEV_CLOSE_STEP;                    // Минимальное число шагов открытия ЭРВ
- _data.maxSteps = EEV_STEPS;                         // Максимальное число шагов ЭРВ (диапазон)
- _data.pid_max = 45;
- _data.trend_threshold = 4;
- _data.tOverheatTCOMP = 850;
- _data.tOverheatTCOMP_delta = 300;
- _data.PosAtHighTemp = 0;
- _data.pid2_delta = 070;
- _data.trend_mul_threshold = 65;
- _data.tOverheat2_low = 200;
- _data.tOverheat2_low_hyst = 10;
+	_data.speedEEV = DEFAULT_SPEED_EEV;                 // Скорость шагового двигателя ЭРВ (импульсы в сек.)
+	_data.preStartPos = DEFAULT_PRE_START_POS;     // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
+	_data.StartPos = DEFAULT_START_POS; // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
+	_data.minSteps = EEV_CLOSE_STEP;                    // Минимальное число шагов открытия ЭРВ
+	_data.maxSteps = EEV_STEPS;                         // Максимальное число шагов ЭРВ (диапазон)
+	_data.pid_max = 45;
+	_data.trend_threshold = 4;
+	_data.tOverheatTCOMP = 850;
+	_data.tOverheatTCOMP_delta = 300;
+	_data.PosAtHighTemp = 0;
+	_data.pid2_delta = 070;
+	_data.trend_mul_threshold = 65;
+	_data.tOverheat2_low = 200;
+	_data.tOverheat2_low_hyst = 10;
 
-  // ЭРВ Времена и задержки
- _data.delayOnPid = DEFAULT_DELAY_ON_PID;             // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
- _data.delayOn = DEFAULT_DELAY_ON;                    // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
- _data.DelayStartPos = DEFAULT_DELAY_START_POS;       // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
- _data.delayOff = DEFAULT_DELAY_OFF;                  // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
- _data.flags = 0x00;                                  // флаги ЭРВ,
- #ifdef EEV_DEF 
-  SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
- #endif 
-  if (DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags,fHoldMotor);
-  SETBIT0(_data.flags,fCorrectOverHeat);              // Включен режим корректировки перегрева
-  SETBIT1(_data.flags,fOneSeekZero);                  //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
-  SETBIT0(_data.flags,fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
-  SETBIT0(_data.flags,fLightStart);                   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-  SETBIT1(_data.flags,fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
-  SETBIT1(_data.flags,fEEV_StartPosByTemp);
+	// ЭРВ Времена и задержки
+	_data.delayOnPid = DEFAULT_DELAY_ON_PID; // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
+	_data.delayOn = DEFAULT_DELAY_ON; // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрывлось при остановке
+	_data.DelayStartPos = DEFAULT_DELAY_START_POS; // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
+	_data.delayOff = DEFAULT_DELAY_OFF; // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
+	_data.flags = 0x00;                                  // флаги ЭРВ,
+#ifdef EEV_DEF
+	SETBIT1(_data.flags, fPresent);                      // наличие ЭРВ в текушей конфигурации
+#endif
+	if(DEFAULT_HOLD_MOTOR) SETBIT1(_data.flags, fHoldMotor);
+	SETBIT0(_data.flags, fCorrectOverHeat);              // Включен режим корректировки перегрева
+	SETBIT1(_data.flags, fOneSeekZero);            //  Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+	SETBIT0(_data.flags, fEevClose);                     // Флаг закрытие ЭРВ при выключении компрессора
+	SETBIT0(_data.flags, fLightStart); // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+	SETBIT1(_data.flags, fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
+	SETBIT1(_data.flags, fEEV_StartPosByTemp);
 
-  Chart.init(get_present());                   // инициалазация статистики
-  name=(char*)nameEEV;                  // Присвоить имя
-  note=(char*)noteEEV;                  // Присвоить описание
-  
-  InitStepper();
-  //journal.jprintf(" EEV init: OK\r\n");
+	Chart.init(get_present());                   // инициалазация статистики
+	name = (char*) nameEEV;                  // Присвоить имя
+	note = (char*) noteEEV;                  // Присвоить описание
+
+	InitStepper();
+	//journal.jprintf(" EEV init: OK\r\n");
 }
 
 // Инициализация шагового двигателя ЭРВ   ВАЖНО ПРАВИЛЬНОЕ ПОДКЛЮЧЕНИЕ!!!
@@ -706,7 +706,6 @@ void devEEV::Resume()
 int8_t devEEV::Start()
 {
 	Resume();
-	//  EEV=0;
 	err = OK;                               // Ошибок нет
 	if(!GETBIT(_data.flags, fPresent)) {
 		journal.jprintf(" EEV is not available\n");
@@ -725,8 +724,7 @@ int8_t devEEV::set_zero()
 	if(!setZero) {
 		journal.jprintf(" EEV: Set zero\n");
 		setZero = true;                                             // Признак ПРОЦЕССА обнуления счетчика шагов EEV  Ставить в начале!!
-		EEV = -1;
-		if(testMode != SAFE_TEST) stepperEEV.step(-_data.maxSteps - EEV_SET_ZERO_OVERRIDE);  // не  SAFE_TEST - работаем
+		if(testMode != SAFE_TEST) stepperEEV.step(0);  // не  SAFE_TEST - работаем
 		else EEV = 0;                                               // SAFE_TEST только координаты меняем
 	}
 	return OK;
