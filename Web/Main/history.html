@@ -301,7 +301,7 @@ function init_chart() {
 			fieldList.push({
 				field: i + 1,
 				axis: arr[i].substr(0, 1),
-				name: arr[i].substr(1),
+				name: arr[i].substr(1).replace("\n",""),
 				data: []
 			});
 		}

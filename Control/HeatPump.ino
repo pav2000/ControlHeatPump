@@ -1862,7 +1862,6 @@ int8_t HeatPump::StartResume(boolean start)
 	{
 		if((get_State() == pWORK_HP) || (get_State() == pSTOPING_HP) || (get_State() == pSTARTING_HP)) return error; // Если ТН включен или уже стартует или идет процесс остановки то ничего не делаем (исключается многократный заход в функцию)
 		journal.jprintf_date( "  Start . . .\n");
-		//lastEEV=-1;                                      // -1 это признак того что слежение eev еще не рабоатет (выключения компрессора  не было)
 	} else {
 		if(get_State() != pWAIT_HP) return error; // Если состяние НЕ РАВНО ожиданию то ничего не делаем, выходим восстанавливать нечего
 		journal.jprintf_date( "  Resume . . .\n");
@@ -3157,13 +3156,13 @@ void HeatPump::compressorON()
 	else  // признак первой итерации
 	{
 		set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
-		lastEEV=dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
+		lastEEV = dEEV.get_EEV();                                 // ЭРВ рабоатет запомнить
 		dEEV.Resume();
 		vTaskResume(xHandleUpdateEEV);                               // Запустить задачу Обновления ЭРВ
 		journal.jprintf(" Start task UpdateEEV\n");
 	}
 #else
-	lastEEV=1;                                                   // Признак первой итерации
+	lastEEV = 1;                                                   // Признак первой итерации
 	set_startTime(rtcSAM3X8.unixtime());                         // Запомнить время старта ТН
 #endif
 }

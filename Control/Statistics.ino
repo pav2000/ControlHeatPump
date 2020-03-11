@@ -685,7 +685,7 @@ void Statistics::SendFileData(uint8_t thread, SdFile *File, char *filename)
 	}
 }
 
-// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd\0"
+// Return: OK, 1 - not found, >2 - error. Network is active. Date format: "yyyymmdd...\0"
 void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix, char *TimeStart, char *TimeEnd)
 {
 	uint32_t bendfile = m_strlen((char*)_buffer_);
@@ -712,6 +712,7 @@ void Statistics::SendFileDataByPeriod(uint8_t thread, SdFile *File, char *Prefix
 	uint32_t bst = bstfile, bend = bendfile;
 	uint8_t findst = 0;
 	char *pos = NULL;
+	uint8_t len_Time = strlen(TimeStart);
 	while(bst <= bend) {
 		uint32_t cur = bst + (bend - bst) / 2;
 xReadBlock:
@@ -729,13 +730,13 @@ xReadBlock:
 			if(pos == NULL) return;  // garbage
 			if(*++pos == '\0') goto xGoDown;
 			{
-				int8_t cmp = strncmp(pos, TimeStart, m_strlen(TimeStart));
+				int8_t cmp = strncmp(pos, TimeStart, len_Time);
 				if(cmp >= 0) {
 					//journal.printf("found%d %c%c%c%c%c%c%c%c%c%c (%s)\n", cmp, pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeStart );
 					findst = 1;
 					if(cmp > 0) {
 						if(cur == bst) {
-							if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) return; // greater - not found
+							if(strncmp(pos, TimeEnd, len_Time) > 0) return; // greater - not found
 							goto xNext;
 						}
 						goto xGoDown;
@@ -797,19 +798,18 @@ xGoDown:	if(cur == bst) { // low limit
 			Error("read data", ID_HISTORY);
 			break;
 		}
-		if(_buffer_[readed + SD_BLOCK - 1] == 0) {  // end of data
-			if(_buffer_[readed] == 0) break;
-			pos = (char*)memchr(_buffer_ + readed, 0, SD_BLOCK);
+		if(_buffer_[readed + SD_BLOCK - 1] == '\0') {  // end of data
+			if(_buffer_[readed] == '\0') break;
+			pos = (char*)memchr(_buffer_ + readed, '\0', SD_BLOCK);
+			readed = (uint8_t*)pos - _buffer_;
 			bendfile = 0;
-			pos = (char*)memchr(_buffer_ + readed, '\n', (uint8_t*)pos - _buffer_);
-			if(*(pos + 1) == '\0') pos = NULL; else readed = (uint8_t*)pos - _buffer_;
 		} else {
 			pos = (char*)memchr(_buffer_ + readed, '\n', SD_BLOCK);
-			if(*(pos + 1) == '\0') pos = NULL; else readed += SD_BLOCK;
+			readed += SD_BLOCK;
 		}
 		if(pos++) {
 xFoundStart:
-			if(strncmp(pos, TimeEnd, m_strlen(TimeEnd)) > 0) {
+			if(strncmp(pos, TimeEnd, len_Time) > 0) {
 				//journal.printf("end %c%c%c%c%c%c%c%c%c%c (%s)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6], pos[7], pos[8], pos[9], TimeEnd );
 				readed = (uint8_t*)pos - _buffer_;
 				bendfile = 0; // stop
@@ -864,7 +864,7 @@ int8_t Statistics::SaveStats(uint8_t newday)
 			return retval;
 		}
 		SPI_switchSD();
-		if(!card.card()->writeBlock(CurrentBlock, (uint8_t*)stats_buffer)) {
+		if(!card.card()->writeBlock(CurrentBlock, stats_buffer)) {
 			Error("save", ID_STATS);
 			// to do - reinit card but in other task
 			//if(card.cardErrorCode() > SD_CARD_ERROR_NONE && card.cardErrorCode() < SD_CARD_ERROR_READ && card.cardErrorData() == 255) { // reinit card
@@ -915,7 +915,7 @@ int8_t Statistics::SaveHistory(uint8_t from_web)
 	if(!from_web && SemaphoreTake(xWebThreadSemaphore, W5200_TIME_WAIT) == pdFALSE) return ERR_CONFIG;
 	int8_t retval = OK;
 	SPI_switchSD();
-	if(!card.card()->writeBlock(HistoryCurrentBlock, (uint8_t*)history_buffer)) {
+	if(!card.card()->writeBlock(HistoryCurrentBlock, history_buffer)) {
 		Error("save", ID_STATS);
 		retval = ERR_SD_WRITE;
 	}

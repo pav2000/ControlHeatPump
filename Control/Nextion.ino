@@ -36,7 +36,7 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 #define NXTID_PAGE_INFO		0x07
 #define NXTID_PAGE_PROFILE	0x08
 // Page Main
-#define NXTID_ONOFF			0x02
+#define NXTID_MAIN_ONOFF	0x02
 #define NXTID_BOILER_URGENT	0x13
 #define NXTID_GENERATOR	    0x16
 // Page Heat
@@ -50,6 +50,8 @@ const char comm_end[3] = { COMM_END_B, COMM_END_B, COMM_END_B };
 // Page Profile
 #define NXTID_SCHEDULER_OFF	0x80
 #define NXTID_SCHEDULER_ON	0x81
+#define NXTID_PROFILE_ONOFF	0x25
+
 
 #define fSleep 1
 #define NEXTION_INPUT_DELAY	10		// * NEXTION_READ ms
@@ -249,16 +251,16 @@ void Nextion::readCommand()
 				uint8_t cmd1 = buffer[1];
 				uint8_t cmd2 = buffer[2];
 				if(cmd1 == NXTID_PAGE_MAIN) {
-					if(cmd2 == NXTID_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
+					if(cmd2 == NXTID_BOILER_URGENT) {
+						HP.set_HeatBoilerUrgently(!HP.HeatBoilerUrgently);
+						fUpdate = 2;
+						input_delay = NEXTION_INPUT_DELAY;
+					} else if(cmd2 == NXTID_MAIN_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
 						if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
 							if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
 							input_delay = NEXTION_INPUT_DELAY * 2;
 							return;
 						}
-					} else if(cmd2 == NXTID_BOILER_URGENT) {
-						HP.set_HeatBoilerUrgently(!HP.HeatBoilerUrgently);
-						fUpdate = 2;
-						input_delay = NEXTION_INPUT_DELAY;
 					} else if(cmd2 == NXTID_GENERATOR) { // Прочитать команду работа от генератора
 				        HP.set_BackupPower(!HP.get_BackupPower());
 				        input_delay = NEXTION_INPUT_DELAY * 2;
@@ -312,6 +314,12 @@ void Nextion::readCommand()
 						HP.Schdlr.web_set_param((char*)WEB_SCH_On, (char*)"1");
 					} else if(cmd2 < I2C_PROFIL_NUM) {
 						HP.Prof.set_list(cmd2);
+					} else if(cmd2 == NXTID_PROFILE_ONOFF) {  // событие нажатие кнопки вкл/выкл ТН
+						if((HP.get_State() != pSTARTING_HP) || (HP.get_State() != pSTOPING_HP)) {
+							if(HP.get_State() == pOFF_HP) HP.sendCommand(pSTART); else HP.sendCommand(pSTOP);
+							input_delay = NEXTION_INPUT_DELAY * 2;
+							return;
+						}
 					}
 				}
 			}
@@ -405,6 +413,9 @@ void Nextion::Update()
 			if((fl ^ Page1flags) & (1<<0)) {
 				if(fl & (1<<0)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 				else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
+#ifndef NEXTION_SCR0_DIS_ON_OFF
+				sendCommand("tsw bt0,1");
+#endif
 			}
 			if((fl ^ Page1flags) & (1<<1)) {
 				if(fl & (1<<1)) sendCommand("vis g,1"); else sendCommand("vis g,0");
@@ -614,6 +625,8 @@ void Nextion::Update()
 		journal.printf("#: %u\n", GetTickCount());
 #endif
 		if(HP.Schdlr.IsShedulerOn()) sendCommand("s.val=1"); else sendCommand("s.val=0");
+		if((HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
+		else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
 		if(fUpdate == 2) {
 			Encode_UTF8_to_ISO8859_5(buffer, HP.Schdlr.sch_data.Names[HP.Schdlr.sch_data.Active], sizeof(buffer)-1);
 			setComponentText("trn", buffer);
