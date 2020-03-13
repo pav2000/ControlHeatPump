@@ -182,6 +182,8 @@ int8_t devVaconFC::get_readState()
 		}
 		if(GETBIT(flags, fOnOff)) { // ТН включил компрессор, проверяем состояние инвертора
 			if(state & FC_S_FLT) { // Действующий отказ
+				uint16_t reg = read_0x03_16(FC_ERROR);
+				journal.jprintf("%s, Fault: %s(%d) - ", name, err ? cError : get_fault_str(reg), err ? err : reg);
 				err = ERR_FC_FAULT;
 			} else if(get_startTime() && rtcSAM3X8.unixtime() - get_startTime() > FC_ACCEL_TIME / 100 && ((state & (FC_S_RDY | FC_S_RUN | FC_S_DIR)) != (FC_S_RDY | FC_S_RUN))) {
 				err = ERR_MODBUS_STATE;

@@ -985,10 +985,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcat(tempBuf, HP.sTemp[i].get_note());
 			strcat(tempBuf, ": ");
 #else
-			strcat(tempBuf, HP.sTemp[i].get_note());
-			strcpy(tempBuf, " (");
-			strcpy(tempBuf, HP.sTemp[i].get_name());
-			strcpy(tempBuf, "): ");
+			strcpy(tempBuf, HP.sTemp[i].get_note());
+			strcat(tempBuf, " (");
+			strcat(tempBuf, HP.sTemp[i].get_name());
+			strcat(tempBuf, "): ");
 #endif
 			_dtoa(tempBuf, HP.sTemp[i].get_Temp(), 2);
 			if(HP.sTemp[i].get_lastErr() != OK) {
@@ -1010,10 +1010,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			if((x=8-strlen(HP.sADC[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
 			strcat(tempBuf,HP.sADC[i].get_note());  strcat(tempBuf,": ");
 #else
-			strcat(tempBuf, HP.sADC[i].get_note());
-			strcpy(tempBuf, " (");
-			strcpy(tempBuf, HP.sADC[i].get_name());
-			strcpy(tempBuf, "): ");
+			strcpy(tempBuf, HP.sADC[i].get_note());
+			strcat(tempBuf, " (");
+			strcat(tempBuf, HP.sADC[i].get_name());
+			strcat(tempBuf, "): ");
 #endif
 			_dtoa(tempBuf, HP.sADC[i].get_Press(), 2);
 			if (HP.sADC[i].get_lastErr()!=OK ) { strcat(tempBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),tempBuf); }
@@ -1031,10 +1031,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcpy(tempBuf,HP.sInput[i].get_name()); if((x=8-strlen(HP.sInput[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
 			strcat(tempBuf,HP.sInput[i].get_note());  strcat(tempBuf,": ");
 #else
-			strcat(tempBuf, HP.sInput[i].get_note());
-			strcpy(tempBuf, " (");
-			strcpy(tempBuf, HP.sInput[i].get_name());
-			strcpy(tempBuf, "): ");
+			strcpy(tempBuf, HP.sInput[i].get_note());
+			strcat(tempBuf, " (");
+			strcat(tempBuf, HP.sInput[i].get_name());
+			strcat(tempBuf, "): ");
 #endif
 			_itoa(HP.sInput[i].get_Input(),tempBuf);
 			strcat(tempBuf," alarm:"); _itoa(HP.sInput[i].get_alarmInput(),tempBuf);
@@ -1052,10 +1052,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcpy(tempBuf,HP.dRelay[i].get_name()); if((x=8-strlen(HP.dRelay[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
 			strcat(tempBuf,HP.dRelay[i].get_note());  strcat(tempBuf,": ");
 #else
-			strcat(tempBuf, HP.dRelay[i].get_note());
-			strcpy(tempBuf, " (");
-			strcpy(tempBuf, HP.dRelay[i].get_name());
-			strcpy(tempBuf, "): ");
+			strcpy(tempBuf, HP.dRelay[i].get_note());
+			strcat(tempBuf, " (");
+			strcat(tempBuf, HP.dRelay[i].get_name());
+			strcat(tempBuf, "): ");
 #endif
 			_itoa(HP.dRelay[i].get_Relay(),tempBuf);
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
@@ -1063,23 +1063,29 @@ void get_mailState(EthernetClient client,char *tempBuf)
 	}
 
 #ifdef EEV_DEF
-	strcpy(tempBuf,"\n  6. ЭРВ - ");  strcat(tempBuf,HP.dEEV.get_note());  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(tempBuf,"\n  6. ЭРВ - ");  strcat(tempBuf,HP.dEEV.get_note());  strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Правило управления ЭРВ: ");
 	HP.dEEV.get_ruleEEVtext(tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Текущее положение: ");
 #ifdef EEV_PREFER_PERCENT
 	_dtoa(tempBuf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
 #else
 	_itoa(HP.dEEV.get_EEV(),tempBuf);
 #endif
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 	strcpy(tempBuf,"Текущий перегрев (градусы): ");  _dtoa(tempBuf, HP.dEEV.get_Overheat(), 2);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcat(tempBuf,cStrEnd);
+	client.write(tempBuf,strlen(tempBuf));
 #else
 	strcpy(tempBuf,"EEV absent");    strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 #endif
@@ -1088,15 +1094,20 @@ void get_mailState(EthernetClient client,char *tempBuf)
 	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 	if(HP.dFC.get_present()) {
 		strcpy(tempBuf,"Текущее состояние инвертора: "); _itoa(HP.dFC.read_stateFC(),tempBuf);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		strcat(tempBuf,cStrEnd);
+		client.write(tempBuf,strlen(tempBuf));
 		strcpy(tempBuf,"Целевая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_target()/100.0,2);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		strcat(tempBuf,cStrEnd);
+		client.write(tempBuf,strlen(tempBuf));
 		strcpy(tempBuf,"Текущая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_frequency()/100.0,2);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		strcat(tempBuf,cStrEnd);
+		client.write(tempBuf,strlen(tempBuf));
 		strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,3);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		strcat(tempBuf,cStrEnd);
+		client.write(tempBuf,strlen(tempBuf));
 		strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _ftoa(tempBuf,(float)HP.dFC.read_tempFC()/10.0,2);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		strcat(tempBuf,cStrEnd);
+		client.write(tempBuf,strlen(tempBuf));
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
 		strcpy(tempBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),tempBuf);
 		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
@@ -1129,10 +1140,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcpy(tempBuf,HP.sFrequency[i].get_name()); if((x=8-strlen(HP.sFrequency[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
 			strcat(tempBuf,HP.sFrequency[i].get_note());  strcat(tempBuf,": ");
 #else
-			strcat(tempBuf, HP.sFrequency[i].get_note());
-			strcpy(tempBuf, " (");
-			strcpy(tempBuf, HP.sFrequency[i].get_name());
-			strcpy(tempBuf, "): ");
+			strcpy(tempBuf, HP.sFrequency[i].get_note());
+			strcat(tempBuf, " (");
+			strcat(tempBuf, HP.sFrequency[i].get_name());
+			strcat(tempBuf, "): ");
 #endif
 			_dtoa(tempBuf, HP.sFrequency[i].get_Value(), 3);
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
