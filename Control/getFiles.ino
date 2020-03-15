@@ -748,121 +748,35 @@ uint16_t get_binSettings(uint8_t thread)
 }
 
 // Получить файл со графиками возвращает число отправленных байт
-uint16_t get_csvChart(uint8_t thread)
+void get_csvChart(uint8_t thread)
 { 
-	int16_t i,j;
-	uint32_t sum=0,s=0;
-
 	// заголовок
 	strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	strcat(Socket[thread].outBuf, WEB_HEADER_TEXT_ATTACH);
 	strcat(Socket[thread].outBuf, "chart.csv\"\r\n\r\n");
-	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
-	strcpy(Socket[thread].outBuf,"Point;");
-	//    strcpy(Socket[thread].outBuf,""); _itoa(HP.sTemp[TIN].Chart.get_num(),Socket[thread].outBuf);strcat(Socket[thread].outBuf,";");// вывести число точек
-	for(i=0;i<TNUMBER;i++) if(HP.sTemp[i].Chart.get_present())      {strcat(Socket[thread].outBuf,HP.sTemp[i].get_name()); strcat(Socket[thread].outBuf,";");}
-#ifndef MIN_RAM_CHARTS
-	for(i=0;i<ANUMBER;i++)
-#else
-	for(i=PCON+1;i<ANUMBER;i++)
-#endif
-		if(HP.sADC[i].Chart.get_present())        { strcat(Socket[thread].outBuf,HP.sADC[i].get_name()); strcat(Socket[thread].outBuf,";");}
-	for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].Chart.get_present()) { strcat(Socket[thread].outBuf,HP.sFrequency[i].get_name()); strcat(Socket[thread].outBuf,";");}
-#ifdef EEV_DEF
-	if(HP.dEEV.Chart.get_present())     strcat(Socket[thread].outBuf,"posEEV;");
-	if(HP.ChartOVERHEAT.get_present())  strcat(Socket[thread].outBuf,"OverHeat;");
-	if(HP.ChartOVERHEAT2.get_present())  strcat(Socket[thread].outBuf,"OverHeat2;");
-	if(HP.ChartTPEVA.get_present())     strcat(Socket[thread].outBuf,"T[PEVA];");
-	if(HP.ChartTPCON.get_present())     strcat(Socket[thread].outBuf,"T[PCON];");
-#endif
-	if(HP.dFC.ChartFC.get_present())       strcat(Socket[thread].outBuf,"FrequencyFC;");
-	if(HP.dFC.ChartPower.get_present())    strcat(Socket[thread].outBuf,"PowerFC;");
-#ifndef MIN_RAM_CHARTS
-	if(HP.dFC.ChartCurrent.get_present())     strcat(Socket[thread].outBuf,"CurrentFC;");
-#endif
-	if(HP.ChartRCOMP.get_present())     strcat(Socket[thread].outBuf,"RCOMP;");
+	sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 
-	if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"dCO;");
-	if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) strcat(Socket[thread].outBuf,"dGEO;");
-
-
-#ifdef FLOWCON
-	if((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) strcat(Socket[thread].outBuf,"PowerCO;");
-#endif
-#ifdef FLOWEVA
-	if((HP.sTemp[TEVAOUTG].Chart.get_present())&&(HP.sTemp[TEVAING].Chart.get_present())) strcat(Socket[thread].outBuf,"PowerGEO;");
-#endif
-
-	if(HP.ChartCOP.get_present())       strcat(Socket[thread].outBuf,"COP;");
-
-#ifdef USE_ELECTROMETER_SDM
-  #ifndef MIN_RAM_CHARTS
-	if(HP.dSDM.ChartVoltage.get_present())    strcat(Socket[thread].outBuf,"VOLTAGE;");
-  #endif
-	//    if(HP.dSDM.sAcPower.get_present())    strcat(Socket[thread].outBuf,"acPOWER;");
-	//    if(HP.dSDM.sRePower.get_present())    strcat(Socket[thread].outBuf,"rePOWER;");
-	if(HP.dSDM.ChartPower.get_present())      strcat(Socket[thread].outBuf,"fullPOWER;");
-	//    if(HP.dSDM.ChartPowerFactor.get_present())strcat(Socket[thread].outBuf,"kPOWER;");
-	if(HP.ChartFullCOP.get_present())      strcat(Socket[thread].outBuf,"fullCOP;");
-#endif
-
+	strcpy(Socket[thread].outBuf,"Point");
+	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+		if(ChartsSetup[i].number != CHART_ON_FLY) {
+			strcat(Socket[thread].outBuf, ";");
+			strcat(Socket[thread].outBuf, ChartsSetup[i].name);
+		}
+	}
 	STR_END;
-	s=strlen(Socket[thread].outBuf);
-	sum=s;
+	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0) == 0) return; // передать пакет, при ошибке выйти
 
-	if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
-	for(i=0;i<HP.sTemp[TIN].Chart.get_num();i++)  // По всем точкам датичк TIN всегда существует
-	{
-		//сформировать одну строку
-		strcpy(Socket[thread].outBuf,"#"); _itoa(i+1,Socket[thread].outBuf); strcat(Socket[thread].outBuf,";");
-		for(j=0;j<TNUMBER;j++)  if(HP.sTemp[j].Chart.get_present())   { _ftoa(Socket[thread].outBuf,(float)HP.sTemp[j].Chart.get_Point(i)/100,2); strcat(Socket[thread].outBuf,";"); }
-		for(j=0;j<ANUMBER;j++)  if(HP.sADC[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sADC[j].Chart.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-		for(j=0;j<FNUMBER;j++)  if(HP.sFrequency[j].Chart.get_present())  { _ftoa(Socket[thread].outBuf,(float)HP.sFrequency[j].Chart.get_Point(i)/1000.0,3); strcat(Socket[thread].outBuf,";"); }
-#ifdef EEV_DEF
-		if(HP.dEEV.Chart.get_present())    { _itoa(HP.dEEV.Chart.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-		if(HP.ChartOVERHEAT.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-		if(HP.ChartOVERHEAT2.get_present()) { _ftoa(Socket[thread].outBuf,(float)HP.ChartOVERHEAT2.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-		if(HP.ChartTPEVA.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPEVA.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-		if(HP.ChartTPCON.get_present())    { _ftoa(Socket[thread].outBuf,(float)HP.ChartTPCON.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-#endif
-		if(HP.dFC.ChartFC.get_present())       { _itoa(HP.dFC.ChartFC.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-		if(HP.dFC.ChartPower.get_present())    { _itoa(HP.dFC.ChartPower.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-#ifndef MIN_RAM_CHARTS
-		if(HP.dFC.ChartCurrent.get_present())  { _itoa(HP.dFC.ChartCurrent.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-#endif
-		if(HP.ChartRCOMP.get_present())    { _itoa(HP.ChartRCOMP.get_Point(i),Socket[thread].outBuf); strcat(Socket[thread].outBuf,";"); }
-		if ((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present())) // считаем на лету экономим оперативку
-		{_ftoa(Socket[thread].outBuf,((float)HP.sTemp[TCONOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); }
-		if ((HP.sTemp[TEVAING].Chart.get_present())&&(HP.sTemp[TEVAOUTG].Chart.get_present())) // считаем на лету экономим оперативку
-		{_ftoa(Socket[thread].outBuf,((float)HP.sTemp[TEVAOUTG].Chart.get_Point(i)-(float)HP.sTemp[TCONING].Chart.get_Point(i))/100, 2); strcat(Socket[thread].outBuf,(char*)";"); }
-
-#ifdef FLOWCON // Мощности расчет на лету
-		if((HP.sTemp[TCONOUTG].Chart.get_present())&&(HP.sTemp[TCONING].Chart.get_present()))
-		{_ftoa(Socket[thread].outBuf,float(abs(HP.sTemp[TCONOUTG].Chart.get_Point(i)-HP.sTemp[TCONING].Chart.get_Point(i))*HP.sFrequency[FLOWCON].Chart.get_Point(i))/HP.sFrequency[FLOWCON].get_kfCapacity()/1000, 2); strcat(Socket[thread].outBuf,(char*)";");}
-#endif
-#ifdef FLOWEVA
-		if((HP.sTemp[TEVAOUTG].Chart.get_present())&&(HP.sTemp[TEVAING].Chart.get_present()))
-		{_ftoa(Socket[thread].outBuf,float(abs(HP.sTemp[TEVAOUTG].Chart.get_Point(i)-HP.sTemp[TEVAING].Chart.get_Point(i))*HP.sFrequency[FLOWEVA].Chart.get_Point(i))/HP.sFrequency[FLOWEVA].get_kfCapacity()/1000, 2); strcat(Socket[thread].outBuf,(char*)";");}
-#endif
-
-
-		if(HP.ChartCOP.get_present())   { _ftoa(Socket[thread].outBuf,(float)HP.ChartCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-
-#ifdef USE_ELECTROMETER_SDM
-	#ifndef MIN_RAM_CHARTS
-		if(HP.dSDM.ChartVoltage.get_present())     { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartVoltage.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-	#endif
-		if(HP.dSDM.ChartPower.get_present())       { _ftoa(Socket[thread].outBuf,(float)HP.dSDM.ChartPower.get_Point(i),2); strcat(Socket[thread].outBuf,";"); }
-		if(HP.ChartFullCOP.get_present())       { _ftoa(Socket[thread].outBuf,(float)HP.ChartFullCOP.get_Point(i)/100.0,2); strcat(Socket[thread].outBuf,";"); }
-#endif
-
+	for(uint16_t point = 0; point < HP.Charts[0]->get_num(); point++) { // По всем точкам
+		itoa(point + 1, Socket[thread].outBuf, 10);
+		for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+			if(ChartsSetup[i].number != CHART_ON_FLY) {
+				strcat(Socket[thread].outBuf, ";");
+				_dtoa(Socket[thread].outBuf, HP.Charts[i]->get_Point(point), 2);
+			}
+		}
 		STR_END;
-		s=strlen(Socket[thread].outBuf);
-		if(sendPacketRTOS(thread,(byte*)Socket[thread].outBuf,s,0)==0) return 0 ;                          // передать пакет, при ошибке выйти
-		sum=sum+s;
-
-	}  // for
-	return sum;
+		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0) == 0) return; // передать пакет, при ошибке выйти
+	}
 }
 
 /*

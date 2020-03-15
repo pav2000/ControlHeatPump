@@ -144,7 +144,6 @@ class sensorTemp
     uint16_t get_save_size(void) { return (byte*)&setup_flags - (byte*)&number + sizeof(setup_flags); } // Размер структуры сохранения
     void  	 after_load();                         		// Инициализация после загрузки
     int8_t   inc_error(void);				   		    // Увеличить счетчик ошибок
-    statChart Chart;                                    // Статистика по датчику
     
     #ifdef SENSOR_IP                                    // Удаленные устройства  #ifdef SENSOR_IP
      sensorIP *devIP;                                   // Ссылка на привязаный датчик (класс) если NULL привявязки нет

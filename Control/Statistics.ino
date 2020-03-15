@@ -242,7 +242,7 @@ void Statistics::Init(uint8_t newyear)
 											Stats_data[i].value = val * 1000;
 										}
 										break;
-									case STATS_OBJ_COP:
+									case STATS_OBJ_COP_Full:
 										Stats_data[i].value = val * 100;
 										break;
 									default:
@@ -379,15 +379,8 @@ void Statistics::Update()
 			break;
 		case STATS_OBJ_Power: {
 			int32_t *ptr = NULL;
-			if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
-				newval = HP.powerCO; // Вт
-				ptr = &motohour_OUT_work;
-			} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
-				newval = HP.powerGEO; // Вт
-			} else if(Stats_data[i].number == OBJ_power220) { // Электричество
-				newval = HP.power220; // Вт
-				ptr = &motohour_IN_work;
-			} else continue;
+			newval = HP.power220; // Вт
+			ptr = &motohour_IN_work;
 			switch(Stats_data[i].type) {
 			case STATS_TYPE_SUM:
 			//case STATS_TYPE_AVG:
@@ -396,23 +389,42 @@ void Statistics::Update()
 			}
 			break;
 		}
-		case STATS_OBJ_COP:
-			if(Stats_data[i].type == STATS_TYPE_AVG) continue;
-			if(Stats_data[i].number == OBJ_COP_Compressor) {
-				newval = HP.COP;
-			} else if(Stats_data[i].number == OBJ_COP_Full) {
-#ifdef STATS_SKIP_COP_WHEN_RELAY_ON
-				static uint8_t skip_by_relay = 0;
-				if(HP.dRelay[STATS_SKIP_COP_WHEN_RELAY_ON].get_Relay()) {
-					skip_by_relay = 30 / (TIME_READ_SENSOR / 1000); // 30 sec pause
-					skip_value = 1;
-				} else if(skip_by_relay) {
-					skip_by_relay--;
-					skip_value = 1;
-				}
-#endif
-				newval = HP.fullCOP;
+		case STATS_OBJ_Power_GEO: {
+			int32_t *ptr = NULL;
+			newval = HP.powerGEO; // Вт
+			switch(Stats_data[i].type) {
+			case STATS_TYPE_SUM:
+			//case STATS_TYPE_AVG:
+				newval = newval * tm / 3600; // в мВтч
+				if(ptr) *ptr += newval; // для motoHour
 			}
+			break;
+		}
+		case STATS_OBJ_Power_OUT: {
+			int32_t *ptr = NULL;
+			newval = HP.powerOUT; // Вт
+			ptr = &motohour_OUT_work;
+			switch(Stats_data[i].type) {
+			case STATS_TYPE_SUM:
+			//case STATS_TYPE_AVG:
+				newval = newval * tm / 3600; // в мВтч
+				if(ptr) *ptr += newval; // для motoHour
+			}
+			break;
+		}
+		case STATS_OBJ_COP_Full:
+			if(Stats_data[i].type == STATS_TYPE_AVG) continue;
+#ifdef STATS_SKIP_COP_WHEN_RELAY_ON
+			static uint8_t skip_by_relay = 0;
+			if(HP.dRelay[STATS_SKIP_COP_WHEN_RELAY_ON].get_Relay()) {
+				skip_by_relay = 30 / (TIME_READ_SENSOR / 1000); // 30 sec pause
+				skip_value = 1;
+			} else if(skip_by_relay) {
+				skip_by_relay--;
+				skip_value = 1;
+			}
+#endif
+			newval = HP.fullCOP;
 			if(newval == 0) skip_value = 1;
 			break;
 		case STATS_OBJ_Sun:
@@ -467,15 +479,11 @@ void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
 			case STATS_OBJ_Power:
 				strcat(ret, "W");		// ось мощность
 				break;
-			case STATS_OBJ_COP:
+			case STATS_OBJ_COP_Full:
 				strcat(ret, "C");		// ось COP
 				break;
 			case STATS_OBJ_Compressor:
-				switch(HistorySetup[i].number) {
-				case OBJ_Freq:
-					strcat(ret, "H");
-					break;
-				}
+				strcat(ret, "H");
 				break;
 			case STATS_OBJ_Flow:
 				strcat(ret, "F");	// ось частота
@@ -521,22 +529,20 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		break;
 	case STATS_OBJ_Power:
 		if(flag) strcat(ret, "W"); // ось мощность
-		if(Stats_data[i].number == OBJ_powerCO) { // Система отопления
-			strcat(ret, "Выработано, кВтч"); // хранится в Вт
-		} else if(Stats_data[i].number == OBJ_powerGEO) { // Геоконтур
-			strcat(ret, "Геоконтур, кВтч"); // хранится в Вт
-		} else if(Stats_data[i].number == OBJ_power220) { // Геоконтур
-			strcat(ret, "Потребление, кВт"); // хранится в Вт
-			if(Stats_data[i].type == STATS_TYPE_SUM) strcat(ret, "ч");
-		}
+		strcat(ret, "Потребление, кВт"); // хранится в Вт
+		if(Stats_data[i].type == STATS_TYPE_SUM) strcat(ret, "ч");
 		break;
-	case STATS_OBJ_COP:
+	case STATS_OBJ_Power_GEO:
+		if(flag) strcat(ret, "W"); // ось мощность
+		strcat(ret, "Геоконтур, кВтч"); // хранится в Вт
+		break;
+	case STATS_OBJ_Power_OUT:
+		if(flag) strcat(ret, "W"); // ось мощность
+		strcat(ret, "Выработано, кВтч"); // хранится в Вт
+		break;
+	case STATS_OBJ_COP_Full:
 		if(flag) strcat(ret, "C"); // ось COP
-		if(Stats_data[i].type == STATS_TYPE_AVG || Stats_data[i].number == OBJ_COP_Full) {
-			strcat(ret, "Полный COP");
-		} else if(Stats_data[i].number == OBJ_COP_Compressor) {
-			strcat(ret, "COP");
-		}
+		strcat(ret, "Полный COP");
 		break;
 	case STATS_OBJ_Compressor:
 		strcat(ret, "Моточасы, м");
@@ -602,7 +608,7 @@ xSkipEmpty:
 			int_to_dec_str(val, 1000, ret, 3);
 		}
 		break;
-	case STATS_OBJ_COP:
+	case STATS_OBJ_COP_Full:
 		if(Stats_data[i].type == STATS_TYPE_AVG) int_to_dec_str(Stats_data[Stats_data[i].when].value / (Stats_data[Stats_data[i].number].value / 100), 100, ret, 2);
 		else int_to_dec_str(val, 100, ret, 2);
 		break;
@@ -975,23 +981,15 @@ void Statistics::History()
 			break;
 #endif
 		case STATS_OBJ_Compressor:
-//			switch(HistorySetup[i].number) {
-//			case OBJ_Freq:
-				int_to_dec_str(HP.dFC.get_frequency(), 10, &buf, 0); // H
-//				break;
-//			}
+			int_to_dec_str(HP.dFC.get_frequency(), 10, &buf, 0); // H
 			break;
 		case STATS_OBJ_Power:
-			switch(HistorySetup[i].number) {
-			case OBJ_power220:
-				int_to_dec_str(HP.power220, 1, &buf, 0);  // W
-				break;
-			case OBJ_powerCO:
-				int_to_dec_str(HP.powerCO, 1, &buf, 0); // W
-				break;
-			}
+			int_to_dec_str(HP.power220, 1, &buf, 0);  // W
 			break;
-		case STATS_OBJ_COP:
+		case STATS_OBJ_Power_OUT:
+			int_to_dec_str(HP.powerOUT, 1, &buf, 0); // W
+			break;
+		case STATS_OBJ_COP_Full:
 			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C
 			break;
 		}

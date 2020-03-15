@@ -20,18 +20,20 @@ function createChart(values, resultdiv) {
 		dataSeries3.splice(0,dataSeries3.length);
 		dataSeries4.splice(0,dataSeries4.length);
 	}
-	if(title == 'Overheat') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
-		ReadyMask |= 1;
-	} else if(title == 'posEEV') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
-		ReadyMask |= 2;
-	} else if(title == 'Overheat2') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
-		ReadyMask |= 4;
-	} else if(title == 'TCOMP-TCON' && showdelta) {
-		for(var i = 0; i < data.length - 1; i++) dataSeries4.push([i, Number(data[i])]);
-		ReadyMask |= 8;
+	if(data.length > 1) {
+		if(data[0] == '2') {
+			for(var i = 1; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+			ReadyMask |= 1;
+		} else if(data[0] == '10') {
+			for(var i = 1; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
+			ReadyMask |= 2;
+		} else if(data[0] == '3') {
+			for(var i = 1; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
+			ReadyMask |= 4;
+		} else if(data[0] == '5' && showdelta) {
+			for(var i = 1; i < data.length - 1; i++) dataSeries4.push([i, Number(data[i])]);
+			ReadyMask |= 8;
+		}
 	}
 	if(ReadyMask != (showdelta ? 15 : 7)) return;
 	ReadyMask = 0;

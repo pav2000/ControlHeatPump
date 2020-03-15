@@ -18,6 +18,7 @@
 
 #ifndef Config_h
 #define Config_h
+#include "SCharts.h"
 #include <Ethernet.h>                       // Нужна для определения SPI_RATE в w5100.h
 
 // --------------------------------------------------------------------------------
@@ -32,53 +33,6 @@
 //#define CONFIG_5		// pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
 //#define CONFIG_6		// NTC      Частотник PWM, 1 фаза, 4 реле, ЭРВ, NTC
 #define CONFIG_7		// vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
-
-// Определения нужные в этом файле ====================================================================================
-//  Перечисляемый тип -ТИПЫ датчиков сухой контакт
-enum TYPE_SENSOR          
-{
-  pALARM,                    // 0 Аварийный датчик, его срабатываение приводит к аварии и останове Тн
-  pSENSOR,                   // 1 Обычный датчик, его значение используется в алгоритмах ТН, его изменение не приводит к ошибке.
-  pPULSE,                    // 2 Импульсный висит на прерывании и считает частоты - выходная величина ЧАСТОТА не используется
-  pEND13                     // Обязательно должен быть последним, добавляем ПЕРЕД!!!
-};
-struct CORRECT_POWER220_STRUCT {
-	uint8_t  num;	// номер реле
-	int16_t  value; // Вт
-};
- 
-enum {
-	STATS_OBJ_Temp = 0,		// °C
-	STATS_OBJ_Press,		// bar
-	STATS_OBJ_PressTemp,	// °C
-	STATS_OBJ_Flow,			// м³ч
-	STATS_OBJ_Voltage,		// V
-	STATS_OBJ_Power,		// кВт*ч, пока только TYPE_SUM для OBJ_*
-	STATS_OBJ_Compressor,
-	STATS_OBJ_COP,			//
-	STATS_OBJ_Sun,
-	STATS_OBJ_EEV			// ЭРВ
-};
-enum {
-	STATS_EEV_Steps = 0,	// Шаги
-	STATS_EEV_Percent,		// %
-	STATS_EEV_OverHeat,		// Перегрев
-	STATS_EEV_OverCool,		// Переохлаждение
-};
-enum {
-	OBJ_powerCO = 0,
-	OBJ_powerGEO,
-	OBJ_power220,
-	OBJ_COP_Compressor,
-	OBJ_COP_Full,
-	OBJ_Freq
-};
-struct History_setup {
-	uint8_t		object;			// STATS_OBJ_*
-	uint8_t 	number;			// номер датчика
-	const char *name;			// Заголовок
-};
-// Конец определений ==================================================================================================
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -3227,7 +3181,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   7 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_7    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
 
     #define CONFIG_NAME   "vad7"
     #define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -3331,7 +3285,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#endif
 	#define REBOOT_ON_I2C_ERRORS				// Soft RESET при постоянной ошибке I2C
 
-	#define MQTT                             // признак использования MQTT, при неиспользовании необходимо закоментировать
+	//#define MQTT                             // признак использования MQTT, при неиспользовании необходимо закоментировать
 
       // FREE RTOS  Размеры стеков задач -----------------------------------------------
      #define STACK_vUpdateCommand  174                              // Стек задачи выполнение команд управления (разбор очереди комманд)
@@ -3635,9 +3589,9 @@ const char *noteTemp[] = {"Температура улицы",
     //#define TCONIN      0   // Температура на входе конденсатора (по фреону)
     //#define TACCUM      0   // Температура на выходе теплоаккмулятора
     // Наличие датчика в конфигурации: 0 - нет, >0 - есть, +2(бит_1) - выводить датчик отдельно внизу на странице "схема ТН" (если бит_0 = 0 - то только когда привязан)
-    //                                                     +4(бит_2) - не строить график в ОЗУ
+    //                                                     +4(бит_2) - Логировать при ошибках
     //...................................0.....1.....2.....3.....4.....5.....6.....7.....8.....9....10....11....12....13....14....15....16....17....18....19....20....21....22....23....
-    const uint8_t SENSORTEMP[TNUMBER]={    5,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    7,    7,    7,    7,    4,    6,    6,    6,    6,    6,    5,    5 };
+    const uint8_t SENSORTEMP[TNUMBER]={    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    7,    7,    7,    7,    4,    6,    6,    6,    6,    6,    1,    1 };
     // минимальные значения температур                                                                                                                                                
     const int16_t MINTEMP[TNUMBER] = { -4000,-1000,-1000,-1000,-2000,-2000,-2000,-2000,-2000,-2000,-4000,-2000,-2000,-3000,-3000,-3000,-3000,-2000,-2000,-2000,-2000,-2000,-2000,-2000 };
     // Макимальные значения температур, ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300                                              
@@ -3729,10 +3683,10 @@ const char *noteTemp[] = {"Температура улицы",
 							  "POUT"
                             };
   // Описание датчиков
-  const char *notePress[] = {"Датчик давления кипения",
-                             "Датчик давления конденсации",
-  	  	  	  	  	  	  	 "Датчик давления геоконтура",
-							 "Датчик давления отопления"};
+  const char *notePress[] = {"Давление кипения",
+                             "Давление конденсации",
+  	  	  	  	  	  	  	 "Давление геоконтура",
+							 "Давление отопления"};
 
   // Номера каналов АЦП, в нумерации SAM3X (AD*):
   #define ADC_SENSOR_PEVA		13		// X33.  датчик давления испарителя
@@ -3772,9 +3726,48 @@ const char *noteTemp[] = {"Температура улицы",
   #define FEED      sTemp[TCONOUTG].get_Temp()       // Подача системы CO
   #define RET       sTemp[TCONING].get_Temp()        // Обратка системы CO
 
-  // История (графики)
+  // Графики в памяти
+	Charts_Mod_setup ChartsModSetup[] = {
+		{ STATS_OBJ_Temp, TOUT },
+		{ STATS_OBJ_Temp, TIN },
+		{ STATS_OBJ_Temp, TBOILER },
+		{ STATS_OBJ_Temp, TCOMP },
+		{ STATS_OBJ_Temp, TEVAING },
+		{ STATS_OBJ_Temp, TEVAOUTG },
+		{ STATS_OBJ_Temp, TCONING },
+		{ STATS_OBJ_Temp, TCONOUTG },
+		{ STATS_OBJ_Temp, TEVAOUT },
+		{ STATS_OBJ_Temp, TCONOUT },
+		{ STATS_OBJ_Temp, TSUN },
+		{ STATS_OBJ_Temp, TSUNOUTG },
+		{ STATS_OBJ_Flow, FLOWEVA },
+		{ STATS_OBJ_Flow, FLOWCON },
+		{ STATS_OBJ_Press, PGEO },
+		{ STATS_OBJ_Press, POUT },
+		{ STATS_OBJ_PressTemp, PEVA },
+		{ STATS_OBJ_PressTemp, PCON }
+	};
+	const Charts_Const_setup ChartsConstSetup[] = {
+		{ STATS_OBJ_EEV, 0, "ЭРВ" },
+		{ STATS_OBJ_Overheat, 0, "Перегрев" },
+		{ STATS_OBJ_Overheat2, 0, "Перегрев на входе компрессора" },
+		{ STATS_OBJ_Compressor, 0, "Частота, Гц" },
+		{ STATS_OBJ_Power_FC, 0, "Мощность компрессора" },
+		{ STATS_OBJ_Power, 0, "Потребляемая мощность" },
+		{ STATS_OBJ_COP_Full, 0, "COP" }
+	};
+	const Charts_Const_setup ChartsOnFlySetup[] = {
+		{ STATS_OBJ_Overcool, "Переохлаждение" },
+		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" },
+		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" },
+		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" },
+		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" },
+		{ STATS_OBJ_Power_OUT, "Выходная мощность" }
+	};
+
+	// История (графики) на SD карте
 	const History_setup HistorySetup[] = {
-		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
+		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
 		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
 		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
 		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
@@ -3794,9 +3787,9 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
 		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
 		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
-		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "COP" },
+		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
+		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
+		{ STATS_OBJ_COP_Full, 0, "COP" },
 		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
 		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
 		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }

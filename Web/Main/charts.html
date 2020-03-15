@@ -9,16 +9,20 @@
 <script type="text/javascript" src="exporting.js"></script>
 <script type='text/javascript'>
 function createChart(values, resultdiv) {
-	var title = values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, "");
-	var yizm = '';
-	if(/^(T|O|d)/g.test(title)) { yizm = "Температура, °C"; }
-	if(/^PE/g.test(title)) { yizm = "Давление, BAR"; }
-	if(/^pos/g.test(title)) { yizm = "Позиция"; ytooltip = ""; }
-	if(/^R/g.test(title)) { yizm = "Состояние реле"; }
-	if(/^Pow|pow/g.test(title)) { yizm = "Мощность, кВт"; }
+	var title = document.getElementById("get_listchart").options[Number(values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, ""))].value;
 	var data = values[1].split(';');
+	var yizm = "";
+	if(data.length > 0) {
+		var n = Number(data[0]);
+		if(n >= 0 && n < 8) { yizm = "Температура, °C"; }
+		else if(n == 8) { yizm = "Давление, бар"; }
+		else if(n == 9) { yizm = "Проток, м³ч"; }
+		else if(n == 10) { yizm = "Позиция"; ytooltip = ""; }
+		else if(n >= 12 && n < 16 ) { yizm = "Мощность, кВт"; }
+		else if(n == 20) { yizm = "Состояние реле"; }
+	}
 	var dataSeries1 = [];
-	for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+	for(var i = 1; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
 	$('#' + resultdiv).highcharts({
 		title: {
 			text: title,
@@ -120,16 +124,16 @@ window.onload = function() {
 <body class="charts">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Графики	<div style="float:right; font-size:14px;color:black;"> <input type="submit" value="Обновить всё"  onclick="setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4')">
+	<h1>Графики <input style="float:none" type="submit" value="Настройки" onclick="location.assign('charts-set.html')"> <div style="float:right; font-size:14px;color:black;"> <input type="submit" value="Обновить всё" onclick="setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4')">
 	 Автообновление графиков: <input id="autoupdate"  type="checkbox" onclick="" > <select style="display:none" id="get_ohp-time_chart" disabled></select></div></h1>
 	<div class="allcharts">
-		<div>График: <select name="chrt_sel" id="get_listchart" onchange="setParam('get_listChart','chart1')"></select> <input type="submit" value="Обновить"  onclick="setParam('get_listChart','chart1')">
+		<div>График: <select name="chrt_sel" id="get_listchart" onchange="setParam('get_listChart','chart1')"></select> <input type="submit" value="Обновить" onclick="setParam('get_listChart','chart1')">
 		<div id="chart1">График не выбран</div></div>
-		<div>График: <select name="chrt_sel" id="get_listchart2" onchange="setParam('get_listChart2','chart2')"></select> <input type="submit" value="Обновить"  onclick="setParam('get_listChart2','chart2')">
+		<div>График: <select name="chrt_sel" id="get_listchart2" onchange="setParam('get_listChart2','chart2')"></select> <input type="submit" value="Обновить" onclick="setParam('get_listChart2','chart2')">
 		<div id="chart2">График не выбран</div></div>
-		<div>График: <select name="chrt_sel" id="get_listchart3" onchange="setParam('get_listChart3','chart3')"></select> <input type="submit" value="Обновить"  onclick="setParam('get_listChart3','chart3')">
+		<div>График: <select name="chrt_sel" id="get_listchart3" onchange="setParam('get_listChart3','chart3')"></select> <input type="submit" value="Обновить" onclick="setParam('get_listChart3','chart3')">
 		<div id="chart3">График не выбран</div></div>
-		<div>График: <select name="chrt_sel" id="get_listchart4" onchange="setParam('get_listChart4','chart4');"></select> <input type="submit" value="Обновить"  onclick="setParam('get_listChart4','chart4')">
+		<div>График: <select name="chrt_sel" id="get_listchart4" onchange="setParam('get_listChart4','chart4');"></select> <input type="submit" value="Обновить" onclick="setParam('get_listChart4','chart4')">
 		<div id="chart4">График не выбран</div></div>
 	</div>
 </div>

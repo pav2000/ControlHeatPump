@@ -28,6 +28,7 @@
 #include "OmronFC.h"
 #include "VaconFC.h"
 #include "Scheduler.h"
+
 extern char *MAC2String(byte* mac);
 
 int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
@@ -151,6 +152,7 @@ struct type_optionHP
  uint16_t maxBackupPower;		     	// Максимальная мощность при питании от генератора (Вт)
  int16_t  SunTempOn;					// Температура выше которой открывается СК
  int16_t  SunTempOff;					// Температура ниже которой закрывается СК
+ uint16_t MinCompressorOn;              // Минимальное время работы компрессора в секундах
 };// __attribute__((packed));
 
 
@@ -448,26 +450,25 @@ class HeatPump
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
       
    
-    // функции для работой с графикками
+    // Графики в памяти
     uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
-    void updateChart();                                     // обновить статистику
-    void startChart();                                      // Запуститьь статистику
-    char * get_listChart(char* str);				          // получить список доступных графиков
-    void get_Chart(char *var,char* str);   				   // получить данные графика
-  
-    // графики не по датчикам (по датчикам она хранится внутри датчика)
-    statChart ChartRCOMP;                                   // Статистика по включению компрессора
-    
-    #ifdef EEV_DEF
-    statChart ChartOVERHEAT;                                // перегрев
-    statChart ChartOVERHEAT2;                               // перегрев2
-    statChart ChartTPEVA;                                   // температура расчитанная из давления испариения
-    statChart ChartTPCON;                                   // температура расчитанная из давления Конденсации
-    #endif
-    statChart ChartCOP;                                     // Коэффициент преобразования
-    statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
-    
-    float powerCO;                                          // Мощность системы отопления, Вт
+    void updateChart();                                    // обновить статистику
+    void clearChart();                                     // Запуститьь статистику
+    void get_listChart(char* str);				           // получить список доступных графиков
+    void get_Chart(int index, char *str);                  // получить данные графика
+    statChart ChartsMods[sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0])];
+    statChart ChartsConst[sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0])];
+    uint8_t Chart_PressTemp_PCON;
+    uint8_t Chart_Temp_TCONOUT;
+    uint8_t Chart_Temp_TCOMP;
+    uint8_t Chart_Temp_TCONOUTG;
+    uint8_t Chart_Temp_TCONING;
+    uint8_t Chart_Temp_TEVAING;
+    uint8_t Chart_Temp_TEVAOUTG;
+    uint8_t Chart_Flow_FLOWCON;
+    uint8_t Chart_Flow_FLOWEVA;
+
+    float powerOUT;                                         // Мощность выходная, Вт
     float powerGEO;                                         // Мощность системы GEO, Вт
     float power220;                                         // Мощность системы 220, Вт
     int32_t fullCOP;                                        // Полный СОР сотые

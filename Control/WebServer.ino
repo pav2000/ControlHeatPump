@@ -38,7 +38,7 @@ extern void  get_fileSettings(uint8_t thread);
 extern void  get_txtJournal(uint8_t thread);
 extern uint16_t get_csvStatistic(uint8_t thread);
 extern void  get_datTest(uint8_t thread);
-extern uint16_t get_csvChart(uint8_t thread);
+extern void  get_csvChart(uint8_t thread);
 extern int16_t  get_indexNoSD(uint8_t thread);
 extern void  noCsvStatistic(uint8_t thread);
 
@@ -842,7 +842,7 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_PowerCO") == 0)
 		{
-			_ftoa(strReturn, HP.powerCO/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
+			_ftoa(strReturn, HP.powerOUT/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_PowerGEO") == 0)
 		{
@@ -1509,6 +1509,13 @@ void parserGET(uint8_t thread, int8_t )
 			} else if(strcmp(str,"Flow")==0)     // Функция get_tblFlow
 			{
 				for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
+			} else if(strcmp(str,"Charts")==0) {    // Функция get_tblCharts
+				for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+					if(ChartsSetup[i].number != CHART_ON_FLY) {
+						_itoa(i, strReturn);
+						strcat(strReturn, ";");
+					}
+				}
 			} else if(strcmp(str,"PDS")==0) {    // Функция get_tblPDS
 				for(i = 0; i < DAILY_SWITCH_MAX; i++) {
 					if(HP.Prof.DailySwitch[i].Device == 0) {
@@ -1904,11 +1911,20 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			//11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
-			if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
-			{
-				HP.get_Chart(x,strReturn);
-				ADD_WEBDELIM(strReturn); continue;
+			//11.  Графики -------------------------------------------
+			if(strncmp(str + 1, "et_Chart", 8) == 0) {
+				l_i32 = atoi(x);
+				char c = str[9];
+				if(c == '\0') {					// Функция get_Chart - получить график
+					HP.get_Chart(l_i32, strReturn);
+				} else if(l_i32 >= 0 && l_i32 < (int32_t)(sizeof(ChartsSetup) / sizeof(ChartsSetup[0]))) {
+					if(*str == 's') {					// set_ChartX
+						Charts_set_param(l_i32, c, z);
+					}
+					Charts_get_param(l_i32, c, strReturn); // get_ChartX
+				}
+				ADD_WEBDELIM(strReturn);
+				continue;
 			}
 
 			//12.  Частотный преобразователь -----------------------------------------------------------------
@@ -1923,7 +1939,7 @@ void parserGET(uint8_t thread, int8_t )
 				STORE_DEBUG_INFO(36);
 				if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 					if (HP.dFC.set_paramFC(x,pm)) HP.dFC.get_paramFC(x,strReturn);
-					else  strcat(strReturn,"E27");  // выход за диапазон значений
+					else  strcat(strReturn,"E27");  // выход за диапазон зна\чений
 				} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
 				ADD_WEBDELIM(strReturn);
 				continue;
@@ -1964,7 +1980,6 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 			STORE_DEBUG_INFO(37);
-
 
 			// str - полное имя запроса до (), x - содержит строку что между (), z - после =
 			// код обработки установки значений модбас

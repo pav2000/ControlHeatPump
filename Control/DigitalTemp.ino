@@ -34,7 +34,6 @@ void sensorTemp::initTemp(int sensor)
       flags=0x00;                              // Сбросить все флаги
 
       if(SENSORTEMP[sensor]) SETBIT1(flags, fPresent); // наличие датчика в текушей конфигурации
-      Chart.init(SENSORTEMP[sensor] && !(SENSORTEMP[sensor] & 4));     // инициалазация статистики, если датчик есть и бит_2 = 0
       memset(address, 0, sizeof(address));	   // обнуление адресс датчика
       busOneWire = NULL;
       testMode = NORMAL;                         // Значение режима тестирования

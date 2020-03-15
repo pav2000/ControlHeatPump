@@ -32,6 +32,9 @@ const boolean _resume = false;  // Команда возобновления р�
 #define COMPRESSOR_ON   { if(dFC.get_present()) dFC.start_FC(); else dRelay[RCOMP].set_ON(); startCompressor = rtcSAM3X8.unixtime(); }  // Включить компрессор в зависимости от наличия инвертора
 #define COMPRESSOR_OFF  { if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF(); stopCompressor = rtcSAM3X8.unixtime(); } // Выключить компрессор в зависимости от наличия инвертора
 
+//struct size
+//char checker(int); char checkSizeOfInt1[sizeof(ChartsSetup)]={checker(&checkSizeOfInt1)};
+
 // Установка критической ошибки для класса ТН вызывает останов ТН
 // Возвращает ошибку останова ТН
 int8_t set_Error(int8_t _err, char *nam)
@@ -124,31 +127,14 @@ void HeatPump::initHeatPump()
 	clMQTT.initMQTT(MAIN_WEB_TASK);                            // Инициализация MQTT, параметр - номер потока сервера в котором идет отправка
 #endif
 
-	// инициализация статистика дополнительно помимо датчиков
-	ChartRCOMP.init(!dFC.get_present());               // Статистика по включению компрессора только если нет частотника
-#ifdef EEV_DEF
-	ChartOVERHEAT.init(true);                          // перегрев
-	ChartOVERHEAT2.init(true);                         // перегрев2
-	ChartTPEVA.init(sADC[PEVA].get_present());         // температура расчитанная из давления  кипения
-	if(sADC[PCON].get_present()) ChartTPCON.init(sADC[PCON].get_present());  // температура расчитанная из давления  конденсации
-	else ChartTPCON.init(sTemp[TCONOUTG].get_present());  // Если датчика высокого давления нет то конденсацию рассчитываем по формуле sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200;
-
-#endif
-
-	for(i = 0; i < FNUMBER; i++)   // По всем частотным датчикам
-	{
-		if(strcmp(sFrequency[i].get_name(), "FLOWCON") == 0)                          // если есть датчик потока по конденсатору
-		{
-			ChartCOP.init(dFC.get_present() & sFrequency[i].get_present() & sTemp[TCONING].get_present() & sTemp[TCONOUTG].get_present()); // Коэффициент преобразования
-			//   SerialDbg.print("StatCOP="); SerialDbg.println(dFC.get_present()&sFrequency[i].get_present()&sTemp[TCONING].get_present()&sTemp[TCONOUTG].get_present()) ;
+	// Графики в памяти
+	memset(Charts, 0, sizeof(Charts));
+	for(i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+		if(ChartsSetup[i].number != CHART_ON_FLY) {
+			Charts[i] = new statChart();
+			Charts[i]->init(true);
 		}
-
 	}
-#ifdef USE_ELECTROMETER_SDM
-#ifdef FLOWCON
-	if((sTemp[TCONOUTG].Chart.get_present()) && (sTemp[TCONING].Chart.get_present())) ChartFullCOP.init(true);  // ПОЛНЫЙ Коэффициент преобразования
-#endif
-#endif
 
 	resetSettingHP();                                          // все переменные
 }
@@ -436,7 +422,7 @@ x_Error:
 	}
 	journal.jprintf(", size %d, crc: ", size + 2); // sizeof(crc)
 	size -= 2;
-	#ifdef LOAD_VERIFICATION
+#ifdef LOAD_VERIFICATION
 	
 	uint16_t crc = 0xFFFF;
 	for(uint16_t i = 0; i < size; i++)  crc = _crc16(crc, buffer[i]);
@@ -445,9 +431,9 @@ x_Error:
 		return error = ERR_CRC16_EEPROM;
 	}
 	journal.jprintf("%04x", crc);
-	#else
+#else
 	journal.jprintf("*No verification");
-	#endif
+#endif
 	uint8_t *buffer_max = buffer + size;
 	size += 2;
 	load_struct(&Option, &buffer, sizeof(Option));
@@ -1025,7 +1011,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_PUMP_WORK)==0)        {if ((x>=0)&&(x<=65535)) {Option.workPump=x; return true;} else return false;}else                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((x>=0)&&(x<=65535)) {Option.pausePump=x; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
    if(strcmp(var,option_ATTEMPT)==0)          { if ((x>=0)&&(x<=255)) {Option.nStart=x; return true;} else return false;  }else                // число попыток пуска
-   if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) startChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
+   if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) clearChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
    if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = x; return true;} else
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
    if(strcmp(var,option_NEXTION)==0)          { Option.flags = (Option.flags & ~(1<<fNextion)) | ((x!=0)<<fNextion); updateNextion(); return true; } else            // использование дисплея nextion
@@ -1051,7 +1037,8 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SunRegGeoTempGOff)==0){ Option.SunRegGeoTempGOff = rd(x, 100); return true; }else
    if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
    if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
-   if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else                         // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = x; return true; }else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -1102,6 +1089,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SunTDelta)==0)        {_ftoa(ret,(float)Option.SunTDelta/100,1); return ret; }else
    if(strcmp(var,option_SunGTDelta)==0)       {_ftoa(ret,(float)Option.SunGTDelta/100,1); return ret; }else
    if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+   if(strcmp(var,option_MinCompressorOn)==0)  {return _itoa(Option.MinCompressorOn, ret); } else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
    if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {return _itoa(Option.delayOffPump,ret);}else      // Задержка выключения насосов после выключения компрессора (сек).
    if(strcmp(var,option_DELAY_START_RES)==0)  {return _itoa(Option.delayStartRes,ret);}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
@@ -1132,238 +1120,99 @@ void HeatPump::set_profile()
 // Все значения в графиках целочислены (сотые), выводятся в формате 0.01
 void  HeatPump::updateChart()
 {
-	uint8_t i;
-	for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present())  sTemp[i].Chart.addPoint(sTemp[i].get_Temp());
-#ifndef MIN_RAM_CHARTS
-	for(i=0;i<ANUMBER;i++)
-#else
-	for(i=PCON+1;i<ANUMBER;i++)
-#endif
-		if(sADC[i].Chart.get_present()) sADC[i].Chart.addPoint(sADC[i].get_Press());
-	for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) sFrequency[i].Chart.addPoint(sFrequency[i].get_Value() / 10); // Частотные датчики 
+	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+		if(Charts[i] && ChartsSetup[i].number != CHART_ON_FLY ) {
+			if(ChartsSetup[i].object == STATS_OBJ_Temp) Charts[i]->add_Point(sTemp[ChartsSetup[i].number].get_Temp());
+			else if(ChartsSetup[i].object == STATS_OBJ_Press) Charts[i]->add_Point(sADC[ChartsSetup[i].number].get_Press());
+			else if(ChartsSetup[i].object == STATS_OBJ_PressTemp) Charts[i]->add_Point(PressToTemp(ChartsSetup[i].number));
+			else if(ChartsSetup[i].object == STATS_OBJ_Flow) Charts[i]->add_Point(sFrequency[ChartsSetup[i].number].get_Value() / 10);
 #ifdef EEV_DEF
 #ifdef EEV_PREFER_PERCENT
-	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.calc_percent(dEEV.get_EEV()));
+			else if(ChartsSetup[i].object == STATS_OBJ_EEV) Charts[i]->add_Point(dEEV.calc_percent(dEEV.get_EEV()));
 #else
-	if(dEEV.Chart.get_present())     dEEV.Chart.addPoint(dEEV.get_EEV());
+			else if(ChartsSetup[i].object == STATS_OBJ_EEV) Charts[i]->add_Point(dEEV.get_EEV());
 #endif
-	if(ChartOVERHEAT.get_present())  ChartOVERHEAT.addPoint(dEEV.get_Overheat());
-	if(ChartOVERHEAT2.get_present()) ChartOVERHEAT2.addPoint(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
-	if(ChartTPEVA.get_present())     ChartTPEVA.addPoint(PressToTemp(PEVA));
-//	if (sADC[PCON].get_present())    // Если датчик высокого давления есть считаем честно
-//    	{ if(ChartTPCON.get_present()) ChartTPCON.addPoint(PressToTemp(PCON));}
-//	else 
-//	    { if(ChartTPCON.get_present()) ChartTPCON.addPoint(sTemp[get_modeHouse()==pCOOL?TEVAOUTG:TCONOUTG].get_Temp() + 200);}
-if(ChartTPCON.get_present()) ChartTPCON.addPoint(get_temp_condensing());
-	
+			else if(ChartsSetup[i].object == STATS_OBJ_Overheat) Charts[i]->add_Point(dEEV.get_Overheat());
+			else if(ChartsSetup[i].object == STATS_OBJ_Overheat2) Charts[i]->add_Point(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
 #endif
-
-	if(dFC.ChartFC.get_present())       dFC.ChartFC.addPoint(dFC.get_frequency());       // факт
-	if(dFC.ChartPower.get_present())    dFC.ChartPower.addPoint(dFC.get_power()/10);
-#ifndef MIN_RAM_CHARTS
-	if(dFC.ChartCurrent.get_present())  dFC.ChartCurrent.addPoint(dFC.get_current());
-#endif
-	if(ChartRCOMP.get_present())     ChartRCOMP.addPoint((int16_t)dRelay[RCOMP].get_Relay());
-
-	if(ChartCOP.get_present())       ChartCOP.addPoint(COP);                     // в сотых долях !!!!!!
+			else if(ChartsSetup[i].object == STATS_OBJ_Compressor) Charts[i]->add_Point(dFC.get_frequency());
+			else if(ChartsSetup[i].object == STATS_OBJ_Power_FC) Charts[i]->add_Point(dFC.get_power() / 10);
+			else if(ChartsSetup[i].object == STATS_OBJ_Current_FC) Charts[i]->add_Point(dFC.get_current());
 #ifdef USE_ELECTROMETER_SDM
-#ifndef MIN_RAM_CHARTS
-	if(dSDM.ChartVoltage.get_present())   dSDM.ChartVoltage.addPoint(dSDM.get_Voltage()*100);
+			else if(ChartsSetup[i].object == STATS_OBJ_Voltage) Charts[i]->add_Point(dSDM.get_Voltage() * 100);
+			else if(ChartsSetup[i].object == STATS_OBJ_Power) Charts[i]->add_Point((int32_t)power220 / 10);
+			else if(ChartsSetup[i].object == STATS_OBJ_COP_Full) Charts[i]->add_Point(fullCOP);
 #endif
-	if(dSDM.ChartPower.get_present())     dSDM.ChartPower.addPoint((int32_t)power220 / 10);
-	//  if(dSDM.ChartPowerFactor.get_present())   dSDM.ChartPowerFactor.addPoint(dSDM.get_PowerFactor()*100);
-	if(ChartFullCOP.get_present())      ChartFullCOP.addPoint(fullCOP);  // в сотых долях !!!!!!
-#endif
+		}
+	}
 }
-
-// сбросить графики в ОЗУ
-void HeatPump::startChart()
-{
- uint8_t i; 
- for(i=0;i<TNUMBER;i++) sTemp[i].Chart.clear();
-#ifndef MIN_RAM_CHARTS
- for(i=0;i<ANUMBER;i++) sADC[i].Chart.clear();
-#else
- for(i=PCON+1;i<ANUMBER;i++) sADC[i].Chart.clear();
-#endif
- for(i=0;i<FNUMBER;i++) sFrequency[i].Chart.clear();
- #ifdef EEV_DEF
- dEEV.Chart.clear();
- ChartOVERHEAT.clear();
- ChartOVERHEAT2.clear();
- ChartTPEVA.clear(); 
- ChartTPCON.clear(); 
- #endif
- dFC.ChartFC.clear();
- dFC.ChartPower.clear();
-#ifndef MIN_RAM_CHARTS
- dFC.ChartCurrent.clear();
-#endif
- ChartRCOMP.clear();
-// ChartRELAY.clear();
- ChartCOP.clear();                                     // Коэффициент преобразования
- #ifdef USE_ELECTROMETER_SDM 
-#ifndef MIN_RAM_CHARTS
- dSDM.ChartVoltage.clear();                              // Статистика по напряжению
-#endif
-
- dSDM.ChartPower.clear();                                // Статистика по Полная мощность
-// dSDM.ChartPowerFactor.clear();                          // Статистика по Коэффициент мощности
- ChartFullCOP.clear();                                     // Коэффициент преобразования
- #endif
-// powerCO=0;
-// powerGEO=0;
-// power220=0;
-}
-
 
 // получить список доступных графиков в виде строки
 // cat true - список добавляется в конец, false - строка обнуляется и список добавляется
-char * HeatPump::get_listChart(char* str)
+void HeatPump::get_listChart(char* str)
 {
-uint8_t i;  
- strcat(str,"none:1;");
- for(i=0;i<TNUMBER;i++) if(sTemp[i].Chart.get_present()) {strcat(str,sTemp[i].get_name()); strcat(str,":0;");}
-#ifndef MIN_RAM_CHARTS
- for(i=0;i<ANUMBER;i++)
-#else
- for(i=PCON+1;i<ANUMBER;i++)
-#endif
-	 if(sADC[i].Chart.get_present()) { strcat(str,sADC[i].get_name()); strcat(str,":0;");}
- for(i=0;i<FNUMBER;i++) if(sFrequency[i].Chart.get_present()) { strcat(str,sFrequency[i].get_name()); strcat(str,":0;");}
- #ifdef EEV_DEF
- if(dEEV.Chart.get_present())      { strcat(str, chart_posEEV); strcat(str,":0;"); }
- if(ChartOVERHEAT.get_present())   { strcat(str,chart_OVERHEAT); strcat(str,":0;"); }
- if(ChartOVERHEAT2.get_present())  { strcat(str,chart_OVERHEAT2); strcat(str,":0;"); }
-#ifdef TCONOUT
- strcat(str, chart_OVERCOOL); strcat(str,":0;");
-#endif
- if(ChartTPEVA.get_present())      { strcat(str,chart_TPEVA); strcat(str,":0;"); }
- if(ChartTPCON.get_present())      {
-	if(sADC[PCON].get_present()) strcat(str,chart_TPCON); else strcat(str,chart_TCON);
-	strcat(str,":0;");
-    strcat(str,chart_TCOMP_TCON); strcat(str,":0;");
- }
- #endif
- if(dFC.ChartFC.get_present())     { strcat(str,chart_freqFC); strcat(str,":0;"); }
- if(dFC.ChartPower.get_present())  { strcat(str,chart_powerFC); strcat(str,":0;"); }
-#ifndef MIN_RAM_CHARTS
- if(dFC.ChartCurrent.get_present()){ strcat(str,chart_currentFC); strcat(str,":0;"); }
-#endif
- if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) { strcat(str,chart_dCO); strcat(str,":0;"); }
- if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) { strcat(str,chart_dGEO); strcat(str,":0;"); }
- #ifdef FLOWCON 
- if((sTemp[TCONOUTG].Chart.get_present())&&(sTemp[TCONING].Chart.get_present())) { strcat(str,chart_PowerCO); strcat(str,":0;"); }
- #endif
- #ifdef FLOWEVA
- if((sTemp[TEVAING].Chart.get_present())&&(sTemp[TEVAOUTG].Chart.get_present())) { strcat(str,chart_PowerGEO); strcat(str,":0;"); }
- #endif
- if(ChartCOP.get_present())        { strcat(str,chart_COP); strcat(str,":0;"); }
-  #ifdef USE_ELECTROMETER_SDM 
-#ifndef MIN_RAM_CHARTS
- if(dSDM.ChartVoltage.get_present()) {   strcat(str,chart_VOLTAGE); strcat(str,":0;"); }
-// if(dSDM.ChartCurrent.get_present()) {    strcat(str,chart_CURRENT); strcat(str,":0;"); }
-#endif
-// if(dSDM.sAcPower.get_present())     strcat(str,"acPOWER:0;");
-// if(dSDM.sRePower.get_present())     strcat(str,"rePOWER:0;");
- if(dSDM.ChartPower.get_present())   {    strcat(str,chart_fullPOWER); strcat(str,":0;"); }
-// if(dSDM.ChartPowerFactor.get_present()) strcat(str,"kPOWER:0;");
- if(ChartFullCOP.get_present())      { strcat(str,chart_fullCOP); strcat(str,":0;"); }
- #endif
-// for(i=0;i<RNUMBER;i++) if(dRelay[i].Chart.get_present()) { strcat(str,dRelay[i].get_name()); strcat(str,":0;");}  
-return str;               
+	strcat(str, "---:1;");
+	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+		strcat(str, ChartsSetup[i].name);
+		strcat(str, ":0;");
+	}
+}
+
+// сбросить графики в ОЗУ
+void HeatPump::clearChart()
+{
+    Chart_PressTemp_PCON = Chart_Temp_TCONOUT = Chart_Temp_TCOMP = Chart_Temp_TCONOUTG = Chart_Temp_TCONING = Chart_Temp_TEVAING = Chart_Temp_TEVAOUTG = Chart_Flow_FLOWCON = Chart_Flow_FLOWEVA = 0;
+	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
+		if(Charts[i] && ChartsSetup[i].number != CHART_ON_FLY) {
+			Charts[i]->clear();
+			if(ChartsSetup[i].object == STATS_OBJ_PressTemp && ChartsSetup[i].number == PCON) Chart_PressTemp_PCON = i;
+			else if(ChartsSetup[i].object == STATS_OBJ_Temp) {
+				if(ChartsSetup[i].number == TCONOUT) Chart_Temp_TCONOUT = i;
+				else if(ChartsSetup[i].number == TCOMP) Chart_Temp_TCOMP = i;
+				else if(ChartsSetup[i].number == TCONOUTG) Chart_Temp_TCONOUTG = i;
+				else if(ChartsSetup[i].number == TCONING) Chart_Temp_TCONING = i;
+				else if(ChartsSetup[i].number == TEVAING) Chart_Temp_TEVAING = i;
+				else if(ChartsSetup[i].number == TEVAOUTG) Chart_Temp_TEVAOUTG = i;
+			} else if(ChartsSetup[i].object == STATS_OBJ_Flow) {
+				if(ChartsSetup[i].number == FLOWCON) Chart_Flow_FLOWCON = i;
+				else if(ChartsSetup[i].number == FLOWEVA) Chart_Flow_FLOWEVA = i;
+			}
+		}
+	}
 }
 
 // получить данные графика  в виде строки, данные ДОБАВЛЯЮТСЯ к str
-void HeatPump::get_Chart(char *var, char* str)
+void HeatPump::get_Chart(int index, char *str)
 {
-	uint8_t i;
-	// В начале имена совпадающие с именами объектов
-	for(i = 0; i < TNUMBER; i++) {
-		if((strcmp(var, sTemp[i].get_name()) == 0) && (sTemp[i].Chart.get_present())) {
-			sTemp[i].Chart.get_PointsStrDiv100(str);
-			return;
-		}
-	}
-#ifndef MIN_RAM_CHARTS
-	for(i = 0; i < ANUMBER; i++) {
-#else
-	for(i = PCON + 1; i < ANUMBER; i++) {
+	if(--index < 0 || index > (int)(sizeof(ChartsSetup) / sizeof(ChartsSetup[0]))) return;
+	_itoa(ChartsSetup[index].object, str);
+	strcat(str, ";");
+	switch (ChartsSetup[index].object) {
+#ifndef EEV_PREFER_PERCENT
+	case STATS_OBJ_EEV:
+		Charts[index]->get_PointsStr(str);
+		break;
 #endif
-		if((strcmp(var, sADC[i].get_name()) == 0) && (sADC[i].Chart.get_present())) {
-			sADC[i].Chart.get_PointsStrDiv100(str);
-			return;
-		}
-	}
-	for(i = 0; i < FNUMBER; i++) {
-		if((strcmp(var, sFrequency[i].get_name()) == 0) && (sFrequency[i].Chart.get_present())) {
-			sFrequency[i].Chart.get_PointsStrDiv100(str);
-			return;
-		}
-	}
-	if(strcmp(var, chart_NONE) == 0) {
-		strcat(str, "");
-#ifdef EEV_DEF
-	} else if(strcmp(var, chart_posEEV) == 0) {
-  #ifdef EEV_PREFER_PERCENT
-		dEEV.Chart.get_PointsStrDiv100(str);
-  #else
-		dEEV.Chart.get_PointsStr(str);
-  #endif
-	} else if(strcmp(var, chart_OVERHEAT2) == 0) {
-		ChartOVERHEAT2.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_OVERHEAT) == 0) {
-		ChartOVERHEAT.get_PointsStrDiv100(str);
-#ifdef TCONOUT
-	} else if(strcmp(var, chart_OVERCOOL) == 0) {
-		ChartTPCON.get_PointsStrSubDiv100(str, &sTemp[TCONOUT].Chart); // считаем график на лету
-#endif
-	} else if(strcmp(var, chart_TPEVA) == 0) {
-		ChartTPEVA.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_TPCON) == 0) {
-		ChartTPCON.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_TCON) == 0)  {
-		ChartTPCON.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_TCOMP_TCON) == 0) {  // График нагнетание - конденсация
-		sTemp[TCOMP].Chart.get_PointsStrSubDiv100(str, &ChartTPCON); // считаем график на лету
-#endif
-	} else if(strcmp(var, chart_freqFC) == 0) {
-		dFC.ChartFC.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_powerFC) == 0) {
-		dFC.ChartPower.get_PointsStrDiv100(str);
-#ifndef MIN_RAM_CHARTS
-	} else if(strcmp(var, chart_currentFC) == 0) {
-		dFC.ChartCurrent.get_PointsStrDiv100(str);
-#endif
-	} else if(strcmp(var, chart_dCO) == 0) {
-		sTemp[TCONOUTG].Chart.get_PointsStrSubDiv100(str, &sTemp[TCONING].Chart); // считаем график на лету экономим оперативку
-	} else if(strcmp(var, chart_dGEO) == 0) {
-		sTemp[TEVAING].Chart.get_PointsStrSubDiv100(str, &sTemp[TEVAOUTG].Chart); // считаем график на лету экономим оперативку
-	} else if(strcmp(var, chart_PowerCO) == 0) {
-#ifdef FLOWCON
-		sFrequency[FLOWCON].Chart.get_PointsStrPower(str, &sTemp[TCONING].Chart, &sTemp[TCONOUTG].Chart, sFrequency[FLOWCON].get_kfCapacity()/*get_Capacity()*/); // считаем график на лету экономим оперативку (поток-десятки литров в час!)
-#else
-		strcat(str, ";");
-#endif
-	} else if(strcmp(var, chart_PowerGEO) == 0) {
-#ifdef FLOWEVA
-		sFrequency[FLOWEVA].Chart.get_PointsStrPower(str, &sTemp[TEVAING].Chart, &sTemp[TEVAOUTG].Chart, sFrequency[FLOWEVA].get_kfCapacity()/*get_Capacity()*/); // считаем график на лету экономим оперативку (поток-десятки литров в час!)
-#else
-		strcat(str, ";");
-#endif
-	} else if(strcmp(var, chart_COP) == 0) {
-		ChartCOP.get_PointsStrDiv100(str);
-#ifdef USE_ELECTROMETER_SDM
-#ifndef MIN_RAM_CHARTS
-	} else if(strcmp(var, chart_VOLTAGE) == 0) {
-		dSDM.ChartVoltage.get_PointsStrDiv100(str);
-	 
-#endif
-	} else if(strcmp(var, chart_fullPOWER) == 0) {
-		dSDM.ChartPower.get_PointsStrDiv100(str);
-	} else if(strcmp(var, chart_fullCOP) == 0) {
-		ChartFullCOP.get_PointsStrDiv100(str);
-#endif
+	case STATS_OBJ_Overcool:
+		Charts[Chart_PressTemp_PCON]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TCONOUT]);
+		break;
+	case STATS_OBJ_TCOMP_TCON:
+		Charts[Chart_Temp_TCOMP]->get_PointsStrSubDiv100(str, Charts[Chart_PressTemp_PCON]);
+		break;
+	case STATS_OBJ_Delta_GEO:
+		Charts[Chart_Temp_TEVAING]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TEVAOUTG]);
+		break;
+	case STATS_OBJ_Delta_OUT:
+		Charts[Chart_Temp_TCONOUTG]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TCONING]);
+		break;
+	case STATS_OBJ_Power_GEO:
+		Charts[Chart_Flow_FLOWEVA]->get_PointsStrPower(str, Charts[Chart_Temp_TEVAING], Charts[Chart_Temp_TEVAOUTG], sFrequency[FLOWEVA].get_kfCapacity());
+		break;
+	case STATS_OBJ_Power_OUT:
+		Charts[Chart_Flow_FLOWCON]->get_PointsStrPower(str, Charts[Chart_Temp_TCONING], Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_kfCapacity());
+		break;
+	default:
+		if(Charts[index]) Charts[index]->get_PointsStrDiv100(str);
 	}
 }
 
@@ -1942,7 +1791,7 @@ int8_t HeatPump::StartResume(boolean start)
 #ifdef CLEAR_CHART_HP_ON
 		journal.jprintf(" Charts clear and start\n");
 		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
-		else startChart();// Запустить графики <- тут не запуск, тут очистка
+		else clearChart();// Запустить графики <- тут не запуск, тут очистка
 #endif
 
 	}
@@ -2429,7 +2278,7 @@ MODE_COMP HeatPump::UpdateHeat()
 	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
-		if(t1>target)                       {Status.ret=pHh3;   return pCOMP_OFF;}          // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > Option.MinCompressorOn) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
 		else if(t1<target-Prof.Heat.dTemp)  {Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
 		else if(RET<Prof.Heat.tempOut)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
@@ -2437,7 +2286,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if(t1>target)     { Status.ret=pHp3; return pCOMP_OFF;}    // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > Option.MinCompressorOn) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
@@ -3517,7 +3366,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 #endif
 		journal.jprintf(cStrEnd);
 		// Доп инфо
-		for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && sTemp[i].Chart.get_present()) journal.jprintf(" %s:%.2f", sTemp[i].get_name(), (float) sTemp[i].get_Temp() / 100);
+		for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && !(SENSORTEMP[i] & 4)) journal.jprintf(" %s:%.2f", sTemp[i].get_name(), (float) sTemp[i].get_Temp() / 100);
 		for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) journal.jprintf(" %s:%.2f", sADC[i].get_name(), (float) sADC[i].get_Press() / 100);
 		journal.jprintf(cStrEnd);
 	} else {
@@ -3630,14 +3479,14 @@ void HeatPump::calculatePower()
 	// Мощности контуров
 	if(is_heating()) {
 #ifdef  FLOWCON 
- 		powerCO = (float)((FEED - RET) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
+ 		powerOUT = (float)((FEED - RET) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
 #endif
 #ifdef  FLOWEVA
 		powerGEO = (float)((sTemp[TEVAING].get_Temp() - sTemp[TEVAOUTG].get_Temp()) * sFrequency[FLOWEVA].get_Value()) / sFrequency[FLOWEVA].get_kfCapacity();
 #endif
 	} else {
 #ifdef  FLOWCON
-		powerCO = (float)((RET - FEED) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
+		powerOUT = (float)((RET - FEED) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
 #endif
 #ifdef  FLOWEVA 
 		powerGEO = (float)((sTemp[TEVAOUTG].get_Temp() - sTemp[TEVAING].get_Temp()) * sFrequency[FLOWEVA].get_Value()) / sFrequency[FLOWEVA].get_kfCapacity();
@@ -3645,12 +3494,12 @@ void HeatPump::calculatePower()
 	}
 #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
 #ifdef RHEAT
-		if (dRelay[RHEAT].get_Relay()) powerCO=powerCO-RHEAT_POWER;  // если включен электрокотел
+		if (dRelay[RHEAT].get_Relay()) powerOUT=powerOUT-RHEAT_POWER;  // если включен электрокотел
 #endif
 #endif
 
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда То отбрасываем отрицательные мощности, это переходные процессы, возможно это надо делать всегда
-	if (powerCO<0) powerCO=0;
+	if (powerOUT<0) powerOUT=0;
 	if (powerGEO<0) powerGEO=0;
 #endif
 
@@ -3671,8 +3520,8 @@ void HeatPump::calculatePower()
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
 if(is_compressor_on()){      // Если компрессор работает
 #endif	
-	if(COP>0) COP = powerCO / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
-	if(power220 != 0) fullCOP = powerCO / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+	if(COP>0) COP = powerOUT / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
+	if(power220 != 0) fullCOP = powerOUT / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
 		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
 		if(COP>10*100) COP=8*100;       // КОП не более 8
 		if(fullCOP>8*100) fullCOP=7*100; // полный КОП не более 7
