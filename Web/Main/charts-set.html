@@ -7,7 +7,13 @@
 <script type="text/javascript">
 window.onload = function() {
 	loadParam("get_tblCharts");
-};
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("set_Chart")!=-1) {
+		var j = Number(paramid.match(/[\d+]/, ""));
+		loadParam("get_ChartN(" + j + "),get_ChartO(" + j + "),get_ChartX(" + j + ")");
+	}
+}
 </script>
 </head>
 <body class="charts">

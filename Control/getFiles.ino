@@ -756,23 +756,48 @@ void get_csvChart(uint8_t thread)
 	strcat(Socket[thread].outBuf, "chart.csv\"\r\n\r\n");
 	sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
 
-	strcpy(Socket[thread].outBuf,"Point");
-	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-		if(ChartsSetup[i].number != CHART_ON_FLY) {
-			strcat(Socket[thread].outBuf, ";");
-			strcat(Socket[thread].outBuf, ChartsSetup[i].name);
-		}
-	}
+	strcpy(Socket[thread].outBuf,"Point;");
+	HP.get_listChart(Socket[thread].outBuf, ";");
+	Socket[thread].outBuf[strlen(Socket[thread].outBuf) - 1] = '\0';
 	STR_END;
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0) == 0) return; // передать пакет, при ошибке выйти
 
-	for(uint16_t point = 0; point < HP.Charts[0]->get_num(); point++) { // По всем точкам
+	for(uint16_t point = 0; point < HP.Charts[0].get_num(); point++) { // По всем точкам
 		itoa(point + 1, Socket[thread].outBuf, 10);
-		for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-			if(ChartsSetup[i].number != CHART_ON_FLY) {
-				strcat(Socket[thread].outBuf, ";");
-				_dtoa(Socket[thread].outBuf, HP.Charts[i]->get_Point(point), 2);
+		for(uint8_t i = 0; i < sizeof(HP.Charts) / sizeof(HP.Charts[0]); i++) {
+			strcat(Socket[thread].outBuf, ";");
+			_dtoa(Socket[thread].outBuf, HP.Charts[i].get_Point(point), 2);
+		}
+		for(uint8_t index = 0; index < sizeof(ChartsOnFlySetup) / sizeof(ChartsOnFlySetup[0]); index++) {
+			strcat(Socket[thread].outBuf, ";");
+			int32_t value = -32767;
+			switch (ChartsOnFlySetup[index].object) {
+#ifdef TCONOUT
+				case STATS_OBJ_Overcool:
+					value = HP.Charts[HP.Chart_PressTemp_PCON].get_Point(point) - HP.Charts[HP.Chart_Temp_TCONOUT].get_Point(point);
+					break;
+#endif
+				case STATS_OBJ_TCOMP_TCON:
+					value = HP.Charts[HP.Chart_Temp_TCOMP].get_Point(point) - HP.Charts[HP.Chart_PressTemp_PCON].get_Point(point);
+					break;
+				case STATS_OBJ_Delta_GEO:
+					value = HP.Charts[HP.Chart_Temp_TEVAING].get_Point(point) - HP.Charts[HP.Chart_Temp_TEVAOUTG].get_Point(point);
+					break;
+				case STATS_OBJ_Delta_OUT:
+					value = HP.Charts[HP.Chart_Temp_TCONOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TCONING].get_Point(point);
+					break;
+#ifdef FLOWEVA
+				case STATS_OBJ_Power_GEO:
+					value = (HP.Charts[HP.Chart_Temp_TEVAOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TEVAING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWEVA].get_Point(point) * 10 / HP.sFrequency[FLOWEVA].get_kfCapacity();
+					break;
+#endif
+#ifdef FLOWCON
+				case STATS_OBJ_Power_OUT:
+					value = (HP.Charts[HP.Chart_Temp_TCONOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TCONING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWCON].get_Point(point) * 10 / HP.sFrequency[FLOWCON].get_kfCapacity();
+					break;
+#endif
 			}
+			_dtoa(Socket[thread].outBuf, value, 2);
 		}
 		STR_END;
 		if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0) == 0) return; // передать пакет, при ошибке выйти

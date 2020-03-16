@@ -1426,12 +1426,6 @@ int8_t devSDM::initSDM()
 	SETBIT0(flags,fSDMLink);
 	note=(char*)noteSDM_NONE;
 #endif
-	// инициализация статистики
-#ifndef MIN_RAM_CHARTS
-	ChartVoltage.init(GETBIT(flags,fSDM));               // Статистика по напряжению
-#endif
-	//  sAcPower.init(GETBIT(flags,fSDM));               // Статистика по активная мощность
-	//  sRePower.init(GETBIT(flags,fSDM));               // Статистика по Реактивная мощность
 	return err;
 }
 

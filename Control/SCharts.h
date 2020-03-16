@@ -59,9 +59,16 @@ enum {
 
 const char *STATS_OBJ_names[] = {
 	"Temp",
-	"Press",
 	"PressTemp",
+	"Overheat",
+	"Overheat2",
+	"Overcool",
+	"TCOMP_TCON",
+	"Delta_GEO",
+	"Delta_OUT",
+	"Press",
 	"Flow",
+	"EEV",
 	"Voltage",
 	"Power",
 	"Power_FC",
@@ -71,13 +78,7 @@ const char *STATS_OBJ_names[] = {
 	"Compressor",
 	"COP_Full",
 	"Sun",
-	"EEV",
-	"Overheat",
-	"Overheat2",
-	"Overcool",
-	"TCOMP_TCON",
-	"Delta_GEO",
-	"Delta_OUT",
+	"Relay",
 	NULL
 };
 
@@ -94,8 +95,6 @@ struct History_setup {
 	const char	*name;		// Заголовок
 };
 
-#define CHART_ON_FLY 255
-
 struct Charts_Mod_setup {
 	uint8_t		object;		// STATS_OBJ_*
 	uint8_t		number;		// номер датчика
@@ -106,6 +105,8 @@ struct Charts_Const_setup {
 	const char	*name;
 } __attribute__((packed));
 
+typedef int16_t CHART_DATA_TYPE;
+
 // ---------------------------------------------------------------------------------
 //  Класс Графики работы   ------------------------------------------------------------
 // ---------------------------------------------------------------------------------
@@ -115,10 +116,10 @@ struct Charts_Const_setup {
 class statChart                                         // организован кольцевой буфер
 {
 public:
-	void init(boolean pres);                              // инициализация класса
+	void init();                             			 // инициализация класса
 	void clear();                                         // очистить статистику
-	void add_Point(int16_t y);                             // добавить точку в массиве (для бинарных данных добавляем все точки сразу)
-	inline int16_t get_Point(uint16_t x);                 // получить точку нумерация 0-самая старая CHART_POINT - самая новая, (работает кольцевой буфер)
+	void add_Point(CHART_DATA_TYPE y);                             // добавить точку в массиве (для бинарных данных добавляем все точки сразу)
+	inline CHART_DATA_TYPE get_Point(uint16_t x);                 // получить точку нумерация 0-самая старая CHART_POINT - самая новая, (работает кольцевой буфер)
 	boolean get_boolPoint(uint16_t x,uint16_t mask);      // БИНАРНЫЕ данные: получить точку нумерация 0-самая старая CHART_POINT - самая новая, (работает кольцевой буфер)
 
 	void get_PointsStrDiv100(char *&b);             		// получить строку в которой перечислены все точки в строковом виде через ";" при этом значения делятся на 100
@@ -126,15 +127,12 @@ public:
 	void get_PointsStrSubDiv100(char *&b, statChart *sChart); // получить строку, вычесть точки sChart
 	void get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t Capacity); // Расчитать мощность на лету используется для графика потока, передаются указатели на температуры
 
-	inline boolean get_present() {return present;}        // Наличие датчика в текущей конфигурации
 	inline uint16_t get_num()  {return num;}              // Получить число накопленных точек
 
 private:
-	int8_t err;                                            // Ошибка
-	int16_t *data;                                        // указатель на массив для накопления данных
+	CHART_DATA_TYPE *data;                                        // указатель на массив для накопления данных
 	int16_t pos;                                          // текущая позиция для записи
 	int16_t num;                                          // число накопленных точек
-	boolean present;                                      // наличие статистики
 	boolean flagFULL;                                     // false в буфере менее CHART_POINT точек
 };
 

@@ -3,7 +3,7 @@
 var VER_WEB = "1.070";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
-var urlcontrol = 'http://192.168.0.199';
+//var urlcontrol = 'http://192.168.0.199';
 //var urlcontrol = 'http://192.168.0.7';
 //var urlcontrol = 'http://77.50.254.24:25402';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
@@ -148,7 +148,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										for(var j = 0; j < elements.length; j++) elements[j].innerHTML = values[1];
 									}
 									continue;
-								} else if(values[0].indexOf("get_Chart")==0) {// график
+								} else if(values[0].indexOf("get_Chart(")==0) {// график
 									if(values[0]) {
 										if(!window.time_chart) { console.log("Chart was not intialized!"); continue; }
 										createChart(values, resultdiv);
@@ -505,7 +505,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											var content = ""; loadsens = "";
 											var count = values[1].split(';');
 											for(var j = 0; j < count.length - 1; j++) {
-												loadsens = loadsens + "get_ChartsN(" + count[j] + "),get_ChartsO(" + count[j] + "),get_ChartsX(" + count[j] + "),";
+												loadsens = loadsens + "get_ChartN(" + count[j] + "),get_ChartO(" + count[j] + "),get_ChartX(" + count[j] + "),";
 												content = content + '<tr><td>' + count[j] + '</td><td id="get_chartn-' + count[j] + '"</td>';
 												content = content + '<td nowrap><input id="get_charto-' + count[j] + '" type="text"> <input type="submit" value=">" onclick="setParam(\'get_ChartO(' + count[j] + ')\');"></td>';
 												content = content + '<td nowrap><input id="get_chartx-' + count[j] + '" type="text"> <input type="submit" value=">" onclick="setParam(\'get_ChartX(' + count[j] + ')\');"></td></tr>';
@@ -558,7 +558,7 @@ function loadParam(paramid, noretry, resultdiv) {
 									}
 								} else if(type == 'values') {
 									if(valueid == "get_ohp-time_chart") window.time_chart = values[1].toLowerCase().replace(/[^\w\d]/g, "");
-									element = document.getElementById(valueid + "3");
+									element = document.getElementById(valueid + "_2");
 									if(element) {
 										element.value = values[1];
 										element.innerHTML = values[1];
@@ -653,7 +653,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										element.value = values[1];
 										element.innerHTML = values[1];
 									}
-									if((element = document.getElementById(valueid + "2"))) {
+									if((element = document.getElementById(valueid + "_2"))) {
 										element.value = values[1];
 										element.innerHTML = values[1];
 									}

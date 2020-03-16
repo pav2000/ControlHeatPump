@@ -33,7 +33,7 @@ const boolean _resume = false;  // Команда возобновления р�
 #define COMPRESSOR_OFF  { if(dFC.get_present()) dFC.stop_FC(); else dRelay[RCOMP].set_OFF(); stopCompressor = rtcSAM3X8.unixtime(); } // Выключить компрессор в зависимости от наличия инвертора
 
 //struct size
-//char checker(int); char checkSizeOfInt1[sizeof(ChartsSetup)]={checker(&checkSizeOfInt1)};
+//char checker(int); char checkSizeOfInt1[sizeof(HP.Charts)/sizeof(HP.Charts[0])]={checker(&checkSizeOfInt1)};
 
 // Установка критической ошибки для класса ТН вызывает останов ТН
 // Возвращает ошибку останова ТН
@@ -128,13 +128,8 @@ void HeatPump::initHeatPump()
 #endif
 
 	// Графики в памяти
-	memset(Charts, 0, sizeof(Charts));
-	for(i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-		if(ChartsSetup[i].number != CHART_ON_FLY) {
-			Charts[i] = new statChart();
-			Charts[i]->init(true);
-		}
-	}
+	for(i = 0; i < sizeof(Charts) / sizeof(Charts[0]); i++) Charts[i].init();
+	clearChart();
 
 	resetSettingHP();                                          // все переменные
 }
@@ -774,7 +769,7 @@ void HeatPump::resetSettingHP()
 	Option.tempRHEAT = 1000;             //  Значение температуры для управления RHEAT (по умолчанию режим резерв - 10 градусов в доме)
 	Option.pausePump = 600;              //  Время паузы  насоса при выключенном компрессоре, сек
 	Option.workPump = 15;                //  Время работы  насоса при выключенном компрессоре, сек
-	Option.tChart = 60;                  //  период накопления статистики по умолчанию 60 секунд
+	Option.tChart = 10;                  //  период накопления статистики по умолчанию 60 секунд
 	SETBIT0(Option.flags, fAddHeat);      //  Использование дополнительного тена при нагреве НЕ ИСПОЛЬЗОВАТЬ
 	SETBIT0(Option.flags, fTypeRHEAT);    //  Использование дополнительного тена по умолчанию режим резерв
 	SETBIT1(Option.flags, fBeep);         //  Звук
@@ -1014,11 +1009,17 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) clearChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
    if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = x; return true;} else
    if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
-   if(strcmp(var,option_NEXTION)==0)          { Option.flags = (Option.flags & ~(1<<fNextion)) | ((x!=0)<<fNextion); updateNextion(); return true; } else            // использование дисплея nextion
-   if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(); return true; } else            // использование дисплея nextion
-   if(strcmp(var,option_NEXT_SLEEP)==0)       {if (x>=0.0) {Option.sleep=x; updateNextion(); return true;} else return false;  }else       // Время засыпания секунды NEXTION минуты
+   if(strcmp(var, option_NEXTION) == 0) {// использование дисплея nextion
+	   bool fl = x != 0;
+	   if(fl != GETBIT(Option.flags, fNextion)) {
+		   Option.flags = (Option.flags & ~(1 << fNextion)) | (fl << fNextion);
+		   updateNextion(true);
+	   }
+	   return true;
+   } else if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(false); return true; } else            // использование дисплея nextion
+   if(strcmp(var,option_NEXT_SLEEP)==0)       {if (x>=0) {Option.sleep=x; updateNextion(false); return true;} else return false;  }else       // Время засыпания секунды NEXTION минуты
 #ifdef NEXTION
-   if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=1.0)&&(x<=100.0)) {Option.dim=x; myNextion.set_dim(Option.dim); return true;} else return false; }else       // Якрость % NEXTION
+   if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=1)&&(x<=100)) {Option.dim=x; myNextion.set_dim(Option.dim); return true;} else return false; }else       // Якрость % NEXTION
 #endif
    if(strcmp(var,option_History)==0)          {if (x==0) {SETBIT0(Option.flags,fHistory); return true;} else if (x==1) {SETBIT1(Option.flags,fHistory); return true;} else return false;       }else       // Сбрасывать статистику на карту
    if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
@@ -1039,15 +1040,15 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
    if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = x; return true; }else
-   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0.0)&&(x<=900.0)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
-   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0.0)&&(x<=900.0)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
-   if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0.0)&&(x<=6000.0)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
-   if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((x>=0.0)&&(x<=6000.0)) {Option.delayRepeadStart=x; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
-   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOn=x; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
-   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((x>=0.0)&&(x<=600.0)) {Option.delayDefrostOff=x; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-   if(strcmp(var,option_DELAY_R4WAY)==0)      {if ((x>=0.0)&&(x<=600.0)) {Option.delayR4WAY=x; return true;} else return false;}else         // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
-   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerSW=x; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
-   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0.0)&&(x<=1200.0)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+   if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0)&&(x<=900)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
+   if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0)&&(x<=900)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
+   if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0)&&(x<=6000)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
+   if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((x>=0)&&(x<=6000)) {Option.delayRepeadStart=x; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+   if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((x>=0)&&(x<=600)) {Option.delayDefrostOn=x; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+   if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((x>=0)&&(x<=600)) {Option.delayDefrostOff=x; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+   if(strcmp(var,option_DELAY_R4WAY)==0)      {if ((x>=0)&&(x<=600)) {Option.delayR4WAY=x; return true;} else return false;}else         // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+   if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((x>=0)&&(x<=1200)) {Option.delayBoilerSW=x; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+   if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0)&&(x<=1200)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    if(strcmp(var,option_fBackupPower)==0)     {if (x==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (x==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;}else // флаг Использование резервного питания от генератора (ограничение мощности) 
    if(strcmp(var,option_maxBackupPower)==0)   {if ((x>=0)&&(x<=10000)) {Option.maxBackupPower=x; return true;} else return false;}else       // Максимальная мощность при питании от генератора
    if(strcmp(var,option_SunTempOn)==0)   	  { Option.SunTempOn = rd(x, 100); return true;} else
@@ -1116,45 +1117,27 @@ void HeatPump::set_profile()
 // --------------------------------------------------------------------
 // ФУНКЦИИ РАБОТЫ С ГРАФИКАМИ ТН -----------------------------------
 // --------------------------------------------------------------------
-// обновить статистику, добавить одну точку и если надо записать ее на карту.
-// Все значения в графиках целочислены (сотые), выводятся в формате 0.01
-void  HeatPump::updateChart()
-{
-	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-		if(Charts[i] && ChartsSetup[i].number != CHART_ON_FLY ) {
-			if(ChartsSetup[i].object == STATS_OBJ_Temp) Charts[i]->add_Point(sTemp[ChartsSetup[i].number].get_Temp());
-			else if(ChartsSetup[i].object == STATS_OBJ_Press) Charts[i]->add_Point(sADC[ChartsSetup[i].number].get_Press());
-			else if(ChartsSetup[i].object == STATS_OBJ_PressTemp) Charts[i]->add_Point(PressToTemp(ChartsSetup[i].number));
-			else if(ChartsSetup[i].object == STATS_OBJ_Flow) Charts[i]->add_Point(sFrequency[ChartsSetup[i].number].get_Value() / 10);
-#ifdef EEV_DEF
-#ifdef EEV_PREFER_PERCENT
-			else if(ChartsSetup[i].object == STATS_OBJ_EEV) Charts[i]->add_Point(dEEV.calc_percent(dEEV.get_EEV()));
-#else
-			else if(ChartsSetup[i].object == STATS_OBJ_EEV) Charts[i]->add_Point(dEEV.get_EEV());
-#endif
-			else if(ChartsSetup[i].object == STATS_OBJ_Overheat) Charts[i]->add_Point(dEEV.get_Overheat());
-			else if(ChartsSetup[i].object == STATS_OBJ_Overheat2) Charts[i]->add_Point(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
-#endif
-			else if(ChartsSetup[i].object == STATS_OBJ_Compressor) Charts[i]->add_Point(dFC.get_frequency());
-			else if(ChartsSetup[i].object == STATS_OBJ_Power_FC) Charts[i]->add_Point(dFC.get_power() / 10);
-			else if(ChartsSetup[i].object == STATS_OBJ_Current_FC) Charts[i]->add_Point(dFC.get_current());
-#ifdef USE_ELECTROMETER_SDM
-			else if(ChartsSetup[i].object == STATS_OBJ_Voltage) Charts[i]->add_Point(dSDM.get_Voltage() * 100);
-			else if(ChartsSetup[i].object == STATS_OBJ_Power) Charts[i]->add_Point((int32_t)power220 / 10);
-			else if(ChartsSetup[i].object == STATS_OBJ_COP_Full) Charts[i]->add_Point(fullCOP);
-#endif
-		}
-	}
-}
 
 // получить список доступных графиков в виде строки
 // cat true - список добавляется в конец, false - строка обнуляется и список добавляется
-void HeatPump::get_listChart(char* str)
+void HeatPump::get_listChart(char* ret, const char *delimiter)
 {
-	strcat(str, "---:1;");
-	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-		strcat(str, ChartsSetup[i].name);
-		strcat(str, ":0;");
+	for(uint8_t index = 0; index < sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]); index++) {
+		if(ChartsModSetup[index].object == STATS_OBJ_Temp) strcat(ret, sTemp[ChartsModSetup[index].number].get_note());
+		else if(ChartsModSetup[index].object == STATS_OBJ_Press) strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+		else if(ChartsModSetup[index].object == STATS_OBJ_PressTemp) {
+			strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+			strcat(ret, ", °C");
+		} else if(ChartsModSetup[index].object == STATS_OBJ_Flow) strcat(ret, sFrequency[ChartsModSetup[index].number].get_note());
+		strcat(ret, delimiter);
+	}
+	for(uint8_t index = 0; index < sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]); index++) {
+		strcat(ret, ChartsConstSetup[index].name);
+		strcat(ret, delimiter);
+	}
+	for(uint8_t index = 0; index < sizeof(ChartsOnFlySetup) / sizeof(ChartsOnFlySetup[0]); index++) {
+		strcat(ret, ChartsOnFlySetup[index].name);
+		strcat(ret, delimiter);
 	}
 }
 
@@ -1162,57 +1145,111 @@ void HeatPump::get_listChart(char* str)
 void HeatPump::clearChart()
 {
     Chart_PressTemp_PCON = Chart_Temp_TCONOUT = Chart_Temp_TCOMP = Chart_Temp_TCONOUTG = Chart_Temp_TCONING = Chart_Temp_TEVAING = Chart_Temp_TEVAOUTG = Chart_Flow_FLOWCON = Chart_Flow_FLOWEVA = 0;
-	for(uint8_t i = 0; i < sizeof(ChartsSetup) / sizeof(ChartsSetup[0]); i++) {
-		if(Charts[i] && ChartsSetup[i].number != CHART_ON_FLY) {
-			Charts[i]->clear();
-			if(ChartsSetup[i].object == STATS_OBJ_PressTemp && ChartsSetup[i].number == PCON) Chart_PressTemp_PCON = i;
-			else if(ChartsSetup[i].object == STATS_OBJ_Temp) {
-				if(ChartsSetup[i].number == TCONOUT) Chart_Temp_TCONOUT = i;
-				else if(ChartsSetup[i].number == TCOMP) Chart_Temp_TCOMP = i;
-				else if(ChartsSetup[i].number == TCONOUTG) Chart_Temp_TCONOUTG = i;
-				else if(ChartsSetup[i].number == TCONING) Chart_Temp_TCONING = i;
-				else if(ChartsSetup[i].number == TEVAING) Chart_Temp_TEVAING = i;
-				else if(ChartsSetup[i].number == TEVAOUTG) Chart_Temp_TEVAOUTG = i;
-			} else if(ChartsSetup[i].object == STATS_OBJ_Flow) {
-				if(ChartsSetup[i].number == FLOWCON) Chart_Flow_FLOWCON = i;
-				else if(ChartsSetup[i].number == FLOWEVA) Chart_Flow_FLOWEVA = i;
+	for(uint8_t i = 0; i < sizeof(Charts) / sizeof(Charts[0]); i++) {
+		Charts[i].clear();
+		if(i < sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0])) {
+			if(ChartsModSetup[i].object == STATS_OBJ_PressTemp && ChartsModSetup[i].number == PCON) Chart_PressTemp_PCON = i;
+			else if(ChartsModSetup[i].object == STATS_OBJ_Temp) {
+				if(ChartsModSetup[i].number == TCONOUT) Chart_Temp_TCONOUT = i;
+				else if(ChartsModSetup[i].number == TCOMP) Chart_Temp_TCOMP = i;
+				else if(ChartsModSetup[i].number == TCONOUTG) Chart_Temp_TCONOUTG = i;
+				else if(ChartsModSetup[i].number == TCONING) Chart_Temp_TCONING = i;
+				else if(ChartsModSetup[i].number == TEVAING) Chart_Temp_TEVAING = i;
+				else if(ChartsModSetup[i].number == TEVAOUTG) Chart_Temp_TEVAOUTG = i;
+			} else if(ChartsModSetup[i].object == STATS_OBJ_Flow) {
+#ifdef FLOWCON
+				if(ChartsModSetup[i].number == FLOWCON) Chart_Flow_FLOWCON = i;
+				else
+#endif
+#ifdef FLOWEVA
+					if(ChartsModSetup[i].number == FLOWEVA) Chart_Flow_FLOWEVA = i;
+#else
+					{}
+#endif
 			}
 		}
+	}
+}
+
+// обновить статистику, добавить одну точку и если надо записать ее на карту.
+// Все значения в графиках целочислены (сотые), выводятся в формате 0.01
+void  HeatPump::updateChart()
+{
+	for(uint8_t i = 0; i < sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]); i++) {
+		if(ChartsModSetup[i].object == STATS_OBJ_Temp) Charts[i].add_Point(sTemp[ChartsModSetup[i].number].get_Temp());
+		else if(ChartsModSetup[i].object == STATS_OBJ_Press) Charts[i].add_Point(sADC[ChartsModSetup[i].number].get_Press());
+		else if(ChartsModSetup[i].object == STATS_OBJ_PressTemp) Charts[i].add_Point(PressToTemp(ChartsModSetup[i].number));
+		else if(ChartsModSetup[i].object == STATS_OBJ_Flow) Charts[i].add_Point(sFrequency[ChartsModSetup[i].number].get_Value() / 10);
+	}
+	for(uint8_t i = 0; i < sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]); i++) {
+		uint8_t j = sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + i;
+		if(ChartsConstSetup[i].object == STATS_OBJ_Overheat) Charts[j].add_Point(dEEV.get_Overheat());
+#ifdef EEV_DEF
+#ifdef EEV_PREFER_PERCENT
+		else if(ChartsConstSetup[i].object == STATS_OBJ_EEV) Charts[j].add_Point(dEEV.calc_percent(dEEV.get_EEV()));
+#else
+		else if(ChartsConstSetup[i].object == STATS_OBJ_EEV) Charts[j].add_Point(dEEV.get_EEV());
+#endif
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Overheat2) Charts[j].add_Point(GETBIT(dEEV.get_flags(), fEEV_DirectAlgorithm) ? dEEV.OverheatTCOMP : dEEV.get_tOverheat());
+#endif
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Compressor) Charts[j].add_Point(dFC.get_frequency());
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Power_FC) Charts[j].add_Point(dFC.get_power() / 10);
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Current_FC) Charts[j].add_Point(dFC.get_current());
+#ifdef USE_ELECTROMETER_SDM
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Voltage) Charts[j].add_Point(dSDM.get_Voltage() * 100);
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Power) Charts[j].add_Point((int32_t)power220 / 10);
+		else if(ChartsConstSetup[i].object == STATS_OBJ_COP_Full) Charts[j].add_Point(fullCOP);
+#endif
 	}
 }
 
 // получить данные графика  в виде строки, данные ДОБАВЛЯЮТСЯ к str
 void HeatPump::get_Chart(int index, char *str)
 {
-	if(--index < 0 || index > (int)(sizeof(ChartsSetup) / sizeof(ChartsSetup[0]))) return;
-	_itoa(ChartsSetup[index].object, str);
+	if(--index < 0 || index > int(sizeof(Charts) / sizeof(Charts[0]) + sizeof(ChartsOnFlySetup) / sizeof(ChartsOnFlySetup[0]))) return;
+	uint8_t obj, idx = index;
+	if(idx < int(sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]))) {
+		obj = ChartsModSetup[idx].object;
+	} else {
+		idx -= sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]);
+		if(idx < int(sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]))) {
+			obj = ChartsConstSetup[idx].object;
+		} else obj = ChartsOnFlySetup[idx - sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0])].object;
+	}
+	_itoa(obj, str);
 	strcat(str, ";");
-	switch (ChartsSetup[index].object) {
+	switch (obj) {
 #ifndef EEV_PREFER_PERCENT
 	case STATS_OBJ_EEV:
-		Charts[index]->get_PointsStr(str);
+		Charts[index].get_PointsStr(str);
 		break;
 #endif
+#ifdef TCONOUT
 	case STATS_OBJ_Overcool:
-		Charts[Chart_PressTemp_PCON]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TCONOUT]);
+		Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
 		break;
+#endif
 	case STATS_OBJ_TCOMP_TCON:
-		Charts[Chart_Temp_TCOMP]->get_PointsStrSubDiv100(str, Charts[Chart_PressTemp_PCON]);
+		Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]);
 		break;
 	case STATS_OBJ_Delta_GEO:
-		Charts[Chart_Temp_TEVAING]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TEVAOUTG]);
+		Charts[Chart_Temp_TEVAING].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TEVAOUTG]);
 		break;
 	case STATS_OBJ_Delta_OUT:
-		Charts[Chart_Temp_TCONOUTG]->get_PointsStrSubDiv100(str, Charts[Chart_Temp_TCONING]);
+		Charts[Chart_Temp_TCONOUTG].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONING]);
 		break;
-	case STATS_OBJ_Power_GEO:
-		Charts[Chart_Flow_FLOWEVA]->get_PointsStrPower(str, Charts[Chart_Temp_TEVAING], Charts[Chart_Temp_TEVAOUTG], sFrequency[FLOWEVA].get_kfCapacity());
+#ifdef FLOWEVA
+		case STATS_OBJ_Power_GEO:
+		Charts[Chart_Flow_FLOWEVA].get_PointsStrPower(str, &Charts[Chart_Temp_TEVAING], &Charts[Chart_Temp_TEVAOUTG], sFrequency[FLOWEVA].get_kfCapacity());
 		break;
+#endif
+#ifdef FLOWCON
 	case STATS_OBJ_Power_OUT:
-		Charts[Chart_Flow_FLOWCON]->get_PointsStrPower(str, Charts[Chart_Temp_TCONING], Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_kfCapacity());
+		Charts[Chart_Flow_FLOWCON].get_PointsStrPower(str, &Charts[Chart_Temp_TCONING], &Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_kfCapacity());
 		break;
+#endif
 	default:
-		if(Charts[index]) Charts[index]->get_PointsStrDiv100(str);
+		Charts[index].get_PointsStrDiv100(str);
 	}
 }
 
@@ -1242,11 +1279,15 @@ uint8_t HeatPump::set_hashAdmin()
 }
 
 // Обновить настройки дисплея Nextion
-void HeatPump::updateNextion()
+void HeatPump::updateNextion(bool need_init)
 {
 #ifdef NEXTION
 	if(GETBIT(Option.flags, fNextion))  // Дисплей подключен
 	{
+		if(need_init) {
+			journal.jprintf("Nextion init:");
+			myNextion.init();
+		}
 		myNextion.init_display();
 		myNextion.set_need_refresh();
 	} else                        // Дисплей выключен

@@ -382,7 +382,7 @@ class HeatPump
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
-   void     updateNextion();                                          // Обновить настройки дисплея
+   void     updateNextion(bool need_init);                             // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fMH_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
@@ -451,13 +451,12 @@ class HeatPump
       
    
     // Графики в памяти
-    uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
-    void updateChart();                                    // обновить статистику
-    void clearChart();                                     // Запуститьь статистику
-    void get_listChart(char* str);				           // получить список доступных графиков
+    uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления графиков в секундах
+    void updateChart();                                    // обновить графики в памяти
+    void clearChart();                                     // Очистить графики в памяти
+    void get_listChart(char* ret, const char *delimiter);	       // получить список доступных графиков
     void get_Chart(int index, char *str);                  // получить данные графика
-    statChart ChartsMods[sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0])];
-    statChart ChartsConst[sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0])];
+    statChart Charts[sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0])];
     uint8_t Chart_PressTemp_PCON;
     uint8_t Chart_Temp_TCONOUT;
     uint8_t Chart_Temp_TCOMP;

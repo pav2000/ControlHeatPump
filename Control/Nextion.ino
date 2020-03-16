@@ -83,8 +83,9 @@ boolean Nextion::init()
 		while(NEXTION_PORT.available()) NEXTION_PORT.read();
 		DataAvaliable = 0;
 		fUpdate = 1;
+		journal.jprintf("OK\n");
 	} else {
-		journal.jprintf(" No response!\n");
+		journal.jprintf("No response!\n");
 		return false;
 	}
 	init_display();
@@ -226,6 +227,7 @@ boolean Nextion::setComponentIdxText(const char* component, uint8_t idx, char* t
 // Обработка входящей команды (только одна - первая)
 void Nextion::readCommand()
 {
+	if(!GETBIT(HP.Option.flags, fNextion)) return;
 	if(input_delay) input_delay--;
 	while(check_incoming() || DataAvaliable) {
 		uint8_t buffer_idx = 0;
@@ -355,7 +357,7 @@ void Nextion::readCommand()
 // Обновление информации на дисплее вызывается в цикле
 void Nextion::Update()
 {
-	
+	if(!GETBIT(HP.Option.flags, fNextion)) return;
 	if((GETBIT(HP.Option.flags, fNextionOnWhileWork) && HP.is_compressor_on()) || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
 		if(!GETBIT(flags, fSleep)) {
 			sendCommand("sleep=0");

@@ -372,7 +372,45 @@ const char *noteTemp[] = {"Температура улицы",
     #define FILTER_SIZE       128            // Длина фильтра для датчика давления
     #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
 
-    // История (графики)
+    // Графики в памяти
+  	Charts_Mod_setup ChartsModSetup[] = {
+  		{ STATS_OBJ_Temp, TOUT },
+  		{ STATS_OBJ_Temp, TIN },
+  		{ STATS_OBJ_Temp, TBOILER },
+  		{ STATS_OBJ_Temp, TCOMP },
+  		{ STATS_OBJ_Temp, TEVAING },
+  		{ STATS_OBJ_Temp, TEVAOUTG },
+  		{ STATS_OBJ_Temp, TCONING },
+  		{ STATS_OBJ_Temp, TCONOUTG },
+  		{ STATS_OBJ_Temp, TEVAOUT },
+  		{ STATS_OBJ_Temp, TCONOUT },
+  //		{ STATS_OBJ_Temp, TSUN },
+  //		{ STATS_OBJ_Temp, TSUNOUTG },
+  //		{ STATS_OBJ_Flow, FLOWEVA },
+  //		{ STATS_OBJ_Flow, FLOWCON },
+  //		{ STATS_OBJ_Press, PGEO },
+  //		{ STATS_OBJ_Press, POUT },
+  		{ STATS_OBJ_PressTemp, PEVA },
+  		{ STATS_OBJ_PressTemp, PCON }
+  	};
+  	const Charts_Const_setup ChartsConstSetup[] = {
+  		{ STATS_OBJ_EEV, "ЭРВ" },
+  		{ STATS_OBJ_Overheat, "Перегрев" },
+  		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+  		{ STATS_OBJ_Compressor, "Частота, Гц" },
+  //		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+  		{ STATS_OBJ_Power, "Потребляемая мощность" },
+  		{ STATS_OBJ_COP_Full, "COP" }
+  	};
+  	const Charts_Const_setup ChartsOnFlySetup[] = {
+  		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+  		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+  		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+  		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+  		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+  		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+  	};
+   // История (графики)
     const History_setup HistorySetup[] = {
     	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
     	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
@@ -868,7 +906,45 @@ const char *noteTemp[] = {"Температура улицы",
       #define FILTER_SIZE       128            // Длина фильтра для датчика давления
       #define FILTER_SIZE_OTHER 8              // Длина фильтра для остальных датчиков
 
-     // История (графики)
+     // Графики в памяти
+   	Charts_Mod_setup ChartsModSetup[] = {
+   		{ STATS_OBJ_Temp, TOUT },
+   		{ STATS_OBJ_Temp, TIN },
+   		{ STATS_OBJ_Temp, TBOILER },
+   		{ STATS_OBJ_Temp, TCOMP },
+   		{ STATS_OBJ_Temp, TEVAING },
+   		{ STATS_OBJ_Temp, TEVAOUTG },
+   		{ STATS_OBJ_Temp, TCONING },
+   		{ STATS_OBJ_Temp, TCONOUTG },
+   		{ STATS_OBJ_Temp, TEVAOUT },
+   		{ STATS_OBJ_Temp, TCONOUT },
+   //		{ STATS_OBJ_Temp, TSUN },
+   //		{ STATS_OBJ_Temp, TSUNOUTG },
+   //		{ STATS_OBJ_Flow, FLOWEVA },
+   //		{ STATS_OBJ_Flow, FLOWCON },
+   //		{ STATS_OBJ_Press, PGEO },
+   //		{ STATS_OBJ_Press, POUT },
+   		{ STATS_OBJ_PressTemp, PEVA },
+   		{ STATS_OBJ_PressTemp, PCON }
+   	};
+   	const Charts_Const_setup ChartsConstSetup[] = {
+   		{ STATS_OBJ_EEV, "ЭРВ" },
+   		{ STATS_OBJ_Overheat, "Перегрев" },
+   		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+   		{ STATS_OBJ_Compressor, "Частота, Гц" },
+   //		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+   		{ STATS_OBJ_Power, "Потребляемая мощность" },
+   		{ STATS_OBJ_COP_Full, "COP" }
+   	};
+   	const Charts_Const_setup ChartsOnFlySetup[] = {
+   		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+   		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+   		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+   		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+   		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+   		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+   	};
+    // История (графики)
      const History_setup HistorySetup[] = {
      	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
      	{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
@@ -1417,6 +1493,44 @@ const char *noteTemp[] = {"Температура улицы",
 
 
 //###################################################################################################################################################################################################################
+       // Графики в памяти
+     	Charts_Mod_setup ChartsModSetup[] = {
+     		{ STATS_OBJ_Temp, TOUT },
+     		{ STATS_OBJ_Temp, TIN },
+     		{ STATS_OBJ_Temp, TBOILER },
+     		{ STATS_OBJ_Temp, TCOMP },
+     		{ STATS_OBJ_Temp, TEVAING },
+     		{ STATS_OBJ_Temp, TEVAOUTG },
+     		{ STATS_OBJ_Temp, TCONING },
+     		{ STATS_OBJ_Temp, TCONOUTG },
+     		{ STATS_OBJ_Temp, TEVAOUT },
+     		{ STATS_OBJ_Temp, TCONOUT },
+     //		{ STATS_OBJ_Temp, TSUN },
+     //		{ STATS_OBJ_Temp, TSUNOUTG },
+     //		{ STATS_OBJ_Flow, FLOWEVA },
+     //		{ STATS_OBJ_Flow, FLOWCON },
+     //		{ STATS_OBJ_Press, PGEO },
+     //		{ STATS_OBJ_Press, POUT },
+     		{ STATS_OBJ_PressTemp, PEVA },
+     		{ STATS_OBJ_PressTemp, PCON }
+     	};
+     	const Charts_Const_setup ChartsConstSetup[] = {
+     		{ STATS_OBJ_EEV, "ЭРВ" },
+     		{ STATS_OBJ_Overheat, "Перегрев" },
+     		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+     		{ STATS_OBJ_Compressor, "Частота, Гц" },
+     //		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+     		{ STATS_OBJ_Power, "Потребляемая мощность" },
+     		{ STATS_OBJ_COP_Full, "COP" }
+     	};
+     	const Charts_Const_setup ChartsOnFlySetup[] = {
+     		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+     		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+     		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+     		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+     		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+     		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+     	};
        // История (графики)
        const History_setup HistorySetup[] = {
        	{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
@@ -1945,41 +2059,6 @@ const char *noteTemp[] = {"Температура улицы",
       // Частотный преобразователь ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) --------------------------------------------------------
       const boolean DEVICEFC=true;  // Наличие Частотного преобразователя в конфигурации
       // Константы частотного преобразователя для конкртеной  реализации
-<<<<<<< Updated upstream
-      #define DEF_FC_USE_RCOMP                     // Использовать для пуска/остановки инвертора отдельный выход RCOMP (команда по модбасу не посылается)
-      #define DEF_FC_UPTIME         (10)      // Время обновления алгоритма пид регулятора (мсек) Основной цикл управления
-      
-      #define DEF_FC_PID_FREQ_STEP    (2*100)        // Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании в 0.01 Гц Необходимо что бы ЭРВ успевал
-      #define DEF_FC_PID_STOP          95          // Проценты от уровня защит (мощность, ток, давление, темпеартура) при которой происходит блокировка роста частоты пидом
-
-      #define DEF_FC_DT_COMP_TEMP   (5*100)        // Защита по температуре компрессора - сколько градусов не доходит до максимальной (TCOMP) и при этом происходит уменьшение частоты
-      #define DEF_FC_DP_CON_PRESS   50             // Защита по давлению компрессора - сколько сотых бара не доходит до максимальной (PCON) и при этом происходит уменьшение частоты
-
-      #define DEF_FC_START_FREQ       (60*100)       // Стартовая частота частота инвертора (см компрессор) в 0.01 Гц
-      #define DEF_FC_START_FREQ_BOILER (50*100)      // Стартовая частота частота инвертора (см компрессор) в 0.01 Гц ГВС
-      
-      #define DEF_FC_MIN_FREQ         (40*100)       // Минимальная  частота инвертора (см компрессор) в 0.01 Гц
-      #define DEF_FC_MIN_FREQ_COOL    (60*100)       // Минимальная  частота инвертора при охлаждении в 0.01 Гц
-      #define DEF_FC_MIN_FREQ_BOILER  (45*100)       // Минимальная  частота инвертора при нагреве ГВС в 0.01 Гц
-      #define DEF_FC_MIN_FREQ_USER    (35*100)       // Минимальная  частота инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01 Гц
-      
-      #define DEF_FC_MAX_FREQ         (110*100)      // Максимальная частота инвертора (см компрессор) в 0.01 Гц
-      #define DEF_FC_MAX_FREQ_COOL    (100*100)      // Максимальная частота инвертора в режиме охлаждения  в 0.01 Гц
-      #define DEF_FC_MAX_FREQ_BOILER  (60*100)       // Максимальная частота инвертора в режиме ГВС в 0.01 Гц поглощение бойлера обычно меньше чем СО
-      #define DEF_FC_MAX_FREQ_USER    (190*100)      // Максимальная частота инвертора РУЧНОЙ РЕЖИМ (см компрессор) в 0.01 Гц
-                
-      #define DEF_FC_STEP_FREQ        (1*100)        // Шаг уменьшения частоты инвертора при достижении максимальной температуры, мощности и тока (см компрессор) в 0.01 Гц
-      #define DEF_FC_STEP_FREQ_BOILER (2*100)        // Шаг уменьшения частоты инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01 Гц
-      
-      #define DEF_FC_DT_TEMP        (1*100)        // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
-      #define DEF_FC_DT_TEMP_BOILER (2*100)        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
-       
-      #define DEF_FC_MAX_POWER      (2.0*10)       // Максимальная мощность инвертора (см компрессор) в 0.1 кВт
-      #define DEF_FC_MAX_POWER_BOILER (1.0*10)     // Максимальная мощность инвертора в режиме ГВС (см компрессор) в 0.1 кВт
-    
-      #define DEF_FC_MAX_CURRENT    (10.0*100)     // Максимальный ток инвертора (см компрессор) в 0.01 А
-      #define DEF_FC_MAX_CURRENT_BOILER (10.0*100) // Максимальный ток инвертора для ГВС в 0.01 А
-=======
       #define FC_USE_RCOMP                     // Использовать для пуска/остановки инвертора отдельный выход RCOMP (команда по модбасу не посылается)
     // Константы частотного преобразователя для конкртеной  реализации  (из программы не меняются)  
   	#define FC_DT_CON_PRESS      50                 // Защита по давлению компрессора - сколько сотых бара не доходит до максимальной (PCON) и при этом происходит уменьшение частоты
@@ -2023,7 +2102,6 @@ const char *noteTemp[] = {"Температура улицы",
     #define DEF_DELAY_R4WAY         120            // Задержка между отключением компрессора и переключением 4ходового клапана для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
     #define DEF_DELAY_BOILER_SW   60             // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
     #define DEF_DELAY_BOILER_OFF  120            // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
->>>>>>> Stashed changes
    
     // Защиты по входному напряжению. Используется счетчик SDM*
     #define SDM_MIN_VOLTAGE     170.0          // Минимальное напряжение работы ТН при падении - предупреждение
@@ -2456,6 +2534,44 @@ const char *noteTemp[] = {"Температура улицы",
       #define ADC_FREQ        100            // [20]  Частота опроса аналоговых датчиков
       #define FILTER_SIZE       128            // [40]  Длина фильтра для датчика давления
       #define FILTER_SIZE_OTHER 8              // [8]   Длина фильтра для остальных датчиков
+      // Графики в памяти
+    	Charts_Mod_setup ChartsModSetup[] = {
+    		{ STATS_OBJ_Temp, TOUT },
+    		{ STATS_OBJ_Temp, TIN },
+    		{ STATS_OBJ_Temp, TBOILER },
+    		{ STATS_OBJ_Temp, TCOMP },
+    		{ STATS_OBJ_Temp, TEVAING },
+    		{ STATS_OBJ_Temp, TEVAOUTG },
+    		{ STATS_OBJ_Temp, TCONING },
+    		{ STATS_OBJ_Temp, TCONOUTG },
+    		{ STATS_OBJ_Temp, TEVAOUT },
+    		{ STATS_OBJ_Temp, TCONOUT },
+    //		{ STATS_OBJ_Temp, TSUN },
+    //		{ STATS_OBJ_Temp, TSUNOUTG },
+    //		{ STATS_OBJ_Flow, FLOWEVA },
+    //		{ STATS_OBJ_Flow, FLOWCON },
+    //		{ STATS_OBJ_Press, PGEO },
+    //		{ STATS_OBJ_Press, POUT },
+    		{ STATS_OBJ_PressTemp, PEVA },
+    		{ STATS_OBJ_PressTemp, PCON }
+    	};
+    	const Charts_Const_setup ChartsConstSetup[] = {
+    		{ STATS_OBJ_EEV, "ЭРВ" },
+    		{ STATS_OBJ_Overheat, "Перегрев" },
+    		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+    		{ STATS_OBJ_Compressor, "Частота, Гц" },
+    //		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+    		{ STATS_OBJ_Power, "Потребляемая мощность" },
+    		{ STATS_OBJ_COP_Full, "COP" }
+    	};
+    	const Charts_Const_setup ChartsOnFlySetup[] = {
+    		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+    		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+    		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+    		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+    		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+    		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+    	};
 
        // История (графики)
       const History_setup HistorySetup[] = {
@@ -2476,10 +2592,10 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_EEV, STATS_EEV_Steps, "EEV" },
 		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "OverHeat" },
 //		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Compressor, OBJ_Freq, "Freq" },
-		{ STATS_OBJ_Power, OBJ_power220, "power220" },
-		{ STATS_OBJ_Power, OBJ_powerCO, "powerCO" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "fullCOP" }      
+		{ STATS_OBJ_Compressor, 0, "Freq" },
+		{ STATS_OBJ_Power, 0, "power220" },
+		{ STATS_OBJ_Power_OUT, 0, "powerCO" },
+		{ STATS_OBJ_COP_Full, 0, "fullCOP" }
       };
       // ------------------- EEV -----------------------------------
       // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
@@ -3037,9 +3153,48 @@ const char *noteTemp[] = {"Температура улицы",
   #define FEED      sTemp[TCONOUTG].get_Temp()       // Подача системы CO
   #define RET       sTemp[TCONING].get_Temp()        // Обратка системы CO
 
+  // Графики в памяти
+	Charts_Mod_setup ChartsModSetup[] = {
+		{ STATS_OBJ_Temp, TOUT },
+		{ STATS_OBJ_Temp, TIN },
+		{ STATS_OBJ_Temp, TBOILER },
+		{ STATS_OBJ_Temp, TCOMP },
+		{ STATS_OBJ_Temp, TEVAING },
+		{ STATS_OBJ_Temp, TEVAOUTG },
+		{ STATS_OBJ_Temp, TCONING },
+		{ STATS_OBJ_Temp, TCONOUTG },
+		{ STATS_OBJ_Temp, TEVAOUT },
+		{ STATS_OBJ_Temp, TCONOUT },
+		{ STATS_OBJ_Temp, TSUN },
+		{ STATS_OBJ_Temp, TSUNOUTG },
+		{ STATS_OBJ_Flow, FLOWEVA },
+		{ STATS_OBJ_Flow, FLOWCON },
+//		{ STATS_OBJ_Press, PGEO },
+//		{ STATS_OBJ_Press, POUT },
+		{ STATS_OBJ_PressTemp, PEVA },
+		{ STATS_OBJ_PressTemp, PCON }
+	};
+	const Charts_Const_setup ChartsConstSetup[] = {
+		{ STATS_OBJ_EEV, "ЭРВ" },
+		{ STATS_OBJ_Overheat, "Перегрев" },
+		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+		{ STATS_OBJ_Compressor, "Частота, Гц" },
+//		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+		{ STATS_OBJ_Power, "Потребляемая мощность" },
+		{ STATS_OBJ_COP_Full, "COP" }
+	};
+	const Charts_Const_setup ChartsOnFlySetup[] = {
+		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+	};
+
   // История (графики)
 	const History_setup HistorySetup[] = {
-		{ STATS_OBJ_Compressor, OBJ_Freq, "Компрессор, Гц" },
+		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
 		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
 		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
 		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
@@ -3059,9 +3214,9 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
 		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
 		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Power, OBJ_power220, "Потребление, кВт" },
-		{ STATS_OBJ_Power, OBJ_powerCO, "Выработка, кВт" },
-		{ STATS_OBJ_COP, OBJ_COP_Full, "КОП" }
+		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
+		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
+		{ STATS_OBJ_COP_Full, 0, "COP" }
 	};
 
   #define PID_FORMULA2							// Адаптированный алгоритм ПИД Arduino-PID-Library
@@ -3340,7 +3495,11 @@ const char *noteTemp[] = {"Температура улицы",
     #define PIN_ETH_INT         3         // ++ ETH-INT Прерывание с w5500 пока не используется надо програмировать на вход
     #define PIN_LED1           42         // ++ LED1 Первый красный светодиод для контроля (питание и фатальная ошибка freeRTOS)
     #define PIN_LED_ERROR      PIN_LED1   // Для библиотеки FreeRTOS
-    #define PIN_LED_OK         43         // ++ LED2 Второй зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+#ifdef TEST_BOARD
+	#define PIN_LED_OK			13          // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+#else
+	#define PIN_LED_OK			43          // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+#endif
     #define PIN_KEY1           44         // ++ KEY1 Первая кнопка (ТН вкл/вкл) Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
     #define PIN_BEEP           45         // ++  SOUND Выход на пищалку  88- нога не использующиеся
      
@@ -3742,27 +3901,27 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_Temp, TSUNOUTG },
 		{ STATS_OBJ_Flow, FLOWEVA },
 		{ STATS_OBJ_Flow, FLOWCON },
-		{ STATS_OBJ_Press, PGEO },
+//		{ STATS_OBJ_Press, PGEO },
 		{ STATS_OBJ_Press, POUT },
 		{ STATS_OBJ_PressTemp, PEVA },
 		{ STATS_OBJ_PressTemp, PCON }
 	};
 	const Charts_Const_setup ChartsConstSetup[] = {
-		{ STATS_OBJ_EEV, 0, "ЭРВ" },
-		{ STATS_OBJ_Overheat, 0, "Перегрев" },
-		{ STATS_OBJ_Overheat2, 0, "Перегрев на входе компрессора" },
-		{ STATS_OBJ_Compressor, 0, "Частота, Гц" },
-		{ STATS_OBJ_Power_FC, 0, "Мощность компрессора" },
-		{ STATS_OBJ_Power, 0, "Потребляемая мощность" },
-		{ STATS_OBJ_COP_Full, 0, "COP" }
+		{ STATS_OBJ_EEV, "ЭРВ" },
+		{ STATS_OBJ_Overheat, "Перегрев" },
+		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+		{ STATS_OBJ_Compressor, "Частота, Гц" },
+//		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+		{ STATS_OBJ_Power, "Потребляемая мощность" },
+		{ STATS_OBJ_COP_Full, "COP" }
 	};
 	const Charts_Const_setup ChartsOnFlySetup[] = {
-		{ STATS_OBJ_Overcool, "Переохлаждение" },
-		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" },
-		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" },
-		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" },
-		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" },
-		{ STATS_OBJ_Power_OUT, "Выходная мощность" }
+		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
 	};
 
 	// История (графики) на SD карте

@@ -76,20 +76,12 @@ int8_t devOmronMX2::initFC()
   else {journal.jprintf("Invertor %s: none config\r\n",name);return err;  }  // выходим если нет инвертора
 
   note=(char*)noteFC_OK;             // Описание инвертора есть
-  ChartFC.init(get_present());               // инициалазация графика
   #ifdef FC_ANALOG_CONTROL                      // Аналоговое управление графики не нужны
   	  pin = PIN_DEVICE_FC;                // Ножка куда прицеплено FC
   	  analogWriteResolution(12);        // разрешение ЦАП 12 бит;
   	  analogWrite(pin,dac);
   	  ChartPower.init(false);                 // инициалазация графика
-#ifndef MIN_RAM_CHARTS
-  	  ChartCurrent.init(false);               // инициалазация графика
-#endif
   #else									// НЕ Аналоговое управление
-      ChartPower.init(get_present());            // инициалазация графика
-#ifndef MIN_RAM_CHARTS
-      ChartCurrent.init(get_present());          // инициалазация графика
-#endif
       err=Modbus.LinkTestOmronMX2();     // проверка связи с инвертором  xModbusSemaphore не используем так как в один поток
       check_blockFC();   
       if (err!=OK)  return err;          // связи нет выходим
