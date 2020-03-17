@@ -477,6 +477,9 @@ void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
 				strcat(ret, "V");		// ось напряжение
 				break;
 			case STATS_OBJ_Power:
+			case STATS_OBJ_Power_OUT:
+			case STATS_OBJ_Power_GEO:
+			case STATS_OBJ_Power_FC:
 				strcat(ret, "W");		// ось мощность
 				break;
 			case STATS_OBJ_COP_Full:
