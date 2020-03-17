@@ -80,7 +80,6 @@ class sensorADC
     uint16_t get_save_size(void) { return sizeof(cfg); } // Размер структуры сохранения
     void	after_load(void);
    
-    statChart Chart;                                      // График по датчику
     //type_rawADC adc;                                      // структура для хранения сырых данных с АЦП
     uint32_t adc_sum;                          			// сумма
     uint16_t *adc_filter;              						// массив накопленных значений
@@ -206,7 +205,6 @@ public:
   inline int8_t  get_pinF(){return pin;}                 // Получить ногу куда прицеплен датчик
   uint8_t *get_save_addr(void) { return (uint8_t *)&number; } // Адрес структуры сохранения
   uint16_t get_save_size(void) { return (byte*)&Capacity - (byte*)&number + sizeof(Capacity); } // Размер структуры сохранения
-  statChart Chart;                                       // Статистика по датчику
     
 private:
    uint32_t Frequency;                                   // значение частоты в тысячных герца
@@ -345,7 +343,6 @@ public:
 	void resetPID();                                       // Сброс пид регулятора
 
 	StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
-	statChart Chart;                                       // График по ЭРВ
 	boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
 	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
 	int16_t OverheatTCOMP;								// перегрев TCOMPIN-T[PEVA]
@@ -522,12 +519,6 @@ class devSDM
       
       uint8_t  *get_save_addr(void) { return (uint8_t *)&settingSDM; } // Адрес структуры сохранения
       uint16_t  get_save_size(void) { return sizeof(settingSDM); } // Размер структуры сохранения
-       // Графики из счетчика
-#ifndef MIN_RAM_CHARTS
-      statChart ChartVoltage;                          // Статистика по напряжению
-//      statChart ChartCurrent;                          // Статистика по току
-#endif
-      statChart ChartPower;                            // Статистика по Полная мощность
   private:
       int8_t  err;                                     // ошибка стесчика (работа)
       uint16_t numErr;                                 // число ошибок чтение по модбасу

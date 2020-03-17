@@ -28,6 +28,7 @@
 #include "OmronFC.h"
 #include "VaconFC.h"
 #include "Scheduler.h"
+
 extern char *MAC2String(byte* mac);
 
 int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw);
@@ -151,6 +152,7 @@ struct type_optionHP
  uint16_t maxBackupPower;		     	// Максимальная мощность при питании от генератора (Вт)
  int16_t  SunTempOn;					// Температура выше которой открывается СК
  int16_t  SunTempOff;					// Температура ниже которой закрывается СК
+ uint16_t MinCompressorOn;              // Минимальное время работы компрессора в секундах
 };// __attribute__((packed));
 
 
@@ -380,7 +382,7 @@ class HeatPump
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //
    uint16_t get_flags() { return Option.flags; }					  // Все флаги
-   void     updateNextion();                                          // Обновить настройки дисплея
+   void     updateNextion(bool need_init);                             // Обновить настройки дисплея
   
    void set_HP_error_state() { Status.State = pERROR_HP; }
    inline void  set_HP_OFF(){SETBIT0(motoHour.flags,fMH_ON);Status.State=pOFF_HP;}// Сброс флага включения ТН
@@ -448,26 +450,24 @@ class HeatPump
     boolean safeNetwork;                                   // Режим работы safeNetwork (сеть по умолчанию, паролей нет)
       
    
-    // функции для работой с графикками
-    uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления ститистики в секундах
-    void updateChart();                                     // обновить статистику
-    void startChart();                                      // Запуститьь статистику
-    char * get_listChart(char* str);				          // получить список доступных графиков
-    void get_Chart(char *var,char* str);   				   // получить данные графика
-  
-    // графики не по датчикам (по датчикам она хранится внутри датчика)
-    statChart ChartRCOMP;                                   // Статистика по включению компрессора
-    
-    #ifdef EEV_DEF
-    statChart ChartOVERHEAT;                                // перегрев
-    statChart ChartOVERHEAT2;                               // перегрев2
-    statChart ChartTPEVA;                                   // температура расчитанная из давления испариения
-    statChart ChartTPCON;                                   // температура расчитанная из давления Конденсации
-    #endif
-    statChart ChartCOP;                                     // Коэффициент преобразования
-    statChart ChartFullCOP;                                 // ПОЛНЫЙ Коэффициент преобразования
-    
-    float powerCO;                                          // Мощность системы отопления, Вт
+    // Графики в памяти
+    uint16_t get_tChart(){return Option.tChart;}           // Получить время накопления графиков в секундах
+    void updateChart();                                    // обновить графики в памяти
+    void clearChart();                                     // Очистить графики в памяти
+    void get_listChart(char* ret, const char *delimiter);	       // получить список доступных графиков
+    void get_Chart(int index, char *str);                  // получить данные графика
+    statChart Charts[sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0])];
+    uint8_t Chart_PressTemp_PCON;
+    uint8_t Chart_Temp_TCONOUT;
+    uint8_t Chart_Temp_TCOMP;
+    uint8_t Chart_Temp_TCONOUTG;
+    uint8_t Chart_Temp_TCONING;
+    uint8_t Chart_Temp_TEVAING;
+    uint8_t Chart_Temp_TEVAOUTG;
+    uint8_t Chart_Flow_FLOWCON;
+    uint8_t Chart_Flow_FLOWEVA;
+
+    float powerOUT;                                         // Мощность выходная, Вт
     float powerGEO;                                         // Мощность системы GEO, Вт
     float power220;                                         // Мощность системы 220, Вт
     int32_t fullCOP;                                        // Полный СОР сотые

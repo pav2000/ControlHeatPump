@@ -227,12 +227,6 @@ public:
   int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
 #endif
 
-  statChart ChartFC;                               // График по скорости
-  statChart ChartPower;                            // График по мощности
-#ifndef MIN_RAM_CHARTS
-  statChart ChartCurrent;                          // График по току инвертора
-#endif
-
  private:
   int8_t   err;										// ошибка частотника (работа) при ошибке останов ТН
   uint16_t numErr;									// число ошибок чтение по модбасу

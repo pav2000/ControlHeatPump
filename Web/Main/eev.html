@@ -7,6 +7,7 @@
 <script type="text/javascript" src="scripts.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
+<script type="text/javascript" src="export-csv2.js"></script>
 <script type="text/javascript">
 var dataSeries1 = [], dataSeries2 = [], dataSeries3 = [], dataSeries4 = [];
 var ReadyMask = 0;
@@ -20,18 +21,20 @@ function createChart(values, resultdiv) {
 		dataSeries3.splice(0,dataSeries3.length);
 		dataSeries4.splice(0,dataSeries4.length);
 	}
-	if(title == 'Overheat') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
-		ReadyMask |= 1;
-	} else if(title == 'posEEV') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
-		ReadyMask |= 2;
-	} else if(title == 'Overheat2') {
-		for(var i = 0; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
-		ReadyMask |= 4;
-	} else if(title == 'TCOMP-TCON' && showdelta) {
-		for(var i = 0; i < data.length - 1; i++) dataSeries4.push([i, Number(data[i])]);
-		ReadyMask |= 8;
+	if(data.length > 1) {
+		if(data[0] == '2') { // Overheat
+			for(var i = 1; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+			ReadyMask |= 1;
+		} else if(data[0] == '10') { // EEV
+			for(var i = 1; i < data.length - 1; i++) dataSeries2.push([i, Number(data[i])]);
+			ReadyMask |= 2;
+		} else if(data[0] == '3') { // Overheat2
+			for(var i = 1; i < data.length - 1; i++) dataSeries3.push([i, Number(data[i])]);
+			ReadyMask |= 4;
+		} else if(data[0] == '5' && showdelta) { // TCOMP_TCON
+			for(var i = 1; i < data.length - 1; i++) dataSeries4.push([i, Number(data[i])]);
+			ReadyMask |= 8;
+		}
 	}
 	if(ReadyMask != (showdelta ? 15 : 7)) return;
 	ReadyMask = 0;
@@ -61,6 +64,8 @@ function createChart(values, resultdiv) {
 			downloadPDF: "Скачать PDF документ",
 			downloadPNG: "Скачать PNG картинку",
 			downloadSVG: "Скачать SVG векторную картинку",
+			downloadCSV: "Скачать CSV",
+			downloadXLS: "Скачать XLS",
 			drillUpText: "Вернуться к {series.name}",
 			loading: "Загрузка...",
 			noData: "Нет информации для отображения",
@@ -180,11 +185,11 @@ function createChart(values, resultdiv) {
 	});
 }
 function GetChart() {
-	loadParam("get_Chart(posEEV)");	
-	loadParam("get_Chart(Overheat)"); 
-	loadParam("get_Chart(Overheat2)");
+	loadParam("get_Chart(EEV)"); // EEV
+	loadParam("get_Chart(OH)"); // Overheat
+	loadParam("get_Chart(OH2)"); // Overheat2
 	showdelta = document.getElementById("showdelta").checked;
-	if(showdelta) loadParam("get_Chart(TCOMP-TCON)");
+	if(showdelta) loadParam("get_Chart(TT)"); // TCOMP_TCON
 }
 window.onload = function() {
 	urlupdate = 2000;

@@ -70,7 +70,7 @@ window.onload = function() {
     <tr><td>Начинать работу ЭРВ со стартовой позиции<sup>3</sup></td><td nowrap><input type="checkbox" id="get_peev-start" onchange="setParam('get_pEEV(START)');"></td></tr>
     <tr><td>Стартовая позиция начала работы ЭРВ (<span name="hide_eevu"></span>) [min..max]</td><td nowrap><input type="number" id="get_peev-sp"> <input type="submit" value=">" onclick="setParam('get_pEEV(SP)');"></td></tr>
     <tr><td>Стартовая позиция ЭРВ определяется по температуре подачи (10..45°)</td><td><input type="checkbox" id="get_peev-spt" onchange="setParam('get_pEEV(SPT)');"></td></tr>
-    <tr><td>Положение при подаче 10° (<span name="hide_eevu"></span>)</td><td id="get_peev-sp3"></td></tr>
+    <tr><td>Положение при подаче 10° (<span name="hide_eevu"></span>)</td><td id="get_peev-sp_2"></td></tr>
     <tr><td>Положение при подаче 45° (<span name="hide_eevu"></span>) [min..при 10°]</td><td nowrap><input type="number" id="get_peev-pht"> <input type="submit" value=">" onclick="setParam('get_pEEV(PHT)');"></td></tr>
     <tr><td>Задержка (сек.) начала регулирования от пуска компрессора, 255 - навсегда [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
 

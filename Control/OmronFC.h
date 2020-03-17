@@ -227,12 +227,6 @@ public:
   uint8_t *get_save_addr(void) { return (uint8_t *)&_data; } // Адрес структуры сохранения
   uint16_t get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
 
-  statChart ChartFC;                               // График по частоте
-  statChart ChartPower;                            // График по мощности
-#ifndef MIN_RAM_CHARTS
-  statChart ChartCurrent;                          // График по току инвертора
-#endif
-
 private:
   int8_t  err;                                     // ошибка частотника (работа) при ошибке останов ТН
   uint16_t numErr;                                 // число ошибок чтение по модбасу

@@ -165,11 +165,6 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 #ifdef ANALOG_MODBUS
 	flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
 #endif
-#ifndef MIN_RAM_CHARTS
-	Chart.init(SENSORPRESS[sensor]);  			// инициалазация статистики
-#else
-	Chart.init(sensor > PCON ? SENSORPRESS[sensor] : false);  // инициалазация статистики
-#endif
 	err = OK;                                     // ошибка датчика (работа)
 	Press = 0;                                    // давление датчика (обработанная)
 	Temp = ERROR_TEMPERATURE;
@@ -401,7 +396,6 @@ void sensorFrequency::initFrequency(int sensor)
    pin=pinsFrequency[sensor];                     // Ножка куда прицеплен датчик
    note=(char*)noteFrequency[sensor];             // наименование датчика
    name=(char*)nameFrequency[sensor];             // Имя датчика
-   Chart.init(true);                              // инициалазация статистики
    reset();
    // Привязывание обработчика преваний к методу конкретного класса
    //   LOW вызывает прерывание, когда на порту LOW
@@ -621,7 +615,6 @@ void devEEV::initEEV()
 	SETBIT1(_data.flags, fStartFlagPos);                 // флаг Всегда начинать работу ЭРВ со стратовой позици
 	SETBIT1(_data.flags, fEEV_StartPosByTemp);
 
-	Chart.init(get_present());                   // инициалазация статистики
 	name = (char*) nameEEV;                  // Присвоить имя
 	note = (char*) noteEEV;                  // Присвоить описание
 
@@ -1433,14 +1426,6 @@ int8_t devSDM::initSDM()
 	SETBIT0(flags,fSDMLink);
 	note=(char*)noteSDM_NONE;
 #endif
-	// инициализация статистики
-#ifndef MIN_RAM_CHARTS
-	ChartVoltage.init(GETBIT(flags,fSDM));               // Статистика по напряжению
-#endif
-	//  sAcPower.init(GETBIT(flags,fSDM));               // Статистика по активная мощность
-	//  sRePower.init(GETBIT(flags,fSDM));               // Статистика по Реактивная мощность
-	ChartPower.init(GETBIT(flags, fSDM));                 // Статистика по Полная мощность
-	// ChartPowerFactor.init(GETBIT(flags,fSDM));           // Статистика по Коэффициент мощности
 	return err;
 }
 

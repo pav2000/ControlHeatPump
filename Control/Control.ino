@@ -220,6 +220,7 @@ void setup() {
 
 	// Борьба с зависшими устройствами на шине  I2C (в первую очередь часы) неудачный сброс
 	Recover_I2C_bus();
+	delay(1);
 
 	// 2. Инициализация журнала и в нем последовательный порт
 	journal.Init();
@@ -241,6 +242,7 @@ void setup() {
 	journal.jprintf("Last reason for reset SAM3x: %s\n", ResetCause());
 	journal.jprintf("Last FreeRTOS task + error: 0x%04x", lastErrorFreeRtosCode);
 	if(GPBR->SYS_GPBR[4]) journal.jprintf(" (%d)", GPBR->SYS_GPBR[4]);
+	if(GPBR->SYS_GPBR[5]) journal.jprintf(" Web(%d)", GPBR->SYS_GPBR[5]);
 	journal.jprintf("\n");
 
 #ifdef PIN_LED1                            // Включение (точнее индикация) питания платы если необходимо
@@ -493,11 +495,11 @@ x_I2C_init_std_message:
 	journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
 #ifdef NEXTION
-	journal.jprintf("14. Nextion display - ");
+	journal.jprintf("14. Nextion display -");
 	if(GETBIT(HP.Option.flags, fNextion)) {
-		if(myNextion.init()) journal.jprintf("OK\n");
+		myNextion.init();
 	} else {
-		journal.jprintf("Disabled\n");
+		journal.jprintf(" Disabled\n");
 	}
 #else
 	journal.jprintf("14. Nextion display is absent in config\n");
@@ -670,9 +672,9 @@ void vWeb0(void *)
 	HP.timeNTP = xTaskGetTickCount();        // В первый момент не обновляем
 	for(;;)
 	{
-		STORE_DEBUG_INFO(1);
+		WEB_STORE_DEBUG_INFO(1);
 		web_server(0);
-		STORE_DEBUG_INFO(2);
+		WEB_STORE_DEBUG_INFO(2);
 		active = true;                                                         // Можно работать в этом цикле (дополнительная нагрузка на поток)
 		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 
@@ -705,14 +707,14 @@ void vWeb0(void *)
 
 			// 2. Чистка сокетов
 			if(HP.time_socketRes() > 0) {
-				STORE_DEBUG_INFO(3);
+				WEB_STORE_DEBUG_INFO(3);
 				checkSockStatus();                   // Почистить старые сокеты  если эта позиция включена
 			}
 
 			// 3. Сброс сетевого чипа по времени
 			if((HP.time_resW5200() > 0) && (active))                             // Сброс W5200 если включен и время подошло
 			{
-				STORE_DEBUG_INFO(4);
+				WEB_STORE_DEBUG_INFO(4);
 				resW5200 = xTaskGetTickCount();
 				if(timeResetW5200 == 0) timeResetW5200 = resW5200;      // Первая итерация не должна быть сразу
 				if(resW5200 - timeResetW5200 > HP.time_resW5200() * 1000UL) {
@@ -725,7 +727,7 @@ void vWeb0(void *)
 			// 4. Проверка связи с чипом
 			if((HP.get_fInitW5200()) && (thisTime - iniW5200 > 60 * 1000UL) && (active)) // проверка связи с чипом сети раз в минуту
 			{
-				STORE_DEBUG_INFO(5);
+				WEB_STORE_DEBUG_INFO(5);
 				iniW5200 = thisTime;
 				if(!HP.NO_Power) {
 					boolean lst = linkStatusWiznet(false);
@@ -741,14 +743,14 @@ void vWeb0(void *)
 			// 5.Обновление времени 1 раз в сутки или по запросу (HP.timeNTP==0)
 			if((HP.timeNTP == 0) || ((HP.get_updateNTP()) && (thisTime - HP.timeNTP > 60 * 60 * 24 * 1000UL) && (active))) // Обновление времени раз в день 60*60*24*1000 в тиках HP.timeNTP==0 признак принудительного обновления
 			{
-				STORE_DEBUG_INFO(6);
+				WEB_STORE_DEBUG_INFO(6);
 				HP.timeNTP = thisTime;
 				set_time_NTP();                                                 // Обновить время
 				active = false;
 			}
 			// 6. ping сервера если это необходимо
 			if((HP.get_pingTime() > 0) && (thisTime - pingt > HP.get_pingTime() * 1000UL) && (active)) {
-				STORE_DEBUG_INFO(7);
+				WEB_STORE_DEBUG_INFO(7);
 				pingt = thisTime;
 				pingServer();
 				active = false;
@@ -758,7 +760,7 @@ void vWeb0(void *)
 			// 7. Отправка нанародный мониторинг
 			if ((HP.clMQTT.get_NarodMonUse())&&(thisTime-narmont>TIME_NARMON*1000UL)&&(active))// если нужно & время отправки пришло
 			{
-				STORE_DEBUG_INFO(55);
+				WEB_STORE_DEBUG_INFO(55);
 				narmont=thisTime;
 				sendNarodMon(false);                       // отладка выключена
 				active=false;
@@ -767,7 +769,7 @@ void vWeb0(void *)
 			// 8. Отправка на MQTT сервер
 			if ((HP.clMQTT.get_MqttUse())&&(thisTime-mqttt>HP.clMQTT.get_ttime()*1000UL)&&(active))// если нужно & время отправки пришло
 			{
-				STORE_DEBUG_INFO(56);
+				WEB_STORE_DEBUG_INFO(56);
 				mqttt=thisTime;
 				if(HP.clMQTT.get_TSUse()) sendThingSpeak(false);
 				else sendMQTT(false);
@@ -1363,6 +1365,7 @@ void vServiceHP(void *)
 	static uint16_t restart_cnt;
 	static uint16_t pump_in_pause_timer = 0;
 	for(;;) {
+		STORE_DEBUG_INFO(70);
 		register uint32_t t = xTaskGetTickCount();
 		if(t - timer_sec >= 1000) { // 1 sec
 			WDT_Restart(WDT);
@@ -1382,12 +1385,16 @@ void vServiceHP(void *)
 			if(HP.IsWorkingNow()) {
 				if(((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) && ++task_updstat_chars >= HP.get_tChart()) { // пришло время
 					task_updstat_chars = 0;
+					STORE_DEBUG_INFO(71);
 					HP.updateChart();                                       // Обновить графики
+					STORE_DEBUG_INFO(72);
 				}
 				uint8_t m = rtcSAM3X8.get_minutes();
 				if(m != task_updstat_countm) { 								// Через 1 минуту
 					task_updstat_countm = m;
+					STORE_DEBUG_INFO(73);
 					HP.updateCount();                                       // Обновить счетчики моточасов
+					STORE_DEBUG_INFO(74);
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
 					Stats.History();                                        // запись истории в файл
 				} else if(m != task_dailyswitch_countm) {
@@ -1400,6 +1407,7 @@ void vServiceHP(void *)
 						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power ? fR_StatusDaily : -fR_StatusDaily);
 					}
 				}
+				STORE_DEBUG_INFO(75);
 			}
 			if(HP.PauseStart) {
 				if(HP.PauseStart == 1) {
@@ -1430,12 +1438,17 @@ xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включит�
 					} else pump_in_pause_timer--;
 				}
 			}
+			STORE_DEBUG_INFO(76);
 			Stats.CheckCreateNewFile();
 		}
+		STORE_DEBUG_INFO(77);
 #ifdef NEXTION
 		myNextion.readCommand();                 // прочитать сообщения от дисплея
+		STORE_DEBUG_INFO(78);
 		if(xTaskGetTickCount() - NextionTick > NEXTION_UPDATE) {
+			STORE_DEBUG_INFO(79);
 			myNextion.Update();                  // Обновление дисплея
+			STORE_DEBUG_INFO(80);
 			NextionTick = xTaskGetTickCount();
 		}
 #endif

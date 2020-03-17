@@ -38,7 +38,7 @@ extern void  get_fileSettings(uint8_t thread);
 extern void  get_txtJournal(uint8_t thread);
 extern uint16_t get_csvStatistic(uint8_t thread);
 extern void  get_datTest(uint8_t thread);
-extern uint16_t get_csvChart(uint8_t thread);
+extern void  get_csvChart(uint8_t thread);
 extern int16_t  get_indexNoSD(uint8_t thread);
 extern void  noCsvStatistic(uint8_t thread);
 
@@ -111,7 +111,7 @@ void web_server(uint8_t thread)
 		{
 			while(Socket[thread].client.connected()) {
 				// Ставить вот сюда
-				STORE_DEBUG_INFO(10);
+				WEB_STORE_DEBUG_INFO(10);
 				if(Socket[thread].client.available()) {
 					len = Socket[thread].client.get_ReceivedSizeRX();                  // получить длину входного пакета
 					if(len > W5200_MAX_LEN) {
@@ -257,7 +257,7 @@ void readFileSD(char *filename, uint8_t thread)
 	//  journal.jprintf("$Thread: %d socket: %d read file: %s\n",thread,Socket[thread].sock,filename);
 	// Реализация функционала подмены для имен файлов по типу: plan[HPscheme].png -> plan2.png
 	char *str;
-	STORE_DEBUG_INFO(11);
+	WEB_STORE_DEBUG_INFO(11);
 	if((str = strchr(filename, '[')) != NULL) // скобка найдена надо обрабатывать
 	{
 		if(strncmp(str + 1, filename_subst_scheme, sizeof(filename_subst_scheme)-1) == 0) // найден аргумент (схема ТН) надо подменять на значение HP_SHEME
@@ -280,7 +280,7 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
 	if(strcmp(filename, "journal.txt") == 0) { get_txtJournal(thread); return; }
 	if(strncmp(filename, stats_file_start, sizeof(stats_file_start)-1) == 0) { // Файл статистики, stats_yyyy.dat, stats_yyyy.csv
-		STORE_DEBUG_INFO(12);
+		WEB_STORE_DEBUG_INFO(12);
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -299,7 +299,7 @@ void readFileSD(char *filename, uint8_t thread)
 		return;
 	}
 	if(strncmp(filename, history_file_start, sizeof(history_file_start)-1) == 0) { // Файл Истории полностью: только для бакапа - hist_yyyy.dat, hist_yyyy.csv, обрезанный по периоду - hist__yyyymmdd-yyyymmdd
-		STORE_DEBUG_INFO(13);
+		WEB_STORE_DEBUG_INFO(13);
 	    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
 	    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
 	    strcat(Socket[thread].outBuf, filename);
@@ -325,7 +325,7 @@ void readFileSD(char *filename, uint8_t thread)
 		return;
 	}
 	if(strncmp(filename, "TEST.", 5) == 0) {
-		STORE_DEBUG_INFO(14);
+		WEB_STORE_DEBUG_INFO(14);
 		filename += 5;
 		if(strcmp(filename, "DAT") == 0) { // TEST.DAT
 			get_datTest(thread);
@@ -377,7 +377,7 @@ void readFileSD(char *filename, uint8_t thread)
 		break;
 	case pSD_WEB:
 		{ // Чтение с карты  файлов
-			STORE_DEBUG_INFO(15);
+			WEB_STORE_DEBUG_INFO(15);
 			SPI_switchSD();
 			if(!webFile.open(filename, O_READ))
 			{
@@ -415,7 +415,7 @@ xFileFound:
 		break;
 	case pFLASH_WEB:
 		{
-			STORE_DEBUG_INFO(16);
+			WEB_STORE_DEBUG_INFO(16);
 			SerialFlashFile ff = SerialFlash.open(filename);
 			if(ff) {
 	#ifdef LOG
@@ -476,7 +476,7 @@ void parserGET(uint8_t thread, int8_t )
 	urldecode(buf, buf, W5200_MAX_LEN);
 	while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельных комманд
 	{
-		STORE_DEBUG_INFO(20);
+		WEB_STORE_DEBUG_INFO(20);
 		strReturn += strlen(strReturn);
 		if((strpbrk(str,"="))==0) // Повторить тело запроса и добавить "=" ДЛЯ НЕ set_ запросов
 		{
@@ -612,7 +612,8 @@ void parserGET(uint8_t thread, int8_t )
 			str += 8;
 			if(strcmp(str,"Chart")==0)  // Функция get_listChart - получить список доступных графиков
 			{
-				HP.get_listChart(strReturn);  // строка добавляется
+				strcat(strReturn, "---:1;");
+				HP.get_listChart(strReturn, ":0;");
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
@@ -754,7 +755,7 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
-		STORE_DEBUG_INFO(21);
+		WEB_STORE_DEBUG_INFO(21);
 
 		if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
@@ -818,7 +819,7 @@ void parserGET(uint8_t thread, int8_t )
 			HP.sendCommand(pSTOP);        // Послать команду на останов ТН
 			if (HP.get_State()==pWORK_HP)  strcat(strReturn,cOne); else  strcat(strReturn,cZero); ADD_WEBDELIM(strReturn) ;    continue;
 		}
-		STORE_DEBUG_INFO(22);
+		WEB_STORE_DEBUG_INFO(22);
 
 		if (strcmp(str,"get_errcode")==0)  // Функция get_errcode
 		{
@@ -842,7 +843,7 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_PowerCO") == 0)
 		{
-			_ftoa(strReturn, HP.powerCO/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
+			_ftoa(strReturn, HP.powerOUT/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_PowerGEO") == 0)
 		{
@@ -922,7 +923,7 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			ADD_WEBDELIM(strReturn); continue;
 		}
-		STORE_DEBUG_INFO(23);
+		WEB_STORE_DEBUG_INFO(23);
 
 		if(strcmp(str,"TEST")==0)   // Команда TEST
 		{
@@ -953,7 +954,7 @@ void parserGET(uint8_t thread, int8_t )
 		}
 
 		if(strncmp(str, "RESET_", 6)==0) {
-			STORE_DEBUG_INFO(24);
+			WEB_STORE_DEBUG_INFO(24);
 			str += 6;
 			if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
 				HP.Reset_TempErrors();
@@ -1123,7 +1124,7 @@ void parserGET(uint8_t thread, int8_t )
 
 		if (strcmp(str,"CONST")==0)   // Команда CONST  Информация очень большая по этому разбито на 2 запроса CONST CONST1
 		{
-			STORE_DEBUG_INFO(25);
+			WEB_STORE_DEBUG_INFO(25);
 			strcat(strReturn,"VERSION|Версия прошивки|");strcat(strReturn,VERSION);strcat(strReturn,";");
 			strcat(strReturn,"__DATE__ __TIME__|Дата и время сборки прошивки|");strcat(strReturn,__DATE__);strcat(strReturn," ");strcat(strReturn,__TIME__) ;strcat(strReturn,";");
 			strcat(strReturn,"CONFIG_NAME|Имя конфигурации|");strcat(strReturn,CONFIG_NAME);strcat(strReturn,";");
@@ -1296,7 +1297,7 @@ void parserGET(uint8_t thread, int8_t )
 		if(strncmp(str, "get_sys", 7) == 0)
 		{
 			str += 7;
-			STORE_DEBUG_INFO(26);
+			WEB_STORE_DEBUG_INFO(26);
 			if(strcmp(str, "Info") == 0) { // "get_sysInfo" - Функция вывода системной информации для разработчика
 				strcat(strReturn,"Источник загрузкки web интерфейса |");
 				switch (HP.get_SourceWeb())
@@ -1307,11 +1308,11 @@ void parserGET(uint8_t thread, int8_t )
 				default:         strcat(strReturn,"unknown;"); break;
 				}
 
-				strcat(strReturn, "Входное напряжение питания контроллера, V:|");
+				strcat(strReturn, "Входное напряжение питания контроллера, V|");
 	#ifdef VCC_CONTROL  // если разрешено чтение напряжение питания
 				_ftoa(strReturn,(float)HP.AdcVcc/K_VCC_POWER,2);strcat(strReturn,";");
 	#else
-				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "%sесли < %.1d - сброс;", Is_otg_vbus_high() ? ", +USB" : "", ((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) + 19);
+				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "%sесли < %.1d - сброс;", Is_otg_vbus_high() ? "+USB, " : "", ((SUPC->SUPC_SMMR & SUPC_SMMR_SMTH_Msk) >> SUPC_SMMR_SMTH_Pos) + 19);
 	#endif
 				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Режим safeNetwork (%sадрес:%d.%d.%d.%d шлюз:%d.%d.%d.%d, не спрашивать пароль)|%s;", defaultDHCP ?"DHCP, ":"",defaultIP[0],defaultIP[1],defaultIP[2],defaultIP[3],defaultGateway[0],defaultGateway[1],defaultGateway[2],defaultGateway[3],HP.safeNetwork ?cYes:cNo);
 				//strcat(strReturn,"Уникальный ID чипа SAM3X8E|");
@@ -1330,14 +1331,14 @@ void parserGET(uint8_t thread, int8_t )
 				strcat(strReturn,";");
 
 				// Вывод строки статуса
-				STORE_DEBUG_INFO(46);
+				WEB_STORE_DEBUG_INFO(46);
 				strReturn += m_snprintf(strReturn += strlen(strReturn), 256, "Строка статуса ТН <sup>4</sup>|State:%d modWork:%X[%s] fHP:%X", HP.get_State(), HP.get_modWork(), codeRet[HP.get_ret()], HP.flags);
 				//for(i = 0; i < RNUMBER; i++) strReturn += m_snprintf(strReturn, 32, " %s:%d", HP.dRelay[i].get_name(), HP.dRelay[i].get_Relay());
 				//if(HP.dFC.get_present())  {strcat(strReturn," freqFC:"); _ftoa(strReturn,(float)HP.dFC.get_frequency()/100.0,2); }
 				//if(HP.dFC.get_present())  {strcat(strReturn," Power:"); _ftoa(strReturn,(float)HP.dFC.get_power()/1000.0,3);  }
 				strcat(strReturn,";");
 
-				STORE_DEBUG_INFO(47);
+				WEB_STORE_DEBUG_INFO(47);
 				strcat(strReturn,"<b> Времена</b>|;");
 				strcat(strReturn,"Текущее время|"); DecodeTimeDate(rtcSAM3X8.unixtime(),strReturn); strcat(strReturn,";");
 				strcat(strReturn,"Время последнего включения ТН|");DecodeTimeDate(HP.get_startTime(),strReturn);strcat(strReturn,";");
@@ -1383,7 +1384,7 @@ void parserGET(uint8_t thread, int8_t )
 				}
 	#endif
 
-				STORE_DEBUG_INFO(48);
+				WEB_STORE_DEBUG_INFO(48);
 				strcat(strReturn,"<b> Статистика за день</b>|;");
 				strReturn += strlen(strReturn);
 				Stats.StatsWebTable(strReturn);
@@ -1404,7 +1405,7 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			ADD_WEBDELIM(strReturn); continue;
 		}
-		STORE_DEBUG_INFO(27);
+		WEB_STORE_DEBUG_INFO(27);
 
 		if (strcmp(str,"test_Mail")==0)  // Функция test_mail
 		{
@@ -1509,6 +1510,11 @@ void parserGET(uint8_t thread, int8_t )
 			} else if(strcmp(str,"Flow")==0)     // Функция get_tblFlow
 			{
 				for(i=0;i<FNUMBER;i++) if(HP.sFrequency[i].get_present()){strcat(strReturn,HP.sFrequency[i].get_name());strcat(strReturn,";");}
+			} else if(strcmp(str,"Charts")==0) {    // Функция get_tblCharts
+				for(uint8_t i = 0; i < sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]); i++) {
+					_itoa(i, strReturn);
+					strcat(strReturn, ";");
+				}
 			} else if(strcmp(str,"PDS")==0) {    // Функция get_tblPDS
 				for(i = 0; i < DAILY_SWITCH_MAX; i++) {
 					if(HP.Prof.DailySwitch[i].Device == 0) {
@@ -1540,7 +1546,7 @@ void parserGET(uint8_t thread, int8_t )
 		// -----------------------------------------------------------------------------------------------------
 		// 2. Функции с параметром ------------------------------------------------------------------------------
 		// Ищем скобки ------------------------------------------------------------------------------------------
-		STORE_DEBUG_INFO(28);
+		WEB_STORE_DEBUG_INFO(28);
 		if (((x=strpbrk(str,"("))!=0)&&((y=strpbrk(str,")"))!=0))  // Функция с одним параметром - найдена открывающиеся и закрывающиеся скобка
 		{
 			// Выделяем параметр функции на выходе число - номер параметра
@@ -1679,7 +1685,7 @@ void parserGET(uint8_t thread, int8_t )
 			// ----------------------------------------------------------------------------------------------------------
 			// 2.2 Функции с одним параметром
 			// ----------------------------------------------------------------------------------------------------------
-			STORE_DEBUG_INFO(29);
+			WEB_STORE_DEBUG_INFO(29);
 
 			if (strcmp(str,"set_modeHP")==0)           // Функция set_modeHP - установить режим отопления ТН
 			{
@@ -1763,7 +1769,7 @@ void parserGET(uint8_t thread, int8_t )
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//  2.3 Функции с параметрами
 			// проверяем наличие функции set_  конструкция типа (TIN=23)
-			STORE_DEBUG_INFO(30);
+			WEB_STORE_DEBUG_INFO(30);
 			if((z=strpbrk(x,"=")) != NULL)  // нашли знак "=" запрос на установку параметра
 			{
 				*z++ = 0; // '=' -> '\0'
@@ -1811,7 +1817,7 @@ void parserGET(uint8_t thread, int8_t )
 				continue;
 			}
 #endif
-			STORE_DEBUG_INFO(31);
+			WEB_STORE_DEBUG_INFO(31);
 
 			// 3. Расписание --------------------------------------------------------
 			// ошибки: E33 - не верный номер расписания, E34 - не хватает места для календаря
@@ -1840,7 +1846,7 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn); continue;
 			}
 #endif
-			STORE_DEBUG_INFO(32);
+			WEB_STORE_DEBUG_INFO(32);
 
 			// 5.  Настройки профилей ---------------------------------------------------------
 			if(strcmp(str, "get_Prof") == 0)           // Функция получить настройки профиля
@@ -1881,12 +1887,12 @@ void parserGET(uint8_t thread, int8_t )
 			//8.  Настройки дата время --------------------------------------------------------
 			if (strcmp(str,"get_datetime")==0)           // Функция get_datetim - получить значение даты времени
 			{
-				STORE_DEBUG_INFO(33);
+				WEB_STORE_DEBUG_INFO(33);
 				HP.get_datetime(x,strReturn);
 				ADD_WEBDELIM(strReturn) ; continue;
 			} else if (strcmp(str,"set_datetime")==0)           // Функция set_datetime - установить значение даты и времени
 			{
-				STORE_DEBUG_INFO(34);
+				WEB_STORE_DEBUG_INFO(34);
 				if (HP.set_datetime(x,z))  HP.get_datetime(x,strReturn);    // преобразование удачно
 				else  strcat(strReturn,"E18") ; // ошибка преобразования строки
 				ADD_WEBDELIM(strReturn) ; continue;
@@ -1904,26 +1910,66 @@ void parserGET(uint8_t thread, int8_t )
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
 
-			//11.  Графики смещение  используется в одной функции get_Chart -------------------------------------------
-			if (strcmp(str,"get_Chart")==0)           // Функция get_Chart - получить график
-			{
-				HP.get_Chart(x,strReturn);
-				ADD_WEBDELIM(strReturn); continue;
+			//11.  Графики -------------------------------------------
+			if(strncmp(str + 1, "et_Chart", 8) == 0) {
+				char c = str[9];
+				if(c == '\0') {
+					if(strcmp(x, "CLR") == 0) HP.clearChart(); // get_Chart(CLR)
+					else {
+						if(*x < '0' || *x > '9') { // EEV related charts
+							uint8_t obj = 255;
+							if(strcmp(x, "EEV") == 0) obj = STATS_OBJ_EEV;
+							else if(strcmp(x, "OH") == 0) obj = STATS_OBJ_Overheat;
+							else if(strcmp(x, "OH2") == 0) obj = STATS_OBJ_Overheat2;
+							else if(strcmp(x, "TT") == 0) obj = STATS_OBJ_TCOMP_TCON;
+							else for(i = 0; STATS_OBJ_names[i]; i++) if(strcmp(x, STATS_OBJ_names[i]) == 0) {
+								obj = i;
+								break;
+							}
+							if(obj != 255) {
+								l_i32 = -1;
+								for(uint8_t index = 0; index < sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]); index++) {
+									if(ChartsConstSetup[index].object == obj) {
+										l_i32 = sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + index + 1;
+										break;
+									}
+								}
+								if(l_i32 < 0) for(uint8_t index = 0; index < sizeof(ChartsOnFlySetup) / sizeof(ChartsOnFlySetup[0]); index++) {
+									if(ChartsOnFlySetup[index].object == obj) {
+										l_i32 = sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]) + index + 1;
+										break;
+									}
+								}
+							}
+						} else l_i32 = atoi(x);
+						HP.get_Chart(l_i32, strReturn); // Функция get_Chart - получить график
+					}
+				} else {
+					l_i32 = atoi(x);
+					if(l_i32 >= 0 && l_i32 < (int32_t)(sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]))) {
+						if(*str == 's') {					// set_ChartX
+							Charts_set_param(l_i32, c, z);
+						}
+						Charts_get_param(l_i32, c, strReturn); // get_ChartX
+					}
+				}
+				ADD_WEBDELIM(strReturn);
+				continue;
 			}
 
 			//12.  Частотный преобразователь -----------------------------------------------------------------
 			if (strcmp(str,"get_pFC")==0)           // Функция get_paramFC - получить значение параметра FC
 			{
-				STORE_DEBUG_INFO(35);
+				WEB_STORE_DEBUG_INFO(35);
 				HP.dFC.get_paramFC(x,strReturn);
 				ADD_WEBDELIM(strReturn);
 				continue;
 			} else if (strcmp(str,"set_pFC")==0)           // Функция set_paramFC - установить значение паремтра FC
 			{
-				STORE_DEBUG_INFO(36);
+				WEB_STORE_DEBUG_INFO(36);
 				if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
 					if (HP.dFC.set_paramFC(x,pm)) HP.dFC.get_paramFC(x,strReturn);
-					else  strcat(strReturn,"E27");  // выход за диапазон значений
+					else  strcat(strReturn,"E27");  // выход за диапазон зна\чений
 				} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
 				ADD_WEBDELIM(strReturn);
 				continue;
@@ -1963,15 +2009,14 @@ void parserGET(uint8_t thread, int8_t )
 				} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
 				ADD_WEBDELIM(strReturn) ; continue;
 			}
-			STORE_DEBUG_INFO(37);
-
+			WEB_STORE_DEBUG_INFO(37);
 
 			// str - полное имя запроса до (), x - содержит строку что между (), z - после =
 			// код обработки установки значений модбас
 			// get_modbus_val(N:D:X), set_modbus_val(N:D:X=YYY)
 			// N - номер устройства, D - тип данных, X - адрес, Y - новое значение
 			if(strncmp(str+1, "et_modbus_", 10) == 0) {
-				STORE_DEBUG_INFO(38);
+				WEB_STORE_DEBUG_INFO(38);
 				if((y = strchr(x, ':'))) {
 					*y++ = '\0';
 					uint8_t id = atoi(x);
@@ -2101,7 +2146,7 @@ void parserGET(uint8_t thread, int8_t )
 #endif //  #ifdef SENSOR_IP
 
 			//////////////////////////////////////////// массивы датчиков ////////////////////////////////////////////////
-			STORE_DEBUG_INFO(40);
+			WEB_STORE_DEBUG_INFO(40);
 
 			{ // Массивы датчиков
 				int p = -1;
@@ -2267,7 +2312,7 @@ x_get_aTemp:
 				// РЕЛЕ
 				if(strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
 				{
-					STORE_DEBUG_INFO(44);
+					WEB_STORE_DEBUG_INFO(44);
 					for(i=0;i<RNUMBER;i++) if(strcmp(x,HP.dRelay[i].get_name())==0) {p=i; break;} // Реле
 					if ((p<0)||(p>=RNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2320,7 +2365,7 @@ x_get_aTemp:
 				// Датчики аналоговые, давления, ТОЧНОСТЬ СОТЫЕ
 				if(strstr(str,"Press"))          // Проверка для запросов содержащих Press
 				{
-					STORE_DEBUG_INFO(41);
+					WEB_STORE_DEBUG_INFO(41);
 					for(i=0;i<ANUMBER;i++) if(strcmp(x,HP.sADC[i].get_name())==0) {p=i; break;} // Поиск среди имен
 					if ((p<0)||(p>=ANUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2448,7 +2493,7 @@ x_get_maxPress: 					_dtoa(strReturn, HP.sADC[p].get_maxPress(), 2);
 				// Частотные датчики ДАТЧИКИ ПОТОКА
 				if(strstr(str,"Flow"))          // Проверка для запросов содержащих Frequency
 				{
-					STORE_DEBUG_INFO(43);
+					WEB_STORE_DEBUG_INFO(43);
 					for(i=0;i<FNUMBER;i++) if(strcmp(x,HP.sFrequency[i].get_name())==0) {p=i; break;} // Частотные датчики
 					if ((p<0)||(p>=FNUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2550,7 +2595,7 @@ x_get_maxPress: 					_dtoa(strReturn, HP.sADC[p].get_maxPress(), 2);
 				//  Датчики сухой контакт
 				if(strstr(str,"Input"))          // Проверка для запросов содержащих Input
 				{
-					STORE_DEBUG_INFO(42);
+					WEB_STORE_DEBUG_INFO(42);
 					for(i=0;i<INUMBER;i++) if(strcmp(x,HP.sInput[i].get_name())==0) {p=i; break;} // Поиск среди имен
 					if ((p<0)||(p>=INUMBER))  {strcat(strReturn,"E03");ADD_WEBDELIM(strReturn);  continue; }  // Не соответсвие имени функции и параметра
 					else  // параметр верный
@@ -2641,7 +2686,7 @@ x_FunctionNotFound:
 		strcat(strReturn,"E01");   // Ошибка нет такой команды
 		ADD_WEBDELIM(strReturn) ;
 	}
-	STORE_DEBUG_INFO(45);
+	WEB_STORE_DEBUG_INFO(45);
 	ADD_WEBDELIM(strReturn) ; // двойной знак закрытие посылки
 }
 
@@ -2650,7 +2695,7 @@ x_FunctionNotFound:
 // thread - номер потока, возсращает тип запроса
 uint16_t GetRequestedHttpResource(uint8_t thread)
 {
-	STORE_DEBUG_INFO(50);
+	WEB_STORE_DEBUG_INFO(50);
 	if((HP.get_fPass()) && (!HP.safeNetwork))  // идентификация если установлен флаг и перемычка не в нуле
 	{
 		//Serial.print("\n"); Serial.print((char*)Socket[thread].inBuf); Serial.print("\n");
@@ -2716,7 +2761,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	int32_t buf_len, lenFile;
 
 	//journal.printf(" POST =>"); journal.printf("%s\n", Socket[thread].inPtr); if(strlen(Socket[thread].inPtr) >= PRINTF_BUF) journal.printf("%s\n", Socket[thread].inPtr + PRINTF_BUF - 1);
-	STORE_DEBUG_INFO(51);
+	WEB_STORE_DEBUG_INFO(51);
 
 	// Поиски во входном буфере: данных, имени файла и длины файла
 	ptr = (byte*) strstr(Socket[thread].inPtr, emptyStr) + sizeof(emptyStr) - 1;    // поиск начала даных
@@ -2750,7 +2795,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	buf_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
 	if(strcmp(nameFile, SETTINGS) == 0) {  // Чтение настроек
-		STORE_DEBUG_INFO(52);
+		WEB_STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
 		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
@@ -2790,7 +2835,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 
 	// загрузка вебморды
 	 else if(HP.get_fSPIFlash() || HP.get_fSD())  { // если есть куда писать
-		STORE_DEBUG_INFO(53);
+		WEB_STORE_DEBUG_INFO(53);
 		if(strcmp(nameFile, LOAD_FLASH_START) == 0) {  // начало загрузки вебморды в SPI Flash
 			if(!HP.get_fSPIFlash()) {
 				journal.jprintf("Upload: No SPI Flash installed!\n");
@@ -2860,7 +2905,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 				if(fWebUploadingFilesTo == 1) {
 					uint16_t numPoint = 0;
 					int32_t loadLen; // Обработанная (загруженная) длина
-					STORE_DEBUG_INFO(54);
+					WEB_STORE_DEBUG_INFO(54);
 					journal.jprintf("%s (%d) ", nameFile, lenFile);
 					loadLen = SerialFlash.free_size();
 					if(lenFile > loadLen) {
@@ -2905,7 +2950,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 						return pLOAD_ERR;
 					}
 				} else if(fWebUploadingFilesTo == 2) { // Запись на SD,
-					STORE_DEBUG_INFO(54);
+					WEB_STORE_DEBUG_INFO(54);
 					journal.jprintf("%s (%d) ", nameFile, lenFile);
 					for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
 					if(wFile.opens(nameFile, O_CREAT | O_TRUNC | O_RDWR, &wfname)) {
@@ -2922,20 +2967,20 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 									if(Socket[thread].client.connected()) continue; else break;
 								}
 								Socket[thread].client.read(Socket[thread].inBuf, buf_len);                      // прочитать буфер
-								STORE_DEBUG_INFO(56);
+								WEB_STORE_DEBUG_INFO(56);
 								for(uint16_t _timeout = 0; _timeout < 2000 && card.card()->isBusy(); _timeout++) _delay(1);
 								if((int32_t)wFile.write(Socket[thread].inBuf, buf_len) != buf_len) {
 									journal.jprintf("Error write file %s (%d,%d)!\n", nameFile, card.cardErrorCode(), card.cardErrorData());
 									break;
 								}
-								STORE_DEBUG_INFO(57);
+								WEB_STORE_DEBUG_INFO(57);
 								if(++numPoint >= 20) {// точка на 30 кб приема (20 пакетов по 1540)
 									numPoint = 0;
 									journal.jprintf(".");
 								}
 							}
 						}
-						STORE_DEBUG_INFO(58);
+						WEB_STORE_DEBUG_INFO(58);
 						if(!wFile.close()) {
 							journal.jprintf("Error close file (%d,%d)!\n", card.cardErrorCode(), card.cardErrorData());
 						}

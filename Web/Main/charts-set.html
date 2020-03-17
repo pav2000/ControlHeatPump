@@ -1,0 +1,31 @@
+<html><head>
+<title>Настройка графиков работы. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+window.onload = function() {
+	loadParam("get_tblCharts");
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("set_Chart")!=-1) {
+		var j = Number(paramid.match(/[\d+]/, ""));
+		loadParam("get_ChartN(" + j + "),get_ChartO(" + j + "),get_ChartX(" + j + ")");
+	}
+}
+</script>
+</head>
+<body class="charts">
+<div id="menu" class="menu"><script src="menu.js"></script></div>
+<div class="content">
+<h1>Настройки графиков работы <input style="float:none;" type="submit" value="Назад" onclick="location.href='charts.html'"></h1>
+<div class="row1">
+<table>
+	<thead><tr><th>Номер</th><th>Описание</th><th>Тип</th><th>Датчик</th></tr></thead>
+	<tbody id="get_tblcharts"></tbody>
+</table>
+</div>
+</div>
+</body>
+</html>
