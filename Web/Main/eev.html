@@ -7,6 +7,7 @@
 <script type="text/javascript" src="scripts.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
+<script type="text/javascript" src="export-csv2.js"></script>
 <script type="text/javascript">
 var dataSeries1 = [], dataSeries2 = [], dataSeries3 = [], dataSeries4 = [];
 var ReadyMask = 0;
@@ -63,6 +64,8 @@ function createChart(values, resultdiv) {
 			downloadPDF: "Скачать PDF документ",
 			downloadPNG: "Скачать PNG картинку",
 			downloadSVG: "Скачать SVG векторную картинку",
+			downloadCSV: "Скачать CSV",
+			downloadXLS: "Скачать XLS",
 			drillUpText: "Вернуться к {series.name}",
 			loading: "Загрузка...",
 			noData: "Нет информации для отображения",

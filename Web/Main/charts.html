@@ -7,6 +7,7 @@
 <script type="text/javascript" src="scripts.js"></script>
 <script type="text/javascript" src="highcharts.js"></script>
 <script type="text/javascript" src="exporting.js"></script>
+<script type="text/javascript" src="export-csv2.js"></script>
 <script type='text/javascript'>
 function createChart(values, resultdiv) {
 	var title = document.getElementById("get_listchart").options[Number(values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, ""))].value;
@@ -49,6 +50,8 @@ function createChart(values, resultdiv) {
 			downloadPDF: "Скачать PDF документ",
 			downloadPNG: "Скачать PNG картинку",
 			downloadSVG: "Скачать SVG векторную картинку",
+			downloadCSV: "Скачать CSV",
+			downloadXLS: "Скачать XLS",
 			drillUpText: "Вернуться к {series.name}",
 			loading: "Загрузка...",
 			noData: "Нет информации для отображения",
@@ -80,6 +83,14 @@ function createChart(values, resultdiv) {
 			align: 'right',
 			verticalAlign: 'middle',
 			borderWidth: 0
+		},
+		exporting: {
+			enabled: true,
+			csv: {
+//				decimalPoint: ',',
+				itemDelimiter: ';',
+				dateFormat: '%Y.%m.%d'// %H:%M:%S'
+			}
 		},
 		//plotOptions: { series: { dataGrouping: { enabled: false } } },
 		plotOptions: {
