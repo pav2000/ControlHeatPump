@@ -216,6 +216,11 @@ class Profile                         // Класс профиль
     int32_t load_from_EEPROM_SaveON_mode(int8_t id);	    // Прочитать из EEPROM режим работы ТН (SaveON)
  
     char list[I2C_PROFIL_NUM*(LEN_PROFILE_NAME+2)+1];         // текущий список конфигураций, не забывем про :1 (список)
+    inline int32_t get_sizeProfile() { // определить длину данных
+    	return sizeof(magic) + sizeof(crc16) +
+				// данные контрольная сумма считается с этого места
+				sizeof(dataProfile) + sizeof(SaveON) + sizeof(Cool) + sizeof(Heat) + sizeof(Boiler)	+ sizeof(DailySwitch);
+    };
  private:
   int8_t err;                                               // Ошибка
  
@@ -223,18 +228,6 @@ class Profile                         // Класс профиль
   byte magic;                                               // признак данных, должно быть  0xaa
   uint16_t crc16;                                           // Контрольная сумма
   type_dataProfile dataProfile;                             // данные профиля
-  inline int32_t get_sizeProfile()  // определить длину данных
-   {
-    return sizeof(magic) + \
-           sizeof(crc16) + \
-           // данные контрольная сумма считается с этого места
-           sizeof(dataProfile) + \
-           sizeof(SaveON) + \
-           sizeof(Cool)  + \
-           sizeof(Heat)  + \
-           sizeof(Boiler) + \
-		   sizeof(DailySwitch);
-   };
    uint16_t get_crc16_mem();                                 // Расчитать контрольную сумму
    int8_t   check_crc16_eeprom(int8_t num);   // Проверить контрольную сумму ПРОФИЛЯ в EEPROM для данных на выходе ошибка, длина определяется из заголовка
    int8_t   check_crc16_buf(int32_t adr, byte* buf);         // Проверить контрольную сумму в буфере для данных на выходе ошибка, длина определяется из заголовка

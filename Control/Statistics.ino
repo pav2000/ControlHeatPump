@@ -233,6 +233,8 @@ void Statistics::Init(uint8_t newyear)
 										Stats_data[i].value = val;
 										break;
 									case STATS_OBJ_Power:
+									case STATS_OBJ_Power_OUT:
+									case STATS_OBJ_Power_GEO:
 										switch(Stats_data[i].type) {
 										case STATS_TYPE_SUM:
 										case STATS_TYPE_AVG:
@@ -602,6 +604,8 @@ xSkipEmpty:
 		int_to_dec_str(val, 1, ret, 0);
 		break;
 	case STATS_OBJ_Power:					// кВт*ч
+	case STATS_OBJ_Power_OUT:
+	case STATS_OBJ_Power_GEO:
 		switch(Stats_data[i].type) {
 		case STATS_TYPE_SUM:
 		case STATS_TYPE_AVG:
@@ -991,6 +995,9 @@ void Statistics::History()
 			break;
 		case STATS_OBJ_Power_OUT:
 			int_to_dec_str(HP.powerOUT, 1, &buf, 0); // W
+			break;
+		case STATS_OBJ_Power_GEO:
+			int_to_dec_str(HP.powerGEO, 1, &buf, 0); // W
 			break;
 		case STATS_OBJ_COP_Full:
 			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C

@@ -33,14 +33,10 @@
 
 extern "C" void TaskGetRunTimeStats(void);
 extern void  get_txtSettings(uint8_t thread);
-extern void  get_fileState(uint8_t thread);
-extern void  get_fileSettings(uint8_t thread);
 extern void  get_txtJournal(uint8_t thread);
-extern uint16_t get_csvStatistic(uint8_t thread);
 extern void  get_datTest(uint8_t thread);
 extern void  get_csvChart(uint8_t thread);
 extern int16_t  get_indexNoSD(uint8_t thread);
-extern void  noCsvStatistic(uint8_t thread);
 
 
 // Названия режимов теста
@@ -60,14 +56,14 @@ const char* pageUnauthorized      = {"HTTP/1.0 401 Unauthorized\r\nWWW-Authentic
 const char* NO_SUPPORT            = {"not supported"};
 const char* NO_STAT               = {"Statistics are not supported in the firmware"};
 
-const char *postRet[]            = {"Настройки из выбранного файла восстановлены, CRC16 OK\r\n\r\n",                           //  Ответы на пост запросы
+const char *postRet[]            = {"Настройки из файла восстановлены\r\n\r\n",                           //  Ответы на пост запросы
 									"Ошибка восстановления настроек из файла (см. журнал)\r\n\r\n",
 									"", // пустая строка - ответ не выводится
 									"Файлы загружены, подробности в журнале\r\n\r\n",
 									"Ошибка загрузки файла, подробности в журнале\r\n\r\n",
-									"Внутренняя ошибка парсера post запросов\r\n\r\n",
+									"Внутренняя ошибка парсера POST запросов\r\n\r\n",
 									"Флеш диск не найден, загружать файлы некуда\r\n\r\n",
-									"Файл настроек для разбора не влезает во внутренний буфер (max 6144 bytes)\r\n\r\n"
+									"Размер файла настроек превышает 6144 байт!\r\n\r\n"
 									};
 
 static SdFile wFile;
@@ -274,7 +270,10 @@ void readFileSD(char *filename, uint8_t thread)
 	if(strncmp(filename, "settings", 8) == 0) {
 		filename += 8;
 		if(strcmp(filename, ".txt") == 0) {	get_txtSettings(thread); return; }
-		else if(strcmp(filename, ".bin") == 0) { get_binSettings(thread); return; }
+		else if(strcmp(filename, ".bin") == 0) {
+			if(!get_binSettings(thread)) journal.jprintf("Error download %s\n", filename);
+			return;
+		}
 		filename -= 8;
 	}
 	if(strcmp(filename, "chart.csv") == 0) { get_csvChart(thread); return; }
@@ -365,9 +364,6 @@ void readFileSD(char *filename, uint8_t thread)
 		}
 		return;
 	}
-#ifdef I2C_EEPROM_64KB
-//	if (strcmp(filename,"statistic.csv")==0) {get_csvStatistic(thread); return;}
-#endif
 
 // загрузка файла -----------
 	// Разбираемся откуда грузить надо (три варианта)
@@ -2764,42 +2760,44 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	WEB_STORE_DEBUG_INFO(51);
 
 	// Поиски во входном буфере: данных, имени файла и длины файла
-	ptr = (byte*) strstr(Socket[thread].inPtr, emptyStr) + sizeof(emptyStr) - 1;    // поиск начала даных
-
-	if((nameFile = strstr(Socket[thread].inPtr, Title)) == NULL) { // Имя файла не найдено, запрос не верен, выходим
+	ptr = (byte*) strstr(Socket[thread].inPtr, emptyStr);     // поиск начала данных
+	if(!ptr) return pLOAD_ERR;
+	ptr += sizeof(emptyStr) - 1;
+	nameFile = strstr(Socket[thread].inPtr, Title);
+	pStart = (byte*) strstr(Socket[thread].inPtr, Length);
+	if(nameFile) {
+		char *p = strchr(nameFile += sizeof(Title) - 1, '\r');
+		if(p) *p = '\0'; else nameFile = NULL;
+	}
+	if(!nameFile) { // Имя файла не найдено, запрос не верен, выходим
 		journal.jprintf("Upload: Name not found!\n");
 		return pLOAD_ERR;
 	}
-	nameFile += sizeof(Title) - 1;
-	char *tmp = strchr(nameFile, '\r');
-	if(tmp == NULL || tmp - nameFile >= MAX_FILE_LEN) {
-		nameFile[MAX_FILE_LEN] = '\0';
+	urldecode(nameFile, nameFile, MAX_FILE_LEN + 10);
+	if(strlen(nameFile) > MAX_FILE_LEN) {
 		journal.jprintf("Upload: %s name length > %d bytes!\n", nameFile, MAX_FILE_LEN - 1);
 		return pLOAD_ERR;
 	}
-	pStart = (byte*) strstr(Socket[thread].inPtr, Length);
-	if(pStart == NULL) { // Размер файла не найден, запрос не верен, выходим
+	if(pStart) {
+		char *p = strchr((char*)(pStart += sizeof(Length) - 1), '\r');
+		if(p) *p = '\0'; else pStart = NULL;
+	}
+	if(!pStart) { // Размер файла не найден, запрос не верен, выходим
+xLenErr:
 		journal.jprintf("Upload: %s - length not found!\n", nameFile);
 		return pLOAD_ERR;
 	}
-	pStart += sizeof(Length) - 1;
-	*tmp = '\0';
-	urldecode(Socket[thread].outBuf, nameFile, 128);
-	nameFile = Socket[thread].outBuf;
-	tmp = strchr((char*) pStart, '\r');
-	if(tmp) {
-		*tmp = '\0';
-		lenFile = atoi((char*) pStart);	// получить длину
-	} else lenFile = 0;
+	lenFile = atoi((char*) pStart);	// получить длину
 	// все нашлось, можно обрабатывать
 	buf_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
 	if(strcmp(nameFile, SETTINGS) == 0) {  // Чтение настроек
+		if(lenFile <= 0) goto xLenErr;
 		WEB_STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
 		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
-		if( pStart== NULL || lenFile == 0) {              // Заголовок не найден
+		if(pStart == NULL) {              // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
 			return pSETTINGS_ERR;
 		}
@@ -2824,11 +2822,18 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		len = HP.load(ptr, 1);
 		if(len <= 0) return pSETTINGS_ERR; // ошибка загрузки настроек
 		boolean ret = true;
-		// Чтение профиля
 		ptr += len;
-		if(HP.Prof.loadFromBuf(0, ptr) != OK) ret = false;   // чтение профиля
-		if(HP.Schdlr.loadFromBuf(ptr + HP.Prof.get_lenProfile()) != OK) ret = false;  // чтения расписания
-		HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
+		// Чтение профилей
+		if(writeEEPROM_I2C(I2C_PROFILE_EEPROM, ptr, len = HP.Prof.get_sizeProfile() * I2C_PROFIL_NUM)) {
+			journal.jprintf("Error write EEPROM at 0x%X\n", I2C_PROFILE_EEPROM);
+			ret = false;
+		} else {
+			HP.Prof.load(HP.Option.numProf);
+			HP.Prof.update_list(HP.Prof.get_idProfile());             // обновить список
+		}
+		// чтение расписания
+		if(ret && HP.Schdlr.loadFromBuf(ptr + len) != OK) ret = false;
+
 		if(ret) return pSETTINGS_OK;
 		else return pSETTINGS_ERR;
 	} //if (strcmp(nameFile,"*SETTINGS*")==0)

@@ -702,10 +702,9 @@ void get_txtSettings(uint8_t thread)
 }
 
 // Записать в клиента бинарный файл настроек
-uint16_t get_binSettings(uint8_t thread)
+bool get_binSettings(uint8_t thread)
 {
-	uint16_t i, len;
-	byte b;
+	uint32_t len;
 	// 1. Заголовок
     strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
     strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
@@ -722,29 +721,28 @@ uint16_t get_binSettings(uint8_t thread)
 	
 	// 2. Запись настроек ТН
 	if((len = HP.save())<= 0) return 0; // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-	for(i = 0; i < len; i++) {  // Копирование в буффер
-		readEEPROM_I2C(I2C_SETTING_EEPROM + i, &b, 1);
-		Socket[thread].outBuf[i] = b;
+	if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)Socket[thread].outBuf, len)) {
+		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SETTING_EEPROM);
+		return 0;
 	}
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
-
-	// 3. Запись текущего профиля
+//	// 3. Запись всех профилей
 	if(HP.Prof.save(HP.Prof.get_idProfile()) <= 0) return 0;
-	len = HP.Prof.get_lenProfile();
-	uint32_t addr = I2C_PROFILE_EEPROM + HP.Prof.get_idProfile() * len;
-	for(i = 0; i < len; i++) {
-		readEEPROM_I2C(addr + i, &b, 1);
-		Socket[thread].outBuf[i] = b;
-		if((uint16_t)(i) > sizeof(Socket[thread].outBuf) - 1) return 0; // Слишком  много данных
+	len = HP.Prof.get_sizeProfile() * I2C_PROFIL_NUM;
+	if(len > sizeof(Socket[thread].outBuf)) len = sizeof(Socket[thread].outBuf);
+	if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)Socket[thread].outBuf, len)) {
+		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_PROFILE_EEPROM);
+		return 0;
 	}
 	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
 	
     // 4. Расписание
-	if((uint16_t)len + HP.Schdlr.get_data_size() > sizeof(Socket[thread].outBuf)) return 0;
-	len = HP.Schdlr.load((uint8_t *)Socket[thread].outBuf);
-	if(len <= 0) return 0; // ошибка
-	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
-	return len;
+	if(sendPacketRTOS(thread, (byte*) &HP.Schdlr.sch_data, sizeof(HP.Schdlr.sch_data), 0) == 0) return 0; // передать пакет, при ошибке выйти
+	else {
+	    uint16_t crc16 = HP.Schdlr.get_crc16((uint8_t *)&HP.Schdlr.sch_data);
+	    if(sendPacketRTOS(thread, (byte*) &crc16, sizeof(crc16), 0) == 0) return 0;
+	}
+	return true;
 }
 
 // Получить файл со графиками возвращает число отправленных байт
@@ -804,15 +802,6 @@ void get_csvChart(uint8_t thread)
 	}
 }
 
-/*
-// файл статистики на карте отсутсвует 
-void noCsvStatistic(uint8_t thread)
-{
-   get_Header(thread,(char*)FILE_STATISTIC);
-   sendPrintfRTOS(thread, "Файл статистики за выбранный год не найден на карте памяти.\r\n");
-}
-*/ 
-   
 // Получить индексный файл при отсутвии SD карты
 // выдача массива index_noSD в index_noSD
 int16_t get_indexNoSD(uint8_t thread)
