@@ -52,26 +52,27 @@
 		<table>
 			<tr><td width="45%">Документация</td><td><a class="download" href="/manual.pdf" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Текущее состояние ТН</td><td><a class="download" href="/state.txt" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Настройки ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Настройки ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Восстановление настроек ТН из бинарного файла<p> </p> </td>
+			<tr><td>Сохранение настроек ТН в текстовом виде</td><td><a class="download" href="/settings.txt" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Сохранение настроек ТН в бинарном виде</td><td><a class="download" href="/settings.bin" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Восстановление настроек ТН из бинарного файла<sup>1</sup><p> </p> </td>
 				<td>
 					<input type="file" id="Setup">
 					<p><input type="submit" value="Восстановить" onclick="send_files('s')"></p>
 				</td>
 			<tr><td><b>Web интерфейс контроллера</b></td></tr>
-			<tr><td>Выбор файлов для записи их в контроллер<sup>1</sup></td><td><input type="file" id="Files" multiple></td></tr>
+			<tr><td>Выбор файлов для записи их в контроллер<sup>2</sup></td><td><input type="file" id="Files" multiple></td></tr>
 			<tr><td></td><td><input type="submit" value="Записать в SPI Flash" onclick="send_files('SPI_FLASH')"></td></tr>
 			<tr><td></td><td><input type="submit" value="Записать на SD карту" onclick="send_files('SD_CARD')"></td></tr>
 			<tr><td><b>Работа ТН</b></td></tr>
 			<tr><td>Журнал работы ТН</td><td><a class="download" href="/journal.txt" download><button>Загрузить</button></a></td></tr>
 			<tr><td>Графики работы ТН из ОЗУ</td><td><a class="download" href="/chart.csv" download><button>Загрузить</button></a></td></tr>
-			<tr><td>Статистика работы ТН (файлы по годам)<sup>2</sup></td><td nowrap><select id="get_liststats" onchange='fix_stats()'></select> <a id="stats_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
-			<tr><td>История работы ТН (файлы по годам)<sup>3</sup></td><td nowrap><select id="get_listhist" onchange='fix_hist()'></select> <a id="hist_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
+			<tr><td>Статистика работы ТН (файлы по годам)<sup>3</sup></td><td nowrap><select id="get_liststats" onchange='fix_stats()'></select> <a id="stats_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
+			<tr><td>История работы ТН (файлы по годам)<sup>4</sup></td><td nowrap><select id="get_listhist" onchange='fix_hist()'></select> <a id="hist_name" class="download" href="-" download><button>Загрузить</button></a></td></tr>
 		</table>
-		 1. Если запись в SPI Flash, то она будет отформатирована, и затем на нее будут записаны ВСЕ выбранные файлы (добавление файлов не возможно). На SD карту файлы сохраняются с перезаписей существующих, остальные данные не изменяются.<br>
-		 2. Статистика пишется всегда, запись происходит не чаще одно раза в день.<br>
-		 3. Для записи истории необходимо на странице "Опции ТН" выбрать пункт "Запись истории на SD карту".<br>
+		 1. Если при восстановлении настроек возникает ошибка, обновите страницу (Ctrl+F5), возможно потребуется сброс контроллера.<br>
+		 2. Если запись в SPI Flash, то она будет отформатирована, и затем на нее будут записаны ВСЕ выбранные файлы (добавление файлов не возможно). На SD карту файлы сохраняются с перезаписей существующих, остальные данные не изменяются.<br>
+		 3. Статистика пишется всегда, запись происходит не чаще одно раза в день.<br>
+		 4. Для записи истории необходимо на странице "Опции ТН" выбрать пункт "Запись истории на SD карту".<br>
 	</div>
 </div>
 
