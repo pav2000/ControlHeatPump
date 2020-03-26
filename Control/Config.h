@@ -2132,6 +2132,7 @@ const char *noteTemp[] = {"Температура улицы",
     #ifdef 	NEXTION
         //#define NEXTION_DEBUG                                               // Выводить информацию в отладочный порт с дисплея
     	#define NEXTION_GENERATOR                                             // Показ на nextion кнопки "Работа от генератора" (ограничение мощности потребления)
+//    	#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, еще одна кнопка Вкл/Выкл на экране Профили.
     #endif  
     uint8_t SPI_RATE 	 = 2;	                                              // делитель для SPI шины, (2=42MHz, 3=28MHz, 4=21MHz) единый для ВСЕХ устройств
 	#define SD_CLOCK     30	                                                  // частота SPI для SD карты в МГц (работало 28)
@@ -2540,29 +2541,34 @@ const char *noteTemp[] = {"Температура улицы",
     		{ STATS_OBJ_Temp, TIN },
     		{ STATS_OBJ_Temp, TBOILER },
     		{ STATS_OBJ_Temp, TCOMP },
+    		{ STATS_OBJ_Temp, TCOMPIN },  // вход компрессора
+    		{ STATS_OBJ_Temp, TACCUM },   // аккумулятор
     		{ STATS_OBJ_Temp, TEVAING },
     		{ STATS_OBJ_Temp, TEVAOUTG },
     		{ STATS_OBJ_Temp, TCONING },
     		{ STATS_OBJ_Temp, TCONOUTG },
+   // 		{ STATS_OBJ_Temp, TEVAIN },   // не нужен
     		{ STATS_OBJ_Temp, TEVAOUT },
+   // 		{ STATS_OBJ_Temp, TCONIN },   // не нужен
     		{ STATS_OBJ_Temp, TCONOUT },
     //		{ STATS_OBJ_Temp, TSUN },
     //		{ STATS_OBJ_Temp, TSUNOUTG },
     //		{ STATS_OBJ_Flow, FLOWEVA },
-    //		{ STATS_OBJ_Flow, FLOWCON },
+    		{ STATS_OBJ_Flow, FLOWCON },
     //		{ STATS_OBJ_Press, PGEO },
     //		{ STATS_OBJ_Press, POUT },
-    		{ STATS_OBJ_PressTemp, PEVA },
-    		{ STATS_OBJ_PressTemp, PCON }
+    //		{ STATS_OBJ_PressTemp, PCON },
+ 	   		{ STATS_OBJ_PressTemp, PEVA }
     	};
     	const Charts_Const_setup ChartsConstSetup[] = {
     		{ STATS_OBJ_EEV, "ЭРВ" },
     		{ STATS_OBJ_Overheat, "Перегрев" },
     		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
     		{ STATS_OBJ_Compressor, "Частота, Гц" },
-    //		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+    		{ STATS_OBJ_Power_FC, "Мощность компрессора" },
     		{ STATS_OBJ_Power, "Потребляемая мощность" },
-    		{ STATS_OBJ_COP_Full, "COP" }
+    		{ STATS_OBJ_Voltage, "Напряжение сети" },
+     		{ STATS_OBJ_COP_Full, "Full COP" }
     	};
     	const Charts_Const_setup ChartsOnFlySetup[] = {
     		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
@@ -2573,7 +2579,7 @@ const char *noteTemp[] = {"Температура улицы",
     		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
     	};
 
-       // История (графики)
+       // История (графики) пишется на карту
       const History_setup HistorySetup[] = {
       	{ STATS_OBJ_Temp, TOUT, nameTemp[TOUT] },
       	{ STATS_OBJ_Temp, TIN, nameTemp[TIN] },
@@ -3352,7 +3358,7 @@ const char *noteTemp[] = {"Температура улицы",
  	#define NEXTION                 // Разрешить использование дисплея. ЗАКОМЕНТИРУЙТЕ эту строку, что бы не использовать дисплей
     #ifdef 	NEXTION
  //   	#define NEXTION_GENERATOR   // Показ на nextion кнопки "Работа от генератора" (ограничение мощности потребления)
-		#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, еще одна кнопка Вкл/Выкл на экране Профили.
+		#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, еще одна кнопка Вкл/Выкл на экране Профили. 
     #endif 
     #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
     #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
