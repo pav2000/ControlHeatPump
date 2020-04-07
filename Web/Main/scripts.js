@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.070";
+var VER_WEB = "1.071";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -488,7 +488,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if((relay = count[j].toLowerCase()) == "") continue;
 												loadsens = loadsens + "get_pinRelay(" + count[j] + "),get_isRelay(" + count[j] + "),get_nRelay(" + count[j] + "),";
 												upsens = upsens + "get_Relay(" + count[j] + "),";
-												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_nrelay-' + relay + '"></td><td id="get_pinrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td>';
+												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_nrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td><td id="get_pinrelay-' + relay + '"></td>';
 												content = content + '</tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
