@@ -101,7 +101,7 @@ int8_t sensorTemp::Read()
 				int8_t i = get_radio_received_idx();
 				if(i >= 0) {
 					lastTemp = radio_received[i].Temp;
-					if(radio_timecnt - radio_received[i].timecnt > RADIO_LOST_TIMEOUT/TIME_READ_SENSOR) radio_received[i].RSSI = 255;
+					if((uint16_t)(radio_timecnt - radio_received[i].timecnt) > (uint16_t)(RADIO_LOST_TIMEOUT/TIME_READ_SENSOR)) radio_received[i].RSSI = 255;
 				} else return err;
 			} else
 #endif
@@ -408,12 +408,12 @@ void check_radio_sensors(void)
 			if(rs_serial_idx >= rs_serial_full_header_size && rs_serial_idx >= rs_serial_full_header_size + (len = rs_serial_buf[rs_serial_full_header_size-1]) + 2) {
 				if(RS_SUM_CRC(rs_serial_buf + sizeof(rs_serial_header), len + rs_serial_full_header_size - sizeof(rs_serial_header)) != *(uint16_t *)(rs_serial_buf + rs_serial_full_header_size + len)) {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
-					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf_time("RS CRC error=%s\n", rs_serial_buf + rs_serial_full_header_size);
 					rs_serial_flag = RS_WAIT_HEADER;
 				} else {
 					rs_serial_buf[rs_serial_full_header_size + len] = '\0';
 					//#ifdef DEBUG_RADIO
-					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf("RS=%s\n", rs_serial_buf + rs_serial_full_header_size);
+					if(GETBIT(HP.Option.flags, fLogWirelessSensors)) journal.jprintf_time("RS=%s\n", rs_serial_buf + rs_serial_full_header_size);
 					//#endif
 					if(rs_serial_buf[rs_serial_full_header_size + 1] == '#') {
 						uint8_t c = rs_serial_buf[rs_serial_full_header_size + 2];

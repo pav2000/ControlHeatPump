@@ -79,7 +79,6 @@ class sensorIP
 #endif
 
 #ifdef RADIO_SENSORS
-#define DEBUG_RADIO
 enum {
 	RS_WAIT_HEADER = 0,
 	RS_WAIT_DATA,
@@ -87,16 +86,16 @@ enum {
 };
 struct radio_received_type {
 	uint32_t serial_num;
-	int16_t  Temp;		// Температура в сотых градуса
 	uint16_t timecnt;	// Время чтения *TIME_READ_SENSOR
 	uint8_t  battery;	// в десятых вольта
+	int16_t  Temp;		// Температура в сотых градуса
 	uint8_t  RSSI;		// уровень сигнала = -(-120..-10)dBm, 255 - lost
-};
+};// __attribute__((packed));
 uint8_t rs_serial_flag = RS_WAIT_HEADER; // enum
 radio_received_type radio_received[RADIO_SENSORS_MAX];
 uint8_t radio_received_num = 0;
 uint32_t radio_hub_serial = 0;
-uint32_t radio_timecnt = 0; // *TIME_READ_SENSOR
+uint16_t radio_timecnt = 0; // *TIME_READ_SENSOR
 char Radio_RSSI_to_Level(uint8_t RSSI);
 #endif
 

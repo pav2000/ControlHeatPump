@@ -3429,6 +3429,7 @@ const char *noteTemp[] = {"Температура улицы",
 //		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
 		//#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 		//#define DEBUG_PID				// Отладка ПИДа
+		#define DEBUG_RADIO				// Отладка радиодатчиков
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
 		#define I2C_FRAM_MEMORY  1		// 1 - FRAM память
 		//#define DONT_LOG_SUCCESS_PING	// Не логировать в журнал успешные пинги
