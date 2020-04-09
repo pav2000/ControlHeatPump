@@ -48,7 +48,7 @@ document.write('\
 	<input type="checkbox" name="group-4" id="group-4">\
 	<label for="group-4"><i></i>Сервис</label>\
 	<ul>\
-		<li class="config"><a href="config.html">Опции ТН</a></li>\
+		<li class="config"><a href="config.html">Настройки</a></li>\
 		<li class="lan"><a href="lan.html">Сеть</a></li>\
 		<li class="time"><a href="time.html">Дата/Время</a></li>\
 		<li class="notice"><a href="notice.html">Уведомления</a></li>\
