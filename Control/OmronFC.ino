@@ -198,6 +198,7 @@ int8_t  devOmronMX2::set_target(int16_t x,boolean show, int16_t _min, int16_t _m
   uint16_t hWord,lWord;
   uint8_t i;
   if ((!get_present())||(GETBIT(flags,fErrFC))) return err;    // выходим если нет инвертора или он заблокирован по ошибке
+  if(GETBIT(HP.Option.flags, fBackupPower) && x > _data.maxFreqGen) x = _data.maxFreqGen;
   if ((x>=_min)&&(x<=_max))                     // Проверка диапазона разрешенных частот
    {
   #ifndef FC_ANALOG_CONTROL                                    // Не аналоговое управление
@@ -509,6 +510,7 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
 	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100.0,2); } else // Гц
 	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100.0,2); } else // Гц
 	if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100.0,2); } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_GEN)==0)          {  _dtoa(ret, _data.maxFreqGen, 2); } else
 	if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100.0,2); } else // Гц
 	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100.0,2); } else // Гц
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
@@ -553,6 +555,7 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=40)&&(x<=240)){_data.maxFreqCool=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=40)&&(x<=240)){_data.maxFreqBoiler=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=40)&&(x<=240)){_data.maxFreqUser=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_MAX_FREQ_GEN)==0)          { if((x>=40)&&(x<=240)){_data.maxFreqGen=x*100;return true; } } else
 	if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>=0.2)&&(x<=10)){_data.stepFreq=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>=0.2)&&(x<=10)){_data.stepFreqBoiler=x*100;return true; } else return false; } // Гц
 

@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG)");
 		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(PIN),get_pFC(L0),get_pFC(L100)");
 		};
 	</script>
@@ -49,6 +49,7 @@
 
     <tr><td><b>Максимальные частоты</b></td><td></td></tr>
     <tr><td>Максимальная установка инвертора</td><td><input type="number" id="get_pfc-max" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAX)');"></td></tr>
+    <tr><td>Максимальная установка при работе от генератора</td><td><input type="number" id="get_pfc-maxg" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXG)');"></td></tr>
     <tr><td>Максимальная установка инвертора при охлаждении</td><td><input type="number" id="get_pfc-maxc" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXC)');"></td></tr>
     <tr><td>Максимальная установка инвертора при ГВС</td><td><input type="number" id="get_pfc-maxb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXB)');"></td></tr>
     <tr><td>Максимальная установка инвертора в ручном режиме</td><td><input type="number" id="get_pfc-maxu" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXU)');"></td></tr>

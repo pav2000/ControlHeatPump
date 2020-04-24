@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(HEAT_list),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO),get_oHP(BPOW),get_oHP(MAXPOW),get_oHP(MCON)");
+		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(HEAT_list),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO),get_oHP(BPOW),get_oHP(MAXPOW),get_oHP(MCON),get_oHP(BPA)");
 		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_1),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD),get_oHP(SCGO),get_oHP(STO),get_oHP(STF)");
 	}; 
 	</script>
@@ -154,6 +154,10 @@
 			<td><input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></td>
 		</tr>
 		<tr>
+			<td>Автоматическое определение работы от резервного источника</td>
+			<td><input type="checkbox" id="get_ohp-bpa" onchange="setParam('get_oHP(BPA)');"></td>
+		</tr>
+		<tr>
 			<td>Максимальная мощность потребления ТН от резервного источника питания (Вт) [0..10000]</td>
 			<td nowrap><input id="get_ohp-maxpow" type="number" min="0" step="1" value="0"> <input type="submit" value=">" onclick="setParam('get_oHP(MAXPOW)');"></td>
 		</tr>
@@ -211,7 +215,7 @@
 	6. Reserve - ТЭН включается если температура в доме ниже заданной, bivalent - ТЭН включится если уличная температура ниже заданной<br/>
 	7. Установка 0 - насос вообще не работает<br/>
 	8. Установка 0 - насос работает непрерывно<br/>
-	9. В режиме работы от резервного источника питания происходит ограничение потребляемой мощности ТН, догрев ГВС (целью становится температура догрева) и электрокотел не включаются.<br/>
+	9. В режиме работы от резервного источника питания происходит ограничение потребляемой мощности ТН, не включаются: догрев ГВС (целью становится температура догрева), электрокотел, ежесуточные реле.<br/>
 	10. 0 - дисплей Nextion не выключается<br/>
 	<br>
 	<input type="submit" value="Сброс настроек HP" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_SETTINGS");'> Введите RESET: <input id="reset_code" size="7">

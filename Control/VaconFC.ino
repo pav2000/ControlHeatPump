@@ -66,8 +66,9 @@ int8_t devVaconFC::initFC()
 	} else if(DEVICEFC == true) SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
 #else
 	pin = PIN_DEVICE_FC;                			  // Ножка куда прицеплено FC
+	analogWriteResolution(FC_ANALOG_RESOLUTION);      // разрешение ЦАП, бит;
 	_data.level0 = 0;                                 // Отсчеты ЦАП соответсвующие 0   мощности
-	_data.level100 = 255;                             // Отсчеты ЦАП соответсвующие 100 мощности
+	_data.level100 = (1<<FC_ANALOG_RESOLUTION) - 1;   // Отсчеты ЦАП соответсвующие 100 мощности
 	SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
 	note = (char*)"OK";
 #endif
@@ -202,7 +203,7 @@ int8_t devVaconFC::get_readState()
 #ifdef FC_RETOIL_FREQ
 		if(GETBIT(flags, fOnOff) && GETBIT(_data.setup_flags, fFC_RetOil) && err == OK) {
 			if(!GETBIT(flags, fFC_RetOilSt)) {
-				if(FC_curr_freq < FC_RETOIL_FREQ) {
+				if(FC_curr_freq < FC_RETOIL_FREQ && (FC_curr_freq < _data.maxFreqGen || !GETBIT(HP.Option.flags, fBackupPower))) {
 					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (FC_RETOIL_FREQ - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
 #ifdef EEV_DEF
@@ -259,6 +260,7 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
     if((!get_present()) || (GETBIT(flags, fErrFC))) return err; // выходим если нет инвертора или он заблокирован по ошибке
     if(x < _min) x = _min; // Проверка диапазона разрешенных частот
     else if(x > _max) x = _max;
+    if(GETBIT(HP.Option.flags, fBackupPower) && x > _data.maxFreqGen) x = _data.maxFreqGen;
 
 	err = OK;
 #ifdef FC_RETOIL_FREQ
@@ -534,11 +536,11 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_NOTE)==0)                  {  strcat(ret,note);             } else
     if(strcmp(var,fc_PRESENT)==0)               { if (GETBIT(flags,fFC))  strcat(ret,(char*)cOne);else  strcat(ret,(char*)cZero); } else
     if(strcmp(var,fc_STATE)==0)                 {  _itoa(state,ret);   } else
-    if(strcmp(var,fc_FC)==0)                    {  _ftoa(ret,(float)FC_target/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_INFO1)==0)                 {  _ftoa(ret,(float)FC_target/100.0,2); strcat(ret, "%"); } else
-    if(strcmp(var,fc_cFC)==0)                   {  _ftoa(ret,(float)FC_curr_freq/100.0,2); strcat(ret, " Гц"); } else // Текущая частота!
+    if(strcmp(var,fc_FC)==0)                    {  _dtoa(ret, FC_target, 2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_INFO1)==0)                 {  _dtoa(ret, FC_target, 2); strcat(ret, "%"); } else
+    if(strcmp(var,fc_cFC)==0)                   {  _dtoa(ret, FC_curr_freq, 2); strcat(ret, " Гц"); } else // Текущая частота!
     if(strcmp(var,fc_cPOWER)==0)                {  _itoa(get_power(), ret); } else
-    if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
+    if(strcmp(var,fc_cCURRENT)==0)              {  _dtoa(ret, current, 2); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
     if(strcmp(var,fc_fFC_RetOil)==0)   			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fFC_RetOil) ? cOne : cZero)); } else
@@ -562,26 +564,27 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_ERROR)==0)                 {  _itoa(err,ret);          } else
     if(strcmp(var,fc_UPTIME)==0)                {  _itoa(_data.Uptime,ret); } else   // вывод в секундах
     if(strcmp(var,fc_PID_STOP)==0)              {  _itoa(_data.PidStop,ret);          } else
-    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _ftoa(ret,(float)_data.dtCompTemp/100,2); } else // градусы
+    if(strcmp(var,fc_DT_COMP_TEMP)==0)          {  _dtoa(ret, _data.dtCompTemp, 2); } else // градусы
 
-	if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _ftoa(ret,(float)_data.PidFreqStep/100,2); } else // %
-	if(strcmp(var,fc_START_FREQ)==0)            {  _ftoa(ret,(float)_data.startFreq/100,2); } else // %
-	if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _ftoa(ret,(float)_data.startFreqBoiler/100,2); } else // %
-	if(strcmp(var,fc_MIN_FREQ)==0)              {  _ftoa(ret,(float)_data.minFreq/100,2); } else // %
-	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.minFreqCool/100,2); } else // %
-	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.minFreqBoiler/100,2); } else // %
-	if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.minFreqUser/100,2); } else // %
-	if(strcmp(var,fc_MAX_FREQ)==0)              {  _ftoa(ret,(float)_data.maxFreq/100,2); } else // %
-	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _ftoa(ret,(float)_data.maxFreqCool/100,2); } else // %
-	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _ftoa(ret,(float)_data.maxFreqBoiler/100,2); } else // %
-	if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _ftoa(ret,(float)_data.maxFreqUser/100,2); } else // %
-	if(strcmp(var,fc_STEP_FREQ)==0)             {  _ftoa(ret,(float)_data.stepFreq/100,2); } else // %
-	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _ftoa(ret,(float)_data.stepFreqBoiler/100,2); } else // %
-    if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100,2); } else // градусы
-    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100,2); } else // градусы
+	if(strcmp(var,fc_PID_FREQ_STEP)==0)         {  _dtoa(ret, _data.PidFreqStep,2); } else // %
+	if(strcmp(var,fc_START_FREQ)==0)            {  _dtoa(ret, _data.startFreq,2); } else // %
+	if(strcmp(var,fc_START_FREQ_BOILER)==0)     {  _dtoa(ret, _data.startFreqBoiler,2); } else // %
+	if(strcmp(var,fc_MIN_FREQ)==0)              {  _dtoa(ret, _data.minFreq,2); } else // %
+	if(strcmp(var,fc_MIN_FREQ_COOL)==0)         {  _dtoa(ret, _data.minFreqCool,2); } else // %
+	if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       {  _dtoa(ret, _data.minFreqBoiler,2); } else // %
+	if(strcmp(var,fc_MIN_FREQ_USER)==0)         {  _dtoa(ret, _data.minFreqUser,2); } else // %
+	if(strcmp(var,fc_MAX_FREQ)==0)              {  _dtoa(ret, _data.maxFreq,2); } else // %
+	if(strcmp(var,fc_MAX_FREQ_COOL)==0)         {  _dtoa(ret, _data.maxFreqCool,2); } else // %
+	if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       {  _dtoa(ret, _data.maxFreqBoiler,2); } else // %
+	if(strcmp(var,fc_MAX_FREQ_USER)==0)         {  _dtoa(ret, _data.maxFreqUser,2); } else // %
+	if(strcmp(var,fc_MAX_FREQ_GEN)==0)          {  _dtoa(ret, _data.maxFreqGen, 2); } else // %
+	if(strcmp(var,fc_STEP_FREQ)==0)             {  _dtoa(ret, _data.stepFreq,2); } else // %
+	if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      {  _dtoa(ret, _data.stepFreqBoiler,2); } else // %
+    if(strcmp(var,fc_DT_TEMP)==0)               {  _dtoa(ret, _data.dtTemp,2); } else // градусы
+    if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _dtoa(ret, _data.dtTempBoiler,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
 #ifdef FC_RETOIL_FREQ
-    if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{  _ftoa(ret,(float)FC_RETOIL_FREQ/100,2); } else
+    if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{  _dtoa(ret, FC_RETOIL_FREQ,2); } else
 #endif
    	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
 
@@ -616,17 +619,18 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_target(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
 		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>=0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
 		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>=0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
-		if(strcmp(var,fc_START_FREQ)==0)            { if((x>=0)&&(x<=10000)){_data.startFreq=x;return true; } } else // %
-		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=0)&&(x<=10000)){_data.startFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>=0)&&(x<=10000)){_data.minFreq=x;return true; } } else // %
-		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { _data.minFreqCool=x;return true; } else // %
-		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { _data.minFreqBoiler=x;return true; } else // %
-		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { _data.minFreqUser=x;return true; } else // %
-		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>=0)&&(x<20000)){_data.maxFreq=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=0)&&(x<20000)){_data.maxFreqCool=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=0)&&(x<20000)){_data.maxFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=0)&&(x<20000)){_data.maxFreqUser=x;return true; } } else // %
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>=0)&&(x<10000)){_data.PidFreqStep=x;return true; } } else // %
+		if(strcmp(var,fc_START_FREQ)==0)            { if((x>=0)&&(x<=20000)){_data.startFreq=x;return true; } } else // %
+		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=0)&&(x<=20000)){_data.startFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ)==0)              { if(x>=0){_data.minFreq=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if(x>=0){_data.minFreqCool=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if(x>=0){_data.minFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if(x>=0){_data.minFreqUser=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>=0)){_data.maxFreq=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=0)){_data.maxFreqCool=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=0)){_data.maxFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=0)){_data.maxFreqUser=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_GEN)==0)          { if((x>=0)){_data.maxFreqGen=x;return true; } } else // %
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>=0)&&(x<20000)){_data.PidFreqStep=x;return true; } } else // %
 		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>=0)&&(x<10000)){_data.stepFreq=x;return true; } } else // %
 		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>=0)&&(x<10000)){_data.stepFreqBoiler=x;return true; } } // %
  

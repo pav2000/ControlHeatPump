@@ -121,7 +121,10 @@ boolean  Charts_when_comp_on = false;
 #define fLogWirelessSensors		13				// Логировать обмен между беспроводными датчиками
 #define fBackupPower			14				// Использование резервного питания от генератора (ограничение мощности)
 #define fSDMLogErrors			15              // флаг писать в лог нерегулярные ошибки счетчика SDM
- 
+//  type_optionHP.flags2:
+#define f2BackupPowerAuto		0               // Автоматически определять работу от генератора (через датчик SGENERATOR)
+
+
 // Структура для хранения опций теплового насоса.
 struct type_optionHP
 {
@@ -153,6 +156,7 @@ struct type_optionHP
  int16_t  SunTempOn;					// Температура выше которой открывается СК
  int16_t  SunTempOff;					// Температура ниже которой закрывается СК
  uint16_t MinCompressorOn;              // Минимальное время работы компрессора в секундах
+ uint16_t flags2;						// Флаги #2 до 16 флагов
 };// __attribute__((packed));
 
 

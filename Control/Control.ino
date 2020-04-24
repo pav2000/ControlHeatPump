@@ -850,6 +850,11 @@ void vReadSensor(void *)
 		}
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+#ifdef SGENERATOR
+		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
+			HP.Option.flags = (HP.Option.flags & ~(1<<fBackupPower)) | ((HP.sInput[SGENERATOR].get_Input() == HP.sInput[SGENERATOR].get_alarmInput())<<fBackupPower);
+		}
+#endif
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
@@ -1404,7 +1409,8 @@ void vServiceHP(void *)
 						if(HP.Prof.DailySwitch[i].Device == 0) break;
 						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
 						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
-						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power ? fR_StatusDaily : -fR_StatusDaily);
+						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)))
+								&& !HP.NO_Power && !GETBIT(HP.Option.flags, fBackupPower) ? fR_StatusDaily : -fR_StatusDaily);
 					}
 				}
 				STORE_DEBUG_INFO(75);

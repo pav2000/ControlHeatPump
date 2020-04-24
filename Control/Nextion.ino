@@ -405,11 +405,7 @@ void Nextion::Update()
 #ifdef RBOILER
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
 #endif
-#ifdef NEXTION_GENERATOR
-					| (HP.get_BackupPower() << 4)
-#endif
-
-					;
+					| (HP.get_BackupPower() << 4);
 		if(fUpdate == 2) Page1flags = ~fl;
 		if(fl != Page1flags) {
 			if((fl ^ Page1flags) & (1<<0)) {
@@ -432,12 +428,14 @@ void Nextion::Update()
 				if(fl & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
 			}
 #endif
-#ifdef NEXTION_GENERATOR 
             if((fl ^ Page1flags) & (1<<4)) {
-            	sendCommand("vis bt1,1");
-            	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0"); // Показ кнопки работа от генератора
-            }
+#ifdef NEXTION_GENERATOR 
+            	sendCommand("vis bt1,1");  // Показ кнопки работа от генератора
+            	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
+#else
+            	if(fl & (1<<4)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
 #endif
+            }
             Page1flags = fl;
 		}
 	} else if(PageID == NXTID_PAGE_NETWORK)  // Обновление данных первой страницы "СЕТЬ"
