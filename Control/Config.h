@@ -3321,18 +3321,19 @@ const char *noteTemp[] = {"Температура улицы",
 //   #define CLEAR_CHART_HP_ON      // Очистка графиков при страте ТН
  	#define NEXTION                 // Разрешить использование дисплея. ЗАКОМЕНТИРУЙТЕ эту строку, что бы не использовать дисплей
     #ifdef 	NEXTION
- //   	#define NEXTION_GENERATOR   // Показ на nextion кнопки "Работа от генератора" (ограничение мощности потребления)
-		#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, еще одна кнопка Вкл/Выкл на экране Профили. 
+ //   	#define NEXTION_GENERATOR   // На дисплее кнопкой можно переключать "Работа от генератора" (ограничение мощности потребления)
+		#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, есть еще одна кнопка Вкл/Выкл на экране Профили.
     #endif 
-    #define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
-    #define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
-//	#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
     #define EXTERNAL_AREF     	  	// Использование внешней опоры для АЦП
     #ifdef EXTERNAL_AREF        	// Какая опора для АЦП используется
       #define SAM3X_ADC_REF  3.00   // Используется внешняя опора ADR4530ARZ
     #else
       #define SAM3X_ADC_REF  3.30   // Штатное подключение используется питание DUE
     #endif
+	#define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
+	#define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
+//	#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
+	#define ADD_FC_POWER_WHEN_GENERATOR // Прибавлять расчитанную мощность частотника к показаниям счетчика, когда работа через генератор
     #define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
 	#define STATS_USE_BUFFER_FOR_SAVING // Сохранять статистику только когда буфер (512 байт) заполнен, иначе каждый день
 	#define MIN_RAM_CHARTS

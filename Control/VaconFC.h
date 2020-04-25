@@ -195,6 +195,7 @@ public:
   int16_t	CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
   int16_t	read_stateFC();                        // Текущее состояние инвертора
   int16_t	read_tempFC();                         // Tемпература радиатора
+  void		set_nominal_power(void);
    
   int16_t	get_target() {return FC_target;}                    // Получить целевую скорость в сотых %
   int8_t	set_target(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую скорость в %, show - выводить сообщение или нет + границы
@@ -227,6 +228,7 @@ public:
   uint32_t read_0x03_32(uint16_t cmd);             // Функция Modbus 0х03 прочитать 4 байта
   int8_t   write_0x06_16(uint16_t cmd, uint16_t data);// Запись данных (2 байта) в регистр cmd возвращает код ошибки
 #endif
+  uint16_t nominal_power;							// Номинальная мощность двигателя Вт
 
  private:
   int8_t   err;										// ошибка частотника (работа) при ошибке останов ТН
@@ -237,7 +239,6 @@ public:
   int16_t  FC_curr_freq;							// Чтение: текущая частота двигателя в 0.01 Гц
   int16_t  power;									// Чтение: Текущая мощность двигателя в +-0.1% от номинала
   uint16_t current;									// Чтение: Текущий ток двигателя в 0.01 Ампер единицах
-  uint16_t nominal_power;							// Номинальная мощность двигателя Вт
   
   int16_t  state;									// Чтение: Состояние ПЧ регистр FC_STATUS
   int16_t minFC;									// Минимальная скорость инвертора в 0.01 %

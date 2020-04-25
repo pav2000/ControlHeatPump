@@ -3579,6 +3579,9 @@ void HeatPump::calculatePower()
 #ifdef CORRECT_POWER220
 	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
 #endif
+#ifdef ADD_FC_POWER_WHEN_GENERATOR
+	if(GETBIT(Option.flags, fBackupPower)) power220 += dFC.get_power();
+#endif
 
 // Расчет КОП
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 

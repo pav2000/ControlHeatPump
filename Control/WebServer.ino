@@ -657,7 +657,7 @@ void parserGET(uint8_t thread, int8_t )
 				}
 				ADD_WEBDELIM(strReturn) ;
 				continue;
-			} else goto x_FunctionNotFound;
+			} else str -= 8;
 		}
 		if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
 		{
@@ -954,6 +954,7 @@ void parserGET(uint8_t thread, int8_t )
 			str += 6;
 			if(strcmp(str,"TERR")==0) {     // Функция RESET_TERR
 				HP.Reset_TempErrors();
+				strcat(strReturn, "OK");
 			} else if (strcmp(str,"STAT")==0)   // RESET_STAT, Команда очистки статистики (в зависимости от типа)
 			{
 #ifndef I2C_EEPROM_64KB     // Статистика в памяти
@@ -1038,10 +1039,17 @@ void parserGET(uint8_t thread, int8_t )
 				if (!HP.dFC.get_present()) {
 					strcat(strReturn,"Инвертор отсутствует");
 				} else {
-					HP.dFC.reset_FC();                             // подать команду на сброс
-					strcat(strReturn,"Cброс преобразователя частоты . . .");
+					if(HP.dFC.reset_FC()) {                            // подать команду на сброс
+						strcat(strReturn, "OK");
+#ifdef FC_VACON
+						HP.dFC.set_nominal_power();
+						strReturn += m_snprintf(strReturn += strlen(strReturn), 256, " Nominal: %d W\n", HP.dFC.nominal_power);
+#endif
+					} else {
+						strcat(strReturn, "Error: ");
+						_itoa(HP.dFC.get_err(), strReturn);
+					}
 				}
-
 			} else goto x_FunctionNotFound;
 			ADD_WEBDELIM(strReturn); continue;
 		}
