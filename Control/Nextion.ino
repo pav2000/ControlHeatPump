@@ -412,7 +412,7 @@ void Nextion::Update()
 				if(fl & (1<<0)) sendCommand("bt0.val=0");    // Кнопка включения в положение ВКЛ
 				else sendCommand("bt0.val=1");    // Кнопка включения в положение ВЫКЛ
 #ifndef NEXTION_SCR0_DIS_ON_OFF
-				sendCommand("tsw bt0,1");
+				if(fUpdate == 2) sendCommand("tsw bt0,1");
 #endif
 			}
 			if((fl ^ Page1flags) & (1<<1)) {
@@ -430,7 +430,10 @@ void Nextion::Update()
 #endif
             if((fl ^ Page1flags) & (1<<4)) {
 #ifdef NEXTION_GENERATOR 
-            	sendCommand("vis bt1,1");  // Показ кнопки работа от генератора
+            	if(fUpdate == 2) {
+            		sendCommand("vis bt1,1");  // Показ кнопки работа от генератора
+            		sendCommand("tsw bt1,1");
+            	}
             	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
 #else
             	if(fl & (1<<4)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");

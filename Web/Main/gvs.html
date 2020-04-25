@@ -54,8 +54,8 @@ window.onload = function() {
 		<td>Целевая температура бойлера °C [5..90]</td>
 		<td nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></td>
 	</tr><tr>
-		<td>Гистерезис целевой температуры °C [1..20]<sup>1</sup></td>
-		<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="20" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(DTRG)');"></td>
+		<td>Гистерезис целевой температуры °C [0..30]<sup>1</sup></td>
+		<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(DTRG)');"></td>
 	</tr><tr>
 		<td><b>Использование ночного тарифа</b></td><td></td>
 	</tr><tr>
