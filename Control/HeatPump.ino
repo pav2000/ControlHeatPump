@@ -782,9 +782,11 @@ void HeatPump::resetSettingHP()
 #ifdef USE_SUN_COLLECTOR
 	Option.SunTDelta = SUN_TDELTA;
 	Option.SunGTDelta = SUNG_TDELTA;
+	Option.SunMinWorktime = SUN_MIN_WORKTIME;
+	Option.SunMinPause = SUN_MIN_PAUSE;
 #endif
     SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
-	Option.maxBackupPower=1000;          // Максимальная мощность при питании от генератора (Вт)
+	Option.maxBackupPower=3000;          // Максимальная мощность при питании от генератора (Вт)
 
 }
 
@@ -1038,6 +1040,8 @@ boolean HeatPump::set_optionHP(char *var, float x)
    if(strcmp(var,option_SunRegGeoTempGOff)==0){ Option.SunRegGeoTempGOff = rd(x, 100); return true; }else
    if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
    if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
+   if(strcmp(var,option_SunMinWorktime)==0)   { Option.SunMinWorktime = x; return true; }else
+   if(strcmp(var,option_SunMinPause)==0)      { Option.SunMinPause = x; return true; }else
    if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = x; return true; }else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0)&&(x<=900)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
@@ -1102,6 +1106,8 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_SunRegGeoTempGOff)==0){_ftoa(ret,(float)Option.SunRegGeoTempGOff/100,1); return ret; }else
    if(strcmp(var,option_SunTDelta)==0)        {_ftoa(ret,(float)Option.SunTDelta/100,1); return ret; }else
    if(strcmp(var,option_SunGTDelta)==0)       {_ftoa(ret,(float)Option.SunGTDelta/100,1); return ret; }else
+   if(strcmp(var,option_SunMinWorktime)==0)   {return _itoa(Option.SunMinWorktime, ret); } else
+   if(strcmp(var,option_SunMinPause)==0)      {return _itoa(Option.SunMinPause, ret); } else
    if(strcmp(var,option_PAUSE)==0)            {return _itoa(Option.pause/60,ret); } else        // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
    if(strcmp(var,option_MinCompressorOn)==0)  {return _itoa(Option.MinCompressorOn, ret); } else
    if(strcmp(var,option_DELAY_ON_PUMP)==0)    {return _itoa(Option.delayOnPump,ret);}else       // Задержка включения компрессора после включения насосов (сек).
@@ -1972,7 +1978,7 @@ int8_t HeatPump::StopWait(boolean stop)
     journal.jprintf(" Stop task UpdateHP\n");
     #ifdef USE_SUN_COLLECTOR
 	Sun_OFF();											// Выключить СК
-	time_Sun = GetTickCount() - SUN_MIN_PAUSE;				// выключить задержку последующего включения
+	time_Sun = GetTickCount() - uint32_t(HP.Option.SunMinPause * 1000);	// выключить задержку последующего включения
 	#endif
   }
     
@@ -2340,7 +2346,7 @@ MODE_COMP HeatPump::UpdateHeat()
 	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
-		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > Option.MinCompressorOn) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 30 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
 		else if(t1<target-Prof.Heat.dTemp)  {Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
 		else if(RET<Prof.Heat.tempOut)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
@@ -2348,7 +2354,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > Option.MinCompressorOn) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 30 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
@@ -3601,7 +3607,7 @@ if(is_compressor_on()){      // Если компрессор работает
 void HeatPump::Sun_ON(void)
 {
 #ifdef USE_SUN_COLLECTOR
-	if(GetTickCount() - time_Sun > SUN_MIN_PAUSE) { // ON
+	if(GetTickCount() - time_Sun > uint32_t(HP.Option.SunMinPause * 1000)) { // ON
 		if(flags & (1<<fHP_SunReady)) {
 			flags |= (1<<fHP_SunWork);
 			dRelay[RSUN].set_Relay(fR_StatusSun);

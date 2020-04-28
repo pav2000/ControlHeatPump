@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.074";
+var VER_WEB = "1.075";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -521,7 +521,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_sensorip-' + j + '"></tr>';
 												content2 = content2 + '<tr><td><input type="checkbox" id="get_sensoruseip-' + j + '" onchange="setParam(\'get_sensorUseIP(' + j + ')\');" ></td>';
 												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
-												content2 = content2 + '<td><select id="get_listIP-' + j + '" onchange="setParam(\'get_listIP-' + j + '\',\'get_listIP-' + j + '\');"></select></td></tr>';
+												content2 = content2 + '<td><select id="get_listip-' + j + '" onchange="setParam(\'get_listIP-' + j + '\',\'get_listIP-' + j + '\');"></select></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											document.getElementById(valueid + "-inputs").innerHTML = content2;

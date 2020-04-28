@@ -451,11 +451,11 @@ xStarted:
 int8_t devVaconFC::stop_FC()
 {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
-#ifdef DEMO
+ #ifdef DEMO
     err = OK;
-#ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
+  #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
-#endif // FC_USE_RCOMP
+  #endif // FC_USE_RCOMP
     if(err == OK) {
         SETBIT0(flags, fOnOff);
         startCompressor = 0;
@@ -465,7 +465,7 @@ int8_t devVaconFC::stop_FC()
         SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
-#else // DEMO
+ #else // DEMO
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
     	if(!get_present() || state == ERR_LINK_FC) {
@@ -473,51 +473,55 @@ int8_t devVaconFC::stop_FC()
             startCompressor = 0;
             return err; // выходим если нет инвертора или нет связи
     	}
-        err = OK;
-#ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
+  #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
         HP.dRelay[RCOMP].set_OFF();
-#else
-#ifdef MODBUS_PORT_NUM
+  #endif
+    	if(state == ERR_LINK_FC) {
+            SETBIT0(flags, fOnOff);
+            startCompressor = 0;
+            return err; // выходим если нет инвертора или нет связи
+    	}
+  #ifdef MODBUS_PORT_NUM
         err = write_0x06_16(FC_CONTROL, FC_C_STOP); // подать команду ход/стоп через модбас
-#endif
-#endif
+  #else
+        err = OK;
+  #endif
     }
     if(err == OK) {
         journal.jprintf(" %s[%s] OFF\n", name, (char *)codeRet[HP.get_ret()]);
         SETBIT0(flags, fOnOff);
         startCompressor = 0;
-    }
-    else {
+    } else {
         SETBIT1(flags, fErrFC);
         set_Error(err, name);
     } // генерация ошибки
-#endif
+ #endif // DEMO
 #else // FC_ANALOG_CONTROL
-#ifdef DEMO
-#ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
+ #ifdef DEMO
+  #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
     HP.dRelay[RCOMP].set_OFF(); // ПЛОХО через глобальную переменную
-#endif // FC_USE_RCOMP
+  #endif // FC_USE_RCOMP
     SETBIT0(flags, fOnOff);
     startCompressor = 0;
     journal.jprintf(" %s OFF\n", name);
-#else // DEMO
+ #else // DEMO
     if((testMode == NORMAL) || (testMode == HARD_TEST)) // Режим работа и хард тест, все включаем,
     {
-#ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
+  #ifdef FC_USE_RCOMP // Использовать отдельный провод для команды ход/стоп
         HP.dRelay[RCOMP].set_OFF();
-#else // подать команду ход/стоп через модбас
+  #else // подать команду ход/стоп через модбас
         err = ERR_FC_CONF_ANALOG;
         SETBIT1(flags, fErrFC);
         set_Error(err, name); // Ошибка конфигурации
-#endif
-#ifdef FC_ANALOG_OFF_SET_0
+  #endif
+  #ifdef FC_ANALOG_OFF_SET_0
         analogWrite(pin, FC_target = dac = 0);
-#endif
+  #endif
     }
     SETBIT0(flags, fOnOff);
     startCompressor = 0;
     journal.jprintf(" %s OFF\n", name);
-#endif
+ #endif // DEMO
 #endif // FC_ANALOG_CONTROL
     return err;
 }
@@ -716,12 +720,15 @@ boolean devVaconFC::reset_errorFC()
 // Сброс состояния связи инвертора через модбас
 boolean devVaconFC::reset_FC()
 {
-	reset_errorFC();
 	number_err = 0;
 #ifndef FC_ANALOG_CONTROL
     CheckLinkStatus();
     if(!err && state == ERR_LINK_FC) err = ERR_RESET_FC;
+    else
 #endif
+    {
+		reset_errorFC();
+    }
     return err == OK;
 }
 

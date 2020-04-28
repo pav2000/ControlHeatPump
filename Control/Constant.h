@@ -24,8 +24,8 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.074"				// Версия прошивки
-#define VER_SAVE		142					// Версия формата сохраняемых данных в I2C память
+#define VERSION			"1.075"				// Версия прошивки
+#define VER_SAVE		143					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
@@ -697,6 +697,8 @@ const char *option_SunRegGeoTemp	  = {"SCGT"};				// Температура на
 const char *option_SunRegGeoTempGOff  = {"SCGO"};				// Температура жидкости конца регенерации геоконтура с помощью СК, в градусах
 const char *option_SunTDelta		  = {"STD"};				// Дельта температур для включения, сотые градуса
 const char *option_SunGTDelta		  = {"SGD"};				// Дельта температур жидкости для выключения, сотые градуса
+const char *option_SunMinWorktime	  = {"SW"};
+const char *option_SunMinPause		  = {"SP"};
 const char *option_WebOnSPIFlash      = {"WSPIF"};              // флаг, что веб морда лежит на SPI Flash, иначе на SD карте
 const char *option_LogWirelessSensors = {"LOGWS"};              // Логировать обмен между беспроводными датчиками
 const char *option_PAUSE              = {"PAUSE"};              // минимальное время простоя компрессора

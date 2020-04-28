@@ -1214,7 +1214,7 @@ delayTask:	// чтобы задача отдавала часть времени
 				HP.flags = (HP.flags & ~((1<<fHP_SunSwitching) | (1<<fHP_SunReady)));
 				if(HP.dRelay[RSUNON].get_Relay()) {
 					HP.flags |= (1<<fHP_SunReady);
-					HP.time_Sun -= SUN_MIN_PAUSE;
+					HP.time_Sun -= uint32_t(HP.Option.SunMinPause * 1000);
 				}
 				HP.dRelay[RSUNON].set_OFF();
 				HP.dRelay[RSUNOFF].set_OFF();
@@ -1226,7 +1226,7 @@ delayTask:	// чтобы задача отдавала часть времени
 									|| (HP.get_onBoiler() && GETBIT(HP.Prof.Boiler.flags, fBoilerUseSun)))) || fregen)
 				 && HP.get_State() != pERROR_HP && (HP.get_State() != pOFF_HP || HP.PauseStart != 0)) {
 				if((HP.flags & (1<<fHP_SunWork))) {
-					if(GetTickCount() - HP.time_Sun > SUN_MIN_WORKTIME) {
+					if(GetTickCount() - HP.time_Sun > uint32_t(HP.Option.SunMinWorktime * 1000)) {
 						if(fregen) {
 							if(tsun < HP.Option.SunRegGeoTemp || HP.sTemp[TSUNOUTG].get_Temp() < HP.Option.SunRegGeoTempGOff) HP.Sun_OFF();
 						} else if(HP.sTemp[TSUNOUTG].get_Temp() < HP.sTemp[TEVAOUTG].get_Temp() + HP.Option.SunGTDelta) HP.Sun_OFF();
@@ -1236,7 +1236,7 @@ delayTask:	// чтобы задача отдавала часть времени
 				}
 			} else {
 				HP.Sun_OFF();
-				HP.time_Sun = GetTickCount() - SUN_MIN_PAUSE;	// выключить задержку последующего включения
+				HP.time_Sun = GetTickCount() - uint32_t(HP.Option.SunMinPause * 1000);	// выключить задержку последующего включения
 			}
 			uint8_t fl = HP.flags & ((1<<fHP_SunNotInited) | (1<<fHP_SunReady) | (1<<fHP_SunSwitching) | (1<<fHP_SunWork));
 			if((fl == (1<<fHP_SunReady) || fl == (1<<fHP_SunNotInited)) && tsun < HP.Option.SunTempOff) {
