@@ -2076,29 +2076,34 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	}
 
 	// -----------------------------------------------------------------------------------------------------
-	// Сброс излишней энергии в систему отопления
-	// Переключаем 3-х ходовой на отопление на ходу и ждем определенное число минут дальше перекидываем на бойлер
-
+	// Сброс излишней энергии в систему отопления по температуре подачи/конденсации
+	// Переключаемся на отопление на ходу и ждем определенное число секунд, дальше возвращаемся на бойлер
 	if(GETBIT(Prof.Boiler.flags,fResetHeat))    // Стоит требуемая опция - Сброс тепла в СО
 	{
-		
-		// Достигнута Температура конденсации - 0,5 градуса для (superbouler).
-		 #ifdef SUPERBOILER                       // Или температура нагнетания компрессора больше максимальной - 5 градусов
-		  if ((PressToTemp(PCON)>Prof.Boiler.tempIn-BOILER_TEMP_FEED_RESET)  // для SuperBouler
-		 #else
-		  if ((FEED>Prof.Boiler.tempIn-BOILER_TEMP_FEED_RESET)              // для Bouler 
-		 #endif		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
-		    ||(sTemp[TCOMP].get_Temp()>sTemp[TCOMP].get_maxTemp()-BOILER_TEMP_COMP_RESET)) 
-		{
-			journal.jprintf(" Discharge of excess heat %ds...\n", Prof.Boiler.Reset_Time);
-			switchBoiler(false);               // Переключится на ходу на отопление
-			_delay(Prof.Boiler.Reset_Time*1000);  // Сброс требуемое число секунд
-			journal.jprintf(" Back to heat boiler\n");
+		if(Status.ret == pBdis && offBoiler + Prof.Boiler.Reset_Time < rtcSAM3X8.unixtime()) {
+#ifdef DEBUG_MODWORK
+			journal.jprintf(" Boiler: Discharged Ok\n");
+#endif
 			switchBoiler(true);              // Переключится на ходу на ГВС
+		} else if(
+#ifdef SUPERBOILER
+		   PressToTemp(PCON)
+#else
+		   FEED
+#endif
+		   > (!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating) ? Prof.Boiler.tempRBOILER : Prof.Boiler.tempInLim) - Prof.Boiler.DischargeDelta * 10
+		   || (sTemp[TCOMP].get_Temp() > sTemp[TCOMP].get_maxTemp() - BOILER_TEMP_COMP_RESET)) // температура нагнетания компрессора больше максимальной -5 градусов
+		{
+#ifdef DEBUG_MODWORK
+			journal.jprintf(" Boiler: Discharging %ds...\n", Prof.Boiler.Reset_Time);
+#endif
+			switchBoiler(false);               // Переключится на ходу на отопление
+			Status.ret = pBdis;
+			return pCOMP_NONE;
 		}
 	}
 
-	Status.ret=pNone;                // Сбросить состояние пида
+	Status.ret = pNone;                // Сбросить состояние
 
 	int16_t T = sTemp[TBOILER].get_Temp();  // текущая температура
 	int16_t TRG = get_boilerTempTarget();   // целевая температура
@@ -2121,7 +2126,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	// Алгоритм гистерезис для старт стоп
 	if(!dFC.get_present() || !GETBIT(Prof.Boiler.flags, fBoilerPID)) // Алгоритм гистерезис для старт стоп и по опции
 	{
-		if(FEED>Prof.Boiler.tempIn) {
+		if(FEED>Prof.Boiler.tempInLim) {
 			Status.ret=pBh1; return pCOMP_OFF;    // Достигнута максимальная температура подачи ВЫКЛ)
 		}
 
@@ -2142,14 +2147,14 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler) {Status.ret=pBh4; return pCOMP_NONE;}  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
-		Status.ret=pBh5; return pCOMP_OFF;// продолжение ПАУЗЫ бойлера внутри гистрезиса
+		Status.ret=pBh5; return pCOMP_OFF;// продолжение ПАУЗЫ бойлера внутри гистерезиса
 
 	} else {
 	// Инвертор ПИД
 #if defined(SUPERBOILER) && defined(PCON)
-		if(PressToTemp(PCON) > Prof.Boiler.tempIn) {
+		if(PressToTemp(PCON) > Prof.Boiler.tempInLim) {
 #else
- 		if(FEED>Prof.Boiler.tempIn) {
+ 		if(FEED>Prof.Boiler.tempInLim) {
 #endif
 			Status.ret=pBp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__); return pCOMP_OFF;  // Достижение максимальной температуры подачи
 		}
@@ -2188,9 +2193,9 @@ MODE_COMP  HeatPump::UpdateBoiler()
         
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
 #if defined(SUPERBOILER) && defined(PCON)
-		else if ((dFC.isfOnOff())&&(PressToTemp(PCON)>Prof.Boiler.tempIn-dFC.get_dtTempBoiler())) // Ограничение, по температуре нагнетания для SUPERBOILER.
+		else if ((dFC.isfOnOff())&&(PressToTemp(PCON)>Prof.Boiler.tempInLim-dFC.get_dtTempBoiler())) // Ограничение, по температуре нагнетания для SUPERBOILER.
 #else
-		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempIn-dFC.get_dtTempBoiler()))             // Подача ограничение
+		else if ((dFC.isfOnOff())&&(FEED>Prof.Boiler.tempInLim-dFC.get_dtTempBoiler()))             // Подача ограничение
 #endif
 		{
 #ifdef DEBUG_MODWORK
@@ -2276,7 +2281,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Смотрим подход к границе защит если идет УВЕЛИЧЕНИЕ частоты
 		if (dFC.get_target()<newFC && dFC.get_PidStop() < 100)                                                                                     // Идет увеличение частоты проверяем подход к границам
 		{
-//			if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempIn-dFC.get_dtTempBoiler())*dFC.get_PidStop()/100))                                                 {Status.ret=pBp17; resetPID(); return pCOMP_NONE;}   // Подача ограничение
+//			if ((dFC.isfOnOff())&&(FEED>(Prof.Boiler.tempInLim-dFC.get_dtTempBoiler())*dFC.get_PidStop()/100))                                                 {Status.ret=pBp17; resetPID(); return pCOMP_NONE;}   // Подача ограничение
 			if ((dFC.isfOnOff())&&(dFC.get_power()>(FC_MAX_POWER_BOILER*dFC.get_PidStop()/100)))                                                            {Status.ret=pBp18; resetPID(); return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&(dFC.get_current()>(FC_MAX_CURRENT_BOILER*dFC.get_PidStop()/100)))                                                        {Status.ret=pBp19; resetPID(); return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((dFC.isfOnOff())&&((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                      {Status.ret=pBp20; resetPID(); return pCOMP_NONE;}   // температура компрессора
@@ -2300,7 +2305,7 @@ int16_t HeatPump::CalcTargetPID(type_settingHP &settings)
     int16_t  targetRealPID;				 // Цель подачи
 	if(GETBIT(settings.flags, fWeather)) { // включена погодозависимость
 		targetRealPID = settings.tempPID + (settings.kWeather * (TEMP_WEATHER - sTemp[TOUT].get_Temp()) / 1000); // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
-		if(targetRealPID > settings.tempIn - 50) targetRealPID = settings.tempIn - 50;  // ограничение целевой подачи = максимальная подача - 0.5 градуса
+		if(targetRealPID > settings.tempInLim - 50) targetRealPID = settings.tempInLim - 50;  // ограничение целевой подачи = максимальная подача - 0.5 градуса
 		if(targetRealPID < MIN_WEATHER) targetRealPID = MIN_WEATHER;
 		if(targetRealPID > MAX_WEATHER) targetRealPID = MAX_WEATHER;
 	} else targetRealPID = settings.tempPID; // отключена погодозависмость
@@ -2347,16 +2352,16 @@ MODE_COMP HeatPump::UpdateHeat()
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
 		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
-		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
+		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
 		else if(t1<target-Prof.Heat.dTemp)  {Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
-		else if(RET<Prof.Heat.tempOut)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
+		else if(RET<Prof.Heat.tempOutLim)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
 		else                                {Status.ret=pHh4;   return pCOMP_NONE;}         // Ничего не делаем  (сохраняем состояние)
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
 		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
-		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempIn)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
+		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (бойлер нагрет) ВКЛ
@@ -2376,7 +2381,7 @@ MODE_COMP HeatPump::UpdateHeat()
         }
 
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
-		else if ((dFC.isfOnOff())&&(FEED>Prof.Heat.tempIn-dFC.get_dtTemp()))         // Подача ограничение (в разделе защита)
+		else if ((dFC.isfOnOff())&&(FEED>Prof.Heat.tempInLim-dFC.get_dtTemp()))         // Подача ограничение (в разделе защита)
 		{
 #ifdef DEBUG_MODWORK
 			journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,FEED/100.0);
@@ -2505,9 +2510,9 @@ MODE_COMP HeatPump::UpdateCool()
 	{
 	case pHYSTERESIS:  // Гистерезис охлаждение.
 		if(t1<target)             {Status.ret=pCh3;   return pCOMP_OFF;}                            // Достигнута целевая температура  ВЫКЛ
-		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)){Status.ret=pCh1;return pCOMP_OFF;}// Достигнута минимальная температура подачи ВЫКЛ
+		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempInLim)){Status.ret=pCh1;return pCOMP_OFF;}// Достигнута минимальная температура подачи ВЫКЛ
 		else if(t1>target+Prof.Cool.dTemp)  {Status.ret=pCh2;   return pCOMP_ON; }                       // Достигнут гистерезис ВКЛ
-		else if(RET>Prof.Cool.tempOut)      {Status.ret=pCh13;  return pCOMP_ON; }                       // Достигнут Максимальная темература обратки ВКЛ
+		else if(RET>Prof.Cool.tempOutLim)      {Status.ret=pCh13;  return pCOMP_ON; }                       // Достигнут Максимальная темература обратки ВКЛ
 		else  {Status.ret=pCh4;    return pCOMP_NONE;   }                                                // Ничего не делаем  (сохраняем состояние)
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
@@ -2515,7 +2520,7 @@ MODE_COMP HeatPump::UpdateCool()
 
 		if(t1<target)     { Status.ret=pCp3; return pCOMP_OFF;}    // Достигнута целевая температура  ВЫКЛ
 		else if(onBoiler) { Status.ret=pCp12; return pCOMP_NONE; } // Переключение с бойлера на охлаждение
-		else if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempIn)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет
+		else if ((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED<Prof.Cool.tempInLim)) {Status.ret=pCp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}         // Достижение минимальной температуры подачи - это ошибка ПИД не рабоатет
 		//  else if ((t1<target-Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                        // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
 		//             else if ((t1>target+Prof.Cool.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pCp2; return pCOMP_ON; }                          // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
 		//             else if ((t1>target+Prof.Cool.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pCp2; return pCOMP_ON;}  // Достигнут гистерезис (бойлер нагрет) ВКЛ
@@ -2536,7 +2541,7 @@ MODE_COMP HeatPump::UpdateCool()
 
 
 		// ЗАЩИТА Компресор работает, достигнута минимальная температура подачи, мощность, температура компрессора или давление то уменьшить обороты на stepFreq
-		else if ((dFC.isfOnOff())&&(FEED<Prof.Cool.tempIn+dFC.get_dtTemp()))                  // Подача
+		else if ((dFC.isfOnOff())&&(FEED<Prof.Cool.tempInLim+dFC.get_dtTemp()))                  // Подача
 		{
 #ifdef DEBUG_MODWORK
 			journal.jprintf("%s %.2f (FEED: %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,FEED/100.0);
