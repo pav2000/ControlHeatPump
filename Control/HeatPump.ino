@@ -2084,7 +2084,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		
 		// Достигнута Температура конденсации - 0,5 градуса для (superbouler).
 		 #ifdef SUPERBOILER                       // Или температура нагнетания компрессора больше максимальной - 5 градусов
-		  if ((PressToTemp(PCON)>Prof.Boiler.tempIn-50)  // для SuperBouler
+		  if ((PressToTemp(PCON)>Prof.Boiler.tempIn-BOILER_TEMP_FEED_RESET)  // для SuperBouler
 		 #else
 		  if ((FEED>Prof.Boiler.tempIn-BOILER_TEMP_FEED_RESET)              // для Bouler 
 		 #endif		// Достигнута максимальная температура подачи - 1 градус или температура нагнетания компрессора больше максимальной - 5 градусов
@@ -2839,20 +2839,28 @@ boolean HeatPump::configHP(MODE_HP conf)
 		#endif
 	} else if((conf & pBOILER)) {  // Бойлер
 		if(Switch_R4WAY(false)) return false; 	 					   // 4-х ходовой на нагрев
-		#ifdef SUPERBOILER                                             // Бойлер греется от предкондесатора
-			dRelay[PUMP_IN].set_ON();                                  // Реле включения насоса входного контура  (геоконтур)
+		if(is_compressor_on()) {                                       // Компрессор рабоатет, переключаемся на ходу
+			switchBoiler(true);                                        // включить бойлер
+#ifdef SUPERBOILER
 			dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
+			_delay(DELAY_AFTER_SWITCH_RELAY);                          // Задержка
 			dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
-			_delay(2*1000);                     // Задержка на 2 сек
-			if(!is_compressor_on() && Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
-		#else
-			if(is_compressor_on()) {                                    // Компрессор рабоатет, переключаемся на ходу 
-				switchBoiler(true);                                     // включить бойлер
-			} else {
-				PUMPS_ON;           // включить насосы
-				if(Status.ret < pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту
-			}
-		#endif
+#endif
+		} else {
+#ifdef SUPERBOILER
+			dRelay[PUMP_IN].set_ON();                                  // Реле включения насоса входного контура  (геоконтур)
+			_delay(DELAY_AFTER_SWITCH_RELAY);                          // Задержка
+			dRelay[PUMP_OUT].set_OFF();                                // Евгений добавил
+			_delay(DELAY_AFTER_SWITCH_RELAY);                          // Задержка
+			dRelay[RSUPERBOILER].set_ON();                             // Евгений добавил
+			_delay(DELAY_AFTER_SWITCH_RELAY);                          // Задержка
+			switchBoiler(true);                                        // включить бойлер
+			if(Status.ret<pBp5) dFC.set_target(SUPERBOILER_FC,true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // В режиме супер бойлер установить частоту SUPERBOILER_FC если не дошли до пида
+#else
+			PUMPS_ON;           // включить насосы
+			if(Status.ret < pBp5) dFC.set_target(dFC.get_startFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler()); // установить стартовую частоту
+#endif
+		}
 		#ifdef RHEAT
 			if (dRelay[RHEAT].get_present()) dRelay[RHEAT].set_OFF();     // Выключить ТЭН отопления
 		#endif

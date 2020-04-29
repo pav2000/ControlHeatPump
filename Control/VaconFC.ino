@@ -592,9 +592,13 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_DT_TEMP)==0)               {  _dtoa(ret, _data.dtTemp,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _dtoa(ret, _data.dtTempBoiler,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
+    if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{
 #ifdef FC_RETOIL_FREQ
-    if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{  _dtoa(ret, FC_RETOIL_FREQ,2); } else
+    	_dtoa(ret, FC_RETOIL_FREQ,2);
+#else
+    	strcat(ret, "-");
 #endif
+    } else
    	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
 
     strcat(ret,(char*)cInvalid);
