@@ -712,7 +712,11 @@ void parserGET(uint8_t thread, int8_t )
 #ifdef RPUMPBH
 			i = HP.dRelay[RPUMPBH].get_Relay();
 #else
+	#ifdef RSUPERBOILER
+			i = HP.dRelay[RSUPERBOILER].get_Relay();
+	#else
 			i = 0;
+	#endif
 #endif
 			if(HP.dRelay[PUMP_OUT].get_Relay()) {
 				strcat(strReturn,  "Вкл");
