@@ -1534,9 +1534,8 @@ boolean HeatPump::switchBoiler(boolean b)
 #ifdef R3WAY
 	if((b == onBoiler)&&(b==dRelay[R3WAY].get_Relay())) return onBoiler; // Нечего делать выходим
 #else
-   if(b == onBoiler) return onBoiler;                                     // Нечего делать выходим
+    if(b == onBoiler) return onBoiler;                                     // Нечего делать выходим
 #endif	
-
 	
 #ifdef DEBUG_MODWORK
 	journal.printf(" swBoiler(%d): %X, mW:%d\n", b, onBoiler, get_modWork());
@@ -2072,7 +2071,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			SETBIT0(flags, fHP_BoilerTogetherHeat);
 		}
 #endif
-		return pCOMP_OFF;             // запрещено греть бойлер согласно расписания
+		return pCOMP_OFF;      // запрещено греть бойлер согласно расписания
 	}
 
 	// -----------------------------------------------------------------------------------------------------
@@ -2080,11 +2079,13 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	// Переключаемся на отопление на ходу и ждем определенное число секунд, дальше возвращаемся на бойлер
 	if(GETBIT(Prof.Boiler.flags,fResetHeat))    // Стоит требуемая опция - Сброс тепла в СО
 	{
-		if(Status.ret == pBdis && offBoiler + Prof.Boiler.Reset_Time < rtcSAM3X8.unixtime()) {
+		if(Status.ret == pBdis) {
+			if(offBoiler + Prof.Boiler.Reset_Time < rtcSAM3X8.unixtime()) {
 #ifdef DEBUG_MODWORK
-			journal.jprintf(" Boiler: Discharged Ok\n");
+				journal.jprintf(" Boiler: Discharged Ok\n");
 #endif
-			switchBoiler(true);              // Переключится на ходу на ГВС
+				switchBoiler(true);    // Переключиться на ходу на ГВС
+			} else return pCOMP_NONE;
 		} else if(
 #ifdef SUPERBOILER
 		   PressToTemp(PCON)
@@ -2097,7 +2098,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #ifdef DEBUG_MODWORK
 			journal.jprintf(" Boiler: Discharging %ds...\n", Prof.Boiler.Reset_Time);
 #endif
-			switchBoiler(false);               // Переключится на ходу на отопление
+			switchBoiler(false);       // Переключиться на ходу на отопление
 			Status.ret = pBdis;
 			return pCOMP_NONE;
 		}
@@ -2181,14 +2182,14 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// ПИД ----------------------------------
         // Питание от резервного источника - ограничение мощности потребления от источника - это жесткое ограничение, по этому оно первое
         else if((GETBIT(Option.flags,fBackupPower))&&(getPower()>get_maxBackupPower())) { // Включено ограничение мощности и текущая мощность уже выше ограничения - надо менять частоту
-        #ifdef DEBUG_MODWORK
-		journal.jprintf("%s %.2f (BACKUP POWER: %.3f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,(float)getPower()/1000.0); // КИЛОВАТЫ
-        #endif
-    	if (dFC.get_target()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  { Status.ret=pBp29; return pCOMP_OFF; }   // Уменьшать дальше некуда, выключаем компрессор
-		Status.ret=pBp28;
-		dFC.set_target(dFC.get_target()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());  // Уменьшить частоту 
-		resetPID();
-		return pCOMP_NONE; 
+#ifdef DEBUG_MODWORK
+        	journal.jprintf("%s %.2f (BACKUP POWER: %.3f kW)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,(float)getPower()/1000.0); // КИЛОВАТЫ
+#endif
+			if (dFC.get_target()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler())  { Status.ret=pBp29; return pCOMP_OFF; }   // Уменьшать дальше некуда, выключаем компрессор
+			Status.ret=pBp28;
+			dFC.set_target(dFC.get_target()-dFC.get_stepFreqBoiler(),true,dFC.get_minFreqBoiler(),dFC.get_maxFreqBoiler());  // Уменьшить частоту
+			resetPID();
+			return pCOMP_NONE;
         }		
         
 		// ЗАЩИТА Компресор работает, достигнута максимальная температура подачи, мощность, температура компрессора то уменьшить обороты на stepFreq
