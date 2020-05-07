@@ -418,7 +418,7 @@ void Profile::initProfile()
   Cool.tempInLim=1000;                    // Tемпература подачи (минимальная)
   Cool.tempOutLim=3500;                   // Tемпература обратки (макс)
   Cool.dt=1500;                        // Максимальная разность температур конденсатора.
-  Cool.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
+  Cool.kWeatherPID=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
  // Cool.P1=0;
   
@@ -442,7 +442,7 @@ void Profile::initProfile()
   Heat.tempInLim=4700;                    // Tемпература подачи (макс)
   Heat.tempOutLim=-5;                      // Tемпература обратки (минимальная)
   Heat.dt=1500;                        // Максимальная разность температур конденсатора.
-  Heat.kWeather=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
+  Heat.kWeatherPID=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
   
  // Heat.P1=0;
  
@@ -505,7 +505,7 @@ boolean Profile::set_paramCoolHP(char *var, float x)
  if(strcmp(var,hp_WEATHER)==0) { Cool.flags = (Cool.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Cool.flags = (Cool.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Cool.flags = (Cool.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ Cool.kWeather=rd(x, 1000); return true; }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ Cool.kWeatherPID=rd(x, 1000); return true; }             // Коэффициент погодозависимости
  return false; 
 }
 
@@ -515,29 +515,29 @@ char* Profile::get_paramCoolHP(char *var, char *ret, boolean fc)
    if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
 	 								return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Cool.Rule);
 				                  else {Cool.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
-   if(strcmp(var,hp_TEMP1)==0)    {_ftoa(ret,(float)Cool.Temp1/100,1); return ret;               } else             // целевая температура в доме
-   if(strcmp(var,hp_TEMP2)==0)    {_ftoa(ret,(float)Cool.Temp2/100,1); return ret;               } else             // целевая температура обратки
+   if(strcmp(var,hp_TEMP1)==0)    {_dtoa(ret,Cool.Temp1/10,1); return ret;               } else             // целевая температура в доме
+   if(strcmp(var,hp_TEMP2)==0)    {_dtoa(ret,Cool.Temp2/10,1); return ret;               } else             // целевая температура обратки
    if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Cool.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
                                   else return strcat(ret,(char*)"Дом:0;Обратка:1;");           } else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-   if(strcmp(var,hp_DTEMP)==0)    {_ftoa(ret,(float)Cool.dTemp/100,1); return ret;               } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_DTEMP)==0)    {_dtoa(ret,Cool.dTemp/10,1); return ret;               } else             // гистерезис целевой температуры
    if(strcmp(var,hp_HP_TIME)==0)  {return  _itoa(Cool.pid_time,ret);                               } else             // Постоянная интегрирования времени в секундах ПИД ТН
-   if(strcmp(var,hp_HP_PRO)==0)   {_ftoa(ret,(float)Cool.pid.Kp/1000,3); return ret;              } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {_dtoa(ret,Cool.pid.Kp,3); return ret;              } else             // Пропорциональная составляющая ПИД ТН
 #ifdef PID_FORMULA2
-   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Cool.pid.Ki/Cool.pid_time/1000,3); return ret;} else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Cool.pid.Kd*Cool.pid_time/1000,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_dtoa(ret,Cool.pid.Ki/Cool.pid_time,3); return ret;} else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_dtoa(ret,Cool.pid.Kd*Cool.pid_time,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
 #else
-   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Cool.pid.Ki/1000,3); return ret;              } else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Cool.pid.Kd/1000,3); return ret;              } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_dtoa(ret,Cool.pid.Ki,3); return ret;              } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_dtoa(ret,Cool.pid.Kd,3); return ret;              } else             // Дифференциальная составляющая ПИД ТН
 #endif
-   if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Cool.tempInLim/100,1); return ret;              } else             // температура подачи (минимальная)
-   if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Cool.tempOutLim/100,1); return ret;             } else             // температура обратки (максимальная)
-   if(strcmp(var,hp_D_TEMP)==0)   {_ftoa(ret,(float)Cool.dt/100,1); return ret;                  } else             // максимальная разность температур конденсатора.
-   if(strcmp(var,hp_TEMP_PID)==0) {_ftoa(ret,(float)Cool.tempPID/100,1); return ret;          } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_TEMP_IN)==0)  {_dtoa(ret,Cool.tempInLim/10,1); return ret;              } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {_dtoa(ret,Cool.tempOutLim/10,1); return ret;             } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_D_TEMP)==0)   {_dtoa(ret,Cool.dt/10,1); return ret;                  } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {_dtoa(ret,Cool.tempPID/10,1); return ret;          } else             // Целевая темпеартура ПИД
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Cool.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Cool.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Cool.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
-   if(strcmp(var,hp_targetPID)==0){_ftoa(ret,(float)HP.CalcTargetPID(Cool)/100,2); return ret;      } else
-   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Cool.kWeather/1000.0,3); return ret;            }                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_targetPID)==0){_dtoa(ret,HP.CalcTargetPID(Cool),2); return ret;      } else
+   if(strcmp(var,hp_K_WEATHER)==0){_dtoa(ret,Cool.kWeatherPID,3); return ret;            }                 // Коэффициент погодозависимости
  return  strcat(ret,(char*)cInvalid);   
 }
 
@@ -575,7 +575,8 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else                     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeather=rd(x, 1000); return true; }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; }
  return false; 
 }
 
@@ -585,33 +586,34 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
   if(strcmp(var,hp_RULE)==0)     {if (fc)   // Есть частотник
 	  	  	  	  	  	  	  	  	  return web_fill_tag_select(ret, "HYSTERESIS:0;PID:0;HYBRID:0;", Heat.Rule);
 				                  else {Heat.Rule=pHYSTERESIS;return strcat(ret,(char*)"HYSTERESIS:1;");}} else             // частотника нет единсвенный алгоритм гистрезис
-   if(strcmp(var,hp_TEMP1)==0)    {_ftoa(ret,(float)Heat.Temp1/100,1); return ret;                } else             // целевая температура в доме
-   if(strcmp(var,ADD_DELTA_TEMP)==0) 	{  _ftoa(ret,(float)Heat.add_delta_temp/100, 1); return ret;}else
+   if(strcmp(var,hp_TEMP1)==0)    {_dtoa(ret,Heat.Temp1/10,1); return ret;                } else             // целевая температура в доме
+   if(strcmp(var,ADD_DELTA_TEMP)==0) 	{  _dtoa(ret,Heat.add_delta_temp/10, 1); return ret;}else
    if(strcmp(var,ADD_DELTA_HOUR)==0) 	{  _itoa(Heat.add_delta_hour, ret); return ret;         }else
    if(strcmp(var,ADD_DELTA_END_HOUR)==0){  _itoa(Heat.add_delta_end_hour, ret); return ret;    	}else
-   if(strcmp(var,hp_TEMP2)==0)    {_ftoa(ret,(float)Heat.Temp2/100,1); return ret;                } else            // целевая температура обратки
+   if(strcmp(var,hp_TEMP2)==0)    {_dtoa(ret,Heat.Temp2/10,1); return ret;                } else            // целевая температура обратки
    if(strcmp(var,hp_TARGET)==0)   {if (!(GETBIT(Heat.flags,fTarget))) return strcat(ret,(char*)"Дом:1;Обратка:0;");
                                   else return strcat(ret,(char*)"Дом:0;Обратка:1;");           } else             // что является целью значения  0 (температура в доме), 1 (температура обратки).
-   if(strcmp(var,hp_DTEMP)==0)    {_ftoa(ret,(float)Heat.dTemp/100,1); return ret;                } else             // гистерезис целевой температуры
+   if(strcmp(var,hp_DTEMP)==0)    {_dtoa(ret,Heat.dTemp/10,1); return ret;                } else             // гистерезис целевой температуры
    if(strcmp(var,hp_HP_TIME)==0)  {return  _itoa(Heat.pid_time,ret);                                } else             // Постоянная интегрирования времени в секундах ПИД ТН
-   if(strcmp(var,hp_HP_PRO)==0)   {_ftoa(ret,(float)Heat.pid.Kp/1000,3); return ret;               } else             // Пропорциональная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_PRO)==0)   {_dtoa(ret,Heat.pid.Kp,3); return ret;               } else             // Пропорциональная составляющая ПИД ТН
 #ifdef PID_FORMULA2
-   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Heat.pid.Ki/Heat.pid_time/1000,3); return ret;} else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Heat.pid.Kd*Heat.pid_time/1000,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_dtoa(ret,Heat.pid.Ki/Heat.pid_time,3); return ret;} else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_dtoa(ret,Heat.pid.Kd*Heat.pid_time,3); return ret;} else             // Дифференциальная составляющая ПИД ТН
 #else
-   if(strcmp(var,hp_HP_IN)==0)    {_ftoa(ret,(float)Heat.pid.Ki/1000,3); return ret;               } else             // Интегральная составляющая ПИД ТН
-   if(strcmp(var,hp_HP_DIF)==0)   {_ftoa(ret,(float)Heat.pid.Kd/1000,3); return ret;               } else             // Дифференциальная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_IN)==0)    {_dtoa(ret,Heat.pid.Ki,3); return ret;               } else             // Интегральная составляющая ПИД ТН
+   if(strcmp(var,hp_HP_DIF)==0)   {_dtoa(ret,Heat.pid.Kd,3); return ret;               } else             // Дифференциальная составляющая ПИД ТН
 #endif
-   if(strcmp(var,hp_TEMP_IN)==0)  {_ftoa(ret,(float)Heat.tempInLim/100,1); return ret;               } else             // температура подачи (минимальная)
-   if(strcmp(var,hp_TEMP_OUT)==0) {_ftoa(ret,(float)Heat.tempOutLim/100,1); return ret;              } else             // температура обратки (максимальная)
-   if(strcmp(var,hp_D_TEMP)==0)   {_ftoa(ret,(float)Heat.dt/100,1); return ret;                   } else             // максимальная разность температур конденсатора.
-   if(strcmp(var,hp_TEMP_PID)==0) {_ftoa(ret,(float)Heat.tempPID/100,1); return ret;              } else             // Целевая темпеартура ПИД
+   if(strcmp(var,hp_TEMP_IN)==0)  {_dtoa(ret,Heat.tempInLim/10,1); return ret;               } else             // температура подачи (минимальная)
+   if(strcmp(var,hp_TEMP_OUT)==0) {_dtoa(ret,Heat.tempOutLim/10,1); return ret;              } else             // температура обратки (максимальная)
+   if(strcmp(var,hp_D_TEMP)==0)   {_dtoa(ret,Heat.dt/10,1); return ret;                   } else             // максимальная разность температур конденсатора.
+   if(strcmp(var,hp_TEMP_PID)==0) {_dtoa(ret,Heat.tempPID/10,1); return ret;              } else             // Целевая темпеартура ПИД
    if(strcmp(var,hp_WEATHER)==0)  { if(GETBIT(Heat.flags,fWeather)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else // Использование погодозависимости
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Heat.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Heat.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
-   if(strcmp(var,hp_targetPID)==0){_ftoa(ret,(float)HP.CalcTargetPID(Heat)/100,2); return ret;    } else
-   if(strcmp(var,hp_K_WEATHER)==0){_ftoa(ret,(float)Heat.kWeather/1000,3); return ret;            }                 // Коэффициент погодозависимости
- return  strcat(ret,(char*)cInvalid);  
+   if(strcmp(var,hp_targetPID)==0){_dtoa(ret,HP.CalcTargetPID(Heat),2); return ret;    } else
+   if(strcmp(var,hp_K_WEATHER)==0){_dtoa(ret,Heat.kWeatherPID,3); return ret;            }                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_kWeatherTarget)==0){_dtoa(ret,Heat.kWeatherTarget,3); return ret;    }
+   return  strcat(ret,(char*)cInvalid);
 }
 
 // Настройка бойлера --------------------------------------------------
@@ -764,12 +766,19 @@ int8_t  Profile::convert_to_new_version(void)
 	  char checkSizeOfInt5[sizeof(DailySwitch)]={checker(&checkSizeOfInt5)};
 	//*/
 	// v.135
+//	#define CNVPROF_SIZE_dataProfile	120
+//	#define CNVPROF_SIZE_SaveON		 	12
+//	#define CNVPROF_SIZE_HeatCool		50
+//	#define CNVPROF_SIZE_Boiler			80
+//	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler)
+	// v.143
 	#define CNVPROF_SIZE_dataProfile	120
 	#define CNVPROF_SIZE_SaveON		 	12
-	#define CNVPROF_SIZE_HeatCool		50
-	#define CNVPROF_SIZE_Boiler			80
-	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler)
-	if(HP.Option.ver <= 135) {
+	#define CNVPROF_SIZE_HeatCool		36
+	#define CNVPROF_SIZE_Boiler			64
+	#define CNVPROF_SIZE_DailySwitch	30
+	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch)
+	if(HP.Option.ver <= 143) {
 		journal.jprintf("Converting Profiles to new version...\n");
 		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
 		for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {
@@ -785,6 +794,8 @@ int8_t  Profile::convert_to_new_version(void)
 			memcpy(&Heat, addr, CNVPROF_SIZE_HeatCool <= sizeof(Heat) ? CNVPROF_SIZE_HeatCool : sizeof(Heat));
 			addr += CNVPROF_SIZE_HeatCool;
 			memcpy(&Boiler, addr, CNVPROF_SIZE_Boiler <= sizeof(Boiler) ? CNVPROF_SIZE_Boiler : sizeof(Boiler));
+			addr += CNVPROF_SIZE_Boiler;
+			memcpy(&DailySwitch, addr, CNVPROF_SIZE_DailySwitch <= sizeof(DailySwitch) ? CNVPROF_SIZE_DailySwitch : sizeof(DailySwitch));
 			if(save(i) < 0) return ERR_SAVE_EEPROM;
 		}
 		if(HP.save() < 0) return ERR_SAVE_EEPROM;

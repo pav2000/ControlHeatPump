@@ -843,11 +843,11 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"get_PowerCO") == 0)
 		{
-			_ftoa(strReturn, HP.powerOUT/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
+			_dtoa(strReturn, HP.powerOUT, 3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_PowerGEO") == 0)
 		{
-			_ftoa(strReturn, HP.powerGEO/1000.0f,3); ADD_WEBDELIM(strReturn); continue;
+			_dtoa(strReturn, HP.powerGEO, 3); ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_Power220") == 0)
 		{
@@ -855,7 +855,7 @@ void parserGET(uint8_t thread, int8_t )
 			if(HP.NO_Power) strcat(strReturn,"*.***");
 			else
 #endif
-				_ftoa(strReturn, HP.power220/1000.0f,3);
+				_dtoa(strReturn, HP.power220, 3);
 			ADD_WEBDELIM(strReturn); continue;
 		}
 		if (strcmp(str,"get_VCC")==0)  // Функция get_VCC  - получение напряжение питания контроллера

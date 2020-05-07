@@ -1060,9 +1060,10 @@ const char *noteTemp[] = {"Температура улицы",
     #define HP_SCHEME       4            // Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
     #define DEBUG                        // В последовательный порт шлет сообщения в первую очередь ошибки
 	#define DEBUG_MODWORK                // Вывод в консоль состояние HP при работе
-    #define SUPERBOILER               // Использование предконденсатора для нагрева ГВС
-    #define SUPERBOILER_FC (70*100)   // частота супербойлера для частотника 
-    #define SUPERBOILER_DT (10*100)   // разница температур компресссора и бойлера для включения насоса
+    #define SUPERBOILER                  // Использование предконденсатора для нагрева ГВС
+    #define SUPERBOILER_FC      (70*100) // частота супербойлера для частотника
+    #define SUPERBOILER_DT      (10*100) // разница температур компресссора и бойлера для включения насоса
+	#define SUPERBOILER_DT_HYST (3*100)  // Гистерезис
     #define I2C_EEPROM_64KB           // + Использование памяти I2C для записи журнала.При коментарии используется оперативка
     #define I2C_FRAM_MEMORY       0   // + Тип используемой памяти 0 - Флеш 1 (обычно) - FRAM память (vad711)
 	
@@ -1471,8 +1472,8 @@ const char *noteTemp[] = {"Температура улицы",
      		{ STATS_OBJ_Temp, TCONOUT },
      //		{ STATS_OBJ_Temp, TSUN },
      //		{ STATS_OBJ_Temp, TSUNOUTG },
-     //		{ STATS_OBJ_Flow, FLOWEVA },
-     //		{ STATS_OBJ_Flow, FLOWCON },
+     		{ STATS_OBJ_Flow, FLOWEVA },
+     		{ STATS_OBJ_Flow, FLOWCON },
      //		{ STATS_OBJ_Press, PGEO },
      //		{ STATS_OBJ_Press, POUT },
      		{ STATS_OBJ_PressTemp, PEVA },

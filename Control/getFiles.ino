@@ -786,12 +786,12 @@ void get_csvChart(uint8_t thread)
 					break;
 #ifdef FLOWEVA
 				case STATS_OBJ_Power_GEO:
-					value = (HP.Charts[HP.Chart_Temp_TEVAOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TEVAING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWEVA].get_Point(point) * 10 / HP.sFrequency[FLOWEVA].get_kfCapacity();
+					value = (HP.Charts[HP.Chart_Temp_TEVAOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TEVAING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWEVA].get_Point(point) / 10 * HP.sFrequency[FLOWEVA].get_Capacity() / 3600;
 					break;
 #endif
 #ifdef FLOWCON
 				case STATS_OBJ_Power_OUT:
-					value = (HP.Charts[HP.Chart_Temp_TCONOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TCONING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWCON].get_Point(point) * 10 / HP.sFrequency[FLOWCON].get_kfCapacity();
+					value = (HP.Charts[HP.Chart_Temp_TCONOUTG].get_Point(point) - HP.Charts[HP.Chart_Temp_TCONING].get_Point(point)) * HP.Charts[HP.Chart_Flow_FLOWCON].get_Point(point) / 10 * HP.sFrequency[FLOWCON].get_Capacity() / 3600;
 					break;
 #endif
 			}

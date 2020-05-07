@@ -46,6 +46,7 @@ struct Scheduler_Data {
 	uint8_t		Active;							// Активное расписание
 	char 		Names[MAX_CALENDARS][32];		// Названия (русские - 2 байта)
 	uint8_t		Timetable[TIMETABLES_MAXSIZE]; 	// буфер для раписаний: {len},{{WD+H},{Profile+1}},..., {len},{{WD+H},{Profile+1}},...,
+	uint8_t		AutoSelectMonthWeek[MAX_CALENDARS]; // Автовыбор расписания в 00:00, месяц(1..12) + неделя(0..3) + f, 0 - нет
 } __attribute__((packed));
 
 class Scheduler

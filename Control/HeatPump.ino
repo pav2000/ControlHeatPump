@@ -1252,26 +1252,26 @@ void HeatPump::get_Chart(int index, char *str)
 #endif
 #ifdef TCONOUT
 	case STATS_OBJ_Overcool:
-		Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
+		if(Chart_PressTemp_PCON && Chart_Temp_TCONOUT) Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
 		break;
 #endif
 	case STATS_OBJ_TCOMP_TCON:
-		Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]);
+		if(Chart_Temp_TCOMP && Chart_PressTemp_PCON) Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]);
 		break;
 	case STATS_OBJ_Delta_GEO:
-		Charts[Chart_Temp_TEVAING].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TEVAOUTG]);
+		if(Chart_Temp_TEVAING && Chart_Temp_TEVAOUTG) Charts[Chart_Temp_TEVAING].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TEVAOUTG]);
 		break;
 	case STATS_OBJ_Delta_OUT:
-		Charts[Chart_Temp_TCONOUTG].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONING]);
+		if(Chart_Temp_TCONOUTG && Chart_Temp_TCONING) Charts[Chart_Temp_TCONOUTG].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONING]);
 		break;
 #ifdef FLOWEVA
-		case STATS_OBJ_Power_GEO:
-		Charts[Chart_Flow_FLOWEVA].get_PointsStrPower(str, &Charts[Chart_Temp_TEVAING], &Charts[Chart_Temp_TEVAOUTG], sFrequency[FLOWEVA].get_kfCapacity());
+	case STATS_OBJ_Power_GEO:
+		if(Chart_Flow_FLOWEVA && Chart_Temp_TEVAOUTG && Chart_Temp_TEVAING) Charts[Chart_Flow_FLOWEVA].get_PointsStrPower(str, &Charts[Chart_Temp_TEVAOUTG], &Charts[Chart_Temp_TEVAING], sFrequency[FLOWEVA].get_Capacity());
 		break;
 #endif
 #ifdef FLOWCON
 	case STATS_OBJ_Power_OUT:
-		Charts[Chart_Flow_FLOWCON].get_PointsStrPower(str, &Charts[Chart_Temp_TCONING], &Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_kfCapacity());
+		if(Chart_Flow_FLOWCON && Chart_Temp_TCONING && Chart_Temp_TCONOUTG) Charts[Chart_Flow_FLOWCON].get_PointsStrPower(str, &Charts[Chart_Temp_TCONING], &Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_Capacity());
 		break;
 #endif
 	default:
@@ -1387,6 +1387,7 @@ int16_t HeatPump::get_targetTempHeat()
 			|| (Prof.Heat.add_delta_end_hour < Prof.Heat.add_delta_hour && (h >= Prof.Heat.add_delta_hour || h <= Prof.Heat.add_delta_end_hour)))
 			T += Prof.Heat.add_delta_temp;
 	}
+	if(Prof.Heat.kWeatherTarget != 0) T += (int32_t)Prof.Heat.kWeatherTarget * (TEMP_WEATHER - sTemp[TOUT].get_Temp()) / 1000; // Погодозависимость
 	T += Schdlr.get_temp_change();
 	return T;
 }
@@ -1432,92 +1433,6 @@ void HeatPump::getTargetTempStr(char *rstr)
 // ---------------------------------- ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ ТН ------------------------------------------
 // --------------------------------------------------------------------------------------------------------
 
-#ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-// Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
-boolean HeatPump::boilerAddHeat()
-{
-	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
-	int16_t T = sTemp[TBOILER].get_Temp();
-	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella)) && (!GETBIT(Option.flags, fBackupPower))) // Сальмонелла не взирая на расписание если включен бойлер и не питание от резервного источника
-	{
-		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
-			startSallmonela = rtcSAM3X8.unixtime();
-			onSallmonela = true;
-			journal.jprintf(" Cycle start salmonella, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
-		}
-		if(onSallmonela) {   // Обеззараживание нужно
-			if(startSallmonela + SALLMONELA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
-				if(T < SALLMONELA_TEMP) return true; // Включить обеззараживание
-#ifdef SALLMONELA_HARD
-				else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
-#else
-				else {  // Вариант работы только до достижение темперaтуpы и сразу выключение
-					onSallmonela = false;
-					startSallmonela = 0;
-					journal.jprintf(" Salmonella cycle finished, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
-					return false;
-				}
-#endif
-			} else {  // Время вышло, выключаем, и идем дальше по алгоритму
-				onSallmonela = false;
-				startSallmonela = 0;
-				journal.jprintf(" Salmonella cycle end, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
-			}
-		}
-	} else if(onSallmonela) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму
-		onSallmonela = false;
-		startSallmonela = 0;
-		journal.jprintf(" Off salmonella\n");
-	}
-	
-	// Догрев бойлера
-	if (GETBIT(Option.flags,fBackupPower))  flagRBOILER = false;  // если переключение на ходу на резервный источник то сбросить догрев бойлера
-    
-	if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
-	{   
-		if(GETBIT(Prof.Boiler.flags, fTurboBoiler))  // Если турбо режим, то повторяем за Тепловым насосом (грет или не греть)
-		{
-			if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
-		} 
-		if(GETBIT(Prof.Boiler.flags, fAddHeating))  // Включен догрев
-		{ 
-			int16_t b_target = get_boilerTempTarget();
-			if((T < b_target - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) && (!flagRBOILER)) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
-			    if (!GETBIT(Option.flags,fBackupPower)) flagRBOILER = true; else  flagRBOILER = false;    // Догрев только если нет питания от резервного источника
-				return false;
-			}  
-			if(!flagRBOILER || onBoiler) return false; // флажка нет или работет бойлер, но догрев не включаем
-			else {
-				if(T < b_target && (T >= Prof.Boiler.tempRBOILER || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
-					return true;
-				} else { // бойлер выше целевой температуры - цель достигнута или греть тэном еще рано
-					flagRBOILER = false;
-					return false;
-				}
-			}
-		} else { // ТЭН не используется (сняты все флажки)
-			flagRBOILER = false;
-			return false;
-		}
-	} else { // Бойлер сейчас запрещен
-		flagRBOILER = false;
-		return false;
-	}
-
-}
-#endif   
-
-// Проверить расписание бойлера true - нужно греть false - греть не надо, если расписание выключено то возвращает true
- boolean HeatPump::scheduleBoiler()
- {
-	 if(HeatBoilerUrgently) return true;
- 	 if(GETBIT(Prof.Boiler.flags, fSchedule))         // Если используется расписание
-	 {  // Понедельник 0 воскресенье 6 это кодирование в расписании функция get_day_of_week возвращает 1-7
-		 boolean b = Prof.Boiler.Schedule[rtcSAM3X8.get_day_of_week() - 1] & (0x01 << rtcSAM3X8.get_hours()) ? true : false;
-		 if(!b) return false;             // запрещено греть бойлер согласно расписания
-	 }
-	 return true;
- }
 // Все реле выключить
 void HeatPump::relayAllOFF()
 {
@@ -2023,6 +1938,96 @@ int8_t HeatPump::StopWait(boolean stop)
   return error;
 }
 
+#ifdef RBOILER  // управление дополнительным ТЭНом бойлера
+// Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
+boolean HeatPump::boilerAddHeat()
+{
+	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
+	if (GETBIT(Option.flags,fBackupPower))  { // если переключение на ходу на резервный источник то сбросить догрев бойлера
+		flagRBOILER = false;
+		return false;
+	}
+	int16_t T = sTemp[TBOILER].get_Temp();
+	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella)) && (!GETBIT(Option.flags, fBackupPower))) // Сальмонелла не взирая на расписание если включен бойлер и не питание от резервного источника
+	{
+		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
+			startSallmonela = rtcSAM3X8.unixtime();
+			onSallmonela = true;
+			journal.jprintf(" Cycle start salmonella, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
+		}
+		if(onSallmonela) {   // Обеззараживание нужно
+			if(startSallmonela + SALLMONELA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
+				if(T < SALLMONELA_TEMP) return true; // Включить обеззараживание
+#ifdef SALLMONELA_HARD
+				else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
+#else
+				else {  // Вариант работы только до достижение темперaтуpы и сразу выключение
+					onSallmonela = false;
+					startSallmonela = 0;
+					journal.jprintf(" Salmonella cycle finished, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
+					return false;
+				}
+#endif
+			} else {  // Время вышло, выключаем, и идем дальше по алгоритму
+				onSallmonela = false;
+				startSallmonela = 0;
+				journal.jprintf(" Salmonella cycle end, %.2dC°\n",HP.sTemp[TBOILER].get_Temp());
+			}
+		}
+	} else if(onSallmonela) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму
+		onSallmonela = false;
+		startSallmonela = 0;
+		journal.jprintf(" Off salmonella\n");
+	}
+
+	// Догрев бойлера
+
+	if(GETBIT(Prof.SaveON.flags, fBoilerON) && scheduleBoiler()) // Если разрешено греть бойлер согласно расписания И Бойлер включен
+	{
+		if(GETBIT(Prof.Boiler.flags, fTurboBoiler))  // Если турбо режим, то повторяем за Тепловым насосом (грет или не греть)
+		{
+			if(T < Prof.Boiler.tempRBOILER) return onBoiler;   // работа параллельно с ТН  если температура МЕНЬШЕ догрева то повторяем работу ТН
+		}
+		if(GETBIT(Prof.Boiler.flags, fAddHeating))  // Включен догрев
+		{
+			int16_t b_target = get_boilerTempTarget();
+			if(!flagRBOILER && (T < b_target - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp))) {  // Бойлер ниже гистерезиса - ставим признак необходимости включения Догрева (но пока не включаем ТЭН)
+			    flagRBOILER = true;
+				return false;
+			}
+			if(!flagRBOILER || onBoiler) return false; // флажка нет или работет бойлер, но догрев не включаем
+			else {
+				if(T < b_target && (T >= Prof.Boiler.tempRBOILER || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
+					return true;
+				} else { // бойлер выше целевой температуры - цель достигнута или греть тэном еще рано
+					flagRBOILER = false;
+					return false;
+				}
+			}
+		} else { // ТЭН не используется (сняты все флажки)
+			flagRBOILER = false;
+			return false;
+		}
+	} else { // Бойлер сейчас запрещен
+		flagRBOILER = false;
+		return false;
+	}
+
+}
+#endif
+
+// Проверить расписание бойлера true - нужно греть false - греть не надо, если расписание выключено то возвращает true
+boolean HeatPump::scheduleBoiler()
+{
+	if(HeatBoilerUrgently) return true;
+	if(GETBIT(Prof.Boiler.flags, fSchedule))         // Если используется расписание
+	{  // Понедельник 0 воскресенье 6 это кодирование в расписании функция get_day_of_week возвращает 1-7
+		boolean b = Prof.Boiler.Schedule[rtcSAM3X8.get_day_of_week() - 1] & (0x01 << rtcSAM3X8.get_hours()) ? true : false;
+		if(!b) return false;             // запрещено греть бойлер согласно расписания
+	}
+	return true;
+}
+
 // Управление температурой в зависимости от режима
 #define STR_REDUCED "Reduced FC"   // Экономим место
 #define STR_FREQUENCY " FC> %.2f\n" // Экономим место
@@ -2095,7 +2100,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #else
 		   FEED
 #endif
-		   > (!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating) ? Prof.Boiler.tempRBOILER : Prof.Boiler.tempInLim) - Prof.Boiler.DischargeDelta * 10
+		   > Prof.Boiler.tempInLim - Prof.Boiler.DischargeDelta * 10
 		   || (sTemp[TCOMP].get_Temp() > sTemp[TCOMP].get_maxTemp() - BOILER_TEMP_COMP_RESET)) // температура нагнетания компрессора больше максимальной -5 градусов
 		{
 #ifdef DEBUG_MODWORK
@@ -2306,7 +2311,7 @@ int16_t HeatPump::CalcTargetPID(type_settingHP &settings)
 {
     int16_t  targetRealPID;				 // Цель подачи
 	if(GETBIT(settings.flags, fWeather)) { // включена погодозависимость
-		targetRealPID = settings.tempPID + (settings.kWeather * (TEMP_WEATHER - sTemp[TOUT].get_Temp()) / 1000); // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
+		targetRealPID = settings.tempPID + (settings.kWeatherPID * (TEMP_WEATHER - sTemp[TOUT].get_Temp()) / 1000); // включена погодозависимость, коэффициент в ТЫСЯЧНЫХ результат в сотых градуса, определяем цель
 		if(targetRealPID > settings.tempInLim - 50) targetRealPID = settings.tempInLim - 50;  // ограничение целевой подачи = максимальная подача - 0.5 градуса
 		if(targetRealPID < MIN_WEATHER) targetRealPID = MIN_WEATHER;
 		if(targetRealPID > MAX_WEATHER) targetRealPID = MAX_WEATHER;
@@ -2328,7 +2333,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		set_Error(ERR_DTEMP_CON,(char*)__FUNCTION__);
 		return pCOMP_NONE;
 	}
-	t1 = GETBIT(Prof.Heat.flags,fTarget) ? RET : sTemp[TIN].get_Temp();  // вычислить температуры для сравнения Prof.Heat.Target 0-дом   1-обратка
+	t1 = GETBIT(Prof.Heat.flags,fTarget) ? RET : sTemp[TIN].get_Temp();  // вычислить температуры для сравнения Prof.Heat.Target 0-дом, 1-обратка
 	target = get_targetTempHeat();
 	if(is_compressor_on() && !onBoiler) {
 #ifdef R4WAY
@@ -2352,7 +2357,7 @@ MODE_COMP HeatPump::UpdateHeat()
 	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
-		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
 		else if(t1<target-Prof.Heat.dTemp)  {Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
 		else if(RET<Prof.Heat.tempOutLim)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
@@ -2360,7 +2365,7 @@ MODE_COMP HeatPump::UpdateHeat()
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
+		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
 		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
@@ -2436,7 +2441,11 @@ MODE_COMP HeatPump::UpdateHeat()
 		else if (rtcSAM3X8.unixtime()-dFC.get_startTime()<FC_START_PID_DELAY/100 ){ Status.ret=pHp10; return pCOMP_NONE;}     // РАЗГОН частоту не трогаем
 
 #ifdef SUPERBOILER                                            // Бойлер греется от предкондесатора
-		if (sTemp[TCOMP].get_Temp()-SUPERBOILER_DT>sTemp[TBOILER].get_Temp())  dRelay[RSUPERBOILER].set_ON(); else dRelay[RSUPERBOILER].set_OFF();// исправил плюс на минус
+		if(sTemp[TCOMP].get_Temp() - (SUPERBOILER_DT - SUPERBOILER_DT_HYST) >= sTemp[TBOILER].get_Temp()
+#ifdef RPUMPB
+			&& !dRelay[RPUMPB].get_Relay()
+#endif
+		) dRelay[RSUPERBOILER].set_ON(); else if(sTemp[TCOMP].get_Temp() - SUPERBOILER_DT < sTemp[TBOILER].get_Temp()) dRelay[RSUPERBOILER].set_OFF();
 		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pHp15; else Status.ret=pHp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
@@ -2715,7 +2724,10 @@ MODE_HP HeatPump::get_Work()
 	switch((int) UpdateBoiler())  // проверка бойлера высший приоритет
 	{
 	case pCOMP_OFF:
-		if(onBoiler) journal.jprintf(" Stop Boiler [%s]\n", (char *)codeRet[HP.get_ret()]);
+		if(onBoiler) {
+			if(Status.ret == pBh22 || Status.ret == pBp22) flagRBOILER = true;
+			journal.jprintf(" Stop Boiler [%s]\n", (char *)codeRet[HP.get_ret()]);
+		}
 		ret = pOFF;
 		break;
 	case pCOMP_ON:
@@ -2727,7 +2739,7 @@ MODE_HP HeatPump::get_Work()
 	}
 
 #ifdef DEBUG_MODWORK
-	journal.printf(" get_Work-Boiler: %s, ret=%X, onBoiler=%d, flagRBOILER=%d\n", codeRet[Status.ret], ret, onBoiler, flagRBOILER);
+	journal.printf(" get_Work-Boiler: %s(%s), ret=%X, onBoiler=%d, flagRBOILER=%d\n", codeRet[Status.ret], codeRet[Status.prev], ret, onBoiler, flagRBOILER);
 #endif
 	if(((get_modeHouse() == pOFF) && (ret == pOFF)) || error) return ret; // режим ДОМА выключен (т.е. запрещено отопление или охлаждение дома) И бойлер надо выключить, то выходим с сигналом pOFF (переводим ТН в паузу)
 	if((ret & pBOILER)) return ret; // работает бойлер больше ничего анализировать не надо выход
@@ -3563,17 +3575,17 @@ void HeatPump::calculatePower()
 	// Мощности контуров
 	if(is_heating()) {
 #ifdef  FLOWCON 
- 		powerOUT = (float)((FEED - RET) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
+ 		powerOUT = ((int32_t)FEED - RET) * sFrequency[FLOWCON].get_Value() / 100 * sFrequency[FLOWCON].get_Capacity() / 3600;
 #endif
 #ifdef  FLOWEVA
-		powerGEO = (float)((sTemp[TEVAING].get_Temp() - sTemp[TEVAOUTG].get_Temp()) * sFrequency[FLOWEVA].get_Value()) / sFrequency[FLOWEVA].get_kfCapacity();
+		powerGEO = ((int32_t)sTemp[TEVAING].get_Temp() - sTemp[TEVAOUTG].get_Temp()) * sFrequency[FLOWEVA].get_Value() / 100 * sFrequency[FLOWEVA].get_Capacity() / 3600;
 #endif
 	} else {
 #ifdef  FLOWCON
-		powerOUT = (float)((RET - FEED) * sFrequency[FLOWCON].get_Value()) / sFrequency[FLOWCON].get_kfCapacity();
+		powerOUT = ((int32_t)RET - FEED) * sFrequency[FLOWCON].get_Value() / 100 * sFrequency[FLOWCON].get_Capacity() / 3600;
 #endif
 #ifdef  FLOWEVA 
-		powerGEO = (float)((sTemp[TEVAOUTG].get_Temp() - sTemp[TEVAING].get_Temp()) * sFrequency[FLOWEVA].get_Value()) / sFrequency[FLOWEVA].get_kfCapacity();
+		powerGEO = ((int32_t)sTemp[TEVAOUTG].get_Temp() - sTemp[TEVAING].get_Temp()) * sFrequency[FLOWEVA].get_Value() / 100 * sFrequency[FLOWEVA].get_Capacity() / 3600;
 #endif
 	}
 #ifdef RHEAT_POWER   // Для Дмитрия. его специфика Вычитаем из общей мощности системы отопления мощность электрокотла
@@ -3590,9 +3602,9 @@ void HeatPump::calculatePower()
 // Получение мощностей потребления электроэнергии
 	COP = dFC.get_power();  // получить текущую мощность компрессора
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
-	if (dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
+	if(dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
 		power220 = dSDM.get_Power();
-	} else power220=0; // связи со счетчиком нет
+	} else power220 = 0; // связи со счетчиком нет
 #else
 	power220=0; // электросчетчика нет
 #endif
@@ -3607,8 +3619,8 @@ void HeatPump::calculatePower()
 #ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
 if(is_compressor_on()){      // Если компрессор работает
 #endif	
-	if(COP>0) COP = powerOUT / COP * 100; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
-	if(power220 != 0) fullCOP = powerOUT / power220 * 100; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+	if(COP>0) COP = powerOUT * 100 / COP; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
+	if(power220 != 0) fullCOP = powerOUT * 100 / power220; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
 		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
 		if(COP>10*100) COP=8*100;       // КОП не более 8
 		if(fullCOP>8*100) fullCOP=7*100; // полный КОП не более 7

@@ -114,7 +114,7 @@ void statChart::get_PointsStrSubDiv100(char *&b, statChart *sChart)
 // Расчитать мощность на лету используется для графика потока, передаются указатели на графики температуры + теплоемкость
 // График температур - сотые градуса, график потока это ДЕСЯТКИ литров в час
 // Теплоемкость kfCapacity =  (3600*100/Capacity)
-void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t kfCapacity)
+void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outChart, uint16_t Capacity)
 {
 	if(num == 0 || inChart->get_num() == 0 || outChart->get_num() == 0) {
 		//strcat(b, ";");
@@ -122,8 +122,7 @@ void statChart::get_PointsStrPower(char *&b, statChart *inChart, statChart *outC
 	}
 	b += m_strlen(b);
 	for(uint16_t i = 0; i < num; i++) {
-		//	b = dptoa(b, (int32_t)(outChart->get_Point(i)-inChart->get_Point(i)) * get_Point(i) * Capacity / (360 *100), 3);// выходная мощность в кВт
-		b = dptoa(b, (int32_t)(outChart->get_Point(i) - inChart->get_Point(i)) * get_Point(i) * 10 / kfCapacity, 3); // выходная мощность в кВт, используем get_kfCapacity() 10 - поток в десятках дитров в час
+		b = dptoa(b, (int32_t)(outChart->get_Point(i) - inChart->get_Point(i)) * get_Point(i) / 10 * Capacity / 3600, 3); // выходная мощность в кВт
 		*(b - 1) = ';';
 		//*b = '\0';
 	}
