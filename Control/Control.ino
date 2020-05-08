@@ -1106,13 +1106,18 @@ void vReadSensor_delay1ms(int32_t ms)
 #endif  // #ifndef SUPERBOILER 
 						if (HP.get_Circulation())                                               // Циркуляция разрешена
 						{
-			                if ((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { // идет нагрев ГВС 
-			                #ifdef SUPERBOILER  	
-                               if (HP.dRelay[RSUPERBOILER].get_Relay()) {HP.dRelay[RPUMPB].set_OFF(); goto delayTask;/* continue;*/} // идет прямой нагрев ГВС через предконденсатор, насос циркуляции ВЫКЛЮЧАЕМ
-                               else    
-                            #endif
-                               {HP.dRelay[RPUMPB].set_ON();goto delayTask;} // идет нагрев ГВС включаем насос циркуляции ВСЕГДА - улучшаем перемешивание
+#ifdef SUPERBOILER
+							if((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler() || HP.dRelay[RSUPERBOILER].get_Relay())) {
+								// идет прямой нагрев ГВС через предконденсатор, насос циркуляции ВЫКЛЮЧАЕМ
+								HP.dRelay[RPUMPB].set_OFF();
+								goto delayTask;
+							}
+#else
+							if((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler())) { // идет нагрев ГВС
+                               HP.dRelay[RPUMPB].set_ON();
+                               goto delayTask; // идет нагрев ГВС включаем насос циркуляции ВСЕГДА - улучшаем перемешивание
 			                }
+#endif
 			                if (HP.get_CirculWork()==0) { HP.dRelay[RPUMPB].set_OFF(); goto delayTask;/* continue;*/}   // В условиях стоит время работы 0 - выключаем насос ГВС
 							if (HP.get_CirculPause()==0) { HP.dRelay[RPUMPB].set_ON(); goto delayTask;/* continue;*/}  // В условиях стоит время паузы 0 - включаем насос ГВС
 							if(HP.dRelay[RPUMPB].get_Relay())                                       // Насос включен Смотрим времена
@@ -1122,9 +1127,7 @@ void vReadSensor_delay1ms(int32_t ms)
 									RPUMPBTick=xTaskGetTickCount();
 									HP.dRelay[RPUMPB].set_OFF();                                  // выключить насос
 								}
-							}
-							else                                                                 // Насос выключен
-							{
+							} else {                                                                // Насос выключен
 								if(((long)xTaskGetTickCount()-RPUMPBTick ) >  HP.get_CirculPause()*configTICK_RATE_HZ)   // ждем время мсек
 								{
 									RPUMPBTick=xTaskGetTickCount();
