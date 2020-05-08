@@ -826,8 +826,8 @@ boolean HeatPump::set_network(char *var, char *c)
                                     else if (x == 1) {SETBIT1(Network.flags,fPass);  return true;}
                                     else return false;  
                                     }else
- if(strcmp(var,net_PASSUSER)==0){    strcpy(Network.passUser,c);set_hashUser(); return true;   }else                 
- if(strcmp(var,net_PASSADMIN)==0){   strcpy(Network.passAdmin,c);set_hashAdmin(); return true; }else
+ if(strcmp(var,net_PASSUSER)==0){    strncpy(Network.passUser,c, PASS_LEN);set_hashUser(); return true;   }else
+ if(strcmp(var,net_PASSADMIN)==0){   strncpy(Network.passAdmin,c, PASS_LEN);set_hashAdmin(); return true; }else
  if(strcmp(var, net_fWebLogError) == 0) { Network.flags = (Network.flags & ~(1<<fWebLogError)) | ((x == 1)<<fWebLogError); return true; } else
  if(strcmp(var, net_fWebFullLog) == 0) { Network.flags = (Network.flags & ~(1<<fWebFullLog)) | ((x == 1)<<fWebFullLog); return true; } else
  if(strcmp(var,net_SIZE_PACKET)==0){
