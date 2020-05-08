@@ -1601,7 +1601,12 @@ if(b && (get_modWork() & pBOILER)){
    	_delay(d); 										// Задержка на d мсек
   #endif
 #endif // R3WAY
-   	if(!b) SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
+   	if(!b) {
+   		SETBIT0(HP.flags, fHP_BoilerTogetherHeat);
+#ifdef SUPERBOILER
+   		dRelay[RSUPERBOILER].set_OFF();
+#endif
+   	}
   	Pump_HeatFloor(b); 				  				// насос ТП
 
 }
