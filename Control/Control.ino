@@ -1107,7 +1107,7 @@ void vReadSensor_delay1ms(int32_t ms)
 						if (HP.get_Circulation())                                               // Циркуляция разрешена
 						{
 #ifdef SUPERBOILER
-							if((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler() || HP.dRelay[RSUPERBOILER].get_Relay())) {
+							if((HP.dRelay[RCOMP].get_Relay()||HP.dFC.isfOnOff())&&(HP.get_onBoiler() || (HP.dRelay[RSUPERBOILER].get_Relay() && !HP.dRelay[PUMP_OUT].get_Relay()))) {
 								// идет прямой нагрев ГВС через предконденсатор, насос циркуляции ВЫКЛЮЧАЕМ
 								HP.dRelay[RPUMPB].set_OFF();
 								goto delayTask;
