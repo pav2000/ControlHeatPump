@@ -37,7 +37,7 @@ const boolean _resume = false;  // Команда возобновления р�
 
 // Установка критической ошибки для класса ТН вызывает останов ТН
 // Возвращает ошибку останова ТН
-int8_t set_Error(int8_t _err, char *nam)
+void set_Error(int8_t _err, char *nam)
 {
 	if(HP.dRelay[RCOMP].get_Relay() || HP.dFC.isfOnOff())    // СРАЗУ Если компрессор включен, выключить  ГЛАВНАЯ ЗАЩИТА
 	{ // Выключить компрессор для обоих вариантов
@@ -65,21 +65,25 @@ int8_t set_Error(int8_t _err, char *nam)
 		if(xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) HP.save_DumpJournal(true); // вывод отладочной информации для начала  если запущена freeRTOS
 		HP.message.setMessage(pMESSAGE_ERROR, HP.note_error, 0);    // сформировать уведомление об ошибке
 		// Сюда ставить надо останов ТН !!!!!!!!!!!!!!!!!!!!!
-		if(HP.get_State() != pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
-		{
-			if(HP.get_nStart() == 0) HP.sendCommand(pSTOP); // Послать команду на останов ТН  если нет попыток повторного пуск
-			else { // сюда ставить повторные пуски ТН при ошибке.
-				if(HP.num_repeat < HP.get_nStart())                    // есть еще попытки
-				{
-					HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
-				} else HP.sendCommand(pSTOP);                    // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
-			}
-			if(HP.get_State() == pSTARTING_HP) { // Ошибка во время старта
-				HP.set_HP_error_state();
-			}
+		HP.process_error();
+	}
+}
+
+void HeatPump::process_error(void)
+{
+	if(HP.get_State() != pOFF_HP)    // Насос не ВЫКЛЮЧЕН есть что выключать
+	{
+		if(HP.get_nStart() == 0) HP.sendCommand(pSTOP); // Послать команду на останов ТН  если нет попыток повторного пуск
+		else { // сюда ставить повторные пуски ТН при ошибке.
+			if(HP.num_repeat < HP.get_nStart())                    // есть еще попытки
+			{
+				HP.sendCommand(pREPEAT);                     // Повторный пуск ТН
+			} else HP.sendCommand(pSTOP);                    // Послать команду на останов ТН  БЕЗ ПОПЫТОК ПУСКА
+		}
+		if(HP.get_State() == pSTARTING_HP) { // Ошибка во время старта
+			HP.set_HP_error_state();
 		}
 	}
-	return _err;
 }
 
 void HeatPump::initHeatPump()
@@ -1704,7 +1708,7 @@ int8_t HeatPump::StartResume(boolean start)
 	//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
 	if((ResetFC()) != OK)                                // Сброс инвертора если нужно
 	{
-		set_Error(ERR_RESET_FC, (char*) __FUNCTION__);
+		if(HP.error == OK) set_Error(ERR_RESET_FC, (char*) __FUNCTION__); else process_error();
 		return error;
 	}
 	eraseError();                                      // Обнулить ошибку только после сброса инвертора! иначе она может повторно возникнет при ошибке инвертора
@@ -2365,19 +2369,16 @@ MODE_COMP HeatPump::UpdateHeat()
 		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)){Status.ret=pHh1;   return pCOMP_OFF;} // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
 		else if(t1<target-Prof.Heat.dTemp)  {Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
+		else if(onBoiler) { return pCOMP_OFF; } // Бойлер нагрет и отопление не нужно
 		else if(RET<Prof.Heat.tempOutLim)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
 		else                                {Status.ret=pHh4;   return pCOMP_NONE;}         // Ничего не делаем  (сохраняем состояние)
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
 		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(HP.Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
-		else if(onBoiler) { Status.ret=pHp12; return pCOMP_NONE; } // Переключение с бойлера на отопление
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не рабоатет (есть задержка срабатывания для переключенияс ГВС)
-		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис и компрессор еще не рабоатет ВКЛ
-		//  else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
-		//  else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(dRelay[R3WAY].get_Relay())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (бойлер нагрет) ВКЛ
-		else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }     // Достигнут гистерезис (компрессор не рабоатет) ВКЛ
-//		else if ((t1<target-Prof.Heat.dTemp)&&(dFC.isfOnOff())&&(!get_onBoiler())) {Status.ret=pHp2; return pCOMP_ON;} // Достигнут гистерезис (компрессор работает, но это не бойлер) ВКЛ (в принципе это лишнее)
+		else if ((t1<target-Prof.Heat.dTemp)&&(!(dFC.isfOnOff())))  {Status.ret=pHp2; return pCOMP_ON; }     // Достигнут гистерезис (компрессор не работает) ВКЛ
+		else if(onBoiler) { return pCOMP_OFF; } // Бойлер нагрет и отопление не нужно
        
         // Питание от резервного источника - ограничение мощности потребления от источника - это жесткое ограничение, по этому оно первое
 	    else if((GETBIT(Option.flags,fBackupPower))&&(getPower()>get_maxBackupPower())) { // Включено ограничение мощности и текущая мощность уже выше ограничения - надо менять частоту
@@ -2450,7 +2451,12 @@ MODE_COMP HeatPump::UpdateHeat()
 #ifdef RPUMPB
 			&& !dRelay[RPUMPB].get_Relay()
 #endif
-		) dRelay[RSUPERBOILER].set_ON(); else if(sTemp[TCOMP].get_Temp() - SUPERBOILER_DT < sTemp[TBOILER].get_Temp()) dRelay[RSUPERBOILER].set_OFF();
+		) dRelay[RSUPERBOILER].set_ON();
+		else if(sTemp[TCOMP].get_Temp() - SUPERBOILER_DT < sTemp[TBOILER].get_Temp()
+#ifdef RPUMPB
+			|| dRelay[RPUMPB].get_Relay()
+#endif
+		) dRelay[RSUPERBOILER].set_OFF();
 		if(xTaskGetTickCount()-updatePidTime<HP.get_timeHeat()*1000)         { Status.ret=pHp11;   return pCOMP_NONE;}   // время обновления ПИДа еше не пришло
 		if (onBoiler) Status.ret=pHp15; else Status.ret=pHp12;                                          // если нужно показывем что бойлер греется от предкондесатора
 #else
@@ -3021,7 +3027,7 @@ void HeatPump::compressorON()
 #endif
 		uint16_t d = Option.delayOnPump;
 #ifdef FLOW_CONTROL
-		for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
+		//for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
 		if(Option.delayOnPump < BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1) d = BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1;
 #endif
 		for(; d > 0; d--) { // задержка перед включением компрессора
@@ -3036,10 +3042,10 @@ void HeatPump::compressorON()
 			   if ((i==FLOWCON)&&(!dRelay[RPUMPO].get_Relay())) continue; // Для режима супербойлер есть вариант когда не будет протока по контуру отопления
 			#endif
 		#endif	
-			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
+			 if(sFrequency[i].get_checkFlow() && sFrequency[i].get_Value() < sFrequency[i].get_minValue()) {  // Поток меньше минимального
 				_delay(TIME_READ_SENSOR);
-				if(sFrequency[i].get_Value() < HP.sFrequency[i].get_minValue()) {  // Поток меньше минимального
-					journal.jprintf(" Flow %s: %.3f\n", sFrequency[i].get_name(), (float)sFrequency[i].get_Value()/1000.0);
+				if(sFrequency[i].get_Value() < sFrequency[i].get_minValue()) {  // Поток меньше минимального
+					journal.jprintf(" Flow %s: %.3d\n", sFrequency[i].get_name(), sFrequency[i].get_Value());
 					set_Error(ERR_MIN_FLOW, (char*) sFrequency[i].get_name());
 					return;
 				}

@@ -890,18 +890,25 @@ int8_t save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_
 {
 	if(size < 128) { // Меньше 128 байт, длина 1 байт, первый бит = 0
 		size <<= 1;
-		if(writeEEPROM_I2C(addr_to++, (uint8_t *)&size, 1)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		if(writeEEPROM_I2C(addr_to++, (uint8_t *)&size, 1)) {
+			set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+			return ERR_SAVE_EEPROM;
+		}
 		crc = _crc16(crc, size);
 	} else { // длина 2 байта, первый бит = 1
 		size = (size << 1) | 1;
-		if(writeEEPROM_I2C(addr_to, (uint8_t *)&size, 2)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		if(writeEEPROM_I2C(addr_to, (uint8_t *)&size, 2)) {
+			set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+			return ERR_SAVE_EEPROM;
+		}
 		addr_to += 2;
 		crc = _crc16(crc, size & 0xFF);
 		crc = _crc16(crc, size >> 8);
 	}
 	size >>= 1;
 	if(writeEEPROM_I2C(addr_to, addr_from, size)) {
-		return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		return ERR_SAVE_EEPROM;
 	}
 	addr_to += size;
 	while(size--) crc = _crc16(crc, *addr_from++);
@@ -910,7 +917,10 @@ int8_t save_struct(uint32_t &addr_to, uint8_t *addr_from, uint16_t size, uint16_
 
 int8_t save_2bytes(uint32_t &addr_to, uint16_t data, uint16_t &crc)
 {
-	if(writeEEPROM_I2C(addr_to, (uint8_t *)&data, 2)) return set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+	if(writeEEPROM_I2C(addr_to, (uint8_t *)&data, 2)) {
+		set_Error(ERR_SAVE_EEPROM, (char*)nameHeatPump);
+		return ERR_SAVE_EEPROM;
+	}
 	addr_to += 2;
 	crc = _crc16(crc, data & 0xFF);
 	crc = _crc16(crc, data >> 8);
