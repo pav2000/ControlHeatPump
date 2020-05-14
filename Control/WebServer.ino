@@ -521,23 +521,7 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"Гц|SS>");
 #endif
 			if (HP.get_errcode() == OK) {
-				if(HP.get_State() == pOFF_HP) {
-					strcat(strReturn, MODE_HP_STR[0]);
-				} else if(HP.get_State() == pWAIT_HP) {
-#ifdef USE_UPS
-					if(HP.NO_Power) strcat(strReturn,"No Power!");
-					else
-#endif
-						strcat(strReturn, "...");
-				} else if(HP.get_State() == pWORK_HP) {
-					if((HP.get_modWork() & pHEAT)) strcat(strReturn, MODE_HP_STR[1]);
-					else if((HP.get_modWork() & pCOOL)) strcat(strReturn, MODE_HP_STR[2]);
-					else if((HP.get_modWork() & pBOILER)) strcat(strReturn, MODE_HP_STR[3]);
-					else if((HP.get_modWork() & pDEFROST)) strcat(strReturn, MODE_HP_STR[4]);
-					else strcat(strReturn, MODE_HP_STR[0]);
-					if((HP.get_modWork() & pCONTINUE)) strcat(strReturn, MODE_HP_STR[5]);
-					strcat(strReturn, " ["); strcat(strReturn, (char *)codeRet[HP.get_ret()]); strcat(strReturn, "]");
-				}
+				HP.get_StateModworkStr(strReturn);
 			} else {strcat(strReturn,"Error "); _itoa(HP.get_errcode(),strReturn);} // есть ошибки
 			ADD_WEBDELIM(strReturn);
 			continue;

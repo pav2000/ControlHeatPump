@@ -1,70 +1,75 @@
 <html>
 <head> 
-	<title>Управление расписаниями. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
-	<style>
-	#feedback { font-size: 1.4em; }
-	#calendar .ui-selecting { background: #00E673; }
-	#calendar .ui-selected { background: #00CC66; }
-	#calendar { margin: 0; padding: 0; width: 850; }
-	#calendar td.clc { margin: 3px; padding: 1px; text-align: center; color: white; border: 1px dotted black; }
-	#calendar td.clh { background: #F7F7F7; } 
-	</style>
-	<script src="jquery.min.js"></script>
-	<script src="jquery-ui.min.js"></script>
-	<script src="jquery.ui.touch.js"></script>
-	<script>
-		var shifted;
-		$( function() { $("#calendar").selectable({filter: ".clc", stop: function() {
-			$( ".ui-selected", this ).each(function() {
-				if(shifted) this.innerHTML = "";
-				else {
-					var v, el = document.getElementById('get_listprof2').options;
-					el = el[el.selectedIndex];
-					if(el.value == -2) {
-						v = 0;
-					} else if(el.value == -1) {
-						v = document.getElementById('delta_temp').value;
-						if(v > 0) v = '+' + v;
-						this.style = "color:red";
-					} else {
-						v = el.value == -2 ? 0 : el.innerHTML.replace(/\. .*$/, "");
-						this.style = "color:yellow";
-					}
-					this.innerHTML = v == 0 ? "" : v;
+<title>Управление расписаниями. Народный контроллер ТН</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type='text/javascript' src='scripts.js'></script>
+<style>
+#feedback { font-size: 1.4em; }
+#calendar .ui-selecting { background: #00E673; }
+#calendar .ui-selected { background: #00CC66; }
+#calendar { margin: 0; padding: 0; width: 850; }
+#calendar td.clc { margin: 3px; padding: 1px; text-align: center; color: white; border: 1px dotted black; }
+#calendar td.clh { background: #F7F7F7; } 
+</style>
+<script src="jquery.min.js"></script>
+<script src="jquery-ui.min.js"></script>
+<script src="jquery.ui.touch.js"></script>
+<script>
+	var shifted;
+	$( function() { $("#calendar").selectable({filter: ".clc", stop: function() {
+		$( ".ui-selected", this ).each(function() {
+			if(shifted) this.innerHTML = "";
+			else {
+				var v, el = document.getElementById('get_listprof2').options;
+				el = el[el.selectedIndex];
+				if(el.value == -2) {
+					v = 0;
+				} else if(el.value == -1) {
+					v = document.getElementById('delta_temp').value;
+					if(v > 0) v = '+' + v;
+					this.style = "color:red";
+				} else {
+					v = el.value == -2 ? 0 : el.innerHTML.replace(/\. .*$/, "");
+					this.style = "color:yellow";
 				}
-			});
-		} }); });
-		$(document).on('keyup keydown', function(e){ shifted = e.shiftKey } );
-	</script>
-	<script type="text/javascript">
-		window.onload = function() {
-		loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(n_list),get_SCHDLR(Calendar),get_listProf2_skip2");
-	};
-	function get_sch_index() {
-		return document.getElementById('get_schdlr-n_list').options.selectedIndex;
-	}
-	function process_calendar(save) {
-		var str = "get_SCHDLR(Calendar"+get_sch_index()+")";
-		if(save) setParam(str); else loadParam(str);
-	}
-	function loadParam_after(paramid) {
-		if(paramid.indexOf("et_SCHDLR")!=-1) {
-			var i = get_sch_index();
-			element = document.getElementById('get_schdlr-name');
-			if(i != -1 && document.activeElement != element) {
-				element.value = document.getElementById('get_schdlr-n_list').options[i].innerHTML;
-				$('#calendar .ui-selected').removeClass('ui-selected');
+				this.innerHTML = v == 0 ? "" : v;
 			}
+		});
+	} }); });
+	$(document).on('keyup keydown', function(e){ shifted = e.shiftKey } );
+</script>
+<script type="text/javascript">
+	window.onload = function() {
+	loadParam("get_SCHDLR(On),get_SCHDLR(Active),get_SCHDLR(n_list),get_SCHDLR(Calendar),get_listProf2_skip2,get_SCHDLR(ASM),get_SCHDLR(ASW)");
+};
+function get_sch_index() {
+	return document.getElementById('get_schdlr-n_list').options.selectedIndex;
+}
+function process_calendar(save) {
+	var i = get_sch_index();
+	var str = "get_SCHDLR(Calendar"+i+")";
+	if(save) setParam(str); 
+	else {
+		loadParam(str+",get_SCHDLR(ASM"+i+")",0,"get_schdlr-asm");
+		loadParam("get_SCHDLR(ASW"+i+")",0,"get_schdlr-asw");
+	}
+}
+function loadParam_after(paramid) {
+	if(/[(]n_list|[(]Calendar/.test(paramid)) {
+		var i = get_sch_index();
+		element = document.getElementById('get_schdlr-name');
+		if(i != -1 && document.activeElement != element) {
+			element.value = document.getElementById('get_schdlr-n_list').options[i].innerHTML;
+			$('#calendar .ui-selected').removeClass('ui-selected');
 		}
 	}
-	function SelectNewProfile() {
-		document.getElementById('delta_temp').hidden = document.getElementById('get_listprof2').options.selectedIndex != 1;
-	}
-	</script>
+}
+function SelectNewProfile() {
+	document.getElementById('delta_temp').hidden = document.getElementById('get_listprof2').options.selectedIndex != 1;
+}
+</script>
 </head>
 <body class="profiles">
 <div id="menu" class="menu" style="min-height: 100%;"><script src="menu.js"></script></div>
@@ -72,10 +77,11 @@
 	<h1>Управление расписаниями<input type="submit" value="Считать" onclick='loadParam("get_LOAD_SCHDLR,RELOAD")'> <input type="submit" value="Очистить" onclick='if(confirm("Очистить все календари?")) loadParam("set_SCHDLR(Clear),RELOAD");' style="margin-right:10px;"> <input type="submit" value="Записать расписание" onclick='loadParam("set_SAVE_SCHDLR")' style="margin-right:10px;"></h1>
 	<div class="row1">
 		<table style="width: 50%;">
-		<tr><td style="width: 40%;">Работа по расписанию</td><td style="width: 60%;"><input type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');"></td></tr>
+		<tr><td style="width: 45%;">Работа по расписанию</td><td style="width: 55%;"><input type="checkbox" name="get_schdlr-on" id="get_schdlr-on" onChange="setParam('get_SCHDLR(On)');"></td></tr>
 		<tr><td>Текущее расписание: </td><td><select id="get_schdlr-n_list" onchange='process_calendar(0);'></select>
 			<input type="submit" value=">" onclick="setParam('get_SCHDLR(Active='+get_sch_index()+')');"></td></tr>
-		<tr><td>Редактировать имя: </td><td><input id="get_schdlr-name" type="text" maxlength="30" size="15"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(Name'+get_sch_index()+')','get_schdlr-name'); loadParam('get_SCHDLR(n_list)');"></td></tr>
+		<tr><td>Редактировать имя:</td><td><input id="get_schdlr-name" type="text" maxlength="30" size="15"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(Name'+get_sch_index()+')','get_schdlr-name');"></td></tr>
+		<tr><td>Автовыбор расписания (0 - нет):</td><td nowrap>Месяц: <input id="get_schdlr-asm" type="number" min="0" max="12"> Десятидневка: <input id="get_schdlr-asw" type="number" min="0" max="3"> <input type="submit" value=">" onclick="setParam('get_SCHDLR(ASM'+get_sch_index()+')','get_schdlr-asm'); setParam('get_SCHDLR(ASW'+get_sch_index()+')','get_schdlr-asw');"></td></tr>
 		<tr height="20"><td></td><td></td></tr>
 		<tr><td>Установить профиль:</td><td width="200"><select id="get_listprof2" onchange="SelectNewProfile()"><option value="-2">.. ТН выключен</option><option value="-1"> ± Температура:</option></select> <input id="delta_temp" type="number" min="-10.0" max="12.7" step="0.1" value="0.0" hidden></td></tr>
 		</table>
@@ -132,6 +138,7 @@
 </table>
 Левая кнопка мыши - установить, с клавишой SHIFT - очистить.<br>
 <br><input type="submit" value="Запомнить календарь" onclick="process_calendar(1);">
+<br>
 </div>
 </body>
 </html>

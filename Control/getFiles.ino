@@ -882,7 +882,10 @@ void get_mailState(EthernetClient client,char *tempBuf)
 	strcpy(tempBuf,"\n  1. Тепловой насос");
 	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 
-	strcpy(tempBuf,"СостояниеТН: "); strcat(tempBuf,HP.StateToStr());
+	strcpy(tempBuf,"Состояние: "); strcat(tempBuf,HP.StateToStr());
+	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+
+	strcpy(tempBuf,"Статус: "); HP.get_StateModworkStr(tempBuf);
 	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 
 	strcpy(tempBuf,"Последняя ошибка: ");  _itoa(HP.get_errcode(),tempBuf); strcat(tempBuf," - "); strcat(tempBuf,HP.get_lastErr());

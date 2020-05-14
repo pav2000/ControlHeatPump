@@ -407,7 +407,6 @@ void Profile::initProfile()
   SETBIT0(Cool.flags,fTarget);         // Что является целью ПИД - значения true (температура в доме), false (температура обратки).
   SETBIT0(Cool.flags,fWeather);        // флаг Погодозависмости
   Cool.dTemp=200;                      // Гистерезис целевой температуры
-  Cool.dTempDay=200;                   // Гистерезис целевой температуры дневной тариф
   Cool.pid_time=90;                    // Постоянная интегрирования времени в секундах ПИД ТН
   Cool.pid.Kp=1;                      // Пропорциональная составляющая ПИД ТН
   Cool.pid.Ki=0;                       // Интегральная составляющая ПИД ТН
@@ -429,7 +428,6 @@ void Profile::initProfile()
   SETBIT1(Heat.flags,fTarget);         // Что является целью ПИД - значения true (температура в доме), false (температура обратки).
   SETBIT1(Heat.flags,fWeather);        // флаг Погодозависмости
   Heat.dTemp=050;                      // Гистерезис целевой температуры
-  Heat.dTempDay=100;                   // Гистерезис целевой температуры дневной тариф
   Heat.pid_time=60;                    // Постоянная интегрирования времени в секундах ПИД ТН
   Heat.pid.Kp=100;                      // Пропорциональная составляющая ПИД ТН
   Heat.pid.Ki=480;                       // Интегральная составляющая ПИД ТН
@@ -438,11 +436,12 @@ void Profile::initProfile()
   Heat.add_delta_temp = 150;	 	   // Добавка температуры к установке бойлера, в градусах
   Heat.add_delta_hour = 5;		   	   // Начальный Час добавки температуры к установке бойлера
   Heat.add_delta_end_hour = 6;         // Конечный Час добавки температуры к установке
- // Защиты
   Heat.tempInLim=4700;                    // Tемпература подачи (макс)
   Heat.tempOutLim=-5;                      // Tемпература обратки (минимальная)
   Heat.dt=1500;                        // Максимальная разность температур конденсатора.
-  Heat.kWeatherPID=10;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
+  Heat.kWeatherPID=0;                    // Коэффициент погодозависимости в СОТЫХ градуса на градус
+  Heat.WeatherBase = 0;
+  Heat.WeatherTargetRange = 0;
   
  // Heat.P1=0;
  
@@ -577,6 +576,8 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
  if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; }             // Коэффициент погодозависимости
  if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; }
+ if(strcmp(var,hp_WeatherBase)==0){ Heat.WeatherBase = x; return true; }
+ if(strcmp(var,hp_WeatherTargetRange)==0){ Heat.WeatherTargetRange = rd(x, 10); return true; }
  return false; 
 }
 
@@ -613,6 +614,8 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_targetPID)==0){_dtoa(ret,HP.CalcTargetPID(Heat),2); return ret;    } else
    if(strcmp(var,hp_K_WEATHER)==0){_dtoa(ret,Heat.kWeatherPID,3); return ret;            }                 // Коэффициент погодозависимости
    if(strcmp(var,hp_kWeatherTarget)==0){_dtoa(ret,Heat.kWeatherTarget,3); return ret;    }
+   if(strcmp(var,hp_WeatherBase)==0){_dtoa(ret,Heat.WeatherBase,0); return ret;    }
+   if(strcmp(var,hp_WeatherTargetRange)==0){_dtoa(ret,Heat.WeatherTargetRange,1); return ret;    }
    return  strcat(ret,(char*)cInvalid);
 }
 
@@ -765,20 +768,29 @@ int8_t  Profile::convert_to_new_version(void)
 	  char checkSizeOfInt4[sizeof(Boiler)]={checker(&checkSizeOfInt4)};
 	  char checkSizeOfInt5[sizeof(DailySwitch)]={checker(&checkSizeOfInt5)};
 	//*/
-	// v.135
-//	#define CNVPROF_SIZE_dataProfile	120
-//	#define CNVPROF_SIZE_SaveON		 	12
-//	#define CNVPROF_SIZE_HeatCool		50
-//	#define CNVPROF_SIZE_Boiler			80
-//	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler)
-	// v.143
-	#define CNVPROF_SIZE_dataProfile	120
-	#define CNVPROF_SIZE_SaveON		 	12
-	#define CNVPROF_SIZE_HeatCool		36
-	#define CNVPROF_SIZE_Boiler			64
-	#define CNVPROF_SIZE_DailySwitch	30
-	#define CNVPROF_SIZE_ALL (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch)
-	if(HP.Option.ver <= 143) {
+	uint16_t CNVPROF_SIZE_dataProfile, CNVPROF_SIZE_SaveON, CNVPROF_SIZE_HeatCool, CNVPROF_SIZE_Boiler, CNVPROF_SIZE_DailySwitch, CNVPROF_SIZE_ALL;
+	if(HP.Option.ver <= 144) {
+		if(HP.Option.ver <= 135) {
+			CNVPROF_SIZE_dataProfile	=	120;
+			CNVPROF_SIZE_SaveON			= 	12;
+			CNVPROF_SIZE_HeatCool		=	50;
+			CNVPROF_SIZE_Boiler			=	80;
+			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler);
+		} else if(HP.Option.ver <= 143) {
+			CNVPROF_SIZE_dataProfile	=	120;
+			CNVPROF_SIZE_SaveON			= 	12;
+			CNVPROF_SIZE_HeatCool		=	36;
+			CNVPROF_SIZE_Boiler			=	64;
+			CNVPROF_SIZE_DailySwitch	=	30;
+			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
+		} else if(HP.Option.ver <= 144) {
+			CNVPROF_SIZE_dataProfile	=	120;
+			CNVPROF_SIZE_SaveON			= 	12;
+			CNVPROF_SIZE_HeatCool		=	38;
+			CNVPROF_SIZE_Boiler			=	64;
+			CNVPROF_SIZE_DailySwitch	=	30;
+			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
+		}
 		journal.jprintf("Converting Profiles to new version...\n");
 		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
 		for(uint8_t i = 0; i < I2C_PROFIL_NUM; i++) {

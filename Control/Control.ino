@@ -409,13 +409,13 @@ x_I2C_init_std_message:
 		HP.save_motoHour();
 	} else {
 		HP.load((uint8_t *)Socket[0].outBuf, 0);      // Загрузить настройки ТН
+		HP.Schdlr.load();							// Загрузка настроек расписания
 		HP.Prof.convert_to_new_version();
 		if(HP.Prof.load(HP.Option.numProf) < 0) journal.jprintf(" Error load profile #%d\n", HP.Option.numProf); // Загрузка текущего профиля
 		if(HP.Option.ver <= 133) {
 			HP.save();
 		}
 	}
-	HP.Schdlr.load();							// Загрузка настроек расписания
 	// обновить хеш для пользователей
 	HP.set_hashUser();
 	HP.set_hashAdmin();
@@ -1078,6 +1078,7 @@ void vReadSensor_delay1ms(int32_t ms)
 	#ifdef RPUMPB
 	static uint32_t RPUMPBTick=0;
 	#endif
+	static uint8_t  Scheduler_check_day = 0;
 	for(;;)
 	{
 		if(!HP.Task_vUpdate_run) {
@@ -1143,8 +1144,36 @@ void vReadSensor_delay1ms(int32_t ms)
 	
 		if(!HP.Task_vUpdate_run) goto delayTask;/* continue;*/
 
-		// 3. Расписание проверка всегда, доп скобки нужны для объявления внутри блока переменных и действия goto 
+		// 3. Расписание проверка всегда
 		{  // error: jump to label [-fpermissive] GCC
+			// Переключение расписания, когда текущий месяц и дясятидневка совпадают; если пропустили из-за выключенного НК или работы,
+			// то пропустили. Расписание выбирается один раз, если вручную перевыбрать, то еще раз автоматически выбираться не будет до следующего года
+			if(GETBIT(HP.Schdlr.sch_data.Flags, bScheduler_active)) {
+				uint8_t d = rtcSAM3X8.get_days();
+				if(Scheduler_check_day != d) {
+					Scheduler_check_day = d;
+					d /= 10;
+					if(d > 2) d = 2;
+					bool need_save = false;
+					for(uint8_t i = 0; i < MAX_CALENDARS; i++) {
+						if(HP.Schdlr.sch_data.AutoSelectMonthWeek[i]) {
+							if((HP.Schdlr.sch_data.AutoSelectMonthWeek[i] & ~0x80) == ((rtcSAM3X8.get_months() << 3) | d)) {
+								if(HP.Schdlr.sch_data.Active != i && !(HP.Schdlr.sch_data.AutoSelectMonthWeek[i] & 0x80)) {
+									journal.jprintf_time("Schedule %d selected\n", i + 1);
+									HP.Schdlr.sch_data.Active = i;
+									HP.Schdlr.sch_data.AutoSelectMonthWeek[i] |= 0x80;
+									need_save = true;
+									break;
+								}
+							} else if(HP.Schdlr.sch_data.AutoSelectMonthWeek[i] & 0x80) {
+								HP.Schdlr.sch_data.AutoSelectMonthWeek[i] &= ~0x80;
+								need_save = true;
+							}
+						}
+					}
+					if(need_save) HP.Schdlr.save();
+				}
+			}
 			int8_t _profile = HP.Schdlr.calc_active_profile(); // Какой профиль ДОЛЖЕН быть сейчас активен
 			if(_profile != SCHDLR_NotActive) {                 // Расписание активно
 				int8_t _curr_profile = HP.get_State() == pWORK_HP ? HP.Prof.get_idProfile() : SCHDLR_Profile_off;

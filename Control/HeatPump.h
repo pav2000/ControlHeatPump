@@ -273,6 +273,7 @@ class HeatPump
     // Строковые функции
     char *StateToStr();                 // Получить состояние ТН в виде строки
     char *StateToStrEN();               // Получить состояние ТН в виде английской строки
+    void get_StateModworkStr(char *strReturn);
     char *TestToStr();                  // Получить режим тестирования
     int8_t save_DumpJournal(boolean f); // Записать состояние теплового насоса в журнал
     

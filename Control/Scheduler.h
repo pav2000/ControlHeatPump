@@ -35,6 +35,8 @@ const char WEB_SCH_Names[] = "n_list";
 const char WEB_SCH_Name[] = "Name";
 const char WEB_SCH_Calendar[] = "Calendar";
 const char WEB_SCH_ActiveName[] = "AN";
+const char WEB_SCH_AutoSelectMonth[] = "ASM";
+const char WEB_SCH_AutoSelectWeek[] = "ASW";
 
 struct Scheduler_Calendar_Item {
 	uint8_t		WD_Hour; 	// День недели (3bits, 0 = monday)  + час (5bits)
@@ -46,7 +48,7 @@ struct Scheduler_Data {
 	uint8_t		Active;							// Активное расписание
 	char 		Names[MAX_CALENDARS][32];		// Названия (русские - 2 байта)
 	uint8_t		Timetable[TIMETABLES_MAXSIZE]; 	// буфер для раписаний: {len},{{WD+H},{Profile+1}},..., {len},{{WD+H},{Profile+1}},...,
-	uint8_t		AutoSelectMonthWeek[MAX_CALENDARS]; // Автовыбор расписания в 00:00, месяц(1..12) + неделя(0..3) + f, 0 - нет
+	uint8_t		AutoSelectMonthWeek[MAX_CALENDARS]; // Автовыбор расписания в 00:00, f + месяц(1..12) + неделя(0..3), 0 - нет
 } __attribute__((packed));
 
 class Scheduler

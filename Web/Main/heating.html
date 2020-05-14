@@ -7,14 +7,18 @@
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
-	loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W)");
-	loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_TrgT,get_Cool(TP),get_Heat(TP),get_Heat(KWT),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN)");
+	loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT)");
+	loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_Heat(KWT),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN),get_Heat(KWB),get_Heat(KWR),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN)");
 	loadParam("get_listDSR,get_tblPDS");
 };
 function setDS(v, i) {
 	setParam("get_Prof(DS" + v + i + "=" + document.getElementById("get_prof-ds" + v.toLowerCase() + i).value.replace(":","").substr(0,3) + ")");
 }
-
+function loadParam_after(paramid) {
+	if(paramid.indexOf("(KW")!=-1) {
+		loadParam("get_TrgT,get_Cool(TP),get_Heat(TP)");
+	}
+}
 </script>
 </head>
 <body class="test">
@@ -57,11 +61,6 @@ function setDS(v, i) {
 		<td nowrap><input id="get_heat-dtemp" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(DTEMP)');"></td>
 	</tr>
 	<tr>
-		<td>Коэффициент погодозависимости</td>
-		<td></td>
-		<td nowrap><input id="get_heat-kwt" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KWT)');"></td>
-	</tr>
-	<tr>
 		<td><b>Использование ночного тарифа</b></td>
 		<td></td>
 	</tr>
@@ -81,9 +80,43 @@ function setDS(v, i) {
 		<td nowrap><input id="get_heat-adeh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(ADEH)');"></td>
 	</tr>
 	<tr>
+		<td><b>Погодозависимость</b></td>
+		<td></td><td></td>
+	</tr>
+	<tr>
+		<td>Базовая температура, формула: цель += (база - улица) * К, C°</td>
+		<td></td>
+		<td nowrap><input id="get_heat-kwb" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(KWB)');"></td>
+	</tr>
+	<tr>
+		<td>Максимальное изменение цели на C°</td>
+		<td></td>
+		<td nowrap><input id="get_heat-kwr" type="number" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(KWR)');"></td>
+	</tr>
+	<tr>
+		<td>Коэффициент погодозависимости цели</td>
+		<td></td>
+		<td nowrap><input id="get_heat-kwt" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KWT)');"></td>
+	</tr>
+	<tr>
+		<td>Использование погодозависимости для ПИД<sup>5</sup></td>
+		<td><input type="checkbox" id="get_cool-w" onchange="setParam('get_Cool(W)');" ></td>
+		<td><input type="checkbox" id="get_heat-w" onchange="setParam('get_Heat(W)');" ></td>
+	</tr>
+	<tr>
+		<td>Коэффициент погодозависимости для ПИД<sup>6</sup></td>
+		<td nowrap><input id="get_cool-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(KW)');"></td>
+		<td nowrap><input id="get_heat-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KW)');"></td>
+	</tr>
+	<tr>
+		<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>
+		<td id="get_cool-tp">-</td>
+		<td id="get_heat-tp">-</td>
+	</tr>
+	<tr>
 		<td><b>ПИД</b></td>
 		<td></td><td></td>
-	</tr>		
+	</tr>
 	<tr>
 		<td>Целевая температура подачи °C [10..50]<sup>4</sup></td>
 		<td nowrap><input id="get_cool-temp_pid" type="number" min="5" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_PID)');"></td>
@@ -110,24 +143,9 @@ function setDS(v, i) {
 		<td nowrap><input id="get_heat-hp_dif" type="number" min="0" max="32" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(HP_DIF)');"></td>
 	</tr>
 	<tr>
-		<td>Использование погодозависимости<sup>5</sup></td>
-		<td><input type="checkbox" id="get_cool-w" onchange="setParam('get_Cool(W)');" ></td>
-		<td><input type="checkbox" id="get_heat-w" onchange="setParam('get_Heat(W)');" ></td>
-	</tr>
-	<tr>
-		<td>Коэффициент погодозависимости<sup>6</sup></td>
-		<td nowrap><input id="get_cool-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Cool(KW)');"></td>
-		<td nowrap><input id="get_heat-kw" type="number" step="0.001"><input type="submit" value=">" onclick="setParam('get_Heat(KW)');"></td>
-	</tr>
-	<tr>
-		<td>Расчетная температура подачи (сейчас на улице: <span id="get_temp-tout">-</span>°C)</td>
-		<td id="get_cool-tp">-</td>
-		<td id="get_heat-tp">-</td>
-	</tr>		
-	<tr>
 		<td><b>Опции</b></td>
 		<td></td><td></td>
-	</tr>	
+	</tr>
 	<tr>
 		<td>Теплый пол</td>
 		<td><input type="checkbox" id="get_cool-hfl" onchange="setParam('get_Cool(HFL)');"></td>
