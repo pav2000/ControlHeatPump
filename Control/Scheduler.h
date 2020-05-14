@@ -40,7 +40,7 @@ const char WEB_SCH_AutoSelectWeek[] = "ASW";
 
 struct Scheduler_Calendar_Item {
 	uint8_t		WD_Hour; 	// День недели (3bits, 0 = monday)  + час (5bits)
-	int8_t		Profile;	// 0x80+Номер профиля(макс 27)+1, 0 = выключен, иначе температура -10,0..+10,0
+	int8_t		Profile;	// 0x80+Номер профиля(макс 27)+1, 0 = выключен, 127 - ничего не менять, иначе температура -10,0..+12,6
 } __attribute__((packed));
 
 struct Scheduler_Data {

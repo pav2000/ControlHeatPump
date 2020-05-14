@@ -1946,7 +1946,7 @@ int8_t HeatPump::StopWait(boolean stop)
   SETBIT0(flags, fHP_BoilerTogetherHeat);
 
   #ifdef CONFIG_5  // случаи бывают разные - должно работать без костылей.- но лучше перебдеть -))
-   relayAllOFF(); // Все выключить, все (на всякий случай)
+   relayAllOFF(); // Все выключить, все (на всякий случай), * внимание - выключатся реле по расписанию!
   #endif 
  
   if (stop)
@@ -3139,8 +3139,6 @@ void HeatPump::compressorON()
 // попытка выключить компрессор  с учетом всех защит
 void HeatPump::compressorOFF()
 {
-	if(DEVICEFC && !dFC.isfOnOff()) return;
-
 #ifdef EEV_DEF
 	lastEEV = dEEV.get_EEV();                                             // Запомнить последнюю позицию ЭРВ
 	dEEV.Pause();                                                       // Поставить на паузу задачу Обновления ЭРВ
@@ -3148,7 +3146,9 @@ void HeatPump::compressorOFF()
 #endif
 
 	command_completed = rtcSAM3X8.unixtime();
-	COMPRESSOR_OFF;                                                     // Компрессор выключить
+	if(dFC.isfOnOff() || !DEVICEFC) {
+		COMPRESSOR_OFF;                                             // Компрессор выключить
+	}
 
 #ifdef REVI
 	checkEVI();                                                     // выключить ЭВИ
@@ -3439,9 +3439,9 @@ char *HeatPump::StateToStrEN()
 			if(get_modWork() == pHEAT)   return (char*)"Wait Heat";         // Включить отопление
 			if(get_modWork() == pCOOL)   return (char*)"Wait Cool";         // Включить охлаждение
 			if(get_modWork() == pBOILER) return (char*)"Wait Boiler";       // Включить бойлер
-			return (char*)strRusPause;
+			return (char*)strEngPause;
 		} else {
-			if(get_modWork() == pOFF)    return (char*)strRusPause;
+			if(get_modWork() == pOFF)    return (char*)strEngPause;
 			if(get_modWork() & pHEAT)    return (char*)"Heating";
 			if(get_modWork() & pCOOL)    return (char*)"Cooling";
 			if(get_modWork() & pBOILER)  return (char*)"Boiler";

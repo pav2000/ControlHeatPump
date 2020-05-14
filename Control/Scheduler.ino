@@ -79,10 +79,13 @@ int8_t Scheduler::calc_active_profile(void)
 	} else { // Берем последнюю
 		item = (Scheduler_Calendar_Item *)&sch_data.Timetable[max - sizeof(Scheduler_Calendar_Item) + 1];
 	}
-	if((item->Profile == 0)) { // Set profile
+	if(item->Profile == 0) { // Set pause
 		current_change = 0;
 		return -1;
-	} else if((item->Profile < -100)) { // Set profile
+	} else if(item->Profile == 127) { // skip
+		current_change = 0;
+		return HP.Prof.get_idProfile();
+	} else if(item->Profile < -100) { // Set profile
 		current_change = 0;
 		return 128 + item->Profile - 1;
 	} else { // change t

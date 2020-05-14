@@ -27,8 +27,9 @@ function setParam(paramid, resultid) {
 		elval = "";
 		for(var j = 0; j < colls.length; j++) {
 			var prof = colls[j].innerHTML;
-			if(prof == "") prof = "0";
+			if(prof == "") prof = 0;
 			else if(prof[0] == '+') prof = Number(prof.substring(1)) * 10;
+			else if(prof == '-') prof = 127;
 			else if(prof[0] == '-') prof = 256 + Number(prof) * 10;
 			else prof = Number(prof) + 0x80; 
 			if(prof != lprof) {
@@ -216,9 +217,12 @@ function loadParam(paramid, noretry, resultdiv) {
 												v ^= 0x80;
 												colls[j].style = "color:yellow";
 											} else {
-												if(v >= 0x80) v -= 256;
-												v = v / 10; 
-												if(v > 0) v = '+' + v;
+												if(v == 127) v = '-';
+												else {	
+													if(v >= 0x80) v -= 256;
+													v = v / 10; 
+													if(v > 0) v = '+' + v;
+												}
 												colls[j].style = "color:red";
 											}
 											colls[j].innerHTML = v ? v : "";
