@@ -26,7 +26,7 @@ function loadParam_after(paramid) {
 <div class="content">
 <h1>Отопление <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1><br>
 	<h2>Параметры отопления</h2>
-	<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select> Цель: <span id="get_trgt">-</span>°</h2>
+	<h2>Режим работы:  <select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select> Цель: <span id="get_trgt">-</span>° <input type="submit" value="?" onclick='location.assign("heating-help.html")' style="float:right;"></h2>
 	<table>
 		<thead>
 	<tr>
@@ -41,6 +41,11 @@ function loadParam_after(paramid) {
 		<td><select id="get_cool-rule" onchange="setParam('get_Cool(RULE)','get_cool-rule');"></select></td>
 		<td><select id="get_heat-rule" onchange="setParam('get_Heat(RULE)','get_heat-rule');"></select></td>
 	<tr>
+		<td>Целевая температура (что является целью)</td>
+		<td nowrap><select id="get_cool-target" onchange="setParam('get_Cool(TARGET)','get_cool-target');"></select></td>
+		<td nowrap><select id="get_heat-target" onchange="setParam('get_Heat(TARGET)','get_heat-target');"></select></td>
+	</tr>
+	<tr>
 		<td>Целевая температура в доме °C [0..30]</td>
 		<td nowrap><input id="get_cool-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP1)');"></td>
 		<td nowrap><input id="get_heat-temp1" type="number" min="0" max="40" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP1)');"></td>
@@ -49,11 +54,6 @@ function loadParam_after(paramid) {
 		<td>Целевая температура обратки °C [10..50]</td>
 		<td nowrap><input id="get_cool-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP2)');"></td>
 		<td nowrap><input id="get_heat-temp2" type="number" min="10" max="50" step="0.1"><input type="submit" value=">" onclick="setParam('get_Heat(TEMP2)');"></td>
-	</tr>						
-	<tr>
-		<td>Целевая температура (что является целью)</td>
-		<td nowrap><select id="get_cool-target" onchange="setParam('get_Cool(TARGET)','get_cool-target');"></select></td>
-		<td nowrap><select id="get_heat-target" onchange="setParam('get_Heat(TARGET)','get_heat-target');"></select></td>
 	</tr>						
 	<tr>
 		<td>Гистерезис целевой температуры °C [0..30]<sup>2</sup></td>
