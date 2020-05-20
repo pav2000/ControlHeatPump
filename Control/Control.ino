@@ -1009,14 +1009,9 @@ void vReadSensor_delay1ms(int32_t ms)
 	uint32_t tm = GetTickCount();
 	do {
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
-		static boolean Key1_ON = HIGH;                              // кнопка вкл/вкл дребез подавление
-		if ((!digitalReadDirect(PIN_KEY1))&&(Key1_ON)) {
-			vTaskDelay(8*3);
-			ms -= 3;
-
-
-
-			if (!digitalReadDirect(PIN_KEY1)) {  // дребезг
+		static uint8_t key_debounce = 0;                              // кнопка вкл/вкл дребезг подавление
+		if(!digitalReadDirect(PIN_KEY1)) {
+			if(!key_debounce) {
 				journal.jprintf("ON/OFF Key pressed!\n");
 				if(HP.get_errcode() && !Error_Beep_confirmed) {
 					Error_Beep_confirmed = true;
@@ -1026,7 +1021,8 @@ void vReadSensor_delay1ms(int32_t ms)
 					HP.sendCommand(pSTOP);
 				}
 			}
-		} else Key1_ON=digitalReadDirect(PIN_KEY1); // запоминаем состояние
+			key_debounce = -1;
+		} else if(key_debounce) key_debounce--;
 #endif
 #ifdef USE_UPS
 		HP.sInput[SPOWER].Read(true);
@@ -1148,7 +1144,7 @@ void vReadSensor_delay1ms(int32_t ms)
 		{  // error: jump to label [-fpermissive] GCC
 			// Переключение расписания, когда текущий месяц и дясятидневка совпадают; если пропустили из-за выключенного НК или работы,
 			// то пропустили. Расписание выбирается один раз, если вручную перевыбрать, то еще раз автоматически выбираться не будет до следующего года
-			if(GETBIT(HP.Schdlr.sch_data.Flags, bScheduler_active)) {
+			if(HP.Schdlr.IsShedulerOn()) {
 				uint8_t d = rtcSAM3X8.get_days();
 				if(Scheduler_check_day != d) {
 					Scheduler_check_day = d;
