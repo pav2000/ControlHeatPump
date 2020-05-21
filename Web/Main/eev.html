@@ -121,6 +121,13 @@ function createChart(values, resultdiv) {
 			verticalAlign: 'middle',
 			borderWidth: 0
 		},
+		exporting: {
+			enabled: true,
+			csv: {
+//				decimalPoint: ',',
+				itemDelimiter: ';'
+			}
+		},
 		plotOptions: {
 			series: {
 				label: {
