@@ -1698,7 +1698,17 @@ xGoWait:
 	int8_t profile = Schdlr.calc_active_profile();
 	if((profile != SCHDLR_NotActive) && (start)) { // расписание активно и дана команда
 		if(profile == SCHDLR_Profile_off) {
+#ifdef USE_UPS
 			goto xGoWait;
+#else
+		journal.jprintf(" Start task UpdateHP\n");
+		journal.jprintf_time("%s WAIT . . .\n", (char*) nameHeatPump);
+		startWait = true;                    // Начало работы с ожидания=true;
+		setState(pWAIT_HP);
+		Task_vUpdate_run = true;
+		vTaskResume(xHandleUpdate);
+		return;
+#endif			
 		} else if(profile != Prof.get_idProfile()) {
 			Prof.load(profile);
 			set_profile();
@@ -1794,7 +1804,7 @@ xGoWait:
 
 #ifdef CLEAR_CHART_HP_ON
 		journal.jprintf(" Charts clear and start\n");
-		if (get_State()!=pSTARTING_HP) return error;            // Могли нажать кнопку стоп, выход из процесса запуска
+		if (get_State()!=pSTARTING_HP) return ;            // Могли нажать кнопку стоп, выход из процесса запуска
 		else clearChart();// Запустить графики <- тут не запуск, тут очистка
 #endif
 
