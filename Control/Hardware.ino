@@ -972,12 +972,12 @@ xSecond:			if(diff < -_data.tOverheatTCOMP_delta) { // Перегрев боль
 //								pidw.max = 2;
 								newEEV = diff - pidw.pre_err2[0];
 								if(newEEV > 0) {
-									newEEV = (int32_t) newEEV * _data.pid.Kp / (5*1000); //(prop*1000)
+									newEEV = (int32_t) newEEV * _data.pid.Kp / (4*1000); //(prop*1000)
 									pidw.max = 1;
 									pidw.trend[trOH_default] = 0;
+								    pidw.trend[trOH_TCOMP] = 0;
 								} else {
 									newEEV = -1;
-									pidw.trend[trOH_TCOMP] = 0;
 								}
 							} else if(pidw.trend[trOH_TCOMP] < 0) {
 						    	if(pidw.trend[trOH_TCOMP] < -_data.trend_threshold) newEEV = 2;
@@ -986,8 +986,10 @@ xSecond:			if(diff < -_data.tOverheatTCOMP_delta) { // Перегрев боль
 								newEEV = (int32_t)diff * _data.pid.Kp / (100*1000) / newEEV - 1;
 								pidw.max = 1;
 								pidw.trend[trOH_default] = 0;
+							    pidw.trend[trOH_TCOMP] = 0;
+							} else if(diff - pidw.pre_err2[0] >= 0) {
+								newEEV = -1;
 							}
-						    pidw.trend[trOH_TCOMP] = 0;
 						} else if(pidw.trend[trOH_TCOMP] <= -_data.trend_threshold) {
 xSecond_sub_1:				if(pidw.hyst[0] > 0) {
 								newEEV = -1;
