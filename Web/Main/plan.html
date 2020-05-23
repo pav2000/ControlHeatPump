@@ -13,7 +13,7 @@
 		urlupdate = 2000;
 		window.onload = function() {
 			loadParam("hide_tro_ei,hide_sun,get_tblTemp1,get_modeHP");
-			updateParam("get_pFC(cFC),get_pFC(INFO1),get_pEEV(POSpp),get_OverHeat,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TCOMPIN),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_Temp(TBOILER),get_Relay(RPUMPI),get_relayOut,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_Power220,get_fullCOP,get_PowerGEO,get_PowerCO,get_Relay(RBOILER),get_Relay(RSUN),get_Temp(TSUN),get_Temp(TSUNOUTG),get_TrgT");
+			updateParam("get_pFC(cFC),get_pFC(INFO1),get_pEEV(POSpp),get_OverHeat,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TCOMPIN),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_Temp(TBOILER),get_Relay(RPUMPI),get_relayOut,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_Power220,get_fullCOP,get_PowerGEO,get_PowerCO,get_Relay(RBOILER),get_Relay(RSUN),get_Temp(TSUN),get_Temp(TSUNOUTG),get_TrgT,get_oHP(BPOW)");
 	};
 	</script>	
 </head>
@@ -55,7 +55,7 @@
 	<tr><td width="16%" style="font-weight: bold;" nowrap>Режим работы:</td><td width="16%"><span id="get_modehp">-</span></td><td width="16%" style="font-weight: bold;">На улице:</td><td width="16%"><span id="get_temp-tout">-</span>&deg;</td><td width="16%" style="font-weight: bold;">В доме:</td><td width="16%"><span id="get_temp-tin">-</span>&deg;</td></tr>
 	<tr><td style="font-weight: bold;">Насос ГК:</td><td><span id="get_relay-rpumpi-ONOFF">-</span></td><td style="font-weight: bold;">Насос СО:</td><td nowrap><span id="get_relayout">-</span></td><td style="font-weight: bold;">Цель:</td><td nowrap><span id="get_trgt">-</span>&deg;</td></tr>
 	<tr><td style="font-weight: bold;">Потребление:</td><td><span id="get_power220">-</span> кВт</td><td style="font-weight: bold;">Вход:</td><td><span id="get_powergeo">-</span> кВт</td><td style="font-weight: bold;">Выход:</td><td><span id="get_powerco">-</span> кВт</td></tr>		
-	<tr><td style="font-weight: bold;">COP:</td><td><span id="get_fullcop">-</span></td> <td></td><td></td> <td></td><td></td></tr>		
+	<tr><td style="font-weight: bold;">COP:</td><td><span id="get_fullcop">-</span></td> <td nobr><span id="get_ohp-bpow-hide" style="color:red" hidden>От генератора</span></td><td></td> <td></td><td></td></tr>		
 </table>
 <table style="width: 321;">
 	<tbody id="get_tbltemp1">
