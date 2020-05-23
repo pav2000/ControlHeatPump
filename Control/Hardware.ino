@@ -973,6 +973,7 @@ xSecond:			if(diff < -_data.tOverheatTCOMP_delta) { // Перегрев боль
 								newEEV = diff - pidw.pre_err2[0];
 								if(newEEV > 0) {
 									newEEV = (int32_t) newEEV * _data.pid.Kp / (4*1000); //(prop*1000)
+									if(newEEV == 0) newEEV = -1;
 									pidw.max = 1;
 									pidw.trend[trOH_default] = 0;
 								    pidw.trend[trOH_TCOMP] = 0;

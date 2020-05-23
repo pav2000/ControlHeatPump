@@ -1180,7 +1180,7 @@ void vReadSensor_delay1ms(int32_t ms)
 						int32_t _mode;
 						if((_mode = HP.Prof.load_from_EEPROM_SaveON_mode(_profile)) >= 0) {
 							MODE_HP currmode = HP.get_modWork();
-							uint8_t frestart = _mode != pOFF && !(currmode & pOFF) && (currmode & (pHEAT | pCOOL)) != (_mode & (pHEAT | pCOOL)); // Если направление работы ТН разное
+							uint8_t frestart = _mode != pOFF && currmode != pOFF && (currmode & (pHEAT | pCOOL)) && (currmode & (pHEAT | pCOOL)) != (_mode & (pHEAT | pCOOL)); // Если направление работы ТН разное
 							if(frestart) {
 								HP.sendCommand(pWAIT);
 								uint8_t i = DELAY_BEFORE_STOP_IN_PUMP + HP.Option.delayOffPump + 1;
