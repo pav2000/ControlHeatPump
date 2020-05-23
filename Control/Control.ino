@@ -416,6 +416,7 @@ x_I2C_init_std_message:
 			HP.save();
 		}
 	}
+	Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
 	// обновить хеш для пользователей
 	HP.set_hashUser();
 	HP.set_hashAdmin();
@@ -673,7 +674,7 @@ void vWeb0(void *)
 	for(;;)
 	{
 		WEB_STORE_DEBUG_INFO(1);
-		web_server(0);
+		web_server(MAIN_WEB_TASK);
 		WEB_STORE_DEBUG_INFO(2);
 		active = true;                                                         // Можно работать в этом цикле (дополнительная нагрузка на поток)
 		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
@@ -755,6 +756,16 @@ void vWeb0(void *)
 				pingServer();
 				active = false;
 			}
+
+#ifdef HTTP_LowConsumeRequest
+			if(active && GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume) {
+				Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
+				strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
+				_itoa(Request_LowConsume, Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
+				Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
+				active = false;
+			}
+#endif
 
 #ifdef MQTT                                     // признак использования MQTT
 			// 7. Отправка нанародный мониторинг

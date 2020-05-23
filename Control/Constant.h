@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.082"				// Версия прошивки
+#define VERSION			"1.083"				// Версия прошивки
 #define VER_SAVE		145					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -159,6 +159,7 @@ const uint16_t  defaultPort=80;
 #define cDELAY_START_MESSAGE 60            // Задержка (сек) после старта на отправку сообщений
 #define UPDATE_HP_WAIT_PERIOD 5000			// Период вызова vUpdate во время ожидания или ошибки, мсек
 #define NO_POWER_ON_DELAY_CNT 10			// Задержка включения после появления питани, *TIME_READ_SENSOR
+#define HTTP_REQ_TIMEOUT      1000			// ms
 
 // ------------------- I2C ----------------------------------
 // Устройства i2c I2C_EEPROM_64KB и I2C_FRAM_MEMORY   Размер и тип памяти, определен в config.h т.к. он часто меняется
@@ -310,6 +311,8 @@ const uint16_t  defaultPort=80;
 #define ATOF_ERROR       -9876543.00     // Код ошибки преобразования строки во флоат
 #define K_VCC_POWER       338.2          // Коэффициент пересчета ацп в вольты для контроля питания (учет опоры) (UT71E результататы ЗИП 284.02 ТН 338.2)
 #define HEAT_CAPACITY     4174           // теплоемкость жидкости в конутре по дефолту при 30 градусах [Cp, Дж/(кг·град)]
+
+#define HTTP_REQ_BUFFER_SIZE 256
 
 //----------------------- WEB ----------------------------
 const char WEB_HEADER_OK_CT[] 			= "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: ";

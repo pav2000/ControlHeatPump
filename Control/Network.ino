@@ -638,6 +638,115 @@ void pingW5200(boolean f)
 	W5100.writeMR(x);
 }
 
+// Запрос на сервер с ожиданием ответа, веб блокируется, вызов из MAIN_WEB_TASK
+// HTTP 1.0 GET, timeout - ms
+// Ответ: "str=x", Возврат: int(x). Ошибка x <= -2000000000;
+int Send_HTTP_Request(char *request, bool fget_value)
+{
+	char *req = strchr(request, '/');
+	if(req == NULL) return -2000000004;
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {   // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+		return -2000000000;
+	}
+	uint8_t *buffer = (uint8_t *) Socket[MAIN_WEB_TASK].outBuf;
+	EthernetClient tTCP;
+	int ret = 0;
+//	char *p = strchr(request, ':');
+	uint16_t port = 80;
+//	if(p != NULL) {
+//		*p = '\0';
+//		port = atoi(p + 1);
+//	}
+	memcpy(buffer, request, req - request);
+	buffer[req - request] = '\0';
+	if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Send request to %s\n", buffer);
+	IPAddress ip(0, 0, 0, 0);
+	if(req == NULL || check_address((char*) buffer, ip) == 0) {
+		ret = -2000000002;
+	} else {
+		if(!tTCP.connect(ip, port, W5200_SOCK_SYS)) {
+			ret = -2000000003;
+		} else {
+			tTCP.write_buffer_flash((uint8_t *) &http_get_str1, sizeof(http_get_str1)-1);
+			tTCP.write_buffer_flash((uint8_t *) req, strlen(req));
+			tTCP.write_buffer_flash((uint8_t *) &http_get_str2, sizeof(http_get_str2)-1);
+			tTCP.write_buffer((uint8_t *) buffer, strlen((char*)buffer));
+			tTCP.write_buffer_flash((uint8_t *) &http_get_str3, sizeof(http_get_str3)-1);
+			if(tTCP.write((const uint8_t *)NULL, (size_t)0) == 0) {
+				ret = -2000000011;
+			} else {
+				ret = -2000000001;
+				int timeout = HTTP_REQ_TIMEOUT / 20;
+				while(timeout-- > 0) { // ожидание ответа
+					SemaphoreGive(xWebThreadSemaphore);
+					_delay(20);
+					if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS)) == pdFALSE) break; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+					if(tTCP.available()) {
+						ret = 0;
+						break;
+					}
+				}
+				if(ret == 0) { // Ответ получен, формат: "str=x"
+					if(tTCP.read(buffer, sizeof(http_key_ok1)-1) == sizeof(http_key_ok1)-1) {
+						if(memcmp(buffer, &http_key_ok1, sizeof(http_key_ok1)-1) == 0) {
+							if(tTCP.read(buffer, 3 + sizeof(http_key_ok2)-1) == 3 + sizeof(http_key_ok2)-1) { // HTTP/
+								if(memcmp(buffer + 3, &http_key_ok2, sizeof(http_key_ok2)-1) == 0) {	// 200 OK
+									if(fget_value) {
+										ret = -2000000010;
+										while(tTCP.available()) {
+											if(tTCP.read() == '\r' && tTCP.read() == '\n' && tTCP.read() == '\r' && tTCP.read() == '\n') { // тело
+												memset(buffer, 0, HTTP_REQ_BUFFER_SIZE);
+												tTCP.read(buffer, HTTP_REQ_BUFFER_SIZE - 1);
+												char *p = strchr((char*)buffer, '=');
+												if(p != NULL) {
+													ret = atoi(p + 1);
+												} else ret = -2000000009;
+												if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf(" Response: %s", buffer);
+												break;
+											}
+										}
+									} else ret = 0;
+								} else {
+									buffer[sizeof(http_key_ok2) + 3] = '\0';
+									if(HP.get_NetworkFlags() & ((1<<fWebLogError) | (1<<fWebFullLog))) journal.jprintf(" ERR %s", buffer);
+									ret = -2000000008;
+								}
+							} else ret = -2000000007;
+						} else ret = -2000000006;
+					} else ret = -2000000005;
+				}
+			}
+			tTCP.stop();
+		}
+	}
+	SemaphoreGive(xWebThreadSemaphore);
+	if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf(" Ret = %d\n", ret);
+	else if(ret < 0 && (HP.get_NetworkFlags() & (1<<fWebLogError))) {
+		journal.jprintf_time("Error %d send request to %s!", ret + 2000000000, request);
+		switch (ret)
+		{
+		case -2000000002:
+			journal.jprintf(" Address wrong");
+			break;
+		case -2000000003:
+			journal.jprintf(" Connect fail\n");
+			break;
+		case -2000000011:
+			journal.jprintf(" Send error\n");
+			break;
+		case -2000000009:
+			journal.jprintf(" Response: %s", buffer);
+			break;
+		case -2000000008:
+			journal.jprintf(" ERR %s", buffer);
+			break;
+		}
+		journal.jprintf("\n");
+	}
+	return ret;
+}
+
+
 // =============================== M Q T T ==================================================
 #ifdef MQTT    // признак использования MQTT
 const char* MQTTpublish={">> %s "};

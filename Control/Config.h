@@ -3373,6 +3373,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef HTTP_TIME_REQUEST
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
 	#endif
+	#define HTTP_LowConsumeRequest "192.168.0.8/&LowConsume_set="	// HTTP GET запрос информирование о режиме низкого потребления, формат server/request, в конец будет добавлен 0/1
+
 	#define INDEX_FILE			"plan.html"       // стартовый файл по умолчанию для веба
 	//#define WEB_STATUS_SHOW_VERSION		// Показывать версию в строке статуса (запрос get_status)
 	//#define WEB_STATUS_SHOW_OVERHEAT		// Показывать перегрев в строке статуса (запрос get_status)
