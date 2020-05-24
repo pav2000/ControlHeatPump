@@ -759,10 +759,9 @@ void vWeb0(void *)
 
 #ifdef HTTP_LowConsumeRequest
 			if(active && GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume) {
-				Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
 				strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
 				_itoa(Request_LowConsume, Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
-				Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
+				if(Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false) != -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
 				active = false;
 			}
 #endif
