@@ -267,9 +267,11 @@ void Nextion::readCommand()
 				        HP.set_BackupPower(!HP.get_BackupPower());
 				        input_delay = NEXTION_INPUT_DELAY * 2;
 					}
-				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения сотые градуса
+				} else if(cmd1 == NXTID_PAGE_HEAT) { // Изменение целевой температуры СО шаг изменения десятые градуса
 					if(cmd2 == NXTID_TEMP_PLUS || cmd2 == NXTID_TEMP_MINUS) {
-						setComponentText("tust", ftoa(ntemp, (float) HP.setTargetTemp(cmd2 == NXTID_TEMP_PLUS ? 20 : -20) / 100.0, 1));
+						HP.setTargetTemp(cmd2 == NXTID_TEMP_PLUS ? 10 : -10);
+						HP.getTargetTempStr(ntemp);
+						setComponentText("tust", ntemp);
 					} else if(cmd2 == NXTID_NEXT_MODE) { // Переключение режимов отопления ТОЛЬКО если насос выключен
 						if(!HP.IsWorkingNow()) {
 							HP.set_nextMode();  // выбрать следующий режим
@@ -381,15 +383,15 @@ void Nextion::Update()
 	// 2. Вывод в зависмости от страницы
 	if(PageID == NXTID_PAGE_MAIN)  // Обновление данных 0 страницы "Главный экран"
 	{
-		strcat(ftoa(ntemp, (float) HP.sTemp[TIN].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TIN].get_Temp() / 10, 1), _xB0);
 		setComponentText("t0", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TOUT].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TOUT].get_Temp() / 10, 1), _xB0);
 		setComponentText("t2", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TBOILER].get_Temp() / 10, 1), _xB0);
 		setComponentText("t3", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TEVAING].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TEVAING].get_Temp() / 10, 1), _xB0);
 		setComponentText("t4", ntemp);
-		strcat(ftoa(ntemp, (float) HP.FEED/100.0,1),_xB0);
+		strcat(dptoa(ntemp, HP.FEED /10, 1),_xB0);
 		setComponentText("t5", ntemp);
 		HP.getTargetTempStr(ntemp);
 		uint16_t newcrc = calc_crc16((uint8_t*)ntemp, 4);
@@ -496,26 +498,26 @@ void Nextion::Update()
 		 из системы отопления - tconoutg
 		 в систему отопления - tconing
 		 */
-		strcat(ftoa(ntemp, (float) HP.sTemp[TOUT].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TOUT].get_Temp() / 10, 1), _xB0);
 		setComponentText("tout", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TIN].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TIN].get_Temp() / 10, 1), _xB0);
 		setComponentText("tin", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TCOMP].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TCOMP].get_Temp() / 10, 1), _xB0);
 		setComponentText("tcomp", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TEVAOUTG].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TEVAOUTG].get_Temp() / 10, 1), _xB0);
 		setComponentText("tevaing", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TEVAING].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TEVAING].get_Temp() / 10, 1), _xB0);
 		setComponentText("tevaoutg", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TCONOUTG].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TCONOUTG].get_Temp() / 10, 1), _xB0);
 		setComponentText("tconing", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TCONING].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TCONING].get_Temp() / 10, 1), _xB0);
 		setComponentText("tconoutg", ntemp);
 
 #ifdef EEV_DEF
-		strcat(ftoa(ntemp, (float) HP.dEEV.get_Overheat() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.dEEV.get_Overheat() / 10, 1), _xB0);
 		setComponentText("tper", ntemp);
 #else
-		strcat(ftoa(ntemp,0.0/100.0,1),_xB0); setComponentText("tper", ntemp);
+		strcat(dptoa(ntemp, 0, 1),_xB0); setComponentText("tper", ntemp);
 #endif
 	} else if(PageID == NXTID_PAGE_HEAT)  // Обновление данных 5 страницы "Отопление/Охлаждение"
 	{
