@@ -4025,7 +4025,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FC_MAX_CURRENT_BOILER    (10*100)       // Максимальный ток инвертора для ГВС в 0.01 А
 	#define FC_ACCEL_TIME			 (2100)			// Время разгона компрессора в сотых сек
 	#define FC_DEACCEL_TIME          (1100)   	  	// Время торможения компрессора в сотых сек
-    #define FC_START_PID_DELAY       (40*100)      	// Задержка ПИД после старта компрессора
+    #define FC_START_PID_DELAY       (30*100)      	// Задержка ПИД после старта компрессора
 
 	#define FC_RETOIL_FREQ			  4500		    // Частота меньше которой должен происходить возврат масла, в сотых Гц
 	#define FC_RETOIL_TIME			 (16/(FC_TIME_READ/1000)) // Время возврата, сек
