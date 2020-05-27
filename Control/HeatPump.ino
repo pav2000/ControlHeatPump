@@ -1133,6 +1133,13 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_DELAY_BOILER_SW)==0)  {return _itoa(Option.delayBoilerSW,ret);}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
    if(strcmp(var,option_DELAY_BOILER_OFF)==0) {return _itoa(Option.delayBoilerOff,ret);}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
    if(strcmp(var,option_fBackupPower)==0)     {if(GETBIT(Option.flags,fBackupPower)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);}else // флаг Использование резервного питания от генератора (ограничение мощности)
+   if(strcmp(var,option_fBackupPowerInfo)==0) { // Работа от генератора
+	   if(GETBIT(Option.flags,fBackupPower)
+#ifdef USE_UPS
+		   && NO_Power
+#endif
+		   ) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);
+   } else
    if(strcmp(var, option_fBackupPowerAuto) == 0) {
 #ifdef SGENERATOR
 	   if(GETBIT(Option.flags2, f2BackupPowerAuto)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero);
