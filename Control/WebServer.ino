@@ -995,7 +995,7 @@ void parserGET(uint8_t thread, int8_t )
 					journal.jprintf("$RESET All Сounters. . .\n");
 					strcat(strReturn,"Сброс ВСЕХ счетчиков");
 					HP.resetCount(true);  // Полный сброс
-				} else {								// RESET_CNT
+				} else {								// RESET_CNT_
 					journal.jprintf("$RESET Season Counters. . .\n");
 					strcat(strReturn,"Сброс счетчиков за сезон");
 					HP.resetCount(false);
