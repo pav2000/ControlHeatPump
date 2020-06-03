@@ -30,9 +30,9 @@
 //#define CONFIG_2		// sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3		// dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4		// dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-//#define CONFIG_5		// pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_5		// pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
 //#define CONFIG_6		// NTC      Частотник PWM, 1 фаза, 4 реле, ЭРВ, NTC
-#define CONFIG_7		// vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
+//#define CONFIG_7		// vad7     Частотник Vacon, 3 фазы, ЭРВ, РТО, 2 датчика давления
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -2523,7 +2523,8 @@ const char *noteTemp[] = {"Температура улицы",
     //		{ STATS_OBJ_Press, PGEO },
     //		{ STATS_OBJ_Press, POUT },
     //		{ STATS_OBJ_PressTemp, PCON },
- 	   		{ STATS_OBJ_PressTemp, PEVA }
+ 	//   		{ STATS_OBJ_PressTemp, PEVA }
+ 	   		{ STATS_OBJ_Press, PEVA }	// Давление	
     	};
     	const Charts_Const_setup ChartsConstSetup[] = {
     		{ STATS_OBJ_EEV, "ЭРВ" },                  // Отключать нельзя используется на странице ЭРВ

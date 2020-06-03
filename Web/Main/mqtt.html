@@ -27,7 +27,9 @@
 <body class="mqtt">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>MQTT <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
+	<h1>MQTT <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'>
+	<input type="submit" value="?" onclick='location.assign("mqtt-help.html")' style="float:none;">
+	</h1>
 	<div class="row1">
 		<h2 id="main_header">Настройка клиента MQTT</h2>
 		<table>
