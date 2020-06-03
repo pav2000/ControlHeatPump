@@ -31,7 +31,7 @@
 <br>
 <input type="submit" value="Сброс контроллера" onclick='if(confirm("Перезагрузить контроллер?")) loadParam("RESET_DUE");'>
 <input type="submit" value="Сброс cети" onclick='loadParam("RESET_NET")'>
-<input type="submit" value="Сброс сезонных счетчиков" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_CNT,RELOAD")'> Введите RESET: <input id="reset_code" size="7">
+<input type="submit" value="Сброс сезонных счетчиков" onclick='if(document.getElementById("reset_code").value=="RESET") loadParam("RESET_CNT_,RELOAD")'> Введите RESET: <input id="reset_code" size="7">
 <p>Для сброса всех счетчиков используйте запрос RESET_CNT_ALL</p>
 1. Запись накопленных данных за последний день, нужно делать перед обновлением прошивки.<br>
 2. Старший байт номер задачи (номер см. на странице ОС RTOS), младший байт код ошибки (1-configASSERT fails, 2-malloc fails, 3-stack overflow, 4-hard fault, 5-bus fault, 6-usage fault, 7-crash data)<br>
