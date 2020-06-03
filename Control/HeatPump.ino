@@ -1737,8 +1737,13 @@ xGoWait:
 		journal.jprintf_date( "  Resume . . .\n");
 	}
 	//  Если требуется сбрасываем инвертор  (проверям ошибку и пишем в журнал)
-	if((ResetFC()) != OK)                                // Сброс инвертора если нужно
-	{
+#ifdef AUTO_START_GENERATOR
+	if(GETBIT(Option.flags, fBackupPower) && dFC.get_state() == ERR_LINK_FC) {
+		dRelay[RGEN].set_ON();
+		_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
+	}
+#endif
+	if(ResetFC() != OK) {                                // Сброс инвертора если нужно
 		if(error == OK) set_Error(ERR_RESET_FC, (char*) __FUNCTION__); else process_error();
 		return;
 	}
@@ -1883,30 +1888,6 @@ xGoWait:
 	return;
 }
 
-// Инициализировать переменные ПИД регулятора
-void HeatPump::resetPID()
-{
-#ifdef PID_FORMULA2
-	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
-	pidw.pre_err = Status.modWork & pHEAT ? Prof.Heat.tempPID - FEED : Status.modWork & pBOILER ?
-#ifdef SUPERBOILER
-			Prof.Boiler.tempPID - PressToTemp(PCON)
-#else
-			Prof.Boiler.tempPID - FEED
-#endif
-			: Prof.Cool.tempPID - FEED;
-	pidw.sum = dFC.get_target() * 1000;
-	pidw.min = dFC.get_minFreq() * 1000;
-	pidw.max = dFC.get_maxFreq() * 1000;
-#else
-	pidw.pre_err = 0;
-	pidw.sum = 0;
-	pidw.max = 0;   // ПИД может менять частоту без ограничений
-#endif
-	updatePidTime = updatePidBoiler = xTaskGetTickCount();                // время обновления ПИДа
-	// ГВС Сбросить переменные пид регулятора
-}
-                     
 // STOP/WAIT -----------------------------------------
 // Функция Останова/Ожидания ТН  - возвращает код ошибки
 // Параметр задает что делаем true-останов, false-ожидание
@@ -1930,10 +1911,10 @@ void HeatPump::StopWait(boolean stop)
   {
 	Task_vUpdate_run = false;					        // Остановить задачу обновления ТН vUpdate (xHandleUpdate)
     journal.jprintf(" Stop task UpdateHP\n");
-    #ifdef USE_SUN_COLLECTOR
+#ifdef USE_SUN_COLLECTOR
 	Sun_OFF();											// Выключить СК
 	time_Sun = GetTickCount() - uint32_t(Option.SunMinPause * 1000);	// выключить задержку последующего включения
-	#endif
+#endif
   }
     
   if(startPump)
@@ -1964,19 +1945,45 @@ void HeatPump::StopWait(boolean stop)
    relayAllOFF(); // Все выключить, все (на всякий случай), * внимание - выключатся реле по расписанию!
   #endif 
  
-  if (stop)
+  if(stop)
   {
      //journal.jprintf(" statChart stop\n");
      setState(pOFF_HP);
      journal.jprintf_time("%s OFF . . .\n",(char*)nameHeatPump);
-  }
-  else
-  {
+  } else {
      setState(pWAIT_HP);
      journal.jprintf_time("%s WAIT . . .\n",(char*)nameHeatPump);
   }
+#ifdef AUTO_START_GENERATOR
+  dRelay[RGEN].set_OFF();
+#endif
   return;
 }
+
+// Инициализировать переменные ПИД регулятора
+void HeatPump::resetPID()
+{
+#ifdef PID_FORMULA2
+	pidw.PropOnMeasure = DEF_FC_PID_P_ON_M;
+	pidw.pre_err = Status.modWork & pHEAT ? Prof.Heat.tempPID - FEED : Status.modWork & pBOILER ?
+#ifdef SUPERBOILER
+			Prof.Boiler.tempPID - PressToTemp(PCON)
+#else
+			Prof.Boiler.tempPID - FEED
+#endif
+			: Prof.Cool.tempPID - FEED;
+	pidw.sum = dFC.get_target() * 1000;
+	pidw.min = dFC.get_minFreq() * 1000;
+	pidw.max = dFC.get_maxFreq() * 1000;
+#else
+	pidw.pre_err = 0;
+	pidw.sum = 0;
+	pidw.max = 0;   // ПИД может менять частоту без ограничений
+#endif
+	updatePidTime = updatePidBoiler = xTaskGetTickCount();                // время обновления ПИДа
+	// ГВС Сбросить переменные пид регулятора
+}
+
 
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
 // Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
@@ -2388,20 +2395,20 @@ MODE_COMP HeatPump::UpdateHeat()
 		}
 #endif
 	}
-	switch (Prof.Heat.Rule)   // в зависмости от алгоритма
+	switch (Prof.Heat.Rule) // в зависмости от алгоритма
 	{
 	case pHYSTERESIS:  // Гистерезис нагрев.
 		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) {Status.ret=pHh3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
-		else if(t1 < target - Prof.Heat.dTemp && (!is_compressor_on() || onBoiler))  { Status.ret=pHh2;   return pCOMP_ON; }          // Достигнут гистерезис ВКЛ
+		else if(t1 < target - (GETBIT(HP.Option.flags, fBackupPower) ? Prof.Heat.dTempGen : Prof.Heat.dTemp) && (!is_compressor_on() || onBoiler))  { Status.ret=pHh2;   return pCOMP_ON; } // Достигнут гистерезис ВКЛ
 		else if(onBoiler) { return pCOMP_OFF; } // Бойлер нагрет и отопление не нужно
 		else if(rtcSAM3X8.unixtime() - offBoiler > Option.delayBoilerOff && FEED > Prof.Heat.tempInLim) { Status.ret=pHh1; return pCOMP_OFF; } // Достигнута максимальная температура подачи ВЫКЛ (С учетом времени перехода с ГВС)
-		else if(RET<Prof.Heat.tempOutLim)      {Status.ret=pHh13;  return pCOMP_ON; }          // Достигнут минимальная темература обратки ВКЛ
-		else                                {Status.ret=pHh4;   return pCOMP_NONE;}         // Ничего не делаем  (сохраняем состояние)
+		else if(RET<Prof.Heat.tempOutLim) { Status.ret = pHh13; return pCOMP_ON; }   // Достигнут минимальная темература обратки ВКЛ
+		else                              { Status.ret = pHh4; return pCOMP_NONE; }  // Ничего не делаем  (сохраняем состояние)
 		break;
 	case pPID:   // ПИД регулирует подачу, а целевай функция гистререзис
 		// отработка гистререзиса целевой функции (дом/обратка)
-		if(t1>target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF;} // Достигнута целевая температура  ВЫКЛ
-		else if(t1<target-Prof.Heat.dTemp && (!is_compressor_on() || onBoiler)) { Status.ret=pHp2; return pCOMP_ON; }     // Достигнут гистерезис (компрессор не работает) ВКЛ
+		if(t1 > target && rtcSAM3X8.unixtime() - startCompressor > (onBoiler || GETBIT(Option.flags, fBackupPower) ? 0 : Option.MinCompressorOn)) { Status.ret=pHp3; return pCOMP_OFF; } // Достигнута целевая температура  ВЫКЛ
+		else if(t1 < target - (GETBIT(HP.Option.flags, fBackupPower) ? Prof.Heat.dTempGen : Prof.Heat.dTemp) && (!is_compressor_on() || onBoiler)) { Status.ret=pHp2; return pCOMP_ON; } // Достигнут гистерезис (компрессор не работает) ВКЛ
 		else if(onBoiler) { return pCOMP_OFF; } // Бойлер нагрет и отопление не нужно
 		else if((rtcSAM3X8.unixtime()-offBoiler>Option.delayBoilerOff)&&(FEED>Prof.Heat.tempInLim)) {Status.ret=pHp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__);return pCOMP_OFF;}  // Достижение максимальной температуры подачи - это ошибка ПИД не работает (есть задержка срабатывания для переключения с ГВС)
        

@@ -152,7 +152,7 @@ int8_t devVaconFC::get_readState()
 		FC_curr_freq = 4000 + (int32_t)FC_target * 30 / 100;
 	} else {
 #ifndef FC_ANALOG_CONTROL // Не аналоговое управление
-		if(!get_present() || state == ERR_LINK_FC) {
+		if(!get_present() || (state == ERR_LINK_FC && !GETBIT(HP.Option.flags, fBackupPower))) { // На гене регулярно проверять линк
 			state = ERR_LINK_FC;
 			FC_curr_freq = 0;
 			power = 0;
@@ -169,6 +169,9 @@ int8_t devVaconFC::get_readState()
 			HP.sInput[SPOWER].Read(true);
 			if(HP.sInput[SPOWER].is_alarm()) return err;
 #endif
+			if(GETBIT(HP.Option.flags, fBackupPower)) {
+				if(!GETBIT(flags, fOnOff)) return err;
+			}
 			SETBIT1(flags, fErrFC); // Блок инвертора
 			set_Error(err, name); // генерация ошибки
 			return err; // Возврат
@@ -763,7 +766,7 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
 {
     uint8_t i;
     int16_t result = 0;
-    if((!get_present()) || state == ERR_LINK_FC) return 0; // выходим если нет инвертора или он заблокирован по ошибке
+    if((!get_present()) || (state == ERR_LINK_FC && !GETBIT(HP.Option.flags, fBackupPower))) return 0; // выходим если нет инвертора или он заблокирован по ошибке
     for (i = 0; i < FC_NUM_READ; i++) // делаем FC_NUM_READ попыток чтения Чтение состояния инвертора, при ошибке генерация общей ошибки ТН и останов
     {
         err = Modbus.readHoldingRegisters16(FC_MODBUS_ADR, cmd - 1, (uint16_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
@@ -772,6 +775,10 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         HP.sInput[SPOWER].Read(true);
         if(HP.sInput[SPOWER].is_alarm()) break;
 #endif
+        if(GETBIT(HP.Option.flags, fBackupPower)) {
+        	result = ERR_LINK_FC;
+        	break;
+        }
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf("Modbus reg #%d - ", cmd);
         journal.jprintf_time(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении

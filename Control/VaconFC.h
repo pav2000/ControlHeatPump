@@ -194,6 +194,7 @@ public:
   boolean	reset_FC();               		      // Сброс состояния связи модбас
   int16_t	CheckLinkStatus(void);				   // Получить Слово состояния FB, ERR_LINK_FC - ошибка связи
   int16_t	read_stateFC();                        // Текущее состояние инвертора
+  __attribute__((always_inline)) inline int16_t get_state(void) { return state; };
   int16_t	read_tempFC();                         // Tемпература радиатора
   void		set_nominal_power(void);
    
@@ -241,8 +242,8 @@ public:
   uint16_t current;									// Чтение: Текущий ток двигателя в 0.01 Ампер единицах
   
   int16_t  state;									// Чтение: Состояние ПЧ регистр FC_STATUS
-  int16_t minFC;									// Минимальная скорость инвертора в 0.01 %
-  int16_t maxFC;									// Максимальная скорость инвертора в 0.01 %
+  int16_t  minFC;									// Минимальная скорость инвертора в 0.01 %
+  int16_t  maxFC;									// Максимальная скорость инвертора в 0.01 %
   uint32_t startCompressor;							// время старта компрессора
 
 #ifdef FC_ANALOG_CONTROL

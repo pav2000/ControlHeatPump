@@ -197,6 +197,7 @@ public:
   boolean reset_errorFC();                         // Сброс ошибок инвертора
   boolean reset_FC();                              // Сброс инвертора через модбас
   int16_t read_stateFC();                          // Текущее состояние инвертора
+  __attribute__((always_inline)) inline int16_t get_state(void) { return state; };
   int16_t read_tempFC();                           // Tемпература радиатора
    
   int16_t get_frequency() { return freqFC; }       // Получить текущую частоту в 0.01 Гц
