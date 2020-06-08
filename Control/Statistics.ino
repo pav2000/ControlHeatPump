@@ -548,6 +548,10 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 	case STATS_OBJ_COP_Full:
 		if(flag) strcat(ret, "C"); // ось COP
 		strcat(ret, "Полный COP");
+		if(Stats_data[i].type == STATS_TYPE_AVG) {
+			if(Stats_data[Stats_data[i].when].when == STATS_WHEN_WORKD || Stats_data[Stats_data[i].number].when == STATS_WHEN_WORKD) strcat(ret, "(work)");
+			return;
+		}
 		break;
 	case STATS_OBJ_Compressor:
 		strcat(ret, "Моточасы, м");
