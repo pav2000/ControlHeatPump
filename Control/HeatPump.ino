@@ -1136,7 +1136,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
    if(strcmp(var,option_fBackupPowerInfo)==0) { // Работа от генератора
 	   if(GETBIT(Option.flags,fBackupPower)
 #ifdef USE_UPS
-		   && NO_Power
+		   && !NO_Power
 #endif
 		   ) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);
    } else
