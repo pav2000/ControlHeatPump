@@ -670,6 +670,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0)&&(x<=60))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
 	if(strcmp(var,boil_DischargeDelta)==0)	{ Boiler.DischargeDelta = rd(x, 10); return true;} else
+	if(strcmp(var,boil_fWorkOnGenerator)==0){ if(x) SETBIT1(Boiler.flags, fWorkOnGenerator); else SETBIT0(Boiler.flags, fWorkOnGenerator); return true; } else
 	return false;
 }
 
@@ -712,6 +713,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_dAddHeat)==0){        _dtoa(ret,Boiler.dAddHeat/10,1); return ret;       }else
  if(strcmp(var,boil_DischargeDelta)==0){  _dtoa(ret, Boiler.DischargeDelta, 1); return ret;       }else
  if(strcmp(var,boil_HeatUrgently)==0){if(HP.HeatBoilerUrgently) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
+ if(strcmp(var,boil_fWorkOnGenerator)==0){ if(GETBIT(Boiler.flags, fWorkOnGenerator)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  return strcat(ret,(char*)cInvalid);
 }
 

@@ -589,6 +589,7 @@ const char *boil_fBoilerPID   = {"PID"};                 // ПИД вкл/вык
 const char *boil_dAddHeat     = {"dAH"};				 // Гистерезис нагрева бойлера до температуры догрева, в сотых градуса
 const char *boil_HeatUrgently = {"URG"};				 // Срочно нужно ГВС
 const char *boil_DischargeDelta={"DD"};
+const char *boil_fWorkOnGenerator={"WGD"};
 
 // Дата время
 const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд
@@ -1091,6 +1092,7 @@ enum TYPE_STATE_HP
 // 27 - Выключение режима ТН при достижении уровня защиты по току (достижение границы)
 // 28 - Ограничение мощности при работе от резервного источника питания (сброс частоты)
 // 29 - Выключение режима ТН при достижении минимальной частоты при работе от резервного источника питания.
+// 30 - Ограничение при работе от генератора
 
 
 enum TYPE_RET_HP
@@ -1133,6 +1135,7 @@ enum TYPE_RET_HP
   pBp28,
   pBp29, 
   pBdis,  // Сброс тепла
+  pBgen,  // Запрет на генераторе
  
   // Отопление
   pHh3,
@@ -1205,7 +1208,7 @@ enum TYPE_RET_HP
   pEND18                            // Обязательно должен быть последним, добавляем ПЕРЕД!!!
 };
 //  Для вывода кодов
-const char *codeRet[]={ "none","MinPause","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", "Bp23","Bp24","Bp25","Bp26","Bp27","Bp28","Bp29","Bdis",\
+const char *codeRet[]={ "none","MinPause","Bh1","Bh2","Bh3","Bh4","Bh5","Bh22","Bp3","Bp1","Bp2","Bp6","Bp7","Bp8","Bp9","Bp5","Bp10","Bp11","Bp12","Bp14","Bp16","Bp17","Bp18","Bp19","Bp20","Bp21","Bp22", "Bp23","Bp24","Bp25","Bp26","Bp27","Bp28","Bp29","Bdis","Bgen",\
                        "Hh3","Hh1","Hh2","Hh13","Hh4","Hp3","Hp1","Hp2","Hp6","Hp7","Hp8","Hp9","Hp5","Hp10","Hp11","Hp12","Hp15","Hp16","Hp17","Hp18","Hp19","Hp20","Hp21","Hp23","Hp24","Hp25","Hp26","Hp27","Hp28","Hp29",\
                        "Ch3","Ch1","Ch2","Ch13","Ch4","Cp3","Cp1","Cp2","Cp6","Cp7","Cp8","Cp9","Cp5","Cp10","Cp11","Cp12","Cp15","Cp16","Cp17","Cp18","Cp19","Cp20","Cp21","Cp23","Cp24","Cp25","Cp26","Cp27","Cp28","Cp29","null"};           
 

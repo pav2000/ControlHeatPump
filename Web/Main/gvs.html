@@ -29,7 +29,7 @@ $(document).on('keyup keydown', function(e){ shifted = e.shiftKey } );
 <script type="text/javascript">
 window.onload = function() {
 	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO)");
-	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(SCHEDULER),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(URG),get_Boiler(DD)");
+	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(SCHEDULER),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(URG),get_Boiler(DD),get_Boiler(WG)");
 };
 </script>
 </head>
@@ -123,6 +123,9 @@ window.onload = function() {
 	</tr><tr>
 		<td>Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°)</td>
 		<td><input type="checkbox" name="get_boiler-sun" id="get_boiler-sun" onchange="setParam('get_Boiler(SUN)');"></td>
+	</tr><tr>
+		<td>Греть от генератора (без тэна)</td>
+		<td><input type="checkbox" id="get_boiler-wg" onchange="setParam('get_Boiler(WG)');"></td>
 	</tr><tr>
 		<td>Управление циркуляционным насосом ГВС<sup>7</sup></td>
 		<td><input type="checkbox" id="get_boiler-circ" onChange="setParam('get_Boiler(CIRC)');" ></td>

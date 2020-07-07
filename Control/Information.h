@@ -110,6 +110,7 @@ struct type_SaveON {
 #define fBoilerPID			8			// ПИД
 #define fBoilerUseSun		9		  	// флаг использования солнечного коллектора
 #define fAddHeatingForce	10			// флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
+#define fWorkOnGenerator    11			// Греть бойлер на генераторе
 
 struct type_boilerHP {
 	uint8_t DischargeDelta;            // Сброс тепла в отопление, если температура подачи/конденсации приблизилась к максимуму/догреву, в десятых градуса

@@ -2761,7 +2761,10 @@ MODE_HP HeatPump::get_Work()
 		ret = pOFF;
 		break;
 	case pCOMP_ON:
-		ret = pBOILER;
+		if(GETBIT(Option.flags, fBackupPower) && !GETBIT(Prof.Boiler.flags, fWorkOnGenerator)) {
+			Status.ret = pBgen;
+			ret = pOFF;
+		} else ret = pBOILER;
 		break;
 	case pCOMP_NONE:
 		ret = pBOILER + pCONTINUE;
