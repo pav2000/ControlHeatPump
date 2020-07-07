@@ -1761,9 +1761,7 @@ static inline void idle() // задержка между чтениями отд
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
       #ifdef PIN_MODBUS_RSE
-      noInterrupts();  // Disable interrupts
       digitalWriteDirect(PIN_MODBUS_RSE, HIGH);
-      interrupts();    // Enable interrupts
       _delay(1);       // что бы слейв не терял первый бит повышается надежность передачи
       #endif
       Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus 	
@@ -1779,9 +1777,7 @@ static inline void postTransmission() // Функция вызываемая П�
 	#if MODBUS_TIME_TRANSMISION != 0
     _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
 	#endif
-	noInterrupts(); // Disable interrupts
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
-    interrupts();    // Enable interrupts
     #endif
 
 }
