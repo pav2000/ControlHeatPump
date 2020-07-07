@@ -56,15 +56,23 @@
 <br>
 Частотник: 1, Счетчик: 2. Нумерация параметров с 1.
 <br> 
-<h3>Чтение, запись. Адреса 4...: <input type="submit" value="+ (16bit)" onclick="add_new_modbus_row('w')"> <input type="submit" value="+ (32bit)" onclick="add_new_modbus_row('l')"> <input type="submit" value="+ (Coil)" onclick="add_new_modbus_row('c')"> <input type="submit" value="+ (Float)" onclick="add_new_modbus_row('f')"> Адреса 3...: <input type="submit" value="+ I(Float)" onclick="add_new_modbus_row('i')"> <input type="submit" value="Обновить, авто:" onclick="refresh_all()"> <input type="checkbox" id="refresh_auto"></h3> 
+<h3>Чтение, запись<sup>1</sup>. Адреса 4...: <input type="submit" value="+ (16bit)" onclick="add_new_modbus_row('w')"> <input type="submit" value="+ (32bit)" onclick="add_new_modbus_row('l')"> <input type="submit" value="+ (Coil)" onclick="add_new_modbus_row('c')"> <input type="submit" value="+ (Float)" onclick="add_new_modbus_row('f')"> Адреса 3...: <input type="submit" value="+ I(Float)" onclick="add_new_modbus_row('i')"> <input type="submit" value="Обновить, авто:" onclick="refresh_all()"> <input type="checkbox" id="refresh_auto"></h3>
 <table id="tbl_modbus">
 	<tr>
 		<th>Устройство</th>
-		<th>Параметр, адрес</th>
+		<th>Параметр, адрес<sup>2</sup></th>
 		<th>Значение</th>
 		<th>Статус</th>
 	</tr>
 </table>
+        Примечание:<br/>
+       Необходимо понимать, что разные устройства передают по разному многобайтные регистры (какой байт идет первым), по этому для чтения float необходимо пробовать оба варианта Float и I(Float).<br/>
+       Например: прочитать напряжение счетчика SDM120 - установить адрес устройства на шине 2, добавить строку вывода, нажав кнопку I(Float) и ввести адрес в строке вывода 1
+       (в документации указано 0х0000), прочитать регистр нажав кнопку '>'. Для чтения частоты из счетчика надо указать адрес 71 (в документации указано 0х0046), все остальное аналогично.<br/>
+       <br/>
+	1. Для корректного отображения информации из регистра необходимо правильно указать формат хранимого значения в регистре (см. документацию на устройство).<br/>
+	2. Нумерация ведется с еденицы (обычно необходимо добавить 1 к адресу), значения вводятся в ДЕСЯТИЧНОМ формате<br/>
+
 </div>
 </body>
 </html>

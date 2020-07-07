@@ -1463,13 +1463,13 @@ int8_t devSDM::initSDM()
 // Выводит сообщеиня в журнал и устанавливает флаг связи
 boolean devSDM::uplinkSDM()
 {
-	int8_t i;
+	int8_t i, errModbus=0;
 //	if((GETBIT(flags,fSDM))&&(GETBIT(flags,fSDMLink))) return err;  // Если есть счетчик и есть связь выходим
 	for(i = 0; i < SDM_NUM_READ; i++)   // делаем SDM_NUM_READ попыток чтения
 	{
 #ifdef USE_PZEM004T
 		uint16_t tmp;
-		if(Modbus.readHoldingRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp) == OK) {
+		if((errModbus=Modbus.readHoldingRegisters16(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp)) == OK) {
 			SETBIT1(flags, fSDMLink);
 			journal.jprintf("%s, found, link OK, modbus address:%d\n", name, SDM_MODBUS_ADR);
 			return true;
@@ -1479,11 +1479,11 @@ boolean devSDM::uplinkSDM()
 #else
 			SETBIT1(flags, fSDMLink);
 #endif
-			journal.jprintf("%s, no connect.\n", name);
+			journal.jprintf("Error %d, %s, no connect.\n", errModbus, name);
 		}
 #else
 		float band;
-		if((Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR, SDM_BAUD_RATE, &band) == OK) && (band == SDM_SPEED)) {
+		if(((errModbus=Modbus.readHoldingRegistersFloat(SDM_MODBUS_ADR, SDM_BAUD_RATE, &band)) == OK) && (band == SDM_SPEED)) {
 			SETBIT1(flags, fSDMLink);
 			journal.jprintf("%s, found, link OK, band rate:%.0f modbus address:%d\n", name, band, SDM_MODBUS_ADR);
 			return true;
@@ -1493,7 +1493,7 @@ boolean devSDM::uplinkSDM()
 #else
 			SETBIT1(flags, fSDMLink);
 #endif
-			journal.jprintf("%s, no connect.\n", name);
+			journal.jprintf("Error %d, %s, no connect.\n", errModbus, name);
 		}
 #endif
 		_delay(SDM_DELAY_REPEAD);
@@ -1761,23 +1761,29 @@ static inline void idle() // задержка между чтениями отд
 static inline void preTransmission() // Функция вызываемая ПЕРЕД началом передачи
     {
       #ifdef PIN_MODBUS_RSE
+      noInterrupts();  // Disable interrupts
       digitalWriteDirect(PIN_MODBUS_RSE, HIGH);
+      interrupts();    // Enable interrupts
+      _delay(1);       // что бы слейв не терял первый бит повышается надежность передачи
       #endif
-   //   _delay(10); // что бы слейв не терял первый бит
-      Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus
-    }
+      Modbus_Entered_Critical = TaskSuspendAll(); // Запрет других задач во время передачи по Modbus 	
+ 
+     }
 static inline void postTransmission() // Функция вызываемая ПОСЛЕ окончания передачи
     {
-	if(Modbus_Entered_Critical) {
-		xTaskResumeAll();
-		Modbus_Entered_Critical = 0;
-	}
+  	if(Modbus_Entered_Critical) {
+	xTaskResumeAll();
+	Modbus_Entered_Critical = 0;
+	}    	
     #ifdef PIN_MODBUS_RSE
 	#if MODBUS_TIME_TRANSMISION != 0
     _delay(MODBUS_TIME_TRANSMISION);// Минимальная пауза между командой и ответом 3.5 символа
 	#endif
+	noInterrupts(); // Disable interrupts
     digitalWriteDirect(PIN_MODBUS_RSE, LOW);
+    interrupts();    // Enable interrupts
     #endif
+
 }
 
 // Инициализация Modbus без проверки связи связи
