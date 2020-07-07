@@ -416,7 +416,6 @@ x_I2C_init_std_message:
 			HP.save();
 		}
 	}
-	Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
 	// обновить хеш для пользователей
 	HP.set_hashUser();
 	HP.set_hashAdmin();
@@ -659,7 +658,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 void vWeb0(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
 	static unsigned long timeResetW5200 = 0;
-	static unsigned long thisTime = 0;
+	static unsigned long thisTime;
 	static unsigned long resW5200 = 0;
 	static unsigned long iniW5200 = 0;
 	static unsigned long pingt = 0;
@@ -671,7 +670,7 @@ void vWeb0(void *)
 	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку, если действие проделано то active = false и новый цикл
 	static boolean network_last_link = true;
 
-	HP.timeNTP = xTaskGetTickCount();        // В первый момент не обновляем
+	HP.timeNTP = thisTime = xTaskGetTickCount();        // В первый момент не обновляем
 	for(;;)
 	{
 		WEB_STORE_DEBUG_INFO(1);
@@ -686,7 +685,6 @@ void vWeb0(void *)
 #ifdef MQTT
 		if(active) active=HP.clMQTT.dnsUpdate();                             // Обновить адреса через dns если надо для MQTT если обновления не было то возвращает true
 #endif
-		if(thisTime > xTaskGetTickCount()) thisTime = 0;                         // переполнение счетчика тиков
 		if(xTaskGetTickCount() - thisTime > WEB0_OTHER_JOB_PERIOD)
 		{
 			thisTime = xTaskGetTickCount();                                      // Запомнить тики
@@ -762,7 +760,7 @@ void vWeb0(void *)
 			if(active) {
 				if(GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume || (RepeatLowConsumeRequest && --RepeatLowConsumeRequest == 0)) {
 					strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
-					_itoa(Request_LowConsume, Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
+					_itoa(GETBIT(HP.Option.flags, fBackupPower), Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
 					int err = Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
 					if(err != -2000000000) {
 						if(err > -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);

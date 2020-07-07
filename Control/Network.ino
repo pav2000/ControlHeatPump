@@ -659,7 +659,7 @@ int Send_HTTP_Request(char *request, bool fget_value)
 //	}
 	memcpy(buffer, request, req - request);
 	buffer[req - request] = '\0';
-	if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Send request to %s\n", buffer);
+	if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Send request: %s\n", request);
 	IPAddress ip(0, 0, 0, 0);
 	if(req == NULL || check_address((char*) buffer, ip) == 0) {
 		ret = -2000000002;
