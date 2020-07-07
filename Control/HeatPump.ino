@@ -2965,6 +2965,7 @@ void HeatPump::compressorON()
 
 	if(is_compressor_on()) return;                                  // Компрессор уже работает
 	if(is_next_command_stop()) {
+xNextStop:
 		journal.jprintf(" Next command stop(%d), skip start", next_command);
 		return;
 	}
@@ -2973,8 +2974,9 @@ void HeatPump::compressorON()
 	if(GETBIT(Option.flags, fBackupPower) && dFC.get_state() == ERR_LINK_FC) {
 		dRelay[RGEN].set_ON();
 		_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
-		for(uint16_t i = AUTO_START_GEN_TIMEOUT; i > 0; i--) {
+		for(uint16_t i = AUTO_START_GEN_TIMEOUT / (FC_TIME_READ / 1000); i > 0; i--) {
 			if(NO_Power) return;
+			if(is_next_command_stop()) goto xNextStop;
 			if(dFC.get_err() == OK) break;
 			_delay(FC_TIME_READ);
 		}
