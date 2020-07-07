@@ -663,6 +663,7 @@ void vWeb0(void *)
 	static unsigned long resW5200 = 0;
 	static unsigned long iniW5200 = 0;
 	static unsigned long pingt = 0;
+	static uint16_t RepeatLowConsumeRequest = 0;
 #ifdef MQTT
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
@@ -686,7 +687,7 @@ void vWeb0(void *)
 		if(active) active=HP.clMQTT.dnsUpdate();                             // Обновить адреса через dns если надо для MQTT если обновления не было то возвращает true
 #endif
 		if(thisTime > xTaskGetTickCount()) thisTime = 0;                         // переполнение счетчика тиков
-		if(xTaskGetTickCount() - thisTime > 10 * 1000)                             // Делим частоту - период 10 сек
+		if(xTaskGetTickCount() - thisTime > WEB0_OTHER_JOB_PERIOD)
 		{
 			thisTime = xTaskGetTickCount();                                      // Запомнить тики
 			// 1. Проверка захваченого семафора сети ожидаем  3 времен W5200_TIME_WAIT если мютекса не получаем то сбрасывае мютекс
@@ -758,11 +759,17 @@ void vWeb0(void *)
 			}
 
 #ifdef HTTP_LowConsumeRequest
-			if(active && GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume) {
-				strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
-				_itoa(Request_LowConsume, Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
-				if(Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false) != -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
-				active = false;
+			if(active) {
+				if(GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume || (RepeatLowConsumeRequest && --RepeatLowConsumeRequest == 0)) {
+					strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
+					_itoa(Request_LowConsume, Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
+					int err = Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
+					if(err != -2000000000) {
+						if(err > -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
+						else RepeatLowConsumeRequest = (uint16_t)(HTTP_REQUEST_ERR_REPEAT * 1000 / WEB0_OTHER_JOB_PERIOD + 1);
+					}
+					active = false;
+				}
 			}
 #endif
 

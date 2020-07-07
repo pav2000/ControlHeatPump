@@ -97,7 +97,7 @@ boolean  Charts_when_comp_on = true;	// Графики в памяти толь�
 #else
 boolean  Charts_when_comp_on = false;
 #endif
-bool Request_LowConsume = false;
+uint8_t Request_LowConsume = 0xFF;
 
 // Рабочие флаги ТН
 #define fHP_BoilerTogetherHeat	0			// Идет нагрев бойлера вместе с отоплением

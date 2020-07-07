@@ -165,6 +165,7 @@ int8_t devVaconFC::get_readState()
 		if(err) // Ошибка
 		{
 			state = ERR_LINK_FC; // признак потери связи с инвертором
+			power = current = FC_curr_freq = 0;
 #ifdef SPOWER
 			HP.sInput[SPOWER].Read(true);
 			if(HP.sInput[SPOWER].is_alarm()) return err;

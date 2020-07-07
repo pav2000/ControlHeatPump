@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.086"				// Версия прошивки
+#define VERSION			"1.087"				// Версия прошивки
 #define VER_SAVE		146					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -274,6 +274,8 @@ const uint16_t  defaultPort=80;
 #ifndef BOILER_TEMP_COMP_RESET
 #define BOILER_TEMP_COMP_RESET  500      // На сколько температура нагнетания (TCOMP) меньше максимальной при нагреве ГВС, при котрой происходит сброс тепла в систему отопления
 #endif
+#define WEB0_OTHER_JOB_PERIOD   10*1000  // Периодичность других функций внутри задачи WEB0, мс
+#define HTTP_REQUEST_ERR_REPEAT 120      // Повтор информирования при ошибке через n секунд
 // ------------------- SENSOR TEMP----------------------------------
 #ifndef T_NUMSAMLES
 #define T_NUMSAMLES       1              // Число значений для усреднения показаний температуры
@@ -900,8 +902,9 @@ const char *noteRemarkEEV[] = {	"Перегрев равен: температу
 #define ERR_FC_ERROR		-89			// ошибка программы управления инвертором
 #define ERR_SD_WRITE		-90			// ошибка записи на SD карту
 #define ERR_FC_RCOMP		-91			// Не возможно остановить инвертор с помошью RCOMP
+#define ERR_FC_NO_LINK		-92			// Нет связи с инвертором по MODBUS
 
-#define ERR_ERRMAX			-91 		// Последняя ошибка
+#define ERR_ERRMAX			-92 		// Последняя ошибка
 
 #ifdef NOT_RESTART_ON_CRITICAL_ERRORS
 const int8_t CRITICAL_ERRORS[] = { ERR_COMP_ERR };
@@ -1010,6 +1013,7 @@ const char *noteError[] = {"Ok",                                                
 						   "Ошибка программы управления инвертором",											//-89
 						   "Ошибка записи на SD карту",															//-90
                            "Не возможно остановить инвертор с помошью RCOMP",                                   //-91
+						   "Нет связи с инвертором по MODBUS",													//-92
                            
                            "NULL"
                            };
