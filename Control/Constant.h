@@ -588,8 +588,8 @@ const char *boil_TOGETHER_HEAT= {"TGHEAT"};              // флаг Греть 
 const char *boil_fBoilerPID   = {"PID"};                 // ПИД вкл/выкл
 const char *boil_dAddHeat     = {"dAH"};				 // Гистерезис нагрева бойлера до температуры догрева, в сотых градуса
 const char *boil_HeatUrgently = {"URG"};				 // Срочно нужно ГВС
-const char *boil_DischargeDelta={"DD"};
-const char *boil_fWorkOnGenerator={"WGD"};
+const char *boil_DischargeDelta={"DD"};                  // Сброс тепла в отопление при приближении подачи к максимальной/догреву на °С
+const char *boil_fWorkOnGenerator={"WG"};                // Греть ГВС без ТЭНа
 
 // Дата время
 const char *time_TIME       = {"TIME"};         // текущее время  12:45 без секунд
