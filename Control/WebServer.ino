@@ -140,12 +140,12 @@ void web_server(uint8_t thread)
 							W5100.readSnDIPR(sock, ip);
 							journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
 							if(HP.get_NetworkFlags() & (1<<fWebFullLog)) {
-								for(int8_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
-								journal.jprintf("\n");
+								if(len > 256) len = 256;
+								for(uint16_t i = 0; i < len; i++) journal.jprintf("%c(%d) ", (char)Socket[thread].inBuf[i], Socket[thread].inBuf[i]);
 							} else {
 								for(len = 0; len < 4; len++) journal.jprintf("%d ", Socket[thread].inBuf[len]);
-								journal.jprintf("...\n");
 							}
+							journal.jprintf("...\n");
 						}
 #endif
 						//sendConstRTOS(thread, "HTTP/1.1 Error GET request\r\n\r\n");
