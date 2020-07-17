@@ -103,8 +103,7 @@ void Nextion::init_display()
 	//_delay(10);
 	sendCommand("sendxy=0");
 	sendCommand("thup=1");
-	if(HP.Option.sleep>0 && HP.get_errcode()==OK)   // установлено засыпание дисплея, при условии! нет ошибок...
-//	if(HP.Option.sleep > 0)   // установлено засыпание дисплея
+	if(HP.Option.sleep>0 && HP.get_errcode()==OK && !HP.get_BackupPower())   // установлено засыпание дисплея, при условии! нет ошибок...
 	{
 		strcpy(ntemp, "thsp=");
 		_itoa(HP.Option.sleep * 60, ntemp); // секунды
@@ -336,7 +335,7 @@ void Nextion::readCommand()
 		case 0x68:  // Touch Coordinate (sleep)
 			break;
 		case 0x86:  // Auto Entered Sleep Mode
-			if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) flags &= ~((HP.is_compressor_on() || HP.get_errcode()!=OK)<<fSleep);
+			if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) flags &= ~((HP.is_compressor_on() || HP.get_errcode() || HP.get_BackupPower())<<fSleep);
 			fUpdate = 0;
 			break;
 		case 0x87:   // выход из сна
@@ -360,7 +359,7 @@ void Nextion::readCommand()
 void Nextion::Update()
 {
 	if(!GETBIT(HP.Option.flags, fNextion)) return;
-	if((GETBIT(HP.Option.flags, fNextionOnWhileWork) && HP.is_compressor_on()) || HP.get_errcode()!=OK) {  // При ошибке дисплей включен
+	if((GETBIT(HP.Option.flags, fNextionOnWhileWork) && HP.is_compressor_on()) || HP.get_errcode() || HP.get_BackupPower()) {  // При ошибке дисплей включен
 		if(!GETBIT(flags, fSleep)) {
 			sendCommand("sleep=0");
 			_delay(NEXTION_BOOT_TIME);
