@@ -3425,9 +3425,9 @@ const char *noteTemp[] = {"Температура улицы",
      #define STACK_vWebX           178                              // Стек задачи веб морды один поток (потоков может быть 1-4)
 	
 	#ifdef  TEST_BOARD
-		#define SD_CLOCK				20	// частота SPI для SD карты в МГц
+		#define SD_CLOCK				28 //20	// частота SPI для SD карты в МГц
     	// СЕТЕВЫЕ НАСТРОЙКИ --------------------------------------------------------------
-		uint8_t SPI_RATE 			  = 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
+		uint8_t SPI_RATE 			  = 2 // 6;	// делитель для SPI шины, 2=42MHz, 3=28MHz, 4=21MHz, 6=14MHz
 		const boolean   defaultDHCP	=	false;
 		const IPAddress defaultIP		(192, 168, 0, 199);
 		const IPAddress defaultGateway	(192, 168, 0, 10);
