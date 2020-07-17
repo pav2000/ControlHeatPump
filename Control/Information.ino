@@ -308,8 +308,8 @@ void Journal::_write(char *dataPtr)
 {
 	int32_t numBytes;
 	if(dataPtr == NULL || (numBytes = strlen(dataPtr)) == 0) return;  // Записывать нечего
+	if(numBytes > PRINTF_BUF) numBytes = PRINTF_BUF; // Ограничиваем размер
 #ifdef I2C_EEPROM_64KB // запись в еепром
-	if(numBytes > JOURNAL_LEN - 2) numBytes = JOURNAL_LEN - 2; // Ограничиваем размером журнала JOURNAL_LEN не забываем про два служебных символа
 	// Запись в I2C память
 	if(SemaphoreTake(xI2CSemaphore, I2C_TIME_WAIT / portTICK_PERIOD_MS) == pdFALSE) {  // Если шедулер запущен то захватываем семафор
 		journal.printf((char*) cErrorMutex, __FUNCTION__, MutexI2CBuzy);
@@ -335,12 +335,12 @@ void Journal::_write(char *dataPtr)
 					SerialDbg.print(errorWriteI2C);
 				#endif
 			} else {
-				bufferTail = numBytes;
+				bufferTail = numBytes >= 0 ? numBytes : JOURNAL_LEN - 1;
 				bufferHead = bufferTail + 1;
 				err = OK;
 			}
 		}
-	} else {  // Запись в один прием Буфер не полный
+	} else {  // Запись в один прием
 		if(eepromI2C.write(I2C_JOURNAL_START + bufferTail, (byte*) dataPtr, numBytes + 1 + full)) {
 			#ifdef DEBUG
 				if(err != ERR_WRITE_I2C_JOURNAL) SerialDbg.print(errorWriteI2C);
@@ -355,7 +355,6 @@ void Journal::_write(char *dataPtr)
 #else   // Запись в память
 	// SerialDbg.print(">"); SerialDbg.print(numBytes); SerialDbg.println("<");
 
-	if( numBytes >= JOURNAL_LEN ) numBytes = JOURNAL_LEN;// Ограничиваем размером журнала
 	// Запись в журнал
 	if(numBytes > JOURNAL_LEN - bufferTail)//  Запись в два приема если число записываемых бит больше чем место от конца очереди до конца буфера
 	{
