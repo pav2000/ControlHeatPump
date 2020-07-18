@@ -70,123 +70,130 @@ fail:
   return false;
 }
 //------------------------------------------------------------------------------
-bool FatVolume::allocateCluster(uint32_t current, uint32_t* next) {
-  uint32_t find = current ? current : m_allocSearchStart;
-  uint32_t start = find;
-  while (1) {
-    find++;
-    // If at end of FAT go to beginning of FAT.
-    if (find > m_lastCluster) {
-      find = 2;
-    }
-    uint32_t f;
-    int8_t fg = fatGet(find, &f);
-    if (fg < 0) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    if (fg && f == 0) {
-      break;
-    }
-    if (find == start) {
-      // Can't find space checked all clusters.
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-  }
-  // mark end of chain
-  if (!fatPutEOC(find)) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  if (current) {
-    // link clusters
-    if (!fatPut(current, find)) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-  } else {
-    // Remember place for search start.
-    m_allocSearchStart = find;
-  }
-  updateFreeClusterCount(-1);
-  *next = find;
-  return true;
+bool FatVolume::allocateCluster(uint32_t current, uint32_t *next) {
+	uint32_t find;
+	bool setStart;
+	if (m_allocSearchStart < current) {
+		// Try to keep file contiguous. Start just after current cluster.
+		find = current;
+		setStart = false;
+	} else {
+		find = m_allocSearchStart;
+		setStart = true;
+	}
+	while (1) {
+		find++;
+		if (find > m_lastCluster) {
+			if (setStart) {
+				// Can't find space, checked all clusters.
+				DBG_FAIL_MACRO;
+				goto fail;
+			}
+			find = m_allocSearchStart;
+			setStart = true;
+			continue;
+		}
+		if (find == current) {
+			// Can't find space, already searched clusters after current.
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		uint32_t f;
+		int8_t fg = fatGet(find, &f);
+		if (fg < 0) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		if (fg && f == 0) {
+			break;
+		}
+	}
+	if (setStart) {
+		m_allocSearchStart = find;
+	}
+	// Mark end of chain.
+	if (!fatPutEOC(find)) {
+		DBG_FAIL_MACRO;
+		goto fail;
+	}
+	if (current) {
+		// Link clusters.
+		if (!fatPut(current, find)) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+	}
+	updateFreeClusterCount(-1);
+	*next = find;
+	return true;
 
 fail:
-  return false;
+	return false;
 }
 //------------------------------------------------------------------------------
 // find a contiguous group of clusters
 bool FatVolume::allocContiguous(uint32_t count, uint32_t* firstCluster) {
-  // flag to save place to start next search
-  bool setStart = true;
-  // start of group
-  uint32_t bgnCluster;
-  // end of group
-  uint32_t endCluster;
-  // Start at cluster after last allocated cluster.
-  uint32_t startCluster = m_allocSearchStart;
-  endCluster = bgnCluster = startCluster + 1;
+	// flag to save place to start next search
+	bool setStart = true;
+	// start of group
+	uint32_t bgnCluster;
+	// end of group
+	uint32_t endCluster;
+	// Start at cluster after last allocated cluster.
+	endCluster = bgnCluster = m_allocSearchStart + 1;
 
-  // search the FAT for free clusters
-  while (1) {
-    // If past end - start from beginning of FAT.
-    if (endCluster > m_lastCluster) {
-      bgnCluster = endCluster = 2;
-    }
-    uint32_t f;
-    int8_t fg = fatGet(endCluster, &f);
-    if (fg < 0) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    if (f || fg == 0) {
-      // cluster in use try next cluster as bgnCluster
-      bgnCluster = endCluster + 1;
+	// search the FAT for free clusters
+	while (1) {
+		if (endCluster > m_lastCluster) {
+			// Can't find space.
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		uint32_t f;
+		int8_t fg = fatGet(endCluster, &f);
+		if (fg < 0) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		if (f || fg == 0) {
+			// don't update search start if unallocated clusters before endCluster.
+			if (bgnCluster != endCluster) {
+				setStart = false;
+			}
+			// cluster in use try next cluster as bgnCluster
+			bgnCluster = endCluster + 1;
+		} else if ((endCluster - bgnCluster + 1) == count) {
+			// done - found space
+			break;
+		}
+		endCluster++;
+	}
+	// Remember possible next free cluster.
+	if (setStart) {
+		m_allocSearchStart = endCluster;
+	}
+	// mark end of chain
+	if (!fatPutEOC(endCluster)) {
+		DBG_FAIL_MACRO;
+		goto fail;
+	}
+	// link clusters
+	while (endCluster > bgnCluster) {
+		if (!fatPut(endCluster - 1, endCluster)) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		endCluster--;
+	}
+	// Maintain count of free clusters.
+	updateFreeClusterCount(-count);
 
-      // don't update search start if unallocated clusters before endCluster.
-      if (bgnCluster != endCluster) {
-        setStart = false;
-      }
-    } else if ((endCluster - bgnCluster + 1) == count) {
-      // done - found space
-      break;
-    }
-    // Can't find space if all clusters checked.
-    if (startCluster == endCluster) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    endCluster++;
-  }
-  // remember possible next free cluster
-  if (setStart) {
-    m_allocSearchStart = endCluster + 1;
-  }
-
-  // mark end of chain
-  if (!fatPutEOC(endCluster)) {
-    DBG_FAIL_MACRO;
-    goto fail;
-  }
-  // link clusters
-  while (endCluster > bgnCluster) {
-    if (!fatPut(endCluster - 1, endCluster)) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    endCluster--;
-  }
-  // Maintain count of free clusters.
-  updateFreeClusterCount(-count);
-
-  // return first cluster number to caller
-  *firstCluster = bgnCluster;
-  return true;
+	// return first cluster number to caller
+	*firstCluster = bgnCluster;
+	return true;
 
 fail:
-  return false;
+	return false;
 }
 //------------------------------------------------------------------------------
 uint32_t FatVolume::clusterFirstBlock(uint32_t cluster) const {
@@ -339,29 +346,29 @@ fail:
 //------------------------------------------------------------------------------
 // free a cluster chain
 bool FatVolume::freeChain(uint32_t cluster) {
-  uint32_t next;
-  int8_t fg;
-  do {
-    fg = fatGet(cluster, &next);
-    if (fg < 0) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    // free cluster
-    if (!fatPut(cluster, 0)) {
-      DBG_FAIL_MACRO;
-      goto fail;
-    }
-    // Add one to count of free clusters.
-    updateFreeClusterCount(1);
+	uint32_t next = 0;
+	int8_t fg;
+	do {
+		fg = fatGet(cluster, &next);
+		if (fg < 0) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		// free cluster
+		if (!fatPut(cluster, 0)) {
+			DBG_FAIL_MACRO;
+			goto fail;
+		}
+		// Add one to count of free clusters.
+		updateFreeClusterCount(1);
 
-    if (cluster < m_allocSearchStart) {
-      m_allocSearchStart = cluster;
-    }
-    cluster = next;
-  } while (fg);
+		if (cluster <= m_allocSearchStart) {
+			m_allocSearchStart = cluster - 1;
+		}
+		cluster = next;
+	} while (fg);
 
-  return true;
+	return true;
 
 fail:
   return false;

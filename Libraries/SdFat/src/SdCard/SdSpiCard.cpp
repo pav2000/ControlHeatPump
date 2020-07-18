@@ -139,10 +139,19 @@ bool SdSpiCard::begin(SdSpiDriver* spi, uint8_t csPin, SPISettings settings) {
   }
   spiSelect();
   // command to go idle in SPI mode
-  while (cardCommand(CMD0, 0) != R1_IDLE_STATE) {
-    if (isTimedOut(t0, SD_INIT_TIMEOUT)) {
+  for (uint8_t i = 1;; i++) {
+    if (cardCommand(CMD0, 0) == R1_IDLE_STATE) {
+      break;
+    }
+    if (i == SD_CMD0_RETRY) {
       error(SD_CARD_ERROR_CMD0);
       goto fail;
+    }
+    // stop multi-block write
+    spiSend(STOP_TRAN_TOKEN);
+    // finish block transfer
+    for (int i = 0; i < 520; i++) {
+      spiReceive();
     }
   }
 #if USE_SD_CRC
@@ -152,19 +161,15 @@ bool SdSpiCard::begin(SdSpiDriver* spi, uint8_t csPin, SPISettings settings) {
   }
 #endif  // USE_SD_CRC
   // check SD version
-  while (1) {
-    if (cardCommand(CMD8, 0x1AA) == (R1_ILLEGAL_COMMAND | R1_IDLE_STATE)) {
-      type(SD_CARD_TYPE_SD1);
-      break;
-    }
+  if (cardCommand(CMD8, 0x1AA) == (R1_ILLEGAL_COMMAND | R1_IDLE_STATE)) {
+    type(SD_CARD_TYPE_SD1);
+  } else {
     for (uint8_t i = 0; i < 4; i++) {
       m_status = spiReceive();
     }
     if (m_status == 0XAA) {
       type(SD_CARD_TYPE_SD2);
-      break;
-    }
-    if (isTimedOut(t0, SD_INIT_TIMEOUT)) {
+    } else {
       error(SD_CARD_ERROR_CMD8);
       goto fail;
     }
@@ -208,8 +213,10 @@ uint8_t SdSpiCard::cardCommand(uint8_t cmd, uint32_t arg) {
   if (!m_spiActive) {
     spiStart();
   }
-  // wait if busy
-  waitNotBusy(SD_WRITE_TIMEOUT);
+  // wait if busy unless CMD0
+  if (cmd != CMD0) {
+    waitNotBusy(SD_CMD_TIMEOUT);
+  }
 
  if(command_crc) { //#if USE_SD_CRC // vad7
   // form message
@@ -239,13 +246,11 @@ uint8_t SdSpiCard::cardCommand(uint8_t cmd, uint32_t arg) {
   spiSend(cmd == CMD0 ? 0X95 : 0X87);
  } //#endif  // USE_SD_CRC //vad7
 
-  // skip stuff byte for stop read
-  if (cmd == CMD12) {
-    spiReceive();
-  }
+  // discard first fill byte to avoid MISO pull-up problem.
+  spiReceive();
 
-  // wait for response
-  for (uint8_t i = 0; ((m_status = spiReceive()) & 0X80) && i != 0XFF; i++) {
+  // there are 1-8 fill bytes before response.  fill bytes should be 0XFF.
+  for (uint8_t i = 0; ((m_status = spiReceive()) & 0X80) && i < 10; i++) {
   }
   return m_status;
 }
@@ -564,7 +569,7 @@ bool SdSpiCard::writeBlock(uint32_t blockNumber, const uint8_t* src) {
 #if CHECK_FLASH_PROGRAMMING
   // wait for flash programming to complete
   if (!waitNotBusy(SD_WRITE_TIMEOUT)) {
-    error(SD_CARD_ERROR_WRITE_TIMEOUT);
+    error(SD_CARD_ERROR_FLASH_PROGRAMMING);
     goto fail;
   }
   // response is r2 so get and check two bytes for nonzero
