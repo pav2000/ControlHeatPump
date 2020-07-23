@@ -3608,7 +3608,8 @@ const char *noteTemp[] = {"Температура улицы",
 		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
 	#define PIN_DEVICE_BATH_HEATER     33 // X37.2(EEV23) -> Relay(-12V)(+12V=X38.1) -> подает DA9(5V) -> провод -> реле 5V -> пускатель нагревателя
-	#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
+	#define PIN_DEVICE_GEN             62 // X22.3 -> R680 -> FOD852.p1, X12.1(GND) -> FOD852.p2 (FOD852 = TLP627)
+//	#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
 //  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 //  #define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
 //    #define PIN_DEVICE_R3WAY         13 //[R_10(X2)3.3V] 3-ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
