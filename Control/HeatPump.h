@@ -388,6 +388,9 @@ class HeatPump
    uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
    uint8_t  get_BackupPower() {return GETBIT(Option.flags,fBackupPower);}// получить флаг использования генератора (ограничение мощности)
    boolean  set_BackupPower(boolean f) {if(f)SETBIT1(Option.flags,fBackupPower);else SETBIT0(Option.flags,fBackupPower);return GETBIT(Option.flags,fBackupPower);}// установить флаг использования генератора (ограничение мощности)
+#ifdef SGENERATOR
+   void     check_fBackupPower(void) { Option.flags = (Option.flags & ~(1<<fBackupPower)) | ((sInput[SGENERATOR].get_Input() == sInput[SGENERATOR].get_alarmInput())<<fBackupPower); };
+#endif
 
    uint8_t  get_nStart() {return Option.nStart;};                      // получить максимальное число попыток пуска ТН
    uint8_t  get_sleep() {return Option.sleep;}                         //

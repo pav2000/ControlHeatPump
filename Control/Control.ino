@@ -866,9 +866,7 @@ void vReadSensor(void *)
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 #ifdef SGENERATOR
-		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
-			HP.Option.flags = (HP.Option.flags & ~(1<<fBackupPower)) | ((HP.sInput[SGENERATOR].get_Input() == HP.sInput[SGENERATOR].get_alarmInput())<<fBackupPower);
-		}
+		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
 #endif
 #ifdef AUTO_START_GENERATOR
 		if(GETBIT(HP.Option.flags, fBackupPower) && HP.is_compressor_on()) HP.dRelay[RGEN].set_ON(); // Не даем генератору выключиться
