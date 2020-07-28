@@ -3376,7 +3376,13 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef HTTP_TIME_REQUEST
     const char HTTP_TIME_REQ[]	= "/curr_time.csv";
 	#endif
-	#define HTTP_LowConsumeRequest "192.168.0.8/&LowConsume_set="	// HTTP GET запрос информирование о режиме низкого потребления, формат server/request, в конец будет добавлен 0/1
+	#define HTTP_LowConsumeRequest	"192.168.0.8/&LowConsume_set="	// HTTP GET запрос информирование о режиме низкого потребления, формат server/request, в конец будет добавлен 0/1
+	#define HTTP_MAP_Address		"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
+	#define HTTP_MAP_Read			"/read_json.php?device="		// Запрос чтения массива данных МАП
+	#define HTTP_MAP_Device_MAP		"map"
+	#define HTTP_MAP_Device_MPPT	"mppt"
+	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
+	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
 
 	#define INDEX_FILE			"plan.html"       // стартовый файл по умолчанию для веба
 	//#define WEB_STATUS_SHOW_VERSION		// Показывать версию в строке статуса (запрос get_status)

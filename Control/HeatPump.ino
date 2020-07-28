@@ -3536,7 +3536,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 #endif
 #endif
 	for(i = 0; i < INUMBER; i++) ((journal).*(fn))(" %s:%d", sInput[i].get_name(), sInput[i].get_Input());
-	journal.jprintf(cStrEnd);
+	((journal).*(fn))(cStrEnd);
 	// Доп инфо
 	for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && !(SENSORTEMP[i] & 4)) ((journal).*(fn))(" %s:%.2d", sTemp[i].get_name(), sTemp[i].get_Temp());
 	for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) ((journal).*(fn))(" %s:%.2d", sADC[i].get_name(), sADC[i].get_Press());
