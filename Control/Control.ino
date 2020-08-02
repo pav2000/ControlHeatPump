@@ -658,7 +658,7 @@ extern "C" void vApplicationIdleHook(void)  // FreeRTOS expects C linkage
 void vWeb0(void *)
 { //const char *pcTaskName = "Web server is running\r\n";
 	static unsigned long timeResetW5200 = 0;
-	static unsigned long thisTime;
+	static unsigned long thisTime, FreqTime;
 	static unsigned long resW5200 = 0;
 	static unsigned long iniW5200 = 0;
 	static unsigned long pingt = 0;
@@ -667,27 +667,210 @@ void vWeb0(void *)
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
 #endif
-	static boolean active = false;  // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку, если действие проделано то active = false и новый цикл
 	static boolean network_last_link = true;
+#ifdef WATTROUTER
+	memset(WR_LoadRun, 0, sizeof(WR_LoadRun));
+	memset(WR_SwitchTime, 0, sizeof(WR_SwitchTime));
+	journal.jprintf("WattRouter running\n");
+#endif
 
-	HP.timeNTP = thisTime = xTaskGetTickCount();        // В первый момент не обновляем
+	HP.timeNTP = thisTime = FreqTime = xTaskGetTickCount();        // В первый момент не обновляем
 	for(;;)
 	{
-		WEB_STORE_DEBUG_INFO(1);
-		web_server(MAIN_WEB_TASK);
-		WEB_STORE_DEBUG_INFO(2);
-		active = true;                                                         // Можно работать в этом цикле (дополнительная нагрузка на поток)
-		vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
+		#define WEB_SERVER_MAIN_TASK() {\
+			/*WEB_STORE_DEBUG_INFO(1);*/\
+			web_server(MAIN_WEB_TASK);\
+			/*WEB_STORE_DEBUG_INFO(2);*/\
+			vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS);\
+		}
+		WEB_SERVER_MAIN_TASK();
 
 		// СЕРВИС: Этот поток работает на любых настройках, по этому сюда ставим работу с сетью
-		HP.message.sendMessage();                                            // Отработать отсылку сообщений (внутри скрыта задержка после включения)
-		active = HP.message.dnsUpdate();                                     // Обновить адреса через dns если надо, dnsUpdate() возвращает true если обновления не было
-#ifdef MQTT
-		if(active) active=HP.clMQTT.dnsUpdate();                             // Обновить адреса через dns если надо для MQTT если обновления не было то возвращает true
+		boolean active = true;   // ФЛАГ Одно дополнительное действие за один цикл - распределяем нагрузку, если действие проделано то active = false и новый цикл
+		if(xTaskGetTickCount() - FreqTime > WEB0_FREQUENT_JOB_PERIOD) {
+			FreqTime = xTaskGetTickCount();
+			active = HP.message.sendMessage();   // Отработать отсылку сообщений (внутри скрыта задержка после включения)
+#ifdef HTTP_LowConsumeRequest
+			if(active) {
+				if(GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume || (RepeatLowConsumeRequest && --RepeatLowConsumeRequest == 0)) {
+					strcpy(Socket[MAIN_WEB_TASK].outBuf, HTTP_LowConsumeRequest);
+					_itoa(GETBIT(HP.Option.flags, fBackupPower), Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_LowConsumeRequest)-1);
+					int err = Send_HTTP_Request(HTTP_LowConsumeServer, Socket[MAIN_WEB_TASK].outBuf, false);
+					if(err != -2000000000) {
+						if(err > -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
+						else RepeatLowConsumeRequest = (uint16_t)(HTTP_REQUEST_ERR_REPEAT * 1000 / WEB0_OTHER_JOB_PERIOD + 1);
+					}
+					active = false;
+				}
+			}
 #endif
+#ifdef WATTROUTER
+			if(!active) {
+				WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+				active = true;
+			}
+			if((((HP.Option.WR_Loads & WR_fLoadMask) && GETBIT(HP.Option.flags2, f2WR_Active)) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
+				while(1) {
+					boolean nopwr = GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power; // Выключить все
+					if(nopwr || WR_Refresh) {
+						for(uint8_t i = 0; i < WR_NumLoads; i++) {
+							if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
+								WR_Change_Load_PWM(i, nopwr || !GETBIT(HP.Option.WR_Loads, i) ? -32768 : 0);
+							} else {
+								WR_Switch_Load(i, nopwr || !GETBIT(HP.Option.WR_Loads, i) ? 0 : WR_LoadRun[i] ? true : false);
+								if(WR_Load_pins[i] < 0) {
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+								}
+							}
+						}
+						WR_Refresh = false;
+						active = false;
+						break;
+					}
+#ifdef WR_Load_pins_Boiler_INDEX
+					if((HP.Option.WR_Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
+						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
+						if(curr) {
+							active = false;
+							if(GETBIT(HP.Option.WR_Loads_PWM, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
+							else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
+							if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf_time("WR: Boiler OK\n");
+							// Компенсируем
+							for(uint8_t i = 0; i < WR_NumLoads; i++) {
+								if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == HP.Option.WR_LoadPower[i]) continue;
+								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
+									int16_t chg = HP.Option.WR_LoadPower[i] - WR_LoadRun[i];
+									if(chg > curr) chg = curr;
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									WR_Change_Load_PWM(i, chg);
+									if(curr == chg) break;
+									curr -= chg;
+								} else {
+									if(HP.Option.WR_LoadPower[i] - HP.Option.WR_LoadHist > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= HP.Option.WR_TurnOnPause))
+										continue;
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									WR_Switch_Load(i, 1);
+									curr -= HP.Option.WR_LoadPower[i];
+								}
+							}
+							break;
+						}
+					}
+#endif
+					// HTTP power meter
+					active = false;
+					int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MAP, 1);
+					if(err) {
+						if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: HTTP request Error %d\n", err);
+						break;
+					}
+					// todo: check "_MODE" >= 3
+					char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_PNET_calc);
+					if(!fld) {
+						if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: HTTP json wrong!\n");
+						break;
+					}
+					char *fld2 = strchr(fld += sizeof(HTTP_MAP_JSON_PNET_calc) + 1, '"');
+					if(!fld2) break;
+					*(fld2 - 2) = '\0' ; // integer part "0.0"
+					int16_t pnet = atoi(fld);
+					//
+					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
+						WR_Pnet = -32768;
+						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) journal.jprintf("WR: Skip %d\n", pnet);
+					} else {
+						if(WR_Pnet_avg_init) { // first time
+							for(uint8_t i = 0; i < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]); i++) WR_Pnet_avg[i] = pnet;
+							WR_Pnet_avg_sum = pnet * (sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+							WR_Pnet_avg_init = false;
+						} else {
+							WR_Pnet_avg_sum = WR_Pnet_avg_sum - WR_Pnet_avg[WR_Pnet_avg_idx] + pnet;
+							WR_Pnet_avg[WR_Pnet_avg_idx] = pnet;
+							if(WR_Pnet_avg_idx < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]) - 1) WR_Pnet_avg_idx++; else WR_Pnet_avg_idx = 0;
+						}
+						WR_Pnet = WR_Pnet_avg_sum / (sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) {
+							journal.jprintf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
+						}
+						// проверка перегрузки
+						pnet = WR_Pnet - HP.Option.WR_MinNetLoad;
+						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
+							uint32_t t = rtcSAM3X8.unixtime();
+							uint8_t reserv = 255;
+							for(uint8_t i = 0; i < WR_NumLoads; i++) {
+								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == 0) continue;
+								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
+									int16_t chg = WR_LoadRun[i];
+									if(chg > pnet) chg = pnet;
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
+									if(pnet == chg) break;
+									pnet -= chg;
+								} else {
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR_TURN_OFF_PAUSE) continue;
+									if(pnet - HP.Option.WR_LoadHist >= WR_LoadRun[i]) {
+										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+										WR_Switch_Load(i, 0);
+										break;
+									} else if(reserv == 255) reserv = i;
+								}
+							}
+							if(reserv != 255 && pnet > HP.Option.WR_LoadHist) { // еще не все
+								WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+								WR_Switch_Load(reserv, 0);
+							}
+						} else { // Увеличиваем нагрузку
+							for(uint8_t i = 0; i < WR_NumLoads; i++) {
+								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == HP.Option.WR_LoadPower[i]) continue;
+#ifdef WR_Load_pins_Boiler_INDEX
+								if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
+#endif
+								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
+									int16_t chg = HP.Option.WR_LoadPower[i] - WR_LoadRun[i];
+									if(chg > HP.Option.WR_LoadAdd) chg = HP.Option.WR_LoadAdd;
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
+									break;
+								} else {
+									uint32_t t = rtcSAM3X8.unixtime();
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= HP.Option.WR_TurnOnPause) continue;
+									if(WR_LastOnTime && t - WR_LastOnTime <= WR_NEXT_TURN_ON_PAUSE) continue;
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									WR_Switch_Load(i, 1);
+									break;
+								}
+							}
+						}
+					}
+					break;
+				}
+//				} else { // Нагрузка включена
+//					while(1) {
+//						// HTTP MPPT
+//						int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MPPT, 1);
+//						if(err) break;
+//						char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Sign);
+//						if(!fld) break;
+//						if(*(fld + sizeof(HTTP_MAP_JSON_PNET_calc) + 1) != '-') break; // Нет свободной энергии
+//						if(GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power) break; // Нет электричества
+//						WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+//						goto xWR_AddPower;
+//					}
+//				}
+			}
+#endif
+		}
 		if(xTaskGetTickCount() - thisTime > WEB0_OTHER_JOB_PERIOD)
 		{
+			if(!active) {
+				WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+				active = true;
+			}
 			thisTime = xTaskGetTickCount();                                      // Запомнить тики
+			if(active) active = HP.message.dnsUpdate();                                     // Обновить адреса через dns если надо, dnsUpdate() возвращает true если обновления не было
+#ifdef MQTT
+			if(active) active=HP.clMQTT.dnsUpdate();                             // Обновить адреса через dns если надо для MQTT если обновления не было то возвращает true
+#endif
 			// 1. Проверка захваченого семафора сети ожидаем  3 времен W5200_TIME_WAIT если мютекса не получаем то сбрасывае мютекс
 			if(SemaphoreTake(xWebThreadSemaphore, ((3 + (fWebUploadingFilesTo != 0) * 30) * W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 				SemaphoreGive(xWebThreadSemaphore);
@@ -755,21 +938,6 @@ void vWeb0(void *)
 				pingServer();
 				active = false;
 			}
-
-#ifdef HTTP_LowConsumeRequest
-			if(active) {
-				if(GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume || (RepeatLowConsumeRequest && --RepeatLowConsumeRequest == 0)) {
-					strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
-					_itoa(GETBIT(HP.Option.flags, fBackupPower), Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
-					int err = Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
-					if(err != -2000000000) {
-						if(err > -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
-						else RepeatLowConsumeRequest = (uint16_t)(HTTP_REQUEST_ERR_REPEAT * 1000 / WEB0_OTHER_JOB_PERIOD + 1);
-					}
-					active = false;
-				}
-			}
-#endif
 
 #ifdef MQTT                                     // признак использования MQTT
 			// 7. Отправка нанародный мониторинг

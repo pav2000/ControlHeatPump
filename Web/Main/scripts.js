@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.088";
+var VER_WEB = "1.089";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -551,6 +551,21 @@ function loadParam(paramid, noretry, resultdiv) {
 													+ '</td><td nowrap><input id="get_prof-dss' + j + '" type="text" size="6" value="' + tflds[2] + '"> <input type="submit" value=">" onclick="setDS(\'S\',' + j + ')"></td><td nowrap><input id="get_prof-dse' + j + '" type="text" size="6" value="' + tflds[3] + '"> <input type="submit" value=">" onclick="setDS(\'E\',' + j + ')"></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
+										} else if(values[0] == 'get_tblWR') {
+											var content = "", upsens = "", loadsens = "";
+											var count = Number(values[1]);
+											for(var j = 0; j < count; j++) {
+												loadsens = loadsens + "get_oHP(WL" + j + "),get_oHP(WP" + j + "),get_oHP(WR" + j + "),get_WRN(" + j + "),";
+												upsens += "get_WRL(" + j + "),get_WRT(" + j + "),";
+												content += '<tr><td>' + (j+1) + '</td><td><input type="checkbox" id="get_ohp-wl' + j + '" onchange="setParam(\'get_oHP(WL' + j + ')\')"></td>';
+												content += '<td><input type="checkbox" id="get_ohp-wp' + j + '" onchange="setParam(\'get_oHP(WP' + j + ')\')" disabled></td>';
+												content += '<td nowrap><input id="get_ohp-wr' + j + '" type="number"><input type="submit" value=">" onclick="setParam(\'get_oHP(WR' + j + ')\')"></td>';
+												content += '<td nowrap><input id="get_wrl-' + j + '" type="number"><input type="submit" value=">" onclick="setParam(\'get_WRL(' + j + ')\')"></td>';
+                                                content += '<td id="get_wrt-' + j + '"></td><td id="get_wrn-' + j + '"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											loadParam(loadsens);
+											updateParam(upsens);
 										} else {
 											var content = values[1].replace(/</g, "&lt;").replace(/\|$/g, "").replace(/\|/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");
 											var element = document.getElementById(valueid);

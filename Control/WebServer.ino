@@ -1522,6 +1522,10 @@ void parserGET(uint8_t thread, int8_t )
 					m_snprintf(strReturn + m_strlen(strReturn), 64, "%s;%d;", HP.dRelay[correct_power220[i].num].get_name(), correct_power220[i].value);
 				}
 #endif
+#ifdef WATTROUTER
+			} else if(strcmp(str, "WR") == 0) {   // Функция get_tblWR
+				_itoa(WR_NumLoads, strReturn);
+#endif
 			} else goto x_FunctionNotFound;
 			ADD_WEBDELIM(strReturn);
 			continue;
@@ -2300,6 +2304,46 @@ x_get_aTemp:
 
 					}  // end else
 				} //if ((strstr(str,"Temp")>0)
+
+#ifdef WATTROUTER
+				// Ваттроутер
+				if(strncmp(str + 4, "WR", 2) == 0) { // get_WR...
+					i = *str == 's'; // set_WR
+					str += 6;
+					p = abs(atoi(x));
+					if(p < WR_NumLoads) {
+						if(*str == 'L') { // get_WRL(n)
+							if(i) {
+								int16_t val = pm;
+								if(GETBIT(HP.Option.WR_Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
+								else {
+									if(WR_Load_pins[i] < 0) { // HTTP
+										if(val < 0) val = 0; else if(val > HP.Option.WR_LoadPower[p]) val = HP.Option.WR_LoadPower[p];
+										WR_LoadRun[p] = val;
+										WR_Refresh = true;
+									} else WR_Switch_Load(p, val > 0);
+								}
+							}
+							_itoa(WR_LoadRun[p], strReturn);
+						} else if(*str == 'T') { // get_WRT(n)
+							l_i32 = WR_SwitchTime[p];
+							if(l_i32 == 0) strcat(strReturn, "-"); else DecodeTimeDate(l_i32, strReturn);
+						} else if(*str == 'N') { // get_WRN(n)
+							if(WR_Load_pins[p] < 0) strcat(strReturn, "HTTP-"); else strcat(strReturn, "D");
+							_itoa(abs(WR_Load_pins[p]), strReturn);
+#ifdef WR_Load_pins_Boiler_INDEX
+							if(p == WR_Load_pins_Boiler_INDEX) strcat(strReturn, "(B)");
+#endif
+						} else { // get_WR(n)
+							if(p == 0) {
+								if(WR_Pnet == -32768) strcat(strReturn, "-"); else _itoa(WR_Pnet, strReturn);
+							}
+						}
+					} else strcat(strReturn,"E08"); // выход за диапазон, значение не установлено
+					ADD_WEBDELIM(strReturn);
+					continue;
+				}
+#endif
 
 				// РЕЛЕ
 				if(strstr(str,"Relay"))          // Проверка для запросов содержащих Relay

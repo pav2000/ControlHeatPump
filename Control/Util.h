@@ -35,5 +35,7 @@ uint8_t _ftoa(char *outstr, float val, unsigned char precision);
 void _dtoa(char *outstr, int val, int precision);
 char* NowTimeToStr(char *buf = NULL);
 char* NowDateToStr(char *buf = NULL);
-
+void WR_Switch_Load(uint8_t idx, boolean On);
+void WR_Change_Load_PWM(uint8_t idx, int16_t delta);
+inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
 #endif

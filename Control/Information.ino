@@ -668,6 +668,7 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0)&&(x<=60))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
+	if(strcmp(var,boil_WR_TempTarget)==0)   { Boiler.WR_TempTarget = rd(x, 100); return true;} else
 	if(strcmp(var,boil_DischargeDelta)==0)	{ Boiler.DischargeDelta = rd(x, 10); return true;} else
 	if(strcmp(var,boil_fWorkOnGenerator)==0){ if(x) SETBIT1(Boiler.flags, fWorkOnGenerator); else SETBIT0(Boiler.flags, fWorkOnGenerator); return true; } else
 	return false;
@@ -710,6 +711,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,hp_SUN)==0) { if(GETBIT(Boiler.flags,fBoilerUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _dtoa(ret,Boiler.tempRBOILER/10,1); return ret;    }else                            // температура включения догрева бойлера
  if(strcmp(var,boil_dAddHeat)==0){        _dtoa(ret,Boiler.dAddHeat/10,1); return ret;       }else
+ if(strcmp(var,boil_WR_TempTarget)==0){   _dtoa(ret,Boiler.WR_TempTarget/10,1); return ret;       }else
  if(strcmp(var,boil_DischargeDelta)==0){  _dtoa(ret, Boiler.DischargeDelta, 1); return ret;       }else
  if(strcmp(var,boil_HeatUrgently)==0){if(HP.HeatBoilerUrgently) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_fWorkOnGenerator)==0){ if(GETBIT(Boiler.flags, fWorkOnGenerator)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
@@ -772,7 +774,7 @@ int8_t  Profile::convert_to_new_version(void)
 	  char checkSizeOfInt5[sizeof(DailySwitch)]={checker(&checkSizeOfInt5)};
 	//*/
 	uint16_t CNVPROF_SIZE_dataProfile, CNVPROF_SIZE_SaveON, CNVPROF_SIZE_HeatCool, CNVPROF_SIZE_Boiler, CNVPROF_SIZE_DailySwitch, CNVPROF_SIZE_ALL;
-	if(HP.Option.ver <= 144) {
+	if(HP.Option.ver <= 146) {
 		if(HP.Option.ver <= 135) {
 			CNVPROF_SIZE_dataProfile	=	120;
 			CNVPROF_SIZE_SaveON			= 	12;
@@ -786,13 +788,20 @@ int8_t  Profile::convert_to_new_version(void)
 			CNVPROF_SIZE_Boiler			=	64;
 			CNVPROF_SIZE_DailySwitch	=	30;
 			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
-		} else if(HP.Option.ver <= 144) {
+		} else if(HP.Option.ver <= 146) {
 			CNVPROF_SIZE_dataProfile	=	120;
 			CNVPROF_SIZE_SaveON			= 	12;
 			CNVPROF_SIZE_HeatCool		=	38;
 			CNVPROF_SIZE_Boiler			=	64;
 			CNVPROF_SIZE_DailySwitch	=	30;
 			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
+//		} else if(HP.Option.ver <= 147) {
+//			CNVPROF_SIZE_dataProfile	=	120;
+//			CNVPROF_SIZE_SaveON			= 	12;
+//			CNVPROF_SIZE_HeatCool		=	38;
+//			CNVPROF_SIZE_Boiler			=	68;
+//			CNVPROF_SIZE_DailySwitch	=	30;
+//			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
 		}
 		journal.jprintf("Converting Profiles to new version...\n");
 		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
