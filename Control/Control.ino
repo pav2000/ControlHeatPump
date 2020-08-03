@@ -841,7 +841,7 @@ void vWeb0(void *)
 						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
 							uint32_t t = rtcSAM3X8.unixtime();
 							uint8_t reserv = 255;
-							for(int8_t i = WR_NumLoads-1; i >= 0; i++) {
+							for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
 								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == 0) continue;
 								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
 									int16_t chg = WR_LoadRun[i];
