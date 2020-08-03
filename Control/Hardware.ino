@@ -133,12 +133,12 @@ void ADC_Handler(void)
 #endif
     
 // ------------------------------------------------------------------------------------------
-// Аналоговые датчики давления --------------------------------------------------------------
-// Давление хранится в СОТЫХ БАР
+// Аналоговые датчики -----------------------------------------------------------------------
+// Значение хранится в СОТЫХ (БАР)
 void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size)
 {
 	// Инициализация структуры для хранения "сырых"данных с аналогового датчика.
-	if(SENSORPRESS[sensor]) adc_filter_max = filter_size;   // отводим память если используем датчик под сырые данные
+	if(ANALOG_SENSORS[sensor]) adc_filter_max = filter_size;   // отводим память если используем датчик под сырые данные
 	else adc_filter_max = 1;
 	adc_filter = (uint16_t*) malloc(sizeof(uint16_t) * adc_filter_max);
 	if(adc_filter == NULL) {   // ОШИБКА если память не выделена
@@ -154,22 +154,22 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 	clearBuffer();
 
 	testMode = NORMAL;                           // Значение режима тестирования
-	cfg.minPress = MINPRESS[sensor];                 // минимально разрешенное давление
-	cfg.maxPress = MAXPRESS[sensor];                 // максимально разрешенное давление
-	cfg.testPress = TESTPRESS[sensor];               // Значение при тестировании
-	cfg.zeroPress = ZEROPRESS[sensor];               // отсчеты АЦП при нуле датчика
-	cfg.transADC = TRANsADC[sensor];                 // коэффициент пересчета АЦП в давление
+	cfg.minValue = ANALOG_MIN[sensor];                 // минимально разрешенное значение
+	cfg.maxValue = ANALOG_MAX[sensor];                 // максимально разрешенное значение
+	cfg.testValue = ANALOG_TEST[sensor];               // Значение при тестировании
+	cfg.zeroValue = ANALOG_ZERO[sensor];               // отсчеты АЦП при нуле датчика
+	cfg.transADC = TRANsADC[sensor];                 // коэффициент пересчета АЦП в значение
 	cfg.number = sensor;
 	pin = pinA;
-	flags = SENSORPRESS[sensor] << fPresent;	 // наличие датчика
+	flags = ANALOG_SENSORS[sensor] << fPresent;	 // наличие датчика
 #ifdef ANALOG_MODBUS
 	flags |= (ANALOG_MODBUS_ADDR[sensor] != 0)<<fsensModbus;  // Дистанционный датчик по модбас
 #endif
 	err = OK;                                     // ошибка датчика (работа)
-	Press = 0;                                    // давление датчика (обработанная)
+	Value = 0;                                    // давление датчика (обработанная)
 	Temp = ERROR_TEMPERATURE;
-	note = (char*) notePress[sensor];              // присвоить наименование датчика
-	name = (char*) namePress[sensor];              // присвоить имя датчика
+	note = (char*) noteAnalog[sensor];              // присвоить наименование датчика
+	name = (char*) nameAnalog[sensor];              // присвоить имя датчика
 }
     
  // очистить буфер АЦП
@@ -189,7 +189,7 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 	 if(!(GETBIT(flags, fPresent))) return err;        // датчик запрещен в конфигурации ничего не делаем
 	 int16_t lastPress;
 	 if(testMode != NORMAL) {
-		 lastPress = cfg.testPress;                // В режиме теста
+		 lastPress = cfg.testValue;                // В режиме теста
 	 } else {                                      // Чтение датчика
 #ifdef DEMO
 		 lastADC=random(1350,2500);                // В демо режиме генерим значение
@@ -216,7 +216,7 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 			 //if(adc.error!=OK)  {err=ERR_READ_PRESS;set_Error(err,name);return err;}   // Проверка на ошибку чтения ацп
 		 }
 #endif
-		 lastPress = (int32_t) lastADC * cfg.transADC / 1000 - cfg.zeroPress;
+		 lastPress = (int32_t) lastADC * cfg.transADC / 1000 - cfg.zeroValue;
 	 }
 #if P_NUMSAMLES > 1
 	 // Усреднение значений
@@ -226,18 +226,18 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
 	 if (last<P_NUMSAMLES-1) last++; else {last=0; SETBIT1(flags,fFull);}
 	 if (GETBIT(flags,fFull)) lastPress=sum/P_NUMSAMLES; else lastPress=sum/last;
 #endif
-	 if(Press != lastPress) {
-		 Press = lastPress;
+	 if(Value != lastPress) {
+		 Value = lastPress;
 		 Temp = ERROR_TEMPERATURE;
 	 }
 	 // Проверка на ошибки именно здесь обрабатывются ошибки и передаются на верх
-	 if(Press < cfg.minPress) {
-		 err = ERR_MINPRESS;
+	 if(Value < cfg.minValue) {
+		 err = ERR_ANALOG_MIN;
 		 set_Error(err, name);
 		 return err;
 	 }
-	 if(Press > cfg.maxPress) {
-		 err = ERR_MAXPRESS;
+	 if(Value > cfg.maxValue) {
+		 err = ERR_ANALOG_MAX;
 		 set_Error(err, name);
 		 return err;
 	 }
@@ -247,21 +247,21 @@ void sensorADC::initSensorADC(uint8_t sensor, uint8_t pinA, uint16_t filter_size
  }
 
 // Установка 0 датчика темпеартуры
-int8_t sensorADC::set_zeroPress(int16_t p)
+int8_t sensorADC::set_zeroValue(int16_t p)
 {
 //	if((p >= -1024) && (p <= 4096)) {
 		clearBuffer();
-		cfg.zeroPress = p;
+		cfg.zeroValue = p;
 		return OK;
 //	} // Суммы обнулить надо
 //	else return WARNING_VALUE;
 }
 
 //Получить значение давления датчика в сотых бара
-int16_t sensorADC::get_Press()
+int16_t sensorADC::get_Value()
 {
 	if (!(GETBIT(flags,fPresent))) return -100;                  // датчик запрещен в конфигурации то давление -100
-	return Press;    
+	return Value;    
 }
 
 // Установить значение коэффициента преобразования напряжение (отсчеты ацп)-температура
@@ -275,9 +275,9 @@ int8_t sensorADC::set_transADC(float p)
 }
 
 // Установить значение давления датчика в режиме теста
-int8_t sensorADC::set_testPress(int16_t p)            
+int8_t sensorADC::set_testValue(int16_t p)            
 {
-	cfg.testPress=p;
+	cfg.testValue=p;
 	return OK;
 }
 

@@ -193,7 +193,7 @@ void vUpdateCommand(void *) __attribute__((naked));
 void vServiceHP(void *) __attribute__((naked));
 
 void setup() {
-	// 1. Инициализация SPI
+	// 1. Инициализация
 	// Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
 	// https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
 	// http://forum.arduino.cc/index.php?topic=243778.0;nowap
@@ -222,7 +222,44 @@ void setup() {
 	Recover_I2C_bus();
 	delay(1);
 
-	// 2. Инициализация журнала и в нем последовательный порт
+	// Настройка сервисных выводов
+	pinMode(PIN_KEY1, INPUT_PULLUP);        // Кнопка 1
+	pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
+	pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+	digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
+	digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+
+	// 2. Инициализация журнала
+	uint8_t b;
+	uint8_t ret = eepromI2C.read(I2C_COUNT_EEPROM, &b, 1);
+	if(ret == 0 && b != I2C_COUNT_EEPROM_HEADER && b != 0xFF) ret = 0xFF;
+#ifndef DEBUG
+	if(ret)
+#endif
+#ifndef DEBUG_NATIVE_USB
+	SerialDbg.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#endif
+	while(ret) {
+		SerialDbg.print("Wrong I2C EEPROM or setup, press KEY[D");
+		SerialDbg.print(PIN_KEY1);
+		SerialDbg.println("] to continue...");
+		if(!digitalReadDirect(PIN_KEY1)) {
+			WDT_Restart(WDT);
+			b = I2C_COUNT_EEPROM_HEADER;
+			ret = eepromI2C.write(I2C_COUNT_EEPROM, &b, 1);
+			if(ret) {
+				SerialDbg.print("Error ");
+				SerialDbg.print(ret);
+				SerialDbg.println(" write to EEPROM!");
+			} else SerialDbg.println("Wait...");
+			while(1) ;
+		}
+		for(uint8_t i = 0; i < 1000 / TIME_LED_ERR; i++) {
+			digitalWriteDirect(PIN_BEEP, i & 1);
+			digitalWriteDirect(PIN_LED_OK, i & 1);
+			delay(TIME_LED_ERR);
+		}
+	}
 	journal.Init();
 #ifdef POWER_CONTROL
 	delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
@@ -389,17 +426,11 @@ x_I2C_init_std_message:
 	journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
 	HP.initHeatPump();                           // Основной класс
 
-	// 5. Установка сервисных пинов
-
+	// 5. Проверка сброса сети
+	// Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
 	journal.jprintf("3. Read safe Network key . . .\n");
-	pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
-	HP.safeNetwork=!digitalReadDirect(PIN_KEY1);
-	if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n");
-
-	pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
-	pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
-	digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
-	digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+	HP.safeNetwork = !digitalReadDirect(PIN_KEY1);
+	journal.jprintf("Mode safeNetwork %s\n", HP.safeNetwork ? "ON" : "OFF");
 
 	// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
 	journal.jprintf("4. Load data from I2C memory . . .\n");
@@ -671,6 +702,9 @@ void vWeb0(void *)
 #ifdef WATTROUTER
 	memset(WR_LoadRun, 0, sizeof(WR_LoadRun));
 	memset(WR_SwitchTime, 0, sizeof(WR_SwitchTime));
+	for(uint8_t i = 0; i < WR_NumLoads; i++) {
+		if(WR_Load_pins[i] > 0) pinMode(WR_Load_pins[i], OUTPUT);
+	}
 	journal.jprintf("WattRouter running\n");
 #endif
 
@@ -757,6 +791,8 @@ void vWeb0(void *)
 						}
 					}
 #endif
+
+#ifndef WR_CurrentSensor_4_20mA
 					// HTTP power meter
 					active = false;
 					int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MAP, 1);
@@ -774,21 +810,29 @@ void vWeb0(void *)
 					if(!fld2) break;
 					*(fld2 - 2) = '\0' ; // integer part "0.0"
 					int16_t pnet = atoi(fld);
+#else
+					HP.sADC[IWR].Read();
+					int16_t pnet = HP.sADC[IWR].get_Value();
+#endif
 					//
 					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
 						WR_Pnet = -32768;
 						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) journal.jprintf("WR: Skip %d\n", pnet);
 					} else {
+#ifdef WR_PNET_AVERAGE
 						if(WR_Pnet_avg_init) { // first time
 							for(uint8_t i = 0; i < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]); i++) WR_Pnet_avg[i] = pnet;
-							WR_Pnet_avg_sum = pnet * (sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+							WR_Pnet_avg_sum = pnet * int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
 							WR_Pnet_avg_init = false;
 						} else {
 							WR_Pnet_avg_sum = WR_Pnet_avg_sum - WR_Pnet_avg[WR_Pnet_avg_idx] + pnet;
 							WR_Pnet_avg[WR_Pnet_avg_idx] = pnet;
 							if(WR_Pnet_avg_idx < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]) - 1) WR_Pnet_avg_idx++; else WR_Pnet_avg_idx = 0;
 						}
-						WR_Pnet = WR_Pnet_avg_sum / (sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+						WR_Pnet = WR_Pnet_avg_sum / int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+#else
+						WR_Pnet = pnet;
+#endif
 						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) {
 							journal.jprintf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 						}
@@ -797,30 +841,36 @@ void vWeb0(void *)
 						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
 							uint32_t t = rtcSAM3X8.unixtime();
 							uint8_t reserv = 255;
-							for(uint8_t i = 0; i < WR_NumLoads; i++) {
+							for(int8_t i = WR_NumLoads-1; i >= 0; i++) {
 								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == 0) continue;
 								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
 									int16_t chg = WR_LoadRun[i];
 									if(chg > pnet) chg = pnet;
-									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
 									if(pnet == chg) break;
 									pnet -= chg;
 								} else {
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR_TURN_OFF_PAUSE) continue;
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= HP.Option.WR_TurnOnMinTime) continue;
 									if(pnet - HP.Option.WR_LoadHist >= WR_LoadRun[i]) {
-										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#ifndef WR_CurrentSensor_4_20mA
+										if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#endif
 										WR_Switch_Load(i, 0);
+#ifndef WR_CurrentSensor_4_20mA
+										if(WR_Load_pins[i] < 0) active = false;
+#endif
 										break;
 									} else if(reserv == 255) reserv = i;
 								}
 							}
 							if(reserv != 255 && pnet > HP.Option.WR_LoadHist) { // еще не все
-								WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#ifndef WR_CurrentSensor_4_20mA
+								if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#endif
 								WR_Switch_Load(reserv, 0);
 							}
 						} else { // Увеличиваем нагрузку
-							for(uint8_t i = 0; i < WR_NumLoads; i++) {
+							for(int8_t i = 0; i < WR_NumLoads; i++) {
 								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == HP.Option.WR_LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
 								if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
@@ -828,15 +878,19 @@ void vWeb0(void *)
 								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
 									int16_t chg = HP.Option.WR_LoadPower[i] - WR_LoadRun[i];
 									if(chg > HP.Option.WR_LoadAdd) chg = HP.Option.WR_LoadAdd;
-									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 									break;
 								} else {
 									uint32_t t = rtcSAM3X8.unixtime();
 									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= HP.Option.WR_TurnOnPause) continue;
 									if(WR_LastOnTime && t - WR_LastOnTime <= WR_NEXT_TURN_ON_PAUSE) continue;
-									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#ifndef WR_CurrentSensor_4_20mA
+									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+#endif
 									WR_Switch_Load(i, 1);
+#ifndef WR_CurrentSensor_4_20mA
+									if(WR_Load_pins[i] < 0) active = false;
+#endif
 									break;
 								}
 							}
@@ -1031,7 +1085,11 @@ void vReadSensor(void *)
 #endif
 #endif     // не DEMO
 		}
+#ifndef IWR
 		for(i = 0; i < ANUMBER; i++) HP.sADC[i].Read();                  // Прочитать данные с датчиков давления
+#else
+		for(i = 0; i < ANUMBER - 1; i++) HP.sADC[i].Read();              // Прочитать данные с датчиков давления, кроме последнего
+#endif
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 #ifdef SGENERATOR
 		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();

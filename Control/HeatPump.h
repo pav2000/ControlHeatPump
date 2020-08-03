@@ -55,7 +55,11 @@ struct type_status
 // Структура для хранения различных счетчиков (максимальный размер 128-1 байт!!!!!)
 #define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
 
+#ifndef TEST_BOARD
 #define I2C_COUNT_EEPROM_HEADER 0xAA
+#else
+#define I2C_COUNT_EEPROM_HEADER 0xAB
+#endif
 struct type_motoHour_old
 {
   byte Header;      // признак данных
@@ -102,10 +106,12 @@ uint8_t Request_LowConsume = 0xFF;
 #ifdef WATTROUTER
 #define  WR_fLoadMask			((1<<WR_NumLoads)-1)	// b0..bWR_NumLoads
 int16_t  WR_Pnet = -32768;
+#ifdef WR_PNET_AVERAGE
 int16_t  WR_Pnet_avg[WR_PNET_AVERAGE];
 uint8_t  WR_Pnet_avg_idx = 0;
 int32_t  WR_Pnet_avg_sum = 0;
 boolean  WR_Pnet_avg_init = true;
+#endif
 boolean  WR_Refresh = false;
 int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
@@ -185,6 +191,7 @@ struct type_optionHP
  int16_t  WR_LoadHist;					// Гистерезис нагрузки, Вт
  int16_t  WR_LoadAdd;					// Увеличение нагрузки PWM за один шаг, Вт
  uint16_t WR_TurnOnPause;				// Задержка включения реле после его выключения, секунды
+ uint16_t WR_TurnOnMinTime;				// Минимальное время включения реле, секунды
  int16_t  WR_LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
 #endif
 };// __attribute__((packed));

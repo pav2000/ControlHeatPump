@@ -866,7 +866,7 @@ boolean sendNarodMon(boolean debug)
              {
                  strcpy(HP.clMQTT.topic,HP.clMQTT.root);
                  strcat(HP.clMQTT.topic,HP.sADC[i].get_name());
-                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Press()/100.0,2);
+                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Value()/100.0,2);
                  if (HP.clMQTT.sendTopic(true,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;      
              }
          
@@ -996,7 +996,7 @@ boolean sendMQTT(boolean debug)
              {
                  strcpy(HP.clMQTT.topic,HP.clMQTT.root);
                  strcat(HP.clMQTT.topic,HP.sADC[i].get_name());
-                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Press()/100.0,2);
+                 ftoa(HP.clMQTT.temp,(float)HP.sADC[i].get_Value()/100.0,2);
                  if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;      
              }
              

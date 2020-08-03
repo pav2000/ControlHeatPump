@@ -93,7 +93,7 @@ void get_txtState(uint8_t thread, boolean header)
             strcat(Socket[thread].outBuf,HP.sADC[i].get_note());  strcat(Socket[thread].outBuf,": "); 
             if (HP.sADC[i].get_present()) 
                 { 
-                  _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_Press()/100.0,2); if (HP.sADC[i].get_lastErr()!=OK ) { strcat(Socket[thread].outBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),Socket[thread].outBuf); }
+                  _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_Value()/100.0,2); if (HP.sADC[i].get_lastErr()!=OK ) { strcat(Socket[thread].outBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),Socket[thread].outBuf); }
                   STR_END; 
       
                 } 
@@ -509,11 +509,11 @@ void get_txtSettings(uint8_t thread)
             strcat(Socket[thread].outBuf,HP.sADC[i].get_note());  strcat(Socket[thread].outBuf,": "); 
             if (HP.sADC[i].get_present()) 
                 { 
-                  strcat(Socket[thread].outBuf," P=");    _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_Press()/100.0,2);
-                  strcat(Socket[thread].outBuf," Pmin="); _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_minPress()/100.0,2);
-                  strcat(Socket[thread].outBuf," Pmax="); _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_maxPress()/100.0,2);
-                  strcat(Socket[thread].outBuf," Ptest=");_ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_testPress()/100.0,2);
-                  strcat(Socket[thread].outBuf," Zero="); _itoa(HP.sADC[i].get_zeroPress(),Socket[thread].outBuf);
+                  strcat(Socket[thread].outBuf," P=");    _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_Value()/100.0,2);
+                  strcat(Socket[thread].outBuf," Pmin="); _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_minValue()/100.0,2);
+                  strcat(Socket[thread].outBuf," Pmax="); _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_maxValue()/100.0,2);
+                  strcat(Socket[thread].outBuf," Ptest=");_ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_testValue()/100.0,2);
+                  strcat(Socket[thread].outBuf," Zero="); _itoa(HP.sADC[i].get_zeroValue(),Socket[thread].outBuf);
                   strcat(Socket[thread].outBuf," Kof=");  _ftoa(Socket[thread].outBuf,(float)HP.sADC[i].get_transADC(),3);
                   strcat(Socket[thread].outBuf," Pin=AD");_itoa(HP.sADC[i].get_pinA(),Socket[thread].outBuf); 
                   if (HP.sADC[i].get_lastErr()!=OK ) { strcat(Socket[thread].outBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),Socket[thread].outBuf); }  STR_END;
@@ -946,7 +946,7 @@ void get_mailState(EthernetClient client,char *tempBuf)
 			strcat(tempBuf, HP.sADC[i].get_name());
 			strcat(tempBuf, "): ");
 #endif
-			_dtoa(tempBuf, HP.sADC[i].get_Press(), 2);
+			_dtoa(tempBuf, HP.sADC[i].get_Value(), 2);
 			if (HP.sADC[i].get_lastErr()!=OK ) { strcat(tempBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),tempBuf); }
 			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
 		}

@@ -372,7 +372,7 @@ void Statistics::Update()
 			newval = HP.sTemp[Stats_data[i].number].get_Temp();
 			break;
 		case STATS_OBJ_Press:
-			newval = HP.sADC[Stats_data[i].number].get_Press();
+			newval = HP.sADC[Stats_data[i].number].get_Value();
 			break;
 		case STATS_OBJ_Voltage:
 		    #ifdef USE_ELECTROMETER_SDM
@@ -965,7 +965,7 @@ void Statistics::History()
 			int_to_dec_str(HP.sTemp[HistorySetup[i].number].get_Temp(), 10, &buf, 0); // T
 			break;
 		case STATS_OBJ_Press:		// bar
-			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Press(), 10, &buf, 0); // P
+			int_to_dec_str(HP.sADC[HistorySetup[i].number].get_Value(), 10, &buf, 0); // P
 			break;
 		case STATS_OBJ_Flow:		// m3h
 			int_to_dec_str(HP.sFrequency[HistorySetup[i].number].get_Value(), 100, &buf, 0); // F

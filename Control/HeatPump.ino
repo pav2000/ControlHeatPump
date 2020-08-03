@@ -115,6 +115,9 @@ void HeatPump::initHeatPump()
 #ifdef POUT
 	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
 #endif
+#ifdef IWR
+	sADC[IWR].initSensorADC(POUT, ADC_SENSOR_IWR, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
+#endif
 
 	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
 	for(i = 0; i < FNUMBER; i++) sFrequency[i].initFrequency(i);  // Инициализация частотных датчиков
@@ -1088,25 +1091,26 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   Option.WR_Loads = (Option.WR_Loads & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   WR_Refresh = true;
+		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   Option.WR_Loads_PWM = (Option.WR_Loads_PWM & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   WR_Refresh = true;
+		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   Option.WR_LoadPower[bit] = x;
-		   WR_Refresh = true;
+		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strcmp(var,option_WR_MinNetLoad)==0) { Option.WR_MinNetLoad = x; return true; }
 	else if(strcmp(var,option_WR_TurnOnPause)==0)  { Option.WR_TurnOnPause = x; return true; }
+	else if(strcmp(var,option_WR_TurnOnMinTime)==0){ Option.WR_TurnOnMinTime = x; return true; }
 	else if(strcmp(var,option_WR_LoadHist)==0)     { Option.WR_LoadHist = x; return true; }
 	else if(strcmp(var,option_WR_LoadAdd)==0)      { Option.WR_LoadAdd = x; return true; }
 	else if(strcmp(var,option_f2WR_Log)==0)        { Option.flags2 = (Option.flags2 & ~(1<<f2WR_Log)) | ((x!=0)<<f2WR_Log); return true; }
@@ -1192,7 +1196,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
-	   if(bit < WR_NumLoads) {
+	   if(bit < WR_NumLoads && WR_Load_pins[bit] > 0) {
 		   return strcat(ret,(char*)(GETBIT(Option.WR_Loads_PWM, bit) ? cOne : cZero));
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1)==0) {
@@ -1202,6 +1206,7 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	   }
 	} else if(strcmp(var, option_WR_MinNetLoad)==0){ return _itoa(Option.WR_MinNetLoad, ret); }
 	else if(strcmp(var, option_WR_TurnOnPause)==0) { return _itoa(Option.WR_TurnOnPause, ret); }
+	else if(strcmp(var, option_WR_TurnOnMinTime)==0){ return _itoa(Option.WR_TurnOnMinTime, ret); }
 	else if(strcmp(var, option_WR_LoadHist)==0)    { return _itoa(Option.WR_LoadHist, ret); }
 	else if(strcmp(var, option_WR_LoadAdd)==0)     { return _itoa(Option.WR_LoadAdd, ret); }
 	else if(strcmp(var, option_f2WR_Log) == 0)     { if(GETBIT(Option.flags2, f2WR_Log)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
@@ -1281,7 +1286,7 @@ void  HeatPump::updateChart()
 {
 	for(uint8_t i = 0; i < sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]); i++) {
 		if(ChartsModSetup[i].object == STATS_OBJ_Temp) Charts[i].add_Point(sTemp[ChartsModSetup[i].number].get_Temp());
-		else if(ChartsModSetup[i].object == STATS_OBJ_Press) Charts[i].add_Point(sADC[ChartsModSetup[i].number].get_Press());
+		else if(ChartsModSetup[i].object == STATS_OBJ_Press) Charts[i].add_Point(sADC[ChartsModSetup[i].number].get_Value());
 		else if(ChartsModSetup[i].object == STATS_OBJ_PressTemp) Charts[i].add_Point(PressToTemp(ChartsModSetup[i].number));
 		else if(ChartsModSetup[i].object == STATS_OBJ_Flow) Charts[i].add_Point(sFrequency[ChartsModSetup[i].number].get_Value() / 10);
 	}
@@ -2339,10 +2344,10 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			return pCOMP_NONE;
 		}
 #ifdef PCON			
-		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)) // давление конденсатора до максимальной минус 0.5 бара
+		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Value()>sADC[PCON].get_maxValue()-FC_DT_CON_PRESS)) // давление конденсатора до максимальной минус 0.5 бара
 		{
 #ifdef DEBUG_MODWORK
-			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,sADC[PCON].get_Press()/100.0);
+			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreqBoiler()/100.0,sADC[PCON].get_Value()/100.0);
 #endif
 			if (dFC.get_target()-dFC.get_stepFreqBoiler()<dFC.get_minFreqBoiler()) { Status.ret=pBp26; return pCOMP_OFF; }     // Уменьшать дальше некуда, выключаем компрессор
 			Status.ret=pBp9;
@@ -2381,7 +2386,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			if ((dFC.get_power()>(FC_MAX_POWER_BOILER*dFC.get_PidStop()/100)))                                                            {Status.ret=pBp18; resetPID(); return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.get_current()>(FC_MAX_CURRENT_BOILER*dFC.get_PidStop()/100)))                                                        {Status.ret=pBp19; resetPID(); return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if (((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                      {Status.ret=pBp20; resetPID(); return pCOMP_NONE;}   // температура компрессора
-			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Press()>((sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))) {Status.ret=pBp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
+			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Value()>((sADC[PCON].get_maxValue()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))) {Status.ret=pBp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
 		}
 		//    надо менять
 		if (dFC.get_target()!=newFC)                                                                                     // Установка частоты если нужно менять
@@ -2512,10 +2517,10 @@ MODE_COMP HeatPump::UpdateHeat()
 			dFC.set_target(dFC.get_target()-dFC.get_stepFreq(),true,dFC.get_minFreq(),dFC.get_maxFreq()); resetPID(); return pCOMP_NONE;                     // Уменьшить частоту
 		}
 #ifdef PCON		
-		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
+		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Value()>sADC[PCON].get_maxValue()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
 		{
 #ifdef DEBUG_MODWORK
-			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Press()/100.0);
+			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Value()/100.0);
 #endif
 			if (dFC.get_target()-dFC.get_stepFreq()<dFC.get_minFreq()) {   Status.ret=pHp26; return pCOMP_OFF; }               // Уменьшать дальше некуда, выключаем компрессор
 			Status.ret=pHp9;
@@ -2564,7 +2569,7 @@ MODE_COMP HeatPump::UpdateHeat()
 			if ((dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                  {Status.ret=pHp18; resetPID(); return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                              {Status.ret=pHp19; resetPID(); return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp())>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100))                       {Status.ret=pHp20; resetPID(); return pCOMP_NONE;}   // температура компрессора
-			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Press()>(sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))  {Status.ret=pHp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
+			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Value()>(sADC[PCON].get_maxValue()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))  {Status.ret=pHp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
 		}
 		//    надо менять
 		if (dFC.get_target()!=newFC)                                                                     // Установкка частоты если нужно менять
@@ -2676,10 +2681,10 @@ MODE_COMP HeatPump::UpdateCool()
 			dFC.set_target(dFC.get_target()-dFC.get_stepFreq(),true,dFC.get_minFreqCool(),dFC.get_maxFreqCool()); resetPID(); return pCOMP_NONE;               // Уменьшить частоту
 		}
 #ifdef PCON			
-		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Press()>sADC[PCON].get_maxPress()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
+		else if (is_compressor_on() &&(sADC[PCON].get_present())&&(sADC[PCON].get_Value()>sADC[PCON].get_maxValue()-FC_DT_CON_PRESS))  // давление конденсатора до максимальной минус 0.5 бара
 		{
 #ifdef DEBUG_MODWORK
-			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Press()/100.0);
+			journal.jprintf("%s %.2f (PCON:  %.2f)\n",STR_REDUCED,dFC.get_stepFreq()/100.0,sADC[PCON].get_Value()/100.0);
 #endif
 			if (dFC.get_target()-dFC.get_stepFreq()<dFC.get_minFreqCool()) {Status.ret=pCp26;  return pCOMP_OFF;   }        // Уменьшать дальше некуда, выключаем компрессор
 			Status.ret=pCp9;
@@ -2720,7 +2725,7 @@ MODE_COMP HeatPump::UpdateCool()
 			if ((dFC.get_power()>(FC_MAX_POWER*dFC.get_PidStop()/100)))                                                                       {Status.ret=pCp18; resetPID(); return pCOMP_NONE;}   // Мощность для ГВС меньшая мощность
 			if ((dFC.get_current()>(FC_MAX_CURRENT*dFC.get_PidStop()/100)))                                                                   {Status.ret=pCp19; resetPID(); return pCOMP_NONE;}   // ТОК для ГВС меньшая мощность
 			if ((sTemp[TCOMP].get_Temp()+dFC.get_dtCompTemp()>(sTemp[TCOMP].get_maxTemp()*dFC.get_PidStop()/100)))                            {Status.ret=pCp20; resetPID(); return pCOMP_NONE;}   // температура компрессора
-			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Press()>(sADC[PCON].get_maxPress()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))       {Status.ret=pCp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
+			if ((sADC[PCON].get_present())&&(sADC[PCON].get_Value()>(sADC[PCON].get_maxValue()-FC_DT_CON_PRESS)*dFC.get_PidStop()/100))       {Status.ret=pCp21; resetPID(); return pCOMP_NONE;}   // давление конденсатора до максимальной минус 0.5 бара
 		}
 		//    надо менять
 
@@ -3597,7 +3602,7 @@ int8_t HeatPump::save_DumpJournal(boolean f)
 	((journal).*(fn))(cStrEnd);
 	// Доп инфо
 	for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && !(SENSORTEMP[i] & 4)) ((journal).*(fn))(" %s:%.2d", sTemp[i].get_name(), sTemp[i].get_Temp());
-	for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) ((journal).*(fn))(" %s:%.2d", sADC[i].get_name(), sADC[i].get_Press());
+	for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) ((journal).*(fn))(" %s:%.2d", sADC[i].get_name(), sADC[i].get_Value());
 	((journal).*(fn))(cStrEnd);
 	return OK;
 }

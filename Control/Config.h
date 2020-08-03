@@ -349,23 +349,23 @@ const char *noteTemp[] = {"Температура улицы",
     // Давление харится в сотых бара
 	#define PEVA			0                // Датчик давления испарителя.
 	#define PCON			1                // Датчик давления конденсатора.
-     const char *namePress[] =       {
+     const char *nameAnalog[] =       {
                                       "PEVA",
                                       "PCON"
                                       };
      // Описание датчиков
-     const char *notePress[] = {"Датчик давления испарителя (bar)",
+     const char *noteAnalog[] = {"Датчик давления испарителя (bar)",
                                 "Датчик давления конденсации (bar)"};
 
    // Коэффициент преобразования отсчеты АЦП-давление
     const uint16_t TRANsADC[ANUMBER]={482,300};
     // напряжение (отсчеты АЦП) соответсвующее cZero
-    const uint16_t ZEROPRESS[ANUMBER]={285,150};
+    const uint16_t ANALOG_ZERO[ANUMBER]={285,150};
 
-    const boolean SENSORPRESS[ANUMBER]={false,false};    
-    const int16_t MINPRESS[ANUMBER]={400,100};        // минимальные значения давления
-    const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
-    const uint16_t TESTPRESS[ANUMBER]={600,700};      // Значения датчиков при тестировании  опция TEST
+    const boolean ANALOG_SENSORS[ANUMBER]={false,false};    
+    const int16_t ANALOG_MIN[ANUMBER]={400,100};        // минимальные значения давления
+    const uint16_t ANALOG_MAX[ANUMBER]={1500,3000};     // Макимальные значения давления
+    const uint16_t ANALOG_TEST[ANUMBER]={600,700};      // Значения датчиков при тестировании  опция TEST
     // ------------------- ADC SENSOR ----------------------------------
     #define P_NUMSAMLES       5              // Число значений для усреднения показаний давления
     #define ADC_FREQ        200              // Частота опроса аналоговых датчиков
@@ -881,23 +881,23 @@ const char *noteTemp[] = {"Температура улицы",
     // Давление харится в сотых бара
    	#define PEVA			0                // Датчик давления испарителя.
    	#define PCON			1                // Датчик давления конденсатора.
-       const char *namePress[] =       {
+       const char *nameAnalog[] =       {
                                         "PEVA",
                                         "PCON"
                                         };
       // Описание датчиков
-      const char *notePress[] = {"Датчик давления испарителя (bar)",
+      const char *noteAnalog[] = {"Датчик давления испарителя (bar)",
                                  "Датчик давления конденсации (bar)"};
 
      // Коэффициент преобразования отсчеты АЦП-давление
       const uint16_t TRANsADC[ANUMBER]={1032,2100};
       // напряжение (отсчеты АЦП) соответсвующее cZero
-      const uint16_t ZEROPRESS[ANUMBER]={410,410};
+      const uint16_t ANALOG_ZERO[ANUMBER]={410,410};
 
-     const boolean SENSORPRESS[ANUMBER]={true,false};    
-     const int16_t MINPRESS[ANUMBER]={-100,-100};          // минимальные значения давления
-     const uint16_t MAXPRESS[ANUMBER]={4100,4100};     // Макимальные значения давления
-     const uint16_t TESTPRESS[ANUMBER]={400,800};      // Значения датчиков при тестировании  опция TEST
+     const boolean ANALOG_SENSORS[ANUMBER]={true,false};    
+     const int16_t ANALOG_MIN[ANUMBER]={-100,-100};          // минимальные значения давления
+     const uint16_t ANALOG_MAX[ANUMBER]={4100,4100};     // Макимальные значения давления
+     const uint16_t ANALOG_TEST[ANUMBER]={400,800};      // Значения датчиков при тестировании  опция TEST
       
   // ------------------- ADC SENSOR ----------------------------------
       #define P_NUMSAMLES       0              // Число значений для усреднения показаний давления
@@ -1433,23 +1433,23 @@ const char *noteTemp[] = {"Температура улицы",
        // Давление харится в сотых бара
       #define PEVA			0                // Датчик давления испарителя.
       #define PCON			1                // Датчик давления конденсатора.
-       const char *namePress[] =       {
+       const char *nameAnalog[] =       {
                                         "PEVA",
                                         "PCON"
                                         };
 	    // Описание датчиков
-      const char *notePress[] = {"Датчик давления испарителя (bar)",
+      const char *noteAnalog[] = {"Датчик давления испарителя (bar)",
                                  "Датчик давления конденсации (bar)"};
 
      // Коэффициент преобразования отсчеты АЦП-давление
       const uint16_t TRANsADC[ANUMBER]={1250,1500};
       // напряжение (отсчеты АЦП) соответсвующее cZero
-      const uint16_t ZEROPRESS[ANUMBER]={625,750};
+      const uint16_t ANALOG_ZERO[ANUMBER]={625,750};
 	  
-       const boolean SENSORPRESS[ANUMBER]={true,true}; 
-       const int16_t MINPRESS[ANUMBER]={400,400};       // минимальные значения давления
-       const uint16_t MAXPRESS[ANUMBER]={2000,3000};    // Максимальные значения давления
-       const uint16_t TESTPRESS[ANUMBER]={750,1600};    // Значения датчиков при тестировании  опция TEST
+       const boolean ANALOG_SENSORS[ANUMBER]={true,true}; 
+       const int16_t ANALOG_MIN[ANUMBER]={400,400};       // минимальные значения давления
+       const uint16_t ANALOG_MAX[ANUMBER]={2000,3000};    // Максимальные значения давления
+       const uint16_t ANALOG_TEST[ANUMBER]={750,1600};    // Значения датчиков при тестировании  опция TEST
        // ------------------- ADC SENSOR ----------------------------------
       #define P_NUMSAMLES       5              // Число значений для усреднения показаний давления
       #define ADC_FREQ          200            // Частота опроса аналоговых датчиков
@@ -1939,23 +1939,23 @@ const char *noteTemp[] = {"Температура улицы",
      // Давление харится в сотых бара
     	#define PEVA			0                // Датчик давления испарителя.
     	#define PCON			1                // Датчик давления конденсатора.
-     const char *namePress[] =       {
+     const char *nameAnalog[] =       {
                                       "PEVA",
                                       "PCON"
                                       };
        // Описание датчиков
-       const char *notePress[] = {"Датчик давления испарителя (bar)",
+       const char *noteAnalog[] = {"Датчик давления испарителя (bar)",
                                   "Датчик давления конденсации (bar)"};
 
       // Коэффициент преобразования отсчеты АЦП-давление
        const uint16_t TRANsADC[ANUMBER]={482,300};
        // напряжение (отсчеты АЦП) соответсвующее cZero
-       const uint16_t ZEROPRESS[ANUMBER]={285,150};
+       const uint16_t ANALOG_ZERO[ANUMBER]={285,150};
 
-       const boolean SENSORPRESS[ANUMBER]={true,true};
-       const int16_t MINPRESS[ANUMBER]={400,400};       // минимальные значения давления
-       const uint16_t MAXPRESS[ANUMBER]={2000,3100};    // Максимальные значения давления
-       const uint16_t TESTPRESS[ANUMBER]={750,1600};    // Значения датчиков при тестировании  опция TEST
+       const boolean ANALOG_SENSORS[ANUMBER]={true,true};
+       const int16_t ANALOG_MIN[ANUMBER]={400,400};       // минимальные значения давления
+       const uint16_t ANALOG_MAX[ANUMBER]={2000,3100};    // Максимальные значения давления
+       const uint16_t ANALOG_TEST[ANUMBER]={750,1600};    // Значения датчиков при тестировании  опция TEST
        // ------------------- ADC SENSOR ----------------------------------
        #define P_NUMSAMLES       5              // Число значений для усреднения показаний давления
        #define ADC_FREQ        200            // Частота опроса аналоговых датчиков
@@ -2476,23 +2476,23 @@ const char *noteTemp[] = {"Температура улицы",
        // Давление харится в сотых бара
       	#define PEVA			0                // Датчик давления испарителя.
       	#define PCON			1                // Датчик давления конденсатора.
-       const char *namePress[] =       {
+       const char *nameAnalog[] =       {
                                         "PEVA",
                                         "PCON"
                                         };
       // Описание датчиков
-      const char *notePress[] = {"Давление испарителя (bar)", // Датчик давления испарителя.
+      const char *noteAnalog[] = {"Давление испарителя (bar)", // Датчик давления испарителя.
                                  "Давление конденсатора (bar)"};  // Датчик давления конденсатора.
 
      // Коэффициент преобразования отсчеты АЦП-давление
       const uint16_t TRANsADC[ANUMBER]={482,300};
       // напряжение (отсчеты АЦП) соответсвующее cZero
-      const uint16_t ZEROPRESS[ANUMBER]={285,150};
+      const uint16_t ANALOG_ZERO[ANUMBER]={285,150};
 
-      const boolean SENSORPRESS[ANUMBER]={true,false};    
-      const int16_t MINPRESS[ANUMBER]={350,100};        // минимальные значения давления
-      const uint16_t MAXPRESS[ANUMBER]={1500,3000};     // Макимальные значения давления
-      const uint16_t TESTPRESS[ANUMBER]={600,1200};      // Значения датчиков при тестировании  опция TEST
+      const boolean ANALOG_SENSORS[ANUMBER]={true,false};    
+      const int16_t ANALOG_MIN[ANUMBER]={350,100};        // минимальные значения давления
+      const uint16_t ANALOG_MAX[ANUMBER]={1500,3000};     // Макимальные значения давления
+      const uint16_t ANALOG_TEST[ANUMBER]={600,1200};      // Значения датчиков при тестировании  опция TEST
       // ------------------- ADC SENSOR ----------------------------------
       #define ADC_PRESCAL		10             // [20]  = (42 / ADCClockMhz - 1)
       #define ADC_SKIP_EXTREMUM 400            // [400] Отбрасывать максимумы/минимумы больше заданной дельты
@@ -3077,13 +3077,13 @@ const char *noteTemp[] = {"Температура улицы",
 //  #define PGEO			2
 //  #define POUT			3
   // Имена датчиков
-  const char *namePress[] = { "PEVA",
+  const char *nameAnalog[] = { "PEVA",
 		  	  	  	  	  	  "PCON",
 //							  "PGEO",
 //							  "POUT"
                             };
   // Описание датчиков
-  const char *notePress[] = {"Датчик давления кипения",
+  const char *noteAnalog[] = {"Датчик давления кипения",
                              "Датчик давления конденсации",
 //  	  	  	  	  	  	  	 "Датчик давления геоконтура",
 //							 "Датчик давления отопления"
@@ -3098,12 +3098,12 @@ const char *noteTemp[] = {"Температура улицы",
   // Коэффициент преобразования отсчеты АЦП-давление, тысячные
   const uint16_t TRANsADC[ANUMBER]  = { 373,  1380  };
   // напряжение (отсчеты АЦП) соответсвующее cZero
-  const uint16_t ZEROPRESS[ANUMBER] = { 290,   740  };
+  const uint16_t ANALOG_ZERO[ANUMBER] = { 290,   740  };
 
-  const boolean SENSORPRESS[ANUMBER]= {    1,     1  };	// Присутствие датчика в конфигурации
-  const int16_t MINPRESS[ANUMBER]   = {   30,   100  };	// минимальные значения давления, в сотых бар
-  const uint16_t MAXPRESS[ANUMBER]  = {  700,  2000  };	// Максимальные значения давления, в сотых бар
-  const uint16_t TESTPRESS[ANUMBER] = {  150,   800  };	// Значения датчиков при тестировании  опция TEST, в сотых бар
+  const boolean ANALOG_SENSORS[ANUMBER]= {    1,     1  };	// Присутствие датчика в конфигурации
+  const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100  };	// минимальные значения давления, в сотых бар
+  const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000  };	// Максимальные значения давления, в сотых бар
+  const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800  };	// Значения датчиков при тестировании  опция TEST, в сотых бар
   //#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
   #ifdef ANALOG_MODBUS
 	  #define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
@@ -3447,8 +3447,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define SDM_NUM_READ        	2           // Число попыток чтения счетчика (подряд) по модбас до его отключения (ошибка не генерится)
 
 	// Защиты по входному напряжению. Используется счетчик SDM*
-	//	#define SDM_MIN_VOLTAGE     120.0          // Минимальное напряжение работы ТН при падении - предупреждение
-	//	#define SDM_MAX_VOLTAGE     265.0          // Максимальное напряжение работы ТН при падении - выключение ТН
+	//#define SDM_MIN_VOLTAGE     120.0          // Минимальное напряжение работы ТН при падении - предупреждение
+	//#define SDM_MAX_VOLTAGE     265.0          // Максимальное напряжение работы ТН при падении - выключение ТН
 	#define SDM_MAX_POWER       7500.0         // Максимальная мощность потребления (ватт) - выключение ТН
 
 	// SPI шина управление отдельными устройствами до 3-х устройств (активный уровень низкий)
@@ -3457,17 +3457,17 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_SPI_CS_FLASH   52			// (67) FLASH-CS сигнал CS управление чипом флеш памяти (D52 пересекается с Serial4!)
 
 	// Сервис
-	#define PIN_ETH_RES        8         // ++ ETH-RES Сброс сетевого чипа w5500 активный low нормально high
-	//#define PIN_ETH_INT      3         // ++ ETH-INT Прерывание с w5500 пока не используется надо програмировать на вход
-	#define PIN_LED1           42         // ++ LED1 Первый красный светодиод для контроля (питание и фатальная ошибка freeRTOS)
-	#define PIN_LED_ERROR      PIN_LED1   // Для библиотеки FreeRTOS
+	#define PIN_ETH_RES        8         // ETH-RES Сброс сетевого чипа w5500 активный low нормально high
+	//#define PIN_ETH_INT      3         // ETH-INT Прерывание с w5500 пока не используется надо програмировать на вход
+	#define PIN_LED1           42        // LED1 Первый красный светодиод для контроля (питание и фатальная ошибка freeRTOS)
+	#define PIN_LED_ERROR      PIN_LED1  // Для библиотеки FreeRTOS
 #ifdef TEST_BOARD
-	#define PIN_LED_OK         13          // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+	#define PIN_LED_OK         13        // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
 #else
-	#define PIN_LED_OK         43          // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+	#define PIN_LED_OK         43        // Зеленый светодиод Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
 #endif
-	#define PIN_KEY1           44         // ++ KEY1 Первая кнопка (ТН вкл/вкл) Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
-	#define PIN_BEEP           45         // ++  SOUND Выход на пищалку  88- нога не использующиеся
+	#define PIN_KEY1           44        // KEY1 Первая кнопка (ТН вкл/вкл) Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
+	#define PIN_BEEP           45        // Выход на пищалку
 
 	// EEV куда подключено общий СИНИЙ
 	#define PIN_EEV1_D24       29  //[X40.1(от надписи)] // 1 нога ЭРВ +А ОРАНЖЕВЫЙ - коричневый
@@ -3576,43 +3576,48 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FLOW_CONTROL								  // Контроль потоков через ПТО (актуален если установлены расходомеры)
 
 	// АНАЛОГОВЫЕ ДАТЧИКИ  -------------------------------------------------------------------
-	#define ANUMBER		4       // Максимальное число аналоговых датчиков (то что поддерживается)
+	#define ANUMBER		5       // Максимальное число аналоговых датчиков (то что поддерживается)
 	// наличие датчиков в конфигурации минимальные максимальные и тестовые значения
 	// Справочно нумерация датчиков
 	// Давление харится в сотых бара
-	#define PEVA			0                // Датчик давления испарителя.
-	#define PCON			1                // Датчик давления конденсатора.
-	#define PGEO			2
-	#define POUT			3
+	#define PEVA			0	// Датчик давления испарителя.
+	#define PCON			1	// Датчик давления конденсатора.
+	#define PGEO			2	// Датчик давления жидкости геоконтура
+	#define POUT			3	// Датчик давления теплоносителя отопления
+	#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
 	// Имена датчиков
-	const char *namePress[] = { "PEVA",
+	const char *nameAnalog[] = {"PEVA",
 								"PCON",
 								"PGEO",
-								"POUT"
+								"POUT",
+								"IWR"
 						   };
 	// Описание датчиков
-	const char *notePress[] = {	"Давление кипения",
+	const char *noteAnalog[] = {"Давление кипения",
 								"Давление конденсации",
 								"Давление геоконтура",
-								"Давление отопления"};
+								"Давление отопления",
+								"Ток ваттроутера"
+							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
-	#define ADC_SENSOR_PEVA		13		// A11, X33.  датчик давления испарителя
-	#define ADC_SENSOR_PCON		12		// A10, X31.  датчик давления конденсатора
+	#define ADC_SENSOR_PEVA		13		// A11, X33. датчик давления испарителя
+	#define ADC_SENSOR_PCON		12		// A10, X31. датчик давления конденсатора
 	#define ADC_SENSOR_PGEO		4		// A3, X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
+	#define ADC_SENSOR_IWR		3		// A4, X19.2 датчик тока (4-20мА), + резистор 150 Ом на GND
 	// Коэффициент преобразования отсчеты АЦП-давление, тысячные
-	const uint16_t TRANsADC[ANUMBER]  = { 373, 1380,  181,  181};
+	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181, 1000};
 	// напряжение (отсчеты АЦП) соответсвующее cZero
-	const uint16_t ZEROPRESS[ANUMBER] = { 290,  740,   70,   70};
+	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70,    0};
 	// Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
 	// const uint8_t  ADC_GAIN[ANUMBER] = { 1,    1,    1,    1};
 
 
-	const boolean SENSORPRESS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
-	const int16_t MINPRESS[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения давления, в сотых бар
-	const uint16_t MAXPRESS[ANUMBER]  = {  700,  2000,  280,  280};	// Максимальные значения давления, в сотых бар
-	const uint16_t TESTPRESS[ANUMBER] = {  150,   800,  150,  150};	// Значения датчиков при тестировании  опция TEST, в сотых бар
+	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true, true};	// Присутствие датчика в конфигурации
+	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100,-32767};	// минимальные значения, в сотых
+	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280,65535};	// Максимальные значения, в сотых
+	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150,    1};	// Значения датчиков при тестировании  опция TEST, в сотых
 	//#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
 	#ifdef ANALOG_MODBUS
 	#define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
@@ -3622,10 +3627,10 @@ const char *noteTemp[] = {"Температура улицы",
 	#endif
 	// ------------------- ADC SENSOR ----------------------------------
 	#define ADC_PRESCAL		9			// = (42 / ADCClockMhz - 1), - 4.2 MHz
-	#define ADC_SKIP_EXTREMUM 300			// Отбрасывать максимумы/минимумы больше заданной дельты
+	#define ADC_SKIP_EXTREMUM 300		// Отбрасывать максимумы/минимумы больше заданной дельты
 	#define P_NUMSAMLES       1			// Число значений для усреднения показаний давления
 	#define ADC_FREQ          3			// период опроса аналоговых датчиков в секунду
-	#define FILTER_SIZE       50			// Длина фильтра для датчиков давления
+	#define FILTER_SIZE       50		// Длина фильтра для датчиков давления
 	#define FILTER_SIZE_OTHER 4			// Длина фильтра для остальных датчиков
 
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4051,8 +4056,6 @@ const char *noteTemp[] = {"Температура улицы",
 	#define INDEX_FILE					"plan.html"		// стартовый файл по умолчанию для веба
 	//#define WEB_STATUS_SHOW_VERSION					// Показывать версию в строке статуса (запрос get_status)
 	//#define WEB_STATUS_SHOW_OVERHEAT					// Показывать перегрев в строке статуса (запрос get_status)
-	#define WEB0_FREQUENT_JOB_PERIOD 	1500	 		// Периодичность важных функций в задаче WEB0, мс
-	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
 	#define FORMAT_DATE_STR_CUSTOM
 	const char *FORMAT_DATE_STR	 		= { "%02d.%02d.%04d" };
 	#define HTTP_TIME_REQUEST			// Запрос времени по HTTP протоколу с собственного сервера (текстовый файл формата: "<время UTC>;").
@@ -4065,21 +4068,35 @@ const char *noteTemp[] = {"Температура улицы",
 
 	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
 	#define WATTROUTER												// Включить
-	#define WR_NumLoads				3								// Кол-во нагрузок (0..5)
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1 };	// [<0] - реле КЭС по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	#define WR_NumLoads				4								// Кол-во нагрузок (0..5)
+//	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
+#ifndef TEST_BOARD
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+#else
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+#endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
-	#define WR_TURN_OFF_PAUSE		10								// Минимальная пауза на выключение, сек
-	#define WR_NEXT_TURN_ON_PAUSE	5								// Минимальная пауза на следующее включение, сек
-	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
-	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
 	#define WR_RELAY_LEVEL_ON		1
 	#define PWM_WRITE_OUT_FREQUENCY	3								// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 5								// = 0..31
+	#define PWM_WRITE_OUT_RESOLUTION 5								// 0..31, bits
+#ifndef WR_CurrentSensor_4_20mA
+	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
+#endif
+	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
+	#define WR_NEXT_TURN_ON_PAUSE	10								// Минимальная пауза на включение следующего реле, сек
+
 	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
 	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП
 	#define HTTP_MAP_Read_MPPT		"/read_json.php?device=mppt"	// Запрос чтения массива данных КЭС
 	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
 	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
+
+#ifdef WR_CurrentSensor_4_20mA
+	#define WEB0_FREQUENT_JOB_PERIOD 	1000	 		// Периодичность важных функций в задаче WEB0, мс
+#else
+	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс
+#endif
+	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
 
 
 #endif  // CONFIG_7

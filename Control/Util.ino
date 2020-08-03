@@ -1104,15 +1104,15 @@ xSwitched:
 			WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
 			if(On) WR_LastOnTime = WR_SwitchTime[idx];
 		}
+		if((WR_LoadRun[idx] > 0) != On) WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
 		WR_LoadRun[idx] = On ? HP.Option.WR_LoadPower[idx] : 0;
-		WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
 		if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: R%d=>%d\n", idx + 1, On);
 	}
 }
 
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 {
-	int n = WR_LoadRun[idx] + delta;
+	int16_t n = WR_LoadRun[idx] + delta;
 	if(n <= 0) n = 0; else if(n > HP.Option.WR_LoadPower[idx]) n = HP.Option.WR_LoadPower[idx];
 	if(GETBIT(HP.Option.flags2, f2WR_LogFull)) journal.jprintf("WR: P%d+=%d\n", idx, delta);
 	else if(GETBIT(HP.Option.flags2, f2WR_Log) && (WR_LoadRun[idx] == 0 || n == HP.Option.WR_LoadPower[idx] || n == 0)) journal.jprintf("WR: P%d=%d\n", idx + 1, n);
