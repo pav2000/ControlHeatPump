@@ -3611,7 +3611,7 @@ const char *noteTemp[] = {"Температура улицы",
 	// напряжение (отсчеты АЦП) соответсвующее cZero
 	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70,    0};
 	// Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
-	// const uint8_t  ADC_GAIN[ANUMBER] = { 1,    1,    1,    1};
+	// const uint8_t  ADC_GAIN[ANUMBER] = {   1,    1,    1,    1,    1};
 
 
 	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true, true};	// Присутствие датчика в конфигурации

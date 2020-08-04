@@ -1114,7 +1114,7 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 {
 	int16_t n = WR_LoadRun[idx] + delta;
 	if(n <= 0) n = 0; else if(n > WR.LoadPower[idx]) n = WR.LoadPower[idx];
-	if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: P%d+=%d\n", idx, delta);
+	if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: P%d+=%d\n", idx + 1, delta);
 	else if(GETBIT(WR.Flags, WR_fLog) && (WR_LoadRun[idx] == 0 || n == WR.LoadPower[idx] || n == 0)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
 	PWM_Write(WR_Load_pins[idx], n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / WR.LoadPower[idx]);
 	if(WR_LoadRun[idx] != n) WR_SwitchTime[idx] = rtcSAM3X8.unixtime();

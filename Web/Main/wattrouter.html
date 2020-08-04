@@ -17,6 +17,14 @@ function loadParam_after(paramid) {
 			element = document.getElementById("get_ohp-wp" + i);
 			if(element) element.disabled = d; else break;
 		}	
+	}
+	if(paramid.indexOf("et_WRL")!=-1) {
+		for(var i = 0; i < 32; i++) {
+			element = document.getElementById("get_wrl-" + i);
+			if(element) { 
+				element.style = element.value != 0 ? "border-color:red" : "border-color:";
+			} else break;
+		}	
 	}                              
 }
 </script>

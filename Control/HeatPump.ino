@@ -116,7 +116,7 @@ void HeatPump::initHeatPump()
 	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
 #endif
 #ifdef IWR
-	sADC[IWR].initSensorADC(POUT, ADC_SENSOR_IWR, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
+	sADC[IWR].initSensorADC(IWR, ADC_SENSOR_IWR, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
 #endif
 
 	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
