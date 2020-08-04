@@ -225,6 +225,7 @@ const uint16_t  defaultPort=80;
 #define SAVE_TYPE_dSDM			-7
 #define SAVE_TYPE_clMQTT		-8
 #define SAVE_TYPE_PwrCorr		-9
+#define SAVE_TYPE_Wattrouter	-10
 #define SAVE_TYPE_LIMIT			-100
 
 // ------------------- EEV ----------------------------------
@@ -737,9 +738,10 @@ const char *option_WR_LoadHist			= {"WH"};				// Гистерезис нагру
 const char *option_WR_LoadAdd			= {"WA"};				// Увеличение нагрузки PWM за один шаг, Вт
 const char *option_WR_TurnOnPause		= {"WO"};				// Задержка включения реле после его выключения, секунды
 const char *option_WR_TurnOnMinTime		= {"WOM"};
-const char *option_f2WR_Log				= {"WD"};
-const char *option_f2WR_LogFull			= {"WDF"};
-const char *option_f2WR_Active			= {"WON"};
+const char *option_WR_NextSwitchPause	= {"NS"};
+const char *option_WR_fLog				= {"WD"};
+const char *option_WR_fLogFull			= {"WDF"};
+const char *option_WR_fActive			= {"WON"};
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы

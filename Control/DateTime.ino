@@ -53,8 +53,8 @@ int8_t set_time(void)
 EthernetClient tTCP; // For get time
 char NTP_buffer[20];
 
-// True - OK
-boolean set_time_NTP(void)
+// 0x80000000 - Ошибка, иначе разница в сек
+int32_t set_time_NTP(void)
 {
 	unsigned long secs = 0;
 	int8_t flag = 0;
@@ -129,6 +129,7 @@ boolean set_time_NTP(void)
 			if(flag > 0) break; else journal.jprintf(" Error %d\n", flag);
 		}
 	}
+	int32_t ret = 0x80000000;
 	if(flag > 0) {  // Обновление времени если оно получено
 		unsigned long lt = rtcSAM3X8.unixtime();
 		if(lt != secs) {
@@ -139,9 +140,10 @@ boolean set_time_NTP(void)
 		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
 		journal.jprintf("OK\n Set time from server: %s %s", NowDateToStr(), NowTimeToStr());
 		journal.jprintf(", was: %02d:%02d:%02d\n", lt % 86400L / 3600, lt % 3600 / 60, lt % 60);
+		ret = rtcSAM3X8.unixtime() - lt;
 	}
 	SemaphoreGive(xWebThreadSemaphore);
-	return flag > 0;
+	return ret;
 }
 
 #else
@@ -336,12 +338,22 @@ xSec:	_itoa(Sec, ret);
 	return ret;
 }
 
-// вывод Времени в формате 12:34:34, не реентерабельна
-char* UTimeToStr(uint32_t idt)
+// Добавление в строку времени unixtime, формат xx:xx:xx
+void UTimeToStr(uint32_t idt, char *ret)
 {
-	static char _tmp[10];  // Длина xx:xx:xx - 10+1 символов
-	m_snprintf((char *)_tmp, sizeof(_tmp), "%02d:%02d:%02d", (idt % 86400L) / 3600, (idt % 3600) / 60, idt % 60);
-	return _tmp;
+	ret += strlen(ret);
+	uint32_t x = (idt % 86400) / 3600;
+	ret[0] = '0' + x / 10;
+	ret[1] = '0' + x % 10;
+	ret[2] = ':';
+	x = (idt % 3600) / 60;
+	ret[3] = '0' + x / 10;
+	ret[4] = '0' + x % 10;
+	ret[5] = ':';
+	x = idt % 60;
+	ret[6] = '0' + x / 10;
+	ret[7] = '0' + x % 10;
+	ret[8] = '\0';
 }
 
 // вывод Времи и даты  в формате hh:mm:ss dd/mm/yyyy

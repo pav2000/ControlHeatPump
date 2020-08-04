@@ -386,6 +386,10 @@ int32_t HeatPump::save(void)
 		if(save_2bytes(addr, SAVE_TYPE_PwrCorr, crc)) break;
 		if(save_struct(addr, (uint8_t*)&correct_power220, sizeof(correct_power220), crc)) break; // Сохранение correct_power220
 		#endif
+		#ifdef WATTROUTER
+		if(save_2bytes(addr, SAVE_TYPE_Wattrouter, crc)) break;
+		if(save_struct(addr, (uint8_t*)&WR, sizeof(WR), crc)) break; // Сохранение WR
+		#endif
 		if(save_2bytes(addr, SAVE_TYPE_END, crc)) break;
 		if(writeEEPROM_I2C(addr, (uint8_t *) &crc, sizeof(crc))) { error = ERR_SAVE_EEPROM; break; } // CRC
 		addr = addr + sizeof(crc) - (I2C_SETTING_EEPROM + 2);
@@ -489,6 +493,10 @@ x_Error:
 #ifdef CORRECT_POWER220
 		} else if(type == SAVE_TYPE_PwrCorr) {
 			load_struct((uint8_t*)&correct_power220, &buffer, sizeof(correct_power220));
+#endif
+#ifdef WATTROUTER
+		} else if(type == SAVE_TYPE_Wattrouter) {
+			load_struct((uint8_t*)&WR, &buffer, sizeof(WR));
 #endif
 		} else if(type == SAVE_TYPE_END) {
 			break;
@@ -663,7 +671,7 @@ void HeatPump::updateCount()
 // параметр изменение времени - корректировка
 void HeatPump::updateDateTime(int32_t dTime)
 {
-	if(dTime != 0)                                   // было изменено время, надо скорректировать переменные времени
+	if(dTime != 0 && dTime != int32_t(0x80000000))                                   // было изменено время, надо скорректировать переменные времени
 	{
 		Prof.SaveON.startTime = Prof.SaveON.startTime + dTime; // время пуска ТН (для организации задержки включения включение ЭРВ)
 		if(timeON > 0) timeON = timeON + dTime;                               // время включения контроллера для вычисления UPTIME
@@ -672,8 +680,13 @@ void HeatPump::updateDateTime(int32_t dTime)
 		if(countNTP > 0) countNTP = countNTP + dTime;                           // число секунд с последнего обновления по NTP
 		if(offBoiler > 0) offBoiler = offBoiler + dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
 		if(startDefrost > 0) startDefrost = startDefrost + dTime;                   // время срабатывания датчика разморозки
-//		if(timeBoilerOff > 0) timeBoilerOff = timeBoilerOff + dTime; // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
 		if(startSallmonela > 0) startSallmonela = startSallmonela + dTime;             // время начала обеззараживания
+#ifdef WATTROUTER
+		if(WR_LastSwitchTime) WR_LastSwitchTime += dTime;
+		for(uint8_t i = 0; i < WR_NumLoads; i++) {
+			if(WR_SwitchTime[i]) WR_SwitchTime[i] += dTime;
+		}
+#endif
 	}
 }
       
@@ -987,7 +1000,7 @@ boolean HeatPump::set_datetime(char *var, char *c)
 		} else return false;
 	} else return false;
 
-	if(dTime != 0) updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+	updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
 	return true;
 }
 
@@ -1090,33 +1103,34 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   Option.WR_Loads = (Option.WR_Loads & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
+		   WR.Loads = (WR.Loads & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
+		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   Option.WR_Loads_PWM = (Option.WR_Loads_PWM & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
+		   WR.Loads_PWM = (WR.Loads_PWM & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
+		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   Option.WR_LoadPower[bit] = x;
-		   if(GETBIT(Option.flags2, f2WR_Active)) WR_Refresh = true;
+		   WR.LoadPower[bit] = x;
+		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
-	} else if(strcmp(var,option_WR_MinNetLoad)==0) { Option.WR_MinNetLoad = x; return true; }
-	else if(strcmp(var,option_WR_TurnOnPause)==0)  { Option.WR_TurnOnPause = x; return true; }
-	else if(strcmp(var,option_WR_TurnOnMinTime)==0){ Option.WR_TurnOnMinTime = x; return true; }
-	else if(strcmp(var,option_WR_LoadHist)==0)     { Option.WR_LoadHist = x; return true; }
-	else if(strcmp(var,option_WR_LoadAdd)==0)      { Option.WR_LoadAdd = x; return true; }
-	else if(strcmp(var,option_f2WR_Log)==0)        { Option.flags2 = (Option.flags2 & ~(1<<f2WR_Log)) | ((x!=0)<<f2WR_Log); return true; }
-	else if(strcmp(var,option_f2WR_LogFull)==0)    { Option.flags2 = (Option.flags2 & ~(1<<f2WR_LogFull)) | ((x!=0)<<f2WR_LogFull); return true; }
-	else if(strcmp(var,option_f2WR_Active)==0) {
-		Option.flags2 = (Option.flags2 & ~(1<<f2WR_Active)) | ((x!=0)<<f2WR_Active);
+	} else if(strcmp(var,option_WR_MinNetLoad)==0) { WR.MinNetLoad = x; return true; }
+	else if(strcmp(var,option_WR_TurnOnPause)==0)  { WR.TurnOnPause = x; return true; }
+	else if(strcmp(var,option_WR_NextSwitchPause)==0){ WR.NextSwitchPause = x; return true; }
+	else if(strcmp(var,option_WR_TurnOnMinTime)==0){ WR.TurnOnMinTime = x; return true; }
+	else if(strcmp(var,option_WR_LoadHist)==0)     { WR.LoadHist = x; return true; }
+	else if(strcmp(var,option_WR_LoadAdd)==0)      { WR.LoadAdd = x; return true; }
+	else if(strcmp(var,option_WR_fLog)==0)         { WR.Flags = (WR.Flags & ~(1<<WR_fLog)) | ((x!=0)<<WR_fLog); return true; }
+	else if(strcmp(var,option_WR_fLogFull)==0)     { WR.Flags = (WR.Flags & ~(1<<WR_fLogFull)) | ((x!=0)<<WR_fLogFull); return true; }
+	else if(strcmp(var,option_WR_fActive)==0) {
+		WR.Flags = (WR.Flags & ~(1<<WR_fActive)) | ((x!=0)<<WR_fActive);
 		if(x != 0) WR_Pnet_avg_init = true; else WR_Refresh = true;
 		return true;
 	}
@@ -1192,26 +1206,27 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   return strcat(ret,(char*)(GETBIT(Option.WR_Loads, bit) ? cOne : cZero));
+		   return strcat(ret,(char*)(GETBIT(WR.Loads, bit) ? cOne : cZero));
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads && WR_Load_pins[bit] > 0) {
-		   return strcat(ret,(char*)(GETBIT(Option.WR_Loads_PWM, bit) ? cOne : cZero));
+		   return strcat(ret,(char*)(GETBIT(WR.Loads_PWM, bit) ? cOne : cZero));
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   return _itoa(Option.WR_LoadPower[bit], ret);
+		   return _itoa(WR.LoadPower[bit], ret);
 	   }
-	} else if(strcmp(var, option_WR_MinNetLoad)==0){ return _itoa(Option.WR_MinNetLoad, ret); }
-	else if(strcmp(var, option_WR_TurnOnPause)==0) { return _itoa(Option.WR_TurnOnPause, ret); }
-	else if(strcmp(var, option_WR_TurnOnMinTime)==0){ return _itoa(Option.WR_TurnOnMinTime, ret); }
-	else if(strcmp(var, option_WR_LoadHist)==0)    { return _itoa(Option.WR_LoadHist, ret); }
-	else if(strcmp(var, option_WR_LoadAdd)==0)     { return _itoa(Option.WR_LoadAdd, ret); }
-	else if(strcmp(var, option_f2WR_Log) == 0)     { if(GETBIT(Option.flags2, f2WR_Log)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
-	else if(strcmp(var, option_f2WR_LogFull) == 0) { if(GETBIT(Option.flags2, f2WR_LogFull)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
-	else if(strcmp(var, option_f2WR_Active) == 0)  { if(GETBIT(Option.flags2, f2WR_Active)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
+	} else if(strcmp(var, option_WR_MinNetLoad)==0){ return _itoa(WR.MinNetLoad, ret); }
+	else if(strcmp(var, option_WR_TurnOnPause)==0) { return _itoa(WR.TurnOnPause, ret); }
+	else if(strcmp(var, option_WR_NextSwitchPause)==0){ return _itoa(WR.NextSwitchPause, ret); }
+	else if(strcmp(var, option_WR_TurnOnMinTime)==0){ return _itoa(WR.TurnOnMinTime, ret); }
+	else if(strcmp(var, option_WR_LoadHist)==0)    { return _itoa(WR.LoadHist, ret); }
+	else if(strcmp(var, option_WR_LoadAdd)==0)     { return _itoa(WR.LoadAdd, ret); }
+	else if(strcmp(var, option_WR_fLog) == 0)     { if(GETBIT(WR.Flags, WR_fLog)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
+	else if(strcmp(var, option_WR_fLogFull) == 0) { if(GETBIT(WR.Flags, WR_fLogFull)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
+	else if(strcmp(var, option_WR_fActive) == 0)  { if(GETBIT(WR.Flags, WR_fActive)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
 #endif
 	return strcat(ret,(char*)cInvalid);
 }

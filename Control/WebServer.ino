@@ -645,7 +645,6 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
 		{
-			// set_time_NTP();                                                 // Обновить время
 			HP.timeNTP=0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
 			strcat(strReturn,"Update time from NTP");
 			ADD_WEBDELIM(strReturn);
@@ -2315,10 +2314,10 @@ x_get_aTemp:
 						if(*str == 'L') { // get_WRL(n)
 							if(i) {
 								int16_t val = pm;
-								if(GETBIT(HP.Option.WR_Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
+								if(GETBIT(WR.Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
 								else {
 									if(WR_Load_pins[i] < 0) { // HTTP
-										if(val < 0) val = 0; else if(val > HP.Option.WR_LoadPower[p]) val = HP.Option.WR_LoadPower[p];
+										if(val < 0) val = 0; else if(val > WR.LoadPower[p]) val = WR.LoadPower[p];
 										WR_LoadRun[p] = val;
 										WR_Refresh = true;
 									} else WR_Switch_Load(p, val > 0);

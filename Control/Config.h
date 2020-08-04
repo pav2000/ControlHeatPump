@@ -4068,7 +4068,7 @@ const char *noteTemp[] = {"Температура улицы",
 
 	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
 	#define WATTROUTER												// Включить
-	#define WR_NumLoads				4								// Кол-во нагрузок (0..5)
+	#define WR_NumLoads				4								// Кол-во нагрузок (1..8)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 #ifndef TEST_BOARD
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
@@ -4083,7 +4083,6 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
 #endif
 	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
-	#define WR_NEXT_TURN_ON_PAUSE	10								// Минимальная пауза на включение следующего реле, сек
 
 	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
 	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП

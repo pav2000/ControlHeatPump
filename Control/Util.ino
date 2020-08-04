@@ -1095,28 +1095,28 @@ void WR_Switch_Load(uint8_t idx, boolean On)
 		if(Send_HTTP_Request(HTTP_MAP_Server, Socket[MAIN_WEB_TASK].outBuf, 3) == 1) { // Ok?
 			goto xSwitched;
 		} else {
-			if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: Error set R%d\n", idx + 1);
+			if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: Error set R%d\n", idx + 1);
 		}
 	} else {
 		digitalWriteDirect(pin, On ? WR_RELAY_LEVEL_ON : !WR_RELAY_LEVEL_ON);
 xSwitched:
 		if((WR_LoadRun[idx] > 0) != On) {
 			WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
-			if(On) WR_LastOnTime = WR_SwitchTime[idx];
+			WR_LastSwitchTime = WR_SwitchTime[idx];
 		}
 		if((WR_LoadRun[idx] > 0) != On) WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
-		WR_LoadRun[idx] = On ? HP.Option.WR_LoadPower[idx] : 0;
-		if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: R%d=>%d\n", idx + 1, On);
+		WR_LoadRun[idx] = On ? WR.LoadPower[idx] : 0;
+		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: R%d=>%d\n", idx + 1, On);
 	}
 }
 
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 {
 	int16_t n = WR_LoadRun[idx] + delta;
-	if(n <= 0) n = 0; else if(n > HP.Option.WR_LoadPower[idx]) n = HP.Option.WR_LoadPower[idx];
-	if(GETBIT(HP.Option.flags2, f2WR_LogFull)) journal.jprintf("WR: P%d+=%d\n", idx, delta);
-	else if(GETBIT(HP.Option.flags2, f2WR_Log) && (WR_LoadRun[idx] == 0 || n == HP.Option.WR_LoadPower[idx] || n == 0)) journal.jprintf("WR: P%d=%d\n", idx + 1, n);
-	PWM_Write(WR_Load_pins[idx], n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / HP.Option.WR_LoadPower[idx]);
+	if(n <= 0) n = 0; else if(n > WR.LoadPower[idx]) n = WR.LoadPower[idx];
+	if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: P%d+=%d\n", idx, delta);
+	else if(GETBIT(WR.Flags, WR_fLog) && (WR_LoadRun[idx] == 0 || n == WR.LoadPower[idx] || n == 0)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
+	PWM_Write(WR_Load_pins[idx], n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / WR.LoadPower[idx]);
 	if(WR_LoadRun[idx] != n) WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
 	WR_LoadRun[idx] = n;
 }
@@ -1124,7 +1124,7 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta)
 {
 	if(delta != 0) {
-		int16_t m = HP.Option.WR_LoadPower[idx] >> PWM_WRITE_OUT_RESOLUTION;
+		int16_t m = WR.LoadPower[idx] >> PWM_WRITE_OUT_RESOLUTION;
 		if(delta < 0) {
 			m = -m;
 			if(m < delta) return m;

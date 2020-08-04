@@ -74,7 +74,6 @@ uint32_t startSupcStatusReg;                        // Состояние при
 #endif
 
 // Глобальные переменные
-extern boolean set_time_NTP(void);   
 EthernetServer server1(80);                         // сервер
 EthernetUDP Udp;                                    // Для NTP сервера
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
@@ -743,15 +742,15 @@ void vWeb0(void *)
 				WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 				active = true;
 			}
-			if((((HP.Option.WR_Loads & WR_fLoadMask) && GETBIT(HP.Option.flags2, f2WR_Active)) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
+			if((((WR.Loads & WR_fLoadMask) && GETBIT(WR.Flags, WR_fActive)) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
 				while(1) {
 					boolean nopwr = GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power; // Выключить все
 					if(nopwr || WR_Refresh) {
 						for(uint8_t i = 0; i < WR_NumLoads; i++) {
-							if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
-								WR_Change_Load_PWM(i, nopwr || !GETBIT(HP.Option.WR_Loads, i) ? -32768 : 0);
+							if(GETBIT(WR.Loads_PWM, i)) {
+								WR_Change_Load_PWM(i, nopwr || !GETBIT(WR.Loads, i) ? -32768 : 0);
 							} else {
-								WR_Switch_Load(i, nopwr || !GETBIT(HP.Option.WR_Loads, i) ? 0 : WR_LoadRun[i] ? true : false);
+								WR_Switch_Load(i, nopwr || !GETBIT(WR.Loads, i) ? 0 : WR_LoadRun[i] ? true : false);
 								if(WR_Load_pins[i] < 0) {
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 								}
@@ -762,29 +761,29 @@ void vWeb0(void *)
 						break;
 					}
 #ifdef WR_Load_pins_Boiler_INDEX
-					if((HP.Option.WR_Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
+					if((WR.Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
 						if(curr) {
 							active = false;
-							if(GETBIT(HP.Option.WR_Loads_PWM, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
+							if(GETBIT(WR.Loads_PWM, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
 							else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
-							if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf_time("WR: Boiler OK\n");
+							if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: Boiler OK\n");
 							// Компенсируем
 							for(uint8_t i = 0; i < WR_NumLoads; i++) {
-								if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == HP.Option.WR_LoadPower[i]) continue;
-								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
-									int16_t chg = HP.Option.WR_LoadPower[i] - WR_LoadRun[i];
+								if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
+								if(GETBIT(WR.Loads_PWM, i)) {
+									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
 									if(chg > curr) chg = curr;
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Change_Load_PWM(i, chg);
 									if(curr == chg) break;
 									curr -= chg;
 								} else {
-									if(HP.Option.WR_LoadPower[i] - HP.Option.WR_LoadHist > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= HP.Option.WR_TurnOnPause))
+									if(WR.LoadPower[i] - WR.LoadHist > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= WR.TurnOnPause))
 										continue;
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Switch_Load(i, 1);
-									curr -= HP.Option.WR_LoadPower[i];
+									curr -= WR.LoadPower[i];
 								}
 							}
 							break;
@@ -797,13 +796,13 @@ void vWeb0(void *)
 					active = false;
 					int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MAP, 1);
 					if(err) {
-						if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: HTTP request Error %d\n", err);
+						if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: HTTP request Error %d\n", err);
 						break;
 					}
 					// todo: check "_MODE" >= 3
 					char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_PNET_calc);
 					if(!fld) {
-						if(GETBIT(HP.Option.flags2, f2WR_Log)) journal.jprintf("WR: HTTP json wrong!\n");
+						if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: HTTP json wrong!\n");
 						break;
 					}
 					char *fld2 = strchr(fld += sizeof(HTTP_MAP_JSON_PNET_calc) + 1, '"');
@@ -817,7 +816,7 @@ void vWeb0(void *)
 					//
 					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
 						WR_Pnet = -32768;
-						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) journal.jprintf("WR: Skip %d\n", pnet);
+						if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Skip %d\n", pnet);
 					} else {
 #ifdef WR_PNET_AVERAGE
 						if(WR_Pnet_avg_init) { // first time
@@ -833,25 +832,26 @@ void vWeb0(void *)
 #else
 						WR_Pnet = pnet;
 #endif
-						if(GETBIT(HP.Option.flags2, f2WR_LogFull)) {
+						if(GETBIT(WR.Flags, WR_fLogFull)) {
 							journal.jprintf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 						}
 						// проверка перегрузки
-						pnet = WR_Pnet - HP.Option.WR_MinNetLoad;
+						pnet = WR_Pnet - WR.MinNetLoad;
 						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
 							uint32_t t = rtcSAM3X8.unixtime();
 							uint8_t reserv = 255;
 							for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
-								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == 0) continue;
-								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
+								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
+								if(GETBIT(WR.Loads_PWM, i)) {
 									int16_t chg = WR_LoadRun[i];
 									if(chg > pnet) chg = pnet;
 									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
 									if(pnet == chg) break;
 									pnet -= chg;
 								} else {
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= HP.Option.WR_TurnOnMinTime) continue;
-									if(pnet - HP.Option.WR_LoadHist >= WR_LoadRun[i]) {
+									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
+									if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
 #ifndef WR_CurrentSensor_4_20mA
 										if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif
@@ -863,7 +863,7 @@ void vWeb0(void *)
 									} else if(reserv == 255) reserv = i;
 								}
 							}
-							if(reserv != 255 && pnet > HP.Option.WR_LoadHist) { // еще не все
+							if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
 #ifndef WR_CurrentSensor_4_20mA
 								if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif
@@ -871,19 +871,19 @@ void vWeb0(void *)
 							}
 						} else { // Увеличиваем нагрузку
 							for(int8_t i = 0; i < WR_NumLoads; i++) {
-								if(!GETBIT(HP.Option.WR_Loads, i) || WR_LoadRun[i] == HP.Option.WR_LoadPower[i]) continue;
+								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
 								if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
 #endif
-								if(GETBIT(HP.Option.WR_Loads_PWM, i)) {
-									int16_t chg = HP.Option.WR_LoadPower[i] - WR_LoadRun[i];
-									if(chg > HP.Option.WR_LoadAdd) chg = HP.Option.WR_LoadAdd;
+								if(GETBIT(WR.Loads_PWM, i)) {
+									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
+									if(chg > WR.LoadAdd) chg = WR.LoadAdd;
 									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 									break;
 								} else {
 									uint32_t t = rtcSAM3X8.unixtime();
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= HP.Option.WR_TurnOnPause) continue;
-									if(WR_LastOnTime && t - WR_LastOnTime <= WR_NEXT_TURN_ON_PAUSE) continue;
+									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
 #ifndef WR_CurrentSensor_4_20mA
 									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif
@@ -982,7 +982,7 @@ void vWeb0(void *)
 			{
 				WEB_STORE_DEBUG_INFO(6);
 				HP.timeNTP = thisTime;
-				set_time_NTP();                                                 // Обновить время
+				HP.updateDateTime(set_time_NTP());                                                 // Обновить время
 				active = false;
 			}
 			// 6. ping сервера если это необходимо

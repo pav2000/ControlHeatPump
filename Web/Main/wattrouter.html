@@ -7,7 +7,7 @@
 urlupdate = 2000;
 window.onload = function() {
 	loadParam("get_tblWR");
-	loadParam("get_oHP(WON),get_oHP(WM),get_oHP(WO),get_oHP(WOM),get_oHP(WH),get_oHP(WA),get_oHP(WD),get_oHP(WDF)");
+	loadParam("get_oHP(WON),get_oHP(WM),get_oHP(WO),get_oHP(WOM),get_oHP(WH),get_oHP(WA),get_oHP(WD),get_oHP(WDF),get_oHP(NS)");
 	updateParam("get_WR(0)");
 }
 function loadParam_after(paramid) {
@@ -52,6 +52,9 @@ function loadParam_after(paramid) {
 	</tr><tr>
 		<td>Минимальная мощность, которую можно брать из сети, Вт</td>
 		<td nowrap><input id="get_ohp-wm" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_oHP(WM)')"></td>
+	</tr><tr>
+		<td>Минимальная пауза переключения следующего реле, сек</td>
+		<td nowrap><input id="get_ohp-ns" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_oHP(NS)')"></td>
 	</tr><tr>
 		<td>Минимальное время включения реле, сек</td>
 		<td nowrap><input id="get_ohp-wom" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_oHP(WOM)')"></td>

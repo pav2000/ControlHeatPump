@@ -104,7 +104,10 @@ boolean  Charts_when_comp_on = false;
 uint8_t Request_LowConsume = 0xFF;
 
 #ifdef WATTROUTER
-#define  WR_fLoadMask			((1<<WR_NumLoads)-1)	// b0..bWR_NumLoads
+#define  WR_fActive				1				// Ваттроутер включен
+#define  WR_fLog				2				// Логирование ваттроутера
+#define  WR_fLogFull			3				// Логирование ваттроутера полное
+#define  WR_fLoadMask			((1<<WR_NumLoads)-1)
 int16_t  WR_Pnet = -32768;
 #ifdef WR_PNET_AVERAGE
 int16_t  WR_Pnet_avg[WR_PNET_AVERAGE];
@@ -115,7 +118,19 @@ boolean  WR_Pnet_avg_init = true;
 boolean  WR_Refresh = false;
 int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
-uint32_t WR_LastOnTime = 0;
+uint32_t WR_LastSwitchTime = 0;
+struct {
+	uint8_t  Loads;						// Биты активирования нагрузки
+	uint8_t  Loads_PWM;					// Биты нагрузки PWM
+	uint16_t Flags;						// Флаги
+	int16_t  MinNetLoad;				// Сколько минимально можно брать из сети, Вт
+	int16_t  LoadHist;					// Гистерезис нагрузки, Вт
+	int16_t  LoadAdd;					// Увеличение нагрузки PWM за один шаг, Вт
+	uint16_t NextSwitchPause;			// Задержка следующего переключения реле, секунды
+	uint16_t TurnOnPause;				// Задержка включения реле после его выключения, секунды
+	uint16_t TurnOnMinTime;				// Минимальное время включения реле, секунды
+	int16_t  LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
+} WR;
 #endif
 
 // Рабочие флаги ТН
@@ -144,9 +159,6 @@ uint32_t WR_LastOnTime = 0;
 #define fSDMLogErrors			15              // флаг писать в лог нерегулярные ошибки счетчика SDM
 //  type_optionHP.flags2:
 #define f2BackupPowerAuto		0               // Автоматически определять работу от генератора (через датчик SGENERATOR)
-#define f2WR_Active				1				// Ваттроутер включен
-#define f2WR_Log				2				// Логирование ваттроутера
-#define f2WR_LogFull			3				// Логирование ваттроутера полное
 
 
 // Структура для хранения опций теплового насоса.
@@ -184,16 +196,6 @@ struct type_optionHP
  uint16_t flags2;						// Флаги #2 до 16 флагов
  uint16_t SunMinWorktime;				// Солнечный коллектор - минимальное время работы, после которого будут проверятся границы, сек
  uint16_t SunMinPause;					// Солнечный коллектор - минимальное время паузы после останова СК, сек
-#ifdef WATTROUTER
- uint8_t  WR_Loads;						// Биты активирования нагрузки
- uint8_t  WR_Loads_PWM;					// Нагрузка PWM
- int16_t  WR_MinNetLoad;				// Сколько минимально можно брать из сети, Вт
- int16_t  WR_LoadHist;					// Гистерезис нагрузки, Вт
- int16_t  WR_LoadAdd;					// Увеличение нагрузки PWM за один шаг, Вт
- uint16_t WR_TurnOnPause;				// Задержка включения реле после его выключения, секунды
- uint16_t WR_TurnOnMinTime;				// Минимальное время включения реле, секунды
- int16_t  WR_LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
-#endif
 };// __attribute__((packed));
 
 
@@ -613,7 +615,6 @@ class HeatPump
     uint32_t stopCompressor;              // время останова компрессора (для опеспечения паузы)
     uint32_t offBoiler;                   // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
     uint32_t startDefrost;                // время срабатывания датчика разморозки
- //   uint32_t timeBoilerOff;               // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
     uint32_t startSallmonela;             // время начала обеззараживания
     uint32_t command_completed;			  // Время отработки команды
     boolean  compressor_in_pause;         // Компрессор в паузе
