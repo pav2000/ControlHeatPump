@@ -231,7 +231,14 @@ void setup() {
 	// 2. Инициализация журнала
 	uint8_t b;
 	uint8_t ret = eepromI2C.read(I2C_COUNT_EEPROM, &b, 1);
-	if(ret == 0 && b != I2C_COUNT_EEPROM_HEADER && b != 0xFF) ret = 0xFF;
+	if(ret == 0 && b != I2C_COUNT_EEPROM_HEADER && b != 0xFF) {
+#ifndef TEST_BOARD
+		if(b == 0xAA) {
+			if(!eepromI2C.read(I2C_SETTING_EEPROM + 2 + 1, &b, 1) && b < 147) goto xRewriteHeader;
+		}
+#endif
+		ret = 0xFF;
+	}
 #ifndef DEBUG
 	if(ret)
 #endif
@@ -244,6 +251,9 @@ void setup() {
 		SerialDbg.println("] to continue...");
 		if(!digitalReadDirect(PIN_KEY1)) {
 			WDT_Restart(WDT);
+#ifndef TEST_BOARD
+xRewriteHeader:
+#endif
 			b = I2C_COUNT_EEPROM_HEADER;
 			ret = eepromI2C.write(I2C_COUNT_EEPROM, &b, 1);
 			if(ret) {
@@ -833,7 +843,7 @@ void vWeb0(void *)
 						WR_Pnet = pnet;
 #endif
 						if(GETBIT(WR.Flags, WR_fLogFull)) {
-							journal.jprintf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
+							journal.printf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 						}
 						// проверка перегрузки
 						pnet = WR_Pnet - WR.MinNetLoad;

@@ -56,9 +56,13 @@ struct type_status
 #define fMH_ON    	0       // флаг Включения ТН (пишется внутрь счетчиков flags)
 
 #ifndef TEST_BOARD
-#define I2C_COUNT_EEPROM_HEADER 0xAA
+	#ifdef I2C_EEPROM_64KB
+		#define I2C_COUNT_EEPROM_HEADER 0xAA
+	#else
+		#define I2C_COUNT_EEPROM_HEADER 0xAB
+	#endif
 #else
-#define I2C_COUNT_EEPROM_HEADER 0xAB
+	#define I2C_COUNT_EEPROM_HEADER 0xAC
 #endif
 struct type_motoHour_old
 {
