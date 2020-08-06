@@ -3638,8 +3638,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
 	#define RNUMBER                    12 // Число исполнительных устройств (всех)
 	// устройства DC 24V
-	#define PIN_DEVICE_RCOMP           61//12 //{#->61,X22.2}[R_9(X1)3.3V] через FOD852(p1..4); X174.2->p2, X1.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
-	//#define PIN_FC_RESET             53 //[R_7] -> DI3(10) Выход для сброса инвертора
+	#define PIN_DEVICE_RCOMP           61 // через FOD852(p1..4); X31.3->p2, X22.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
+	//#define PIN_FC_RESET             53 // -> DI3(10) Выход для сброса инвертора
 	// устройства DC 12V
 	#define PIN_DEVICE_GEN             62 // X22.3 -> R680 -> FOD852.p1, X12.1(GND) -> FOD852.p2 (FOD852 = TLP627)
 	// устройства DC 5V
@@ -3648,15 +3648,16 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_DEVICE_RPUMPO          47 //[R_2] Реле включения насоса выходного контура  (отопление и ГВС)
 	#define PIN_DEVICE_RPUMPBH         48 //[R_3] Реле насоса НАГРЕВА бойлера (ГВС) - не циркуляция
 	#define PIN_DEVICE_RPUMPI          49 //[R_4] Реле включения насоса входного контура  (геоконтур)
-	#define PIN_DEVICE_RBOILER         12//50 //{#->12} [R_5] Включение ТЭНа бойлера (SSR, PWM)
+	#define PIN_DEVICE_RBOILER         12 // X1.2(+),X17.2(-) Включение ТЭНа бойлера (SSR, PWM)
 	#define PIN_DEVICE_R4WAY           51 //[R_6] 4-ходовой клапан
-	#define PIN_DEVICE_RPUMPFL         50//11 //{#->50}[R_8] реле насоса Теплого Пола
+	#define PIN_DEVICE_RPUMPFL         50 //[R_5 реле насоса Теплого Пола
 	#ifdef USE_SUN_COLLECTOR
 		#define PIN_DEVICE_RSUN        46 //[R_1] Реле включения насоса солнечного коллектора
 		#define PIN_DEVICE_RSUN_ON     53 //[R_7] Реле включение шарового крана солнечного коллектора
-		#define PIN_DEVICE_RSUN_OFF    60//13 //{#->60,X22.1}[R_10] Реле выключение шарового крана солнечного коллектора, через доп реле.
+		#define PIN_DEVICE_RSUN_OFF    60 // X22.1 Реле выключение шарового крана солнечного коллектора, через доп реле.
 		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
+	// Free: R_8[D11], R_10(X2.2)[D13]
 	//	#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
 	//  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 	//  #define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
