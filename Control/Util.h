@@ -35,7 +35,20 @@ uint8_t _ftoa(char *outstr, float val, unsigned char precision);
 void _dtoa(char *outstr, int val, int precision);
 char* NowTimeToStr(char *buf = NULL);
 char* NowDateToStr(char *buf = NULL);
+
+extern uint8_t PWMEnabled;
+extern uint8_t TCChanEnabled[];
+#define sizeof_TCChanEnabled 9
+#ifdef WATTROUTER
+#define PWM_WRITE_OUT_FREQUENCY	WR.PWM_Freq		// PWM freq for PWM_Write() function
 void WR_Switch_Load(uint8_t idx, boolean On);
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta);
 inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
+#else
+#define PWM_WRITE_OUT_FREQUENCY	PWM_FREQUENCY	// PWM freq for PWM_Write() function
+#ifndef PWM_WRITE_OUT_RESOLUTION
+#define PWM_WRITE_OUT_RESOLUTION 8				// bit
+#endif
+#endif
+
 #endif

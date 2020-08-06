@@ -134,6 +134,7 @@ struct {
 	uint16_t NextSwitchPause;			// Задержка следующего переключения реле, секунды
 	uint16_t TurnOnPause;				// Задержка включения реле после его выключения, секунды
 	uint16_t TurnOnMinTime;				// Минимальное время включения реле, секунды
+	uint16_t PWM_Freq;					// Гц
 	int16_t  LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
 } WR;
 #endif

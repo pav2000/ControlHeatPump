@@ -3308,7 +3308,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   7 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_7    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
 	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -4077,7 +4077,7 @@ const char *noteTemp[] = {"Температура улицы",
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
 	#define WR_RELAY_LEVEL_ON		1
-	#define PWM_WRITE_OUT_FREQUENCY	3								// Частота вывода PWM, Гц, для функции PWM_Write()
+	#define PWM_WRITE_OUT_FREQ_DEFAULT 3							// Частота вывода PWM, Гц, для функции PWM_Write()
 	#define PWM_WRITE_OUT_RESOLUTION 5								// 0..31, bits
 #ifndef WR_CurrentSensor_4_20mA
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения

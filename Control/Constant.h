@@ -742,6 +742,7 @@ const char *option_WR_NextSwitchPause	= {"NS"};
 const char *option_WR_fLog				= {"WD"};
 const char *option_WR_fLogFull			= {"WDF"};
 const char *option_WR_fActive			= {"WON"};
+const char *option_WR_PWM_Freq			= {"WF"};
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы

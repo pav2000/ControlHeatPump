@@ -985,14 +985,6 @@ static void TC_SetCMR_ChannelB(Tc *tc, uint32_t chan, uint32_t v)
 {
 	tc->TC_CHANNEL[chan].TC_CMR = (tc->TC_CHANNEL[chan].TC_CMR & 0xF0FFFFFF) | v;
 }
-extern uint8_t PWMEnabled;
-extern uint8_t TCChanEnabled[];
-#ifndef PWM_WRITE_OUT_FREQUENCY
-#define PWM_WRITE_OUT_FREQUENCY	PWM_FREQUENCY	// PWM freq for PWM_Write() function
-#endif
-#ifndef PWM_WRITE_OUT_RESOLUTION
-#define PWM_WRITE_OUT_RESOLUTION 8				// bit
-#endif
 
 // PWM output to PWM/TIMER pins
 void PWM_Write(uint32_t ulPin, uint32_t ulValue) {
