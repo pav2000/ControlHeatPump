@@ -2319,7 +2319,7 @@ x_get_aTemp:
 									if(WR_Load_pins[i] < 0) { // HTTP
 										if(val < 0) val = 0; else if(val > WR.LoadPower[p]) val = WR.LoadPower[p];
 										WR_LoadRun[p] = val;
-										WR_Refresh = true;
+										WR_Refresh |= (1<<p);
 									} else WR_Switch_Load(p, val > 0);
 								}
 							}

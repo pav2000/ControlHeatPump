@@ -1104,21 +1104,21 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   WR.Loads = (WR.Loads & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
+		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   WR.Loads_PWM = (WR.Loads_PWM & ~(1<<bit)) | (x == 0 ? 0 : (1<<bit));
-		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
+		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   WR.LoadPower[bit] = x;
-		   if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
+		   if(GETBIT(WR.Loads_PWM, bit)) WR_Refresh |= (1<<bit);
 		   return true;
 	   }
 	} else if(strcmp(var,option_WR_MinNetLoad)==0) { WR.MinNetLoad = x; return true; }

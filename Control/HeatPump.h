@@ -112,6 +112,7 @@ uint8_t Request_LowConsume = 0xFF;
 #define  WR_fLog				2				// Логирование ваттроутера
 #define  WR_fLogFull			3				// Логирование ваттроутера полное
 #define  WR_fLoadMask			((1<<WR_NumLoads)-1)
+#define  WR_fTYPE				uint8_t
 int16_t  WR_Pnet = -32768;
 #ifdef WR_PNET_AVERAGE
 int16_t  WR_Pnet_avg[WR_PNET_AVERAGE];
@@ -119,13 +120,13 @@ uint8_t  WR_Pnet_avg_idx = 0;
 int32_t  WR_Pnet_avg_sum = 0;
 boolean  WR_Pnet_avg_init = true;
 #endif
-boolean  WR_Refresh = false;
+WR_fTYPE WR_Refresh = 0;
 int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
 struct {
-	uint8_t  Loads;						// Биты активирования нагрузки
-	uint8_t  Loads_PWM;					// Биты нагрузки PWM
+	WR_fTYPE Loads;						// Биты активирования нагрузки
+	WR_fTYPE Loads_PWM;					// Биты нагрузки PWM
 	uint16_t Flags;						// Флаги
 	int16_t  MinNetLoad;				// Сколько минимально можно брать из сети, Вт
 	int16_t  LoadHist;					// Гистерезис нагрузки, Вт
