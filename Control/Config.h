@@ -4075,6 +4075,7 @@ const char *noteTemp[] = {"Температура улицы",
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	#undef HTTP_LowConsumeRequest
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
 	#define WR_RELAY_LEVEL_ON		1

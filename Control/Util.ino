@@ -1040,11 +1040,16 @@ void PWM_Write(uint32_t ulPin, uint32_t ulValue) {
 			pmc_enable_periph_clk(TC_INTERFACE_ID + interfaceID);
 			TC_Configure(chTC, chNo,
 				TC_CMR_TCCLKS_TIMER_CLOCK1 |
-				TC_CMR_WAVE |         // Waveform mode
-				TC_CMR_WAVSEL_UP_RC | // Counter running up and reset when equals to RC
-				TC_CMR_EEVT_XC0 |     // Set external events from XC0 (this setup TIOB as output)
+				TC_CMR_WAVE |			// Waveform mode
+				TC_CMR_WAVSEL_UP_RC |	// Counter running up and reset when equals to RC
+//				TC_CMR_EEVTEDG_EDGE |	// External Event Edge Selection
+//				TC_CMR_ENETRG |			// External Event Trigger Enable
+				TC_CMR_EEVT_XC2 |		// Set external events from XCn (this setup TIOB as output)
 				TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_CLEAR |
 				TC_CMR_BCPB_CLEAR | TC_CMR_BCPC_CLEAR);
+
+//		    chTC->TC_BMR |= TC_BMR_TC0XC0S_TCLK0 << (2*chNo);
+//		    PIO_SetPeripheral(PIOD, PIO_PERIPH_B, PIO_PD9B_TCLK8); // (XC2) Set as input trigger
 			TC_SetRC(chTC, chNo, TC);
 		}
 		if (ulValue == 0) {

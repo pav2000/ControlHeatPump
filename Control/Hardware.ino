@@ -539,7 +539,11 @@ int8_t devRelay::set_Relay(int8_t r)
 #ifdef R4WAY_INVERT              // Признак инвертирования 4х ходового
 		if(number == R4WAY) r = !r;
 #endif
-		digitalWriteDirect(pin, r);
+#ifdef WR_Load_pins_Boiler_INDEX
+		if(number == RBOILER) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, r ? 32767 : -32768);
+		else
+#endif
+			digitalWriteDirect(pin, r);
 	}
 #ifdef RELAY_WAIT_SWITCH
 	uint8_t tasks_suspended = TaskSuspendAll();
