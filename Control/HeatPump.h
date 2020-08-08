@@ -135,6 +135,8 @@ struct {
 	uint16_t TurnOnPause;				// Задержка включения реле после его выключения, секунды
 	uint16_t TurnOnMinTime;				// Минимальное время включения реле, секунды
 	uint16_t PWM_Freq;					// Гц
+	uint8_t  PWM_FullPowerTime;			// Время работы на максимальной мощности для PWM и время паузы после, 0 - выкл, минут
+	uint8_t  PWM_FullPowerLimit;		// Процент ограничения мощности после времени максимальной работы, %
 	int16_t  LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
 } WR;
 #endif

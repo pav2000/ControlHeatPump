@@ -756,12 +756,15 @@ void vWeb0(void *)
 				while(1) {
 					boolean nopwr = GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power; // Выключить все
 					if(nopwr) WR_Refresh |= WR_fLoadMask;
-					if(WR_Refresh) {
+					if(WR_Refresh || WR.PWM_FullPowerTime) {
 						for(uint8_t i = 0; i < WR_NumLoads; i++) {
-							if(!GETBIT(WR_Refresh, i)) continue;
+							if(!GETBIT(WR.Loads, i)) continue;
 							if(GETBIT(WR.Loads_PWM, i)) {
-								WR_Change_Load_PWM(i, nopwr ? -32768 : 0);
-							} else {
+								if(nopwr) WR_Change_Load_PWM(i, -32768);
+								else if(GETBIT(WR_Refresh, i) || (WR.PWM_FullPowerTime && WR_LoadRun[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] > WR.PWM_FullPowerTime * 60)) {
+									WR_Change_Load_PWM(i, 0);
+								}
+							} else if(GETBIT(WR_Refresh, i)) {
 								WR_Switch_Load(i, nopwr ? 0 : WR_LoadRun[i] ? true : false);
 								if(WR_Load_pins[i] < 0) {
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
