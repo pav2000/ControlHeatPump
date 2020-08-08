@@ -730,8 +730,8 @@ const char *option_fBackupPowerInfo   = {"BP"};					// Работа от ген�
 const char *option_maxBackupPower     = {"MAXPOW"};				// Максимальная мощность при питании от генератора
 const char *option_fBackupPowerAuto	  = {"BPA"};
 
-const char option_WR_Loads[]			= "WL";					// Биты активирования нагрузки
-const char option_WR_Loads_PWM[]		= "WP";					// Нагрузка PWM
+const char option_WR_Loads[]			= "WL";					// WLn, Биты активирования нагрузки
+const char option_WR_Loads_PWM[]		= "WP";					// WPn, Нагрузка PWM
 const char option_WR_LoadPower[]		= "WR";					// Мощности нагрузки, Вт
 const char *option_WR_MinNetLoad		= {"WM"};				// Сколько минимально можно брать из сети, Вт
 const char *option_WR_LoadHist			= {"WH"};				// Гистерезис нагрузки, Вт
@@ -743,8 +743,8 @@ const char *option_WR_fLog				= {"WD"};
 const char *option_WR_fLogFull			= {"WDF"};
 const char *option_WR_fActive			= {"WON"};
 const char *option_WR_PWM_Freq			= {"WF"};
-const char *option_WR_PWM_FullPowerTime = {"WPT"};
-const char *option_WR_PWM_FullPowerLimit= {"WPL"};
+const char *option_WR_PWM_FullPowerTime = {"WFPT"};
+const char *option_WR_PWM_FullPowerLimit= {"WFPL"};
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы

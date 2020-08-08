@@ -752,13 +752,13 @@ void vWeb0(void *)
 				WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 				active = true;
 			}
-			if((((WR.Loads & WR_fLoadMask) && GETBIT(WR.Flags, WR_fActive)) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
+			if((GETBIT(WR.Flags, WR_fActive) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
 				while(1) {
 					boolean nopwr = GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power; // Выключить все
 					if(nopwr) WR_Refresh |= WR_fLoadMask;
 					if(WR_Refresh || WR.PWM_FullPowerTime) {
 						for(uint8_t i = 0; i < WR_NumLoads; i++) {
-							if(!GETBIT(WR.Loads, i)) continue;
+							//if(!GETBIT(WR.Loads, i)) continue;
 							if(GETBIT(WR.Loads_PWM, i)) {
 								if(nopwr) WR_Change_Load_PWM(i, -32768);
 								else if(GETBIT(WR_Refresh, i) || (WR.PWM_FullPowerTime && WR_LoadRun[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] > WR.PWM_FullPowerTime * 60)) {
@@ -775,6 +775,7 @@ void vWeb0(void *)
 						active = false;
 						break;
 					}
+					if((WR.Loads & WR_fLoadMask) == 0) break;
 #ifdef WR_Load_pins_Boiler_INDEX
 					if((WR.Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
