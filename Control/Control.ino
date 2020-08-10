@@ -752,10 +752,10 @@ void vWeb0(void *)
 				WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 				active = true;
 			}
-			if((GETBIT(WR.Flags, WR_fActive) || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
+			if((GETBIT(WR.Flags, WR_fActive) || WR.PWM_FullPowerTime || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
 				while(1) {
-					boolean nopwr = GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power; // Выключить все
-					if(nopwr) WR_Refresh |= WR_fLoadMask;
+					boolean nopwr = (GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power) && GETBIT(WR.Flags, WR_fActive); // Выключить все
+					if(nopwr) WR_Refresh |= WR.Loads;
 					if(WR_Refresh || WR.PWM_FullPowerTime) {
 						for(uint8_t i = 0; i < WR_NumLoads; i++) {
 							//if(!GETBIT(WR.Loads, i)) continue;
@@ -768,14 +768,13 @@ void vWeb0(void *)
 								WR_Switch_Load(i, nopwr ? 0 : WR_LoadRun[i] ? true : false);
 								if(WR_Load_pins[i] < 0) {
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									active = false;
 								}
 							}
 						}
 						WR_Refresh = false;
-						active = false;
-						break;
 					}
-					if((WR.Loads & WR_fLoadMask) == 0) break;
+					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
 					if((WR.Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];

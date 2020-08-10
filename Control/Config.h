@@ -3308,7 +3308,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   7 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_7    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-//	#define TEST_BOARD 				// Тестовая плата!
+	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
 	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -3648,7 +3648,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_DEVICE_RPUMPO          47 //[R_2] Реле включения насоса выходного контура  (отопление и ГВС)
 	#define PIN_DEVICE_RPUMPBH         48 //[R_3] Реле насоса НАГРЕВА бойлера (ГВС) - не циркуляция
 	#define PIN_DEVICE_RPUMPI          49 //[R_4] Реле включения насоса входного контура  (геоконтур)
-	#define PIN_DEVICE_RBOILER         12 // X1.2(+),X17.2(-) Включение ТЭНа бойлера (SSR, PWM)
+	#define PIN_DEVICE_RBOILER         11 //[R_8] Включение ТЭНа бойлера (SSR, PWM)
+	#define PIN_PWM_ZERO_CROSS         12 // X1.2(+),X17.2(-)
 	#define PIN_DEVICE_R4WAY           51 //[R_6] 4-ходовой клапан
 	#define PIN_DEVICE_RPUMPFL         50 //[R_5 реле насоса Теплого Пола
 	#ifdef USE_SUN_COLLECTOR
@@ -3657,7 +3658,7 @@ const char *noteTemp[] = {"Температура улицы",
 		#define PIN_DEVICE_RSUN_OFF    60 // X22.1 Реле выключение шарового крана солнечного коллектора, через доп реле.
 		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
-	// Free: R_8[D11], R_10(X2.2)[D13]
+	// Free: R_10(X2.2)[D13]
 	//#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
 	//#define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 	//#define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
@@ -4069,20 +4070,29 @@ const char *noteTemp[] = {"Температура улицы",
 
 	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
 	#define WATTROUTER												// Включить
-	#define WR_NumLoads				4								// Кол-во нагрузок (1..8)
+	#define WR_NumLoads				3								// Кол-во нагрузок (1..8)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 #ifndef TEST_BOARD
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 	#undef HTTP_LowConsumeRequest
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
-	#define WR_RELAY_LEVEL_ON		1
-	#define PWM_WRITE_OUT_FREQ_DEFAULT 3							// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 5								// 0..31, bits
+	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
 #ifndef WR_CurrentSensor_4_20mA
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
+#endif
+	//#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
+#ifdef WR_ONE_PERIOD_PWM
+	#define PWM_WRITE_OUT_FREQ_DEFAULT 100							// Частота вывода PWM, Гц, для функции PWM_Write()
+	#define PWM_WRITE_OUT_RESOLUTION 8								// bits
+	#define WR_ZERO_CROSS_TC_CMR_EEVT TC_CMR_EEVT_TIOB
+	#define WR_ZERO_CROSS_TC_BMR_SET //chTC->TC_BMR |= TC_BMR_TC2XC2S_TCLK2
+	#define WR_ZERO_CROSS_PERIPH PIO_PERIPH_B
+#else
+	#define PWM_WRITE_OUT_FREQ_DEFAULT 1							// Частота вывода PWM, Гц, для функции PWM_Write()
+	#define PWM_WRITE_OUT_RESOLUTION 6								// bits
 #endif
 	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
 
