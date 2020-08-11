@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.091";
+var VER_WEB = "1.092";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -296,11 +296,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												content += '<td>' +count[j]+ '</td>';
 												content += '<td id="get_npress-' +P+ '"></td>';
 												content += '<td id="get_press-' +P+ '" nowrap>-</td>';
-												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" min="0" max="2048" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" min="0" max="4" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
 												content += '<td id="get_pinpress-' +P+ '">-</td>';
 												content += '<td id="get_adcpress-' +P+ '">-</td>';
 												content += '<td id="get_epress-' +P+ '">-</td>';

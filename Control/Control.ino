@@ -826,7 +826,7 @@ void vWeb0(void *)
 					int16_t pnet = atoi(fld);
 #else
 					HP.sADC[IWR].Read();
-					int16_t pnet = HP.sADC[IWR].get_Value();
+					int16_t pnet = HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
 #endif
 					//
 					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
