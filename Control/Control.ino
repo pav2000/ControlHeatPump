@@ -850,45 +850,51 @@ void vWeb0(void *)
 						if(GETBIT(WR.Flags, WR_fLogFull)) {
 							journal.printf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 						}
+						if(WR_TestLoadStatus) WR_TestLoadStatus++;
 						// проверка перегрузки
 						pnet = WR_Pnet - WR.MinNetLoad;
 						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
-							uint32_t t = rtcSAM3X8.unixtime();
-							uint8_t reserv = 255;
-							for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
-								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
-								if(GETBIT(WR.Loads_PWM, i)) {
-									int16_t chg = WR_LoadRun[i];
-									if(chg > pnet) chg = pnet;
-									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
-									if(pnet == chg) break;
-									pnet -= chg;
-								} else {
-									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
-									if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
+							if(WR_TestLoadStatus) {
+								WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
+								WR_TestLoadStatus = 0;
+							} else {
+								uint32_t t = rtcSAM3X8.unixtime();
+								uint8_t reserv = 255;
+								for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
+									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
+									if(GETBIT(WR.Loads_PWM, i)) {
+										int16_t chg = WR_LoadRun[i];
+										if(chg > pnet) chg = pnet;
+										WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
+										if(pnet == chg) break;
+										pnet -= chg;
+									} else {
+										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
+										if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
 #ifndef WR_CurrentSensor_4_20mA
-										if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+											if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif
-										WR_Switch_Load(i, 0);
+											WR_Switch_Load(i, 0);
 #ifndef WR_CurrentSensor_4_20mA
-										if(WR_Load_pins[i] < 0) active = false;
+											if(WR_Load_pins[i] < 0) active = false;
 #endif
-										break;
-									} else if(reserv == 255) reserv = i;
+											break;
+										} else if(reserv == 255) reserv = i;
+									}
 								}
-							}
-							if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
+								if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
 #ifndef WR_CurrentSensor_4_20mA
-								if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif
-								WR_Switch_Load(reserv, 0);
+									WR_Switch_Load(reserv, 0);
+								}
 							}
 						} else { // Увеличиваем нагрузку
 							for(int8_t i = 0; i < WR_NumLoads; i++) {
 								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-								if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
+								if(WR_TestLoadStatus || (i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat)) continue;
 #endif
 								if(GETBIT(WR.Loads_PWM, i)) {
 									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
@@ -899,6 +905,17 @@ void vWeb0(void *)
 									uint32_t t = rtcSAM3X8.unixtime();
 									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
 									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
+#ifdef WR_TestAvailablePowerForRelayLoads
+									if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
+										if(WR_TestLoadStatus == 0) {
+											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR_TestLoadPower = WR.LoadPower[i]);
+											WR_TestLoadStatus = 1;
+										} else if(WR_TestLoadStatus > WR_TestAvailablePowerTime) {
+											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
+											WR_TestLoadStatus = 0;
+										}
+									}
+#endif
 #ifndef WR_CurrentSensor_4_20mA
 									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 #endif

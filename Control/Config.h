@@ -4079,6 +4079,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#undef HTTP_LowConsumeRequest
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
+	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
+	#define WR_TestAvailablePowerTime 3								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
 #ifndef WR_CurrentSensor_4_20mA
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
