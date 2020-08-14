@@ -237,9 +237,7 @@ xUNAUTHORIZED:
 		//	vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 			taskYIELD();
 		} // end if (client)
-#ifdef FAST_LIB  // Переделка
 	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
-#endif
 	SemaphoreGive (xWebThreadSemaphore);              // Семафор отдать
 }
 
@@ -2316,10 +2314,12 @@ x_get_aTemp:
 								int16_t val = pm;
 								if(GETBIT(WR.Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
 								else {
-									if(WR_Load_pins[i] < 0) { // HTTP
+									if(WR_Load_pins[p] < 0) { // HTTP
 										if(val < 0) val = 0; else if(val > WR.LoadPower[p]) val = WR.LoadPower[p];
-										WR_LoadRun[p] = val;
-										WR_Refresh |= (1<<p);
+										WR_Refresh |= (val > 0)<<p;
+										_itoa(val, strReturn);
+										ADD_WEBDELIM(strReturn);
+										continue;
 									} else WR_Switch_Load(p, val > 0);
 								}
 							}
