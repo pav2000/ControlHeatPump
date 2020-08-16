@@ -909,6 +909,7 @@ void vWeb0(void *)
 									if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
 										if(WR_TestLoadStatus == 0) {
 											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR_TestLoadPower = WR.LoadPower[i]);
+											WR_SwitchTime[i] = rtcSAM3X8.unixtime();
 											WR_TestLoadStatus = 1;
 										} else if(WR_TestLoadStatus > WR_TestAvailablePowerTime) {
 											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
