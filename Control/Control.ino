@@ -439,7 +439,7 @@ x_I2C_init_std_message:
 	// Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
 	journal.jprintf("3. Read safe Network key . . .\n");
 	HP.safeNetwork = !digitalReadDirect(PIN_KEY1);
-	journal.jprintf("Mode safeNetwork %s\n", HP.safeNetwork ? "ON" : "OFF");
+	journal.jprintf(" Mode safeNetwork %s\n", HP.safeNetwork ? "ON" : "OFF");
 
 	// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
 	journal.jprintf("4. Load data from I2C memory . . .\n");

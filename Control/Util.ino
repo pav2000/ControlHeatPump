@@ -1108,11 +1108,7 @@ void WR_Switch_Load(uint8_t idx, boolean On)
 	} else {
 		digitalWriteDirect(pin, On ? WR_RELAY_LEVEL_ON : !WR_RELAY_LEVEL_ON);
 xSwitched:
-		if((WR_LoadRun[idx] > 0) != On) {
-			WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
-			WR_LastSwitchTime = WR_SwitchTime[idx];
-		}
-		if((WR_LoadRun[idx] > 0) != On) WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
+		if((WR_LoadRun[idx] > 0) != On) WR_SwitchTime[idx] = WR_LastSwitchTime = rtcSAM3X8.unixtime();
 		WR_LoadRun[idx] = On ? WR.LoadPower[idx] : 0;
 		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: R%d=>%d\n", idx + 1, On);
 	}
