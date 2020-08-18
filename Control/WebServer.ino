@@ -2315,7 +2315,7 @@ x_get_aTemp:
 								if(GETBIT(WR.Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
 								else {
 									if(WR_Load_pins[p] < 0) { // HTTP
-										if(val < 0) val = 0; else if(val > WR.LoadPower[p]) val = WR.LoadPower[p];
+										if(val < 0) val = 0; else if(val > 0) val = WR.LoadPower[p];
 										WR_Refresh |= (val > 0)<<p;
 										WR_LoadRun[p] = val;
 										WR_SwitchTime[p] = WR_LastSwitchTime = rtcSAM3X8.unixtime();
