@@ -3577,7 +3577,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FLOW_CONTROL								  // Контроль потоков через ПТО (актуален если установлены расходомеры)
 
 	// АНАЛОГОВЫЕ ДАТЧИКИ  -------------------------------------------------------------------
-	#define ANUMBER		5       // Максимальное число аналоговых датчиков (то что поддерживается)
+	#define ANUMBER		4       // Максимальное число аналоговых датчиков (то что поддерживается)
 	// наличие датчиков в конфигурации минимальные максимальные и тестовые значения
 	// Справочно нумерация датчиков
 	// Давление харится в сотых бара
@@ -3585,20 +3585,20 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PCON			1	// Датчик давления конденсатора.
 	#define PGEO			2	// Датчик давления жидкости геоконтура
 	#define POUT			3	// Датчик давления теплоносителя отопления
-	#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
+	//#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
 	// Имена датчиков
 	const char *nameAnalog[] = {"PEVA",
 								"PCON",
 								"PGEO",
-								"POUT",
-								"IWR"
+								"POUT"
+								//,"IWR"
 						   };
 	// Описание датчиков
 	const char *noteAnalog[] = {"Давление кипения",
 								"Давление конденсации",
 								"Давление геоконтура",
-								"Давление отопления",
-								"Ток ваттроутера"
+								"Давление отопления"
+								//,"Ток ваттроутера"
 							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
@@ -3608,17 +3608,17 @@ const char *noteTemp[] = {"Температура улицы",
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_IWR		3		// A4, X19.2 датчик тока (4-20мА), + резистор 150 Ом на GND
 	// Коэффициент преобразования отсчеты АЦП-давление, тысячные
-	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181, 1000};
+	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181};
 	// напряжение (отсчеты АЦП) соответсвующее cZero
-	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70,    0};
+	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70};
 	// Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
-	// const uint8_t  ADC_GAIN[ANUMBER] = {   1,    1,    1,    1,    1};
+	// const uint8_t  ADC_GAIN[ANUMBER] = {   1,    1,    1,    1};
 
 
-	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true, true};	// Присутствие датчика в конфигурации
-	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100,-32767};	// минимальные значения, в сотых
-	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280,65535};	// Максимальные значения, в сотых
-	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150,    1};	// Значения датчиков при тестировании  опция TEST, в сотых
+	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
+	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения, в сотых
+	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280};	// Максимальные значения, в сотых
+	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150};	// Значения датчиков при тестировании  опция TEST, в сотых
 	//#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
 	#ifdef ANALOG_MODBUS
 	#define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
@@ -4073,6 +4073,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WATTROUTER												// Включить
 	#define WR_NumLoads				3								// Кол-во нагрузок (1..8)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
+	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
+	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b)
 #ifndef TEST_BOARD
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
@@ -4083,7 +4085,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 3								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
-#ifndef WR_CurrentSensor_4_20mA
+#if !defined(WR_CurrentSensor_4_20mA) && !defined(WR_PowerMeter_Modbus)
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
 #endif
 	//#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
@@ -4105,7 +4107,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
 	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
 
-#ifdef WR_CurrentSensor_4_20mA
+#if defined(WR_CurrentSensor_4_20mA) || defined(WR_PowerMeter_Modbus)
 	#define WEB0_FREQUENT_JOB_PERIOD 	1000	 		// Периодичность важных функций в задаче WEB0, мс
 #else
 	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс

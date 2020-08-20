@@ -806,7 +806,13 @@ void vWeb0(void *)
 					}
 #endif
 
-#ifndef WR_CurrentSensor_4_20mA
+#ifdef WR_CurrentSensor_4_20mA
+					HP.sADC[IWR].Read();
+					int16_t pnet = HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
+#elif WR_PowerMeter_Modbus
+					int16_t pnet = round_div_int32(WR_PowerMeter_Power, 10);
+#else
+
 					// HTTP power meter
 					active = false;
 					int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MAP, 1);
@@ -824,9 +830,6 @@ void vWeb0(void *)
 					if(!fld2) break;
 					*(fld2 - 2) = '\0' ; // integer part "0.0"
 					int16_t pnet = atoi(fld);
-#else
-					HP.sADC[IWR].Read();
-					int16_t pnet = HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
 #endif
 					//
 					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
@@ -1133,9 +1136,14 @@ void vReadSensor(void *)
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
-		  HP.dSDM.get_readState(0); // Основная группа регистров
+		HP.dSDM.get_readState(0); // Основная группа регистров
 #endif
-
+#ifdef WR_PowerMeter_Modbus
+		if(GETBIT(WR.Flags, WR_fActive)) {
+			i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
+			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+		}
+#endif
 		vReadSensor_delay1ms(cDELAY_DS1820 - (int32_t)(GetTickCount() - ttime)); 	// Ожидать время преобразования
 
 		if(OW_scan_flags == 0) {
@@ -1179,6 +1187,16 @@ void vReadSensor(void *)
 		HP.calculatePower();  // Расчет мощностей и СОР
 		Stats.Update();
 
+#if defined(WR_PowerMeter_Modbus) && TIME_READ_SENSOR > 1500
+		if(GETBIT(WR.Flags, WR_fActive)) {
+			int32_t tm = TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime);
+			if(tm > WEB0_FREQUENT_JOB_PERIOD / 2) {
+				vReadSensor_delay1ms(tm - WEB0_FREQUENT_JOB_PERIOD);     													// 1. Ожидать время нужное для цикла чтения
+				i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
+				if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+			}
+		}
+#endif
 		vReadSensor_delay1ms((TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime)) / 2);     // 1. Ожидать время нужное для цикла чтения
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении

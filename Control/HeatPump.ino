@@ -1150,7 +1150,10 @@ boolean HeatPump::set_optionHP(char *var, float x)
 		return true;
 	} else if(strcmp(var,option_WR_fActive)==0) {
 		WR.Flags = (WR.Flags & ~(1<<WR_fActive)) | ((n!=0)<<WR_fActive);
-		if(n != 0) WR_Pnet_avg_init = true; else WR_Refresh = true;
+		if(n == 0) WR_Refresh = true;
+#ifdef WR_PNET_AVERAGE
+		else WR_Pnet_avg_init = true;
+#endif
 		return true;
 	}
 #endif
