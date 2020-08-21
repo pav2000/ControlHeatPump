@@ -760,12 +760,17 @@ void vWeb0(void *)
 						for(uint8_t i = 0; i < WR_NumLoads; i++) {
 							//if(!GETBIT(WR.Loads, i)) continue;
 							if(GETBIT(WR.Loads_PWM, i)) {
-								if(nopwr) WR_Change_Load_PWM(i, -32768);
-								else if(GETBIT(WR_Refresh, i) || (WR.PWM_FullPowerTime && WR_LoadRun[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] > WR.PWM_FullPowerTime * 60)) {
+								if(nopwr) {
+									if(WR_LoadRun[i] == 0) continue;
+									WR_Change_Load_PWM(i, -32768);
+								} else if(GETBIT(WR_Refresh, i) || (WR.PWM_FullPowerTime && WR_LoadRun[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] > WR.PWM_FullPowerTime * 60)) {
 									WR_Change_Load_PWM(i, 0);
 								}
 							} else if(GETBIT(WR_Refresh, i)) {
-								WR_Switch_Load(i, nopwr ? 0 : WR_LoadRun[i] ? true : false);
+								if(nopwr) {
+									if(WR_LoadRun[i] == 0) continue;
+									WR_Switch_Load(i, 0);
+								} else WR_Switch_Load(i, WR_LoadRun[i] ? true : false);
 								if(WR_Load_pins[i] < 0) {
 									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									active = false;
