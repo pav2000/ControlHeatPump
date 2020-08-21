@@ -876,7 +876,10 @@ void vWeb0(void *)
 										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
 									}
 #ifdef HTTP_MAP_Read_MPPT
-									if(mppt == 255 && (mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
+									if(mppt != 255) {
+										active = false;
+										if((mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
+									}
 #endif
 									if(GETBIT(WR.Loads_PWM, i)) {
 										int16_t chg = WR_LoadRun[i];
@@ -886,21 +889,15 @@ void vWeb0(void *)
 										pnet -= chg;
 									} else {
 										if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
-#ifndef WR_CurrentSensor_4_20mA
-											if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-#endif
+											if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 											WR_Switch_Load(i, 0);
-#ifndef WR_CurrentSensor_4_20mA
 											if(WR_Load_pins[i] < 0) active = false;
-#endif
 											break;
 										} else if(reserv == 255) reserv = i;
 									}
 								}
 								if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
-#ifndef WR_CurrentSensor_4_20mA
-									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-#endif
+									if(WR_Load_pins[reserv] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Switch_Load(reserv, 0);
 								}
 							}
@@ -917,7 +914,10 @@ void vWeb0(void *)
 									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
 								}
 #ifdef HTTP_MAP_Read_MPPT
-								if(mppt != 255 && (mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
+								if(mppt != 255) {
+									active = false;
+									if((mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
+								}
 #endif
 								if(GETBIT(WR.Loads_PWM, i)) {
 									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
@@ -937,13 +937,9 @@ void vWeb0(void *)
 										}
 									}
 #endif
-#ifndef WR_CurrentSensor_4_20mA
-									if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-#endif
+									if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Switch_Load(i, 1);
-#ifndef WR_CurrentSensor_4_20mA
 									if(WR_Load_pins[i] < 0) active = false;
-#endif
 									break;
 								}
 							}

@@ -1159,11 +1159,11 @@ uint8_t WR_Check_MPPT(void)
 		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: MPPT request Error %d\n", err);
 		return 0;
 	}
-	char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Sign);
+	char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Mode);
 	if(!fld) return 0;
-	if(*(fld + sizeof(HTTP_MAP_JSON_PNET_calc) + 1) == '-') return 3;
-	fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Mode);
-	if(fld && *(fld + sizeof(HTTP_MAP_JSON_Mode) + 1) == 'S') return 2;
+	if(*(fld + sizeof(HTTP_MAP_JSON_Mode) + 1) == 'S') return 2;
+	fld = strstr(fld, HTTP_MAP_JSON_Sign);
+	if(fld && *(fld + sizeof(HTTP_MAP_JSON_Sign) + 1) == '-') return 3;
 	return 1;
 }
 #endif
