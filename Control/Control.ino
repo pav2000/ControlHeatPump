@@ -594,8 +594,8 @@ x_I2C_init_std_message:
 	// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 	// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 	// 1 - поток
-	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+5,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+5);
+	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+12,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+12);
 #if W5200_THREAD >= 2 // - потока
 	if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
@@ -866,17 +866,17 @@ void vWeb0(void *)
 									WR_TestLoadStatus = 0;
 								}
 							} else {
-								uint32_t t = rtcSAM3X8.unixtime();
 								uint8_t reserv = 255;
 								uint8_t mppt = 255;
 								for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
 									if(!GETBIT(WR.Loads_PWM, i)) {
+										uint32_t t = rtcSAM3X8.unixtime();
 										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
 										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
 									}
 #ifdef HTTP_MAP_Read_MPPT
-									if(mppt != 255) {
+									if(mppt == 255) {
 										active = false;
 										if((mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
 									}
@@ -889,9 +889,11 @@ void vWeb0(void *)
 										pnet -= chg;
 									} else {
 										if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
-											if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+											if(WR_Load_pins[i] < 0 && !active) {
+												WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+												active = false;
+											}
 											WR_Switch_Load(i, 0);
-											if(WR_Load_pins[i] < 0) active = false;
 											break;
 										} else if(reserv == 255) reserv = i;
 									}
@@ -902,7 +904,6 @@ void vWeb0(void *)
 								}
 							}
 						} else { // Увеличиваем нагрузку
-							uint32_t t = rtcSAM3X8.unixtime();
 							uint8_t mppt = 255;
 							for(int8_t i = 0; i < WR_NumLoads; i++) {
 								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
@@ -910,11 +911,12 @@ void vWeb0(void *)
 								if(WR_TestLoadStatus || (i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat)) continue;
 #endif
 								if(!GETBIT(WR.Loads_PWM, i)) {
+									uint32_t t = rtcSAM3X8.unixtime();
 									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
 									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
 								}
 #ifdef HTTP_MAP_Read_MPPT
-								if(mppt != 255) {
+								if(mppt == 255) {
 									active = false;
 									if((mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
 								}
@@ -937,9 +939,11 @@ void vWeb0(void *)
 										}
 									}
 #endif
-									if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									if(WR_Load_pins[i] < 0 && !active) {
+										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+										active = false;
+									}
 									WR_Switch_Load(i, 1);
-									if(WR_Load_pins[i] < 0) active = false;
 									break;
 								}
 							}

@@ -3308,7 +3308,7 @@ const char *noteTemp[] = {"Температура улицы",
 // =============================================== C O N F I G   7 ===================================================================
 // -----------------------------------------------------------------------------------------------------------------------------------
 #ifdef CONFIG_7    // Имя и описание конфигурации и ОСОБЕННОСТИ конфигурации ---------------------------------------------------------
-	#define TEST_BOARD 				// Тестовая плата!
+//	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
 	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
@@ -4080,6 +4080,7 @@ const char *noteTemp[] = {"Температура улицы",
 #else
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 	#undef HTTP_LowConsumeRequest
+	#undef WR_PowerMeter_Modbus
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
@@ -4112,7 +4113,7 @@ const char *noteTemp[] = {"Температура улицы",
 #elif  defined(WR_PowerMeter_Modbus)
 	#define WEB0_FREQUENT_JOB_PERIOD 	TIME_READ_SENSOR// Периодичность важных функций в задаче WEB0, мс
 #else
-	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс
+	#define WEB0_FREQUENT_JOB_PERIOD 	1500	 		// Периодичность важных функций в задаче WEB0, мс
 #endif
 	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
 
