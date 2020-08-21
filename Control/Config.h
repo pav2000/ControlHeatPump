@@ -4083,7 +4083,7 @@ const char *noteTemp[] = {"Температура улицы",
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
-	#define WR_TestAvailablePowerTime 3								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
+	#define WR_TestAvailablePowerTime 2								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
 #if !defined(WR_CurrentSensor_4_20mA) && !defined(WR_PowerMeter_Modbus)
 	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
@@ -4099,7 +4099,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PWM_WRITE_OUT_FREQ_DEFAULT 1							// Частота вывода PWM, Гц, для функции PWM_Write()
 	#define PWM_WRITE_OUT_RESOLUTION 6								// bits
 #endif
-	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
+	#define WR_SKIP_EXTREMUM		300								// Отбрасывать пиковое значение больше Вт
 
 	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
 	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП
@@ -4107,8 +4107,10 @@ const char *noteTemp[] = {"Температура улицы",
 	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
 	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
 
-#if defined(WR_CurrentSensor_4_20mA) || defined(WR_PowerMeter_Modbus)
+#if defined(WR_CurrentSensor_4_20mA)
 	#define WEB0_FREQUENT_JOB_PERIOD 	1000	 		// Периодичность важных функций в задаче WEB0, мс
+#elif  defined(WR_PowerMeter_Modbus)
+	#define WEB0_FREQUENT_JOB_PERIOD 	TIME_READ_SENSOR// Периодичность важных функций в задаче WEB0, мс
 #else
 	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс
 #endif
