@@ -1140,8 +1140,9 @@ void vReadSensor(void *)
 #endif
 #ifdef WR_PowerMeter_Modbus
 		if(GETBIT(WR.Flags, WR_fActive)) {
+			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: #%d\n", GetTickCount() - ttime);
 			i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
-			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+			if(i != OK && GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: Modbus read err %d\n", i);
 		}
 #endif
 		vReadSensor_delay1ms(cDELAY_DS1820 - (int32_t)(GetTickCount() - ttime)); 	// Ожидать время преобразования
@@ -1190,10 +1191,11 @@ void vReadSensor(void *)
 #if defined(WR_PowerMeter_Modbus) && TIME_READ_SENSOR > 1500
 		if(GETBIT(WR.Flags, WR_fActive)) {
 			int32_t tm = TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime);
+			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: +%d\n", tm);
 			if(tm > WEB0_FREQUENT_JOB_PERIOD / 2) {
 				vReadSensor_delay1ms(tm - WEB0_FREQUENT_JOB_PERIOD);     													// 1. Ожидать время нужное для цикла чтения
 				i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
-				if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+				if(i != OK && GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: Modbus read err %d\n", i);
 			}
 		}
 #endif
