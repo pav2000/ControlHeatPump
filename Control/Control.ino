@@ -812,7 +812,6 @@ void vWeb0(void *)
 #elif WR_PowerMeter_Modbus
 					int16_t pnet = round_div_int32(WR_PowerMeter_Power, 10);
 #else
-
 					// HTTP power meter
 					active = false;
 					int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MAP, 1);
@@ -858,13 +857,27 @@ void vWeb0(void *)
 						pnet = WR_Pnet - WR.MinNetLoad;
 						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
 							if(WR_TestLoadStatus) {
-								WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
-								WR_TestLoadStatus = 0;
+#ifdef HTTP_MAP_Read_MPPT
+								if(WR_Check_MPPT() > 1) WR_TestLoadStatus++;  // Проверка наличия свободного солнца
+								else
+#endif
+								{
+									WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
+									WR_TestLoadStatus = 0;
+								}
 							} else {
 								uint32_t t = rtcSAM3X8.unixtime();
 								uint8_t reserv = 255;
+								uint8_t mppt = 255;
 								for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
+									if(!GETBIT(WR.Loads_PWM, i)) {
+										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
+									}
+#ifdef HTTP_MAP_Read_MPPT
+									if(mppt == 255 && (mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
+#endif
 									if(GETBIT(WR.Loads_PWM, i)) {
 										int16_t chg = WR_LoadRun[i];
 										if(chg > pnet) chg = pnet;
@@ -872,8 +885,6 @@ void vWeb0(void *)
 										if(pnet == chg) break;
 										pnet -= chg;
 									} else {
-										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
-										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
 										if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
 #ifndef WR_CurrentSensor_4_20mA
 											if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
@@ -894,10 +905,19 @@ void vWeb0(void *)
 								}
 							}
 						} else { // Увеличиваем нагрузку
+							uint32_t t = rtcSAM3X8.unixtime();
+							uint8_t mppt = 255;
 							for(int8_t i = 0; i < WR_NumLoads; i++) {
 								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
 								if(WR_TestLoadStatus || (i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat)) continue;
+#endif
+								if(!GETBIT(WR.Loads_PWM, i)) {
+									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
+								}
+#ifdef HTTP_MAP_Read_MPPT
+								if(mppt != 255 && (mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
 #endif
 								if(GETBIT(WR.Loads_PWM, i)) {
 									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
@@ -905,9 +925,6 @@ void vWeb0(void *)
 									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 									break;
 								} else {
-									uint32_t t = rtcSAM3X8.unixtime();
-									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
 #ifdef WR_TestAvailablePowerForRelayLoads
 									if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
 										if(WR_TestLoadStatus == 0) {
@@ -934,19 +951,6 @@ void vWeb0(void *)
 					}
 					break;
 				}
-//				} else { // Нагрузка включена
-//					while(1) {
-//						// HTTP MPPT
-//						int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MPPT, 1);
-//						if(err) break;
-//						char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Sign);
-//						if(!fld) break;
-//						if(*(fld + sizeof(HTTP_MAP_JSON_PNET_calc) + 1) != '-') break; // Нет свободной энергии
-//						if(GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power) break; // Нет электричества
-//						WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-//						goto xWR_AddPower;
-//					}
-//				}
 			}
 #endif
 		}

@@ -39,11 +39,16 @@ char* NowDateToStr(char *buf = NULL);
 extern uint8_t PWMEnabled;
 extern uint8_t TCChanEnabled[];
 #define sizeof_TCChanEnabled 9
+
 #ifdef WATTROUTER
 #define PWM_WRITE_OUT_FREQUENCY	WR.PWM_Freq		// PWM freq for PWM_Write() function
 void WR_Switch_Load(uint8_t idx, boolean On);
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta);
 inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
+#ifdef HTTP_MAP_Read_MPPT
+// 0 - Oшибка, 1 - Нет свободной энергии, 2 - Нужна пауза, 3 - Есть свободная энергия
+uint8_t WR_Check_MPPT(void);
+#endif
 #else
 #define PWM_WRITE_OUT_FREQUENCY	PWM_FREQUENCY	// PWM freq for PWM_Write() function
 #ifndef PWM_WRITE_OUT_RESOLUTION

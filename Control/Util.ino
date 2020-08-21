@@ -1148,5 +1148,25 @@ inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta)
 	}
 	return delta;
 }
+
+#ifdef HTTP_MAP_Read_MPPT
+// Проверка наличия свободного солнца
+// 0 - Oшибка, 1 - Нет свободной энергии, 2 - Нужна пауза, 3 - Есть свободная энергия
+uint8_t WR_Check_MPPT(void)
+{
+	int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MPPT, 1);
+	if(err) {
+		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: MPPT request Error %d\n", err);
+		return 0;
+	}
+	char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Sign);
+	if(!fld) return 0;
+	if(*(fld + sizeof(HTTP_MAP_JSON_PNET_calc) + 1) == '-') return 3;
+	fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Mode);
+	if(fld && *(fld + sizeof(HTTP_MAP_JSON_Mode) + 1) == 'S') return 2;
+	return 1;
+}
+#endif
+
 #endif
 

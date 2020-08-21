@@ -343,6 +343,7 @@ static uint8_t  fWebUploadingFilesTo = 0;                // Куда грузи�
 //const char HTTP_MAP_JSON_MODE[]			= { "\"_MODE\"" };
 const char HTTP_MAP_JSON_PNET_calc[]	= {	"\"_PNET_calc\"" }; // "_PNET_calc":"0.0"
 const char HTTP_MAP_JSON_Sign[]			= {	"\"Sign\"" }; // "Sign":"-"
+const char HTTP_MAP_JSON_Mode[]			= {	"\"Mode\"" }; // "Mode":"S"
 
 
 // Константы регистров контроллера питания SOPC SAM3x ---------------------------------------

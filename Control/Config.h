@@ -4099,7 +4099,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PWM_WRITE_OUT_FREQ_DEFAULT 1							// Частота вывода PWM, Гц, для функции PWM_Write()
 	#define PWM_WRITE_OUT_RESOLUTION 6								// bits
 #endif
-	#define WR_SKIP_EXTREMUM		300								// Отбрасывать пиковое значение больше Вт
+	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
 
 	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
 	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП
