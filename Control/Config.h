@@ -4086,9 +4086,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 2								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
-#if !defined(WR_CurrentSensor_4_20mA) && !defined(WR_PowerMeter_Modbus)
-	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
-#endif
+	#define WR_PNET_AVERAGE			4								// Размер буфера для усреднения
 	//#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
 #ifdef WR_ONE_PERIOD_PWM
 	#define PWM_WRITE_OUT_FREQ_DEFAULT 100							// Частота вывода PWM, Гц, для функции PWM_Write()

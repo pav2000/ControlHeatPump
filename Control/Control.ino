@@ -836,7 +836,8 @@ void vWeb0(void *)
 					int16_t pnet = atoi(fld);
 #endif
 					//
-					if(WR_Pnet != -32768 && abs(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
+					if(WR_TestLoadStatus) WR_TestLoadStatus++;
+					if(WR_Pnet != -32768 && /*abs*/(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
 						WR_Pnet = -32768;
 						if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Skip %d\n", pnet);
 					} else {
@@ -857,20 +858,19 @@ void vWeb0(void *)
 						if(GETBIT(WR.Flags, WR_fLogFull)) {
 							journal.printf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 						}
-						if(WR_TestLoadStatus) WR_TestLoadStatus++;
-						// проверка перегрузки
-						pnet = WR_Pnet - WR.MinNetLoad;
-						if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
-							if(WR_TestLoadStatus) {
-#ifdef HTTP_MAP_Read_MPPT
-								if(WR_Check_MPPT() > 1) WR_TestLoadStatus++;  // Проверка наличия свободного солнца
-								else
-#endif
-								{
-									WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
-									WR_TestLoadStatus = 0;
+						if(WR_TestLoadStatus > WR_TestAvailablePowerTime) {
+							WR_TestLoadStatus = 0;
+							WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads,  -WR.LoadPower[WR_TestLoadIndex]);
+							if(pnet <= WR.MinNetLoad) {
+								if(WR_Load_pins[WR_TestLoadIndex] < 0 && !active) {
+									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 								}
-							} else {
+								WR_Switch_Load(WR_TestLoadIndex, 1);
+							}
+						} else {
+							// проверка перегрузки
+							pnet = WR_Pnet - WR.MinNetLoad;
+							if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
 								uint8_t reserv = 255;
 								uint8_t mppt = 255;
 								for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
@@ -894,10 +894,7 @@ void vWeb0(void *)
 										pnet -= chg;
 									} else {
 										if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
-											if(WR_Load_pins[i] < 0 && !active) {
-												WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-												active = false;
-											}
+											if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 											WR_Switch_Load(i, 0);
 											break;
 										} else if(reserv == 255) reserv = i;
@@ -907,49 +904,43 @@ void vWeb0(void *)
 									if(WR_Load_pins[reserv] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Switch_Load(reserv, 0);
 								}
-							}
-						} else { // Увеличиваем нагрузку
-							uint8_t mppt = 255;
-							for(int8_t i = 0; i < WR_NumLoads; i++) {
-								if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
+							} else { // Увеличиваем нагрузку
+								uint8_t mppt = 255;
+								for(int8_t i = 0; i < WR_NumLoads; i++) {
+									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-								if(WR_TestLoadStatus || (i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat)) continue;
+									if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
 #endif
-								if(!GETBIT(WR.Loads_PWM, i)) {
-									uint32_t t = rtcSAM3X8.unixtime();
-									if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
-									if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
-								}
+									if(!GETBIT(WR.Loads_PWM, i)) {
+										uint32_t t = rtcSAM3X8.unixtime();
+										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+										if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnPause) continue;
+									}
 #ifdef HTTP_MAP_Read_MPPT
-								if(mppt == 255) {
-									active = false;
-									if((mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
-								}
-#endif
-								if(GETBIT(WR.Loads_PWM, i)) {
-									int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
-									if(chg > WR.LoadAdd) chg = WR.LoadAdd;
-									WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
-									break;
-								} else {
-#ifdef WR_TestAvailablePowerForRelayLoads
-									if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
-										if(WR_TestLoadStatus == 0) {
-											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR_TestLoadPower = WR.LoadPower[i]);
-											WR_SwitchTime[i] = rtcSAM3X8.unixtime();
-											WR_TestLoadStatus = 1;
-										} else if(WR_TestLoadStatus > WR_TestAvailablePowerTime) {
-											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, -WR_TestLoadPower);
-											WR_TestLoadStatus = 0;
-										}
-									}
-#endif
-									if(WR_Load_pins[i] < 0 && !active) {
-										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+									if(mppt == 255) {
 										active = false;
+										if((mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
 									}
-									WR_Switch_Load(i, 1);
-									break;
+#endif
+									if(GETBIT(WR.Loads_PWM, i)) {
+										int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
+										if(chg > WR.LoadAdd) chg = WR.LoadAdd;
+										WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
+										break;
+									} else {
+#ifdef WR_TestAvailablePowerForRelayLoads
+										if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
+											WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR.LoadPower[i]);
+											WR_SwitchTime[i] = rtcSAM3X8.unixtime();
+											WR_TestLoadIndex = i;
+											WR_TestLoadStatus = 1;
+											break;
+										}
+#endif
+										if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+										WR_Switch_Load(i, 1);
+										break;
+									}
 								}
 							}
 						}

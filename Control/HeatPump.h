@@ -128,7 +128,7 @@ int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
 uint8_t  WR_TestLoadStatus = 0; 		// >1 - идет тестирование нагрузки
-int16_t  WR_TestLoadPower = 0;
+uint8_t  WR_TestLoadIndex;
 struct {
 	WR_fTYPE Loads;						// Биты активирования нагрузки
 	WR_fTYPE Loads_PWM;					// Биты нагрузки PWM
