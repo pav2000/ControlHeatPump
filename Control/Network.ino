@@ -651,7 +651,7 @@ void pingW5200(boolean f)
 // Запрос на сервер с ожиданием ответа, веб блокируется, вызов из MAIN_WEB_TASK
 // HTTP 1.0 GET, timeout - ms
 // Ответ: "str=x", Возврат: int(x). Ошибка x <= -2000000000;
-// fget_value: 0 - не читать ответ, 1 - считать тело ответа в Socket[MAIN_WEB_TASK].outBuf,
+// fget_value: 0 - не читать ответ, 1 - считать тело ответа в Socket[MAIN_WEB_TASK].outBuf, 4 - #1 + проверить Content-Length
 //             2 - вернуть значение после '=', 3 - проверить на "Ok"
 int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_value)
 {
@@ -705,15 +705,42 @@ int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_valu
 										ret = 0;
 									} else {
 										int datasize = tTCP.available();
-										if(datasize > (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)) datasize = sizeof(Socket[MAIN_WEB_TASK].outBuf);
 										if(tTCP.read(buffer, datasize) == datasize) {
-											buffer = (uint8_t*)strstr((char*)buffer, WEB_HEADER_END);
+											buffer = (uint8_t*) memmem(buffer, datasize, WEB_HEADER_END, sizeof(WEB_HEADER_END)-1);
 											if(buffer) {
 												buffer += sizeof(WEB_HEADER_END)-1;
 												if(fget_value == 1)	{
+xget_value_1:
 													memcpy((uint8_t*)Socket[MAIN_WEB_TASK].outBuf, buffer, datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf));
-													ret = 0;
+													*(Socket[MAIN_WEB_TASK].outBuf + datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf)) = '\0';
 													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Response: %s", Socket[MAIN_WEB_TASK].outBuf);
+													ret = 0;
+												} else if(fget_value == 4) {
+													char *p = (char*) memmem(Socket[MAIN_WEB_TASK].outBuf, datasize, http_Length, sizeof(http_Length)-1);
+													if(p) {
+														if(atoi(p + sizeof(http_Length)-1) <= datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf)) goto xget_value_1;
+													} else goto xget_value_1;
+													memcpy((uint8_t*)Socket[MAIN_WEB_TASK].outBuf, buffer, datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf));
+													WEB_STORE_DEBUG_INFO(60);
+													buffer = (uint8_t*)Socket[MAIN_WEB_TASK].outBuf + datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
+													do {
+														for(uint8_t i = 0; i < 255; i++) {
+															if((datasize = tTCP.available()) == 0) _delay(1); else break; // ждем получение пакета
+														}
+														if(datasize) {
+															if(buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf + datasize > (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)-1) datasize = sizeof(Socket[MAIN_WEB_TASK].outBuf)-1 - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
+															if(tTCP.read(buffer, datasize) != datasize) break;
+															buffer += datasize;
+															if(datasize < W5200_MAX_LEN) break;
+														} else break;
+													} while(buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf < (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)-1);
+													*buffer = '\0';
+													WEB_STORE_DEBUG_INFO(61);
+													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) {
+														journal.jprintf("Size: %d, ", buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
+														journal.jprintf_time("Response: %s", Socket[MAIN_WEB_TASK].outBuf);
+													}
+													ret = 0;
 												} else {
 													if(fget_value == 2) {
 														char *p = strchr((char*)buffer, '=');
@@ -722,7 +749,10 @@ int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_valu
 														} else ret = -2000000009;
 													} else { // 3
 														ret = (buffer[0] & ~0x20) == 'O' && (buffer[1] & ~0x20) == 'K'; // 'Ok'?
-														if(ret == 0 && (HP.get_NetworkFlags() & ((1<<fWebFullLog) | (1<<fWebLogError))) == (1<<fWebLogError)) journal.jprintf_time("Response: %s", buffer);
+														if(ret == 0 && (HP.get_NetworkFlags() & ((1<<fWebFullLog) | (1<<fWebLogError))) == (1<<fWebLogError)) {
+															*(Socket[MAIN_WEB_TASK].outBuf + datasize) = '\0';
+															journal.jprintf_time("Response: %s", buffer);
+														}
 													}
 													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Response: %s", buffer);
 												}

@@ -144,6 +144,10 @@ struct {
 	uint8_t  PWM_FullPowerLimit;		// Процент ограничения мощности после времени максимальной работы, %
 	int16_t  LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
 } WR;
+
+#ifdef WEATHER_FORECAST
+uint8_t WF_BoilerTargetPercent = 100;
+#endif
 #endif
 
 // Рабочие флаги ТН
@@ -209,6 +213,10 @@ struct type_optionHP
  uint16_t flags2;						// Флаги #2 до 16 флагов
  uint16_t SunMinWorktime;				// Солнечный коллектор - минимальное время работы, после которого будут проверятся границы, сек
  uint16_t SunMinPause;					// Солнечный коллектор - минимальное время паузы после останова СК, сек
+#ifdef WEATHER_FORECAST
+ char     WF_ReqServer[24];				// Сервер прогноза погоды по протоколу http
+ char     WF_ReqText[128];				// Тело GET запроса
+#endif
 };// __attribute__((packed));
 
 
@@ -458,6 +466,7 @@ class HeatPump
    
    // Бойлер ТН
     int16_t get_boilerTempTarget();					          // Получить целевую температуру бойлера с учетом корректировки
+    __attribute__((always_inline)) inline int16_t Boiler_Target_AddHeating() { return Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat); }
     boolean get_Circulation(){return GETBIT(Prof.Boiler.flags,fCirculation);} // Нужно ли управлять циркуляционным насосом болйлера
     uint16_t get_CirculWork(){ return Prof.Boiler.Circul_Work; }            // Время  работы насоса ГВС секунды (fCirculation)
     uint16_t get_CirculPause(){ return Prof.Boiler.Circul_Pause;}           // Пауза в работе насоса ГВС  секунды (fCirculation)

@@ -3355,11 +3355,13 @@ const char *noteTemp[] = {"Температура улицы",
 	#endif
 	//	#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
 
-	#define USE_SUN_COLLECTOR			// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
-	#define SUN_TDELTA			300		// Дельта температур для включения, сотые градуса, по умолчанию
-	#define SUNG_TDELTA			200		// Дельта температур жидкости для выключения, сотые градуса, по умолчанию
-	#define SUN_MIN_WORKTIME	120		// минимальное время работы, после которого будут проверятся границы, сек, по умолчанию
-	#define SUN_MIN_PAUSE		900		// минимальное время паузы после останова СК, сек, по умолчанию
+	#define TARIF_NIGHT_END			6		// Последний час ночного тарифа электроэнергии
+
+	#define USE_SUN_COLLECTOR				// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
+	#define SUN_TDELTA				300		// Дельта температур для включения, сотые градуса, по умолчанию
+	#define SUNG_TDELTA				200		// Дельта температур жидкости для выключения, сотые градуса, по умолчанию
+	#define SUN_MIN_WORKTIME		120		// минимальное время работы, после которого будут проверятся границы, сек, по умолчанию
+	#define SUN_MIN_PAUSE			900		// минимальное время паузы после останова СК, сек, по умолчанию
 
 	#define RADIO_SENSORS			// Радиодатчики через ZONT МЛ‑489.
 	// Подключение через плату UART - K-line или через 4 платы UART-RS485 отдельно на RX и TX, на стороне МЛ-489 : питание 5V, через диод K-line >--TX--|>|--RX
@@ -3372,10 +3374,11 @@ const char *noteTemp[] = {"Температура улицы",
 
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
-	//	#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
-	//  #define NEXTION_DEBUG 			// Отладка дисплея Nextion
-	//	#define DEBUG_PID				// Отладка ПИДа
+//		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
+//		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+//		#define NEXTION_DEBUG 			// Отладка дисплея Nextion - отправка
+//		#define NEXTION_DEBUG2 			// Отладка дисплея Nextion - прием
+//		#define DEBUG_PID				// Отладка ПИДа
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 		#undef ONEWIRE_DS2482
 		#undef ONEWIRE_DS2482_SECOND
@@ -3386,7 +3389,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 		//#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-		//#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+		//#define DEBUG_MODWORK			// Вывод в консоль состояние HP при работе
+	  	#define NEXTION_DEBUG2			// Отладка дисплея Nextion - прием
 		//#define DEBUG_PID				// Отладка ПИДа
 		#define DEBUG_RADIO				// Отладка радиодатчиков
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
@@ -3874,74 +3878,6 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FEED      sTemp[TCONOUTG].get_Temp()       // Подача системы CO
 	#define RET       sTemp[TCONING].get_Temp()        // Обратка системы CO
 
-	// Графики в памяти
-	Charts_Mod_setup ChartsModSetup[] = {
-		{ STATS_OBJ_Temp, TOUT },
-		{ STATS_OBJ_Temp, TIN },
-		{ STATS_OBJ_Temp, TBOILER },
-		{ STATS_OBJ_Temp, TCOMP },
-		{ STATS_OBJ_Temp, TEVAING },
-		{ STATS_OBJ_Temp, TEVAOUTG },
-		{ STATS_OBJ_Temp, TCONING },
-		{ STATS_OBJ_Temp, TCONOUTG },
-		{ STATS_OBJ_Temp, TEVAOUT },
-		{ STATS_OBJ_Temp, TCONOUT },
-		{ STATS_OBJ_Temp, TSUN },
-		{ STATS_OBJ_Temp, TSUNOUTG },
-		{ STATS_OBJ_Flow, FLOWEVA },
-		{ STATS_OBJ_Flow, FLOWCON },
-		//{ STATS_OBJ_Press, PGEO },
-		{ STATS_OBJ_Press, POUT },
-		{ STATS_OBJ_PressTemp, PEVA },
-		{ STATS_OBJ_PressTemp, PCON }
-	};
-	const Charts_Const_setup ChartsConstSetup[] = {
-		{ STATS_OBJ_EEV, "ЭРВ" },
-		{ STATS_OBJ_Overheat, "Перегрев" },
-		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
-		{ STATS_OBJ_Compressor, "Частота, Гц" },
-		//{ STATS_OBJ_Power_FC, "Мощность компрессора" },
-		{ STATS_OBJ_Power, "Потребляемая мощность" },
-		{ STATS_OBJ_COP_Full, "COP" }
-	};
-	const Charts_Const_setup ChartsOnFlySetup[] = {
-		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
-		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
-		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
-		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
-		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
-		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
-	};
-
-	// История (графики) на SD карте
-	const History_setup HistorySetup[] = {
-		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
-		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
-		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
-		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
-		{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
-		{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
-		{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
-		{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
-		{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
-		{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
-		{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
-		{ STATS_OBJ_Temp, TSUN, noteTemp[TSUN] },
-		{ STATS_OBJ_Temp, TSUNOUTG, noteTemp[TSUNOUTG] },
-		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
-		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
-		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
-		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
-		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
-		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
-		{ STATS_OBJ_COP_Full, 0, "COP" },
-		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
-		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
-		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
-	};
 
 	#define PID_FORMULA2							// Адаптированный алгоритм ПИД Arduino-PID-Library
 	// ------------------- EEV -----------------------------------
@@ -4083,6 +4019,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#undef WR_PowerMeter_Modbus
 #endif
 	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
+	#define WR_Boiler_Hysteresis	100								// Гистерезис бойлера, сотые градуса
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 2								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
@@ -4114,6 +4051,87 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WEB0_FREQUENT_JOB_PERIOD 	1500	 		// Периодичность важных функций в задаче WEB0, мс
 #endif
 	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
+
+	#define WEATHER_FORECAST							// Корректировка ночного нагрева бойлера по прогнозу погоды
+	#define WF_ForecastHour				5				// Час, когда запрашивать прогноз
+	#define WF_ForecastAggregateHours	5				// За сколько часов брать среднее
+	#define WF_ForecastAfterSunrise		60 * 60 		// Через сколько времени после восхода смотреть прогноз, сек
+	#define WF_BOILER_MAX_CLOUDS		90				// Ниже этой облачности начинаем корректировать температуру бойлера, %
+	//                                   янв, фев, мар, апр, май, июн, июл, авг, сен, окт, ноя, дек
+	const uint8_t WF_SunByMonth[12] = 	{ 40,  25,  10,   0,   0,   0,   0,   0,  20,  35,  50,  60 };	// + к облачности, %
+
+	// Графики в памяти
+	Charts_Mod_setup ChartsModSetup[] = {
+#ifdef WATTROUTER
+		{ STATS_OBJ_WattRouter, 0 },
+#else
+		{ STATS_OBJ_Temp, TOUT },
+#endif
+		{ STATS_OBJ_Temp, TIN },
+		{ STATS_OBJ_Temp, TBOILER },
+		{ STATS_OBJ_Temp, TCOMP },
+		{ STATS_OBJ_Temp, TEVAING },
+		{ STATS_OBJ_Temp, TEVAOUTG },
+		{ STATS_OBJ_Temp, TCONING },
+		{ STATS_OBJ_Temp, TCONOUTG },
+		{ STATS_OBJ_Temp, TEVAOUT },
+		{ STATS_OBJ_Temp, TCONOUT },
+		{ STATS_OBJ_Temp, TSUN },
+		{ STATS_OBJ_Temp, TSUNOUTG },
+		{ STATS_OBJ_Flow, FLOWEVA },
+		{ STATS_OBJ_Flow, FLOWCON },
+		//{ STATS_OBJ_Press, PGEO },
+		{ STATS_OBJ_Press, POUT },
+		{ STATS_OBJ_PressTemp, PEVA },
+		{ STATS_OBJ_PressTemp, PCON }
+	};
+	const Charts_Const_setup ChartsConstSetup[] = {
+		{ STATS_OBJ_EEV, "ЭРВ" },
+		{ STATS_OBJ_Overheat, "Перегрев" },
+		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+		{ STATS_OBJ_Compressor, "Частота, Гц" },
+		//{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+		{ STATS_OBJ_Power, "Потребляемая мощность" },
+		{ STATS_OBJ_COP_Full, "COP" }
+	};
+	const Charts_Const_setup ChartsOnFlySetup[] = {
+		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+	};
+
+	// История (графики) на SD карте
+	const History_setup HistorySetup[] = {
+		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
+		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+		{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+		{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+		{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+		{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+		{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+		{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+		{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
+		{ STATS_OBJ_Temp, TSUN, noteTemp[TSUN] },
+		{ STATS_OBJ_Temp, TSUNOUTG, noteTemp[TSUNOUTG] },
+		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
+		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
+		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
+		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
+		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
+		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
+		{ STATS_OBJ_COP_Full, 0, "COP" },
+		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
+		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
+		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
+	};
 
 
 #endif  // CONFIG_7

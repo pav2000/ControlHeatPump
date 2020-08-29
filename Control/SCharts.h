@@ -80,7 +80,7 @@ const char *STATS_OBJ_names[] = {
 	"COP_Full",
 	"Sun",
 	"Relay",
-	"WR",
+	"WattRouter",
 	NULL
 };
 

@@ -489,7 +489,7 @@ x_I2C_init_std_message:
 	}
 
 	journal.jprintf("7. Start read ADC sensors\n");
-	journal.jprintf("Temperature SAM3X8E: %.2f\n", temp_DUE());
+	//journal.jprintf("Temperature SAM3X8E: %.2f\n", temp_DUE());
 	start_ADC(); // после инициализации HP
 	//journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
 
@@ -594,8 +594,8 @@ x_I2C_init_std_message:
 	// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 	// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 	// 1 - поток
-	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+12,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+12);
+	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+14,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+14);
 #if W5200_THREAD >= 2 // - потока
 	if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
@@ -703,11 +703,14 @@ void vWeb0(void *)
 	static unsigned long iniW5200 = 0;
 	static unsigned long pingt = 0;
 	static uint16_t RepeatLowConsumeRequest = 0;
+	static boolean network_last_link = true;
 #ifdef MQTT
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
 #endif
-	static boolean network_last_link = true;
+#ifdef WEATHER_FORECAST
+	static uint8_t WF_Day = 0;
+#endif
 #ifdef WATTROUTER
 	memset(WR_LoadRun, 0, sizeof(WR_LoadRun));
 	memset(WR_SwitchTime, 0, sizeof(WR_SwitchTime));
@@ -781,7 +784,7 @@ void vWeb0(void *)
 					}
 					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
-					if((WR.Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget) { // Нагрели
+					if((WR.Loads & (1<<WR_Load_pins_Boiler_INDEX)) && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget) { // Нагрели
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
 						if(curr) {
 							active = false;
@@ -909,7 +912,7 @@ void vWeb0(void *)
 								for(int8_t i = 0; i < WR_NumLoads; i++) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-									if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_TempTarget - HP.Prof.Boiler.dAddHeat) continue;
+									if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) continue;
 #endif
 									if(!GETBIT(WR.Loads_PWM, i)) {
 										uint32_t t = rtcSAM3X8.unixtime();
@@ -1049,6 +1052,19 @@ void vWeb0(void *)
 				active=false;
 			}
 #endif   // MQTT
+
+#ifdef WEATHER_FORECAST
+			if(rtcSAM3X8.get_days() != WF_Day && rtcSAM3X8.get_hours() == WF_ForecastHour && strlen(HP.Option.WF_ReqServer)) {
+				active = false;
+				int err = Send_HTTP_Request(HP.Option.WF_ReqServer, HP.Option.WF_ReqText, 4);
+				if(err) {
+					if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("WF: Request Error %d\n", err);
+				} else if(WF_ProcessForecast(Socket[MAIN_WEB_TASK].outBuf) == OK) {
+					WF_Day = rtcSAM3X8.get_days();
+				}
+			}
+#endif
+
 			taskYIELD();
 		} // if (xTaskGetTickCount()-thisTime>10000)
 
@@ -1711,11 +1727,21 @@ void vServiceHP(void *)
 			}
 			timer_sec = t;
 			if(HP.IsWorkingNow()) {
-				if(((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) && ++task_updstat_chars >= HP.get_tChart()) { // пришло время
+				if(++task_updstat_chars >= HP.get_tChart()) {
 					task_updstat_chars = 0;
-					STORE_DEBUG_INFO(71);
-					HP.updateChart();                                       // Обновить графики
-					STORE_DEBUG_INFO(72);
+					if((Charts_when_comp_on && HP.is_compressor_on()) || (!Charts_when_comp_on && HP.get_State() != pOFF_HP)) { // пришло время
+						STORE_DEBUG_INFO(71);
+						HP.updateChart();                                       // Обновить графики
+						STORE_DEBUG_INFO(72);
+					} else {
+#ifdef WATTROUTER
+#ifdef WR_PowerMeter_Modbus
+						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter) HP.Charts[0].add_Point(WR_PowerMeter_Power / 10);
+#else
+						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter) HP.Charts[0].add_Point(WR_Pnet);
+#endif
+#endif
+					}
 				}
 				uint8_t m = rtcSAM3X8.get_minutes();
 				if(m != task_updstat_countm) { 								// Через 1 минуту

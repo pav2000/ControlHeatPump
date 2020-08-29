@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.092";
+var VER_WEB = "1.095";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -84,7 +84,7 @@ function setParam(paramid, resultid) {
 			element.placeholder = "";
 		}
 	}
-	loadParam(encodeURIComponent(elsend), true, resultid);
+	loadParam(encodeURIComponent(elsend.replace(/&/g,'$')), true, resultid);
 }
 
 var NeedLogin = sessionStorage.getItem("NeedLogin");
@@ -132,7 +132,8 @@ function loadParam(paramid, noretry, resultdiv) {
 						}
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
-								values = arr[i].split('=');
+								var j = arr[i].indexOf('=');
+								var values = [arr[i].substring(0,j), arr[i].substring(j+1)];
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 

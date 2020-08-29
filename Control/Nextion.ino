@@ -240,8 +240,8 @@ void Nextion::readCommand()
 		DataAvaliable = NEXTION_PORT.available();
 		if(p == NULL) break;
 		uint8_t len = p - buffer;
-#ifdef NEXTION_DEBUG
-		journal.jprintf("NXTRX: ");
+#ifdef NEXTION_DEBUG2
+		journal.jprintf("NRX%d: ", fUpdate);
 		for(uint8_t i = 0; i < len + 3; i++) journal.jprintf("%02x", buffer[i]);
 		journal.jprintf("\n");
 #endif
@@ -308,7 +308,7 @@ void Nextion::readCommand()
 					if(cmd2 == NXTID_BOILER_ONOFF) {                       // событие нажатие кнопки вкл/выкл ГВС
 						if(HP.get_BoilerON()) HP.set_BoilerOFF(); else HP.set_BoilerON();
 					} else if(cmd2 == NXTID_BOILER_PLUS || cmd2 == NXTID_BOILER_MINUS) {  // Изменение целевой температуры ГВС шаг изменения сотые градуса
-						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 100.0, 1));
+						setComponentText("tustgvs", dptoa(ntemp, HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 10, 1));
 					}
 				} else if(cmd1 == NXTID_PAGE_PROFILE) {
 					if(cmd2 == NXTID_SCHEDULER_OFF) {
@@ -343,13 +343,15 @@ void Nextion::readCommand()
 			break;
 		case 0x88:   // Power on
 			init_display();
-			break;
+			fUpdate = 2;
+			return;
 		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
 			sendCommand("sendme");
 #ifdef NEXTION_DEBUG
 			journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
 #endif
-			_delay(10);
+			fUpdate = 2;
+			return;
 		}
 	}
 	if(fUpdate >= 2) Update();

@@ -9,6 +9,7 @@
 		window.onload = function() {
 		loadParam("get_oHP(HIST),get_isRelay(RHEAT),get_oHP(TEMP_RHEAT),get_oHP(PUMP_WORK),get_oHP(PUMP_PAUSE),get_oHP(ATTEMPT),get_oHP(HEAT_list),get_oHP(BEEP),get_oHP(NXT),get_oHP(NXTS),get_oHP(NXTD),get_oHP(NXTW),get_oHP(WSPIF),get_oHP(LOGWS),get_oHP(PAUSE),get_oHP(TIME_CHART),get_oHP(CWCO),get_oHP(BPOW),get_oHP(MAXPOW),get_oHP(MCON),get_oHP(BPA),get_oHP(SW)");
 		loadParam("get_oHP(DLONP),get_oHP(DLOFP),get_oHP(DLSR),get_oHP(DLRS),get_oHP(DLTRV),get_oHP(DLBSW),get_oHP(DLBOFF),get_oHP(SDM_LOGER),get_oHP(TEMP_EVI),get_oHP(SAVE_ON),get_oHP(SGL1W_1),get_oHP(SGL1W_2),get_oHP(SGL1W_3),get_oHP(SGL1W_4),get_oHP(SCG),get_oHP(SCGT),get_oHP(GSC),get_oHP(STD),get_oHP(SGD),get_oHP(SCGO),get_oHP(STO),get_oHP(STF),get_oHP(SP)");
+		loadParam("get_oHP(WFS),get_oHP(WFT)");
 	}; 
 	</script>
 </head>
@@ -214,8 +215,16 @@
 			<td>На четвертой шине 1-Wire только один датчик температуры</td>
 			<td><input type="checkbox" id="get_ohp-sgl1w_4" onchange="setParam('get_oHP(SGL1W_4)');"></td>
 		</tr>	
+		<tr>
+			<td>Имя или адрес сервера погоды, работающего на API openweathermap.org</td>
+			<td nowrap><input id="get_ohp-wfs" type="text"> <input type="submit" value=">" onclick="setParam('get_oHP(WFS)')"></td>
+		</tr>
+		<tr>
+			<td>HTTP GET запрос на сервер погоды</td>
+			<td nowrap><input id="get_ohp-wft" type="text"> <input type="submit" value=">" onclick="setParam('get_oHP(WFT)')"></td>
+		</tr>
 	</tbody>
-	</table>
+	</table><br>
 	1. При неработающей веб морде, можно принудительно переключится на другой источник, используя запросы: IP/&set_oHP(WSPIF=1)&& - SPI Flash, IP/&set_oHP(WSPIF=0)&& - SD<br/>
 	2. 0 - Повторный пуск при ошибке не производится<br/>
 	3. При изменении периода графики обнуляются.<br/>

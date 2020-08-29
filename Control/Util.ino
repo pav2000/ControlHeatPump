@@ -114,6 +114,15 @@ boolean parseIPAddress(const char* str, char sep, IPAddress &ip)
  if (i<4-1) return false; else { ip=tmp;return true; }  
 }
 
+// Замена символа в строке
+void str_replace(char *str, char find, char replace)
+{
+	while(*str) {
+		if(*str == find) *str = replace;
+		str++;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Функции ниже использовать только в WebServer или с семафором xWebThreadSemaphore!
 char _buf[20];

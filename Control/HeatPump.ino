@@ -1534,22 +1534,27 @@ int16_t HeatPump::get_targetTempHeat()
 }
 
 // ИЗМЕНИТЬ целевую температуру бойлера с провекой допустимости значений
-int16_t HeatPump::setTempTargetBoiler(int16_t dt)
-{
-  if ((Prof.Boiler.TempTarget+dt>=5.0*100)&&(Prof.Boiler.TempTarget+dt<=90.0*100))   Prof.Boiler.TempTarget=Prof.Boiler.TempTarget+dt;
-  return Prof.Boiler.TempTarget;     
+int16_t HeatPump::setTempTargetBoiler(int16_t dt) {
+	if((Prof.Boiler.TempTarget + dt >= 500) && (Prof.Boiler.TempTarget + dt <= 9000)) Prof.Boiler.TempTarget = Prof.Boiler.TempTarget + dt;
+	return Prof.Boiler.TempTarget;
 }
 
 // Получить целевую температуру бойлера с учетом корректировки
 int16_t HeatPump::get_boilerTempTarget()
 {
-	 if(Prof.Boiler.add_delta_temp != 0) {
-		int8_t h = rtcSAM3X8.get_hours();
+	int16_t ret = Prof.Boiler.TempTarget;
+	int8_t h = rtcSAM3X8.get_hours();
+	if(Prof.Boiler.add_delta_temp != 0) {
 		if((Prof.Boiler.add_delta_end_hour >= Prof.Boiler.add_delta_hour && h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour)
-			|| (Prof.Boiler.add_delta_end_hour < Prof.Boiler.add_delta_hour && (h >= Prof.Boiler.add_delta_hour || h <= Prof.Boiler.add_delta_end_hour)))
-			return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp;
-	 }
-	 return Prof.Boiler.TempTarget;
+				|| (Prof.Boiler.add_delta_end_hour < Prof.Boiler.add_delta_hour && (h >= Prof.Boiler.add_delta_hour || h <= Prof.Boiler.add_delta_end_hour)))
+			ret += Prof.Boiler.add_delta_temp;
+	}
+#if defined(WATTROUTER) && defined(WEATHER_FORECAST) && defined(WR_Load_pins_Boiler_INDEX)
+	if(h <= TARIF_NIGHT_END && GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive) && WF_BoilerTargetPercent < 99) {
+		ret = Prof.Boiler.WF_MinTarget + (ret - Prof.Boiler.WF_MinTarget) * WF_BoilerTargetPercent / 100;
+	}
+#endif
+	return ret;
 }
 
 // Получить целевую температуру отопления
@@ -2291,7 +2296,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
+			if(T > Boiler_Target_AddHeating()) {
 				Status.ret=pBh22; return pCOMP_OFF; // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
@@ -2319,7 +2324,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
+			if(T > Boiler_Target_AddHeating()) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
