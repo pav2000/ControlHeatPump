@@ -327,31 +327,33 @@ void Nextion::readCommand()
 				}
 			}
 			break;
-		case 0x66:  // 	Current Page    // Произошла смена страницы
+		case 0x66:	// 	Current Page    // Произошла смена страницы
 			fUpdate = 2;
 			PageID = buffer[1];
 			break;
-		case 0x67:  // Touch Coordinate (awake)
-		case 0x68:  // Touch Coordinate (sleep)
-			break;
-		case 0x86:  // Auto Entered Sleep Mode
+		case 0x86:	// Auto Entered Sleep Mode
 			if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) flags &= ~((HP.is_compressor_on() || HP.get_errcode() || HP.get_BackupPower())<<fSleep);
 			fUpdate = 0;
 			break;
-		case 0x87:   // выход из сна
+		case 0x87:	// выход из сна
 			fUpdate = 2;
 			break;
-		case 0x88:   // Power on
+		case 0x88:	// Power on
 			init_display();
 			fUpdate = 2;
 			return;
-		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
+		case 0x03:	// Invalid Page ID
 			sendCommand("sendme");
-#ifdef NEXTION_DEBUG
-			journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
-#endif
+			return;
+		case 0x1F:	// IO Operation failed
+		case 0x24:	// Serial Buffer overflow
 			fUpdate = 2;
 			return;
+//		case 0x00:	// Nextion has started or reset
+//		case 0x67:  // Touch Coordinate (awake)
+//		case 0x68:  // Touch Coordinate (sleep)
+//			break;
+//		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
 		}
 	}
 	if(fUpdate >= 2) Update();
