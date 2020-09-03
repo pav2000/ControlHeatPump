@@ -3390,7 +3390,7 @@ const char *noteTemp[] = {"Температура улицы",
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 		//#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
 		//#define DEBUG_MODWORK			// Вывод в консоль состояние HP при работе
-	  	#define NEXTION_DEBUG2			// Отладка дисплея Nextion - прием
+	  	//#define NEXTION_DEBUG2			// Отладка дисплея Nextion - прием
 		//#define DEBUG_PID				// Отладка ПИДа
 		#define DEBUG_RADIO				// Отладка радиодатчиков
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
