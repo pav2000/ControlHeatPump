@@ -60,10 +60,12 @@ int WF_ProcessForecast(char *json)
 		avg += n;
 	}
 	if(--i) {
-		avg = avg / i + WF_SunByMonth[rtcSAM3X8.get_months()-1];
+		avg /= i;
+		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WF: Clouds(%d)=%d", i, avg);
+		avg += WF_SunByMonth[rtcSAM3X8.get_months()-1];
 		if(avg > 100) avg = 100;
+		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf(":%d\n", avg);
 		WF_BoilerTargetPercent = avg;
-		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WF: Clouds(%d)=%d%%\n", i, WF_BoilerTargetPercent);
 		return OK;
 	}
 	WF_BoilerTargetPercent = 100;

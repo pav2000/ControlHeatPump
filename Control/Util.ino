@@ -1039,7 +1039,7 @@ void PWM_Write(uint32_t ulPin, uint32_t ulValue) {
 				TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_CLEAR |
 				TC_CMR_BCPB_CLEAR | TC_CMR_BCPC_CLEAR |
 #ifdef WR_ONE_PERIOD_PWM
-				TC_CMR_EEVTEDG_RISING |	// External Event Edge Selection
+				WR_ZERO_CROSS_EDGE |	// External Event Edge Selection
 				TC_CMR_ENETRG |			// External Event Trigger Enable
 				WR_ZERO_CROSS_TC_CMR_EEVT // Set external events
 #else

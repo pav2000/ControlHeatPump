@@ -3653,8 +3653,8 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_DEVICE_RPUMPO          47 //[R_2] Реле включения насоса выходного контура  (отопление и ГВС)
 	#define PIN_DEVICE_RPUMPBH         48 //[R_3] Реле насоса НАГРЕВА бойлера (ГВС) - не циркуляция
 	#define PIN_DEVICE_RPUMPI          49 //[R_4] Реле включения насоса входного контура  (геоконтур)
-	#define PIN_DEVICE_RBOILER         11 //[R_8] Включение ТЭНа бойлера (SSR, PWM)
-	#define PIN_PWM_ZERO_CROSS         12 // X1.2(+),X17.2(-)
+	#define PIN_DEVICE_RBOILER         11 //[R_8] Включение ТЭНа бойлера (SSR, PWM). PWM - Dimmer(10000W).SCR, GND - Dimmer.[MOC3023.2](Cut MOC3023.2 to Dimmer.GND!)
+	#define PIN_PWM_ZERO_CROSS         12 // X17.2(-), X1.2(+) - PC817C.4(pullup to X1.1(3.3V) - R75k), [Dimmer(10000W).Zero - Zero] - R15k - PC817C.1, Dimmer.GND - PC817C.2
 	#define PIN_DEVICE_R4WAY           51 //[R_6] 4-ходовой клапан
 	#define PIN_DEVICE_RPUMPFL         50 //[R_5 реле насоса Теплого Пола
 	#ifdef USE_SUN_COLLECTOR
@@ -4018,19 +4018,20 @@ const char *noteTemp[] = {"Температура улицы",
 	#undef HTTP_LowConsumeRequest
 	#undef WR_PowerMeter_Modbus
 #endif
-	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
-	#define WR_Boiler_Hysteresis	100								// Гистерезис бойлера, сотые градуса
+	#define WR_Load_pins_Boiler_INDEX 	0							// Индекс бойлера в массиве WR_Load_pins
+	#define WR_Boiler_Hysteresis		100							// Гистерезис бойлера, сотые градуса
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
-	#define WR_TestAvailablePowerTime 2								// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
-	#define WR_RELAY_LEVEL_ON		1								// Уровень реле ВКЛ
-	#define WR_PNET_AVERAGE			4								// Размер буфера для усреднения
-	//#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
+	#define WR_TestAvailablePowerTime 	2							// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
+	#define WR_RELAY_LEVEL_ON			1							// Уровень реле ВКЛ
+	#define WR_PNET_AVERAGE				4							// Размер буфера для усреднения
+	#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
 #ifdef WR_ONE_PERIOD_PWM
-	#define PWM_WRITE_OUT_FREQ_DEFAULT 100							// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 8								// bits
-	#define WR_ZERO_CROSS_TC_CMR_EEVT TC_CMR_EEVT_TIOB
-	#define WR_ZERO_CROSS_TC_BMR_SET //chTC->TC_BMR |= TC_BMR_TC2XC2S_TCLK2
-	#define WR_ZERO_CROSS_PERIPH PIO_PERIPH_B
+	#define PWM_WRITE_OUT_FREQ_DEFAULT	100							// Частота вывода PWM, Гц, для функции PWM_Write()
+	#define PWM_WRITE_OUT_RESOLUTION 	8							// bits
+	#define WR_ZERO_CROSS_EDGE			TC_CMR_EEVTEDG_RISING		// для PIN_PWM_ZERO_CROSS
+	#define WR_ZERO_CROSS_TC_CMR_EEVT 	TC_CMR_EEVT_TIOB
+	#define WR_ZERO_CROSS_TC_BMR_SET 	//chTC->TC_BMR |= TC_BMR_TC2XC2S_TCLK2
+	#define WR_ZERO_CROSS_PERIPH 		PIO_PERIPH_B
 #else
 	#define PWM_WRITE_OUT_FREQ_DEFAULT 1							// Частота вывода PWM, Гц, для функции PWM_Write()
 	#define PWM_WRITE_OUT_RESOLUTION 6								// bits
