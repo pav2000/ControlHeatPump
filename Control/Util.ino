@@ -1142,7 +1142,15 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 	if(n != WR_LoadRun[idx] || GETBIT(WR_Refresh, idx)) {
 		WR_LoadRun[idx] = n;
 		if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
+#ifdef PWM_ACCURATE_POWER
+		n = n * (sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1)*10 / WR.LoadPower[idx]; // 0..100
+		int r = n % 10;
+		int val = PWM_POWER_ARRAY[n /= 10];
+		if(n < sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1) val += (PWM_POWER_ARRAY[n + 1] - val) * r / 10;
+		PWM_Write(WR_Load_pins[idx], val);
+#else
 		PWM_Write(WR_Load_pins[idx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1) - n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / WR.LoadPower[idx]);
+#endif
 	}
 }
 

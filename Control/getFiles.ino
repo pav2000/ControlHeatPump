@@ -315,7 +315,7 @@ void get_txtSettings(uint8_t thread)
      
      strcat(Socket[thread].outBuf," - Опции -\r\n");
      strcat(Socket[thread].outBuf,"Греть совместно с отоплением, если ТН работает на отопление: ");HP.Prof.get_boiler((char*)boil_TOGETHER_HEAT,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Профилактика сальмонеллы (1 раз в неделю): ");HP.Prof.get_boiler((char*)boil_SALLMONELA,Socket[thread].outBuf);STR_END;
+     strcat(Socket[thread].outBuf,"Профилактика сальмонеллы (1 раз в неделю): ");HP.Prof.get_boiler((char*)boil_SALMONELLA,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°): ");HP.Prof.get_boiler((char*)hp_SUN,Socket[thread].outBuf);STR_END; // hp_SUN это правильно
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: ");HP.Prof.get_boiler((char*)boil_CIRCULATION,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС (мин.): ");HP.Prof.get_boiler((char*)boil_CIRCUL_WORK,Socket[thread].outBuf);STR_END;
