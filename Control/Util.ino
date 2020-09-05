@@ -1234,6 +1234,7 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("Power[%d]: %d\n", PWM_CalcIdx, PWM_AverageSum);
 			PWM_Write(WR_Load_pins[PWM_CalcLoadIdx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
 			if(PWM_CalcIdx++ == ((1<<PWM_WRITE_OUT_RESOLUTION)-1)) {
+				WR.LoadPower[PWM_CalcLoadIdx] = PWM_AverageSum;
 				TaskSuspendAll();
 				journal.jprintf("\nPWM Calc Ok\nPower[%d] = ", (1<<PWM_WRITE_OUT_RESOLUTION));
 				for(uint16_t i = 0; i < (1<<PWM_WRITE_OUT_RESOLUTION); i++) {
@@ -1242,7 +1243,7 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 				journal.jprintf("\nPWM[%d] = %d,", sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0]), ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
 				uint16_t last_idx = 1;
 				for(uint16_t i = 1; i < sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0]) - 2; i++) {
-					int n = WR.LoadPower[PWM_CalcLoadIdx] * i / (sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1);
+					int n = PWM_AverageSum * i / (sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1);
 					for(; last_idx < (1<<PWM_WRITE_OUT_RESOLUTION) - 1; last_idx++) {
 						if(n >= PWM_CalcArray[last_idx] && n <= PWM_CalcArray[last_idx + 1]) {
 							journal.jprintf("%d,", ((1<<PWM_WRITE_OUT_RESOLUTION)-1) - (abs(n - PWM_CalcArray[last_idx]) <= abs(n - PWM_CalcArray[last_idx + 1]) ? last_idx : ++last_idx));
