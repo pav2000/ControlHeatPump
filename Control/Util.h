@@ -49,11 +49,17 @@ inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
 // 0 - Oшибка, 1 - Нет свободной энергии, 2 - Нужна пауза, 3 - Есть свободная энергия
 uint8_t WR_Check_MPPT(void);
 #endif
+#ifdef PWM_CALC_POWER_ARRAY
+void WR_Calc_Power_Array_NewMeter(int32_t power);
+#endif
+
 #else
+
 #define PWM_WRITE_OUT_FREQUENCY	PWM_FREQUENCY	// PWM freq for PWM_Write() function
 #ifndef PWM_WRITE_OUT_RESOLUTION
 #define PWM_WRITE_OUT_RESOLUTION 8				// bit
 #endif
+
 #endif
 
 #endif

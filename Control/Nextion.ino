@@ -409,7 +409,11 @@ void Nextion::Update()
 					| (HP.dRelay[RSUN].get_Relay() << 2)
 #endif
 #ifdef RBOILER
+	#ifdef WR_Load_pins_Boiler_INDEX
+					| ((HP.dRelay[RBOILER].get_Relay() || WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) << 3)
+	#else
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
+	#endif
 #endif
 					| (HP.get_BackupPower() << 4);
 		if(fUpdate == 2) Page1flags = ~fl;
@@ -431,7 +435,7 @@ void Nextion::Update()
 #endif
 #ifdef RBOILER
 			if((fl ^ Page1flags) & (1<<3)) {
-				if(fl & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
+				if(fl & (1<<3)) sendCommand(HP.dRelay[RBOILER].get_Relay() ? "t3.pco=63488" : "t3.pco=65280"); else sendCommand("t3.pco=65535");
 			}
 #endif
             if((fl ^ Page1flags) & (1<<4)) {

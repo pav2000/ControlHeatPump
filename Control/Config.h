@@ -4010,16 +4010,19 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WR_NumLoads				3								// Кол-во нагрузок (1..8)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
-	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b)
+	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b), десятые Вт
 #ifndef TEST_BOARD
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 	#undef HTTP_LowConsumeRequest
 	#undef WR_PowerMeter_Modbus
+	#define IWR 0
+	#define WR_CurrentSensor_4_20mA	IWR
 #endif
 	#define WR_Load_pins_Boiler_INDEX 	0							// Индекс бойлера в массиве WR_Load_pins
 	#define WR_Boiler_Hysteresis		100							// Гистерезис бойлера, сотые градуса
+	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 	2							// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON			1							// Уровень реле ВКЛ
@@ -4030,6 +4033,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PWM_WRITE_OUT_RESOLUTION 	8							// bits
 	#define PWM_ACCURATE_POWER										// Точный расчет мощности
 #ifdef PWM_ACCURATE_POWER
+	#define PWM_CALC_POWER_ARRAY									// Расчет массива точной мощности
 	const uint8_t PWM_POWER_ARRAY[101] = { 255,238,229,223,218,214,210,206,203,200,197,194,192,189,187,185,183,180,178,176,174,172,170,169,167,165,163,161,160,158,156,155,153,152,150,148,147,145,144,142,141,139,137,136,134,133,131,130,128,127,125,124,122,121,119,118,116,115,113,112,110,109,107,105,104,102,101,99,97,96,94,92,91,89,87,85,83,81,79,78,75,73,71,69,67,64,62,59,57,54,51,47,44,40,36,31,24,16,0 ,0,0 };
 #endif
 	#define WR_ZERO_CROSS_EDGE			TC_CMR_EEVTEDG_RISING		// для PIN_PWM_ZERO_CROSS

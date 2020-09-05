@@ -2357,8 +2357,13 @@ x_get_aTemp:
 #ifdef WR_Load_pins_Boiler_INDEX
 							if(p == WR_Load_pins_Boiler_INDEX) strcat(strReturn, "(B)");
 #endif
+						} else if(*str == 'C') { // get_WRC(n)
+							if(GETBIT(WR.Loads_PWM, p))	{
+								WR_Calc_Power_Array_Start(p);
+								strcat(strReturn, "1");
+							}
 						} else { // get_WR(n)
-							if(p == 0) {
+							if(p == 0) { // get_WR(0)
 								if(WR_Pnet == -32768) strcat(strReturn, "-"); else _itoa(WR_Pnet, strReturn);
 							}
 						}

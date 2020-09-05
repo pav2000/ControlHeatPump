@@ -784,7 +784,7 @@ void vWeb0(void *)
 					}
 					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
-					if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX)) {
+					if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()) {
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
 						if(curr > 0) {
 							if(WR_TestLoadStatus) {
@@ -898,7 +898,9 @@ void vWeb0(void *)
 #endif
 									if(GETBIT(WR.Loads_PWM, i)) {
 										int16_t chg = WR_LoadRun[i];
-										if(chg > pnet) chg = pnet;
+										if(chg > pnet) {
+											if(chg - pnet > WR_PWM_POWER_MIN) chg = pnet;
+										}
 										WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
 										if(pnet == chg) break;
 										pnet -= chg;
@@ -919,7 +921,7 @@ void vWeb0(void *)
 								for(int8_t i = 0; i < WR_NumLoads; i++) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-									if(i == WR_Load_pins_Boiler_INDEX && HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) continue;
+									if(i == WR_Load_pins_Boiler_INDEX && (HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis || HP.dRelay[RBOILER].get_Relay())) continue;
 #endif
 									if(!GETBIT(WR.Loads_PWM, i)) {
 										uint32_t t = rtcSAM3X8.unixtime();
@@ -940,7 +942,7 @@ void vWeb0(void *)
 									} else {
 #ifdef WR_TestAvailablePowerForRelayLoads
 #if defined(WR_Load_pins_Boiler_INDEX) && WR_TestAvailablePowerForRelayLoads == WR_Load_pins_Boiler_INDEX
-										if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads) && HP.sTemp[TBOILER].get_Temp() < SALMONELLA_TEMP) {
+										if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads) && HP.sTemp[TBOILER].get_Temp() < SALMONELLA_TEMP && !HP.dRelay[RBOILER].get_Relay()) {
 #else
 										if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
 #endif
@@ -1222,9 +1224,18 @@ void vReadSensor(void *)
 //			if(tm > WEB0_FREQUENT_JOB_PERIOD / 2) {
 //				vReadSensor_delay1ms(tm - WEB0_FREQUENT_JOB_PERIOD);     													// 1. Ожидать время нужное для цикла чтения
 				i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
-				if(i != OK && GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+				if(i != OK) {
+					if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+				}
+#ifdef PWM_CALC_POWER_ARRAY
+				else WR_Calc_Power_Array_NewMeter(WR_PowerMeter_Power);
+#endif
 //			}
 		}
+#else
+#if defined(PWM_CALC_POWER_ARRAY) && defined(WR_CurrentSensor_4_20mA)
+		WR_Calc_Power_Array_NewMeter(0);
+#endif
 #endif
 		vReadSensor_delay1ms((TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime)) / 2);     // 1. Ожидать время нужное для цикла чтения
 

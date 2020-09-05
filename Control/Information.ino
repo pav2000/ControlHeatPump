@@ -35,7 +35,7 @@ void Journal::Init()
 	bufferHead = 0;
 	full = 0;                   // Буфер не полный
 	memset(_data, 0, JOURNAL_LEN);
-	jprintf("\nSTART ---\nInit RAM journal, size %d . . .\n", JOURNAL_LEN);
+	//jprintf("\nSTART ---\nInit RAM journal, size %d . . .\n", JOURNAL_LEN);
 	return;
 #else                      // журнал во флеше
 
