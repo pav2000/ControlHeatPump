@@ -27,7 +27,7 @@ function loadParam_after(paramid) {
 	}                              
 }
 function run_pwm_calc() {
-	if(confirm("Запустить расчет таблицы PWM?\nПроцесс длится около 90 минут.")) {
+	if(confirm("Запустить расчет таблицы PWM?\nПроцесс длится больше часа.")) {
 		var n = Number(prompt("Введите номер PWM нагрузки: "));
 		if(n) {
 			loadParam("get_WRC(" + (n - 1) + ")");

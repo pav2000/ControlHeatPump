@@ -129,6 +129,20 @@ uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
 uint8_t  WR_TestLoadStatus = 0; 		// >1 - идет тестирование нагрузки
 uint8_t  WR_TestLoadIndex;
+
+#ifdef PWM_CALC_POWER_ARRAY
+// Вычисление массива точного расчета мощности
+#define PWM_fCalcNow			1
+#define PWM_fCalcRelax			2
+uint8_t PWM_CalcFlags = 0;
+int8_t  PWM_CalcLoadIdx;
+int32_t PWM_AverageSum;
+uint8_t PWM_AverageCnt; // +1
+int32_t PWM_StandbyPower;
+int16_t *PWM_CalcArray;
+uint16_t PWM_CalcIdx;
+#endif
+
 struct {
 	WR_fTYPE Loads;						// Биты активирования нагрузки
 	WR_fTYPE Loads_PWM;					// Биты нагрузки PWM

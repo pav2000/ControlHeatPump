@@ -1187,16 +1187,6 @@ uint8_t WR_Check_MPPT(void)
 
 #ifdef PWM_CALC_POWER_ARRAY
 // Вычисление массива точного расчета мощности
-#define PWM_fCalcNow			1
-#define PWM_fCalcRelax			2
-#define PWM_fCalc_WR_Active		3
-uint8_t PWM_CalcFlags = 0;
-int8_t  PWM_CalcLoadIdx;
-int32_t PWM_AverageSum;
-uint8_t PWM_AverageCnt; // +1
-int32_t PWM_StandbyPower;
-int16_t *PWM_CalcArray;
-uint16_t PWM_CalcIdx;
 
 // power - 0.1W
 void WR_Calc_Power_Array_NewMeter(int32_t power)
@@ -1218,7 +1208,7 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 		if(PWM_AverageCnt++) PWM_AverageSum += round_div_int32(power, 10); // skip first
 #endif
 		if(GETBIT(PWM_CalcFlags, PWM_fCalcRelax)) {
-			if(PWM_AverageCnt >= 5) { // 10 sec
+			if(PWM_AverageCnt >= 3) { // 6 sec
 				PWM_AverageSum = PWM_AverageSum / (PWM_AverageCnt - 1);
 				if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("Relax: %d\n", PWM_AverageSum);
 				PWM_AverageSum -= PWM_CalcArray[0];
@@ -1227,7 +1217,7 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 				PWM_CalcFlags &= ~(1<<PWM_fCalcRelax);
 				PWM_AverageSum = PWM_AverageCnt = 0;
 			}
-		} else if(PWM_AverageCnt >= 6) { // 12 sec
+		} else if(PWM_AverageCnt >= 4) { // 8 sec
 			PWM_AverageSum /= (PWM_AverageCnt - 1);
 			if(PWM_CalcIdx) PWM_AverageSum -= PWM_CalcArray[0];
 			PWM_CalcArray[PWM_CalcIdx] = PWM_AverageSum;
@@ -1254,7 +1244,6 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 				journal.jprintf("0, 0\n\n");
 				xTaskResumeAll();
 				free(PWM_CalcArray);
-				WR.Flags |= (GETBIT(PWM_CalcFlags, PWM_fCalc_WR_Active)<<WR_fActive);
 				PWM_CalcFlags = 0;
 			} else {
 				PWM_CalcFlags |= (1<<PWM_fCalcRelax);
@@ -1278,8 +1267,7 @@ void WR_Calc_Power_Array_Start(int8_t load_idx)
 		return;
 	}
 	PWM_Write(WR_Load_pins[PWM_CalcLoadIdx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
-	PWM_CalcFlags = (PWM_CalcFlags & ~(1<<PWM_fCalc_WR_Active)) | (GETBIT(WR.Flags, WR_fActive)<<PWM_fCalc_WR_Active) | (1<<PWM_fCalcNow);
-	WR.Flags &= ~(1<<WR_fActive);
+	PWM_CalcFlags |= (1<<PWM_fCalcNow);
 #endif
 }
 #endif

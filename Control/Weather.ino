@@ -42,7 +42,7 @@ int WF_ProcessForecast(char *json)
 		return -4;
 	}
 	fld += sizeof(WF_JSON_Hourly);
-	uint32_t avg = 0;
+	int32_t avg = 0;
 	uint8_t i = 1;
 	for(; i <= WF_ForecastAggregateHours; i++) {
 		fld = strstr(fld, WF_JSON_DT);
@@ -61,6 +61,10 @@ int WF_ProcessForecast(char *json)
 	}
 	if(--i) {
 		avg /= i;
+		if(avg < 100) { // 50..99 -> 0..98
+			avg = (avg - 50) * 2;
+			if(avg < 0) avg = 0;
+		}
 		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WF: Clouds(%d)=%d", i, avg);
 		avg += WF_SunByMonth[rtcSAM3X8.get_months()-1];
 		if(avg > 100) avg = 100;

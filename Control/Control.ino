@@ -535,7 +535,7 @@ x_I2C_init_std_message:
 	journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
 #ifdef NEXTION
-	journal.jprintf("14. Nextion display -");
+	journal.jprintf("14. Nextion display: ");
 	if(GETBIT(HP.Option.flags, fNextion)) {
 		myNextion.init();
 	} else {
@@ -757,6 +757,9 @@ void vWeb0(void *)
 			}
 			if((GETBIT(WR.Flags, WR_fActive) || WR.PWM_FullPowerTime || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
 				while(1) {
+#ifdef PWM_CALC_POWER_ARRAY
+					if(GETBIT(PWM_CalcFlags, PWM_fCalcNow)) break;
+#endif
 					boolean nopwr = (GETBIT(HP.Option.flags, fBackupPower) || HP.NO_Power) && GETBIT(WR.Flags, WR_fActive); // Выключить все
 					if(nopwr) WR_Refresh |= WR.Loads;
 					if(WR_Refresh || WR.PWM_FullPowerTime) {
@@ -885,6 +888,9 @@ void vWeb0(void *)
 								uint8_t mppt = 255;
 								for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == 0) continue;
+#ifdef WR_Load_pins_Boiler_INDEX
+									if(i == WR_Load_pins_Boiler_INDEX && HP.dRelay[RBOILER].get_Relay()) continue;
+#endif
 									if(!GETBIT(WR.Loads_PWM, i)) {
 										uint32_t t = rtcSAM3X8.unixtime();
 										if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
@@ -921,7 +927,7 @@ void vWeb0(void *)
 								for(int8_t i = 0; i < WR_NumLoads; i++) {
 									if(!GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-									if(i == WR_Load_pins_Boiler_INDEX && (HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis || HP.dRelay[RBOILER].get_Relay())) continue;
+									if(i == WR_Load_pins_Boiler_INDEX && ((HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) || HP.dRelay[RBOILER].get_Relay())) continue;
 #endif
 									if(!GETBIT(WR.Loads_PWM, i)) {
 										uint32_t t = rtcSAM3X8.unixtime();
