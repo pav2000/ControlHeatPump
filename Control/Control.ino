@@ -878,21 +878,21 @@ void vWeb0(void *)
 								if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Skip %d\n", pnet);
 								break;
 							}
-#ifdef WR_PNET_AVERAGE
-							if(WR_Pnet_avg_init) { // first time
-								for(uint8_t i = 0; i < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]); i++) WR_Pnet_avg[i] = pnet;
-								WR_Pnet_avg_sum = pnet * int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
-								WR_Pnet_avg_init = false;
-							} else {
-								WR_Pnet_avg_sum = WR_Pnet_avg_sum - WR_Pnet_avg[WR_Pnet_avg_idx] + pnet;
-								WR_Pnet_avg[WR_Pnet_avg_idx] = pnet;
-								if(WR_Pnet_avg_idx < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]) - 1) WR_Pnet_avg_idx++; else WR_Pnet_avg_idx = 0;
-							}
-							WR_Pnet = WR_Pnet_avg_sum / int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
-#else
-							WR_Pnet = pnet;
-#endif
 						}
+#ifdef WR_PNET_AVERAGE
+						if(WR_Pnet_avg_init) { // first time
+							for(uint8_t i = 0; i < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]); i++) WR_Pnet_avg[i] = pnet;
+							WR_Pnet_avg_sum = pnet * int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+							WR_Pnet_avg_init = false;
+						} else {
+							WR_Pnet_avg_sum = WR_Pnet_avg_sum - WR_Pnet_avg[WR_Pnet_avg_idx] + pnet;
+							WR_Pnet_avg[WR_Pnet_avg_idx] = pnet;
+							if(WR_Pnet_avg_idx < sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]) - 1) WR_Pnet_avg_idx++; else WR_Pnet_avg_idx = 0;
+						}
+						if(need_average) WR_Pnet = WR_Pnet_avg_sum / int32_t(sizeof(WR_Pnet_avg) / sizeof(WR_Pnet_avg[0]));
+						else
+#endif
+							WR_Pnet = pnet;
 					}
 					// проверка перегрузки
 					pnet = WR_Pnet - WR.MinNetLoad;
