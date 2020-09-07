@@ -969,7 +969,7 @@ void vWeb0(void *)
 						for(int8_t i = 0; i < WR_NumLoads; i++) {
 							if(WR_LoadRun[i] == WR.LoadPower[i] || !GETBIT(WR.Loads, i)) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-							if(i == WR_Load_pins_Boiler_INDEX && !need_heat_boiler) continue;
+							if(i == WR_Load_pins_Boiler_INDEX && ((HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) || HP.dRelay[RBOILER].get_Relay())) continue;
 #endif
 							if(!GETBIT(WR.Loads_PWM, i)) {
 								uint32_t t = rtcSAM3X8.unixtime();
