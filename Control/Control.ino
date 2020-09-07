@@ -849,6 +849,7 @@ void vWeb0(void *)
 					int pnet = atoi(fld);
 #endif
 					//
+					if(GETBIT(WR.Flags, WR_fLogFull)) journal.printf("WR: Pnet=%d\n", pnet);
 					if(WR_TestLoadStatus) {
 						if(++WR_TestLoadStatus > WR_TestAvailablePowerTime) {
 							WR_TestLoadStatus = 0;
@@ -859,8 +860,8 @@ void vWeb0(void *)
 								}
 								WR_Switch_Load(WR_TestLoadIndex, 1);
 							}
-						} else break;
-						WR_Pnet = pnet;
+						}
+						break;
 					} else {
 						// Если возможна только релейная нагрузка, то отбрасываем пики и усредняем
 						bool need_average = true;
@@ -892,9 +893,6 @@ void vWeb0(void *)
 							WR_Pnet = pnet;
 #endif
 						}
-					}
-					if(GETBIT(WR.Flags, WR_fLogFull)) {
-						journal.printf("WR: Pnet=%d(%d)\n", WR_Pnet, pnet);
 					}
 					// проверка перегрузки
 					pnet = WR_Pnet - WR.MinNetLoad;
