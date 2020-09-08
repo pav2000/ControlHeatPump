@@ -1205,8 +1205,9 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 		}
 #endif
 #else
-		if(PWM_AverageCnt++) PWM_AverageSum += round_div_int32(power, 10); // skip first
+		if(++PWM_AverageCnt > 2) PWM_AverageSum += round_div_int32(power, 10); // skip 2
 #endif
+#if PWM_CALC_POWER_ARRAY == 1
 		if(GETBIT(PWM_CalcFlags, PWM_fCalcRelax)) {
 			if(PWM_AverageCnt >= 3) { // 6 sec
 				PWM_AverageSum = PWM_AverageSum / (PWM_AverageCnt - 1);
@@ -1217,13 +1218,20 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 				PWM_CalcFlags &= ~(1<<PWM_fCalcRelax);
 				PWM_AverageSum = PWM_AverageCnt = 0;
 			}
-		} else if(PWM_AverageCnt >= 4) { // 8 sec
+		} else
+#endif
+		if(PWM_AverageCnt >= 4) { // 8 sec
 			PWM_AverageSum /= (PWM_AverageCnt - 1);
 			if(PWM_CalcIdx) PWM_AverageSum -= PWM_CalcArray[0];
 			PWM_CalcArray[PWM_CalcIdx] = PWM_AverageSum;
 			if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("Power[%d]: %d\n", PWM_CalcIdx, PWM_AverageSum);
+#if PWM_CALC_POWER_ARRAY == 1
 			PWM_Write(WR_Load_pins[PWM_CalcLoadIdx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
+#endif
 			if(PWM_CalcIdx++ == ((1<<PWM_WRITE_OUT_RESOLUTION)-1)) {
+#if PWM_CALC_POWER_ARRAY != 1
+				PWM_Write(WR_Load_pins[PWM_CalcLoadIdx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
+#endif
 				WR.LoadPower[PWM_CalcLoadIdx] = PWM_AverageSum;
 				TaskSuspendAll();
 				journal.jprintf("\nPWM Calc Ok\nPower[%d] = ", (1<<PWM_WRITE_OUT_RESOLUTION));
@@ -1246,7 +1254,11 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 				free(PWM_CalcArray);
 				PWM_CalcFlags = 0;
 			} else {
+#if PWM_CALC_POWER_ARRAY == 1
 				PWM_CalcFlags |= (1<<PWM_fCalcRelax);
+#else
+				PWM_Write(WR_Load_pins[PWM_CalcLoadIdx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1) - PWM_CalcIdx);
+#endif
 				PWM_AverageSum = PWM_AverageCnt = 0;
 			}
 		}
