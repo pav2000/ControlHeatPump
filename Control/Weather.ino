@@ -61,11 +61,11 @@ int WF_ProcessForecast(char *json)
 	}
 	if(--i) {
 		avg /= i;
-		if(avg < 100) { // 50..99 -> 0..98
-			avg = (avg - 50) * 2;
+		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WF: Clouds(%d)=%d", i, avg);
+		if(avg < 100) { // 66..99 -> 0..98
+			avg = (avg - 66) * 3;
 			if(avg < 0) avg = 0;
 		}
-		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WF: Clouds(%d)=%d", i, avg);
 		avg += WF_SunByMonth[rtcSAM3X8.get_months()-1];
 		if(avg > 100) avg = 100;
 		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf(":%d\n", avg);
