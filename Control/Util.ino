@@ -1205,11 +1205,11 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 		}
 #endif
 #else
-		if(++PWM_AverageCnt > PWM_CALC_POWER_SW_SKIP) PWM_AverageSum += round_div_int32(power, 10); // skip 2
+		if(++PWM_AverageCnt > PWM_CALC_POWER_SW_SKIP) PWM_AverageSum += round_div_int32(power, 10); // skip n
 #endif
 #if PWM_CALC_POWER_ARRAY == 1
 		if(GETBIT(PWM_CalcFlags, PWM_fCalcRelax)) {
-			if(PWM_AverageCnt >= 3) { // 6 sec
+			if(PWM_AverageCnt >= PWM_CALC_POWER_SW_SKIP + 2) { // Relax
 				PWM_AverageSum = PWM_AverageSum / (PWM_AverageCnt - PWM_CALC_POWER_SW_SKIP);
 				if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("Relax: %d\n", PWM_AverageSum);
 				PWM_AverageSum -= PWM_CalcArray[0];
@@ -1220,7 +1220,7 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 			}
 		} else
 #endif
-		if(PWM_AverageCnt >= 4) { // 8 sec
+		if(PWM_AverageCnt >= PWM_CALC_POWER_SW_SKIP + 2) { // Ok
 			PWM_AverageSum /= (PWM_AverageCnt - PWM_CALC_POWER_SW_SKIP);
 			if(PWM_CalcIdx) PWM_AverageSum -= PWM_CalcArray[0];
 			PWM_CalcArray[PWM_CalcIdx] = PWM_AverageSum;
