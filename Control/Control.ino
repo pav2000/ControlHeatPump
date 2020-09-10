@@ -811,8 +811,7 @@ void vWeb0(void *)
 										if(curr == chg) break;
 										curr -= chg;
 									} else {
-										if(WR.LoadPower[i] - WR.LoadHist > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= WR.TurnOnPause))
-											continue;
+										if(WR.LoadPower[i] > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= WR.TurnOnPause)) continue;
 										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 										WR_Switch_Load(i, 1);
 										curr -= WR.LoadPower[i];
@@ -895,8 +894,8 @@ void vWeb0(void *)
 							WR_Pnet = pnet;
 					}
 					// проверка перегрузки
-					pnet = WR_Pnet - WR.MinNetLoad;
-					if(pnet > 0) { // Потребление из сети больше - уменьшаем нагрузку
+					if(WR_Pnet - WR.MinNetLoad > 0) { // Потребление из сети больше - уменьшаем нагрузку
+						pnet = WR_Pnet - WR.MinNetLoad / 2;
 						uint8_t reserv = 255;
 						uint8_t mppt = 255;
 						for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
@@ -917,9 +916,7 @@ void vWeb0(void *)
 #endif
 							if(GETBIT(WR.Loads_PWM, i)) {
 								int chg = WR_LoadRun[i];
-								if(chg > pnet) {
-									if(chg - pnet > WR_PWM_POWER_MIN) chg = pnet;
-								}
+								if(chg > pnet && chg - pnet > WR_PWM_POWER_MIN) chg = pnet;
 								WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
 								if(pnet == chg) break;
 								pnet -= chg;

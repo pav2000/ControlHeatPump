@@ -1550,7 +1550,7 @@ int16_t HeatPump::get_boilerTempTarget()
 			ret += Prof.Boiler.add_delta_temp;
 	}
 #if defined(WATTROUTER) && defined(WEATHER_FORECAST) && defined(WR_Load_pins_Boiler_INDEX)
-	if(h <= TARIF_NIGHT_END && GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive) && WF_BoilerTargetPercent < 99) {
+	if(h <= TARIF_NIGHT_END && WF_BoilerTargetPercent < WF_BOILER_MAX_CLOUDS && GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive)) {
 		ret = Prof.Boiler.WF_MinTarget + (ret - Prof.Boiler.WF_MinTarget) * WF_BoilerTargetPercent / 100;
 		if(ret < Prof.Boiler.tempRBOILER) ret = Prof.Boiler.tempRBOILER;
 	}
