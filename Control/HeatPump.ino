@@ -817,13 +817,14 @@ void HeatPump::resetSettingHP()
     SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
 	Option.maxBackupPower=3000;          // Максимальная мощность при питании от генератора (Вт)
 #ifdef WATTROUTER
-	WR.MinNetLoad = 150;
-	WR.NextSwitchPause = 20;
-	WR.TurnOnMinTime = 18;
+	WR.MinNetLoad = 50;
+	WR.NextSwitchPause = 10;
+	WR.TurnOnMinTime = 9;
 	WR.TurnOnPause = 300;
-	WR.LoadAdd = 80;
-	WR.LoadHist = 50;
-	WR.PWM_Freq = 3;
+	WR.LoadAdd = 100;
+	WR.LoadHist = 100;
+	WR.PWM_Freq = PWM_WRITE_OUT_FREQ_DEFAULT;
+	WR.WF_Hour = 5;
 #endif
 
 }
@@ -1142,12 +1143,16 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	else if(strcmp(var,option_WR_fLogFull)==0)     { WR.Flags = (WR.Flags & ~(1<<WR_fLogFull)) | ((n!=0)<<WR_fLogFull); return true; }
 	else if(strcmp(var,option_WR_WF_Hour)==0)      { if(n >= 0 && n <= 23) { WR.WF_Hour = n; return true; } else return false; }
 	else if(strcmp(var,option_WR_PWM_Freq)==0)     {
+#ifdef WR_ONE_PERIOD_PWM
+		WR.PWM_Freq = PWM_WRITE_OUT_FREQ_DEFAULT;
+#else
 		if(WR.PWM_Freq != n) {
 			WR.PWM_Freq = n;
 			memset(TCChanEnabled, 0, sizeof_TCChanEnabled);
 			PWMEnabled = 0;
 			WR_Refresh |= WR_fLoadMask;
 		}
+#endif
 		return true;
 	} else if(strcmp(var,option_WR_fActive)==0) {
 		WR.Flags = (WR.Flags & ~(1<<WR_fActive)) | ((n!=0)<<WR_fActive);

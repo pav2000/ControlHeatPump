@@ -41,7 +41,11 @@ extern uint8_t TCChanEnabled[];
 #define sizeof_TCChanEnabled 9
 
 #ifdef WATTROUTER
-#define PWM_WRITE_OUT_FREQUENCY	WR.PWM_Freq		// PWM freq for PWM_Write() function
+#ifdef WR_ONE_PERIOD_PWM
+#define PWM_WRITE_OUT_FREQUENCY	PWM_WRITE_OUT_FREQ_DEFAULT	// PWM freq for PWM_Write() function
+#else
+#define PWM_WRITE_OUT_FREQUENCY	WR.PWM_Freq					// PWM freq for PWM_Write() function
+#endif
 void WR_Switch_Load(uint8_t idx, boolean On);
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta);
 inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
