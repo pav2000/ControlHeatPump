@@ -6,7 +6,7 @@
 <script type="text/javascript">
 urlupdate = 2000;
 window.onload = function() {
-	loadParam("get_tblWR,get_oHP(WON),get_oHP(WM),get_oHP(WO),get_oHP(WOM),get_oHP(WH),get_oHP(WA),get_oHP(WD),get_oHP(WDF),get_oHP(NS),get_oHP(WF),get_oHP(WFPT),get_oHP(WFPL)");
+	loadParam("get_tblWR,get_oHP(WON),get_oHP(WM),get_oHP(WO),get_oHP(WOM),get_oHP(WH),get_oHP(WA),get_oHP(WD),get_oHP(WDF),get_oHP(NS),get_oHP(WF),get_oHP(WFPT),get_oHP(WFPL),get_oHP(WFH)");
 	updateParam("get_WR(0)");
 }
 function loadParam_after(paramid) {
@@ -93,6 +93,9 @@ function run_pwm_calc() {
 	</tr><tr>
 		<td>Частота ШИМ, Гц</td>
 		<td nowrap><input id="get_ohp-wf" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_oHP(WF)')"></td>
+	</tr><tr>
+		<td>Час получения прогноза погоды</td>
+		<td nowrap><input id="get_ohp-wfh" type="number" min="0" max="23" step="1"><input type="submit" value=">" onclick="setParam('get_oHP(WFH)')"></td>
 	</tr><tr>
 		<td>Отладка в журнал (Вкл, Детально, Расчет PWM)</td>
 		<td><input type="checkbox" id="get_ohp-wd" onChange="setParam('get_oHP(WD)')"> <input type="checkbox" id="get_ohp-wdf" onChange="setParam('get_oHP(WDF)')"> <input type="checkbox" id="get_wrc-0" onChange="if(this.checked) if(run_pwm_calc()) this.checked=0;"></td>

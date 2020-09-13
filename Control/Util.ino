@@ -1138,8 +1138,9 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 				} else if(WR_SwitchTime[idx] && t - WR_SwitchTime[idx] > WR.PWM_FullPowerTime * 60) n = max; // Перегрелись
 			} else if(n < max && WR_LoadRun[idx] > max) WR_SwitchTime[idx] = t;
 		} else if(WR_LoadRun[idx]) WR_SwitchTime[idx] = t;
-	} else if(WR_LoadRun[idx] != n) WR_SwitchTime[idx] = t;
+	}
 	if(n != WR_LoadRun[idx] || GETBIT(WR_Refresh, idx)) {
+		if(n != WR_LoadRun[idx] && (WR_LoadRun[idx] == 0 || n == 0)) WR_SwitchTime[idx] = t;
 		WR_LoadRun[idx] = n;
 		if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
 #ifdef PWM_ACCURATE_POWER

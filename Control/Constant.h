@@ -754,6 +754,7 @@ const char *option_WR_fActive			= {"WON"};
 const char *option_WR_PWM_Freq			= {"WF"};
 const char *option_WR_PWM_FullPowerTime = {"WFPT"};
 const char *option_WR_PWM_FullPowerLimit= {"WFPL"};
+const char *option_WR_WF_Hour			= {"WFH"};
 
 // Отопление/охлаждение параметры
 const char *hp_RULE      = {"RULE"};             // алгоритм работы

@@ -874,7 +874,7 @@ void vWeb0(void *)
 						if(need_average) {
 							if(WR_Pnet != -32768 && /*abs*/(pnet - WR_Pnet) > WR_SKIP_EXTREMUM) {
 								WR_Pnet = -32768;
-								if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Skip %d\n", pnet);
+								if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: Skip %d\n", pnet);
 								break;
 							}
 						}
@@ -1110,13 +1110,16 @@ void vWeb0(void *)
 #endif   // MQTT
 
 #ifdef WEATHER_FORECAST
-			if(rtcSAM3X8.get_days() != WF_Day && rtcSAM3X8.get_hours() == WF_ForecastHour && strlen(HP.Option.WF_ReqServer)) {
-				active = false;
-				int err = Send_HTTP_Request(HP.Option.WF_ReqServer, HP.Option.WF_ReqText, 4);
-				if(err) {
-					if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("WF: Request Error %d\n", err);
-				} else if(WF_ProcessForecast(Socket[MAIN_WEB_TASK].outBuf) == OK) {
-					WF_Day = rtcSAM3X8.get_days();
+			if(rtcSAM3X8.get_days() != WF_Day) {
+				WF_BoilerTargetPercent = 100;
+				if(rtcSAM3X8.get_hours() == WR.WF_Hour && strlen(HP.Option.WF_ReqServer)) {
+					if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+					int err = Send_HTTP_Request(HP.Option.WF_ReqServer, HP.Option.WF_ReqText, 4);
+					if(err != 0) {
+						if((HP.get_NetworkFlags() & (1<<fWebFullLog)) || rtcSAM3X8.get_minutes() == 59) journal.jprintf_time("WF: Request Error %d\n", err);
+					} else if(WF_ProcessForecast(Socket[MAIN_WEB_TASK].outBuf) == OK) {
+						WF_Day = rtcSAM3X8.get_days();
+					}
 				}
 			}
 #endif

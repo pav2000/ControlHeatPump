@@ -156,6 +156,8 @@ struct {
 	uint16_t PWM_Freq;					// Гц
 	uint8_t  PWM_FullPowerTime;			// Время работы на максимальной мощности для PWM и время паузы после, 0 - выкл, минут
 	uint8_t  PWM_FullPowerLimit;		// Процент ограничения мощности после времени максимальной работы, %
+	uint8_t  WF_Hour;					// Час получения прогноза погоды
+	uint8_t  __RESERVED__;
 	int16_t  LoadPower[WR_NumLoads];	// Мощности нагрузки, Вт
 } WR;
 
