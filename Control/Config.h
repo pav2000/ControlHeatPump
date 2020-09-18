@@ -3338,7 +3338,7 @@ const char *noteTemp[] = {"Температура улицы",
 	//#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
 	#define ADD_FC_POWER_WHEN_GENERATOR // Прибавлять расчитанную мощность частотника к показаниям счетчика, когда работа через генератор
 	#define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
-	#define AUTO_START_GENERATOR 30 // Автозапуск генератора (реле RGEN), ждать секунд (для прогрева)
+	#define AUTO_START_GENERATOR 60 // Автозапуск генератора (реле RGEN), ждать секунд (для прогрева)
 	#define AUTO_START_GEN_TIMEOUT 200 // Таймаут ожидания старта генератора, сек
 	#define STATS_USE_BUFFER_FOR_SAVING // Сохранять статистику только когда буфер (512 байт) заполнен, иначе каждый день
 	#define MIN_RAM_CHARTS

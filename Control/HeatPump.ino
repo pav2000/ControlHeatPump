@@ -3101,18 +3101,20 @@ xNextStop:
 	}
 
 #ifdef AUTO_START_GENERATOR
-	if(GETBIT(Option.flags, fBackupPower) && dFC.get_state() == ERR_LINK_FC) {
-		dRelay[RGEN].set_ON();
-		_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
-		for(uint16_t i = AUTO_START_GEN_TIMEOUT / (FC_TIME_READ / 1000); i > 0; i--) {
-			if(NO_Power) return;
-			if(is_next_command_stop()) goto xNextStop;
-			if(dFC.get_err() == OK) break;
-			_delay(FC_TIME_READ);
-		}
-		if(dFC.get_err() != OK) {
-			set_Error(ERR_FC_NO_LINK, (char*) __FUNCTION__);
-			return;
+	if(GETBIT(Option.flags, fBackupPower)) {
+		dRelay[RGEN].set_ON(); // Включаем или не даем выключиться
+		if(dFC.get_state() == ERR_LINK_FC) {
+			_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
+			for(uint16_t i = AUTO_START_GEN_TIMEOUT / (FC_TIME_READ / 1000); i > 0; i--) {
+				if(NO_Power) return;
+				if(is_next_command_stop()) goto xNextStop;
+				if(dFC.get_err() == OK) break;
+				_delay(FC_TIME_READ);
+			}
+			if(dFC.get_err() != OK) {
+				set_Error(ERR_FC_NO_LINK, (char*) __FUNCTION__);
+				return;
+			}
 		}
 	}
 #endif

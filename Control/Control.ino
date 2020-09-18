@@ -1205,9 +1205,6 @@ void vReadSensor(void *)
 #ifdef SGENERATOR
 		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
 #endif
-#ifdef AUTO_START_GENERATOR
-		if(GETBIT(HP.Option.flags, fBackupPower) && HP.is_compressor_on()) HP.dRelay[RGEN].set_ON(); // Не даем генератору выключиться
-#endif
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
 #ifdef USE_ELECTROMETER_SDM   // Опрос состояния счетчика
