@@ -552,7 +552,7 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>=50)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else // % от цели
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>=1)&&(x<=25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
 
-	if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x<=5)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
+	if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>0)&&(x*100<=FC_PID_MAX_STEP)){_data.PidFreqStep=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_START_FREQ)==0)            { if((x>=20)&&(x<=120)){_data.startFreq=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=20)&&(x<=150)){_data.startFreqBoiler=x*100;return true; } else return false; } else // Гц
 	if(strcmp(var,fc_MIN_FREQ)==0)              { if((x>=20)&&(x<=80)){_data.minFreq=x*100;return true; } else return false; } else // Гц

@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG),get_pFC(EEVK)");
 		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(PIN),get_pFC(L0),get_pFC(L100)");
 		};
 	</script>
@@ -31,6 +31,7 @@
     <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_pfc-logw" onchange="setParam('get_pFC(LOGW)');"></td></tr>
     <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>1</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
     <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_pfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STOP)');"></td></tr>
+    <tr><td>Подстройка ЭРВ при изменении частоты, множитель</td><td><input type="number" id="get_pfc-eevk" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(EEVK)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
     <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_pfc-dtc" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(DTC)');"></td></tr>

@@ -1039,8 +1039,11 @@ xSecond_sub_1:				if(pidw.hyst[0] > 0) {
             pidw.Kp_dmin=_data.pid2_delta; // передать параметр - уменьшение пропорциональной при определенной ошибке
 			newEEV = updatePID(newEEV, _data.pid, pidw)/100; // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление вниз
 	//		newEEV = round_div_int32(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление здесь 0.5 это один шаг
-			if ((abs(newEEV)>_data.pid_max)&&(_data.pid_max>0)) {if (newEEV>0) newEEV=EEV+_data.pid_max; else newEEV=EEV-_data.pid_max;} else newEEV+=EEV;   // Ограничение пида +  добавление предудущего значения
 #endif
+			// Ограничение пида +  добавление предудущего значения
+			if(newEEV > _data.pid_max) newEEV = _data.pid_max;
+			else if(newEEV < -_data.pid_max) newEEV = -_data.pid_max;
+			newEEV += EEV;
 			// Проверка управляющего воздействия, возможно отказ ЭРВ
 			//      SerialDbg.print("errPID="); SerialDbg.print(errPID,4);SerialDbg.print(" newEEV=");SerialDbg.print(newEEV);SerialDbg.print(" EEV=");SerialDbg.println(EEV);
 		}

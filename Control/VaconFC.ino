@@ -253,12 +253,12 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
     if((x >= _min) && (x <= _max)) // Проверка диапазона разрешенных частот
     {
         FC_target = x;
-        if(show) journal.jprintf(" Set %s: %.2f\n", name, (float)FC_target / 100);
+        if(show) journal.jprintf(" Set %s: %.2d\n", name, FC_target);
         return err;
     } // установка частоты OK  - вывод сообщения если надо
     else {
     	err = ERR_FC_ERROR;
-        journal.jprintf("%s: Wrong frequency %.2f\n", name, (float)x / 100);
+        journal.jprintf("%s: Wrong frequency %.2d\n", name, x);
         return WARNING_VALUE;
     }
 #else // Боевой вариант
@@ -280,15 +280,19 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 		err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
 	}
 	if(err == OK) {
+		if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
+			HP.dEEV.set_EEV((int32_t)HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 10000);
+		}
 		FC_target = x;
-		if(show) journal.jprintf(" Set %s[%s]: %.2f%%\n", name, (char *)codeRet[HP.get_ret()], (float)FC_target / 100);
-		return err;
+		if(show) journal.jprintf(" Set %s[%s]: %.2d%%\n", name, (char *)codeRet[HP.get_ret()], FC_target);
 	} else {  // генерация ошибки
 		SETBIT1(flags, fErrFC);
 		set_Error(err, name);
-		return err;
 	}
 #else // Аналоговое управление
+	if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
+		HP.dEEV.set_EEV(HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 100);
+	}
 	FC_target = x;
 #ifdef FC_ANALOG_OFF_SET_0
 	if(!GETBIT(flags, fOnOff)) return err;
@@ -304,7 +308,7 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 		break; //  Ничего не включаем
 	}
 	if(show) {
-		journal.jprintf(" Set %s: %.2f%%\n", name, (float)FC_target / 100); // установка частоты OK  - вывод сообщения если надо
+		journal.jprintf(" Set %s: %.2d%%\n", name, FC_target); // установка частоты OK  - вывод сообщения если надо
     }
 #endif
 	return err;
@@ -599,7 +603,8 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     	strcat(ret, "-");
 #endif
     } else
-   	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+   	if(strcmp(var, fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+    if(strcmp(var, fc_AdjustEEV_k)==0)			{  _dtoa(ret, (int32_t)_data.AdjustEEV_k * 100 / HP.dEEV.get_maxEEV(), 2); } else
 
     strcat(ret,(char*)cInvalid);
 }
@@ -625,27 +630,28 @@ boolean devVaconFC::set_paramFC(char *var, float f)
     if(strcmp(var,fc_ReturnOilPeriod)==0)       { _data.ReturnOilPeriod = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     { _data.ReturnOilPerDivHz = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilEEV)==0)          { _data.ReturnOilEEV = x; return true; } else
-    if(strcmp(var,fc_PID_STOP)==0)              { if((x>=0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  }
+    if(strcmp(var,fc_PID_STOP)==0)              { if((x>=0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else
+	if(strcmp(var,fc_AdjustEEV_k)==0)           { _data.AdjustEEV_k = f * HP.dEEV.get_maxEEV(); return true; } else
    
 	x = rd(f, 100);
-    	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>=0)&&(x<2500)){_data.dtCompTemp=x;return true; } else return false; } else // градусы
-		if(strcmp(var,fc_FC)==0)                    { if((x>=_data.minFreqUser)&&(x<=_data.maxFreqUser)){set_target(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
-		if(strcmp(var,fc_DT_TEMP)==0)               { if((x>=0)&&(x<1000)){_data.dtTemp=x;return true; } } else // градусы
-		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>=0)&&(x<1000)){_data.dtTempBoiler=x;return true; } } else // градусы
-		if(strcmp(var,fc_START_FREQ)==0)            { if((x>=0)&&(x<=20000)){_data.startFreq=x;return true; } } else // %
-		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if((x>=0)&&(x<=20000)){_data.startFreqBoiler=x;return true; } } else // %
+    	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if(x>=0 && x<2500){_data.dtCompTemp=x;return true; } else return false; } else // градусы
+		if(strcmp(var,fc_FC)==0)                    { if(x>=_data.minFreqUser && x<=_data.maxFreqUser){set_target(x,true, _data.minFreqUser, _data.maxFreqUser); return true; } } else
+		if(strcmp(var,fc_DT_TEMP)==0)               { if(x>=0 && x<1000){_data.dtTemp=x;return true; } } else // градусы
+		if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if(x>=0 && x<1000){_data.dtTempBoiler=x;return true; } } else // градусы
+		if(strcmp(var,fc_START_FREQ)==0)            { if(x>=0 && x<=20000){_data.startFreq=x;return true; } } else // %
+		if(strcmp(var,fc_START_FREQ_BOILER)==0)     { if(x>=0 && x<=20000){_data.startFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ)==0)              { if(x>=0){_data.minFreq=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ_COOL)==0)         { if(x>=0){_data.minFreqCool=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ_BOILER)==0)       { if(x>=0){_data.minFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MIN_FREQ_USER)==0)         { if(x>=0){_data.minFreqUser=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ)==0)              { if((x>=0)){_data.maxFreq=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if((x>=0)){_data.maxFreqCool=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if((x>=0)){_data.maxFreqBoiler=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if((x>=0)){_data.maxFreqUser=x;return true; } } else // %
-		if(strcmp(var,fc_MAX_FREQ_GEN)==0)          { if((x>=0)){_data.maxFreqGen=x;return true; } } else // %
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if((x>=0)&&(x<20000)){_data.PidFreqStep=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ)==0)             { if((x>=0)&&(x<10000)){_data.stepFreq=x;return true; } } else // %
-		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if((x>=0)&&(x<10000)){_data.stepFreqBoiler=x;return true; } } // %
+		if(strcmp(var,fc_MAX_FREQ)==0)              { if(x>=0){_data.maxFreq=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_COOL)==0)         { if(x>=0){_data.maxFreqCool=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if(x>=0){_data.maxFreqBoiler=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if(x>=0){_data.maxFreqUser=x;return true; } } else // %
+		if(strcmp(var,fc_MAX_FREQ_GEN)==0)          { if(x>=0){_data.maxFreqGen=x;return true; } } else // %
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if(x>=0 && x<=FC_PID_MAX_STEP){ _data.PidFreqStep=x; return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ)==0)             { if(x>=0 && x<10000){_data.stepFreq=x;return true; } } else // %
+		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if(x>=0 && x<10000){_data.stepFreqBoiler=x;return true; } } // %
  
     return false;
 }
