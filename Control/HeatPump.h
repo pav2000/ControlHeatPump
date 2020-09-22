@@ -127,7 +127,7 @@ WR_fTYPE WR_Refresh = 0;
 int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
-uint8_t  WR_TestLoadStatus = 0; 		// >1 - идет тестирование нагрузки
+uint8_t  WR_TestLoadStatus = 0; 		// >0 - идет тестирование нагрузки
 uint8_t  WR_TestLoadIndex;
 
 #ifdef PWM_CALC_POWER_ARRAY
@@ -445,6 +445,7 @@ class HeatPump
    int16_t get_targetTempCool();                           // Получить целевую температуру Охлаждения
    int16_t get_targetTempHeat();                           // Получить целевую температуру Отопления
    void    getTargetTempStr(char *rstr);					// Целевая температура в строку
+   void    getTargetTempStr2(char *rstr);					// Целевая температура в строку, 2 знака после запятой
    int16_t setTargetTemp(int16_t dt);                      // ИЗМЕНИТЬ целевую температуру
    int16_t setTempTargetBoiler(int16_t dt);                // ИЗМЕНИТЬ целевую температуру бойлера
    int16_t CalcTargetPID(type_settingHP &settings);			// Рассчитать подачу для PID

@@ -184,6 +184,7 @@ public:
   int16_t get_dtTemp(){return _data.dtTemp;}                    // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
   int16_t get_dtTempBoiler(){return _data.dtTempBoiler;}        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
   int16_t get_maxFreqGen(){return _data.maxFreqGen;}            // Максимальная частота инвертора при работе от генератора в 0.01
+  uint16_t get_PidMaxStep(){return _data.PidMaxStep;}
   
   // Управление по модбас
   uint16_t	get_power(){return (uint32_t)nominal_power * power / 1000;}   // Получить текущую мощность в Вт
@@ -282,6 +283,7 @@ public:
 	  int16_t ReturnOilEEV;				// Изменения позиции ЭРВ
 	  int16_t maxFreqGen;				// Максимальная скорость инвертора при работе от генератора в 0.01 %
 	  int16_t AdjustEEV_k;				// Подстройки ЭРВ при изменении оборотов, множитель, сотые шага
+	  uint16_t PidMaxStep;				// Максимальный шаг изменения частоты инвертора у PID регулятора, сотые
 #ifdef FC_ANALOG_CONTROL
 	  int16_t  level0;                  // Отсчеты ЦАП соответсвующие 0   скорость
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости

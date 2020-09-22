@@ -892,14 +892,14 @@ void parserGET(uint8_t thread, int8_t )
 					}
 				}
 			}
-			// "get_TrgT" -> "x.x / y.y", "get_TrgT(1)" -> "x.x"
+			// "get_TrgT" -> "x.xx / y.yy", "get_TrgT(1)" -> "x.xx"
 			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
 			else {
-				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
+				HP.getTargetTempStr2(strReturn + m_strlen(strReturn));
 				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '(') {
 					strcat(strReturn, " / ");
 					strReturn = dptoa(strReturn + m_strlen(strReturn), HP.CalcTargetPID(*HP.get_modeHouseSettings()), 2);
-					*--strReturn = '\0';
+					//*--strReturn = '\0';
 				}
 			}
 			ADD_WEBDELIM(strReturn); continue;
@@ -2365,6 +2365,14 @@ x_get_aTemp:
 						} else { // get_WR(n)
 							if(p == 0) { // get_WR(0)
 								if(WR_Pnet == -32768) strcat(strReturn, "-"); else _itoa(WR_Pnet, strReturn);
+							} else if(p == 1) { // get_WR(1)
+#ifdef WR_Boiler_Substitution_INDEX
+								bool on = digitalReadDirect(WR_Boiler_Substitution_pin);
+								strReturn += strlen(strReturn);
+								*strReturn++ = '0' + (on ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX);
+								*strReturn++ = '0' + (on ? WR_Load_pins_Boiler_INDEX : WR_Boiler_Substitution_INDEX);
+								*strReturn = '\0';
+#endif
 							}
 						}
 					} else strcat(strReturn,"E08"); // выход за диапазон, значение не установлено

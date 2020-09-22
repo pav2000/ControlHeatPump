@@ -787,7 +787,11 @@ void vWeb0(void *)
 					}
 					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
-					if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()) {
+					if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()
+#ifdef WR_Boiler_Substitution_pin
+						&& !digitalReadDirect(WR_Boiler_Substitution_pin)
+#endif
+					) {
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
 						if(curr > 0) {
 							if(WR_TestLoadStatus) {
@@ -991,10 +995,9 @@ void vWeb0(void *)
 #else
 								if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
 #endif
-									WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR.LoadPower[i]);
-									WR_SwitchTime[i] = rtcSAM3X8.unixtime();
 									WR_TestLoadIndex = i;
 									WR_TestLoadStatus = 1;
+									WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR.LoadPower[i]);
 									break;
 								}
 #endif

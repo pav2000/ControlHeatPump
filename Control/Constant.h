@@ -290,9 +290,6 @@ const uint16_t  defaultPort=80;
 #endif
 #define HTTP_REQUEST_ERR_REPEAT 120      // Повтор информирования при ошибке через n секунд
 
-#ifndef FC_PID_MAX_STEP
-#define FC_PID_MAX_STEP         1000	 // Максимальный шаг изменения частоты инвертора у PID регулятора, сотые
-#endif
 // ------------------- SENSOR TEMP----------------------------------
 #ifndef T_NUMSAMLES
 #define T_NUMSAMLES       1              // Число значений для усреднения показаний температуры
@@ -701,6 +698,7 @@ const char *fc_ReturnOilPeriod   = {"ROP"};               // Время возв
 const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота при которой возвращается масло
 const char *fc_ReturnOilEEV      = {"ROE"};               // Шаги ЭРВ при котором возвращается масло
 const char *fc_AdjustEEV_k       = {"EEVK"};
+const char *fc_PidMaxStep        = {"PMS"};
 
 // Описание имен параметров опций ТН  для функций get_optionHP ("get_oHP") set_optionHP ("set_oHP")
 const char *option_ADD_HEAT           = {"HEAT_list"};              // использование дополнительного нагревателя (значения 1 и 0)

@@ -539,8 +539,17 @@ int8_t devRelay::set_Relay(int8_t r)
 		if(number == R4WAY) r = !r;
 #endif
 #ifdef WR_Load_pins_Boiler_INDEX
-		if(number == RBOILER) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, r ? 32767 : -32768);
-		else
+		if(number == RBOILER) {
+#ifdef WR_Boiler_Substitution_pin
+			if(r && digitalReadDirect(WR_Boiler_Substitution_pin)) { // выключить подмену бойлера
+				WR_Change_Load_PWM(WR_Boiler_Substitution_INDEX, -32768);
+				_delay(10); // 1/100 Hz
+				digitalWriteDirect(WR_Boiler_Substitution_pin, 0);
+				_delay(WR_Boiler_Substitution_swtime);
+			}
+#endif
+			WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, r ? 32767 : -32768);
+		} else
 #endif
 			digitalWriteDirect(pin, r);
 	}

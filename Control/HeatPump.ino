@@ -1508,7 +1508,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 
 int16_t HeatPump::get_targetTempCool()
 {
-	int16_t T;
+	int T;
 	if(get_ruleCool() == pHYBRID) T = Prof.Cool.Temp1;
 	else if(!(GETBIT(Prof.Cool.flags, fTarget))) T = Prof.Cool.Temp1;
 	else T = Prof.Cool.Temp2;
@@ -1518,7 +1518,7 @@ int16_t HeatPump::get_targetTempCool()
 
 int16_t HeatPump::get_targetTempHeat()
 {
-	int16_t T;
+	int T;
 	if(get_ruleHeat() == pHYBRID) T = Prof.Heat.Temp1;
 	else if(!(GETBIT(Prof.Heat.flags, fTarget))) T = Prof.Heat.Temp1;
 	else T = Prof.Heat.Temp2;
@@ -1581,6 +1581,23 @@ void HeatPump::getTargetTempStr(char *rstr)
 		return;
 	}
 	*--rstr = '\0';
+}
+
+// Целевая температура в строку, 2 знака после запятой
+void HeatPump::getTargetTempStr2(char *rstr)
+{
+	switch(get_modeHouse())   // проверка отопления
+	{
+	case pHEAT:
+		rstr = dptoa(rstr, get_targetTempHeat(), 2);
+		break;
+	case pCOOL:
+		rstr = dptoa(rstr, get_targetTempCool(), 2);
+		break;
+	default:
+		strcpy(rstr, "-.-");
+		return;
+	}
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2440,11 +2457,11 @@ MODE_COMP  HeatPump::UpdateBoiler()
 #endif
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - FC_PID_MAX_STEP) newFC = dFC.get_target() - FC_PID_MAX_STEP; // На уменьшение
+		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
 #else
 		// Расчет целевой частоты с ограничением
 		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -FC_PID_MAX_STEP) newFC = -FC_PID_MAX_STEP;
+		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
 		newFC += dFC.get_target();
 #endif
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
@@ -2626,11 +2643,11 @@ MODE_COMP HeatPump::UpdateHeat()
 		newFC = updatePID(CalcTargetPID(Prof.Heat) - FEED, Prof.Heat.pid, pidw);
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - FC_PID_MAX_STEP) newFC = dFC.get_target() - FC_PID_MAX_STEP; // На уменьшение
+		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
 #else
 		// Расчет целевой частоты с ограничением
 		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -FC_PID_MAX_STEP) newFC = -FC_PID_MAX_STEP;
+		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
 		newFC += dFC.get_target();
 #endif
 
@@ -2784,11 +2801,11 @@ MODE_COMP HeatPump::UpdateCool()
 		newFC = updatePID(FEED - CalcTargetPID(Prof.Cool), Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - FC_PID_MAX_STEP) newFC = dFC.get_target() - FC_PID_MAX_STEP; // На уменьшение
+		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
 #else
 		// Расчет целевой частоты с ограничением
 		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -FC_PID_MAX_STEP) newFC = -FC_PID_MAX_STEP;
+		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
 		newFC += dFC.get_target();
 #endif
 

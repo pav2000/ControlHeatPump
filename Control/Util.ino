@@ -1140,7 +1140,30 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 		} else if(WR_LoadRun[idx]) WR_SwitchTime[idx] = t;
 	}
 	if(n != WR_LoadRun[idx] || GETBIT(WR_Refresh, idx)) {
-		if(n != WR_LoadRun[idx] && (WR_LoadRun[idx] == 0 || n == 0)) WR_SwitchTime[idx] = t;
+		if(n != WR_LoadRun[idx]) {
+#ifdef WR_Boiler_Substitution_INDEX
+			if(n > 0) {
+				if(idx == WR_Boiler_Substitution_INDEX && !digitalReadDirect(WR_Boiler_Substitution_pin)) {
+					if(WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) {
+						PWM_Write(WR_Load_pins[WR_Load_pins_Boiler_INDEX], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
+						WR_SwitchTime[WR_Load_pins_Boiler_INDEX] = t;
+						_delay(10); // 1/100 Hz
+					}
+					digitalWriteDirect(WR_Boiler_Substitution_pin, 1);
+					_delay(WR_Boiler_Substitution_swtime);
+				} else if(idx == WR_Load_pins_Boiler_INDEX && digitalReadDirect(WR_Boiler_Substitution_pin)) {
+					if(WR_LoadRun[WR_Boiler_Substitution_INDEX] > 0) {
+						PWM_Write(WR_Load_pins[WR_Boiler_Substitution_INDEX], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
+						WR_SwitchTime[WR_Boiler_Substitution_INDEX] = t;
+						_delay(10); // 1/100 Hz
+					}
+					digitalWriteDirect(WR_Boiler_Substitution_pin, 0);
+					_delay(WR_Boiler_Substitution_swtime);
+				}
+			}
+#endif
+			if((WR_LoadRun[idx] == 0 || n == 0) && WR_TestLoadStatus == 0) WR_SwitchTime[idx] = t;
+		}
 		WR_LoadRun[idx] = n;
 		if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
 #ifdef PWM_ACCURATE_POWER

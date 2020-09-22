@@ -3972,7 +3972,6 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FC_ACCEL_TIME			 (2100)			// Время разгона компрессора в сотых сек
 	#define FC_DEACCEL_TIME          (1100)   	  	// Время торможения компрессора в сотых сек
 	#define FC_START_PID_DELAY       (30*100)      	// Задержка ПИД после старта компрессора
-	#define FC_PID_MAX_STEP           300			// Максимальный шаг изменения частоты инвертора у PID регулятора, сотые %
 
 	#define FC_RETOIL_FREQ			  4500		    // Частота меньше которой должен происходить возврат масла, в сотых Гц
 	#define FC_RETOIL_TIME			 (16/(FC_TIME_READ/1000)) // Время возврата, сек
@@ -4009,21 +4008,26 @@ const char *noteTemp[] = {"Температура улицы",
 
 	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
 	#define WATTROUTER												// Включить
-	#define WR_NumLoads				3								// Кол-во нагрузок (1..8)
+	#define WR_NumLoads				4								// Кол-во нагрузок (1..8)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
 	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b), десятые Вт
 #ifndef TEST_BOARD
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 	#undef HTTP_LowConsumeRequest
 	#undef WR_PowerMeter_Modbus
 	#define IWR 0
 	#define WR_CurrentSensor_4_20mA	IWR
 #endif
-	#define WR_Load_pins_Boiler_INDEX 	0							// Индекс бойлера в массиве WR_Load_pins
+
+	#define WR_Load_pins_Boiler_INDEX 	 0							// Индекс бойлера в массиве WR_Load_pins
 	#define WR_Boiler_Hysteresis		100							// Гистерезис бойлера, сотые градуса
+	#define WR_Boiler_Substitution_INDEX 3							// Индекс подменной нагрузки для бойлера
+	#define WR_Boiler_Substitution_pin	13							// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
+	#define WR_Boiler_Substitution_swtime 50						// Время переключения контактора, мсек
+
 	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 	2							// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
