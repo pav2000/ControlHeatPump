@@ -2363,11 +2363,17 @@ x_get_aTemp:
 								strcat(strReturn, "1");
 							}
 						} else { // get_WR(n)
+xget_WR:
 							if(p == 0) { // get_WR(0)
+								if(i) { // <ip>/&set_WR(0=x) -> set power(= x / 10) + set MPPT flag(WR_Check_MPPT() = x % 10)
+#ifdef WR_PowerMeter_Modbus
+									if(HP.get_testMode() != NORMAL) WR_PowerMeter_Power = pm;
+#endif
+								}
 								if(WR_Pnet == -32768) strcat(strReturn, "-"); else _itoa(WR_Pnet, strReturn);
 							} else if(p == 1) { // get_WR(1)
 #ifdef WR_Boiler_Substitution_INDEX
-								bool on = digitalReadDirect(WR_Boiler_Substitution_pin);
+								bool on = digitalReadDirect(PIN_WR_Boiler_Substitution);
 								strReturn += strlen(strReturn);
 								*strReturn++ = '0' + (on ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX);
 								*strReturn++ = '0' + (on ? WR_Load_pins_Boiler_INDEX : WR_Boiler_Substitution_INDEX);
@@ -2375,7 +2381,8 @@ x_get_aTemp:
 #endif
 							}
 						}
-					} else strcat(strReturn,"E08"); // выход за диапазон, значение не установлено
+					} else if(*str == '(') goto xget_WR;
+					else strcat(strReturn,"E08"); // выход за диапазон, значение не установлено
 					ADD_WEBDELIM(strReturn);
 					continue;
 				}

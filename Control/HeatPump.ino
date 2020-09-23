@@ -821,7 +821,7 @@ void HeatPump::resetSettingHP()
 	WR.NextSwitchPause = 10;
 	WR.TurnOnMinTime = 9;
 	WR.TurnOnPause = 300;
-	WR.LoadAdd = 100;
+	WR.LoadAdd = 150;
 	WR.LoadHist = 100;
 	WR.PWM_Freq = PWM_WRITE_OUT_FREQ_DEFAULT;
 	WR.WF_Hour = 5;
@@ -1120,6 +1120,10 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads) {
+#ifdef WR_Boiler_Substitution_INDEX
+		   if(bit == WR_Boiler_Substitution_INDEX) return true;
+		   if(bit == WR_Load_pins_Boiler_INDEX) WR.Loads_PWM = (WR.Loads_PWM & ~(1<<WR_Boiler_Substitution_INDEX)) | (n == 0 ? 0 : (1<<WR_Boiler_Substitution_INDEX));
+#endif
 		   WR.Loads_PWM = (WR.Loads_PWM & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
 		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;

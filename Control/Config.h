@@ -3375,7 +3375,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 //		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+//		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //		#define NEXTION_DEBUG 			// Отладка дисплея Nextion - отправка
 //		#define NEXTION_DEBUG2 			// Отладка дисплея Nextion - прием
 //		#define DEBUG_PID				// Отладка ПИДа
@@ -3606,7 +3606,7 @@ const char *noteTemp[] = {"Температура улицы",
 							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
-	#define ADC_SENSOR_PEVA		13		// A11, X33. датчик давления испарителя
+	#define ADC_SENSOR_PEVA		13		// A11/PIN_65. X33. датчик давления испарителя
 	#define ADC_SENSOR_PCON		12		// A10, X31. датчик давления конденсатора
 	#define ADC_SENSOR_PGEO		4		// A3, X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
@@ -3640,6 +3640,7 @@ const char *noteTemp[] = {"Температура улицы",
 
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Исполнительные устройства (реле и сухие контакты) ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
+	// Проверочный regexp: "PIN_[a-zA-Z0-9_]+[\s\t]+\d+"
 	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
 	#define RNUMBER                    12 // Число исполнительных устройств (всех)
 	// устройства DC 24V
@@ -4012,21 +4013,21 @@ const char *noteTemp[] = {"Температура улицы",
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
 	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b), десятые Вт
-#ifndef TEST_BOARD
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-#else
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-	#undef HTTP_LowConsumeRequest
-	#undef WR_PowerMeter_Modbus
-	#define IWR 0
-	#define WR_CurrentSensor_4_20mA	IWR
-#endif
 
-	#define WR_Load_pins_Boiler_INDEX 	 0							// Индекс бойлера в массиве WR_Load_pins
-	#define WR_Boiler_Hysteresis		100							// Гистерезис бойлера, сотые градуса
-	#define WR_Boiler_Substitution_INDEX 3							// Индекс подменной нагрузки для бойлера
-	#define WR_Boiler_Substitution_pin	13							// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
-	#define WR_Boiler_Substitution_swtime 50						// Время переключения контактора, мсек
+	#define WR_Load_pins_Boiler_INDEX		0						// Индекс бойлера в массиве WR_Load_pins
+	#define WR_Boiler_Hysteresis			100						// Гистерезис бойлера, сотые градуса
+	#define WR_Boiler_Substitution_INDEX	3						// Если бойлер нагрет - Индекс подменной нагрузки для бойлера, должен быть больше индекса бойлера
+	#define PIN_WR_Boiler_Substitution		13						// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
+	#define WR_Boiler_Substitution_swtime	50						// Время переключения контактора, мсек
+
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+
+#ifndef TEST_BOARD
+#else
+	#undef HTTP_LowConsumeRequest
+	#undef PIN_WR_Boiler_Substitution
+	#define PIN_WR_Boiler_Substitution		43
+#endif
 
 	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс

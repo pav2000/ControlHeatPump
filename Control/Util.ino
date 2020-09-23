@@ -1143,21 +1143,21 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 		if(n != WR_LoadRun[idx]) {
 #ifdef WR_Boiler_Substitution_INDEX
 			if(n > 0) {
-				if(idx == WR_Boiler_Substitution_INDEX && !digitalReadDirect(WR_Boiler_Substitution_pin)) {
+				if(idx == WR_Boiler_Substitution_INDEX && !digitalReadDirect(PIN_WR_Boiler_Substitution)) {
 					if(WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) {
 						PWM_Write(WR_Load_pins[WR_Load_pins_Boiler_INDEX], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
 						WR_SwitchTime[WR_Load_pins_Boiler_INDEX] = t;
 						_delay(10); // 1/100 Hz
 					}
-					digitalWriteDirect(WR_Boiler_Substitution_pin, 1);
+					digitalWriteDirect(PIN_WR_Boiler_Substitution, 1);
 					_delay(WR_Boiler_Substitution_swtime);
-				} else if(idx == WR_Load_pins_Boiler_INDEX && digitalReadDirect(WR_Boiler_Substitution_pin)) {
+				} else if(idx == WR_Load_pins_Boiler_INDEX && digitalReadDirect(PIN_WR_Boiler_Substitution)) {
 					if(WR_LoadRun[WR_Boiler_Substitution_INDEX] > 0) {
 						PWM_Write(WR_Load_pins[WR_Boiler_Substitution_INDEX], ((1<<PWM_WRITE_OUT_RESOLUTION)-1));
 						WR_SwitchTime[WR_Boiler_Substitution_INDEX] = t;
 						_delay(10); // 1/100 Hz
 					}
-					digitalWriteDirect(WR_Boiler_Substitution_pin, 0);
+					digitalWriteDirect(PIN_WR_Boiler_Substitution, 0);
 					_delay(WR_Boiler_Substitution_swtime);
 				}
 			}
@@ -1197,6 +1197,13 @@ uint8_t WR_Check_MPPT(void)
 {
 	int err = Send_HTTP_Request(HTTP_MAP_Server, HTTP_MAP_Read_MPPT, 1);
 	if(err) {
+		if(HP.get_testMode() != NORMAL) {
+#ifdef WR_PowerMeter_Modbus
+			return WR_PowerMeter_Power % 10;
+#else
+			return 3;
+#endif
+		}
 		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: MPPT request Error %d\n", err);
 		return 0;
 	}

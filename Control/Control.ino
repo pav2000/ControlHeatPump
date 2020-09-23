@@ -269,6 +269,9 @@ xRewriteHeader:
 			delay(TIME_LED_ERR);
 		}
 	}
+#ifdef TEST_BOARD
+	_delay(50);
+#endif
 	journal.Init();
 #ifdef POWER_CONTROL
 	delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
@@ -717,6 +720,9 @@ void vWeb0(void *)
 	for(uint8_t i = 0; i < WR_NumLoads; i++) {
 		if(WR_Load_pins[i] > 0) pinMode(WR_Load_pins[i], OUTPUT);
 	}
+#ifdef PIN_WR_Boiler_Substitution
+	pinMode(PIN_WR_Boiler_Substitution, OUTPUT);
+#endif
 	journal.jprintf("WattRouter running\n");
 #endif
 
@@ -788,8 +794,8 @@ void vWeb0(void *)
 					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
 					if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()
-#ifdef WR_Boiler_Substitution_pin
-						&& !digitalReadDirect(WR_Boiler_Substitution_pin)
+#ifdef PIN_WR_Boiler_Substitution
+						&& !digitalReadDirect(PIN_WR_Boiler_Substitution)
 #endif
 					) {
 						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
@@ -804,6 +810,9 @@ void vWeb0(void *)
 								if(GETBIT(WR.Loads_PWM, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
 								else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
 								if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: Boiler OK\n");
+//								for(uint8_t i = 0; i < 5; i++) { // >1/100 sec
+//									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+//								}
 								// Компенсируем
 								for(uint8_t i = 0; i < WR_NumLoads; i++) {
 									if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(WR.Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
@@ -853,19 +862,27 @@ void vWeb0(void *)
 #endif
 					//
 					if(GETBIT(WR.Flags, WR_fLogFull)) journal.printf("WR: Pnet=%d\n", pnet);
+#ifdef WR_TestAvailablePowerForRelayLoads
 					if(WR_TestLoadStatus) {
 						if(++WR_TestLoadStatus > WR_TestAvailablePowerTime) {
 							WR_TestLoadStatus = 0;
-							WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads,  -WR.LoadPower[WR_TestLoadIndex]);
+#ifdef WR_Boiler_Substitution_INDEX
+								uint8_t idx = digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_TestAvailablePowerForRelayLoads;
+#else
+								uint8_t idx = WR_TestAvailablePowerForRelayLoads;
+#endif
+							WR_Change_Load_PWM(idx, -WR.LoadPower[WR_TestLoadIndex]);
 							if(pnet <= WR.MinNetLoad) {
-								if(WR_Load_pins[WR_TestLoadIndex] < 0 && !active) {
-									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-								}
+//								for(uint8_t i = 0; i < 5; i++) { // >1/100 sec
+//									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+//								}
 								WR_Switch_Load(WR_TestLoadIndex, 1);
 							}
 						}
 						break;
-					} else {
+					} else
+#endif
+					{
 						// Если возможна только релейная нагрузка, то отбрасываем пики и усредняем
 						bool need_average = true;
 						if(pnet > WR.MinNetLoad) {
@@ -984,20 +1001,29 @@ void vWeb0(void *)
 							}
 #endif
 							if(GETBIT(WR.Loads_PWM, i)) {
+#ifdef WR_Boiler_Substitution_INDEX
+								if(i == WR_Boiler_Substitution_INDEX && WR_LoadRun[WR_Load_pins_Boiler_INDEX] != 0) continue;
+#endif
 								int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
 								if(chg > WR.LoadAdd) chg = WR.LoadAdd;
 								WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 								break;
 							} else {
 #ifdef WR_TestAvailablePowerForRelayLoads
-#if defined(WR_Load_pins_Boiler_INDEX) && WR_TestAvailablePowerForRelayLoads == WR_Load_pins_Boiler_INDEX
-								if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads) && HP.sTemp[TBOILER].get_Temp() < SALMONELLA_TEMP && !HP.dRelay[RBOILER].get_Relay()) {
-#else
-								if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads)) {
-#endif
+	#if defined(WR_Load_pins_Boiler_INDEX) && WR_TestAvailablePowerForRelayLoads == WR_Load_pins_Boiler_INDEX
+		#ifdef WR_Boiler_Substitution_INDEX
+								uint8_t idx = digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX;
+								if(GETBIT(WR.Loads, idx) && (idx != WR_Load_pins_Boiler_INDEX || (HP.sTemp[TBOILER].get_Temp() < SALMONELLA_TEMP && !HP.dRelay[RBOILER].get_Relay())) && WR_LoadRun[idx] < WR.LoadPower[idx]) {
+		#else
+								if(GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && (HP.sTemp[TBOILER].get_Temp() < SALMONELLA_TEMP && !HP.dRelay[RBOILER].get_Relay())) && WR_LoadRun[WR_Load_pins_Boiler_INDEX] < WR.LoadPower[WR_Load_pins_Boiler_INDEX]) {
+		#endif
+	#else
+								uint8_t idx = WR_TestAvailablePowerForRelayLoads;
+								if(GETBIT(WR.Loads, WR_TestAvailablePowerForRelayLoads) && WR_LoadRun[WR_TestAvailablePowerForRelayLoads] < WR.LoadPower[WR_TestAvailablePowerForRelayLoads]) {
+	#endif
 									WR_TestLoadIndex = i;
 									WR_TestLoadStatus = 1;
-									WR_Change_Load_PWM(WR_TestAvailablePowerForRelayLoads, WR.LoadPower[i]);
+									WR_Change_Load_PWM(idx, WR.LoadPower[i]);
 									break;
 								}
 #endif
@@ -1175,7 +1201,6 @@ void vReadSensor(void *)
 #endif
 #endif
 	static uint32_t ttime;
-	static uint32_t oldTime = GetTickCount();
 	static uint8_t  prtemp = 0;
 	
 	for(;;) {
@@ -1271,7 +1296,7 @@ void vReadSensor(void *)
 //				vReadSensor_delay1ms(tm - WEB0_FREQUENT_JOB_PERIOD);     													// 1. Ожидать время нужное для цикла чтения
 				i = Modbus.readInputRegisters32(WR_PowerMeter_Modbus, WR_PowerMeter_ModbusReg, (uint32_t*)&WR_PowerMeter_Power);
 				if(i != OK) {
-					if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: Modbus read err %d\n", i);
+					if(GETBIT(WR.Flags, WR_fLogFull) && HP.get_testMode() == NORMAL) journal.jprintf("WR: Modbus read err %d\n", i);
 				}
 #ifdef PWM_CALC_POWER_ARRAY
 				else WR_Calc_Power_Array_NewMeter(WR_PowerMeter_Power);
@@ -1327,48 +1352,6 @@ void vReadSensor(void *)
 		if (HP.sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
-		//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
-		if(HP.get_updateI2C())  // если надо обновить часы из I2c
-		{
-			if(GetTickCount() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
-			{
-				oldTime = rtcSAM3X8.unixtime();
-				uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
-				if(t) {
-					rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
-					HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
-					journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
-				} else {
-					journal.jprintf("Error read I2C RTC\n");
-				}
-				oldTime = GetTickCount();
-			}
-		}
-		// Проверка и сброс митекса шины I2C
-//       if (SemaphoreTake(xI2CSemaphore,(3*I2C_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) { SemaphoreGive(xI2CSemaphore);journal.jprintf("UNLOCK mutex xI2CSemaphore\n");  HP.num_resMutexI2C++;} // Захват мютекса I2C или ОЖИДАНИНЕ 3 времен I2C_TIME_WAIT  и его освобождение
-//       else  SemaphoreGive(xI2CSemaphore);
-		// Проверки граничных температур для уведомлений, если разрешено!
-		static uint16_t countTEMP = 0;        // Для проверки критических температур для рассылки уведомлений
-		if(HP.message.get_fMessageTemp()) {
-			if(countTEMP > TIME_MESSAGE_TEMP) {
-				countTEMP = 0;
-				if(HP.message.get_mTIN() > HP.sTemp[TIN].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
-						(char*) "Критическая температура в доме,", HP.sTemp[TIN].get_Temp());
-				if(HP.message.get_mTBOILER() > HP.sTemp[TBOILER].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
-						(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
-				if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
-						(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
-			} else countTEMP += TIME_READ_SENSOR / 100; // в 0.1 сек
-		}
-		static uint8_t last_life_h = 255;
-		if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
-		{
-			uint8_t hour = rtcSAM3X8.get_hours();
-			if(hour == HOUR_SIGNAL_LIFE && hour != last_life_h) {
-				HP.message.setMessage(pMESSAGE_LIFE, (char*) "Контроллер работает . . .", 0);
-			}
-			last_life_h = hour;
-		}
 		//
 		vReadSensor_delay1ms(TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime));     // Ожидать время нужное для цикла чтения
 
@@ -1819,6 +1802,7 @@ void vServiceHP(void *)
 					STORE_DEBUG_INFO(74);
 					if(task_updstat_countm == 59) HP.save_motoHour();		// сохранить раз в час
 					Stats.History();                                        // запись истории в файл
+					taskYIELD();
 				} else if(m != task_dailyswitch_countm) {
 					task_dailyswitch_countm = m;
 					uint32_t tt = rtcSAM3X8.get_hours() * 100 + m;
@@ -1863,6 +1847,48 @@ xPumpsOn:					HP.dRelay[PUMP_OUT].set_ON();                  	// включит�
 			}
 			STORE_DEBUG_INFO(76);
 			Stats.CheckCreateNewFile();
+			taskYIELD();
+
+			//  Синхронизация часов с I2C часами если стоит соответсвующий флаг
+			static uint32_t oldTime = GetTickCount();
+			if(HP.get_updateI2C())  // если надо обновить часы из I2c
+			{
+				if(GetTickCount() - oldTime > (uint32_t)TIME_I2C_UPDATE) // время пришло обновляться надо Период синхронизации внутренних часов с I2C часами (сек)
+				{
+					oldTime = rtcSAM3X8.unixtime();
+					uint32_t t = TimeToUnixTime(getTime_RtcI2C());       // Прочитать время из часов i2c тут проблема
+					if(t) {
+						rtcSAM3X8.set_clock(t);                		 // Установить внутренние часы по i2c
+						HP.updateDateTime(t > oldTime ? t - oldTime : -(oldTime - t));  // Обновить переменные времени с новым значением часов
+						journal.jprintf((const char*) "Sync from I2C RTC: %s %s\n", NowDateToStr(), NowTimeToStr());
+					} else {
+						journal.jprintf("Error read I2C RTC\n");
+					}
+					oldTime = GetTickCount();
+				}
+			}
+			// Проверки граничных температур для уведомлений, если разрешено!
+			static uint16_t countTEMP = 0;        // Для проверки критических температур для рассылки уведомлений
+			if(HP.message.get_fMessageTemp()) {
+				if(countTEMP > TIME_MESSAGE_TEMP) {
+					countTEMP = 0;
+					if(HP.message.get_mTIN() > HP.sTemp[TIN].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
+							(char*) "Критическая температура в доме,", HP.sTemp[TIN].get_Temp());
+					if(HP.message.get_mTBOILER() > HP.sTemp[TBOILER].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
+							(char*) "Критическая температура ГВС,", HP.sTemp[TBOILER].get_Temp());
+					if(HP.message.get_mTCOMP() < HP.sTemp[TCOMP].get_Temp()) HP.message.setMessage(pMESSAGE_TEMP,
+							(char*) "Критическая температура компрессора,", HP.sTemp[TCOMP].get_Temp());
+				} else countTEMP += TIME_READ_SENSOR / 100; // в 0.1 сек
+			}
+			static uint8_t last_life_h = 255;
+			if(HP.message.get_fMessageLife()) // Подача сигнала жизни если разрешено!
+			{
+				uint8_t hour = rtcSAM3X8.get_hours();
+				if(hour == HOUR_SIGNAL_LIFE && hour != last_life_h) {
+					HP.message.setMessage(pMESSAGE_LIFE, (char*) "Контроллер работает . . .", 0);
+				}
+				last_life_h = hour;
+			}
 		}
 		STORE_DEBUG_INFO(77);
 #ifdef NEXTION
