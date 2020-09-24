@@ -2337,7 +2337,7 @@ x_get_aTemp:
 						if(*str == 'L') { // get_WRL(n)
 							if(i) {
 								int16_t val = pm;
-								if(GETBIT(WR.Loads_PWM, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
+								if(GETBIT(WR.PWM_Loads, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
 								else {
 									if(WR_Load_pins[p] < 0) { // HTTP
 										if(val < 0) val = 0; else if(val > 0) val = WR.LoadPower[p];
@@ -2357,8 +2357,11 @@ x_get_aTemp:
 #ifdef WR_Load_pins_Boiler_INDEX
 							if(p == WR_Load_pins_Boiler_INDEX) strcat(strReturn, "(B)");
 #endif
+#ifdef WR_Boiler_Substitution_INDEX
+							if(p == WR_Boiler_Substitution_INDEX) m_snprintf(strReturn + strlen(strReturn), 20, "(D%d)", PIN_WR_Boiler_Substitution);
+#endif
 						} else if(*str == 'C') { // get_WRC(n)
-							if(GETBIT(WR.Loads_PWM, p))	{
+							if(GETBIT(WR.PWM_Loads, p))	{
 								WR_Calc_Power_Array_Start(p);
 								strcat(strReturn, "1");
 							}

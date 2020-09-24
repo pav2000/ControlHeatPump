@@ -20,6 +20,7 @@ function loadParam_after(paramid) {
 		}
 	} else {
 		if(paramid.indexOf("et_oHP(WON")!=-1) {
+			//if(paramid[0] == 's') location.reload();
 			var d = document.getElementById("get_ohp-won").checked;
 			for(var i = 0; i < 32; i++) {
 				element = document.getElementById("get_ohp-wp" + i);

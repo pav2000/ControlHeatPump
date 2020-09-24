@@ -124,6 +124,7 @@ int32_t  WR_Pnet_avg_sum = 0;
 boolean  WR_Pnet_avg_init = true;
 #endif
 WR_fTYPE WR_Refresh = 0;
+WR_fTYPE WR_Loads;						// зависим от профиля
 int16_t  WR_LoadRun[WR_NumLoads];
 uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
@@ -145,7 +146,7 @@ uint16_t PWM_CalcIdx;
 
 struct {
 	WR_fTYPE Loads;						// Биты активирования нагрузки
-	WR_fTYPE Loads_PWM;					// Биты нагрузки PWM
+	WR_fTYPE PWM_Loads;					// Биты нагрузки PWM
 	uint16_t Flags;						// Флаги
 	int16_t  MinNetLoad;				// Сколько минимально можно брать из сети, Вт
 	int16_t  LoadHist;					// Гистерезис нагрузки, Вт

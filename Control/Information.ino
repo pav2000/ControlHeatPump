@@ -836,6 +836,9 @@ int16_t  Profile::save(int8_t num)
   magic=0xaa;                                   // Обновить заголовок
   dataProfile.len=get_sizeProfile();            // вычислить адрес начала данных
   dataProfile.saveTime=rtcSAM3X8.unixtime();    // запомнить время сохранения профиля
+#ifdef WATTROUTER
+  SaveON.WR_Loads = WR_Loads;
+#endif
 
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;
   
@@ -910,7 +913,11 @@ int32_t Profile::load(int8_t num)
   if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALMONELLA_TEMP+300);journal.jprintf(" Set boiler max t=%.2d for salmonella\n", HP.sTemp[TBOILER].get_maxTemp());}
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
-  // Обнуляем ПИД errKp
+
+#ifdef WATTROUTER
+  WR_Refresh = WR_Loads = SaveON.WR_Loads;
+#endif
+
   return adr;
  }
 

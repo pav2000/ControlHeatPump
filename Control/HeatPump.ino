@@ -496,7 +496,7 @@ x_Error:
 #endif
 #ifdef WATTROUTER
 		} else if(type == SAVE_TYPE_Wattrouter) {
-			load_struct((uint8_t*)&WR, &buffer, sizeof(WR));
+			load_struct((uint8_t*)&WR, &buffer, sizeof(WR)); WR_Loads = WR.Loads;
 #endif
 		} else if(type == SAVE_TYPE_END) {
 			break;
@@ -1113,7 +1113,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1) == 0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   WR.Loads = (WR.Loads & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
+		   WR.Loads = WR_Loads = (WR_Loads & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
 		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
@@ -1122,9 +1122,9 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	   if(bit < WR_NumLoads) {
 #ifdef WR_Boiler_Substitution_INDEX
 		   if(bit == WR_Boiler_Substitution_INDEX) return true;
-		   if(bit == WR_Load_pins_Boiler_INDEX) WR.Loads_PWM = (WR.Loads_PWM & ~(1<<WR_Boiler_Substitution_INDEX)) | (n == 0 ? 0 : (1<<WR_Boiler_Substitution_INDEX));
+		   if(bit == WR_Load_pins_Boiler_INDEX) WR.PWM_Loads = (WR.PWM_Loads & ~(1<<WR_Boiler_Substitution_INDEX)) | (n == 0 ? 0 : (1<<WR_Boiler_Substitution_INDEX));
 #endif
-		   WR.Loads_PWM = (WR.Loads_PWM & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
+		   WR.PWM_Loads = (WR.PWM_Loads & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
 		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
 		   return true;
 	   }
@@ -1132,7 +1132,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
 	   if(bit < WR_NumLoads) {
 		   WR.LoadPower[bit] = n;
-		   if(GETBIT(WR.Loads_PWM, bit)) WR_Refresh |= (1<<bit);
+		   if(GETBIT(WR.PWM_Loads, bit)) WR_Refresh |= (1<<bit);
 		   return true;
 	   }
 	} else if(strcmp(var,option_WR_MinNetLoad)==0) { WR.MinNetLoad = n; return true; }
@@ -1238,12 +1238,12 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
 	   if(bit < WR_NumLoads) {
-		   return strcat(ret,(char*)(GETBIT(WR.Loads, bit) ? cOne : cZero));
+		   return strcat(ret,(char*)(GETBIT(WR_Loads, bit) ? cOne : cZero));
 	   }
 	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
 	   if(bit < WR_NumLoads && WR_Load_pins[bit] > 0) {
-		   return strcat(ret,(char*)(GETBIT(WR.Loads_PWM, bit) ? cOne : cZero));
+		   return strcat(ret,(char*)(GETBIT(WR.PWM_Loads, bit) ? cOne : cZero));
 	   }
 	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1)==0) {
 	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
@@ -1561,7 +1561,7 @@ int16_t HeatPump::get_boilerTempTarget()
 			ret += Prof.Boiler.add_delta_temp;
 	}
 #if defined(WATTROUTER) && defined(WEATHER_FORECAST) && defined(WR_Load_pins_Boiler_INDEX)
-	if(h <= TARIF_NIGHT_END && WF_BoilerTargetPercent < WF_BOILER_MAX_CLOUDS && GETBIT(WR.Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive)) {
+	if(h <= TARIF_NIGHT_END && WF_BoilerTargetPercent < WF_BOILER_MAX_CLOUDS && GETBIT(WR_Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive)) {
 		ret = Prof.Boiler.WF_MinTarget + (ret - Prof.Boiler.WF_MinTarget) * WF_BoilerTargetPercent / 100;
 		if(ret < Prof.Boiler.tempRBOILER) ret = Prof.Boiler.tempRBOILER;
 	}

@@ -3311,7 +3311,7 @@ const char *noteTemp[] = {"Температура улицы",
 //	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
-	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
+	#define CONFIG_NOTE   "Частотник(3ф), охлаждение, ЭРВ, РТО, ТП, СК, ВаттРоутер"
 	// Danfoss HLP068T4LC6, Vacon 10 (12A), ПТО: B3-052-46-HQ, РТО: HE 4.0, ЭРВ: ETS 6-25
 	// Геоконтур: 6x50м ПНД50/ПП20 коаксил, Солнечный Коллектор: 6х50м ПНД 20.
 	#define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png

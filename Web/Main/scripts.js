@@ -311,7 +311,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 											values[1] = "--;" + values[1];
-										}
+										} else if(arr[0].substring(0,13) == "set_listProf(") location.reload();
 										element = document.getElementById(idsel);
 										if(element) {
 											if(values[0].substr(-6, 5) == "_skip") {
@@ -693,7 +693,7 @@ function loadParam(paramid, noretry, resultdiv) {
 				check_ready = 1;
 				setTimeout(function() {
 					loadParam(paramid);
-				}, 4000);
+				}, urltimeout);
 			}
 			autoheight(); // update height
 		}
