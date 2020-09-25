@@ -671,7 +671,7 @@ int16_t devOmronMX2::read_stateFC()
 int16_t devOmronMX2::read_tempFC()
 {
 #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
-  return read_0x03_16(MX2_TEMP) * 10;
+  return read_0x03_16(MX2_TEMP) / 10;
 #else
   return 0;
 #endif  
