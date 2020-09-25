@@ -2336,15 +2336,28 @@ x_get_aTemp:
 					if(p < WR_NumLoads) {
 						if(*str == 'L') { // get_WRL(n)
 							if(i) {
-								int16_t val = pm;
-								if(GETBIT(WR.PWM_Loads, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
-								else {
-									if(WR_Load_pins[p] < 0) { // HTTP
-										if(val < 0) val = 0; else if(val > 0) val = WR.LoadPower[p];
-										WR_Refresh |= (1<<p);
-										WR_LoadRun[p] = val;
-										WR_SwitchTime[p] = WR_LastSwitchTime = rtcSAM3X8.unixtime();
-									} else WR_Switch_Load(p, val > 0);
+#ifdef WR_Boiler_Substitution_INDEX
+								if(p == (!digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX)) { // switch
+									uint8_t idx = p == WR_Boiler_Substitution_INDEX ? WR_Load_pins_Boiler_INDEX : WR_Boiler_Substitution_INDEX;
+									if(WR_LoadRun[idx] > 0) {
+										if(GETBIT(WR.PWM_Loads, idx)) WR_Change_Load_PWM(idx, -32768); else WR_Switch_Load(idx, 0);
+										WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
+										//_delay(10); // 1/100 Hz
+									}
+									digitalWriteDirect(PIN_WR_Boiler_Substitution, !digitalReadDirect(PIN_WR_Boiler_Substitution));
+								} else
+#endif
+								{
+									int16_t val = pm;
+									if(GETBIT(WR.PWM_Loads, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
+									else {
+										if(WR_Load_pins[p] < 0) { // HTTP
+											if(val < 0) val = 0; else if(val > 0) val = WR.LoadPower[p];
+											WR_Refresh |= (1<<p);
+											WR_LoadRun[p] = val;
+											WR_SwitchTime[p] = WR_LastSwitchTime = rtcSAM3X8.unixtime();
+										} else WR_Switch_Load(p, val > 0);
+									}
 								}
 							}
 							_itoa(WR_LoadRun[p], strReturn);

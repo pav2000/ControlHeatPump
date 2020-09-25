@@ -3826,9 +3826,7 @@ void HeatPump::calculatePower()
 
 	// Получение мощностей потребления электроэнергии
 	int32_t _power220 = 0;
-#ifdef CORRECT_POWER220
-	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) _power220 += correct_power220[i].value;
- #ifdef CORRECT_POWER220_EXCL_RBOILER
+#ifdef CORRECT_POWER220_EXCL_RBOILER
   #ifdef WR_Load_pins_Boiler_INDEX
    #ifdef WR_Boiler_Substitution_INDEX
 	_power220 -= WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX];
@@ -3838,15 +3836,20 @@ void HeatPump::calculatePower()
   #else
 	if(dRelay[RBOILER].get_Relay()) _power220 -= CORRECT_POWER220_EXCL_RBOILER;
   #endif
- #endif
+	if(_power220) _power220 = _power220 * dSDM.get_voltage() / 220;
 #endif
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
 	if(dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
- #ifdef CORRECT_POWER220
-		if(_power220) _power220 = _power220 * dSDM.get_voltage() / 220;
- #endif
 		_power220 += dSDM.get_power();
 		if(_power220 < 0) _power220 = 0;
+	}
+#endif
+#ifdef CORRECT_POWER220
+	int32_t corr_power220 = 0;
+	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) corr_power220 += correct_power220[i].value;
+	if(corr_power220) {
+		corr_power220 = corr_power220 * dSDM.get_voltage() / 220;
+		_power220 += corr_power220;
 	}
 #endif
 #ifdef ADD_FC_POWER_WHEN_GENERATOR
