@@ -505,9 +505,8 @@ class devSDM
       uint16_t get_numErr(){return numErr;}            // Получить число ошибок чтения счетчика
       char*   get_note(){return note;}                 // Получить описание датчика
       char*   get_name(){return name;}                 // Получить имя датчика
-      float   get_power(){return AcPower;}
-       __attribute__((always_inline)) inline float get_Voltage(){return Voltage;}          // Напряжение
-       __attribute__((always_inline)) inline float get_Power(){return AcPower;}            // Aктивная мощность
+       __attribute__((always_inline)) inline int16_t get_voltage(){return Voltage;}          // Напряжение, V
+       __attribute__((always_inline)) inline int32_t get_power(){return AcPower;}            // Aктивная мощность, Вт
 
       boolean uplinkSDM();                             // Проверить связь со счетчиком (связь дейстивтельно проверяется - чтение регистра скорости счетчика)
       boolean progConnect();                           // перепрограммировать счетчик на требуемые параметры связи SDM_SPEED SDM_MODBUS_ADR c DEFAULT_SDM_SPEED DEFAULT_SDM_MODBUS_ADR
@@ -521,8 +520,8 @@ class devSDM
       uint16_t numErr;                                 // число ошибок чтение по модбасу
       byte flags;                                      // флаги  0 - наличие счетчика,
        // Управление по 485
-      float AcPower;                                   // активная мощность, Вт
-      float Voltage;                                   // Напряжение в вольтах
+      int32_t AcPower;                                 // активная мощность, Вт
+      int16_t Voltage;                                 // Напряжение, V
       type_settingSDM  settingSDM;                     // Настройки
       char *note;                                      // Описание
       char *name;                                      // Имя

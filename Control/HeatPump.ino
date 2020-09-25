@@ -734,7 +734,7 @@ void HeatPump::resetSettingHP()
 	num_resPing = 0;                                // число не прошедших пингов
 
 	fullCOP = -1000;                                // Полный СОР  сотые -1000 признак невозможности расчета
-	COP = -1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
+//	COP = -1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
 
 	// Инициализациия различных времен
 	DateTime.saveTime = 0;                          // дата и время сохранения настроек в eeprom
@@ -1364,7 +1364,7 @@ void  HeatPump::updateChart()
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Power_FC) Charts[j].add_Point(dFC.get_power() / 10);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Current_FC) Charts[j].add_Point(dFC.get_current());
 #ifdef USE_ELECTROMETER_SDM
-		else if(ChartsConstSetup[i].object == STATS_OBJ_Voltage) Charts[j].add_Point(dSDM.get_Voltage() * 100);
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Voltage) Charts[j].add_Point(dSDM.get_voltage() * 100);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Power) Charts[j].add_Point((int32_t)power220 / 10);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_COP_Full) Charts[j].add_Point(fullCOP);
 #endif
@@ -3824,34 +3824,53 @@ void HeatPump::calculatePower()
 	if (powerGEO<0) powerGEO=0;
 #endif
 
-// Получение мощностей потребления электроэнергии
-	uint16_t fc_pwr = dFC.get_power();  // получить текущую мощность компрессора
+	// Получение мощностей потребления электроэнергии
+	int32_t _power220 = 0;
+#ifdef CORRECT_POWER220
+	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) _power220 += correct_power220[i].value;
+ #ifdef CORRECT_POWER220_EXCL_RBOILER
+  #ifdef WR_Load_pins_Boiler_INDEX
+   #ifdef WR_Boiler_Substitution_INDEX
+	_power220 -= WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX];
+   #else
+	_power220 -= WR_LoadRun[WR_Load_pins_Boiler_INDEX];
+   #endif
+  #else
+	if(dRelay[RBOILER].get_Relay()) _power220 -= CORRECT_POWER220_EXCL_RBOILER;
+  #endif
+ #endif
+#endif
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
 	if(dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
-		power220 = dSDM.get_Power();
-	} else power220 = 0; // связи со счетчиком нет
-#else
-	power220=0; // электросчетчика нет
-#endif
-#ifdef CORRECT_POWER220
-	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
+ #ifdef CORRECT_POWER220
+		if(_power220) _power220 = _power220 * dSDM.get_voltage() / 220;
+ #endif
+		_power220 += dSDM.get_power();
+		if(_power220 < 0) _power220 = 0;
+	}
 #endif
 #ifdef ADD_FC_POWER_WHEN_GENERATOR
-	if(GETBIT(Option.flags, fBackupPower)) power220 += fc_pwr;
+	if(GETBIT(Option.flags, fBackupPower)) _power220 += dFC.get_power();  // получить текущую мощность компрессора
 #endif
+	power220 = _power220;
 
-// Расчет КОП
-#ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
-if(is_compressor_on()){      // Если компрессор работает
+	// Расчет COP
+#ifndef COP_ALL_CALC    	// если COP надо считать не всегда
+if(is_compressor_on()){		// Если компрессор работает
 #endif	
-	if(fc_pwr) COP = powerOUT * 100 / fc_pwr; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
-	if(power220 != 0) fullCOP = powerOUT * 100 / power220; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
-		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
-		if(COP>10*100) COP=8*100;       // КОП не более 8
-		if(fullCOP>8*100) fullCOP=7*100; // полный КОП не более 7
-		#endif
-#ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
-	} else { COP=0; fullCOP=0; }  // компрессор не рабоатет
+//	uint16_t fc_pwr = dFC.get_power();  // получить текущую мощность компрессора
+//	if(fc_pwr) COP = powerOUT * 100 / fc_pwr; else COP=0; // Компрессорный COP в сотых долях !!!!!!
+	if(_power220 != 0) fullCOP = powerOUT * 100 / _power220; else fullCOP = 0; // ПОЛНЫЙ COP в сотых долях !!!!!!
+	#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
+//		if(COP>10*100) COP=8*100;       // COP не более 8
+		if(fullCOP>8*100) fullCOP=7*100; // полный COP не более 7
+	#endif
+#ifndef COP_ALL_CALC		// если COP надо считать не всегда
+	} else {				// компрессор не рабоатет
+		fullCOP=0;
+//		COP=0;
+
+	}
 #endif
 }
 
@@ -3894,17 +3913,17 @@ void HeatPump::Sun_OFF(void)
 // Предполагается что Электросчетчик стоит на входе ТН (ТЭН не включены) это наиболее точный метод определения мощности
 // Если электросчетчика нет, то пытаемся получить из частотного преобразователя.
 // если не получается определить мощность то функция возвращает 0
-#define SUM_POWER_PUMP 200   // Мощность потребления насосов (для добавления к мощности компрессора)
-int16_t HeatPump::getPower(void)
-{
-#ifdef USE_ELECTROMETER_SDM  // Пытаемся получить мощность по электросчетчику
-if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
-dSDM.uplinkSDM();	// Попытаемся реанимировать счетчик (связь по модбасу)
-if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
+#ifndef NOLINK_SUM_POWER_PUMP
+#define NOLINK_SUM_POWER_PUMP 200   // Мощность потребления насосов, для добавления к мощности компрессора, если нет связи со электро-счетчиком
 #endif
-// Дошли до сюда - значит не получилось мощность по электросчетчику определить,	работаем с ПЧ
-if (dFC.get_present()) return dFC.get_power()+SUM_POWER_PUMP; 
-return 0; // Мощность не определилась
+int16_t HeatPump::getPower(void) {
+#ifdef USE_ELECTROMETER_SDM  // Пытаемся получить мощность по электросчетчику
+	if(!dSDM.get_link()) dSDM.uplinkSDM();	// Попытаемся реанимировать счетчик (связь по модбасу)
+	if(dSDM.get_link()) return dSDM.get_power();
+#endif
+	// Дошли до сюда - значит не получилось мощность по электросчетчику определить,	работаем с ПЧ
+	if(dFC.get_present()) return dFC.get_power() + NOLINK_SUM_POWER_PUMP;
+	return 0; // Мощность не определилась
 }
 
 void HeatPump::set_HeatBoilerUrgently(boolean onoff)

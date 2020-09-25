@@ -1103,13 +1103,13 @@ boolean sendMQTT(boolean debug)
            ftoa(HP.clMQTT.temp,(float)HP.fullCOP/100.0,2);
            if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
           #endif 
-           if (HP.dFC.get_present())   
-           {
-           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
-           strcat(HP.clMQTT.topic,"COP");
-           ftoa(HP.clMQTT.temp,(float)HP.COP/100.0,2);
-           if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
-           }        
+//           if (HP.dFC.get_present())
+//           {
+//           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+//           strcat(HP.clMQTT.topic,"COP");
+//           ftoa(HP.clMQTT.temp,(float)HP.COP/100.0,2);
+//           if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;
+//           }
            if (debug) journal.jprintf(cStrEnd);   
           }  
         if (!debug) journal.jprintf((char*)MQTTPublishOK);   

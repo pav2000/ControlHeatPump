@@ -759,7 +759,7 @@ inline int16_t devVaconFC::read_stateFC()
 #endif
 }
 
-// Tемпература радиатора
+// Tемпература радиатора, C
 int16_t devVaconFC::read_tempFC()
 {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ

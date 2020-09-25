@@ -1226,10 +1226,10 @@ void WR_Calc_Power_Array_NewMeter(int32_t power)
 #ifdef WR_CurrentSensor_4_20mA
 		HP.sADC[IWR].Read();
 #ifndef TEST_BOARD
-		if(PWM_AverageCnt++) PWM_AverageSum += HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
+		if(PWM_AverageCnt++) PWM_AverageSum += HP.sADC[IWR].get_Value() * HP.dSDM.get_voltage();
 #else
 		if(PWM_AverageCnt++) {
-			if(HP.dSDM.get_Voltage() != 0) PWM_AverageSum += HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
+			if(HP.dSDM.get_Voltage() != 0) PWM_AverageSum += HP.sADC[IWR].get_Value() * HP.dSDM.get_voltage();
 			else {
 				PWM_AverageSum += 10 + (GETBIT(PWM_CalcFlags, PWM_fCalcRelax) ? 0 : PWM_CalcIdx * 9) + (rand() & 0x3);
 			}

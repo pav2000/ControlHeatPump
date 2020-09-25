@@ -838,7 +838,7 @@ void vWeb0(void *)
 
 #ifdef WR_CurrentSensor_4_20mA
 					HP.sADC[IWR].Read();
-					int pnet = HP.sADC[IWR].get_Value() * (int)HP.dSDM.get_Voltage();
+					int pnet = HP.sADC[IWR].get_Value() * HP.dSDM.get_voltage();
 #elif WR_PowerMeter_Modbus
 					int pnet = round_div_int32(WR_PowerMeter_Power, 10);
 #else
@@ -861,7 +861,7 @@ void vWeb0(void *)
 					int pnet = atoi(fld);
 #endif
 					//
-					if(GETBIT(WR.Flags, WR_fLogFull)) journal.printf("WR: Pnet=%d\n", pnet);
+					if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: P=%d\n", pnet);
 #ifdef WR_TestAvailablePowerForRelayLoads
 					if(WR_TestLoadStatus) { // Тестирование нагрузки
 						if(++WR_TestLoadStatus > WR_TestAvailablePowerTime) {

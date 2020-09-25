@@ -16,6 +16,10 @@
  * GNU General Public License for more details.
  */
 
+#include "Constant.h"
+
+#ifdef WEATHER_FORECAST
+
 // <"key">:<value>,
 const char WF_JSON_Sunrise[] = "\"sunrise\"";
 const char WF_JSON_Hourly[] = "\"hourly\"";
@@ -76,3 +80,4 @@ int WF_ProcessForecast(char *json)
 	return -1;
 }
 
+#endif

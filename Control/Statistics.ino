@@ -376,7 +376,7 @@ void Statistics::Update()
 			break;
 		case STATS_OBJ_Voltage:
 		    #ifdef USE_ELECTROMETER_SDM
-			newval = HP.dSDM.get_Voltage();
+			newval = HP.dSDM.get_voltage();
 			#endif
 			break;
 		case STATS_OBJ_Power: {
