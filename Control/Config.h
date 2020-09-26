@@ -3664,7 +3664,7 @@ const char *noteTemp[] = {"Температура улицы",
 		#define PIN_DEVICE_RSUN_OFF    60 // X22.1 Реле выключение шарового крана солнечного коллектора, через доп реле.
 		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
-	// Free: R_10(X2.2)[D13]
+	// Free: -
 	//#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
 	//#define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
 	//#define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
@@ -4019,7 +4019,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define WR_Load_pins_Boiler_INDEX		0						// Индекс бойлера в массиве WR_Load_pins
 	#define WR_Boiler_Hysteresis			100						// Гистерезис бойлера, сотые градуса
 	#define WR_Boiler_Substitution_INDEX	3						// Если бойлер нагрет - Индекс подменной нагрузки для бойлера, должен быть больше индекса бойлера
-	#define PIN_WR_Boiler_Substitution		13						// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
+	#define PIN_WR_Boiler_Substitution		13						// R_10(X2.2). Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
 	#define WR_Boiler_Substitution_swtime	50						// Время переключения контактора, мсек
 
 	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER

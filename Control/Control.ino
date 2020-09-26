@@ -917,41 +917,50 @@ void vWeb0(void *)
 					// проверка перегрузки
 					if(WR_Pnet - WR.MinNetLoad > 0) { // Потребление из сети больше - уменьшаем нагрузку
 						pnet = WR_Pnet - WR.MinNetLoad; // / 2;
-						uint8_t reserv = 255;
-						uint8_t mppt = 255;
-						for(int8_t i = WR_NumLoads-1; i >= 0; i--) {
-							if(WR_LoadRun[i] == 0 || !GETBIT(WR_Loads, i)) continue;
+						int8_t mppt = -1;
+						for(int8_t i = WR_NumLoads-1; i >= 0; i--) { // PWM only
+							if(!GETBIT(WR.PWM_Loads, i) || WR_LoadRun[i] == 0 || !GETBIT(WR_Loads, i)) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
 							if(i == WR_Load_pins_Boiler_INDEX && HP.dRelay[RBOILER].get_Relay()) continue;
 #endif
-							if(!GETBIT(WR.PWM_Loads, i)) {
-								uint32_t t = rtcSAM3X8.unixtime();
-								if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
-								if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
-							}
 #ifdef HTTP_MAP_Read_MPPT
-							if(mppt == 255) {
+							if(mppt == -1) {
 								active = false;
 								if((mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
 							}
 #endif
-							if(GETBIT(WR.PWM_Loads, i)) {
-								int chg = WR_LoadRun[i];
-								if(chg > pnet && chg - pnet > WR_PWM_POWER_MIN) chg = pnet;
-								WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
-								if(pnet == chg) break;
-								pnet -= chg;
-							} else {
+							int chg = WR_LoadRun[i];
+							if(chg > pnet && chg - pnet > WR_PWM_POWER_MIN) chg = pnet;
+							WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, -chg));
+							pnet -= chg;
+							if(pnet <= 0) break;
+						}
+						if(pnet > 0 && mppt <= 1) {
+							uint8_t reserv = 255;
+							uint32_t t = rtcSAM3X8.unixtime();
+							for(int8_t i = WR_NumLoads-1; i >= 0; i--) {  // Relay only
+								if(GETBIT(WR.PWM_Loads, i) || WR_LoadRun[i] == 0 || !GETBIT(WR_Loads, i)) continue;
+#ifdef WR_Load_pins_Boiler_INDEX
+								if(i == WR_Load_pins_Boiler_INDEX && HP.dRelay[RBOILER].get_Relay()) continue;
+#endif
+								if(WR_LastSwitchTime && t - WR_LastSwitchTime <= WR.NextSwitchPause) continue;
+								if(WR_SwitchTime[i] && t - WR_SwitchTime[i] <= WR.TurnOnMinTime) continue;
+#ifdef HTTP_MAP_Read_MPPT
+								if(mppt == -1) {
+									active = false;
+									if((mppt = WR_Check_MPPT()) > 1) break;				// Проверка наличия свободного солнца
+								}
+#endif
 								if(pnet - WR.LoadHist >= WR_LoadRun[i]) {
 									if(WR_Load_pins[i] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 									WR_Switch_Load(i, 0);
 									break;
 								} else if(reserv == 255) reserv = i;
 							}
-						}
-						if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
-							if(WR_Load_pins[reserv] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-							WR_Switch_Load(reserv, 0);
+							if(reserv != 255 && pnet > WR.LoadHist) { // еще не все
+								if(WR_Load_pins[reserv] < 0 && !active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+								WR_Switch_Load(reserv, 0);
+							}
 						}
 					} else { // Увеличиваем нагрузку
 #ifdef WR_Load_pins_Boiler_INDEX

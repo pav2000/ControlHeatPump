@@ -51,7 +51,7 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta);
 inline int16_t WR_Adjust_PWM_delta(uint8_t idx, int16_t delta);
 #ifdef HTTP_MAP_Read_MPPT
 // 0 - Oшибка, 1 - Нет свободной энергии, 2 - Нужна пауза, 3 - Есть свободная энергия
-uint8_t WR_Check_MPPT(void);
+int8_t WR_Check_MPPT(void);
 #endif
 #ifdef PWM_CALC_POWER_ARRAY
 void WR_Calc_Power_Array_NewMeter(int32_t power);
