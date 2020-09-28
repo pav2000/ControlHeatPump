@@ -793,44 +793,49 @@ void vWeb0(void *)
 					}
 					if(!active || !GETBIT(WR.Flags, WR_fActive)) break;
 #ifdef WR_Load_pins_Boiler_INDEX
-					if(GETBIT(WR_Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()
-#ifdef PIN_WR_Boiler_Substitution
-						&& !digitalReadDirect(PIN_WR_Boiler_Substitution)
+					if(GETBIT(WR_Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()) {
+#ifdef WR_Boiler_Substitution_INDEX
+						if(digitalReadDirect(PIN_WR_Boiler_Substitution)) {
+							if(WR_LoadRun[WR_Boiler_Substitution_INDEX] == 0 && HP.sTemp[TBOILER].get_Temp() <= HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) {
+								digitalWriteDirect(PIN_WR_Boiler_Substitution, 0); // Переключаемся на бойлер
+							}
+						} else
 #endif
-					) {
-						int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
-						if(curr > 0) {
-							if(WR_TestLoadStatus) {
-								if(HP.sTemp[TBOILER].get_Temp() > SALMONELLA_TEMP) { // Перегрели
+						{
+							int16_t curr = WR_LoadRun[WR_Load_pins_Boiler_INDEX];
+							if(curr > 0) {
+								if(WR_TestLoadStatus) {
+									if(HP.sTemp[TBOILER].get_Temp() > SALMONELLA_TEMP) { // Перегрели
+										if(GETBIT(WR.PWM_Loads, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
+										else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
+									}
+								} else if(HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget) { // Нагрели
+									active = false;
 									if(GETBIT(WR.PWM_Loads, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
 									else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
-								}
-							} else if(HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget) { // Нагрели
-								active = false;
-								if(GETBIT(WR.PWM_Loads, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
-								else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
-								if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: Boiler OK\n");
-//								for(uint8_t i = 0; i < 5; i++) { // >1/100 sec
-//									WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-//								}
-								// Компенсируем
-								for(uint8_t i = 0; i < WR_NumLoads; i++) {
-									if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(WR_Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
-									if(GETBIT(WR.PWM_Loads, i)) {
-										int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
-										if(chg > curr) chg = curr;
-										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-										WR_Change_Load_PWM(i, chg);
-										if(curr == chg) break;
-										curr -= chg;
-									} else {
-										if(WR.LoadPower[i] > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= WR.TurnOnPause)) continue;
-										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-										WR_Switch_Load(i, 1);
-										curr -= WR.LoadPower[i];
+									if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf_time("WR: Boiler OK\n");
+//									for(uint8_t i = 0; i < 5; i++) { // >1/100 sec
+//										WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+//									}
+									// Компенсируем
+									for(uint8_t i = 0; i < WR_NumLoads; i++) {
+										if(i == WR_Load_pins_Boiler_INDEX || !GETBIT(WR_Loads, i) || WR_LoadRun[i] == WR.LoadPower[i]) continue;
+										if(GETBIT(WR.PWM_Loads, i)) {
+											int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
+											if(chg > curr) chg = curr;
+											WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+											WR_Change_Load_PWM(i, chg);
+											if(curr == chg) break;
+											curr -= chg;
+										} else {
+											if(WR.LoadPower[i] > curr || (WR_SwitchTime[i] && rtcSAM3X8.unixtime() - WR_SwitchTime[i] <= WR.TurnOnPause)) continue;
+											WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+											WR_Switch_Load(i, 1);
+											curr -= WR.LoadPower[i];
+										}
 									}
+									break;
 								}
-								break;
 							}
 						}
 					}
