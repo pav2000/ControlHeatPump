@@ -126,6 +126,7 @@ boolean  WR_Pnet_avg_init = true;
 WR_fTYPE WR_Refresh = 0;
 WR_fTYPE WR_Loads;						// зависим от профиля
 int16_t  WR_LoadRun[WR_NumLoads];
+int32_t  WR_LoadRunStats = 0;
 uint32_t WR_SwitchTime[WR_NumLoads];
 uint32_t WR_LastSwitchTime = 0;
 uint8_t  WR_TestLoadStatus = 0; 		// >0 - идет тестирование нагрузки

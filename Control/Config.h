@@ -4082,7 +4082,7 @@ const char *noteTemp[] = {"Температура улицы",
 	// Графики в памяти
 	Charts_Mod_setup ChartsModSetup[] = {
 #ifdef WATTROUTER
-		{ STATS_OBJ_WattRouter, 0 },
+		{ STATS_OBJ_WattRouter_In, 0 },
 #else
 		{ STATS_OBJ_Temp, TOUT },
 #endif
@@ -4149,7 +4149,8 @@ const char *noteTemp[] = {"Температура улицы",
 		{ STATS_OBJ_COP_Full, 0, "COP" },
 		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
 		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
-		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
+		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] },
+		{ STATS_OBJ_WattRouter_Out, 0, "Ваттроутер, кВтч"}
 	};
 
 

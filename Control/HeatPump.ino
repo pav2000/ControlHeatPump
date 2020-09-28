@@ -1343,9 +1343,9 @@ void  HeatPump::updateChart()
 		else if(ChartsModSetup[i].object == STATS_OBJ_Flow) Charts[i].add_Point(sFrequency[ChartsModSetup[i].number].get_Value() / 10);
 #ifdef WATTROUTER
 #ifdef WR_PowerMeter_Modbus
-		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter) Charts[i].add_Point(WR_PowerMeter_Power / 10);
+		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter_In) Charts[i].add_Point(WR_PowerMeter_Power / 10);
 #else
-		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter) Charts[i].add_Point(WR_Pnet);
+		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter_In) Charts[i].add_Point(WR_Pnet);
 #endif
 #endif
 	}
@@ -1416,7 +1416,7 @@ void HeatPump::get_Chart(int index, char *str)
 		if(Chart_Flow_FLOWCON && Chart_Temp_TCONING && Chart_Temp_TCONOUTG) Charts[Chart_Flow_FLOWCON].get_PointsStrPower(str, &Charts[Chart_Temp_TCONING], &Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_Capacity());
 		break;
 #endif
-	case STATS_OBJ_WattRouter:
+	case STATS_OBJ_WattRouter_In:
 		Charts[index].get_PointsStr(str);
 		break;
 	default:

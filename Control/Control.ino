@@ -270,7 +270,7 @@ xRewriteHeader:
 		}
 	}
 #ifdef TEST_BOARD
-	_delay(50);
+	//_delay(1);
 #endif
 	journal.Init();
 #ifdef POWER_CONTROL
@@ -1796,9 +1796,9 @@ void vServiceHP(void *)
 					} else {
 #ifdef WATTROUTER
 #ifdef WR_PowerMeter_Modbus
-						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter) HP.Charts[0].add_Point(WR_PowerMeter_Power / 10);
+						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter_In) HP.Charts[0].add_Point(WR_PowerMeter_Power / 10);
 #else
-						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter) HP.Charts[0].add_Point(WR_Pnet);
+						if(ChartsModSetup[0].object == STATS_OBJ_WattRouter_In) HP.Charts[0].add_Point(WR_Pnet);
 #endif
 #endif
 					}

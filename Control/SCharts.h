@@ -55,7 +55,8 @@ enum {
 	STATS_OBJ_COP_Full,		//= 18,
 	STATS_OBJ_Sun,			//= 19,
 	STATS_OBJ_Relay,		//= 20,
-	STATS_OBJ_WattRouter	//= 21
+	STATS_OBJ_WattRouter_In,//= 21,
+	STATS_OBJ_WattRouter_Out//= 22
 };
 
 const char *STATS_OBJ_names[] = {
@@ -80,7 +81,8 @@ const char *STATS_OBJ_names[] = {
 	"COP_Full",
 	"Sun",
 	"Relay",
-	"WattRouter",
+	"WattRouter_In",
+	"WattRouter_Out",
 	NULL
 };
 
