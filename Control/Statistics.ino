@@ -420,7 +420,11 @@ void Statistics::Update()
 #ifdef WATTROUTER
 		case STATS_OBJ_WattRouter_Out: {
 			newval = 0;
-			for(int8_t j = 0; j < WR_NumLoads; j++) newval += WR_LoadRun[j];
+			for(int8_t j = 0; j < WR_NumLoads; j++)
+#ifdef WR_Load_pins_Boiler_INDEX
+				if(j != WR_Load_pins_Boiler_INDEX || !HP.dRelay[RBOILER].get_Relay())
+#endif
+					newval += WR_LoadRun[j];
 			newval = newval * tm / 360; // в мВтч*10
 			WR_LoadRunStats += newval;
 			break;
