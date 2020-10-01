@@ -615,13 +615,13 @@ void Nextion::Update()
 
 	} else if(PageID == NXTID_PAGE_BOILER)  // Обновление данных 6 страницы "ГВС"
 	{
-		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TBOILER].get_Temp() / 10, 1), _xB0);
 		setComponentText("tboiler", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TCONOUTG].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TCONOUTG].get_Temp() / 10, 1), _xB0);
 		setComponentText("tconoutg", ntemp);
-		strcat(ftoa(ntemp, (float) HP.sTemp[TCONING].get_Temp() / 100.0, 1), _xB0);
+		strcat(dptoa(ntemp, HP.sTemp[TCONING].get_Temp() / 10, 1), _xB0);
 		setComponentText("tconing", ntemp);
-		strcat(ftoa(ntemp, (float) HP.get_boilerTempTarget() / 100.0, 1), "");
+		strcat(dptoa(ntemp, HP.get_boilerTempTarget() / 10, 1), "");
 		setComponentText("tustgvs", ntemp);
 		if(HP.get_BoilerON()) sendCommand("gvson.val=1");    // Кнопка включения ГВС в положение ВКЛ
 		else sendCommand("gvson.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ

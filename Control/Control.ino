@@ -796,7 +796,7 @@ void vWeb0(void *)
 					if(GETBIT(WR_Loads, WR_Load_pins_Boiler_INDEX) && !HP.dRelay[RBOILER].get_Relay()) {
 #ifdef WR_Boiler_Substitution_INDEX
 						if(digitalReadDirect(PIN_WR_Boiler_Substitution)) {
-							if(WR_LoadRun[WR_Boiler_Substitution_INDEX] == 0 && HP.sTemp[TBOILER].get_Temp() <= HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) {
+							if(WR_LoadRun[WR_Boiler_Substitution_INDEX] == 0 && HP.sTemp[TBOILER].get_Temp() <= HP.Prof.Boiler.WR_Target - WR_Boiler_Hysteresis) {
 								digitalWriteDirect(PIN_WR_Boiler_Substitution, 0); // Переключаемся на бойлер
 							}
 						} else
@@ -809,7 +809,7 @@ void vWeb0(void *)
 										if(GETBIT(WR.PWM_Loads, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
 										else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
 									}
-								} else if(HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget) { // Нагрели
+								} else if(HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_Target) { // Нагрели
 									active = false;
 									if(GETBIT(WR.PWM_Loads, WR_Load_pins_Boiler_INDEX)) WR_Change_Load_PWM(WR_Load_pins_Boiler_INDEX, -32768);
 									else WR_Switch_Load(WR_Load_pins_Boiler_INDEX, 0);
@@ -970,7 +970,7 @@ void vWeb0(void *)
 					} else { // Увеличиваем нагрузку
 #ifdef WR_Load_pins_Boiler_INDEX
 						bool need_heat_boiler =	WR.LoadPower[WR_Load_pins_Boiler_INDEX] - WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0
-												&& (HP.sTemp[TBOILER].get_Temp() <= HP.Prof.Boiler.TempTarget - HP.Prof.Boiler.dTemp) && !HP.dRelay[RBOILER].get_Relay();
+												&& (HP.sTemp[TBOILER].get_Temp() <= HP.Prof.Boiler.WR_Target - HP.Prof.Boiler.dAddHeat) && !HP.dRelay[RBOILER].get_Relay();
 						if(need_heat_boiler) {
 							// Переключаемся на нагрев бойлера
 							for(int8_t i = 0; i < WR_NumLoads; i++) {
@@ -1001,7 +1001,7 @@ void vWeb0(void *)
 						for(int8_t i = 0; i < WR_NumLoads; i++) {
 							if(WR_LoadRun[i] == WR.LoadPower[i] || !GETBIT(WR_Loads, i)) continue;
 #ifdef WR_Load_pins_Boiler_INDEX
-							if(i == WR_Load_pins_Boiler_INDEX && ((HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.TempTarget - WR_Boiler_Hysteresis) || HP.dRelay[RBOILER].get_Relay())) continue;
+							if(i == WR_Load_pins_Boiler_INDEX && ((HP.sTemp[TBOILER].get_Temp() > HP.Prof.Boiler.WR_Target - WR_Boiler_Hysteresis) || HP.dRelay[RBOILER].get_Relay())) continue;
 #endif
 							if(!GETBIT(WR.PWM_Loads, i)) {
 								uint32_t t = rtcSAM3X8.unixtime();

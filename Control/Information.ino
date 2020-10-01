@@ -662,7 +662,8 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
 	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0)&&(x<=90))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
-	if(strcmp(var,boil_WF_MinTarget)==0)   { Boiler.WF_MinTarget = rd(x, 100); return true;} else
+	if(strcmp(var,boil_WF_MinTarget)==0)    { Boiler.WF_MinTarget = rd(x, 100); return true;} else
+	if(strcmp(var,boil_WR_Target)==0)       { Boiler.WR_Target = rd(x, 100); return true;} else
 	if(strcmp(var,boil_DischargeDelta)==0)	{ Boiler.DischargeDelta = rd(x, 10); return true;} else
 	if(strcmp(var,boil_fWorkOnGenerator)==0){ if(x) SETBIT1(Boiler.flags, fWorkOnGenerator); else SETBIT0(Boiler.flags, fWorkOnGenerator); return true; } else
 	return false;
@@ -706,6 +707,7 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _dtoa(ret,Boiler.tempRBOILER/10,1); return ret;    }else                            // температура включения догрева бойлера
  if(strcmp(var,boil_dAddHeat)==0){        _dtoa(ret,Boiler.dAddHeat/10,1); return ret;       }else
  if(strcmp(var,boil_WF_MinTarget)==0){   _dtoa(ret,Boiler.WF_MinTarget/10,1); return ret;       }else
+ if(strcmp(var,boil_WR_Target)==0){      _dtoa(ret,Boiler.WR_Target/10,1); return ret;       }else
  if(strcmp(var,boil_DischargeDelta)==0){  _dtoa(ret, Boiler.DischargeDelta, 1); return ret;       }else
  if(strcmp(var,boil_HeatUrgently)==0){if(HP.HeatBoilerUrgently) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_fWorkOnGenerator)==0){ if(GETBIT(Boiler.flags, fWorkOnGenerator)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else

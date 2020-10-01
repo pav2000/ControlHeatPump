@@ -28,7 +28,7 @@ $(document).on('keyup keydown', function(e){ shifted = e.shiftKey } );
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 window.onload = function() {
-	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO)");
+	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO),get_Boiler(W)");
 	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(SCHEDULER),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(URG),get_Boiler(DD),get_Boiler(WG),get_Boiler(WT),get_Boiler(TT)");
 };
 </script>
@@ -80,6 +80,9 @@ window.onload = function() {
 	</tr><tr>
 		<td>Температура догрева бойлера (выкл. нагрев ТН и вкл. ТЭН бойлера) °C [0..90]</td>
 		<td nowrap><input id="get_boiler-tempr" type="number" min="0" max="90" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(TEMPR)');"></td>
+	</tr><tr>
+		<td>Температура цели при нагреве Ваттроутером °C</td>
+		<td nowrap><input id="get_boiler-w" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(W)');"></td>
 	</tr><tr>
 		<td>Температура цели при нагреве ночью и с прогнозом нулевой облачности °C</td>
 		<td nowrap><input id="get_boiler-wt" type="number" min="0" step="0.1"><input type="submit" value=">" onclick="setParam('get_Boiler(WT)');"></td>
