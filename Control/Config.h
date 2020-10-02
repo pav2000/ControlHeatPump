@@ -4031,7 +4031,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_WR_Boiler_Substitution		43
 #endif
 
-	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
+	#define WR_PWM_POWER_MIN			40							// Минимальная мощность для PWM, Вт
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
 	#define WR_TestAvailablePowerTime 	2							// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
 	#define WR_RELAY_LEVEL_ON			1							// Уровень реле ВКЛ

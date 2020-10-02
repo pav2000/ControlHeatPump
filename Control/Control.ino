@@ -1011,18 +1011,22 @@ void vWeb0(void *)
 #ifdef HTTP_MAP_Read_MPPT
 							if(mppt == 255) {
 								active = false;
-								if((mppt = WR_Check_MPPT()) < 3) break;					// Проверка наличия свободного солнца
+								if((mppt = WR_Check_MPPT()) == 2) break;	// Проверка наличия свободного солнца
 							}
 #endif
 							if(GETBIT(WR.PWM_Loads, i)) {
 #ifdef WR_Boiler_Substitution_INDEX
 								if(i == WR_Boiler_Substitution_INDEX && WR_LoadRun[WR_Load_pins_Boiler_INDEX] != 0) continue;
 #endif
-								int16_t chg = WR.LoadPower[i] - WR_LoadRun[i];
-								if(chg > WR.LoadAdd) chg = WR.LoadAdd;
+								int16_t chg;
+								if(mppt < 3) { 								// Добавляем помаленьку, когда MPPT говорит, что нет энергии
+									chg = WR.MinNetLoad - pnet;
+									if(chg < WR_PWM_POWER_MIN) break;
+								} else chg = WR.LoadAdd;
 								WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 								break;
 							} else {
+								if(mppt < 3) continue;
 #ifdef WR_TestAvailablePowerForRelayLoads
 	#if defined(WR_Load_pins_Boiler_INDEX) && WR_TestAvailablePowerForRelayLoads == WR_Load_pins_Boiler_INDEX
 		#ifdef WR_Boiler_Substitution_INDEX
