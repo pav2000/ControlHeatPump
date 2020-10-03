@@ -318,7 +318,9 @@ int8_t sensorDiditalInput::Read(boolean fast)
 	if(testMode != NORMAL) Input = testInput;            // В режиме теста
 	else {
 		boolean in = digitalReadDirect(pin);
-		if(!fast && in != Input) {
+		if(fast) {
+			Input = in;
+		} else if(in != Input) {
 			uint8_t i;
 			for(i = 0; i < 2; i++) {
 				_delay(1);

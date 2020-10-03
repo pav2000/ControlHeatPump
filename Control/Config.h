@@ -3504,7 +3504,7 @@ const char *noteTemp[] = {"Температура улицы",
 	//  Ноги куда прицепленны контактные датчики
 	#define PIN_SENSOR_SHIGHP   37  // [X4(S2)] Датчик высокого давления (X4.1 + X4.2)
 	#define PIN_SENSOR_POWER	63	// [X24.1] Датчик наличия высокого напряжения, через делитель <--20кОм--БП12V--6.8кОм--GND[X24.2]
-	#define PIN_SENSOR_GENERATOR 36	// [X3] Датчик работы от генератора - реле NO, (X3.1 + X3.2)
+	#define PIN_SENSOR_GENERATOR 36	// [X3(S1)] Датчик работы от генератора - реле NO, (X3.1 + X3.2)
 	//#define PIN_SENSOR_SLOWP      //         // Датчик низкого давления
 	//#define PIN_SENSOR_SERRFC   38  //[X5]     // Сигнал ошибка инвертора
 	//#define PIN_SENSOR_SFLOWCON 39             // Датчик потока по кондесатору
