@@ -1059,7 +1059,16 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	if(strcmp(var,option_ATTEMPT)==0)          { if ((n>=0)&&(n<=255)) {Option.nStart=n; return true;} else return false;  }else                // число попыток пуска
 	if(strcmp(var,option_TIME_CHART)==0)       { if(n>0) { if (get_State()==pWORK_HP) clearChart(); Option.tChart = n; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
 	if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = n; return true;} else
-	if(strcmp(var,option_BEEP)==0)             {if (n==0) {SETBIT0(Option.flags,fBeep); return true;} else if (n==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
+	if(strcmp(var, option_BEEP) == 0) { // Подача звукового сигнала
+		if(n == 0) {
+			SETBIT0(Option.flags, fBeep);
+			digitalWriteDirect(PIN_BEEP, LOW);
+			return true;
+		} else if(n == 1) {
+			SETBIT1(Option.flags, fBeep);
+			return true;
+		} else return false;
+	} else
 	if(strcmp(var, option_NEXTION) == 0) {// использование дисплея nextion
 	   bool fl = n != 0;
 	   if(fl != GETBIT(Option.flags, fNextion)) {
