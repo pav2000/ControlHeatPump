@@ -1247,9 +1247,10 @@ void vReadSensor(void *)
 #else
 		for(i = 0; i < ANUMBER - 1; i++) HP.sADC[i].Read();              // Прочитать данные с датчиков давления, кроме последнего
 #endif
-		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 #ifdef SGENERATOR
-		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
+		for(i = 0; i < SGENERATOR; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
+#else
+		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 #endif
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
@@ -1434,6 +1435,35 @@ void vReadSensor_delay1ms(int32_t ms)
 				HP.NO_Power = 0;
 			}
 		}
+#endif
+#ifdef SGENERATOR
+		HP.sInput[SGENERATOR].Read(true);			// Прочитать данные сухой контакт, быстро
+		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
+		if(GETBIT(HP.Option.flags, fBackupPower)) {
+			if(!HP.Prev_fBackupPower) {				// Нужно уменьшить нагрузку
+#ifdef RBOILER
+				HP.dRelay[RBOILER].set_OFF();		// выключить тэн бойлера
+#ifdef WATTROUTER
+				for(uint8_t i = 0; i < WR_NumLoads; i++) {
+					if(!GETBIT(WR_Loads, i) || WR_LoadRun[i] == 0) continue;
+					if(GETBIT(WR.PWM_Loads, i)) {
+						WR_Change_Load_PWM(i, -32768);
+					} else {
+						if(WR_Load_pins[i] >= 0) WR_Switch_Load(i, 0);
+					}
+				}
+#endif
+				if(HP.is_compressor_on() && HP.dFC.get_target() > HP.dFC.get_maxFreqGen()) {
+					HP.dFC.set_target(HP.dFC.get_maxFreqGen(), true, HP.dFC.get_minFreq(), HP.dFC.get_maxFreq());
+				}
+				journal.jprintf_time("Switched to Backup power!\n");
+				HP.Prev_fBackupPower = true;
+			}
+		} else {
+			if(HP.Prev_fBackupPower) journal.jprintf_time("Switched to Normal power!\n");
+			HP.Prev_fBackupPower = false;
+		}
+#endif
 #endif
 #ifdef RADIO_SENSORS
 		check_radio_sensors();

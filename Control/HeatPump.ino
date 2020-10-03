@@ -508,6 +508,7 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 	updateLinkIP();
 #endif
 	journal.jprintf("OK\n");
+	Prev_fBackupPower = GETBIT(HP.Option.flags, fBackupPower);
 //	if(Option.ver <= 133) {
 //#ifdef USE_ELECTROMETER_SDM
 //		if(dSDM.get_readState(3) == OK) {
@@ -799,8 +800,8 @@ void HeatPump::resetSettingHP()
 	Option.pausePump = 600;              //  Время паузы  насоса при выключенном компрессоре, сек
 	Option.workPump = 15;                //  Время работы  насоса при выключенном компрессоре, сек
 	Option.tChart = 10;                  //  период накопления статистики по умолчанию 60 секунд
-	SETBIT0(Option.flags, fAddHeat);      //  Использование дополнительного тена при нагреве НЕ ИСПОЛЬЗОВАТЬ
-	SETBIT0(Option.flags, fTypeRHEAT);    //  Использование дополнительного тена по умолчанию режим резерв
+	SETBIT0(Option.flags, fAddHeat);      //  Использование дополнительного тэна при нагреве НЕ ИСПОЛЬЗОВАТЬ
+	SETBIT0(Option.flags, fTypeRHEAT);    //  Использование дополнительного тэна по умолчанию режим резерв
 	SETBIT1(Option.flags, fBeep);         //  Звук
 	SETBIT1(Option.flags, fNextion);      //  дисплей Nextion
 	SETBIT0(Option.flags, fHistory);      //  Сброс статистика на карту
@@ -814,7 +815,8 @@ void HeatPump::resetSettingHP()
 	Option.SunMinWorktime = SUN_MIN_WORKTIME;
 	Option.SunMinPause = SUN_MIN_PAUSE;
 #endif
-    SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
+    SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности)
+    Prev_fBackupPower = false;
 	Option.maxBackupPower=3000;          // Максимальная мощность при питании от генератора (Вт)
 #ifdef WATTROUTER
 	WR.MinNetLoad = 50;
@@ -2063,11 +2065,11 @@ void HeatPump::StopWait(boolean stop)
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
   #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-     dRelay[RBOILER].set_OFF();  // выключить тен бойлера
+     dRelay[RBOILER].set_OFF();  // выключить тэн бойлера
   #endif
 
   #ifdef RHEAT  // управление  ТЭНом отопления
-     dRelay[RHEAT].set_OFF();     // выключить тен отопления
+     dRelay[RHEAT].set_OFF();     // выключить тэн отопления
   #endif
 
   #ifdef RPUMPB  // управление  насосом циркуляции ГВС
@@ -2124,7 +2126,7 @@ void HeatPump::resetPID()
 
 
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-// Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
+// Проверка на необходимость греть бойлер дополнительным тэном (true - надо греть) ВСЕ РЕЖИМЫ
 boolean HeatPump::boilerAddHeat()
 {
 	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
@@ -2980,7 +2982,7 @@ MODE_HP HeatPump::get_Work()
 		}
 		break;
 	}
-#ifdef RHEAT  // Дополнительный тен для нагрева отопления
+#ifdef RHEAT  // Дополнительный тэн для нагрева отопления
 if(!GETBIT(Option.flags,fBackupPower)){ // Нет питания от резервного источника
 	if (GETBIT(Option.flags,fAddHeat))
 	{

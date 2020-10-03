@@ -786,12 +786,6 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         if(HP.sInput[SPOWER].is_alarm()) break;
 #endif
         if(GETBIT(HP.Option.flags, fBackupPower)) break;
-#ifdef SGENERATOR
-        if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
-        	HP.check_fBackupPower();
-            if(GETBIT(HP.Option.flags, fBackupPower)) break;
-        }
-#endif
         if(state == ERR_LINK_FC) {
         	result = ERR_LINK_FC;
         	break;
@@ -821,12 +815,6 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
         if(HP.sInput[SPOWER].is_alarm()) break;
 #endif
         if(GETBIT(HP.Option.flags, fBackupPower)) break;
-#ifdef SGENERATOR
-        if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
-        	HP.check_fBackupPower();
-            if(GETBIT(HP.Option.flags, fBackupPower)) break;
-        }
-#endif
         if(state == ERR_LINK_FC) {
         	result = ERR_LINK_FC;
         	break;
