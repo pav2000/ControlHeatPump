@@ -99,6 +99,7 @@ void HeatPump::initHeatPump()
 {
 	uint8_t i;
 	NO_Power = 0;
+	fBackupPowerOffDelay = 0;
 	flags = (1<<fHP_SunNotInited);
 	eraseError();
 
