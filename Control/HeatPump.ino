@@ -508,7 +508,6 @@ xSkip:		load_struct(NULL, &buffer, 0); // skip unknown type
 	updateLinkIP();
 #endif
 	journal.jprintf("OK\n");
-	Prev_fBackupPower = GETBIT(HP.Option.flags, fBackupPower);
 //	if(Option.ver <= 133) {
 //#ifdef USE_ELECTROMETER_SDM
 //		if(dSDM.get_readState(3) == OK) {
@@ -816,7 +815,6 @@ void HeatPump::resetSettingHP()
 	Option.SunMinPause = SUN_MIN_PAUSE;
 #endif
     SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности)
-    Prev_fBackupPower = false;
 	Option.maxBackupPower=3000;          // Максимальная мощность при питании от генератора (Вт)
 #ifdef WATTROUTER
 	WR.MinNetLoad = 50;

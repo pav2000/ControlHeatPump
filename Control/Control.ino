@@ -1331,6 +1331,24 @@ void vReadSensor(void *)
 		WR_Calc_Power_Array_NewMeter(0);
 #endif
 #endif
+
+#ifdef USE_UPS
+		if(HP.NO_Power && !HP.sInput[SPOWER].is_alarm()) { // Включаемся
+			if(HP.NO_Power_delay) {
+				if(--HP.NO_Power_delay == 0) HP.sendCommand(pNETWORK);
+			} else {
+				journal.jprintf_date( "POWER RESTORED!\n");
+				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
+					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
+						HP.NO_Power = 0;
+						journal.jprintf("Resuming work...\n");
+						HP.sendCommand(pRESUME);
+					}
+				}
+				HP.NO_Power = 0;
+			}
+		}
+#endif
 		vReadSensor_delay1ms((TIME_READ_SENSOR - (int32_t)(GetTickCount() - ttime)) / 2);     // 1. Ожидать время нужное для цикла чтения
 
 		// Вычисление перегрева используются РАЗНЫЕ датчики при нагреве и охлаждении
@@ -1424,27 +1442,22 @@ void vReadSensor_delay1ms(int32_t ms)
 				}
 			}
 			HP.NO_Power_delay = NO_POWER_ON_DELAY_CNT;
-		} else if(HP.NO_Power) { // Включаемся
-			if(HP.NO_Power_delay) {
-				if(--HP.NO_Power_delay == 0) HP.sendCommand(pNETWORK);
-			} else {
-				journal.jprintf_date( "POWER RESTORED!\n");
-				if(!HP.Schdlr.IsShedulerOn()) {  // Расписание не активно, иначе включаемся через расписание
-					if(HP.NO_Power == 2 && HP.get_State() == pWAIT_HP) {
-						HP.NO_Power = 0;
-						journal.jprintf("Resuming work...\n");
-						HP.sendCommand(pRESUME);
-					}
-				}
-				HP.NO_Power = 0;
-			}
 		}
 #endif
 #ifdef SGENERATOR
 		HP.sInput[SGENERATOR].Read(true);			// Прочитать данные сухой контакт, быстро
-		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
+		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
+			if(HP.sInput[SGENERATOR].get_Input() == HP.sInput[SGENERATOR].get_alarmInput()) { // на резерве
+				HP.Option.flags |= (1<<fBackupPower);
+			} else if(HP.fBackupPowerOffDelay) {
+				if(--HP.fBackupPowerOffDelay == 0) {
+					journal.jprintf_time("Switched to Normal power!\n");
+					HP.Option.flags &= ~(1<<fBackupPower);
+				}
+			} else HP.Option.flags &= ~(1<<fBackupPower);
+		}
 		if(GETBIT(HP.Option.flags, fBackupPower)) {
-			if(!HP.Prev_fBackupPower) {				// Нужно уменьшить нагрузку
+			if(!HP.fBackupPowerOffDelay) {			// Нужно уменьшить нагрузку
 #ifdef RBOILER
 				HP.dRelay[RBOILER].set_OFF();		// выключить тэн бойлера
 #ifdef WATTROUTER
@@ -1461,11 +1474,8 @@ void vReadSensor_delay1ms(int32_t ms)
 					HP.dFC.set_target(HP.dFC.get_maxFreqGen(), true, HP.dFC.get_minFreq(), HP.dFC.get_maxFreq());
 				}
 				journal.jprintf_time("Switched to Backup power!\n");
-				HP.Prev_fBackupPower = true;
 			}
-		} else {
-			if(HP.Prev_fBackupPower) journal.jprintf_time("Switched to Normal power!\n");
-			HP.Prev_fBackupPower = false;
+			HP.fBackupPowerOffDelay = RETURN_FROM_GENERATOR_DELAY / 10;
 		}
 #endif
 #endif

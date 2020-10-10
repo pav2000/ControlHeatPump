@@ -605,7 +605,7 @@ public:
 	uint32_t time_Sun;                    // тики солнечного коллектора
 	uint8_t  NO_Power;					  // Нет питания основных узлов, 2 - нужно запустить после восстановления
 	uint8_t  NO_Power_delay;
-	bool     Prev_fBackupPower;				// предыдущее значения флага
+	uint16_t fBackupPowerOffDelay;			// задержка выключения флага работы от резервного питания
 	boolean  HeatBoilerUrgently;		  // Срочно нужно ГВС
 	void     set_HeatBoilerUrgently(boolean onoff);
 

@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.103"				// Версия прошивки
+#define VERSION			"1.104"				// Версия прошивки
 #define VER_SAVE		149					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -147,24 +147,25 @@ const uint16_t  defaultPort=80;
     
 // ------------------- TIME & DELAY ----------------------------------
 // Времена и задержки
-#define cDELAY_DS1820     750              // мсек. Задержка для чтения DS1820 (время преобразования)
+#define cDELAY_DS1820     			750             // мсек. Задержка для чтения DS1820 (время преобразования)
 #ifndef TIME_READ_SENSOR 
-#define TIME_READ_SENSOR  4000		       // мсек. Период опроса датчиков
+#define TIME_READ_SENSOR  			4000		    // мсек. Период опроса датчиков
 #endif
-#define TIME_WEB_SERVER   2                // мсек. Период опроса web servera было 5
-#define TIME_CONTROL      (10*1000)        // мсек. Период управления тепловым насосом (цикл управления в режиме Гистерезис)
-#define TIME_EEV          (1*1000)         // мсек. Период задачи vUpdateEEV в переходных состояниях ТН
-#define TIME_EEV_BEFORE_PID (4*1000)       // мсек.
-#define TIME_COMMAND      500              // мсек. Период разбора команд управления ТН (скорее пауза перед обработкой команды)
-#define TIME_I2C_UPDATE   (60*60)*1000     // мсек. Время обновления внутренних часов по I2С часам (если конечно нужно)
-#define TIME_MESSAGE_TEMP 300			   // 1/10 секунды, Проверка граничных температур для уведомлений
-#define TIME_LED_OK       1500             // Период мигания светодиода при ОК (мсек)
-#define TIME_LED_ERR      200              // Период мигания светодиода при ошибке (мсек).
-#define TIME_BEEP_ERR     1000             // Период звукового сигнала при ошибке, мсек
-#define cDELAY_START_MESSAGE 60            // Задержка (сек) после старта на отправку сообщений
-#define UPDATE_HP_WAIT_PERIOD 5000			// Период вызова vUpdate во время ожидания или ошибки, мсек
-#define NO_POWER_ON_DELAY_CNT 10			// Задержка включения после появления питани, *TIME_READ_SENSOR
-#define HTTP_REQ_TIMEOUT   2000				// ms
+#define TIME_WEB_SERVER   			2               // мсек. Период опроса web servera было 5
+#define TIME_CONTROL      			(10*1000)       // мсек. Период управления тепловым насосом (цикл управления в режиме Гистерезис)
+#define TIME_EEV          			(1*1000)        // мсек. Период задачи vUpdateEEV в переходных состояниях ТН
+#define TIME_EEV_BEFORE_PID 		(4*1000)        // мсек.
+#define TIME_COMMAND      			500             // мсек. Период разбора команд управления ТН (скорее пауза перед обработкой команды)
+#define TIME_I2C_UPDATE   			(60*60)*1000    // мсек. Время обновления внутренних часов по I2С часам (если конечно нужно)
+#define TIME_MESSAGE_TEMP 			300			    // 1/10 секунды, Проверка граничных температур для уведомлений
+#define TIME_LED_OK       			1500            // Период мигания светодиода при ОК (мсек)
+#define TIME_LED_ERR      			200             // Период мигания светодиода при ошибке (мсек).
+#define TIME_BEEP_ERR     			1000            // Период звукового сигнала при ошибке, мсек
+#define cDELAY_START_MESSAGE 		60              // Задержка (сек) после старта на отправку сообщений
+#define UPDATE_HP_WAIT_PERIOD 		5000			// Период вызова vUpdate во время ожидания или ошибки, мсек
+#define NO_POWER_ON_DELAY_CNT 		15				// Задержка включения после появления питани, *TIME_READ_SENSOR
+#define RETURN_FROM_GENERATOR_DELAY	60000			// Задержка переключения с резерва на основное питание, ms
+#define HTTP_REQ_TIMEOUT   			2000			// ms
 // ------------------- I2C ----------------------------------
 // Устройства i2c I2C_EEPROM_64KB и I2C_FRAM_MEMORY   Размер и тип памяти, определен в config.h т.к. он часто меняется
 #define I2C_SPEED         twiClock400kHz // Частота работы шины I2C
