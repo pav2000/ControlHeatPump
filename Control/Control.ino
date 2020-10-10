@@ -763,6 +763,8 @@ void vWeb0(void *)
 			}
 			if((GETBIT(WR.Flags, WR_fActive) || WR.PWM_FullPowerTime || WR_Refresh) /*&& HP.get_State() == pWORK_HP*/) {
 				while(1) {
+					static uint8_t skip_next_small_increase = 0;
+					if(skip_next_small_increase) skip_next_small_increase--;
 #ifdef PWM_CALC_POWER_ARRAY
 					if(GETBIT(PWM_CalcFlags, PWM_fCalcNow)) break;
 #endif
@@ -1020,8 +1022,10 @@ void vWeb0(void *)
 #endif
 								int16_t chg;
 								if(mppt < 3) { 								// Добавляем помаленьку, когда MPPT говорит, что нет энергии
+									if(skip_next_small_increase) break;
 									chg = WR.MinNetLoad - pnet;
 									if(chg < WR_PWM_POWER_MIN) break;
+									skip_next_small_increase = 2;
 								} else chg = WR.LoadAdd;
 								WR_Change_Load_PWM(i, WR_Adjust_PWM_delta(i, chg));
 								break;
