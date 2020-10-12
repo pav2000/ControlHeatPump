@@ -1204,7 +1204,7 @@ int8_t WR_Check_MPPT(void)
 			return 3;
 #endif
 		}
-		if(GETBIT(WR.Flags, WR_fLog)) journal.jprintf("WR: MPPT request Error %d\n", err);
+		if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf("WR: MPPT request Error %d\n", err);
 		return 0;
 	}
 	char *fld = strstr(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_JSON_Mode);

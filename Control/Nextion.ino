@@ -409,13 +409,15 @@ void Nextion::Update()
 					| (HP.dRelay[RSUN].get_Relay() << 2)
 #endif
 #ifdef RBOILER
-	#ifdef WR_Load_pins_Boiler_INDEX
-					| ((HP.dRelay[RBOILER].get_Relay() || WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) << 3)
-	#else
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
-	#endif
 #endif
-					| (HP.get_BackupPower() << 4);
+#ifdef RPUMPBH
+					| ((HP.dRelay[RPUMPBH].get_Relay() && !(HP.get_modWork() & pBOILER)) << 4)
+#endif
+#ifdef WR_Load_pins_Boiler_INDEX
+					| ((WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) << 5)
+#endif
+					| (HP.get_BackupPower() << 6);
 		if(fUpdate == 2) Page1flags = ~fl;
 		if(fl != Page1flags) {
 			if((fl ^ Page1flags) & (1<<0)) {
@@ -433,20 +435,23 @@ void Nextion::Update()
 				if(fl & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
 			}
 #endif
-#ifdef RBOILER
-			if((fl ^ Page1flags) & (1<<3)) {
-				if(fl & (1<<3)) sendCommand(HP.dRelay[RBOILER].get_Relay() ? "t3.pco=63488" : "t3.pco=65280"); else sendCommand("t3.pco=65535");
+#if defined(RBOILER) || defined(RPUMPBH) || defined(WR_Load_pins_Boiler_INDEX)
+			if((fl ^ Page1flags) & (7<<3)) {
+				if(fl & (1<<3)) sendCommand("t3.pco=63488");
+				else if(fl & (1<<4)) sendCommand("t3.pco=2016");
+				else if(fl & (1<<5)) sendCommand("t3.pco=65280");
+				else sendCommand("t3.pco=65535");
 			}
 #endif
-            if((fl ^ Page1flags) & (1<<4)) {
+            if((fl ^ Page1flags) & (1<<6)) {
 #ifdef NEXTION_GENERATOR 
             	if(fUpdate == 2) {
             		sendCommand("vis bt1,1");  // Показ кнопки работа от генератора
             		sendCommand("tsw bt1,1");
             	}
-            	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
+            	if(fl & (1<<6)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
 #else
-            	if(fl & (1<<4)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
+            	if(fl & (1<<6)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
 #endif
             }
             Page1flags = fl;
