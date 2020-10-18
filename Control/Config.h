@@ -4005,6 +4005,7 @@ const char *noteTemp[] = {"Температура улицы",
 										// У меня берется с электросчетчика Меркурий 231 АТ через подключенный к нему esp8266 (http://vad-7.blogspot.com/2017/03/mercury231.html)
 	#ifdef HTTP_TIME_REQUEST
 	const char HTTP_TIME_REQ[]			= "/curr_time.csv";
+	#define HTTP_TIME_REQUEST_FLD2		// Брать второе поле из ответа - локальное время счетчика
 	#endif
 	#define HTTP_LowConsumeServer		"192.168.0.8"
 	#define HTTP_LowConsumeRequest		"/&LowConsume_set="			// HTTP GET запрос информирование о режиме низкого потребления, в конец будет добавлен 0/1

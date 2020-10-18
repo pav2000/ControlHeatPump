@@ -100,7 +100,7 @@ int32_t set_time_NTP(void)
 						break;
 					}
 				}
-				if(flag > 0) { // Ответ получен, формат: "<время UTC>;"
+				if(flag > 0) { // Ответ получен, формат: "<время UTC>;<время счетчика LOCAL>;"
 					if(tTCP.read((uint8_t *)&NTP_buffer, sizeof(http_key_ok1)-1) == sizeof(http_key_ok1)-1) {
 						if(memcmp(&NTP_buffer, &http_key_ok1, sizeof(http_key_ok1)-1) == 0) {
 							if(tTCP.read((uint8_t *)&NTP_buffer, 3 + sizeof(http_key_ok2)-1) == 3 + sizeof(http_key_ok2)-1) { // HTTP/
@@ -112,9 +112,16 @@ int32_t set_time_NTP(void)
 											tTCP.read((uint8_t *)&NTP_buffer, sizeof(NTP_buffer));
 											char *p = strchr(NTP_buffer, ';');
 											if(p != NULL) {
-												*p = '\0';
-												secs = atoi(NTP_buffer);
-												if(secs) flag = 1;
+#ifdef HTTP_TIME_REQUEST_FLD2
+												secs = strtoul(p + 1, NULL, 10);
+												if(secs != ULONG_MAX) flag = 1;
+#else
+												secs = strtoul(NTP_buffer, NULL, 10);
+												if(secs != ULONG_MAX) {
+													secs += time_zone_adjustment(TIME_ZONE);
+													flag = 1;
+												}
+#endif
 											} else flag = -7;
 											break;
 										}
@@ -133,7 +140,7 @@ int32_t set_time_NTP(void)
 	if(flag > 0) {  // Обновление времени если оно получено
 		unsigned long lt = rtcSAM3X8.unixtime();
 		if(lt != secs) {
-			rtcSAM3X8.set_clock(secs, TIME_ZONE);    // обновить внутренние часы
+			rtcSAM3X8.set_clock(secs, 0);    // обновить внутренние часы
 		}
 		// обновились, можно и часы i2c обновить
 		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());

@@ -88,7 +88,7 @@ void RTC_clock::set_clock(unsigned long timestamp, int timezone)
 
 	// Sunday, 01-Jan-40 00:00:00 UTC 70 years after the beginning of the unix timestamp so
 	// if the timestamp bigger than this the "offset" will automatic removed
-	if(timestamp >= 2208988800UL) time -= 2208988800UL;
+	//if(timestamp >= 2208988800UL) time -= 2208988800UL;
 
 	time = timestamp + time_zone_adjustment(timezone);
 	uint8_t _second = time % 60;
