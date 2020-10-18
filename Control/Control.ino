@@ -75,8 +75,9 @@ uint32_t startSupcStatusReg;                        // Состояние при
 
 // Глобальные переменные
 EthernetServer server1(80);                         // сервер
-EthernetUDP Udp;                                    // Для NTP сервера
+#ifdef MQTT
 EthernetClient ethClient(W5200_SOCK_SYS);           // для MQTT
+#endif
 
 #ifdef RADIO_SENSORS
 void check_radio_sensors(void);
