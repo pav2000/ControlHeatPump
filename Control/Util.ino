@@ -1125,12 +1125,17 @@ xSwitched:
 
 void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 {
+#ifdef PWM_ACCURATE_POWER
+	int MP = WR.LoadPower[idx] * HP.dSDM.get_voltage() / 220;
+#else
+	#define MP WR.LoadPower[idx]
+#endif
 	int n = WR_LoadRun[idx] + delta;
-	if(n <= 0) n = 0; else if(n > WR.LoadPower[idx]) n = WR.LoadPower[idx];
+	if(n <= 0) n = 0; else if(n > MP) n = MP;
 	uint32_t t = rtcSAM3X8.unixtime();
 	if(WR.PWM_FullPowerTime) {
 		if(n > 0) {
-			int max = int(WR.LoadPower[idx]) * WR.PWM_FullPowerLimit / 100;
+			int max = MP * WR.PWM_FullPowerLimit / 100;
 			if(n > max) {
 				if(WR_LoadRun[idx] <= max) {
 					if(t - WR_SwitchTime[idx] <= WR.PWM_FullPowerTime * 60) n = max; // Включаемся, но еще не остыли
@@ -1167,13 +1172,13 @@ void WR_Change_Load_PWM(uint8_t idx, int16_t delta)
 		WR_LoadRun[idx] = n;
 		if(GETBIT(WR.Flags, WR_fLogFull)) journal.jprintf_time("WR: P%d=%d\n", idx + 1, n);
 #ifdef PWM_ACCURATE_POWER
-		n = n * (sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1)*10 / WR.LoadPower[idx]; // 0..100
+		n = n * (sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0])-1)*10 / MP; // 0..100
 		int r = n % 10;
 		int val = PWM_POWER_ARRAY[n /= 10];
 		if(n < (int)(sizeof(PWM_POWER_ARRAY)/sizeof(PWM_POWER_ARRAY[0]))-1) val += (PWM_POWER_ARRAY[n + 1] - val) * r / 10;
 		PWM_Write(WR_Load_pins[idx], val);
 #else
-		PWM_Write(WR_Load_pins[idx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1) - n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / WR.LoadPower[idx]);
+		PWM_Write(WR_Load_pins[idx], ((1<<PWM_WRITE_OUT_RESOLUTION)-1) - n * ((1<<PWM_WRITE_OUT_RESOLUTION)-1) / MP);
 #endif
 	}
 }
