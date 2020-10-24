@@ -421,7 +421,7 @@ int32_t HeatPump::load(uint8_t *buffer, uint8_t flag)
 {
 	uint16_t size;
 	journal.jprintf(" Load settings from ");
-	if(!GETBIT(flag, 1)) {
+	if(!(flag & 1)) {
 		journal.jprintf("I2C");
 		if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*) &size, sizeof(size))) {
 x_ReadError:
@@ -441,7 +441,7 @@ x_Error:
 	size -= 2;
 	uint16_t crc = 0xFFFF;
 #ifdef LOAD_VERIFICATION
-	if(GETBIT(flag, 2)) {
+	if(flag & 2) {
 		journal.jprintf("*SKIP*");
 	} else {
 		for(uint16_t i = 0; i < size; i++)  crc = _crc16(crc, buffer[i]);
