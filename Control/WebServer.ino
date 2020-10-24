@@ -784,8 +784,13 @@ void parserGET(uint8_t thread, int8_t )
 		
 		if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
-			if(strcmp(str+8, "_SCHDLR") == 0) {
+			str += 8;
+			if(strcmp(str, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.load(), strReturn); // загрузка расписаний
+			} else if(strcmp(str, "_HP_NOCRC") == 0) {
+				_itoa(HP.load((uint8_t*)Socket[thread].inPtr, 2), strReturn); // загрузка настроек без проверки CRC
+				ADD_WEBDELIM(strReturn);
+				break;
 			}
 			ADD_WEBDELIM(strReturn);
 			continue;
