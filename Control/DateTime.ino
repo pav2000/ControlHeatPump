@@ -116,10 +116,10 @@ int32_t set_time_NTP(void)
 											if(p != NULL) {
 #ifdef HTTP_TIME_REQUEST_FLD2
 												secs = strtoul(p + 1, NULL, 10);
-												if(secs != ULONG_MAX) flag = 1;
+												if(secs != 0 && secs != ULONG_MAX) flag = 1;
 #else
 												secs = strtoul(NTP_buffer, NULL, 10);
-												if(secs != ULONG_MAX) {
+												if(secs != 0 && secs != ULONG_MAX) {
 													secs += time_zone_adjustment(TIME_ZONE);
 													flag = 1;
 												}
