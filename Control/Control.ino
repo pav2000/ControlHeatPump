@@ -1405,11 +1405,6 @@ void vReadSensor(void *)
 void vReadSensor_delay1ms(int32_t ms)
 {
 	if(ms <= 0) return;
-	if(ms < 10) {
-		vTaskDelay(ms);
-		return;
-	}
-	ms -= 10;
 	uint32_t tm = GetTickCount();
 	do {
 #ifdef  KEY_ON_OFF // Если надо проверяем кнопку включения ТН
@@ -1450,6 +1445,7 @@ void vReadSensor_delay1ms(int32_t ms)
 		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
 			if(HP.sInput[SGENERATOR].get_Input() == HP.sInput[SGENERATOR].get_alarmInput()) { // на резерве
 				HP.Option.flags |= (1<<fBackupPower);
+				if(HP.fBackupPowerOffDelay) HP.fBackupPowerOffDelay = RETURN_FROM_GENERATOR_DELAY / 10;
 			} else if(HP.fBackupPowerOffDelay) {
 				if(--HP.fBackupPowerOffDelay == 0) {
 					journal.jprintf_time("Switched to Normal power!\n");
@@ -1475,20 +1471,20 @@ void vReadSensor_delay1ms(int32_t ms)
 					HP.dFC.set_target(HP.dFC.get_maxFreqGen(), true, HP.dFC.get_minFreq(), HP.dFC.get_maxFreq());
 				}
 				journal.jprintf_time("Switched to Backup power!\n");
+				HP.fBackupPowerOffDelay = RETURN_FROM_GENERATOR_DELAY / 10;
 			}
-			HP.fBackupPowerOffDelay = RETURN_FROM_GENERATOR_DELAY / 10;
 		}
 #endif
 #endif
 #ifdef RADIO_SENSORS
-		check_radio_sensors();
+		if(ms - (GetTickCount() - tm) >= 20) check_radio_sensors();
 #endif
 		int32_t tm2 = GetTickCount() - tm;
-		if((tm2 -= ms) >= 0) {
-			if(tm2 < 10) vTaskDelay(10 - tm2);
+		if((tm2 -= ms) >= -10) {
+			if(tm2 < 0) vTaskDelay(-tm2);
 			break;
 		}
-		vTaskDelay(tm2 > -10 ? 3 : 10);
+		vTaskDelay(10);
 	} while(true);
 }
 
