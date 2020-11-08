@@ -1098,7 +1098,7 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	} else
 	if(strcmp(var,option_SunMinWorktime)==0)   { Option.SunMinWorktime = n; return true; }else
 	if(strcmp(var,option_SunMinPause)==0)      { Option.SunMinPause = n; return true; }else
-	if(strcmp(var,option_PAUSE)==0)			   { if ((n>=0)&&(n<=200)) {Option.pause=n*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+	if(strcmp(var,option_PAUSE)==0)			   { if ((n>=0)&&(n<=999)) {Option.pause=n*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
 	if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = n; return true; }else
 	if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((n>=0)&&(n<=900)) {Option.delayOnPump=n; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
 	if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((n>=0)&&(n<=900)) {Option.delayOffPump=n; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
@@ -1984,10 +1984,10 @@ xGoWait:
 	//  set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке для проверки EEV
 
 
-	// 5. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
+	// 5. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузы не будет -----------------
 	if(!start)  // Команда Resume
 		while(check_compressor_pause()) {
-			_delay(100 * 1000);
+			_delay(1000);
 			if(get_State() != pSTARTING_HP) return;
 		}    // Могли нажать кнопку стоп, выход из процесса запуска
 
@@ -3129,8 +3129,9 @@ boolean HeatPump::Switch_R4WAY(boolean fCool)
 // проверка на паузу между включениями, возврат true - в паузе
 boolean HeatPump::check_compressor_pause()
 {
-	if(stopCompressor && rtcSAM3X8.unixtime() - stopCompressor < Option.pause) {
-		if(!compressor_in_pause) journal.jprintf_time("Waiting compressor, pause %d s...\n", Option.pause - (rtcSAM3X8.unixtime() - stopCompressor));
+	uint16_t pause = (Status.modWork & (pHEAT | pCOOL)) ? Prof.Heat.CompressorPause : Option.pause;
+	if(stopCompressor && rtcSAM3X8.unixtime() - stopCompressor < pause) {
+		if(!compressor_in_pause) journal.jprintf_time("Waiting compressor, pause %d s...\n", pause - (rtcSAM3X8.unixtime() - stopCompressor));
 		return compressor_in_pause = true;
 	}
 	return compressor_in_pause = false;

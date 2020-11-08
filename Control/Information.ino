@@ -568,10 +568,11 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else                     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; }             // Коэффициент погодозависимости
- if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; }
- if(strcmp(var,hp_WeatherBase)==0){ Heat.WeatherBase = x; return true; }
- if(strcmp(var,hp_WeatherTargetRange)==0){ Heat.WeatherTargetRange = rd(x, 10); return true; }
+ if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; } else            // Коэффициент погодозависимости
+ if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; } else
+ if(strcmp(var,hp_WeatherBase)==0){ Heat.WeatherBase = x; return true; } else
+ if(strcmp(var,hp_WeatherTargetRange)==0){ Heat.WeatherTargetRange = rd(x, 10); return true; } else
+ if(strcmp(var,hp_CompressorPause)==0){ if(x >= 0) {Heat.CompressorPause = x * 60; return true; } else return false; } else
  return false; 
 }
 
@@ -607,10 +608,11 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Heat.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Heat.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_targetPID)==0){ _dtoa(ret,HP.CalcTargetPID(Heat),2); return ret;    } else
-   if(strcmp(var,hp_K_WEATHER)==0){ _dtoa(ret,Heat.kWeatherPID,3); return ret;            }                 // Коэффициент погодозависимости
-   if(strcmp(var,hp_kWeatherTarget)==0){ _dtoa(ret,Heat.kWeatherTarget,3); return ret;    }
-   if(strcmp(var,hp_WeatherBase)==0){ _dtoa(ret,Heat.WeatherBase,0); return ret;    }
-   if(strcmp(var,hp_WeatherTargetRange)==0){ _dtoa(ret,Heat.WeatherTargetRange,1); return ret;    }
+   if(strcmp(var,hp_K_WEATHER)==0){ _dtoa(ret,Heat.kWeatherPID,3); return ret;            } else                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_kWeatherTarget)==0){ _dtoa(ret,Heat.kWeatherTarget,3); return ret;    } else
+   if(strcmp(var,hp_WeatherBase)==0){ _dtoa(ret,Heat.WeatherBase,0); return ret;    } else
+   if(strcmp(var,hp_WeatherTargetRange)==0){ _dtoa(ret,Heat.WeatherTargetRange,1); return ret;    } else
+   if(strcmp(var,hp_CompressorPause)==0) { _itoa(Heat.CompressorPause / 60, ret); return ret; } else
    return  strcat(ret,(char*)cInvalid);
 }
 
