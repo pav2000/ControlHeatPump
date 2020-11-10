@@ -282,11 +282,12 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 	}
 	if(err == OK) {
 		if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
-			int16_t n = (x - FC_target) * _data.AdjustEEV_k / 10000L;
-			HP.dEEV.set_EEV(HP.dEEV.get_EEV() + n);
+			int16_t n = HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 10000L;
+			if(n < HP.dEEV.get_minEEV()) n = HP.dEEV.get_minEEV(); else if(n > HP.dEEV.get_maxEEV()) n = HP.dEEV.get_maxEEV();
 			if(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm)) {
-				HP.dEEV.pidw.max = 1 + (n > 5 ? 1 : 0); // пропустить итераций
+				HP.dEEV.pidw.max = 1 + (abs(n - HP.dEEV.get_EEV()) > 5 ? 1 : 0); // пропустить итераций
 			}
+			HP.dEEV.set_EEV(n);
 		}
 		FC_target = x;
 		if(show) journal.jprintf(" Set %s[%s]: %.2d%%\n", name, (char *)codeRet[HP.get_ret()], FC_target);
@@ -296,7 +297,9 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 	}
 #else // Аналоговое управление
 	if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
-		HP.dEEV.set_EEV(HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 100);
+		int16_t n = HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 100;
+		if(n < HP.dEEV.get_minEEV()) n = HP.dEEV.get_minEEV(); else if(n > HP.dEEV.get_maxEEV()) n = HP.dEEV.get_maxEEV();
+		HP.dEEV.set_EEV(n);
 	}
 	FC_target = x;
 #ifdef FC_ANALOG_OFF_SET_0
