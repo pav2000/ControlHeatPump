@@ -744,7 +744,8 @@ const char *option_Charts_when_comp_on= {"CWCO"};				// Графики в пам
 const char *option_fBackupPower       = {"BPOW"};				// флаг Использование резервного питания от генератора (ограничение мощности) 
 const char *option_fBackupPowerInfo   = {"BP"};					// Работа от генератора
 const char *option_maxBackupPower     = {"MAXPOW"};				// Максимальная мощность при питании от генератора
-const char *option_fBackupPowerAuto	  = {"BPA"};
+const char *option_f2BackupPowerAuto  = {"BPA"};
+const char *option_f2NextionGenFlashing={"NGF"};
 const char *option_WF_ReqServer       = {"WFS"};
 const char *option_WF_ReqText         = {"WFT"};
 

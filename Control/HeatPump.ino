@@ -1110,14 +1110,18 @@ boolean HeatPump::set_optionHP(char *var, float x)
 	if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((n>=0)&&(n<=1200)) {Option.delayBoilerSW=n; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
 	if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((n>=0)&&(n<=1200)) {Option.delayBoilerOff=n; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
 	else if(strcmp(var,option_fBackupPower)==0)     {if (n==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (n==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;} // флаг Использование резервного питания от генератора (ограничение мощности)
-	else if(strcmp(var, option_fBackupPowerAuto) == 0) {
+	else if(strcmp(var, option_f2BackupPowerAuto) == 0) {
 	#ifdef SGENERATOR
-		if(n == 0) {
-			SETBIT0(Option.flags2, f2BackupPowerAuto);
-			return true;
-		} else if(n == 1) {
-			SETBIT1(Option.flags2, f2BackupPowerAuto);
-			return true;
+		if(n == 0) { SETBIT0(Option.flags2, f2BackupPowerAuto);	return true;
+		} else if(n == 1) {	SETBIT1(Option.flags2, f2BackupPowerAuto); return true;
+		} else return false;
+	#else
+		return true;
+	#endif
+	} else if(strcmp(var, option_f2NextionGenFlashing) == 0) {
+	#ifdef NEXTION_GENERATOR_FLASHING
+		if(n == 0) { SETBIT0(Option.flags2, f2NextionGenFlashing);	return true;
+		} else if(n == 1) {	SETBIT1(Option.flags2, f2NextionGenFlashing); return true;
 		} else return false;
 	#else
 		return true;
@@ -1238,9 +1242,16 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	#endif
 		   ) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);
 	} else
-	if(strcmp(var, option_fBackupPowerAuto) == 0) {
+	if(strcmp(var, option_f2BackupPowerAuto) == 0) {
 	#ifdef SGENERATOR
 	   if(GETBIT(Option.flags2, f2BackupPowerAuto)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero);
+	#else
+	   return strcat(ret, (char*) cZero);
+	#endif
+	} else
+	if(strcmp(var, option_f2NextionGenFlashing) == 0) {
+	#ifdef NEXTION_GENERATOR_FLASHING
+	   if(GETBIT(Option.flags2, f2NextionGenFlashing)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero);
 	#else
 	   return strcat(ret, (char*) cZero);
 	#endif

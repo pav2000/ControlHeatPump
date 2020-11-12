@@ -451,7 +451,13 @@ void Nextion::Update()
             	}
             	if(fl & (1<<6)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
 #else
+	#ifdef NEXTION_GENERATOR_FLASHING
+            	if(fl & (1<<6)) {
+            		if(GETBIT(HP.Option.flags2, f2NextionGenFlashing)) sendCommand("r.val=1"); else sendCommand("r.val=2");
+            	} else sendCommand("r.val=0");
+	#else
             	if(fl & (1<<6)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
+	#endif
 #endif
             }
             Page1flags = fl;

@@ -194,6 +194,7 @@ uint8_t WF_BoilerTargetPercent = 100;
 #define fSDMLogErrors			15              // флаг писать в лог нерегулярные ошибки счетчика SDM
 //  type_optionHP.flags2:
 #define f2BackupPowerAuto		0               // Автоматически определять работу от генератора (через датчик SGENERATOR)
+#define f2NextionGenFlashing	1				// Моргать картинкой на дисплее, если работаем от генератора
 
 
 // Структура для хранения опций теплового насоса.
