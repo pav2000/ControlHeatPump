@@ -3859,10 +3859,27 @@ void HeatPump::calculatePower()
    #else
 	_power220 -= WR_LoadRun[WR_Load_pins_Boiler_INDEX];
    #endif
-  #else
-	if(dRelay[RBOILER].get_Relay()) _power220 -= CORRECT_POWER220_EXCL_RBOILER;
-  #endif
+   #ifndef PWM_ACCURATE_POWER
 	if(_power220) _power220 = _power220 * dSDM.get_voltage() / 220;
+   #endif
+  #else
+	if(dRelay[RBOILER].get_Relay()) _power220 -= CORRECT_POWER220_EXCL_RBOILER * dSDM.get_voltage() / 220;
+  #endif
+#else
+	#ifdef WATTROUTER
+	if(!dRelay[RBOILER].get_Relay()) { // Если греем ваттроутером, то вычесть
+		#ifdef WR_Load_pins_Boiler_INDEX
+		 #ifdef WR_Boiler_Substitution_INDEX
+		_power220 -= WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX];
+		 #else
+		_power220 -= WR_LoadRun[WR_Load_pins_Boiler_INDEX];
+		 #endif
+		#endif
+		#ifndef PWM_ACCURATE_POWER
+		if(_power220) _power220 = _power220 * dSDM.get_voltage() / 220;
+		#endif
+	}
+	#endif
 #endif
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
 	if(dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
