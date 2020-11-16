@@ -1419,11 +1419,12 @@ void HeatPump::get_Chart(int index, char *str)
 #endif
 #ifdef TCONOUT
 	case STATS_OBJ_Overcool:
-		if(Chart_PressTemp_PCON && Chart_Temp_TCONOUT) Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
+		if(Chart_PressTemp_PCON && Chart_Temp_TCONOUT) Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str,&Charts[Chart_Temp_TCONOUT]);
 		break;
 #endif
 	case STATS_OBJ_TCOMP_TCON:
-		if(Chart_Temp_TCOMP && Chart_PressTemp_PCON) Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]);
+		if(Chart_Temp_TCOMP && Chart_PressTemp_PCON) Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]); else // если датчика PCON нет
+		if(Chart_Temp_TCOMP && Chart_Temp_TCONOUT)   Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
 		break;
 	case STATS_OBJ_Delta_GEO:
 		if(Chart_Temp_TEVAING && Chart_Temp_TEVAOUTG) Charts[Chart_Temp_TEVAING].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TEVAOUTG]);

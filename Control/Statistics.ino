@@ -1027,6 +1027,7 @@ void Statistics::History()
 		case STATS_OBJ_Power_GEO:
 			int_to_dec_str(HP.powerGEO, 1, &buf, 0); // W
 			break;
+	   #ifdef WATTROUTER	
 		case STATS_OBJ_WattRouter_Out: {
 			int32_t n = WR_LoadRunStats;
 			WR_LoadRunStats = 0;
@@ -1034,6 +1035,7 @@ void Statistics::History()
 			int_to_dec_str(n, 1, &buf, 0); // W
 			break;
 		}
+		#endif
 		case STATS_OBJ_COP_Full:
 			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C
 			break;

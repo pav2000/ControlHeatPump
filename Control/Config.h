@@ -30,9 +30,9 @@
 //#define CONFIG_2		// sheeny   Воздушный Старт стоп  с шаговым ЭРВ, РТО и датчиком давления испарителя
 //#define CONFIG_3		// dimex    инвертор+ЭРВ + с РТО и датчиком давления испарителя
 //#define CONFIG_4		// dobrinia инвертор+ЭРВ + с РТО и датчиком давления испарителя
-//#define CONFIG_5		// pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
+#define CONFIG_5		// pav2000inv  Инвертор BLDC с шаговым ЭРВ и РТО
 //#define CONFIG_6		// NTC      Частотник PWM, 1 фаза, 4 реле, ЭРВ, NTC
-#define CONFIG_7		// vad7     Частотник Vacon, 3 фазы, ЭРВ, 2 датчика давления, РТО, СК, ВаттРоутер
+//#define CONFIG_7		// vad7     Частотник Vacon, 3 фазы, ЭРВ, 2 датчика давления, РТО, СК, ВаттРоутер
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // =============================================== C O N F I G   1 ===================================================================
@@ -2537,7 +2537,7 @@ const char *noteTemp[] = {"Температура улицы",
      		{ STATS_OBJ_COP_Full, "Full COP" }
     	};
     	const Charts_Const_setup ChartsOnFlySetup[] = {
-    		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+    //		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
     		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON Отключать нельзя используется на странице ЭРВ
     		{ STATS_OBJ_Delta_GEO, "Δ t° геоконтура" }, // TEVAING - TEVAOUTG
     		{ STATS_OBJ_Delta_OUT, "Δ t° выхода" }, // TCONOUTG - TCONING
@@ -2557,7 +2557,7 @@ const char *noteTemp[] = {"Температура улицы",
       	{ STATS_OBJ_Temp, TCONOUTG, nameTemp[TCONOUTG] },
       	{ STATS_OBJ_Temp, TEVAOUT, nameTemp[TEVAOUT] },
 //    	{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
-//		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
 //		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
 //		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
 		{ STATS_OBJ_Flow, FLOWCON, nameFrequency[FLOWCON] },
