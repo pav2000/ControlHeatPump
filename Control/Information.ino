@@ -922,6 +922,12 @@ int32_t Profile::load(int8_t num)
   WR_Refresh = WR_Loads = SaveON.WR_Loads;
 #endif
 
+  if(SaveON.bTIN == 0) { // Первоначальное заполнение
+	  for(uint8_t i = 0; i < TNUMBER; i++) {
+		  if(HP.sTemp[i].get_setup_flags() & ((1<<fTEMP_as_TIN_average) | (1<<fTEMP_as_TIN_min))) SaveON.bTIN |= (1<<i);
+	  }
+  }
+
   return adr;
  }
 

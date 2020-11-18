@@ -1,21 +1,21 @@
-<html>
-<head>
-	<title>Схема. Народный контроллер ТН</title>
-	<meta charset="utf-8" />
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-	table { max-width:950; }
-	td, th { font-size: 1em; border: 0; text-align: left; }
-	</style>
-	<script src='scripts.js'></script>
-	<script>
-		urlupdate = 2000;
-		window.onload = function() {
-			loadParam("hide_tro_ei,hide_sun,get_tblTemp1,get_modeHP");
-			updateParam("get_pFC(cFC),get_pFC(INFO1),get_pEEV(POSpp),get_OverHeat,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TCOMPIN),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_Temp(TBOILER),get_Relay(RPUMPI),get_relayOut,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_Power220,get_fullCOP,get_PowerGEO,get_PowerCO,get_Relay(RBOILER),get_Relay(RSUN),get_Temp(TSUN),get_Temp(TSUNOUTG),get_TrgT,get_oHP(BP)");
-	};
-	</script>	
+<html><head><title>Схема. Народный контроллер ТН</title><meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+table { max-width:950; }
+td, th { font-size: 1em; border: 0; text-align: left; }
+</style>
+<script src='scripts.js'></script>
+<script>
+	urlupdate = 2000;
+	window.onload = function() {
+		loadParam("hide_tro_ei,hide_sun,get_tblTemp1,get_modeHP");
+		updateParam("get_pFC(cFC),get_pFC(INFO1),get_pEEV(POSpp),get_OverHeat,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TCOMPIN),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_Temp(TBOILER),get_Relay(RPUMPI),get_relayOut,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_Power220,get_fullCOP,get_PowerGEO,get_PowerCO,get_Relay(RBOILER),get_Relay(RSUN),get_Temp(TSUN),get_Temp(TSUNOUTG),get_TrgT,get_oHP(BP)");
+};
+function set_bTIN(f,T) {
+	if(confirm((f.checked ? "Включить" : "Выключить") + " регулирование по этому датчику?")) setParam("get_inTemp(" +T+ ")"); else f.checked = !f.checked;
+}
+</script>	
 </head>
 <body class="plan">
 <div id="menu" class="menu"><script src="menu.js"></script></div>

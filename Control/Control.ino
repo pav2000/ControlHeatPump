@@ -1284,7 +1284,7 @@ void vReadSensor(void *)
 				temp = 0;
 				uint8_t cnt = 0;
 				for(i = 0; i < TNUMBER; i++) {
-					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average) && HP.sTemp[i].get_Temp() != STARTTEMP) {
+					if(GETBIT(HP.Prof.SaveON.bTIN, i) && HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_average) && HP.sTemp[i].get_Temp() != STARTTEMP) {
 						temp += HP.sTemp[i].get_Temp();
 						cnt++;
 					}
@@ -1294,7 +1294,7 @@ void vReadSensor(void *)
 			int16_t temp2 = temp;
 			if(GETBIT(flags, fTEMP_as_TIN_min)) { // Выбор минимальной температуры для TIN
 				for(i = 0; i < TNUMBER; i++) {
-					if(HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_min) && temp2 > HP.sTemp[i].get_Temp()) temp2 = HP.sTemp[i].get_Temp();
+					if(GETBIT(HP.Prof.SaveON.bTIN, i) && HP.sTemp[i].get_setup_flag(fTEMP_as_TIN_min) && temp2 > HP.sTemp[i].get_Temp()) temp2 = HP.sTemp[i].get_Temp();
 				}
 			}
 			if(temp2 != STARTTEMP) HP.sTemp[TIN].set_Temp(temp2);

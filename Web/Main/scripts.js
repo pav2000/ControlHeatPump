@@ -453,12 +453,21 @@ function loadParam(paramid, noretry, resultdiv) {
 										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
 											var content = "", loadsens = "", upsens = "";
 											var count = values[1].split(';');
+											var T, TL, tin;
 											for(var j = 0; j < count.length - 1; j++) {
-												var T = count[j];
+												T = count[j];
+												tin = 0;
+												if(T.substring(0,1) == '*') {
+													tin = 1;
+													T = T.substring(1);
+												}
 												loadsens += "get_nTemp(" +T+ "),";
+												if(tin) loadsens += "get_inTemp(" +T+ "),";
 												upsens += "get_fullTemp(" +T+ "),";
-												T = T.toLowerCase();
-												content += '<tr><td nowrap><span id="get_ntemp-' +T+ '"></span>:</td><td id="get_fulltemp-' +T+ '"></td></tr>';
+												TL = T.toLowerCase();
+												content += '<tr><td nowrap><span id="get_ntemp-' +TL+ '"></span>:</td><td id="get_fulltemp-' +TL+ '"></td><td>'
+												if(tin) content += '<input type="checkbox" id="get_intemp-' +TL+ '" onchange="set_bTIN(this,\'' +T+ '\');">';
+												content += '</td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											loadParam(loadsens);

@@ -1488,11 +1488,12 @@ void parserGET(uint8_t thread, int8_t )
 			if(strcmp(str, "TempF") == 0) // get_tblTempF, Возвращает список датчиков через ";"
 			{
 				for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
-			} else if(strncmp(str, "Temp", 4) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
-			{
+			} else if(strncmp(str, "Temp", 4) == 0) {	// get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
+														// При доступности для датчика настройки HP.Prof.SaveON.bTIN - '*' перед именем датчика
 				uint8_t m = atoi(str + 4);
 				for(i = 0; i < TNUMBER; i++)
 					if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
+						if(HP.sTemp[i].get_setup_flags() & ((1<<fTEMP_as_TIN_average) | (1<<fTEMP_as_TIN_min))) strcat(strReturn, "*");
 						strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
 					}
 			} else if(strcmp(str,"Input")==0)     // Функция get_tblInput
@@ -2262,6 +2263,10 @@ x_get_aTemp:
 								if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
+							if(strncmp(str, "inT", 3) == 0) {      // Функция get_inTemp - флаги разрешения использования датчиков для расчета TIN
+								strcat(strReturn, GETBIT(HP.Prof.SaveON.bTIN, p) ? cOne : cZero);
+								ADD_WEBDELIM(strReturn); continue;
+							}
 							if(strncmp(str, "nTemp", 5) == 0)           // Функция get_nTemp, если радиодатчик: добавляется уровень сигнала, если get_nTemp2 - +напряжение батарейки
 							{
 								strcat(strReturn, HP.sTemp[p].get_note());
@@ -2305,6 +2310,11 @@ x_get_aTemp:
 							{ 	if (HP.sTemp[p].set_errTemp(rd(pm, 100))==OK)    // Установить значение в сотых градуса
 									{ _dtoa(strReturn, HP.sTemp[p].get_errTemp(), 2); ADD_WEBDELIM(strReturn); continue; }
 								else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
+							}
+							if(strncmp(str, "inT", 3) == 0) {      // Функция set_inTemp - флаги разрешения использования датчиков для расчета TIN
+								HP.Prof.SaveON.bTIN = (HP.Prof.SaveON.bTIN & ~(1<<p)) | ((pm != 0)<<p);
+								strcat(strReturn, pm != 0 ? cOne : cZero);
+								ADD_WEBDELIM(strReturn); continue;
 							}
 
 							if(strncmp(str, "fTemp", 5) == 0) {   // set_fTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика (flag)
