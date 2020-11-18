@@ -24,8 +24,8 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.108"				// Версия прошивки
-#define VER_SAVE		149					// Версия формата сохраняемых данных в I2C память
+#define VERSION			"1.109"				// Версия прошивки
+#define VER_SAVE		150					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
 #endif
@@ -695,10 +695,11 @@ const char *fc_DT_TEMP_BOILER    = {"DTB"};    			  // Превышение те
 const char *fc_MB_ERR		     = {"MB_ERR"};			  // Ошибок Modbus
 const char *fc_FC_TIME_READ      = {"TR"};				  // Время опроса
 const char *fc_fFC_RetOil	     = {"FRO"};               // Флаг возврат масла
-const char *fc_FC_RETOIL_FREQ	 = {"FRF"};				  // Частота
 const char *fc_ReturnOilPeriod   = {"ROP"};               // Время возварта масла
 const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота при которой возвращается масло
-const char *fc_ReturnOilEEV      = {"ROE"};               // Шаги ЭРВ при котором возвращается масло
+const char *fc_ReturnOilTime     = {"ROT"};
+const char *fc_ReturnOilFreq     = {"ROF"};
+
 const char *fc_AdjustEEV_k       = {"EEVK"};
 const char *fc_PidMaxStep        = {"PMS"};
 

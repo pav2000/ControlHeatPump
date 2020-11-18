@@ -233,6 +233,8 @@ public:
   uint16_t nominal_power;							// Номинальная мощность двигателя Вт
 
  private:
+  void		Adjust_EEV(int16_t new_freq);
+
   int8_t   err;										// ошибка частотника (работа) при ошибке останов ТН
   uint16_t numErr;									// число ошибок чтение по модбасу
   uint8_t  number_err;								// Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
@@ -280,18 +282,18 @@ public:
 	  uint16_t setup_flags;             // флаги настройки - см. define FC_SAVED_FLAGS
 	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
 	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
-	  int16_t ReturnOilEEV;				// Изменения позиции ЭРВ
+	  uint16_t ReturnOilTime;			// Время возврата, в периодах опроса инвертора (FC_TIME_READ)
 	  int16_t maxFreqGen;				// Максимальная скорость инвертора при работе от генератора в 0.01 %
 	  int16_t AdjustEEV_k;				// Подстройки ЭРВ при изменении оборотов, множитель, сотые шага
 	  uint16_t PidMaxStep;				// Максимальный шаг изменения частоты инвертора у PID регулятора, сотые
+	  uint16_t ReturnOilFreq;			// Частота меньше которой должен происходить возврат масла, в сотых Гц
 #ifdef FC_ANALOG_CONTROL
 	  int16_t  level0;                  // Отсчеты ЦАП соответсвующие 0   скорость
 	  int16_t  level100;                // Отсчеты ЦАП соответсвующие максимальной скорости
 #endif
    } _data;  // Структура для сохранения настроек
    uint16_t flags;  					// рабочие флаги
-   int16_t ReturnOilTimer;
-  // Функции работы с Modbus
+   int16_t	ReturnOilTimer;
  };
 
 #endif
