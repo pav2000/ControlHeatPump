@@ -1165,7 +1165,7 @@ void vWeb0(void *)
 #endif   // MQTT
 
 #ifdef WEATHER_FORECAST
-			if(rtcSAM3X8.get_days() != WF_Day) {
+			if(active && rtcSAM3X8.get_days() != WF_Day) {
 				WF_BoilerTargetPercent = 100;
 				if(rtcSAM3X8.get_hours() == WR.WF_Hour && strlen(HP.Option.WF_ReqServer)) {
 					if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
@@ -1175,16 +1175,20 @@ void vWeb0(void *)
 					} else if(WF_ProcessForecast(Socket[MAIN_WEB_TASK].outBuf) == OK) {
 						WF_Day = rtcSAM3X8.get_days();
 					}
+					active = false;
 				}
 			}
 #endif
 #ifdef HTTP_MAP_RELAY_MAX
-			if(xTaskGetTickCount() - daily_http_time > 600000UL) { // дискретность 10 минут
-				daily_http_time = xTaskGetTickCount();
+			uint32_t t = rtcSAM3X8.unixtime();
+			if(t - daily_http_time > 600UL) { // дискретность 10 минут
+				daily_http_time = t;
+				daily_http_time -= daily_http_time % 600;
 				uint32_t tt = rtcSAM3X8.get_hours() * 100 + rtcSAM3X8.get_minutes();
 				for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
 					if(HP.Prof.DailySwitch[i].Device == 0) break;
 					if(HP.Prof.DailySwitch[i].Device < RNUMBER) continue;
+					if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
 					uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
 					uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
 					strcpy(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_RELAY_SW_1);
