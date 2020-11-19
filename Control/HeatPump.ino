@@ -1751,7 +1751,10 @@ if(b && (get_modWork() & pBOILER)){
 
 	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
-		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
+		for(uint16_t i = 0; i < DELAY_BEFORE_STOP_IN_PUMP; i++) {
+			_delay(1000); // задержка перед выключение гео насоса после выключения компрессора (облегчение останова)
+			if(is_next_command_stop()) break;
+		}
 	}
 	
 	dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
@@ -1762,7 +1765,10 @@ if(b && (get_modWork() & pBOILER)){
 #endif
 	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");
-		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
+		for(uint16_t i = 0; i < Option.delayOffPump; i++) {
+			_delay(1000); // задержка перед выключение насосов после выключения компрессора (облегчение останова)
+			if(is_next_command_stop()) break;
+		}
 	} else {
 		_delay(d);                                // Задержка на d мсек
 	}

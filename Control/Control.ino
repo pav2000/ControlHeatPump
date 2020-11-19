@@ -1180,25 +1180,27 @@ void vWeb0(void *)
 			}
 #endif
 #ifdef HTTP_MAP_RELAY_MAX
-			uint32_t t = rtcSAM3X8.unixtime();
-			if(t - daily_http_time > 600UL) { // дискретность 10 минут
-				daily_http_time = t;
-				daily_http_time -= daily_http_time % 600;
-				uint32_t tt = rtcSAM3X8.get_hours() * 100 + rtcSAM3X8.get_minutes();
-				for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
-					if(HP.Prof.DailySwitch[i].Device == 0) break;
-					if(HP.Prof.DailySwitch[i].Device < RNUMBER) continue;
-					if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
-					uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
-					uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
-					strcpy(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_RELAY_SW_1);
-					_itoa(HP.Prof.DailySwitch[i].Device - RNUMBER+1, Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1);
-					strcat(Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1, HTTP_MAP_RELAY_SW_2);
-					_itoa(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power && !GETBIT(HP.Option.flags, fBackupPower),
-							Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1 + sizeof(HTTP_MAP_RELAY_SW_2)-1);
-					if(Send_HTTP_Request(HTTP_MAP_Server, Socket[MAIN_WEB_TASK].outBuf, 3) == 1) { // Ok?
-					} else {
-						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("Error set relay HTTP-%d relay!\n", HP.Prof.DailySwitch[i].Device - RNUMBER+1);
+			if(HP.IsWorkingNow()) {
+				uint32_t t = rtcSAM3X8.unixtime();
+				if(t - daily_http_time > 600UL) { // дискретность 10 минут
+					daily_http_time = t;
+					daily_http_time -= daily_http_time % 600;
+					uint32_t tt = rtcSAM3X8.get_hours() * 100 + rtcSAM3X8.get_minutes();
+					for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
+						if(HP.Prof.DailySwitch[i].Device == 0) break;
+						if(HP.Prof.DailySwitch[i].Device < RNUMBER) continue;
+						if(!active) WEB_SERVER_MAIN_TASK();	/////////////////////////////////////// Выполнить задачу веб сервера
+						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
+						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
+						strcpy(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_RELAY_SW_1);
+						_itoa(HP.Prof.DailySwitch[i].Device - RNUMBER+1, Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1);
+						strcat(Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1, HTTP_MAP_RELAY_SW_2);
+						_itoa(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power && !GETBIT(HP.Option.flags, fBackupPower),
+								Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1 + sizeof(HTTP_MAP_RELAY_SW_2)-1);
+						if(Send_HTTP_Request(HTTP_MAP_Server, Socket[MAIN_WEB_TASK].outBuf, 3) == 1) { // Ok?
+						} else {
+							if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("Error set relay HTTP-%d relay!\n", HP.Prof.DailySwitch[i].Device - RNUMBER+1);
+						}
 					}
 				}
 			}
