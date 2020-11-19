@@ -144,7 +144,7 @@ struct type_boilerHP {
 #define fUseSun      3				  // флаг использования солнечного коллектора
 
 struct type_DailySwitch {
-	uint8_t Device;					// Реле; 0 - нет и конец массива
+	uint8_t Device;					// Реле, если >=RNUMBER, то дистанционные реле; 0 - нет и конец массива
 	uint8_t TimeOn;					// Время включения hh:m0
 	uint8_t TimeOff;				// Время выключения hh:m0
 } __attribute__((packed));

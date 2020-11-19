@@ -1001,7 +1001,7 @@ boolean Profile::set_paramProfile(char *var, char *c)
 		var += sizeof(prof_DailySwitch)-1;
 		uint32_t i = *(var + 1) - '0';
 		if(i >= DAILY_SWITCH_MAX) return false;
-		if(*var == prof_DailySwitchDevice) {
+		if(*var == prof_DailySwitchDevice) { // set_DSDn
 			DailySwitch[i].Device = x;
 		} else {
 			uint32_t h = x / 10;
@@ -1009,9 +1009,9 @@ boolean Profile::set_paramProfile(char *var, char *c)
 			uint32_t m = x % 10;
 			if(m > 5) m = 5;
 			x = h * 10 + m;
-			if(*var == prof_DailySwitchOn) {
+			if(*var == prof_DailySwitchOn) { // set_DSSn
 				DailySwitch[i].TimeOn = x;
-			} else if(*var == prof_DailySwitchOff) {
+			} else if(*var == prof_DailySwitchOff) { // set_DSEn
 				DailySwitch[i].TimeOff = x;
 			}
 		}

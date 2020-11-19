@@ -715,6 +715,9 @@ void vWeb0(void *)
 #ifdef WEATHER_FORECAST
 	static uint8_t WF_Day = 0;
 #endif
+#ifdef HTTP_MAP_RELAY_MAX
+	static uint32_t daily_http_time = 0;
+#endif
 #ifdef WATTROUTER
 	memset(WR_LoadRun, 0, sizeof(WR_LoadRun));
 	memset(WR_SwitchTime, 0, sizeof(WR_SwitchTime));
@@ -1171,6 +1174,27 @@ void vWeb0(void *)
 						if((HP.get_NetworkFlags() & (1<<fWebFullLog)) || rtcSAM3X8.get_minutes() == 59) journal.jprintf_time("WF: Request Error %d\n", err);
 					} else if(WF_ProcessForecast(Socket[MAIN_WEB_TASK].outBuf) == OK) {
 						WF_Day = rtcSAM3X8.get_days();
+					}
+				}
+			}
+#endif
+#ifdef HTTP_MAP_RELAY_MAX
+			if(xTaskGetTickCount() - daily_http_time > 600000UL) { // дискретность 10 минут
+				daily_http_time = xTaskGetTickCount();
+				uint32_t tt = rtcSAM3X8.get_hours() * 100 + rtcSAM3X8.get_minutes();
+				for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
+					if(HP.Prof.DailySwitch[i].Device == 0) break;
+					if(HP.Prof.DailySwitch[i].Device < RNUMBER) continue;
+					uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
+					uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
+					strcpy(Socket[MAIN_WEB_TASK].outBuf, HTTP_MAP_RELAY_SW_1);
+					_itoa(HP.Prof.DailySwitch[i].Device - RNUMBER+1, Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1);
+					strcat(Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1, HTTP_MAP_RELAY_SW_2);
+					_itoa(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end))) && !HP.NO_Power && !GETBIT(HP.Option.flags, fBackupPower),
+							Socket[MAIN_WEB_TASK].outBuf + sizeof(HTTP_MAP_RELAY_SW_1)-1 + sizeof(HTTP_MAP_RELAY_SW_2)-1);
+					if(Send_HTTP_Request(HTTP_MAP_Server, Socket[MAIN_WEB_TASK].outBuf, 3) == 1) { // Ok?
+					} else {
+						if(HP.get_NetworkFlags() & (1<<fWebLogError)) journal.jprintf("Error set relay HTTP-%d relay!\n", HP.Prof.DailySwitch[i].Device - RNUMBER+1);
 					}
 				}
 			}
@@ -1867,6 +1891,7 @@ void vServiceHP(void *)
 					uint32_t tt = rtcSAM3X8.get_hours() * 100 + m;
 					for(uint8_t i = 0; i < DAILY_SWITCH_MAX; i++) {
 						if(HP.Prof.DailySwitch[i].Device == 0) break;
+						if(HP.Prof.DailySwitch[i].Device >= RNUMBER) continue;
 						uint32_t st = HP.Prof.DailySwitch[i].TimeOn * 10;
 						uint32_t end = HP.Prof.DailySwitch[i].TimeOff * 10;
 						HP.dRelay[HP.Prof.DailySwitch[i].Device].set_Relay(((end >= st && tt >= st && tt <= end) || (end < st && (tt >= st || tt <= end)))

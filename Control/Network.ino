@@ -685,7 +685,7 @@ int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_valu
 				ret = -2000000011;
 			} else {
 				ret = -2000000001;
-				int timeout = HTTP_REQ_TIMEOUT / 20;
+				int timeout = HTTP_REQ_TIMEOUT / 10;
 				while(timeout-- > 0) { // ожидание ответа
 					SemaphoreGive(xWebThreadSemaphore);
 					_delay(20);
@@ -788,6 +788,9 @@ xget_value_1:
 		journal.jprintf_time("Error %d send request to %s!", ret + 2000000000, server);
 		switch (ret)
 		{
+		case -2000000001:
+			journal.jprintf(" Response timeout");
+			break;
 		case -2000000002:
 			journal.jprintf(" Address wrong");
 			break;

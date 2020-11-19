@@ -610,9 +610,16 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			if(strcmp(str,"DSR")==0) {    // Функция get_listDSR
 				strcat(strReturn, "---;");
-				for(i = RCOMP + 1; i < RNUMBER; i++) if(HP.dRelay[i].get_present()) {
+				for(i = RCOMP + 1; i < RNUMBER; i++) {
 					strcat(strReturn, HP.dRelay[i].get_name()); strcat(strReturn,";");
 				}
+#ifdef HTTP_MAP_RELAY_MAX
+				for(i = 1; i <= HTTP_MAP_RELAY_MAX; i++) {
+					strcat(strReturn, "HTTP-");
+					_itoa(i, strReturn);
+					strcat(strReturn,";");
+				}
+#endif
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
@@ -1516,8 +1523,13 @@ void parserGET(uint8_t thread, int8_t )
 						strcat(strReturn, "---;;00:00;00:00|");
 						break;
 					}
-					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
+					if(HP.Prof.DailySwitch[i].Device >= RNUMBER) {
+						strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "HTTP-%d;Дистанционное реле %d;%02d:%d0;%02d:%d0|", HP.Prof.DailySwitch[i].Device - RNUMBER+1, HP.Prof.DailySwitch[i].Device - RNUMBER+1,
+													HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
+					} else {
+						strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
 							HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
+					}
 				}
 #ifdef CORRECT_POWER220
 			} else if(strcmp(str,"PwrC")==0) {    // Функция get_tblPwrC
