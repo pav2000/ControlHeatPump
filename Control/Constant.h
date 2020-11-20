@@ -700,6 +700,7 @@ const char *fc_fFC_RetOil	     = {"FRO"};               // Флаг возвра
 const char *fc_ReturnOilPeriod   = {"ROP"};               // Время возварта масла
 const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота при которой возвращается масло
 const char *fc_ReturnOilTime     = {"ROT"};
+const char *fc_ReturnOilMinFreq  = {"ROM"};
 const char *fc_ReturnOilFreq     = {"ROF"};
 
 const char *fc_AdjustEEV_k       = {"EEVK"};

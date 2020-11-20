@@ -287,7 +287,7 @@ public:
 	void   CorrectOverheatInit(void);						 // Перед стартом компрессора
 
 	// Движение ЭРВ
-	__attribute__((always_inline)) inline int16_t get_EEV() {return  EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя ЭРВ двигатель может двигаться
+	__attribute__((always_inline)) inline int16_t get_EEV() {return EEV;} // Прочитать МГНОВЕННУЮ!! позицию шагового двигателя в шагах, ЭРВ двигатель может двигаться
 	inline int16_t calc_pos(int16_t percent) { return (int32_t)_data.maxSteps * percent / 10000; } // пересчитать % -> шаги, сотые
 	inline int16_t calc_percent(int16_t pos) { return (int32_t) pos * 10000 / _data.maxSteps; } // пересчитать % -> шаги, сотые
 	int8_t  set_EEV(int16_t x);                             // Перейти на позицию абсолютную  возвращает код ошибки
@@ -339,7 +339,7 @@ public:
 
 	StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
 	boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
-	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
+	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция, шаги
 	int16_t OverheatTCOMP;								// перегрев TCOMPIN-T[PEVA]
 	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
 

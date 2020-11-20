@@ -7,7 +7,7 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG),get_pFC(EEVK),get_pFC(PMS)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG),get_pFC(EEVK),get_pFC(PMS),get_pFC(ROM)");
 		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(ROT),get_pFC(ROF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(PIN),get_pFC(L0),get_pFC(L100)");
 		};
 	</script>
@@ -63,7 +63,8 @@
 
     <tr><td><b>Возврат масла</b></td><td></td></tr>
     <tr><td>Периодический возврат масла с корректировкой ЭРВ</td><td><input type="checkbox" id="get_pfc-fro" onchange="setParam('get_pFC(FRO)');"></td></tr>
-    <tr><td>Частота ниже которой будет происходить возврат масла, Гц</td><td><input type="number" id="get_pfc-rof" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(ROF)');"></td></tr>
+    <tr><td>Частота ниже которой будет происходить возврат масла, Гц</td><td><input type="number" id="get_pfc-rom" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(ROM)');"></td></tr>
+    <tr><td>Установка инвертора для возврата масла</td><td><input type="number" id="get_pfc-rof" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(ROF)');"></td></tr>
     <tr><td>Период возврата, кратно времени опроса инвертора (сек.)</td><td><input type="number" id="get_pfc-rop"> <input type="submit" value=">" onclick="setParam('get_pFC(ROP)');"></td></tr>
     <tr><td>Уменьшение периода на каждый 1 Гц меньше базовой частоты (сек.)</td><td><input type="number" id="get_pfc-roph"> <input type="submit" value=">" onclick="setParam('get_pFC(ROPH)');"></td></tr>
     <tr><td>Время возврата масла, кратно времени опроса инвертора (сек.)</td><td><input type="number" id="get_pfc-rot"> <input type="submit" value=">" onclick="setParam('get_pFC(ROT)');"></td></tr>

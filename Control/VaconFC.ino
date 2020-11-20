@@ -55,8 +55,9 @@ int8_t devVaconFC::initFC()
 	_data.dtTemp = DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 	_data.dtTempBoiler = DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 	_data.PidMaxStep = 500;
-	_data.ReturnOilFreq = FC_RETOIL_FREQ;
-	_data.ReturnOilPeriod = 600000 / FC_TIME_READ;
+	_data.ReturnOilMinFreq = FC_RETOIL_FREQ;
+	_data.ReturnOilFreq = 3000; // %
+	_data.ReturnOilPeriod = 1800000 / FC_TIME_READ;
 	_data.ReturnOilPerDivHz = 48000 / FC_TIME_READ;
 	_data.ReturnOilTime = FC_RETOIL_TIME;
 
@@ -214,11 +215,11 @@ int8_t devVaconFC::get_readState()
 #ifdef FC_RETOIL_FREQ
 		if(GETBIT(flags, fOnOff) && GETBIT(_data.setup_flags, fFC_RetOil) && err == OK) {
 			if(!GETBIT(flags, fFC_RetOilSt)) {
-				if(FC_curr_freq < _data.ReturnOilFreq && (FC_curr_freq < _data.maxFreqGen || !GETBIT(HP.Option.flags, fBackupPower))) {
-					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (_data.ReturnOilFreq - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
+				if(FC_curr_freq < _data.ReturnOilMinFreq && (FC_curr_freq < _data.maxFreqGen || !GETBIT(HP.Option.flags, fBackupPower))) {
+					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (_data.ReturnOilMinFreq - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
 						Adjust_EEV(_data.startFreq);
-						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.startFreq);
+						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.ReturnOilFreq);
 						ReturnOilTimer = 0;
 					}
 				} else ReturnOilTimer = 0;
@@ -565,6 +566,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_fFC_RetOil)==0)   			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fFC_RetOil) ? cOne : cZero)); } else
     if(strcmp(var,fc_ReturnOilPeriod)==0)       {  _itoa(_data.ReturnOilPeriod * (FC_TIME_READ/1000), ret); } else
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     {  _itoa(_data.ReturnOilPerDivHz * (FC_TIME_READ/1000), ret); } else
+    if(strcmp(var,fc_ReturnOilMinFreq)==0)      {  _dtoa(ret, _data.ReturnOilMinFreq, 2); } else
     if(strcmp(var,fc_ReturnOilFreq)==0)         {  _dtoa(ret, _data.ReturnOilFreq, 2); } else
     if(strcmp(var,fc_ReturnOilTime)==0)         {  _itoa(_data.ReturnOilTime * (FC_TIME_READ/1000), ret); } else
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
@@ -653,7 +655,8 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if(x>=0 && x<=_data.PidMaxStep){ _data.PidFreqStep=x; return true; } } else // %
 		if(strcmp(var,fc_STEP_FREQ)==0)             { if(x>=0 && x<10000){_data.stepFreq=x;return true; } } else // %
 		if(strcmp(var,fc_PidMaxStep)==0)            { if(x>=0 && x<10000){_data.PidMaxStep=x; return true; } } else // %
-		if(strcmp(var,fc_ReturnOilFreq)==0)         { if(x>=0 && x<=20000){ _data.ReturnOilFreq = x; return true; } } else
+		if(strcmp(var,fc_ReturnOilMinFreq)==0)      { _data.ReturnOilMinFreq = x; return true; } else
+		if(strcmp(var,fc_ReturnOilFreq)==0)         { _data.ReturnOilFreq = x; return true; } else
 		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if(x>=0 && x<10000){_data.stepFreqBoiler=x;return true; } } // %
  
     return false;

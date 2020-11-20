@@ -701,6 +701,30 @@ void get_txtSettings(uint8_t thread)
 
 }
 
+// Передать полный дамп EEPROM
+bool get_binEeprom(uint8_t thread)
+{
+    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
+    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
+    strcat(Socket[thread].outBuf, "settings_eeprom.bin\"\r\n\r\n");
+    uint16_t len = strlen(Socket[thread].outBuf);
+    if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, len, 0) != len) return 0;
+    uint32_t ptr = 0;
+    do {
+    	len = I2C_MEMORY_TOTAL * 1024 / 8 - ptr >= sizeof(Socket[thread].outBuf) ? sizeof(Socket[thread].outBuf) : I2C_MEMORY_TOTAL * 1024 / 8 - ptr;
+    	if(readEEPROM_I2C(ptr, (byte*)Socket[thread].outBuf, len)) {
+    		journal.jprintf("Error read EEPROM at 0x%X\n", ptr);
+    		return false;
+    	}
+    	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) {
+    		journal.jprintf("Error send file from 0x%X\n", ptr);
+    		return false;
+    	}
+    	ptr += len;
+    } while(len == sizeof(Socket[thread].outBuf));
+    return true;
+}
+
 // Записать в клиента бинарный файл настроек
 bool get_binSettings(uint8_t thread)
 {

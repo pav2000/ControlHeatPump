@@ -264,12 +264,20 @@ void readFileSD(char *filename, uint8_t thread)
 	}
 
 	// В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
-	if(strcmp(filename, "state.txt") == 0) { get_txtState(thread, true); return; }
+	if(strcmp(filename, "state.txt") == 0) {
+		get_txtState(thread, true);
+		return;
+	}
 	if(strncmp(filename, "settings", 8) == 0) {
 		filename += 8;
-		if(strcmp(filename, ".txt") == 0) {	get_txtSettings(thread); return; }
-		else if(strcmp(filename, ".bin") == 0) {
+		if(strcmp(filename, ".txt") == 0) {
+			get_txtSettings(thread);
+			return;
+		} else if(strcmp(filename, ".bin") == 0) {
 			if(!get_binSettings(thread)) journal.jprintf("Error download %s%s\n", "settings", filename);
+			return;
+		} else if(strcmp(filename, "_eeprom.bin") == 0) {
+			get_binEeprom(thread);
 			return;
 		}
 		filename -= 8;
