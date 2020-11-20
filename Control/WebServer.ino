@@ -2898,6 +2898,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	ptr += sizeof(emptyStr) - 1;
 	nameFile = strstr(Socket[thread].inPtr, Title);
 	pStart = (byte*) strstr(Socket[thread].inPtr, http_Length);
+	if(pStart) pStart += sizeof(http_Length) - 1;
 	if(nameFile) {
 		char *p = strchr(nameFile += sizeof(Title) - 1, '\r');
 		if(p) *p = '\0'; else nameFile = NULL;
@@ -2911,16 +2912,12 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		journal.jprintf("Upload: %s name length > %d bytes!\n", nameFile, MAX_FILE_LEN - 1);
 		return pLOAD_ERR;
 	}
-	if(pStart) {
-		char *p = strchr((char*)(pStart += sizeof(http_Length) - 1), '\r');
-		if(p) *p = '\0'; else pStart = NULL;
-	}
 	if(!pStart) { // Размер файла не найден, запрос не верен, выходим
 xLenErr:
 		journal.jprintf("Upload: %s - length not found!\n", nameFile);
 		return pLOAD_ERR;
 	}
-	lenFile = atoi((char*) pStart);	// получить длину
+	lenFile = strtol((char*) pStart, NULL, 10);	// получить длину
 	// все нашлось, можно обрабатывать
 	buf_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
@@ -2929,10 +2926,16 @@ xLenErr:
 		WEB_STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
-		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
+xContinueSearchHeader:
+		pStart = (byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
 		if(pStart == NULL) {              // Заголовок не найден
+			if((len = Socket[thread].client.available())) {
+				if(len > W5200_MAX_LEN) len = W5200_MAX_LEN;
+				Socket[thread].client.read(ptr = (uint8_t*)Socket[thread].inBuf, len);            // прочитать буфер
+				goto xContinueSearchHeader;
+			}
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
-			if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("%s\n\n", ptr);
+			if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("[Avail:%d] %s\n\n", Socket[thread].client.available(), ptr);
 			return pSETTINGS_ERR;
 		}
 		len=pStart+sizeof(HEADER_BIN)-1 - (byte*) Socket[thread].inBuf;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные

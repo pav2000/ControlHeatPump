@@ -3384,16 +3384,27 @@ void HeatPump::compressorOFF()
 	checkEVI();                                                     // выключить ЭВИ
 #endif
 
+#if defined(EEV_DEF) && defined(EEV_CLOSE_IMMEDIATELY)
+	if(dEEV.get_EevClose())                                 // Hазбираемся с ЭРВ
+	{
+		//journal.jprintf(" Pause before closing EEV %d sec . . .\n", dEEV.get_delayOff());
+		_delay(dEEV.get_delayOff() * 1000);                              // пауза перед закрытием ЭРВ
+		dEEV.set_EEV(EEV_CLOSE_STEP);                                    // Если нужно, то закрыть ЭРВ
+		journal.jprintf(" EEV closed\n");
+	}
+#endif
+
 	PUMPS_OFF;                                                          // выключить насосы + задержка
 
 	onBoiler = false;
 	offBoiler = rtcSAM3X8.unixtime();
 
-#ifdef EEV_DEF
+
+#if defined(EEV_DEF) && !defined(EEV_CLOSE_IMMEDIATELY)
 	if(dEEV.get_EevClose())                                 // Hазбираемся с ЭРВ
 	{
 		journal.jprintf(" Pause before closing EEV %d sec . . .\n", dEEV.get_delayOff());
-		_delay(dEEV.get_delayOff() * 1000);                                // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
+		_delay(dEEV.get_delayOff() * 1000);                              // пауза перед закрытием ЭРВ
 		dEEV.set_EEV(EEV_CLOSE_STEP);                                    // Если нужно, то закрыть ЭРВ
 		journal.jprintf(" EEV closed\n");
 	}
