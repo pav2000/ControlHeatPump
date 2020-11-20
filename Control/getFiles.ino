@@ -768,7 +768,7 @@ bool get_binSettings(uint8_t thread)
 	
     // 4. Расписание
 	if((len = HP.Schdlr.load((byte*) Socket[thread].outBuf)) <= 0) {
-		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SCHEDULER_EEPROM);
+		journal.jprintf("Error read scheduler from EEPROM\n");
 		return 0;
 	}
 	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) return 0; // передать пакет, при ошибке выйти

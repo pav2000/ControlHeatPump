@@ -919,7 +919,8 @@ int32_t Profile::load(int8_t num)
   #endif
 
 #ifdef WATTROUTER
-  WR_Refresh = WR_Loads = SaveON.WR_Loads;
+  WR_Loads = SaveON.WR_Loads;
+  if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = WR_Loads;
 #endif
 
   if(SaveON.bTIN == 0) { // Первоначальное заполнение

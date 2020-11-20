@@ -218,14 +218,14 @@ int8_t devVaconFC::get_readState()
 				if(FC_curr_freq < _data.ReturnOilMinFreq && (FC_curr_freq < _data.maxFreqGen || !GETBIT(HP.Option.flags, fBackupPower))) {
 					if(++ReturnOilTimer >= _data.ReturnOilPeriod - (_data.ReturnOilMinFreq - FC_curr_freq) * _data.ReturnOilPerDivHz / 100) {
 						flags |= 1 << fFC_RetOilSt;
-						Adjust_EEV(_data.startFreq);
+						Adjust_EEV(_data.ReturnOilFreq - FC_target);
 						err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.ReturnOilFreq);
 						ReturnOilTimer = 0;
 					}
 				} else ReturnOilTimer = 0;
 			} else {
 				if(++ReturnOilTimer >= _data.ReturnOilTime) {
-					Adjust_EEV(FC_target);
+					Adjust_EEV(FC_target - _data.ReturnOilFreq);
 					err = write_0x06_16((uint16_t) FC_SET_SPEED, FC_target);
 					flags &= ~(1 << fFC_RetOilSt);
 					ReturnOilTimer = 0;
@@ -242,11 +242,11 @@ int8_t devVaconFC::get_readState()
 	return err;
 }
 
-void devVaconFC::Adjust_EEV(int16_t new_freq)
+void devVaconFC::Adjust_EEV(int16_t delta_freq)
 {
 #ifdef EEV_DEF
 	if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
-		int16_t n = HP.dEEV.get_EEV() + (new_freq - FC_target) * _data.AdjustEEV_k / 10000L;
+		int16_t n = HP.dEEV.get_EEV() + delta_freq * _data.AdjustEEV_k / 10000L;
 		if(n < HP.dEEV.get_minEEV()) n = HP.dEEV.get_minEEV(); else if(n > HP.dEEV.get_maxEEV()) n = HP.dEEV.get_maxEEV();
 		if(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm)) {
 			HP.dEEV.pidw.max = 1 + (abs(n - HP.dEEV.get_EEV()) > 5 ? 1 : 0); // пропустить итераций
@@ -291,7 +291,7 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 		err = write_0x06_16((uint16_t)FC_SET_SPEED, x);
 	}
 	if(err == OK) {
-		Adjust_EEV(x);
+		Adjust_EEV(x - FC_target);
 		FC_target = x;
 		if(show) journal.jprintf(" Set %s[%s]: %.2d%%\n", name, (char *)codeRet[HP.get_ret()], FC_target);
 	} else {  // генерация ошибки
@@ -299,7 +299,7 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 		set_Error(err, name);
 	}
 #else // Аналоговое управление
-	Adjust_EEV(x);
+	Adjust_EEV(x - FC_target);
 	FC_target = x;
 #ifdef FC_ANALOG_OFF_SET_0
 	if(!GETBIT(flags, fOnOff)) return err;
@@ -634,7 +634,7 @@ boolean devVaconFC::set_paramFC(char *var, float f)
     if(strcmp(var,fc_ReturnOilPerDivHz)==0)     { _data.ReturnOilPerDivHz = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_ReturnOilTime)==0)         { _data.ReturnOilTime = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>=0)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else
-	if(strcmp(var,fc_AdjustEEV_k)==0)           { _data.AdjustEEV_k = f * HP.dEEV.get_maxEEV(); return true; } else
+	if(strcmp(var,fc_AdjustEEV_k)==0)           { _data.AdjustEEV_k = f * HP.dEEV.get_maxEEV() + 0.5f; return true; } else
    
 	x = rd(f, 100);
     	if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if(x>=0 && x<2500){_data.dtCompTemp=x;return true; } else return false; } else // градусы

@@ -274,7 +274,7 @@ void readFileSD(char *filename, uint8_t thread)
 			get_txtSettings(thread);
 			return;
 		} else if(strcmp(filename, ".bin") == 0) {
-			if(!get_binSettings(thread)) journal.jprintf("Error download %s%s\n", "settings", filename);
+			get_binSettings(thread);
 			return;
 		} else if(strcmp(filename, "_eeprom.bin") == 0) {
 			get_binEeprom(thread);
