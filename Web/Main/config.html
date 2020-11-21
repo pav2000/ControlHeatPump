@@ -119,6 +119,14 @@
 			<td><b>Времена и задержки</b></td><td></td>
 		</tr>
 		<tr>
+			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
+			<td nowrap><input type="number" id="get_ohp-dlsr"> <input type="submit" value=">" onclick="setParam('get_oHP(DLSR)');"></td>
+		</tr>	
+		<tr>
+			<td>Задержка перед повторным включением ТН при ошибке (попытке пуска) (сек.) [0...6000]</td>
+			<td nowrap><input type="number" id="get_ohp-dlrs"> <input type="submit" value=">" onclick="setParam('get_oHP(DLRS)');"></td>
+		</tr>	
+		<tr>
 			<td>Минимальный простой компрессора перед включением (мин.) [0..999]</td>
 			<td nowrap><input id="get_ohp-pause" type="number" min="0" max="999" step="1"> <input type="submit" value=">" onclick="setParam('get_oHP(PAUSE)');"></td>
 		</tr>						
@@ -131,20 +139,12 @@
 			<td nowrap><input type="number" id="get_ohp-dlonp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLONP)');"></td>
 		</tr>	
 		<tr>
-			<td>Задержка выключения насоса отопления после выключения компрессора (сек.) [0...900]</td>
-			<td nowrap><input type="number" id="get_ohp-dlofp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLOFP)');"></td>
-		</tr>	
-		<tr>
-			<td>Задержка включения ТН после внезапного сброса контроллера (сек.) [0...6000]</td>
-			<td nowrap><input type="number" id="get_ohp-dlsr"> <input type="submit" value=">" onclick="setParam('get_oHP(DLSR)');"></td>
-		</tr>	
-		<tr>
-			<td>Задержка перед повторным включением ТН при ошибке (попытке пуска) (сек.) [0...6000]</td>
-			<td nowrap><input type="number" id="get_ohp-dlrs"> <input type="submit" value=">" onclick="setParam('get_oHP(DLRS)');"></td>
-		</tr>	
-		<tr>
 			<td>Задержка между переключением реверсивного клапана и включением компрессора (сек.) [0...600]</td>
 			<td nowrap><input type="number" id="get_ohp-dltrv"> <input type="submit" value=">" onclick="setParam('get_oHP(DLTRV)');"></td>
+		</tr>	
+		<tr>
+			<td>Задержка выключения насоса отопления после выключения компрессора (сек.) [0...900]</td>
+			<td nowrap><input type="number" id="get_ohp-dlofp"> <input type="submit" value=">" onclick="setParam('get_oHP(DLOFP)');"></td>
 		</tr>	
 		<tr>
 			<td>Пауза после переключения ГВС (сек.) [0...1200]</td>
