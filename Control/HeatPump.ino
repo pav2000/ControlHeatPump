@@ -3158,7 +3158,6 @@ boolean HeatPump::check_compressor_pause()
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена
 // Вход режим работы ТН
 // Возможно компрессор уже включен и происходит только смена режима
-const char *EEV_go={" EEV go "};  // экономим место
 void HeatPump::compressorON()
 {
 	if(get_State() == pOFF_HP || get_State() == pSTOPING_HP || error) return;  // ТН выключен или выключается выходим ничего не делаем!!!
@@ -3193,16 +3192,38 @@ xNextStop:
 		return;
 	}
 
+	// 1. Обеспечение минимальной паузы компрессора
 #ifdef EEV_DEF
 	if(lastEEV != -1) {         // Не первое включение компрессора после старта ТН
-		// 1. Обеспечение минимальной паузы компрессора
 		if(compressor_in_pause) return;
 #ifdef DEBUG_MODWORK
 		journal.jprintf_time("compressorON > modWork:%X[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 #endif
 	}//get_fEEVStartPosByTemp()
-	// 2. Разбираемся с ЭРВ
-	journal.jprintf(EEV_go);
+
+	// 2. Задержка перед включением компрессора
+	#ifdef DEFROST
+	if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
+	{
+	#endif
+#ifdef DEBUG_MODWORK
+	journal.jprintf_time("Pause %d s before start compressor\n", Option.delayOnPump);
+#endif
+	uint16_t d = Option.delayOnPump;
+#ifdef FLOW_CONTROL
+	//for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
+	if(Option.delayOnPump < BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1) d = BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1;
+#endif
+	for(; d > 0; d--) { // задержка перед включением компрессора
+		_delay(1000);
+		if(error || is_next_command_stop()) return; // прерваться по ошибке или по команде
+	}
+	#ifdef DEFROST
+	}  // if(!(mod & pDEFROST))
+	#endif
+
+	// 3. Установка ЭРВ
+	journal.jprintf(" EEV go ");
 	if(dEEV.get_LightStart()) { // Выйти на пусковую позицию
 		dEEV.set_EEV(dEEV.get_preStartPos());
 #ifdef EEV_PREFER_PERCENT
@@ -3213,9 +3234,9 @@ xNextStop:
 	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
 		dEEV.set_EEV(dEEV.get_StartPos());
 #ifdef EEV_PREFER_PERCENT
-		journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+		journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_StartPos()));
 #else
-		journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
+		journal.jprintf("StartPos: %d\n", dEEV.get_StartPos());
 #endif
 
 	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
@@ -3226,15 +3247,14 @@ xNextStop:
 		journal.jprintf("lastEEV: %d\n", lastEEV);
 #endif
 	}
+	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
+	dEEV.CorrectOverheatInit();
 	if(lastEEV != -1 && dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
 		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
 	}
-	dEEV.CorrectOverheatInit();
-	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
 #endif
-	
 
-	// 3. Управление компрессором
+	// 4. Управление компрессором
 	if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок
 	{
 		// Дополнительные защиты перед пуском компрессора
@@ -3243,10 +3263,10 @@ xNextStop:
 			startPump=false;                               // Поставить признак останова задачи насос
 			if(get_workPump()) journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
-	#ifdef DEFROST
-	  if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
-	  {
-	#endif		
+		#ifdef DEFROST
+		if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
+		{
+		#endif
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
@@ -3264,19 +3284,6 @@ xNextStop:
 			return;
 		}
 #endif
-
-#ifdef DEBUG_MODWORK
-		journal.jprintf_time("Pause %d s before start compressor\n", Option.delayOnPump);
-#endif
-		uint16_t d = Option.delayOnPump;
-#ifdef FLOW_CONTROL
-		//for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
-		if(Option.delayOnPump < BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1) d = BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1;
-#endif
-		for(; d > 0; d--) { // задержка перед включением компрессора
-			_delay(1000);
-			if(error || is_next_command_stop()) return; // прерваться по ошибке, еще бы проверить команду на останов...
-		}
 
 #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
 		for(uint8_t i = 0; i < FNUMBER; i++) {   // Проверка потока по каждому датчику
@@ -3300,9 +3307,10 @@ xNextStop:
 			if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
-#ifdef DEFROST
-   }  // if(!(mod & pDEFROST))
-#endif	
+		#ifdef DEFROST
+		}  // if(!(mod & pDEFROST))
+		#endif
+
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
 		if(Charts_when_comp_on) task_updstat_chars = 0;
 	    command_completed = rtcSAM3X8.unixtime();
@@ -3313,13 +3321,13 @@ xNextStop:
 		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);return;
 	}
 
-	// 4. Если нужно облегченный пуск  в зависимости от флага fEEV_light_start
+	// 5. Если нужно облегченный пуск  в зависимости от флага fEEV_light_start
 #ifdef EEV_DEF
 	if(dEEV.get_LightStart())                  //  ЭРВ ОБЛЕГЧЕННЫЙ ПУСК
 	{
-		journal.jprintf(" Pause %d second before go starting position EEV . . .\n", dEEV.get_DelayStartPos());
+		journal.jprintf(" Pause %ds before go start position EEV . . .\n", dEEV.get_DelayStartPos());
 		_delay(dEEV.get_DelayStartPos() * 1000);  // Задержка после включения компрессора до ухода на рабочую позицию
-		journal.jprintf(EEV_go);
+		journal.jprintf(" EEV go ");
 		if((dEEV.get_StartFlagPos()) || ((lastEEV == -1))) {
 			dEEV.set_EEV(dEEV.get_StartPos());
 #ifdef EEV_PREFER_PERCENT
@@ -3338,7 +3346,7 @@ xNextStop:
 		}
 	}
 #endif
-	// 5. Обеспечение задержки отслеживания ЭРВ
+	// 6. Обеспечение задержки отслеживания ЭРВ
 #ifdef EEV_DEF
 	if (lastEEV>0)                                            // НЕ первое включение компрессора после старта ТН
 	{
