@@ -696,15 +696,15 @@ const char *fc_DT_TEMP           = {"DT"};           	  // Превышение 
 const char *fc_DT_TEMP_BOILER    = {"DTB"};    			  // Превышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 const char *fc_MB_ERR		     = {"MB_ERR"};			  // Ошибок Modbus
 const char *fc_FC_TIME_READ      = {"TR"};				  // Время опроса
+const char *fc_AdjustEEV_k       = {"EEVK"};
+const char *fc_PidMaxStep        = {"PMS"};
 const char *fc_fFC_RetOil	     = {"FRO"};               // Флаг возврат масла
 const char *fc_ReturnOilPeriod   = {"ROP"};               // Время возварта масла
 const char *fc_ReturnOilPerDivHz = {"ROPH"};              // Частота при которой возвращается масло
 const char *fc_ReturnOilTime     = {"ROT"};
 const char *fc_ReturnOilMinFreq  = {"ROM"};
 const char *fc_ReturnOilFreq     = {"ROF"};
-
-const char *fc_AdjustEEV_k       = {"EEVK"};
-const char *fc_PidMaxStep        = {"PMS"};
+const char *fc_ReturnOil_AdjustEEV_k = {"REK"};
 
 // Описание имен параметров опций ТН  для функций get_optionHP ("get_oHP") set_optionHP ("set_oHP")
 const char *option_ADD_HEAT           = {"HEAT_list"};              // использование дополнительного нагревателя (значения 1 и 0)
