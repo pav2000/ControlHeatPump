@@ -24,7 +24,7 @@
 #include "Util.h"
 
 // ОПЦИИ КОМПИЛЯЦИИ ПРОЕКТА -------------------------------------------------------
-#define VERSION			"1.109"				// Версия прошивки
+#define VERSION			"1.110"				// Версия прошивки
 #define VER_SAVE		150					// Версия формата сохраняемых данных в I2C память
 #ifndef UART_SPEED
 #define UART_SPEED		115200				// Скорость отладочного порта
@@ -451,6 +451,7 @@ const char *eev_TARGET        =  {"TRG"};        	// Перегрев ЦЕЛЬ (
 const char *eev_tOverheatTCOMP=  {"TRG2"};          // Перегрев2 цель (сотые градуса)
 const char *eev_tOverheat2_low = {"T2L"};
 const char *eev_tOverheat2_low_hyst = {"T2H"};
+const char *eev_tOverheat2_critical = {"T2C"};
 const char *eev_tOverheatTCOMP_delta= {"TRG2D"};    // Перегрев2 дельта цель (сотые градуса)
 const char *eev_KP            =  {"KP"};            // ПИД Коэф пропорц.   В ТЫСЯЧНЫХ!!!
 const char *eev_KI            =  {"KI"};            // ПИД Коэф интегр.  для настройки Ki=0   В ТЫСЯЧНЫХ!!!

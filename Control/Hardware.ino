@@ -611,6 +611,7 @@ void devEEV::initEEV()
 	_data.trend_mul_threshold = 65;
 	_data.tOverheat2_low = 200;
 	_data.tOverheat2_low_hyst = 10;
+	_data.tOverheat2_critical = EEV_OVERHEAT2_CRITICAL;
 
 	// ЭРВ Времена и задержки
 	_data.delayOnPid = DEFAULT_DELAY_ON_PID; // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
@@ -986,7 +987,7 @@ xSecond:			if(diff < -_data.tOverheatTCOMP_delta) { // Перегрев боль
 						}
 					} else if(diff > _data.tOverheatTCOMP_delta) {
 						if(OverheatTCOMP < _data.tOverheat2_low) {
-							if(OverheatTCOMP < EEV_OVERHEAT2_CRITICAL && pidw.trend[trOH_TCOMP] <= 0) {
+							if(OverheatTCOMP < (int16_t)_data.tOverheat2_critical) { // && pidw.trend[trOH_TCOMP] <= 0) {
 								if(DebugToLog) journal.jprintf(";#6");
 //								newEEV = diff * _data.pid.Kp / (100*1000);
 //								pidw.max = 2;
@@ -1244,6 +1245,7 @@ void devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_dtoa(ret, _data.trend_mul_threshold, 2);
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_dtoa(ret, _data.tOverheat2_low, 2);
 	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_dtoa(ret, _data.tOverheat2_low_hyst, 2);
+	} else if(strcmp(var, eev_tOverheat2_critical)==0){	_dtoa(ret, _data.tOverheat2_critical, 2);
 	} else if(strcmp(var, eev_DebugToLog)==0) { strcat(ret, (char*)(DebugToLog ? cOne : cZero));
 	} else strcat(ret,"E10");
 }
@@ -1396,6 +1398,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_data.trend_mul_threshold = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_data.tOverheat2_low = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_data.tOverheat2_low_hyst = rd(x, 100); return true;
+	} else if(strcmp(var, eev_tOverheat2_critical)==0){	_data.tOverheat2_critical = rd(x, 100); return true;
 	} else if(strcmp(var, eev_DebugToLog)==0){ DebugToLog = x; return true;
 	} else return false; // ошибочное имя параметра
 
