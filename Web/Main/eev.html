@@ -213,7 +213,15 @@ window.onload = function() {
 	   }
 	});       
 };
-  </script>
+var AllowMoveEEV = 0;
+function set_manual() {
+	var e = document.getElementById("get_peev-rule");
+	if(AllowMoveEEV == 0 && e.options[e.selectedIndex].text != "MANUAL") {
+		if(confirm("Вы уверены, что хотите управлять ЭРВ вручную?")) AllowMoveEEV = 1; else return;
+	}
+	setParam('get_pEEV(MANUAL)');
+}
+</script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
@@ -241,7 +249,7 @@ window.onload = function() {
 	<td id="get_tcomp_tcon"></td>
 	<td id="get_peev-ctdelta"></td>
 	<td id="get_peev-error"></td>
-	<td nowrap><input id="get_peev-manual" type="number" step="1"><input type="submit" value=">" onclick="setParam('get_pEEV(MANUAL)')"></td>
+	<td nowrap><input id="get_peev-manual" type="number" step="1"><input type="submit" value=">" onclick="set_manual()"></td>
   </tr>
  </tbody>
  </table>

@@ -1255,10 +1255,10 @@ void devEEV::get_paramEEV(char *var, char *ret)
 boolean devEEV::set_paramEEV(char *var,float x)
 {
 	if(strcmp(var, eev_POS)==0) {
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ set_EEV(x); return true;} else return false;
+		if(x >= 0 && x <= _data.maxSteps) { set_EEV(x); return true;} else return false;
 	} else if(strcmp(var, eev_POSp)==0){
 		x = x * _data.maxSteps / 100;
-		if ((x >= _data.minSteps)&&(x <= _data.maxSteps)) { set_EEV(x); return true;} else return false;
+		if(x >= 0 && x <= _data.maxSteps) { set_EEV(x); return true; } else return false;
 	} else if(strcmp(var, eev_POSpp)==0){
 		return true;  // не имеет смысла - только чтение
 	} else if(strcmp(var, eev_MIN)==0){
@@ -1284,7 +1284,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 			return true;
 		} else return false;	// секунды
 	} else if(strcmp(var, eev_TARGET)==0){ 
-		if ((x>0.0)&&(x<=50.0)) { _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
+		if((x>0)&&(x<=50)) { _data.tOverheat=rd(x, 100); ;return true;}  else return false;	// цель сотые градуса
 	} else if(strcmp(var, eev_tOverheatTCOMP)==0){
 		_data.tOverheatTCOMP = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheatTCOMP_delta)==0){
@@ -1330,37 +1330,39 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_cPERIOD)==0){
 		if ((x>=0)&&(x<=10000)) { _data.OHCor_Period=x; return true;} else return false;	// циклы ЭРВ
 	} else if(strcmp(var, eev_cDELTA)==0){
-		if ((x>=-10.0)&&(x<=50.0)) {_data.OHCor_TDIS_TCON=rd(x, 100); return true;}else return false;	// сотые градуса
+		if ((x>=-10)&&(x<=50)) {_data.OHCor_TDIS_TCON=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cDELTA_Thr)==0){
 		_data.OHCor_TDIS_TCON_Thr = rd(x, 100); return true; // сотые градуса
 	} else if(strcmp(var, eev_cOH_cDELTA_MAX)==0){
 		_data.OHCor_TDIS_TCON_MAX = x; return true;
 	} else if(strcmp(var, eev_PID_MAX)==0){ // ограничение ПИД в шагах ЭРВ
-		if ((x>=0.0)&&(x<=200.0)) {_data.pid_max = x; return true;} else return false;
+		if ((x>=0)&&(x<=200)) {_data.pid_max = x; return true;} else return false;
 	} else if(strcmp(var, eev_cOH_MIN)==0){
-		if ((x>=0.0)&&(x<=50.0)) {_data.OverheatMin=rd(x, 100); return true;}else return false;	// сотые градуса
+		if ((x>=0)&&(x<=50)) {_data.OverheatMin=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cOH_MAX)==0){
-		if ((x>=0.0)&&(x<=50.0)) {_data.OverheatMax=rd(x, 100); return true;}else return false;	// сотые градуса
+		if ((x>=0)&&(x<=50)) {_data.OverheatMax=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_cOH_START)==0){
-		if ((x>=0.0)&&(x<=50.0)) {_data.OverHeatStart=rd(x, 100); return true;}else return false;	// сотые градуса
+		if ((x>=0)&&(x<=50)) {_data.OverHeatStart=rd(x, 100); return true;}else return false;	// сотые градуса
 	} else if(strcmp(var, eev_PID2_delta)==0){
 		_data.pid2_delta=rd(x, 100); return true; // сотые
 	} else if(strcmp(var, eev_SPEED)==0){
 		if ((x>=5)&&(x<=120)) { stepperEEV.setSpeed(_data.speedEEV = x); return true;} else return false;	// шаги в секунду
 #ifdef EEV_PREFER_PERCENT
 	} else if(strcmp(var, eev_MANUAL)==0){
-		_data.manualStep = calc_pos(rd(x, 100));
-		if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep);
-		return true;
+		if(x >= 0 && x <= 100) {
+			_data.manualStep = calc_pos(rd(x, 100));
+			/*if(_data.ruleEEV == MANUAL)*/ set_EEV(_data.manualStep);
+			return true;
+		} else return false;
 	} else if(strcmp(var, eev_PRE_START_POS)==0){
-		_data.preStartPos = calc_pos(rd(x, 100)); return true;
+		if(x >= 0 && x <= 100) { _data.preStartPos = calc_pos(rd(x, 100)); return true; } else return false;
 	} else if(strcmp(var, eev_START_POS)==0){
-		_data.StartPos = calc_pos(rd(x, 100)); return true;
+		if(x >= 0 && x <= 100) { _data.StartPos = calc_pos(rd(x, 100)); return true; } else return false;
 	} else if(strcmp(var, eev_PosAtHighTemp)==0){
-		_data.PosAtHighTemp = calc_pos(rd(x, 100)); return true;
+		if(x >= 0 && x <= 100) { _data.PosAtHighTemp = calc_pos(rd(x, 100)); return true; } else return false;
 #else 	// шаги
 	} else if(strcmp(var, eev_MANUAL)==0){
-		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep = x; if(_data.ruleEEV == MANUAL) set_EEV(_data.manualStep); return true; } else return false;
+		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)){ _data.manualStep = x; /*if(_data.ruleEEV == MANUAL)*/ set_EEV(_data.manualStep); return true; } else return false;
 	} else if(strcmp(var, eev_PRE_START_POS)==0){
 		if ((x>=_data.minSteps)&&(x<=_data.maxSteps)) { _data.preStartPos=x; return true;} else return false;
 	} else if(strcmp(var, eev_START_POS)==0){
