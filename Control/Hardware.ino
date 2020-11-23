@@ -1398,7 +1398,7 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_PID_P_ON_M)==0){
 		if (x==0) SETBIT0(_data.flags, fPID_PropOnMeasure); else SETBIT1(_data.flags, fPID_PropOnMeasure);
 		resetPID();
-	} else if(strcmp(var, eev_fEEVStartPosByTemp)==0){ if(x==0) SETBIT0(_data.flags, fEEV_BoilerStartPos); else SETBIT1(_data.flags, fEEV_BoilerStartPos);
+	} else if(strcmp(var, eev_fEEV_BoilerStartPos)==0){ if(x==0) SETBIT0(_data.flags, fEEV_BoilerStartPos); else SETBIT1(_data.flags, fEEV_BoilerStartPos);
 	} else if(strcmp(var, eev_trend_threshold)==0){	_data.trend_threshold = x; return true;
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_data.trend_mul_threshold = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_data.tOverheat2_low = rd(x, 100); return true;
