@@ -259,17 +259,18 @@ private:
 };  
 
 // ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ---------------------------------------- --------------------------------------
-#define fPresent         		0   // флаг наличие Объекта един для всего!!!! определение смотри выше
-#define fOneSeekZero     		1	// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
-#define fEnterInPercent  		2	// Ввод на веб-странице в %, иначе в шагах
-#define fCorrectOverHeat 		3	// Включен режим корректировки перегрева
-#define fHoldMotor       		4	// Режим "удержания" шагового двигателя ЭРВ
-#define fEevClose        		5   // Флаг закрытие ЭРВ при выключении компрессора
-#define fLightStart      		6   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
-#define fStartFlagPos    		7   // флаг Всегда начинать работу ЭРВ со стратовой позици
-#define fPID_PropOnMeasure		8   // ПИД пропорционально измерению (Proportional on Measurement), иначе пропорционально ошибке (Proportional on Error)
-#define fEEV_StartPosByTemp		9	// Стартовая позиция ЭРВ определяется по температуре подачи (пропорционально между EEV_START_POS_LOW_TEMP=StartPos и EEV_START_POS_HIGH_TEMP=PosAtHighTemp)
-#define fEEV_DirectAlgorithm	10	// Прямое управление ЭРВ без ПИД
+#define fPresent         			0   // флаг наличие Объекта един для всего!!!! определение смотри выше
+#define fOneSeekZero     			1	// Флаг однократного поиска "0" ЭРВ (только при первом включении ТН)
+#define fEnterInPercent  			2	// Ввод на веб-странице в %, иначе в шагах
+#define fCorrectOverHeat 			3	// Включен режим корректировки перегрева
+#define fHoldMotor       			4	// Режим "удержания" шагового двигателя ЭРВ
+#define fEevClose        			5   // Флаг закрытие ЭРВ при выключении компрессора
+#define fLightStart      			6   // флаг Облегчение старта компрессора   приоткрытие ЭРВ в момент пуска компрессора
+#define fStartFlagPos    			7   // флаг Всегда начинать работу ЭРВ со стратовой позици
+#define fPID_PropOnMeasure			8   // ПИД пропорционально измерению (Proportional on Measurement), иначе пропорционально ошибке (Proportional on Error)
+#define fEEV_StartPosByTemp			9	// Стартовая позиция ЭРВ определяется по температуре подачи (пропорционально между EEV_START_POS_LOW_TEMP=StartPos и EEV_START_POS_HIGH_TEMP=PosAtHighTemp)
+#define fEEV_DirectAlgorithm		10	// Прямое управление ЭРВ без ПИД
+#define fEEV_BoilerStartPos			11	// При нагреве бойлера специальная стартовая позиция ЭРВ
 
 class devEEV
 {
@@ -319,6 +320,7 @@ public:
 	uint16_t get_preStartPos(){return _data.preStartPos;}
 	uint8_t get_DelayStartPos() {return _data.DelayStartPos;}
 	uint16_t get_StartPos();
+	uint16_t get_BoilerStartPos() { return (uint32_t)_data.maxSteps * _data.BoilerStartPos / 100; };
 
 	char*   get_note(){ return note;}                      // Прочитать описание ЭРВ
 	char*   get_name(){ return name;}                      // Прочитать имя ЭРВ
@@ -366,7 +368,7 @@ private:
 		int16_t	 Correction;                    // Величина корректироровки перегрева (систематическая ошибка расчета перегерва)
 		int16_t	 manualStep;                    // Число шагов открытия ЭРВ для правила работы ЭРВ «Manual»
 		uint8_t  tOverheat2_critical;           // Критическая граница перегрева 2, сотые градуса
-		RULE_EEV  ruleEEV;                      // правило работы ЭРВ
+		RULE_EEV ruleEEV;                      // правило работы ЭРВ
 		PID_STRUCT pid2;						// Консервативный ПИД
 		uint16_t OHCor_Period;					// Период расчета корректировки перегрева в циклах ЭРВ
 		int16_t  OHCor_TDIS_TCON_Thr;			// Порог, после превышения которого начинаем менять перегрев, в сотых градуса
@@ -377,12 +379,12 @@ private:
 		uint8_t	 minSteps;                       // Минимальное число шагов открытия ЭРВ
 		uint16_t preStartPos;                   // ПУСКОВАЯ позиция ЭРВ (ТО что при старте компрессора ПРИ РАСКРУТКЕ)
 		uint16_t StartPos;                      // СТАРТОВАЯ позиция ЭРВ после раскрутки компрессора т.е. ПОЗИЦИЯ С КОТОРОЙ НАЧИНАЕТСЯ РАБОТА проходит DelayStartPos сек
-		// ЭРВ Времена и задержки
 		uint8_t	 delayOnPid;                     // Задержка включения EEV после включения компрессора (сек).  Точнее после выхода на рабочую позицию Общее время =delayOnPid+DelayStartPos
 		uint8_t	 DelayStartPos;                  // Время после старта компрессора когда EEV выходит на стартовую позицию - облегчение пуска вначале ЭРВ
 		uint8_t	 delayOff;                       // Задержка закрытия EEV после выключения насосов (сек). Время от команды стоп компрессора до закрытия ЭРВ = delayOffPump+delayOff
 		uint8_t	 delayOn;                        // Задержка между открытием (для старта) ЭРВ и включением компрессора, для выравнивания давлений (сек). Если ЭРВ закрылось при остановке
 		uint8_t  OHCor_TDIS_TCON_MAX;			// верхняя граница для пропорционального изменения перегрева, % от OHCor_TDIS_TCON
+		uint8_t  BoilerStartPos;				// Начальная позиция при нагреве бойлера, %
 		int16_t	 OverHeatStart;                  // Начальный перегрев (сотые градуса)
 		int16_t	 maxSteps;                       // Максимальное число шагов ЭРВ (диапазон)
 		uint16_t OHCor_Delay;				    // Задержка корректировки пергрева после старта компрессора, сек
@@ -393,6 +395,7 @@ private:
 		int16_t  tOverheatTCOMP;				// Целевой перегрев2 TCOMPIN-T[PEVA]
 		int16_t  tOverheatTCOMP_delta;			// Дельта целевого перегрева2 TCOMPIN-T[PEVA]
 		int8_t   trend_threshold;				// Порог детектирования тренда
+		uint8_t  _RESERVED_;
 		uint16_t trend_mul_threshold;			// Порог для *2, сотые градуса
 		int16_t  tOverheat2_low;				// Нижняя граница перегрева 2 для быстрого закрытия ЭРВ
 		int16_t  tOverheat2_low_hyst;			// Гистерезис для tOverheat2_low

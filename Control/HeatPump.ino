@@ -3226,28 +3226,21 @@ xNextStop:
 	journal.jprintf(" EEV go ");
 	if(dEEV.get_LightStart()) { // Выйти на пусковую позицию
 		dEEV.set_EEV(dEEV.get_preStartPos());
-#ifdef EEV_PREFER_PERCENT
-		journal.jprintf("preStartPos: %.2d\n", dEEV.calc_percent(dEEV.get_preStartPos()));
-#else
-		journal.jprintf("preStartPos: %d\n", dEEV.get_preStartPos());
-#endif
+		journal.jprintf("PreStartPos:");
 	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
-		dEEV.set_EEV(dEEV.get_StartPos());
-#ifdef EEV_PREFER_PERCENT
-		journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_StartPos()));
-#else
-		journal.jprintf("StartPos: %d\n", dEEV.get_StartPos());
-#endif
-
+		dEEV.set_EEV((Status.modWork & pBOILER) && GETBIT(dEEV.get_flags(), fEEV_BoilerStartPos) ? dEEV.get_BoilerStartPos() : dEEV.get_StartPos());
+		journal.jprintf("StartPos:");
 	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
 		dEEV.set_EEV(lastEEV);
-#ifdef EEV_PREFER_PERCENT
-		journal.jprintf("lastEEV: %.2d\n", dEEV.calc_percent(lastEEV));
-#else
-		journal.jprintf("lastEEV: %d\n", lastEEV);
-#endif
+		journal.jprintf("LastPos:");
 	}
 	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
+#ifdef EEV_PREFER_PERCENT
+	journal.jprintf(" %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+#else
+	journal.jprintf(" %d\n", dEEV.get_EEV());
+#endif
+
 	dEEV.CorrectOverheatInit();
 	if(lastEEV != -1 && dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
 		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений

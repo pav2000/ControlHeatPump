@@ -690,10 +690,10 @@ void devEEV::InitStepper(void)
 
 void devEEV::after_load(void)
 {
-	if(HP.Option.ver == 128) { // Конвертация флагов
-		_data.flags = _data.OHCor_TDIS_TCON_MAX;
-		_data.OHCor_TDIS_TCON_MAX = 50;
-	}
+//	if(HP.Option.ver == 128) { // Конвертация флагов
+//		_data.flags = _data.OHCor_TDIS_TCON_MAX;
+//		_data.OHCor_TDIS_TCON_MAX = 50;
+//	}
 #ifdef EEV_DEF
 	SETBIT1(_data.flags,fPresent);                      // наличие ЭРВ в текушей конфигурации
 #else
@@ -1246,6 +1246,8 @@ void devEEV::get_paramEEV(char *var, char *ret)
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_dtoa(ret, _data.tOverheat2_low, 2);
 	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_dtoa(ret, _data.tOverheat2_low_hyst, 2);
 	} else if(strcmp(var, eev_tOverheat2_critical)==0){	_dtoa(ret, _data.tOverheat2_critical, 2);
+	} else if(strcmp(var, eev_BoilerStartPos)==0){ _itoa(_data.BoilerStartPos, ret);
+	} else if(strcmp(var, eev_fEEV_BoilerStartPos)==0) { strcat(ret, (char*)(GETBIT(_data.flags, fEEV_BoilerStartPos) ? cOne : cZero));
 	} else if(strcmp(var, eev_DebugToLog)==0) { strcat(ret, (char*)(DebugToLog ? cOne : cZero));
 	} else strcat(ret,"E10");
 }
@@ -1396,11 +1398,13 @@ boolean devEEV::set_paramEEV(char *var,float x)
 	} else if(strcmp(var, eev_PID_P_ON_M)==0){
 		if (x==0) SETBIT0(_data.flags, fPID_PropOnMeasure); else SETBIT1(_data.flags, fPID_PropOnMeasure);
 		resetPID();
+	} else if(strcmp(var, eev_fEEVStartPosByTemp)==0){ if(x==0) SETBIT0(_data.flags, fEEV_BoilerStartPos); else SETBIT1(_data.flags, fEEV_BoilerStartPos);
 	} else if(strcmp(var, eev_trend_threshold)==0){	_data.trend_threshold = x; return true;
 	} else if(strcmp(var, eev_trend_mul_threshold)==0){	_data.trend_mul_threshold = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low)==0){	_data.tOverheat2_low = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_low_hyst)==0){	_data.tOverheat2_low_hyst = rd(x, 100); return true;
 	} else if(strcmp(var, eev_tOverheat2_critical)==0){	_data.tOverheat2_critical = rd(x, 100); return true;
+	} else if(strcmp(var, eev_BoilerStartPos)==0){ _data.BoilerStartPos = x; return true;
 	} else if(strcmp(var, eev_DebugToLog)==0){ DebugToLog = x; return true;
 	} else return false; // ошибочное имя параметра
 

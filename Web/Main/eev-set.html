@@ -8,7 +8,7 @@
 <script type="text/javascript">
 window.onload = function() {
 	loadParam("hide_pid2,hide_EEVU,get_pEEV(FREON),get_pEEV(RULE),get_pEEV(MANUAL),get_pEEV(CONST),get_pEEV(MIN),get_pEEV(MAX),get_pEEV(SPEED),get_pEEV(DSP),get_pEEV(PSP),get_pEEV(SP),get_pEEV(DOP),get_pEEV(DON),get_pEEV(DOFF),get_pEEV(HM),get_pEEV(P2D),get_pEEV(ZERO),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(PINS),get_pEEV(REMARK)");
-	loadParam("get_pEEV(START),get_pEEV(LST),get_pEEV(CLOSE),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cD),get_pEEV(cOH_MIN),get_pEEV(cOH_MAX),get_pEEV(cOH_START),get_pEEV(POM),get_pEEV(PMAX),get_pEEV(SPT),get_pEEV(PHT),get_pEEV(DIR),get_pEEV(TRG2),get_pEEV(TRG2D),get_pEEV(TTH),get_pEEV(cDM),get_pEEV(cPERIOD),get_pEEV(cDT),get_pEEV(TMT),get_pEEV(DBG),get_pEEV(T2L),get_pEEV(T2H),get_pEEV(T2C)");
+	loadParam("get_pEEV(START),get_pEEV(LST),get_pEEV(CLOSE),get_pEEV(cCORRECT),get_pEEV(cDELAY),get_pEEV(cD),get_pEEV(cOH_MIN),get_pEEV(cOH_MAX),get_pEEV(cOH_START),get_pEEV(POM),get_pEEV(PMAX),get_pEEV(SPT),get_pEEV(PHT),get_pEEV(DIR),get_pEEV(TRG2),get_pEEV(TRG2D),get_pEEV(TTH),get_pEEV(cDM),get_pEEV(cPERIOD),get_pEEV(cDT),get_pEEV(TMT),get_pEEV(DBG),get_pEEV(T2L),get_pEEV(T2H),get_pEEV(T2C),get_pEEV(BF),get_pEEV(BS)");
 };
 </script>
 </head>
@@ -65,6 +65,7 @@ window.onload = function() {
 	<tr><td>Разница c предыдущей дельтой, больше которой тренд * 2, °C</td><td nowrap><input id="get_peev-tmt" type="number" min="0" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pEEV(TMT)')"></td></tr>
 
     <tr><td><b>Пуск компрессора</b></td><td></td></tr>
+    <tr><td>Задержка (сек.) начала регулирования от пуска компрессора, 255 - навсегда [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
     <tr><td>Использовать специальную позицию ЭРВ при пуске компрессора<sup>1</sup></td><td><input type="checkbox" id="get_peev-lst" onchange="setParam('get_pEEV(LST)');"></td></tr>
     <tr><td>Специальная позиция ЭРВ для облегчения пуска компрессора (<span name="hide_eevu"></span>) [min..max]</td><td nowrap><input type="number" id="get_peev-psp"> <input type="submit" value=">" onclick="setParam('get_pEEV(PSP)');"></td></tr>
     <tr><td>Время на раскрутку компрессора (сек.) [0..255]<sup>2</sup></td><td nowrap><input type="number" id="get_peev-dsp"> <input type="submit" value=">" onclick="setParam('get_pEEV(DSP)');"></td></tr>
@@ -73,7 +74,8 @@ window.onload = function() {
     <tr><td>Стартовая позиция ЭРВ определяется по температуре подачи (10..45°)</td><td><input type="checkbox" id="get_peev-spt" onchange="setParam('get_pEEV(SPT)');"></td></tr>
     <tr><td>Положение при подаче 10° (<span name="hide_eevu"></span>)</td><td id="get_peev-sp_2"></td></tr>
     <tr><td>Положение при подаче 45° (<span name="hide_eevu"></span>) [min..при 10°]</td><td nowrap><input type="number" id="get_peev-pht"> <input type="submit" value=">" onclick="setParam('get_pEEV(PHT)');"></td></tr>
-    <tr><td>Задержка (сек.) начала регулирования от пуска компрессора, 255 - навсегда [0..255]<sup>4</sup></td><td><input type="number" id="get_peev-dop"> <input type="submit" value=">" onclick="setParam('get_pEEV(DOP)');"></td></tr>
+    <tr><td>Использовать специальную стартовую позицию ЭРВ при нагреве бойлера</td><td><input type="checkbox" id="get_peev-bf" onchange="setParam('get_pEEV(BF)');"></td></tr>
+    <tr><td>Стартовая позиция при нагреве бойлера, % от максимального кол-ва шагов</td><td nowrap><input type="number" id="get_peev-bs"> <input type="submit" value=">" onclick="setParam('get_pEEV(BS)');"></td></tr>
 
     <tr><td><b>Останов компрессора</b></td><td></td></tr>
     <tr><td>Закрытие ЭРВ при выключении компрессора</td><td><input type="checkbox" id="get_peev-close" onchange="setParam('get_pEEV(CLOSE)');"></td></tr>
