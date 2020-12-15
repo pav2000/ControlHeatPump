@@ -501,7 +501,7 @@ const char *eev_PosAtHighTemp =  {"PHT"};			// PosAtHighTemp
 const char *eev_fEEV_DirectAlgorithm = {"DIR"};		// флаг fEEV_DirectAlgorithm
 const char *eev_trend_threshold ={"TTH"};
 const char *eev_trend_mul_threshold = {"TMT"};
-const char *eev_DebugToLog    = {"DBG"};
+const char *eev_DebugToLog    = {"DBG"};            // Отладка ЭРВ в журнал 
 const char *eev_fEEV_BoilerStartPos={"BF"};
 const char *eev_BoilerStartPos={"BS"};
 

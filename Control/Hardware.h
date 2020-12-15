@@ -342,8 +342,8 @@ public:
 	StepMotor stepperEEV;                                  // Шаговый двигатель ЭРВ
 	boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
 	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция, шаги
-	int16_t OverheatTCOMP;								// перегрев TCOMPIN-T[PEVA]
-	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
+	int16_t OverheatTCOMP;							    	// перегрев TCOMPIN-T[PEVA]
+	PID_WORK_STRUCT pidw;  								    // переменные пид регулятора
 
 private:
 	boolean fPause;                                        // пауза алгоритма отслеживания true
@@ -356,7 +356,7 @@ private:
 	int16_t OHCor_tdelta_prev;							 // Расчитанная целевая дельта Нагнетание-Конденсации
 	TEST_MODE testMode;                                  // Значение режима тестирования
 	int8_t  err;                                         // ошибка ЭРВ (работа) при ошибке останов ТН
-	bool DebugToLog;
+	bool DebugToLog;                                     // Выводить отладочную иинформацию в журнал
 
 	char *note;                                          // Описание
 	char *name;                                          // Имя

@@ -1047,10 +1047,11 @@ xSecond_sub_1:				if(pidw.hyst[0] > 0) {
 			newEEV = _data.tOverheat - Overheat;   // Расчет ошибки для пида
 #ifdef PID_FORMULA2
 			newEEV = round_div_int32(updatePID(newEEV, abs(newEEV) < _data.pid2_delta ? _data.pid2 : _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление и добавление предудущего значения
-#else  // Алгоритм 1
+#else  // Алгоритм 1 (классический ПИД в конечных разностях) config5 это использует 
             pidw.Kp_dmin=_data.pid2_delta; // передать параметр - уменьшение пропорциональной при определенной ошибке
 			newEEV = updatePID(newEEV, _data.pid, pidw)/100; // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление вниз
 	//		newEEV = round_div_int32(updatePID(newEEV, _data.pid, pidw), 100); // Рассчитaть итерацию: Перевод в шаги (выход ПИДА в сотых) + округление здесь 0.5 это один шаг
+	        if(DebugToLog) journal.jprintf(" EEV: Overheat %d, pos %d \n", Overheat, EEV+newEEV);
 #endif
 			// Ограничение пида +  добавление предудущего значения
 			if(newEEV > _data.pid_max) newEEV = _data.pid_max;

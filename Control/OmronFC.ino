@@ -34,6 +34,7 @@ int8_t devOmronMX2::initFC()
   startCompressor=0;                // время старта компрессора
   state=ERR_LINK_FC;                // Состояние - нет связи с частотником
   dac=0;                            // Текущее значение ЦАП
+  Adjust_EEV_delta = 0;
   testMode=NORMAL;                                 // Значение режима тестирования
   name=(char*)nameOmron;                           // Имя
   note=(char*)noteFC_NONE;                         // Описание инвертора   типа нет его
@@ -405,8 +406,6 @@ err=OK;
 			}
 #endif
 		}
-
-
     
 #else // Аналоговое управление
     freqFC=FC;
@@ -475,7 +474,8 @@ err=OK;
             }
             SETBIT1(flags,fOnOff);startCompressor=rtcSAM3X8.unixtime(); journal.jprintf(" %s ON\n",name);
       #endif 
-  #endif    
+  #endif   
+Adjust_EEV_delta = 0;   
 return err;
 }
 
@@ -544,6 +544,7 @@ err=OK;
           SETBIT0(flags,fOnOff);startCompressor=0; journal.jprintf(" %s OFF\n",name);
       #endif 
  #endif // FC_ANALOG_CONTROL 
+Adjust_EEV_delta = 0; 
 return err;
 }
 
