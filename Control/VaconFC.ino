@@ -56,12 +56,13 @@ int8_t devVaconFC::initFC()
 	_data.dtTemp = DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 	_data.dtTempBoiler = DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
 	_data.PidMaxStep = 500;
+#ifdef FC_RETOIL_FREQ	
 	_data.ReturnOilMinFreq = FC_RETOIL_FREQ;
 	_data.ReturnOilFreq = 3000; // %
 	_data.ReturnOilPeriod = 1800000 / FC_TIME_READ;
 	_data.ReturnOilPerDivHz = 48000 / FC_TIME_READ;
 	_data.ReturnOilTime = FC_RETOIL_TIME;
-
+#endif
 	flags = 0x00;                                	   // флаги  0 - наличие FC
 	_data.setup_flags = 0;
 #ifndef FC_ANALOG_CONTROL

@@ -1311,7 +1311,10 @@ void HeatPump::get_listChart(char* ret, const char *delimiter)
 		if(ChartsModSetup[index].object == STATS_OBJ_Temp) strcat(ret, sTemp[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_Press) strcat(ret, sADC[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_PressTemp) {
-			strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+	//	strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+        if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PEVA")==0) strcat(ret, "T° кипения");else
+        if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PCON")==0) strcat(ret, "T° конденсации");else
+		{strcat(ret, "Температура "); strcat(ret, sADC[ChartsModSetup[index].number].get_name());}
 			strcat(ret, ", °C");
 		} else if(ChartsModSetup[index].object == STATS_OBJ_Flow) strcat(ret, sFrequency[ChartsModSetup[index].number].get_note());
 		else strcat(ret, STATS_OBJ_names[ChartsModSetup[index].object]);
@@ -3889,8 +3892,9 @@ void HeatPump::calculatePower()
 	if(GETBIT(Option.flags, fBackupPower)) _power220 += dFC.get_power();  // получить текущую мощность компрессора
 #endif
 
-	corr_power220 = 0;
+	
 #ifdef CORRECT_POWER220_EXCL_RBOILER
+corr_power220 = 0;
   #ifdef WR_Load_pins_Boiler_INDEX
    #ifdef WR_Boiler_Substitution_INDEX
 	corr_power220 = WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX]
@@ -3926,8 +3930,9 @@ void HeatPump::calculatePower()
 	#endif
 #endif
 	power220 = _power220;
+#ifdef CORRECT_POWER220_EXCL_RBOILER	
 	_power220 -= corr_power220; // Из мгновенного COP убираем бойлер
-
+#endif
 	// Расчет COP
 #ifndef COP_ALL_CALC    	// если COP надо считать не всегда
 if(is_compressor_on()){		// Если компрессор работает

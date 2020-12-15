@@ -56,11 +56,38 @@ int8_t devOmronMX2::initFC()
   _data.stepFreqBoiler=DEF_FC_STEP_FREQ_BOILER;    // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01
   _data.dtTemp=DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
   _data.dtTempBoiler=DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
- #ifdef FC_ANALOG_CONTROL
-  _data.level0=0;                                  // Отсчеты ЦАП соответсвующие 0   мощности
-  _data.level100=4096;                             // Отсчеты ЦАП соответсвующие 100 мощности
-  _data.levelOff=10;                               // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
-  #endif
+ #ifdef FC_RETOIL_FREQ	// возврат масла
+  _data.ReturnOilMinFreq = FC_RETOIL_FREQ;
+  _data.ReturnOilFreq = 3000; // %
+  _data.ReturnOilPeriod = 1800000 / FC_TIME_READ;
+  _data.ReturnOilPerDivHz = 48000 / FC_TIME_READ;
+  _data.ReturnOilTime = FC_RETOIL_TIME;
+#endif
+
+// #ifdef FC_ANALOG_CONTROL
+//  _data.level0=0;                                  // Отсчеты ЦАП соответсвующие 0   мощности
+//  _data.level100=4096;                             // Отсчеты ЦАП соответсвующие 100 мощности
+//  _data.levelOff=10;                               // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
+//  #endif
+
+#ifndef FC_ANALOG_CONTROL
+	if(!Modbus.get_present()) // modbus отсутствует
+	{
+		SETBIT0(flags, fFC); // Инвертор не работает
+		journal.jprintf("%s, modbus not found, block.\n", name);
+		err = ERR_NO_MODBUS;
+		return err;
+	} else if(DEVICEFC == true) SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
+#else
+	pin = PIN_DEVICE_FC;                			  // Ножка куда прицеплено FC
+	analogWriteResolution(FC_ANALOG_RESOLUTION);      // разрешение ЦАП, бит;
+	_data.level0 = 0;                                 // Отсчеты ЦАП соответсвующие 0   мощности
+	_data.level100 = (1<<FC_ANALOG_RESOLUTION) - 1;   // Отсчеты ЦАП соответсвующие 100 мощности
+	SETBIT1(flags, fFC); // наличие частотника в текушей конфигурации
+	note = (char*)"OK";
+#endif
+
+  
  _data.PidMaxStep = 1000;
  flags=0x00;                               		 // флаги  0 - наличие FC
   _data.setup_flags=0x00;                                // флаги
@@ -218,6 +245,12 @@ int8_t  devOmronMX2::set_target(int16_t x,boolean show, int16_t _min, int16_t _m
           if(testMode == NORMAL || testMode == HARD_TEST) {
         	  if( x!=(int16_t)read_0x03_32(MX2_TARGET_FR)) {err=ERR_FC_ERROR; SETBIT1(flags,fErrFC); set_Error(err,name);return err;}
           }
+   #ifdef FC_RETOIL_FREQ
+	if(GETBIT(flags, fFC_RetOilSt)) {
+		FC_target = x;
+		return err;
+	}
+   #endif       
    #else  // Аналоговое управление
          FC=x;
          dac=((level100-level0)*FC-0*level100)/(100-0);
@@ -335,12 +368,60 @@ err=OK;
     current=read_0x03_16(MX2_AMPERAGE);               // прочитать ток
     err=Modbus.get_err();                             // Скопировать ошибку
     if (err!=OK) {state=ERR_LINK_FC;}                // Ошибка выходим
+
+// Скопировано от вакома (добавка к ЭРВ и возврат масла)
+
+		if(GETBIT(flags, fOnOff) && err == OK) {
+			if(Adjust_EEV_delta) {
+#ifdef EEV_DEF
+				int16_t n = HP.dEEV.get_EEV() + Adjust_EEV_delta;
+				if(n < HP.dEEV.get_minEEV()) n = HP.dEEV.get_minEEV(); else if(n > HP.dEEV.get_maxEEV()) n = HP.dEEV.get_maxEEV();
+				if(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm)) {
+					HP.dEEV.pidw.max = 1 + (abs(n - HP.dEEV.get_EEV()) > 5 ? 1 : 0); // пропустить итераций
+				}
+				HP.dEEV.set_EEV(n);
+#endif
+				Adjust_EEV_delta = 0;
+			}
+#ifdef FC_RETOIL_FREQ
+			if(GETBIT(_data.setup_flags, fFC_RetOil)) {
+				if(!GETBIT(flags, fFC_RetOilSt)) {
+					if(freqFC < _data.ReturnOilMinFreq && (freqFC < _data.maxFreqGen || !GETBIT(HP.Option.flags, fBackupPower))) {
+						if(++ReturnOilTimer >= _data.ReturnOilPeriod - (_data.ReturnOilMinFreq - freqFC) * _data.ReturnOilPerDivHz / 100) {
+							flags |= 1 << fFC_RetOilSt;
+							err = write_0x06_16((uint16_t) FC_SET_SPEED, _data.ReturnOilFreq);
+							Adjust_EEV(_data.ReturnOilFreq - FC);
+							ReturnOilTimer = 0;
+						}
+					} else ReturnOilTimer = 0;
+				} else {
+					if(++ReturnOilTimer >= _data.ReturnOilTime) {
+						Adjust_EEV(_data.ReturnOilFreq - FC);
+						flags &= ~(1 << fFC_RetOilSt);
+						err = write_0x06_16((uint16_t) FC_SET_SPEED, FC);
+						ReturnOilTimer = 0;
+					}
+				}
+			}
+#endif
+		}
+
+
+    
 #else // Аналоговое управление
     freqFC=FC;
     power=0;
     current=0;
 #endif
 return err;                            
+}
+
+void devOmronMX2::Adjust_EEV(int16_t freq_delta)
+{
+	if(GETBIT(flags, fOnOff)) {
+		int16_t k = GETBIT(flags, fFC_RetOilSt) ? _data.ReturnOil_AdjustEEV_k : _data.AdjustEEV_k;
+		Adjust_EEV_delta = (freq_delta * k + 5000) / 10000L; // +Округление
+	}
 }
 
 // Команда ход на инвертор (целевая частота НЕ ВЫСТАВЛЯЕТСЯ)
@@ -489,6 +570,12 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_cCURRENT)==0)              {  _ftoa(ret,(float)current/100.0,2); } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      {  strcat(ret,(char*)(GETBIT(_data.setup_flags,fAutoResetFault) ? cOne : cZero)); } else
     if(strcmp(var,fc_LogWork)==0)      			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fLogWork) ? cOne : cZero)); } else
+    if(strcmp(var,fc_fFC_RetOil)==0)   			{  strcat(ret,(char*)(GETBIT(_data.setup_flags,fFC_RetOil) ? cOne : cZero)); } else
+    if(strcmp(var,fc_ReturnOilPeriod)==0)       {  _itoa(_data.ReturnOilPeriod * (FC_TIME_READ/1000), ret); } else
+    if(strcmp(var,fc_ReturnOilPerDivHz)==0)     {  _itoa(_data.ReturnOilPerDivHz * (FC_TIME_READ/1000), ret); } else
+    if(strcmp(var,fc_ReturnOilMinFreq)==0)      {  _dtoa(ret, _data.ReturnOilMinFreq, 2); } else
+    if(strcmp(var,fc_ReturnOilFreq)==0)         {  _dtoa(ret, _data.ReturnOilFreq, 2); } else
+    if(strcmp(var,fc_ReturnOilTime)==0)         {  _itoa(_data.ReturnOilTime * (FC_TIME_READ/1000), ret); } else 
     if(strcmp(var,fc_ANALOG)==0)                { // Флаг аналогового управления
 		                                        #ifdef FC_ANALOG_CONTROL                                                    
 		                                         strcat(ret,(char*)cOne);
@@ -496,8 +583,9 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
 		                                         strcat(ret,(char*)cZero);
 		                                        #endif
                                                 } else
-    if(strcmp(var,fc_DAC)==0)                   {  _itoa(dac,ret);          } else
     #ifdef FC_ANALOG_CONTROL
+    if(strcmp(var,fc_PIN)==0)                   {  _itoa(pin,ret);     	    } else  
+    if(strcmp(var,fc_DAC)==0)                   {  _itoa(dac,ret);          } else   
     if(strcmp(var,fc_LEVEL0)==0)                {  _itoa(level0,ret);       } else
     if(strcmp(var,fc_LEVEL100)==0)              {  _itoa(level100,ret);     } else
     if(strcmp(var,fc_LEVELOFF)==0)              {  _itoa(levelOff,ret);     } else
@@ -524,9 +612,11 @@ void devOmronMX2::get_paramFC(char *var,char *ret)
     if(strcmp(var,fc_DT_TEMP)==0)               {  _ftoa(ret,(float)_data.dtTemp/100.0,2); } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        {  _ftoa(ret,(float)_data.dtTempBoiler/100.0,2); } else // градусы
     if(strcmp(var,fc_MB_ERR)==0)        		{  _itoa(numErr, ret); } else
-    if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{ 	strcat(ret, "-"); } else
-   	if(strcmp(var, fc_PidMaxStep)==0)   		{  _dtoa(ret, _data.PidMaxStep, 2); } else
+ //   if(strcmp(var,fc_FC_RETOIL_FREQ)==0)   		{ 	strcat(ret, "-"); } else // не понятно, больше нигде нет fc_FC_RETOIL_FREQ в коде, временно закоментировано
   	if(strcmp(var,fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+   	if(strcmp(var, fc_PidMaxStep)==0)   		{  _dtoa(ret, _data.PidMaxStep, 2); } else
+    if(strcmp(var,fc_AdjustEEV_k)==0)			{  _dtoa(ret, _data.AdjustEEV_k, 2); } else
+    if(strcmp(var,fc_ReturnOil_AdjustEEV_k)==0) {  _dtoa(ret, _data.ReturnOil_AdjustEEV_k, 2); } else  
    		strcat(ret,(char*)cInvalid);
 }
    
@@ -539,6 +629,7 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
     if(strcmp(var,fc_FC)==0)                    { if((x*100>=_data.minFreqUser)&&(x*100<=_data.maxFreqUser)){set_target(x*100,true, _data.minFreqUser, _data.maxFreqUser); return true; }else return false; } else
     if(strcmp(var,fc_AUTO_RESET_FAULT)==0)      { if (x==0) SETBIT0(_data.setup_flags,fAutoResetFault);else SETBIT1(_data.setup_flags,fAutoResetFault);return true;  } else // для Омрона код не написан
     if(strcmp(var,fc_LogWork)==0)               { _data.setup_flags = (_data.setup_flags & ~(1<<fLogWork)) | ((x!=0)<<fLogWork); return true;  } else
+    if(strcmp(var,fc_fFC_RetOil)==0)            { _data.setup_flags = (_data.setup_flags & ~(1<<fFC_RetOil)) | ((x!=0)<<fFC_RetOil); return true;  } else
 
     #ifdef FC_ANALOG_CONTROL
     if(strcmp(var,fc_LEVEL0)==0)                { if ((x>=0)&&(x<=4096)) { level0=x; return true;} else return false;      } else 
@@ -551,6 +642,9 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
                                                 return true;            
                                                 } else  
     if(strcmp(var,fc_UPTIME)==0)                { if((x>=3)&&(x<600)){_data.Uptime=x;return true; } else return false; } else   // хранение в сек
+    if(strcmp(var,fc_ReturnOilPeriod)==0)       { _data.ReturnOilPeriod = (int16_t) x / (FC_TIME_READ/1000); return true; } else
+    if(strcmp(var,fc_ReturnOilPerDivHz)==0)     { _data.ReturnOilPerDivHz = (int16_t) x / (FC_TIME_READ/1000); return true; } else
+    if(strcmp(var,fc_ReturnOilTime)==0)         { _data.ReturnOilTime = (int16_t) x / (FC_TIME_READ/1000); return true; } else
     if(strcmp(var,fc_PID_STOP)==0)              { if((x>=50)&&(x<=100)){_data.PidStop=x;return true; } else return false;  } else // % от цели
     if(strcmp(var,fc_DT_COMP_TEMP)==0)          { if((x>=1)&&(x<=25)){_data.dtCompTemp=x*100;return true; } else return false; } else // градусы
 
@@ -572,6 +666,11 @@ boolean devOmronMX2::set_paramFC(char *var, float x)
 	if(strcmp(var,fc_DT_TEMP)==0)               { if((x>0)&&(x<10)){_data.dtTemp=x*100;return true; } else return false; } else // градусы
     if(strcmp(var,fc_DT_TEMP_BOILER)==0)        { if((x>0)&&(x<10)){_data.dtTempBoiler=x*100;return true; } else return false; } else // градусы
 	if(strcmp(var,fc_PidMaxStep)==0)            { if(x>=0 && x<10000){_data.PidMaxStep=x; return true; } else return false; } else // %
+	if(strcmp(var,fc_ReturnOilMinFreq)==0)      { _data.ReturnOilMinFreq = x; return true; } else
+	if(strcmp(var,fc_ReturnOilFreq)==0)         { _data.ReturnOilFreq = x; return true; } else
+	if(strcmp(var,fc_AdjustEEV_k)==0)           { _data.AdjustEEV_k = x; return true; } else
+	if(strcmp(var,fc_ReturnOil_AdjustEEV_k)==0) { _data.ReturnOil_AdjustEEV_k = x; return true; } else
+
     return false;
 }
 
