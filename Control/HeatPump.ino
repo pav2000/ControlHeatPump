@@ -1311,10 +1311,13 @@ void HeatPump::get_listChart(char* ret, const char *delimiter)
 		if(ChartsModSetup[index].object == STATS_OBJ_Temp) strcat(ret, sTemp[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_Press) strcat(ret, sADC[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_PressTemp) {
-	//	strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+#ifndef CONFIG_5
+		strcat(ret, sADC[ChartsModSetup[index].number].get_note());
+#else
         if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PEVA")==0) strcat(ret, "T° кипения");else
         if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PCON")==0) strcat(ret, "T° конденсации");else
 		{strcat(ret, "Температура "); strcat(ret, sADC[ChartsModSetup[index].number].get_name());}
+#endif
 			strcat(ret, ", °C");
 		} else if(ChartsModSetup[index].object == STATS_OBJ_Flow) strcat(ret, sFrequency[ChartsModSetup[index].number].get_note());
 		else strcat(ret, STATS_OBJ_names[ChartsModSetup[index].object]);
