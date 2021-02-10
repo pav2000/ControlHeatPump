@@ -81,17 +81,19 @@
 			<td nowrap><input id="get_net-passadmin" type="text" maxlength="10"><input type="submit" value=">" onclick="setParam('get_Net(PASSADMIN)');"></td>
 		</tr>
 		<tr>
-			<td>Логировать ошибки веб запросов</td>
+			<td>Логировать ошибки веб запросов <sup>3</sup></td>
 			<td><input type="checkbox" id="get_net-wlog" onchange="setParam('get_Net(WLOG)');"></td>
 		</tr>				
 		<tr>
-			<td> Детальный лог</td>
+			<td> Детальный лог<sup>4</sup></td>
 			<td><input type="checkbox" id="get_net-wflog" onchange="setParam('get_Net(WFLOG)');"></td>
 		</tr>				
 	</tbody>
 	</table>
 	1. Рекомендуется если контроллер имеет прямой выход в интернет<br/>
 	2. Если активирован режим safeNetwork запрос паролей не производится, но их можно изменить на этой странице<br/>
+	3. В журнал файл пишутся ошибки при работе web сервера<br/>
+	4. В журнал пишется подробная информация о работе сетевых сервисов (уведомления, HTPP запросы) за исключением web сервера<br/>
 	</div>
 
 <div class="row1">

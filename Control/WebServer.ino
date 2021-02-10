@@ -135,7 +135,7 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						if(HP.get_NetworkFlags() & ((1<<fWebLogError) | (1<<fWebFullLog))) {
+						if(HP.get_NetworkFlags() & ((1<<fWebLogError) /* | (1<<fWebFullLog)*/)) {
 							uint8_t ip[4];
 							W5100.readSnDIPR(sock, ip);
 							journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);

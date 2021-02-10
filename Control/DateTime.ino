@@ -167,7 +167,7 @@ boolean set_time_NTP(void)
 	boolean flag = false;
 	IPAddress ip(0, 0, 0, 0);
 
-	journal.jprintf_time("Update time from NTP server: %s\n", HP.get_serverNTP());
+	journal.jprintf(" Update time from NTP server: %s\n", HP.get_serverNTP());
 	//1. Установить адрес  не забываем работаетм через один сокет, опреации строго последовательные,иначе настройки сбиваются
 	WDT_Restart(WDT);                                        // Сбросить вачдог  при ошибке долго ждем
 
@@ -191,7 +191,7 @@ boolean set_time_NTP(void)
 	for(uint8_t i = 0; i < NTP_REPEAT; i++)                                       // Делам 5 попыток получить время
 	{
 		WDT_Restart(WDT);                                            // Сбросить вачдог
-		journal.jprintf(" Send packet NTP, wait . . .\n");
+		journal.jprintf(" Send packet NTP, wait . . .\n ");
 
 		memset(packetBuffer, 0, NTP_PACKET_SIZE);
 		// Initialize values needed to form NTP request
@@ -244,7 +244,7 @@ boolean set_time_NTP(void)
 		// обновились, можно и часы i2c обновить
 		setTime_RtcI2C(rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds());
 		setDate_RtcI2C(rtcSAM3X8.get_days(), rtcSAM3X8.get_months(), rtcSAM3X8.get_years());
-		journal.jprintf_date("Set time from NTP server");
+		journal.jprintf_date("Set time from NTP server\n");
 	} else {
 		journal.jprintf_date("ERROR update time from NTP server!");
 	}
