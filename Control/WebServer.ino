@@ -752,19 +752,21 @@ void parserGET(uint8_t thread, int8_t )
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
 		WEB_STORE_DEBUG_INFO(21);
+		
+#define strHP_OFF "The heat pump must be switched OFF" // 
 
 		if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			str += 8;
 			if(strcmp(str, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
-			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
+			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику set_SAVE_STATS
 				xSaveStats:		if((i = HP.save_motoHour()) == OK)
 					if((i = Stats.SaveStats(1)) == OK)
 						i = Stats.SaveHistory(1);
 				_itoa(i, strReturn);
-			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению
-				if(HP.is_compressor_on()) _itoa(-1, strReturn);
+			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению (set_SAVE_UPD) - проверяет работу теплового насоса и если он выключен записывает статистику
+				if(HP.is_compressor_on()) strcat(strReturn,strHP_OFF);//_itoa(-1, strReturn);
 				else {
 					if(HP.dEEV.EEV != -1) HP.dEEV.set_EEV(HP.dEEV.get_maxEEV());
 					goto xSaveStats;
@@ -791,7 +793,7 @@ void parserGET(uint8_t thread, int8_t )
 			    strcat(strReturn,"Программирование инвертора, подробности смотри в журнале. Ожидайте 10 сек . . .");
 				HP.sendCommand(pPROG_FC);        // Послать команду
 				}
-				else strcat(strReturn,"The heat pump must be switched OFF");	
+				else strcat(strReturn,strHP_OFF);	
          ADD_WEBDELIM(strReturn);
          continue;
 		}
@@ -1308,7 +1310,7 @@ void parserGET(uint8_t thread, int8_t )
 			str += 7;
 			WEB_STORE_DEBUG_INFO(26);
 			if(strcmp(str, "Info") == 0) { // "get_sysInfo" - Функция вывода системной информации для разработчика
-				strcat(strReturn,"Источник загрузкки web интерфейса |");
+				strcat(strReturn,"Источник загрузки web интерфейса |");
 				switch (HP.get_SourceWeb())
 				{
 				case pMIN_WEB:   strcat(strReturn,"internal;"); break;
