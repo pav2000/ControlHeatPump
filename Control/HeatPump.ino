@@ -2034,7 +2034,7 @@ boolean HeatPump::boilerAddHeat()
 			}
 			if(!flagRBOILER || onBoiler) return false; // флажка нет или работет бойлер, но догрев не включаем
 			else {
-				if(T < b_target && (T >= Prof.Boiler.tempRBOILER || dRelay[RBOILER].get_Relay() || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
+				if(T < b_target && (T >= Prof.Boiler.tempRBOILER - Prof.Boiler.dAddHeat || dRelay[RBOILER].get_Relay() || GETBIT(Prof.Boiler.flags, fAddHeatingForce))) {  // Греем тэном
 					return true;
 				} else { // бойлер выше целевой температуры - цель достигнута или греть тэном еще рано
 					flagRBOILER = false;
@@ -2177,7 +2177,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently || flagRBOILER ? 0 : Prof.Boiler.dAddHeat)) {
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBh22; return pCOMP_OFF; // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
@@ -2205,7 +2205,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently || flagRBOILER ? 0 : Prof.Boiler.dAddHeat)) {
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
