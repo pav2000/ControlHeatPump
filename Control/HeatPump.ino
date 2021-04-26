@@ -3523,41 +3523,24 @@ char * HeatPump::TestToStr()
 int8_t HeatPump::save_DumpJournal(boolean f)
 {
 	uint8_t i;
-	if(f)  // вывод в журнал
-	{
-		journal.jprintf(" modWork:%X[%s]", (int) get_modWork(), codeRet[Status.ret]);
-		for(i = 0; i < RNUMBER; i++) journal.jprintf(" %s:%d", dRelay[i].get_name(), dRelay[i].get_Relay());
-		if(dFC.get_present()) journal.jprintf(" freqFC:%.2f", dFC.get_frequency() / 100.0);
-		if(dFC.get_present()) journal.jprintf(" Power:%.3f", dFC.get_power() / 1000.0);
+	void (Journal::*fn)(const char *format, ...) = f ? &Journal::jprintf : &Journal::printf;
+	((journal).*(fn))(" modWork:%X[%s]", (int) get_modWork(), codeRet[Status.ret]);
+	for(i = 0; i < RNUMBER; i++) ((journal).*(fn))(" %s:%d", dRelay[i].get_name(), dRelay[i].get_Relay());
+	if(dFC.get_present()) ((journal).*(fn))(" freqFC:%.2d", dFC.get_frequency());
+	if(dFC.get_present()) ((journal).*(fn))(" Power:%.3d", dFC.get_power());
 #ifdef EEV_DEF
 #ifdef EEV_PREFER_PERCENT
-		journal.jprintf(" EEV:%.2d", dEEV.calc_percent(dEEV.get_EEV()));
+	((journal).*(fn))(" EEV:%.2d", dEEV.calc_percent(dEEV.get_EEV()));
 #else
-		journal.jprintf(" EEV:%d", dEEV.get_EEV());
+	((journal).*(fn))(" EEV:%d", dEEV.get_EEV());
 #endif
 #endif
-		journal.jprintf(cStrEnd);
-		// Доп инфо
-		for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && !(SENSORTEMP[i] & 4)) journal.jprintf(" %s:%.2f", sTemp[i].get_name(), (float) sTemp[i].get_Temp() / 100);
-		for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) journal.jprintf(" %s:%.2f", sADC[i].get_name(), (float) sADC[i].get_Press() / 100);
-		journal.jprintf(cStrEnd);
-	} else {
-		journal.printf(" modWork:%X[%s]", (int) get_modWork(), codeRet[Status.ret]);
-		for(i = 0; i < RNUMBER; i++) journal.printf(" %s:%d", dRelay[i].get_name(), dRelay[i].get_Relay());
-		//SerialDbg.print(" dEEV.stepperEEV.isBuzy():");  SerialDbg.print(dEEV.stepperEEV.isBuzy());
-		//SerialDbg.print(" dEEV.setZero: ");  SerialDbg.print(dEEV.setZero);
-		if(dFC.get_present()) journal.printf(" freqFC:%.2f", dFC.get_frequency() / 100.0);
-		if(dFC.get_present()) journal.printf(" Power:%.3f", dFC.get_power() / 1000.0);
-#ifdef EEV_DEF
-#ifdef EEV_PREFER_PERCENT
-		journal.printf(" EEV:%.2d", dEEV.calc_percent(dEEV.get_EEV()));
-#else
-		journal.printf(" EEV:%d", dEEV.get_EEV());
-#endif
-#endif
-		journal.printf(cStrEnd);
-
-	}
+	for(i = 0; i < INUMBER; i++) ((journal).*(fn))(" %s:%d", sInput[i].get_name(), sInput[i].get_Input());
+	((journal).*(fn))(cStrEnd);
+	// Доп инфо
+	for(i = 0; i < TNUMBER; i++) if(sTemp[i].get_present() && !(SENSORTEMP[i] & 4)) ((journal).*(fn))(" %s:%.2d", sTemp[i].get_name(), sTemp[i].get_Temp());
+	for(i = 0; i < ANUMBER; i++) if(sADC[i].get_present()) ((journal).*(fn))(" %s:%.2d", sADC[i].get_name(), sADC[i].get_Press());
+	((journal).*(fn))(cStrEnd);
 	return OK;
 }
 

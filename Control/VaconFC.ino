@@ -772,6 +772,13 @@ int16_t devVaconFC::read_0x03_16(uint16_t cmd)
         HP.sInput[SPOWER].Read(true);
         if(HP.sInput[SPOWER].is_alarm()) break;
 #endif
+        if(GETBIT(HP.Option.flags, fBackupPower)) break;
+#ifdef SGENERATOR
+        if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
+        	HP.check_fBackupPower();
+            if(GETBIT(HP.Option.flags, fBackupPower)) break;
+        }
+#endif
         if(state == ERR_LINK_FC) {
         	result = ERR_LINK_FC;
         	break;
@@ -796,6 +803,21 @@ uint32_t devVaconFC::read_0x03_32(uint16_t cmd)
     {
         err = Modbus.readHoldingRegisters32(FC_MODBUS_ADR, cmd - 1, (uint32_t *)&result); // Послать запрос, Нумерация регистров с НУЛЯ!!!!
         if(err == OK) break; // Прочитали удачно
+#ifdef SPOWER
+        HP.sInput[SPOWER].Read(true);
+        if(HP.sInput[SPOWER].is_alarm()) break;
+#endif
+        if(GETBIT(HP.Option.flags, fBackupPower)) break;
+#ifdef SGENERATOR
+        if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) {
+        	HP.check_fBackupPower();
+            if(GETBIT(HP.Option.flags, fBackupPower)) break;
+        }
+#endif
+        if(state == ERR_LINK_FC) {
+        	result = ERR_LINK_FC;
+        	break;
+        }
         numErr++; // число ошибок чтение по модбасу
         journal.jprintf_time(cErrorRS485, name, __FUNCTION__, err); // Выводим сообщение о повторном чтении
         if(check_blockFC()) break; // проверить необходимость блокировки
