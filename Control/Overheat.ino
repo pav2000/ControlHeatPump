@@ -378,7 +378,7 @@ int16_t _PressToTemp(const int16_t press)
 __attribute__((always_inline)) inline int16_t PressToTemp(const uint8_t sensor)
 {
 	if(HP.sADC[sensor].Temp != ERROR_TEMPERATURE) return HP.sADC[sensor].Temp;
-	return HP.sADC[sensor].Temp = _PressToTemp(HP.sADC[sensor].get_Press());
+	return HP.sADC[sensor].Temp = _PressToTemp(HP.sADC[sensor].get_Value());
 }
 
 // Получить положение ЭРВ по температурам Конденсатора и Испарителя алгоритм ТАБЛИЦА

@@ -193,7 +193,7 @@ void vUpdateCommand(void *) __attribute__((naked));
 void vServiceHP(void *) __attribute__((naked));
 
 void setup() {
-	// 1. Инициализация SPI
+	// 1. Инициализация
 	// Баг разводки дуе (вероятность). Есть проблема с инициализацией spi.  Ручками прописываем
 	// https://groups.google.com/a/arduino.cc/forum/#!topic/developers/0PUzlnr7948
 	// http://forum.arduino.cc/index.php?topic=243778.0;nowap
@@ -222,7 +222,44 @@ void setup() {
 	Recover_I2C_bus();
 	delay(1);
 
-	// 2. Инициализация журнала и в нем последовательный порт
+	// Настройка сервисных выводов
+	pinMode(PIN_KEY1, INPUT_PULLUP);        // Кнопка 1
+	pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
+	pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
+	digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
+	digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+
+	// 2. Инициализация журнала
+	uint8_t b;
+	uint8_t ret = eepromI2C.read(I2C_COUNT_EEPROM, &b, 1);
+	if(ret == 0 && b != I2C_COUNT_EEPROM_HEADER && b != 0xFF) ret = 0xFF;
+#ifndef DEBUG
+	if(ret)
+#endif
+#ifndef DEBUG_NATIVE_USB
+	SerialDbg.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
+#endif
+	while(ret) {
+		SerialDbg.print("Wrong I2C EEPROM or setup, press KEY[D");
+		SerialDbg.print(PIN_KEY1);
+		SerialDbg.println("] to continue...");
+		if(!digitalReadDirect(PIN_KEY1)) {
+			WDT_Restart(WDT);
+			b = I2C_COUNT_EEPROM_HEADER;
+			ret = eepromI2C.write(I2C_COUNT_EEPROM, &b, 1);
+			if(ret) {
+				SerialDbg.print("Error ");
+				SerialDbg.print(ret);
+				SerialDbg.println(" write to EEPROM!");
+			} else SerialDbg.println("Wait...");
+			while(1) ;
+		}
+		for(uint8_t i = 0; i < 1000 / TIME_LED_ERR; i++) {
+			digitalWriteDirect(PIN_BEEP, i & 1);
+			digitalWriteDirect(PIN_LED_OK, i & 1);
+			delay(TIME_LED_ERR);
+		}
+	}
 	journal.Init();
 #ifdef POWER_CONTROL
 	delay(200);  // Не понятно но без нее иногда на старте срабатывает вачдог.  возможно проблема с буфером
@@ -389,17 +426,11 @@ x_I2C_init_std_message:
 	journal.jprintf("2. Init %s main class . . .\n",(char*)nameHeatPump);
 	HP.initHeatPump();                           // Основной класс
 
-	// 5. Установка сервисных пинов
-
+	// 5. Проверка сброса сети
+	// Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
 	journal.jprintf("3. Read safe Network key . . .\n");
-	pinMode(PIN_KEY1, INPUT);               // Кнопка 1, Нажатие при включении - режим safeNetwork (настрока сети по умолчанию 192.168.0.177  шлюз 192.168.0.1, не спрашивает пароль на вход в веб морду)
-	HP.safeNetwork=!digitalReadDirect(PIN_KEY1);
-	if (HP.safeNetwork)  journal.jprintf("Mode safeNetwork ON \n"); else journal.jprintf("Mode safeNetwork OFF \n");
-
-	pinMode(PIN_BEEP, OUTPUT);              // Выход на пищалку
-	pinMode(PIN_LED_OK, OUTPUT);            // Выход на светодиод мигает 0.5 герца - ОК  с частотой 2 герца ошибка
-	digitalWriteDirect(PIN_BEEP,LOW);       // Выключить пищалку
-	digitalWriteDirect(PIN_LED_OK,HIGH);    // Выключить светодиод
+	HP.safeNetwork = !digitalReadDirect(PIN_KEY1);
+	journal.jprintf("Mode safeNetwork %s\n", HP.safeNetwork ? "ON" : "OFF");
 
 	// 6. Чтение ЕЕПРОМ, надо раньше чем инициализация носителей веб морды, что бы знать откуда грузить
 	journal.jprintf("4. Load data from I2C memory . . .\n");

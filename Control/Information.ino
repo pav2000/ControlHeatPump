@@ -30,12 +30,6 @@
 void Journal::Init()
 {
 	err = OK;
-#ifdef DEBUG
-#ifndef DEBUG_NATIVE_USB
-	SerialDbg.begin(UART_SPEED);                   // Если надо инициализировать отладочный порт
-#endif
-#endif
-
 #ifndef I2C_EEPROM_64KB     // журнал в памяти
 	bufferTail = 0;
 	bufferHead = 0;
@@ -772,7 +766,7 @@ int8_t  Profile::convert_to_new_version(void)
 	  char checkSizeOfInt5[sizeof(DailySwitch)]={checker(&checkSizeOfInt5)};
 	//*/
 	uint16_t CNVPROF_SIZE_dataProfile, CNVPROF_SIZE_SaveON, CNVPROF_SIZE_HeatCool, CNVPROF_SIZE_Boiler, CNVPROF_SIZE_DailySwitch, CNVPROF_SIZE_ALL;
-	if(HP.Option.ver <= 144) {
+	if(HP.Option.ver <= 146) {
 		if(HP.Option.ver <= 135) {
 			CNVPROF_SIZE_dataProfile	=	120;
 			CNVPROF_SIZE_SaveON			= 	12;
@@ -786,13 +780,20 @@ int8_t  Profile::convert_to_new_version(void)
 			CNVPROF_SIZE_Boiler			=	64;
 			CNVPROF_SIZE_DailySwitch	=	30;
 			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
-		} else if(HP.Option.ver <= 144) {
+		} else if(HP.Option.ver <= 146) {
 			CNVPROF_SIZE_dataProfile	=	120;
 			CNVPROF_SIZE_SaveON			= 	12;
 			CNVPROF_SIZE_HeatCool		=	38;
 			CNVPROF_SIZE_Boiler			=	64;
 			CNVPROF_SIZE_DailySwitch	=	30;
 			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
+//		} else if(HP.Option.ver <= 147) {
+//			CNVPROF_SIZE_dataProfile	=	120;
+//			CNVPROF_SIZE_SaveON			= 	12;
+//			CNVPROF_SIZE_HeatCool		=	38;
+//			CNVPROF_SIZE_Boiler			=	68;
+//			CNVPROF_SIZE_DailySwitch	=	30;
+//			CNVPROF_SIZE_ALL = (sizeof(magic) + sizeof(crc16) + CNVPROF_SIZE_dataProfile + CNVPROF_SIZE_SaveON + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_HeatCool + CNVPROF_SIZE_Boiler + CNVPROF_SIZE_DailySwitch);
 		}
 		journal.jprintf("Converting Profiles to new version...\n");
 		if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)&Socket[0].outBuf, CNVPROF_SIZE_ALL * I2C_PROFIL_NUM)) return ERR_LOAD_EEPROM;
