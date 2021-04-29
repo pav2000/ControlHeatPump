@@ -1214,10 +1214,10 @@ void parserGET(uint8_t thread, int8_t )
 			strcat(strReturn,"K_VCC_POWER|Коэффициент пересчета для канала контроля напряжения питания (отсчеты/В)|");
 			_ftoa(strReturn,(float)K_VCC_POWER,2);strcat(strReturn,";");
 #endif
-			// SALLMONELA
-			strcat(strReturn,"SALLMONELA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALLMONELA_DAY,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"SALLMONELA_HOUR|Час когда начинаятся обеззарживание ГВС|");_itoa(SALLMONELA_HOUR,strReturn);strcat(strReturn,";");
-			strcat(strReturn,"SALLMONELA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_dtoa(strReturn, SALLMONELA_TEMP, 2);strcat(strReturn,";");
+			// SALMONELLA
+			strcat(strReturn,"SALMONELLA_DAY|День недели когда проводится обеззараживание ГВС (1-понедельник)|");_itoa(SALMONELLA_DAY,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"SALMONELLA_HOUR|Час когда начинаятся обеззарживание ГВС|");_itoa(SALMONELLA_HOUR,strReturn);strcat(strReturn,";");
+			strcat(strReturn,"SALMONELLA_TEMP|Целевая температура обеззараживания ГВС (°C)|");_dtoa(strReturn, SALMONELLA_TEMP, 2);strcat(strReturn,";");
 			// ЭРВ
 #ifdef EEV_DEF
 			strcat(strReturn,"EEV_QUEUE|Длина очереди команд шагового двигателя ЭРВ|");_itoa(EEV_QUEUE,strReturn);strcat(strReturn,";");
@@ -2803,7 +2803,7 @@ xLenErr:
 		while(1)  // Чтение остальных бинарных данных по сети
 		{
 			for(uint8_t i = 0; i < 255; i++) {
-				if(!Socket[thread].client.available()) _delay(1); else break; // ждем получние пакета до 20 мсек (может быть плохая связь)
+				if(!Socket[thread].client.available()) _delay(1); else break; // ждем получение пакета
 			}
 			if(!Socket[thread].client.available()) break;                                          // пакета нет - выходим
 			len = Socket[thread].client.get_ReceivedSizeRX();                                      // получить длину входного пакета

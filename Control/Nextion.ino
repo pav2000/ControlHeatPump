@@ -240,8 +240,8 @@ void Nextion::readCommand()
 		DataAvaliable = NEXTION_PORT.available();
 		if(p == NULL) break;
 		uint8_t len = p - buffer;
-#ifdef NEXTION_DEBUG
-		journal.jprintf("NXTRX: ");
+#ifdef NEXTION_DEBUG2
+		journal.jprintf("NRX%d: ", fUpdate);
 		for(uint8_t i = 0; i < len + 3; i++) journal.jprintf("%02x", buffer[i]);
 		journal.jprintf("\n");
 #endif
@@ -308,7 +308,7 @@ void Nextion::readCommand()
 					if(cmd2 == NXTID_BOILER_ONOFF) {                       // событие нажатие кнопки вкл/выкл ГВС
 						if(HP.get_BoilerON()) HP.set_BoilerOFF(); else HP.set_BoilerON();
 					} else if(cmd2 == NXTID_BOILER_PLUS || cmd2 == NXTID_BOILER_MINUS) {  // Изменение целевой температуры ГВС шаг изменения сотые градуса
-						setComponentText("tustgvs", ftoa(ntemp, (float) HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 100.0, 1));
+						setComponentText("tustgvs", dptoa(ntemp, HP.setTempTargetBoiler(cmd2 == NXTID_BOILER_PLUS ? 100 : -100) / 10, 1));
 					}
 				} else if(cmd1 == NXTID_PAGE_PROFILE) {
 					if(cmd2 == NXTID_SCHEDULER_OFF) {
@@ -327,29 +327,34 @@ void Nextion::readCommand()
 				}
 			}
 			break;
-		case 0x66:  // 	Current Page    // Произошла смена страницы
+		case 0x66:	// 	Current Page    // Произошла смена страницы
 			fUpdate = 2;
 			PageID = buffer[1];
 			break;
-		case 0x67:  // Touch Coordinate (awake)
-		case 0x68:  // Touch Coordinate (sleep)
-			break;
-		case 0x86:  // Auto Entered Sleep Mode
+		case 0x86:	// Auto Entered Sleep Mode
 			if(GETBIT(HP.Option.flags, fNextionOnWhileWork)) flags &= ~((HP.is_compressor_on() || HP.get_errcode() || HP.get_BackupPower())<<fSleep);
 			fUpdate = 0;
 			break;
-		case 0x87:   // выход из сна
+		case 0x87:	// выход из сна
 			fUpdate = 2;
 			break;
-		case 0x88:   // Power on
+		case 0x88:	// Power on
 			init_display();
-			break;
-		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
+			fUpdate = 2;
+			return;
+		case 0x03:	// Invalid Page ID
 			sendCommand("sendme");
-#ifdef NEXTION_DEBUG
-			journal.jprintf("Nextion(%d) RX: %02X\n", PageID, buffer[0]);
-#endif
-			_delay(10);
+			return;
+		case 0x1F:	// IO Operation failed
+		case 0x24:	// Serial Buffer overflow
+			fUpdate = 2;
+			return;
+//		case 0x00:	// Nextion has started or reset
+//		case 0x67:  // Touch Coordinate (awake)
+		case 0x68:  // Touch Coordinate (sleep)
+			fUpdate = 1;
+			break;
+//		default: // 0x00 - 	Invalid Instruction, 0x03 - Invalid Page ID, 0x1A,0x1B - Invalid Variable, 0x1E - Invalid Quantity of Parameters, 0x1F - IO Operation failed
 		}
 	}
 	if(fUpdate >= 2) Update();
@@ -426,7 +431,7 @@ void Nextion::Update()
 #endif
 #ifdef RBOILER
 			if((fl ^ Page1flags) & (1<<3)) {
-				if(fl & (1<<3)) sendCommand("t3.pco=63488"); else sendCommand("t3.pco=65535");
+				if(fl & (1<<3)) sendCommand(HP.dRelay[RBOILER].get_Relay() ? "t3.pco=63488" : "t3.pco=65280"); else sendCommand("t3.pco=65535");
 			}
 #endif
             if((fl ^ Page1flags) & (1<<4)) {

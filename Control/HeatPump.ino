@@ -660,7 +660,7 @@ void HeatPump::updateCount()
 // параметр изменение времени - корректировка
 void HeatPump::updateDateTime(int32_t dTime)
 {
-	if(dTime != 0)                                   // было изменено время, надо скорректировать переменные времени
+	if(dTime != 0 && dTime != int32_t(0x80000000))                                   // было изменено время, надо скорректировать переменные времени
 	{
 		Prof.SaveON.startTime = Prof.SaveON.startTime + dTime; // время пуска ТН (для организации задержки включения включение ЭРВ)
 		if(timeON > 0) timeON = timeON + dTime;                               // время включения контроллера для вычисления UPTIME
@@ -669,8 +669,8 @@ void HeatPump::updateDateTime(int32_t dTime)
 		if(countNTP > 0) countNTP = countNTP + dTime;                           // число секунд с последнего обновления по NTP
 		if(offBoiler > 0) offBoiler = offBoiler + dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
 		if(startDefrost > 0) startDefrost = startDefrost + dTime;                   // время срабатывания датчика разморозки
-//		if(timeBoilerOff > 0) timeBoilerOff = timeBoilerOff + dTime; // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
-		if(startSallmonela > 0) startSallmonela = startSallmonela + dTime;             // время начала обеззараживания
+		if(startSalmonella > 0) startSalmonella = startSalmonella + dTime;             // время начала обеззараживания
+
 	}
 }
       
@@ -704,7 +704,7 @@ void HeatPump::resetSettingHP()
 
 	startWait = false;                              // Начало работы с ожидания
 	onBoiler = false;                               // Если true то идет нагрев бойлера
-	onSallmonela = false;                           // Если true то идет Обеззараживание
+	onSalmonella = false;                           // Если true то идет Обеззараживание
 	command = pEMPTY;                               // Команд на выполнение нет
 	next_command = pEMPTY;
 	PauseStart = 0;                                 // начать отсчет задержки пред стартом с начала
@@ -729,7 +729,7 @@ void HeatPump::resetSettingHP()
 	offBoiler = 0;                                  // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
 	startDefrost = 0;                               // время срабатывания датчика разморозки
 	timeNTP = 0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
-	startSallmonela = 0;                            // время начала обеззараживания
+	startSalmonella = 0;                            // время начала обеззараживания
 	command_completed = 0;
 	time_Sun = 0;
 	compressor_in_pause = false;
@@ -1751,7 +1751,7 @@ xGoWait:
 	}
 
 	offBoiler = 0;                                         // Бойлер никогда не выключался
-	onSallmonela = false;                                  // Если true то идет Обеззараживание
+	onSalmonella = false;                                  // Если true то идет Обеззараживание
 	onBoiler = false;                                      // Если true то идет нагрев бойлера
 	SETBIT0(flags, fHP_BoilerTogetherHeat);
 
@@ -1988,33 +1988,33 @@ boolean HeatPump::boilerAddHeat()
 	int16_t T = sTemp[TBOILER].get_Temp();
 	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella)) && (!GETBIT(Option.flags, fBackupPower))) // Сальмонелла не взирая на расписание если включен бойлер и не питание от резервного источника
 	{
-		if((rtcSAM3X8.get_day_of_week() == SALLMONELA_DAY) && (rtcSAM3X8.get_hours() == SALLMONELA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSallmonela)) { // Надо начитать процесс обеззараживания
-			startSallmonela = rtcSAM3X8.unixtime();
-			onSallmonela = true;
+		if((rtcSAM3X8.get_day_of_week() == SALMONELLA_DAY) && (rtcSAM3X8.get_hours() == SALMONELLA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSalmonella)) { // Надо начитать процесс обеззараживания
+			startSalmonella = rtcSAM3X8.unixtime();
+			onSalmonella = true;
 			journal.jprintf(" Cycle start salmonella, %.2dC°\n", sTemp[TBOILER].get_Temp());
 		}
-		if(onSallmonela) {   // Обеззараживание нужно
-			if(startSallmonela + SALLMONELA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
-				if(T < SALLMONELA_TEMP) return true; // Включить обеззараживание
-#ifdef SALLMONELA_HARD
-				else if (T > SALLMONELA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
+		if(onSalmonella) {   // Обеззараживание нужно
+			if(startSalmonella + SALMONELLA_TIME > rtcSAM3X8.unixtime()) { // Время цикла еще не исчерпано
+				if(T < SALMONELLA_TEMP) return true; // Включить обеззараживание
+#ifdef SALMONELLA_HARD
+				else if (T > SALMONELLA_TEMP+50) return false; else return dRelay[RBOILER].get_Relay(); // Вариант работы - Стабилизация температуры обеззараживания, гистерезис 0.5 градуса
 #else
 				else {  // Вариант работы только до достижение темперaтуpы и сразу выключение
-					onSallmonela = false;
-					startSallmonela = 0;
+					onSalmonella = false;
+					startSalmonella = 0;
 					journal.jprintf(" Salmonella cycle finished, %.2dC°\n", sTemp[TBOILER].get_Temp());
 					return false;
 				}
 #endif
 			} else {  // Время вышло, выключаем, и идем дальше по алгоритму
-				onSallmonela = false;
-				startSallmonela = 0;
+				onSalmonella = false;
+				startSalmonella = 0;
 				journal.jprintf(" Salmonella cycle end, %.2dC°\n", sTemp[TBOILER].get_Temp());
 			}
 		}
-	} else if(onSallmonela) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму
-		onSallmonela = false;
-		startSallmonela = 0;
+	} else if(onSalmonella) { // если сальмонеллу отключили на ходу выключаем и идем дальше по алгоритму
+		onSalmonella = false;
+		startSalmonella = 0;
 		journal.jprintf(" Off salmonella\n");
 	}
 
@@ -2975,18 +2975,20 @@ xNextStop:
 	}
 
 #ifdef AUTO_START_GENERATOR
-	if(GETBIT(Option.flags, fBackupPower) && dFC.get_state() == ERR_LINK_FC) {
-		dRelay[RGEN].set_ON();
-		_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
-		for(uint16_t i = AUTO_START_GEN_TIMEOUT / (FC_TIME_READ / 1000); i > 0; i--) {
-			if(NO_Power) return;
-			if(is_next_command_stop()) goto xNextStop;
-			if(dFC.get_err() == OK) break;
-			_delay(FC_TIME_READ);
-		}
-		if(dFC.get_err() != OK) {
-			set_Error(ERR_FC_NO_LINK, (char*) __FUNCTION__);
-			return;
+	if(GETBIT(Option.flags, fBackupPower)) {
+		dRelay[RGEN].set_ON(); // Включаем или не даем выключиться
+		if(dFC.get_state() == ERR_LINK_FC) {
+			_delay(AUTO_START_GENERATOR * 1000); // Задержка на запуск, в том числе и для прогрева генератора
+			for(uint16_t i = AUTO_START_GEN_TIMEOUT / (FC_TIME_READ / 1000); i > 0; i--) {
+				if(NO_Power) return;
+				if(is_next_command_stop()) goto xNextStop;
+				if(dFC.get_err() == OK) break;
+				_delay(FC_TIME_READ);
+			}
+			if(dFC.get_err() != OK) {
+				set_Error(ERR_FC_NO_LINK, (char*) __FUNCTION__);
+				return;
+			}
 		}
 	}
 #endif

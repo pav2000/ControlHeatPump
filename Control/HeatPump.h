@@ -581,8 +581,7 @@ class HeatPump
     uint32_t stopCompressor;              // время останова компрессора (для опеспечения паузы)
     uint32_t offBoiler;                   // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
     uint32_t startDefrost;                // время срабатывания датчика разморозки
- //   uint32_t timeBoilerOff;               // Время переключения (находу) с ГВС на отопление или охлаждения (нужно для временной блокировки защит) если 0 то переключения не было
-    uint32_t startSallmonela;             // время начала обеззараживания
+    uint32_t startSalmonella;             // время начала обеззараживания
     uint32_t command_completed;			  // Время отработки команды
     boolean  compressor_in_pause;         // Компрессор в паузе
        
@@ -598,7 +597,7 @@ class HeatPump
     unsigned long updatePidBoiler;        // время обновления ПИДа ГВС
     boolean flagRBOILER;                  // true - идет или скоро может быть пойдет цикл догрева бойлера
     boolean onBoiler;                     // Если true то идет нагрев бойлера ТН (не ТЭНом)
-    boolean onSallmonela;                 // Если true то идет Обеззараживание
+    boolean onSalmonella;                 // Если true то идет Обеззараживание
     
     friend void set_Error(int8_t err, char *nam );// Установка критической ошибки для класса ТН
   };

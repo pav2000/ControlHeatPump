@@ -479,7 +479,7 @@ x_I2C_init_std_message:
 	}
 
 	journal.jprintf("7. Start read ADC sensors\n");
-	journal.jprintf("Temperature SAM3X8E: %.2f\n", temp_DUE());
+	//journal.jprintf("Temperature SAM3X8E: %.2f\n", temp_DUE());
 	start_ADC(); // после инициализации HP
 	//journal.jprintf(" Mask ADC_IMR: 0x%08x\n",ADC->ADC_IMR);
 
@@ -525,7 +525,7 @@ x_I2C_init_std_message:
 	journal.jprintf("13. Delayed start %s: ",(char*)nameHeatPump); if(HP.get_HP_ON()) journal.jprintf("YES\n"); else journal.jprintf("NO\n");
 
 #ifdef NEXTION
-	journal.jprintf("14. Nextion display -");
+	journal.jprintf("14. Nextion display: ");
 	if(GETBIT(HP.Option.flags, fNextion)) {
 		myNextion.init();
 	} else {
@@ -584,8 +584,8 @@ x_I2C_init_std_message:
 	// ПРИОРИТЕТ 1 средний - обслуживание вебморды в несколько потоков и дисплея Nextion
 	// ВНИМАНИЕ первый поток должен иметь больший стек для обработки фоновых сетевых задач
 	// 1 - поток
-	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+12,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
-	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+12);
+	if ( xTaskCreate(vWeb0,"Web0", STACK_vWebX+14,NULL,1,&HP.xHandleUpdateWeb0)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
+	HP.mRTOS=HP.mRTOS+64+4*(STACK_vWebX+14);
 #if W5200_THREAD >= 2 // - потока
 	if ( xTaskCreate(vWeb1,"Web1", STACK_vWebX,NULL,1,&HP.xHandleUpdateWeb1)==errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) set_Error(ERR_MEM_FREERTOS,(char*)nameFREERTOS);
 	HP.mRTOS=HP.mRTOS+64+4*STACK_vWebX;
@@ -897,9 +897,6 @@ void vReadSensor(void *)
 		for(i = 0; i < INUMBER; i++) HP.sInput[i].Read();                // Прочитать данные сухой контакт
 #ifdef SGENERATOR
 		if(GETBIT(HP.Option.flags2, f2BackupPowerAuto)) HP.check_fBackupPower();
-#endif
-#ifdef AUTO_START_GENERATOR
-		if(GETBIT(HP.Option.flags, fBackupPower) && HP.is_compressor_on()) HP.dRelay[RGEN].set_ON(); // Не даем генератору выключиться
 #endif
 		for(i = 0; i < FNUMBER; i++) HP.sFrequency[i].Read();			// Получить значения датчиков потока
 
