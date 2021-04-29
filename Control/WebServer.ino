@@ -237,9 +237,7 @@ xUNAUTHORIZED:
 		//	vTaskDelay(TIME_WEB_SERVER / portTICK_PERIOD_MS); // задержка чтения уменьшаем загрузку процессора
 			taskYIELD();
 		} // end if (client)
-#ifdef FAST_LIB  // Переделка
 	}  // for (int sock = 0; sock < W5200_SOCK_SYS; sock++)
-#endif
 	SemaphoreGive (xWebThreadSemaphore);              // Семафор отдать
 }
 
@@ -271,7 +269,7 @@ void readFileSD(char *filename, uint8_t thread)
 		filename += 8;
 		if(strcmp(filename, ".txt") == 0) {	get_txtSettings(thread); return; }
 		else if(strcmp(filename, ".bin") == 0) {
-			if(!get_binSettings(thread)) journal.jprintf("Error download %s\n", filename);
+			if(!get_binSettings(thread)) journal.jprintf("Error download %s%s\n", "settings", filename);
 			return;
 		}
 		filename -= 8;
@@ -645,7 +643,6 @@ void parserGET(uint8_t thread, int8_t )
 		}
 		if (strcmp(str,"update_NTP")==0)  // Функция update_NTP обновление времени по NTP
 		{
-			// set_time_NTP();                                                 // Обновить время
 			HP.timeNTP=0;                                    // Время обновления по NTP в тиках (0-сразу обновляемся)
 			strcat(strReturn,"Update time from NTP");
 			ADD_WEBDELIM(strReturn);
@@ -2795,21 +2792,22 @@ xLenErr:
 		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
 		if(pStart == NULL) {              // Заголовок не найден
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
+			if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("%s\n\n", ptr);
 			return pSETTINGS_ERR;
 		}
-		len=pStart+sizeof(HEADER_BIN) - (byte*) Socket[thread].inBuf-1;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные
+		len=pStart+sizeof(HEADER_BIN)-1 - (byte*) Socket[thread].inBuf;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные
 		buf_len = size - len;                                                   // определяем размер бинарных данных в первом пакете 
 		memcpy(Socket[thread].outBuf, pStart+sizeof(HEADER_BIN)-1, buf_len);    // копируем бинарные данные в буфер, без заголовка!
-	    lenFile=lenFile-len;                                                    // корректируем длину файла на длину заголовка (только бинарные данные)
-		while(buf_len < lenFile)  // Чтение остальных бинарных данных по сети
+		while(1)  // Чтение остальных бинарных данных по сети
 		{
-			for(uint8_t i=0;i<20;i++) if(!Socket[thread].client.available()) _delay(1);else break; // ждем получние пакета до 20 мсек (может быть плохая связь)
+			for(uint8_t i = 0; i < 255; i++) {
+				if(!Socket[thread].client.available()) _delay(1); else break; // ждем получние пакета до 20 мсек (может быть плохая связь)
+			}
 			if(!Socket[thread].client.available()) break;                                          // пакета нет - выходим
 			len = Socket[thread].client.get_ReceivedSizeRX();                                      // получить длину входного пакета
-			if(len > W5200_MAX_LEN - 1) len = W5200_MAX_LEN - 1;                                   // Ограничить размером в максимальный размер пакета w5200
-			Socket[thread].client.read(Socket[thread].inBuf, len);                                 // прочитать буфер
-			if(buf_len + len >= (int32_t) sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
-			memcpy(Socket[thread].outBuf + buf_len, Socket[thread].inBuf, len);                    // Добавить пакет в буфер
+			if(len > W5200_MAX_LEN) len = W5200_MAX_LEN;                                   		// Ограничить размером в максимальный размер пакета w5200
+			if(buf_len + len > (int32_t)sizeof(Socket[thread].outBuf)) return pSETTINGS_MEM;     // проверить длину если не влезает то выходим
+			Socket[thread].client.read((uint8_t*)Socket[thread].outBuf + buf_len, len);            // прочитать буфер
 			buf_len = buf_len + len;                                                               // определить размер данных
 		}
 	    ptr = (byte*) Socket[thread].outBuf;     

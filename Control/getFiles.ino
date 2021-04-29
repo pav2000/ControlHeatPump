@@ -704,44 +704,50 @@ void get_txtSettings(uint8_t thread)
 // Записать в клиента бинарный файл настроек
 bool get_binSettings(uint8_t thread)
 {
-	uint32_t len;
+	int len;
 	// 1. Заголовок
     strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
     strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
     strcat(Socket[thread].outBuf, "settings.bin\"\r\n\r\n");
-	sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
-	strcpy(Socket[thread].outBuf,"Ver. "); // Записать номер версии в которой делалось сохранение
+	strcat(Socket[thread].outBuf, "Ver. "); // Записать номер версии в которой делалось сохранение
     strcat(Socket[thread].outBuf, VERSION);
     strcat(Socket[thread].outBuf, " ");
     // Сюда можно запихивать текстовую информацию, при чтении бинарных данных она будет игнорироваться
     strcat(Socket[thread].outBuf, HEADER_BIN); // Заголовок по которому определяется начало "бинарных данных"
-    sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, strlen(Socket[thread].outBuf), 0);
+    len = strlen(Socket[thread].outBuf);
+    if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, len, 0) != len) return 0;
 
-//	sendConstRTOS(thread, HEADER_BIN); // Заголовок по которому определяется начало "полезных данных"
-	
 	// 2. Запись настроек ТН
-	if((len = HP.save())<= 0) return 0; // записать настройки в еепром, а потом будем их писать и получить размер записываемых данных
-	if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)Socket[thread].outBuf, len)) {
+	//if((len = HP.save())<= 0) return 0; // записать настройки в еепром,
+    uint16_t *size = (uint16_t *)Socket[thread].outBuf;
+	if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*)size, sizeof(*size))) {
 		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SETTING_EEPROM);
 		return 0;
 	}
-	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
-//	// 3. Запись всех профилей
-	if(HP.Prof.save(HP.Prof.get_idProfile()) <= 0) return 0;
+	len = *size;
+	if(len > W5200_MAX_LEN) return 0;
+	if(readEEPROM_I2C(I2C_SETTING_EEPROM + 2, (byte*)Socket[thread].outBuf + 2, len)) {
+		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SETTING_EEPROM);
+		return 0;
+	}
+	len += 2;
+	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) return 0; // передать пакет, при ошибке выйти
+	// 3. Запись всех профилей
+	//if(HP.Prof.save(HP.Prof.get_idProfile()) <= 0) return 0;
 	len = HP.Prof.get_sizeProfile() * I2C_PROFIL_NUM;
-	if(len > sizeof(Socket[thread].outBuf)) len = sizeof(Socket[thread].outBuf);
+	if(len > (int)sizeof(Socket[thread].outBuf)) return 0;
 	if(readEEPROM_I2C(I2C_PROFILE_EEPROM, (byte*)Socket[thread].outBuf, len)) {
 		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_PROFILE_EEPROM);
 		return 0;
 	}
-	if(sendPacketRTOS(thread, (byte*) Socket[thread].outBuf, len, 0) == 0) return 0; // передать пакет, при ошибке выйти
+	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) return 0; // передать пакет, при ошибке выйти
 	
     // 4. Расписание
-	if(sendPacketRTOS(thread, (byte*) &HP.Schdlr.sch_data, sizeof(HP.Schdlr.sch_data), 0) == 0) return 0; // передать пакет, при ошибке выйти
-	else {
-	    uint16_t crc16 = HP.Schdlr.get_crc16((uint8_t *)&HP.Schdlr.sch_data);
-	    if(sendPacketRTOS(thread, (byte*) &crc16, sizeof(crc16), 0) == 0) return 0;
+	if((len = HP.Schdlr.load((byte*) Socket[thread].outBuf)) <= 0) {
+		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SCHEDULER_EEPROM);
+		return 0;
 	}
+	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) return 0; // передать пакет, при ошибке выйти
 	return true;
 }
 

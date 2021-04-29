@@ -1175,6 +1175,7 @@ void HeatPump::get_listChart(char* ret, const char *delimiter)
 			strcat(ret, sADC[ChartsModSetup[index].number].get_note());
 			strcat(ret, ", °C");
 		} else if(ChartsModSetup[index].object == STATS_OBJ_Flow) strcat(ret, sFrequency[ChartsModSetup[index].number].get_note());
+		else strcat(ret, STATS_OBJ_names[ChartsModSetup[index].object]);
 		strcat(ret, delimiter);
 	}
 	for(uint8_t index = 0; index < sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]); index++) {

@@ -257,19 +257,19 @@ int16_t Scheduler::load(uint8_t *data)
 		if(data == NULL) {
 			data = (uint8_t *)&sch_data;
 			ret = 0;
-			journal.jprintf("load ");
+			journal.jprintf("load");
 		} else {
 			ret = 2; // +crc16
-			journal.jprintf("save ");
+			journal.jprintf("save");
 		}
 	    if(readEEPROM_I2C(I2C_SCHEDULER_EEPROM, data, sizeof(sch_data))) {
 	        set_Error(ERR_LOAD_EEPROM, (char *) get_name());
-	        journal.jprintf("Error!\n");
+	        journal.jprintf(" - Error!\n");
 	        return ERR_SAVE_EEPROM;
 	    } else if(ret) {
 	    	uint16_t crc = get_crc16((uint8_t *)&sch_data);
 	    	*(uint16_t *)(data + sizeof(sch_data)) = crc;
-	    	journal.jprintf("crc: %04x ", crc);
+	    	journal.jprintf(" - crc: %04x, ", crc);
 	    }
 	    ret += sizeof(sch_data);
 #ifndef LOAD_VERIFICATION
