@@ -984,7 +984,7 @@ boolean HeatPump::set_datetime(char *var, char *c)
 		} else return false;
 	} else return false;
 
-	if(dTime != 0) updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
+	updateDateTime(dTime);    // было изменено время, надо скорректировать переменные времени
 	return true;
 }
 

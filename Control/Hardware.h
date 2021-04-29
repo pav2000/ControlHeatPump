@@ -92,18 +92,13 @@ class sensorADC
   private:
     int16_t Value;                                       // значение датчика (обработанное) в сотых
     struct {     // Save GROUP, firth number
-   	uint8_t number;										 // Номер
-    int16_t zeroValue;                                   // отсчеты АЦП при нуле датчика
-    union {
-    	float transADC_f;
-    	struct {
-    		uint16_t transADC;                           // коэффициент пересчета АЦП в значение, тысячные
-    	    uint16_t _reserved_2;
-    	} __attribute__((packed));
-    };
-    int16_t testValue;                                   // давление датчика в режиме тестирования
-    int16_t minValue;                                    // минимально разрешенное значение
-    int16_t maxValue;                                    // максимально разрешенное значение
+		uint8_t number;									 // Номер
+		int16_t zeroValue;                               // отсчеты АЦП при нуле датчика
+		uint16_t transADC;                               // коэффициент пересчета АЦП в значение, тысячные
+		uint16_t _reserved_2;
+		int16_t testValue;                               // давление датчика в режиме тестирования
+		int16_t minValue;                                // минимально разрешенное значение
+		int16_t maxValue;                                // максимально разрешенное значение
     } __attribute__((packed)) cfg;// Save Group end
     TEST_MODE testMode;                                  // Значение режима тестирования
     uint16_t lastADC;                                    // Последние значение отсчета ацп
@@ -455,7 +450,9 @@ uint16_t maxPower;                      // максимальная мощнос
   #ifdef USE_SDM630    // Регистры 3-х фазного счетчика SDM630.
 	const char *nameSDM = {"SDM630"};                               // Имя счетчика
 	// Адрес уже уменьшен на 1
+#ifndef SDM_VOLTAGE
     #define SDM_VOLTAGE     42
+#endif
     #define SDM_CURRENT     48
     #define SDM_AC_POWER    52
     #define SDM_POWER       56

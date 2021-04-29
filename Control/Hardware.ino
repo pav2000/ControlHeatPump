@@ -283,9 +283,8 @@ int8_t sensorADC::set_testValue(int16_t p)
 
 void sensorADC::after_load(void)
 {
-	if(HP.Option.ver <= 131) {
-		cfg.transADC = rd(cfg.transADC_f, 1000);
-	}
+//	if(HP.Option.ver <= 131) {
+//	}
 }
 
 // ------------------------------------------------------------------------------------------

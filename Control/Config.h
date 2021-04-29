@@ -3334,6 +3334,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#endif
 	#define USE_ELECTROMETER_SDM    // + Наличие счетчика SDM
 	#define USE_SDM630        	  	// Наличие счетчика SDM630 - 3 фазы
+	#define SDM_VOLTAGE      4		// Ячейка напряжения
 	//#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
 	#define ADD_FC_POWER_WHEN_GENERATOR // Прибавлять расчитанную мощность частотника к показаниям счетчика, когда работа через генератор
 	#define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
