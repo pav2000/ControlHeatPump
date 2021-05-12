@@ -3312,7 +3312,7 @@ const char *noteTemp[] = {"Температура улицы",
 //	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
-	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
+	#define CONFIG_NOTE   "Частотник(3ф), охлаждение, ЭРВ, РТО, ТП, СК, ВаттРоутер"
 	// Danfoss HLP068T4LC6, Vacon 10 (12A), ПТО: B3-052-46-HQ, РТО: HE 4.0, ЭРВ: ETS 6-25
 	// Геоконтур: 6x50м ПНД50/ПП20 коаксил, Солнечный Коллектор: 6х50м ПНД 20.
 	#define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -3376,7 +3376,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 //		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+//		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 //		#define NEXTION_DEBUG 			// Отладка дисплея Nextion - отправка
 //		#define NEXTION_DEBUG2 			// Отладка дисплея Nextion - прием
 //		#define DEBUG_PID				// Отладка ПИДа
@@ -3607,7 +3607,7 @@ const char *noteTemp[] = {"Температура улицы",
 							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
-	#define ADC_SENSOR_PEVA		13		// A11, X33. датчик давления испарителя
+	#define ADC_SENSOR_PEVA		13		// A11/PIN_65. X33. датчик давления испарителя
 	#define ADC_SENSOR_PCON		12		// A10, X31. датчик давления конденсатора
 	#define ADC_SENSOR_PGEO		4		// A3, X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
@@ -3641,6 +3641,7 @@ const char *noteTemp[] = {"Температура улицы",
 
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Исполнительные устройства (реле и сухие контакты) ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
+	// Проверочный regexp: "PIN_[a-zA-Z0-9_]+[\s\t]+\d+"
 	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
 	#define RNUMBER                    12 // Число исполнительных устройств (всех)
 	// устройства DC 24V
@@ -3701,9 +3702,11 @@ const char *noteTemp[] = {"Температура улицы",
 
 	//#define RELAY_WAIT_SWITCH	11			// Заморозить выполнение задач на это время после переключения реле, ms
 
-	#define CORRECT_POWER220				// Корректировка потребляемой мощности из электросети (и для расчета COP), если включены указанные реле, Вт
+	#define NOLINK_SUM_POWER_PUMP 200  		// Мощность потребления насосов, для добавления к мощности компрессора, если нет связи со электро-счетчиком, Вт
+	#define CORRECT_POWER220				// Корректировка потребляемой мощности из электросети (и для расчета COP), если включены указанные реле, Вт при 220V
 	#ifdef CORRECT_POWER220
 		CORRECT_POWER220_STRUCT correct_power220[] = { {RPUMPFL, 25} }; // Обороты: III = 45 Вт, II = 22 Вт, ТП-4 = 25
+		#define CORRECT_POWER220_EXCL_RBOILER// Вычитание мощности бойлера, включая данные ваттроутера, Вт при 220V
 	#endif
 	#define STATS_SKIP_COP_WHEN_RELAY_ON 	RBOILER	// Пропускать логирование COP при включенном реле
 
@@ -4013,21 +4016,21 @@ const char *noteTemp[] = {"Температура улицы",
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
 	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
 	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b), десятые Вт
-#ifndef TEST_BOARD
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-#else
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-	#undef HTTP_LowConsumeRequest
-	#undef WR_PowerMeter_Modbus
-	#define IWR 0
-	#define WR_CurrentSensor_4_20mA	IWR
-#endif
 
-	#define WR_Load_pins_Boiler_INDEX 	 0							// Индекс бойлера в массиве WR_Load_pins
-	#define WR_Boiler_Hysteresis		100							// Гистерезис бойлера, сотые градуса
-	#define WR_Boiler_Substitution_INDEX 3							// Индекс подменной нагрузки для бойлера
-	#define WR_Boiler_Substitution_pin	13							// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
-	#define WR_Boiler_Substitution_swtime 50						// Время переключения контактора, мсек
+	#define WR_Load_pins_Boiler_INDEX		0						// Индекс бойлера в массиве WR_Load_pins
+	#define WR_Boiler_Hysteresis			100						// Гистерезис бойлера, сотые градуса
+	#define WR_Boiler_Substitution_INDEX	3						// Если бойлер нагрет - Индекс подменной нагрузки для бойлера, должен быть больше индекса бойлера
+	#define PIN_WR_Boiler_Substitution		13						// Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
+	#define WR_Boiler_Substitution_swtime	50						// Время переключения контактора, мсек
+
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
+
+#ifndef TEST_BOARD
+#else
+	#undef HTTP_LowConsumeRequest
+	#undef PIN_WR_Boiler_Substitution
+	#define PIN_WR_Boiler_Substitution		43
+#endif
 
 	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
 	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс

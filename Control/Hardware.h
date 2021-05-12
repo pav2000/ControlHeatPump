@@ -341,6 +341,7 @@ public:
 	boolean setZero;                                       // признак ПРОЦЕССА обнуления EEV;
 	int16_t EEV;                                           // Текущая  АБСОЛЮТНАЯ позиция
 	int16_t OverheatTCOMP;								// перегрев TCOMPIN-T[PEVA]
+	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
 
 private:
 	boolean fPause;                                        // пауза алгоритма отслеживания true
@@ -348,7 +349,6 @@ private:
 	int8_t stepDown();                                     // 1 Шаг в минус возвращает код ошибки
 	int8_t stepUp();                                       // 1 Шаг в плюс возвращает код ошибки
 
-	PID_WORK_STRUCT pidw;  								// переменные пид регулятора
 	int16_t Overheat;                                    // Перегрев текущий (сотые градуса)
 	int16_t OHCor_tdelta;								 // Расчитанная целевая дельта Нагнетание-Конденсации
 	int16_t OHCor_tdelta_prev;							 // Расчитанная целевая дельта Нагнетание-Конденсации
