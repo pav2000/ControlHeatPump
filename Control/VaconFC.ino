@@ -54,6 +54,7 @@ int8_t devVaconFC::initFC()
 	_data.stepFreqBoiler = DEF_FC_STEP_FREQ_BOILER;    // Шаг уменьшения инвертора при достижении максимальной температуры, мощности и тока ГВС в 0.01
 	_data.dtTemp = DEF_FC_DT_TEMP;                     // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
 	_data.dtTempBoiler = DEF_FC_DT_TEMP_BOILER;        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
+	_data.PidMaxStep = 1000;
 	flags = 0x00;                                	   // флаги  0 - наличие FC
 	_data.setup_flags = 0;
 #ifndef FC_ANALOG_CONTROL
@@ -281,7 +282,11 @@ int8_t devVaconFC::set_target(int16_t x, boolean show, int16_t _min, int16_t _ma
 	}
 	if(err == OK) {
 		if(GETBIT(flags, fOnOff) && _data.AdjustEEV_k) {
-			HP.dEEV.set_EEV((int32_t)HP.dEEV.get_EEV() + (x - FC_target) * _data.AdjustEEV_k / 10000);
+			int16_t n = (x - FC_target) * _data.AdjustEEV_k / 10000L;
+			HP.dEEV.set_EEV(HP.dEEV.get_EEV() + n);
+			if(GETBIT(HP.dEEV.get_flags(), fEEV_DirectAlgorithm)) {
+				HP.dEEV.pidw.max = 1 + (n > 5 ? 1 : 0); // пропустить итераций
+			}
 		}
 		FC_target = x;
 		if(show) journal.jprintf(" Set %s[%s]: %.2d%%\n", name, (char *)codeRet[HP.get_ret()], FC_target);
@@ -604,6 +609,7 @@ void devVaconFC::get_paramFC(char *var,char *ret)
 #endif
     } else
    	if(strcmp(var, fc_FC_TIME_READ)==0)   		{  _itoa(FC_TIME_READ, ret); } else
+   	if(strcmp(var, fc_PidMaxStep)==0)   		{  _dtoa(ret, _data.PidMaxStep, 2); } else
     if(strcmp(var, fc_AdjustEEV_k)==0)			{  _dtoa(ret, (int32_t)_data.AdjustEEV_k * 100 / HP.dEEV.get_maxEEV(), 2); } else
 
     strcat(ret,(char*)cInvalid);
@@ -649,8 +655,9 @@ boolean devVaconFC::set_paramFC(char *var, float f)
 		if(strcmp(var,fc_MAX_FREQ_BOILER)==0)       { if(x>=0){_data.maxFreqBoiler=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_USER)==0)         { if(x>=0){_data.maxFreqUser=x;return true; } } else // %
 		if(strcmp(var,fc_MAX_FREQ_GEN)==0)          { if(x>=0){_data.maxFreqGen=x;return true; } } else // %
-		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if(x>=0 && x<=FC_PID_MAX_STEP){ _data.PidFreqStep=x; return true; } } else // %
+		if(strcmp(var,fc_PID_FREQ_STEP)==0)         { if(x>=0 && x<=_data.PidMaxStep){ _data.PidFreqStep=x; return true; } } else // %
 		if(strcmp(var,fc_STEP_FREQ)==0)             { if(x>=0 && x<10000){_data.stepFreq=x;return true; } } else // %
+		if(strcmp(var,fc_PidMaxStep)==0)            { if(x>=0 && x<10000){_data.PidMaxStep=x; return true; } } else // %
 		if(strcmp(var,fc_STEP_FREQ_BOILER)==0)      { if(x>=0 && x<10000){_data.stepFreqBoiler=x;return true; } } // %
  
     return false;
@@ -752,7 +759,7 @@ inline int16_t devVaconFC::read_stateFC()
 #endif
 }
 
-// Tемпература радиатора
+// Tемпература радиатора, C
 int16_t devVaconFC::read_tempFC()
 {
 #ifndef FC_ANALOG_CONTROL // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
