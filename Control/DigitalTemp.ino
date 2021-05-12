@@ -138,9 +138,21 @@ int8_t sensorTemp::Read()
 				// Защита от скачков
 				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
 					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
+				} else { // Данные сильно отличаются от предыдущих - "СКАЧЕК"
 				   nGap++;
-				   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
+				   if((get_setup_flags() & ((1<<fTEMP_dont_log_errors) | (1<<fTEMP_ignory_errors))) == ((1<<fTEMP_dont_log_errors) | (1<<fTEMP_ignory_errors))) {
+					   if(ttemp == 8500) {
+						   if(nGap > 1) nGap--;
+					   } else if(nGap > GAP_NUMBER_BAD) {
+						   nGap = 0;
+						   lastTemp = ttemp;
+					   }
+				   } else if(get_setup_flag(fTEMP_ignory_CRC)) {
+					   if(nGap > GAP_NUMBER_CRC ) {
+						   nGap = 0;
+					   	   lastTemp = ttemp;
+					   }
+				   } else if(nGap > GAP_NUMBER) {
 					   nGap = 0;
 					   lastTemp = ttemp;
 				   }

@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.092";
+var VER_WEB = "1.099";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -84,7 +84,7 @@ function setParam(paramid, resultid) {
 			element.placeholder = "";
 		}
 	}
-	loadParam(encodeURIComponent(elsend), true, resultid);
+	loadParam(encodeURIComponent(elsend.replace(/&/g,'$')), true, resultid);
 }
 
 var NeedLogin = sessionStorage.getItem("NeedLogin");
@@ -132,7 +132,8 @@ function loadParam(paramid, noretry, resultdiv) {
 						}
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
-								values = arr[i].split('=');
+								var j = arr[i].indexOf('=');
+								var values = [arr[i].substring(0,j), arr[i].substring(j+1)];
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
 								var type, element;
 								if(/get_status|get_pFC[(]INFO|get_sys|^CONST|get_socketInfo/.test(values[0])) type = "const"; 
@@ -296,11 +297,11 @@ function loadParam(paramid, noretry, resultdiv) {
 												content += '<td>' +count[j]+ '</td>';
 												content += '<td id="get_npress-' +P+ '"></td>';
 												content += '<td id="get_press-' +P+ '" nowrap>-</td>';
-												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" min="0" max="2048" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" min="0" max="4" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
-												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" min="-1" max="50" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_minpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_minPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_maxpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_maxPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_zeropress-' +P+ '" type="number" step="1"><input type="submit" value=">" onclick="setParam(\'get_zeroPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_transpress-' +P+ '" type="number" step="0.001"><input type="submit" value=">" onclick="setParam(\'get_transPress(' +count[j]+ ')\');"></td>';
+												content += '<td nowrap><input id="get_testpress-' +P+ '" type="number" step="0.01"><input type="submit" value=">" onclick="setParam(\'get_testPress(' +count[j]+ ')\');"></td>';
 												content += '<td id="get_pinpress-' +P+ '">-</td>';
 												content += '<td id="get_adcpress-' +P+ '">-</td>';
 												content += '<td id="get_epress-' +P+ '">-</td>';
@@ -551,6 +552,21 @@ function loadParam(paramid, noretry, resultdiv) {
 													+ '</td><td nowrap><input id="get_prof-dss' + j + '" type="text" size="6" value="' + tflds[2] + '"> <input type="submit" value=">" onclick="setDS(\'S\',' + j + ')"></td><td nowrap><input id="get_prof-dse' + j + '" type="text" size="6" value="' + tflds[3] + '"> <input type="submit" value=">" onclick="setDS(\'E\',' + j + ')"></td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
+										} else if(values[0] == 'get_tblWR') {
+											var content = "", upsens = "", loadsens = "";
+											var count = Number(values[1]);
+											for(var j = 0; j < count; j++) {
+												loadsens = loadsens + "get_oHP(WL" + j + "),get_oHP(WP" + j + "),get_oHP(WR" + j + "),get_WRN(" + j + "),";
+												upsens += "get_WRL(" + j + "),get_WRT(" + j + "),";
+												content += '<tr><td>' + (j+1) + '</td><td><input type="checkbox" id="get_ohp-wl' + j + '" onchange="setParam(\'get_oHP(WL' + j + ')\')"></td>';
+												content += '<td><input type="checkbox" id="get_ohp-wp' + j + '" onchange="setParam(\'get_oHP(WP' + j + ')\')" disabled></td>';
+												content += '<td nowrap><input id="get_ohp-wr' + j + '" type="number"><input type="submit" value=">" onclick="setParam(\'get_oHP(WR' + j + ')\')"></td>';
+												content += '<td nowrap><input id="get_wrl-' + j + '" type="number"><input type="submit" value=">" onclick="setParam(\'get_WRL(' + j + ')\')"></td>';
+                                                content += '<td id="get_wrt-' + j + '"></td><td id="get_wrn-' + j + '"></td></tr>';
+											}
+											document.getElementById(valueid).innerHTML = content;
+											loadParam(loadsens);
+											updateParam(upsens);
 										} else {
 											var content = values[1].replace(/</g, "&lt;").replace(/\|$/g, "").replace(/\|/g, "</td><td>").replace(/\n/g, "</td></tr><tr><td>");
 											var element = document.getElementById(valueid);

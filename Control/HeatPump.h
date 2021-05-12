@@ -411,6 +411,7 @@ class HeatPump
    
    // Бойлер ТН
     int16_t get_boilerTempTarget();					          // Получить целевую температуру бойлера с учетом корректировки
+    __attribute__((always_inline)) inline int16_t Boiler_Target_AddHeating() { return Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat); }
     boolean get_Circulation(){return GETBIT(Prof.Boiler.flags,fCirculation);} // Нужно ли управлять циркуляционным насосом болйлера
     uint16_t get_CirculWork(){ return Prof.Boiler.Circul_Work; }            // Время  работы насоса ГВС секунды (fCirculation)
     uint16_t get_CirculPause(){ return Prof.Boiler.Circul_Pause;}           // Пауза в работе насоса ГВС  секунды (fCirculation)
