@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2023 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * Частотный преобразователь Vacon 10
  * Автор vad711, vad7@yahoo.com

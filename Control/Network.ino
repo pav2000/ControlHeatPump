@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+ * Copyright (c) 2016-2023 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
  * &                       by Vadim Kulakov vad7@yahoo.com, vad711
  * "Народный контроллер" для тепловых насосов.
  * Данное програмноое обеспечение предназначено для управления
@@ -905,8 +905,6 @@ boolean sendNarodMon(boolean debug)
 #macN#valueN[#timeN][#nameN]\n
 ##
 */
-
-
 // debug  true - выводить в консоль информацию о посылаемых данных false - нет вывода
 boolean sendNarodMon2022(boolean debug)
 {
@@ -1019,8 +1017,6 @@ boolean sendNarodMon2022(boolean debug)
          }   
       strcat(HP.clMQTT.root,"##\n");
 
-
-
     // пакет сформирован его надо отправить
    	IPAddress ip(0, 0, 0, 0);
    	int8_t flag = 0;
@@ -1082,15 +1078,12 @@ boolean sendNarodMon2022(boolean debug)
 				 }
 			
 		}
- 
 
  //    journal.jprintf("\n------------------------\n");    
- //     journal.jprintf(HP.clMQTT.root);    
+      if(debug)  journal.jprintf(HP.clMQTT.root);    
       return true;
-      
- 
      
-}
+}  // Конец отсылки данных на народный мониторинг
 
 
 // Посылка данных на брокер MQTT
