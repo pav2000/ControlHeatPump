@@ -135,7 +135,7 @@ void web_server(uint8_t thread)
 					{
 					case HTTP_invalid: {
 #ifdef DEBUG
-						if(HP.get_NetworkFlags() & ((1<<fWebLogError) /* | (1<<fWebFullLog)*/)) {
+						if(HP.get_NetworkFlags() & ((1<<fWebLogError) | (1<<fWebFullLog))) {
 							uint8_t ip[4];
 							W5100.readSnDIPR(sock, ip);
 							journal.jprintf("WEB:Wrong request %d.%d.%d.%d (%d): ", ip[0], ip[1], ip[2], ip[3], len);
@@ -264,20 +264,12 @@ void readFileSD(char *filename, uint8_t thread)
 	}
 
 	// В начале обрабатываем генерируемые файлы (для выгрузки из контроллера)
-	if(strcmp(filename, "state.txt") == 0) {
-		get_txtState(thread, true);
-		return;
-	}
+	if(strcmp(filename, "state.txt") == 0) { get_txtState(thread, true); return; }
 	if(strncmp(filename, "settings", 8) == 0) {
 		filename += 8;
-		if(strcmp(filename, ".txt") == 0) {
-			get_txtSettings(thread);
-			return;
-		} else if(strcmp(filename, ".bin") == 0) {
-			get_binSettings(thread);
-			return;
-		} else if(strcmp(filename, "_eeprom.bin") == 0) {
-			get_binEeprom(thread);
+		if(strcmp(filename, ".txt") == 0) {	get_txtSettings(thread); return; }
+		else if(strcmp(filename, ".bin") == 0) {
+			if(!get_binSettings(thread)) journal.jprintf("Error download %s%s\n", "settings", filename);
 			return;
 		}
 		filename -= 8;
@@ -618,16 +610,9 @@ void parserGET(uint8_t thread, int8_t )
 			}
 			if(strcmp(str,"DSR")==0) {    // Функция get_listDSR
 				strcat(strReturn, "---;");
-				for(i = RCOMP + 1; i < RNUMBER; i++) {
+				for(i = RCOMP + 1; i < RNUMBER; i++) if(HP.dRelay[i].get_present()) {
 					strcat(strReturn, HP.dRelay[i].get_name()); strcat(strReturn,";");
 				}
-#ifdef HTTP_MAP_RELAY_MAX
-				for(i = 1; i <= HTTP_MAP_RELAY_MAX; i++) {
-					strcat(strReturn, "HTTP-");
-					_itoa(i, strReturn);
-					strcat(strReturn,";");
-				}
-#endif
 				ADD_WEBDELIM(strReturn);
 				continue;
 			}
@@ -752,21 +737,19 @@ void parserGET(uint8_t thread, int8_t )
 			ADD_WEBDELIM(strReturn) ;    continue;
 		}
 		WEB_STORE_DEBUG_INFO(21);
-		
-#define strHP_OFF "The heat pump must be switched OFF" // 
 
 		if (strncmp(str, "set_SAVE", 8) == 0)  // Функция set_SAVE -
 		{
 			str += 8;
 			if(strcmp(str, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.save(), strReturn); // сохранение расписаний
-			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику set_SAVE_STATS
+			} else if(strcmp(str, "_STATS") == 0) { // Сохранить счетчики и статистику
 				xSaveStats:		if((i = HP.save_motoHour()) == OK)
 					if((i = Stats.SaveStats(1)) == OK)
 						i = Stats.SaveHistory(1);
 				_itoa(i, strReturn);
-			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению (set_SAVE_UPD) - проверяет работу теплового насоса и если он выключен записывает статистику
-				if(HP.is_compressor_on()) strcat(strReturn,strHP_OFF);//_itoa(-1, strReturn);
+			} else if(strcmp(str, "_UPD") == 0) { // Подготовка к обновлению
+				if(HP.is_compressor_on()) _itoa(-1, strReturn);
 				else {
 					if(HP.dEEV.EEV != -1) HP.dEEV.set_EEV(HP.dEEV.get_maxEEV());
 					goto xSaveStats;
@@ -793,7 +776,7 @@ void parserGET(uint8_t thread, int8_t )
 			    strcat(strReturn,"Программирование инвертора, подробности смотри в журнале. Ожидайте 10 сек . . .");
 				HP.sendCommand(pPROG_FC);        // Послать команду
 				}
-				else strcat(strReturn,strHP_OFF);	
+				else strcat(strReturn,"The heat pump must be switched OFF");	
          ADD_WEBDELIM(strReturn);
          continue;
 		}
@@ -801,13 +784,8 @@ void parserGET(uint8_t thread, int8_t )
 		
 		if (strncmp(str, "set_LOAD", 8) == 0)  // Функция set_LOAD -
 		{
-			str += 8;
-			if(strcmp(str, "_SCHDLR") == 0) {
+			if(strcmp(str+8, "_SCHDLR") == 0) {
 				_itoa(HP.Schdlr.load(), strReturn); // загрузка расписаний
-			} else if(strcmp(str, "_HP_NOCRC") == 0) {
-				_itoa(HP.load((uint8_t*)Socket[thread].inPtr, 2), strReturn); // загрузка настроек без проверки CRC
-				ADD_WEBDELIM(strReturn);
-				break;
 			}
 			ADD_WEBDELIM(strReturn);
 			continue;
@@ -914,14 +892,14 @@ void parserGET(uint8_t thread, int8_t )
 					}
 				}
 			}
-			// "get_TrgT" -> "x.xx / y.yy", "get_TrgT(1)" -> "x.xx"
+			// "get_TrgT" -> "x.x / y.y", "get_TrgT(1)" -> "x.x"
 			if(HP.get_modeHouse() == pOFF) strcat(strReturn, "-");
 			else {
-				HP.getTargetTempStr2(strReturn + m_strlen(strReturn));
+				HP.getTargetTempStr(strReturn + m_strlen(strReturn));
 				if(HP.get_modeHouseSettings()->Rule != pHYSTERESIS && str[8] != '(') {
 					strcat(strReturn, " / ");
 					strReturn = dptoa(strReturn + m_strlen(strReturn), HP.CalcTargetPID(*HP.get_modeHouseSettings()), 2);
-					//*--strReturn = '\0';
+					*--strReturn = '\0';
 				}
 			}
 			ADD_WEBDELIM(strReturn); continue;
@@ -1310,7 +1288,7 @@ void parserGET(uint8_t thread, int8_t )
 			str += 7;
 			WEB_STORE_DEBUG_INFO(26);
 			if(strcmp(str, "Info") == 0) { // "get_sysInfo" - Функция вывода системной информации для разработчика
-				strcat(strReturn,"Источник загрузки web интерфейса |");
+				strcat(strReturn,"Источник загрузкки web интерфейса |");
 				switch (HP.get_SourceWeb())
 				{
 				case pMIN_WEB:   strcat(strReturn,"internal;"); break;
@@ -1505,12 +1483,11 @@ void parserGET(uint8_t thread, int8_t )
 			if(strcmp(str, "TempF") == 0) // get_tblTempF, Возвращает список датчиков через ";"
 			{
 				for(i = 0; i < TNUMBER; i++) if(HP.sTemp[i].get_present()) { strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";"); }
-			} else if(strncmp(str, "Temp", 4) == 0) {	// get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
-														// При доступности для датчика настройки HP.Prof.SaveON.bTIN - '*' перед именем датчика
+			} else if(strncmp(str, "Temp", 4) == 0) // get_tblTempN - Возвращает список датчиков через ";", N число в конце - возвращаются датчики имеющие этот бит в SENSORTEMP[]
+			{
 				uint8_t m = atoi(str + 4);
 				for(i = 0; i < TNUMBER; i++)
 					if((HP.sTemp[i].get_cfg_flags() & (1<<m)) && ((HP.sTemp[i].get_cfg_flags()&(1<<0)) || HP.sTemp[i].get_fAddress())) {
-						if(HP.sTemp[i].get_setup_flags() & ((1<<fTEMP_as_TIN_average) | (1<<fTEMP_as_TIN_min))) strcat(strReturn, "*");
 						strcat(strReturn, HP.sTemp[i].get_name()); strcat(strReturn, ";");
 					}
 			} else if(strcmp(str,"Input")==0)     // Функция get_tblInput
@@ -1533,23 +1510,14 @@ void parserGET(uint8_t thread, int8_t )
 						strcat(strReturn, "---;;00:00;00:00|");
 						break;
 					}
-					if(HP.Prof.DailySwitch[i].Device >= RNUMBER) {
-						strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "HTTP-%d;Дистанционное реле %d;%02d:%d0;%02d:%d0|", HP.Prof.DailySwitch[i].Device - RNUMBER+1, HP.Prof.DailySwitch[i].Device - RNUMBER+1,
-													HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
-					} else {
-						strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
+					strReturn += m_snprintf(strReturn += m_strlen(strReturn), 256, "%s;%s;%02d:%d0;%02d:%d0|", HP.dRelay[HP.Prof.DailySwitch[i].Device].get_name(), HP.dRelay[HP.Prof.DailySwitch[i].Device].get_note(),
 							HP.Prof.DailySwitch[i].TimeOn / 10, HP.Prof.DailySwitch[i].TimeOn % 10, HP.Prof.DailySwitch[i].TimeOff / 10, HP.Prof.DailySwitch[i].TimeOff % 10);
-					}
 				}
 #ifdef CORRECT_POWER220
 			} else if(strcmp(str,"PwrC")==0) {    // Функция get_tblPwrC
 				for(i = 0; i < (int8_t)(sizeof(correct_power220)/sizeof(correct_power220[0])); i++) {
 					m_snprintf(strReturn + m_strlen(strReturn), 64, "%s;%d;", HP.dRelay[correct_power220[i].num].get_name(), correct_power220[i].value);
 				}
-#endif
-#ifdef WATTROUTER
-			} else if(strcmp(str, "WR") == 0) {   // Функция get_tblWR
-				_itoa(WR_NumLoads, strReturn);
 #endif
 			} else goto x_FunctionNotFound;
 			ADD_WEBDELIM(strReturn);
@@ -1997,39 +1965,16 @@ void parserGET(uint8_t thread, int8_t )
 			}
 
 			// 13 Опции теплового насоса
-			if(strcmp(str, "get_oHP") == 0)           // Функция get_optionHP - получить значение параметра отопления ТН
+			if (strcmp(str,"get_oHP")==0)           // Функция get_optionHP - получить значение параметра отопления ТН
 			{
-#ifdef WEATHER_FORECAST
-xGetOptionHP:
-				if(strcmp(x, option_WF_ReqServer)==0) {
-					strcat(strReturn, HP.Option.WF_ReqServer);
-				} else if(strcmp(x, option_WF_ReqText)==0) {
-					strcat(strReturn, HP.Option.WF_ReqText);
-				} else
-#endif
-					HP.get_optionHP(x, strReturn);
-				ADD_WEBDELIM(strReturn);
-				continue;
-			} else if(strcmp(str, "set_oHP") == 0)           // Функция set_optionHP - установить значение паремтра  опций
+				HP.get_optionHP(x,strReturn); ADD_WEBDELIM(strReturn) ; continue;
+			} else if (strcmp(str,"set_oHP")==0)           // Функция set_optionHP - установить значение паремтра  опций
 			{
-				if(pm != ATOF_ERROR) {   // нет ошибки преобразования
-					if(HP.set_optionHP(x, pm)) HP.get_optionHP(x, strReturn);  // преобразование удачно,
-					else strcat(strReturn, "E17"); // выход за диапазон значений
-				} else {
-#ifdef WEATHER_FORECAST
-					str_replace(z, '$', '&');
-					if(strcmp(x, option_WF_ReqServer)==0) {
-						strncpy(HP.Option.WF_ReqServer, z, sizeof(HP.Option.WF_ReqServer)-1);
-						goto xGetOptionHP;
-					} else if(strcmp(x, option_WF_ReqText)==0) {
-						strncpy(HP.Option.WF_ReqText, z, sizeof(HP.Option.WF_ReqText)-1);
-						goto xGetOptionHP;
-					}
-#endif
-					strcat(strReturn, "E11");   // ошибка преобразования во флоат
-				}
-				ADD_WEBDELIM(strReturn);
-				continue;
+				if (pm!=ATOF_ERROR) {   // нет ошибки преобразования
+					if (HP.set_optionHP(x,pm))   HP.get_optionHP(x,strReturn);  // преобразование удачно,
+					else strcat(strReturn,"E17") ; // выход за диапазон значений
+				} else strcat(strReturn,"E11");   // ошибка преобразования во флоат
+				ADD_WEBDELIM(strReturn); continue;
 			}
 			//14.  Параметры  отопления и охлаждения ТН
 			if (strcmp(str,"get_Cool")==0)           // Функция get_paramCoolHP - получить значение параметра охлаждения ТН
@@ -2285,10 +2230,6 @@ x_get_aTemp:
 								if (HP.sTemp[p].get_present()==true)  strcat(strReturn,cOne); else  strcat(strReturn,cZero);
 								ADD_WEBDELIM(strReturn) ;    continue;
 							}
-							if(strncmp(str, "inT", 3) == 0) {      // Функция get_inTemp - флаги разрешения использования датчиков для расчета TIN
-								strcat(strReturn, GETBIT(HP.Prof.SaveON.bTIN, p) ? cOne : cZero);
-								ADD_WEBDELIM(strReturn); continue;
-							}
 							if(strncmp(str, "nTemp", 5) == 0)           // Функция get_nTemp, если радиодатчик: добавляется уровень сигнала, если get_nTemp2 - +напряжение батарейки
 							{
 								strcat(strReturn, HP.sTemp[p].get_note());
@@ -2333,11 +2274,6 @@ x_get_aTemp:
 									{ _dtoa(strReturn, HP.sTemp[p].get_errTemp(), 2); ADD_WEBDELIM(strReturn); continue; }
 								else { strcat(strReturn,"E05" WEBDELIM);  continue;}      // выход за диапазон ПРЕДУПРЕЖДЕНИЕ значение не установлено
 							}
-							if(strncmp(str, "inT", 3) == 0) {      // Функция set_inTemp - флаги разрешения использования датчиков для расчета TIN
-								HP.Prof.SaveON.bTIN = (HP.Prof.SaveON.bTIN & ~(1<<p)) | ((pm != 0)<<p);
-								strcat(strReturn, pm != 0 ? cOne : cZero);
-								ADD_WEBDELIM(strReturn); continue;
-							}
 
 							if(strncmp(str, "fTemp", 5) == 0) {   // set_fTempX(N=V): X - номер флага fTEMP_* (1..), N - имя датчика (flag)
 								i = str[5] - '0' - 1 + fTEMP_ignory_errors;
@@ -2363,83 +2299,6 @@ x_get_aTemp:
 
 					}  // end else
 				} //if ((strstr(str,"Temp")>0)
-
-#ifdef WATTROUTER
-				// Ваттроутер
-				if(strncmp(str + 4, "WR", 2) == 0) { // get_WR...
-					i = *str == 's'; // set_WR
-					str += 6;
-					p = abs(atoi(x));
-					if(p < WR_NumLoads) {
-						if(*str == 'L') { // get_WRL(n)
-							if(i) {
-#ifdef WR_Boiler_Substitution_INDEX
-								if(p == (!digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX)) { // switch
-									uint8_t idx = p == WR_Boiler_Substitution_INDEX ? WR_Load_pins_Boiler_INDEX : WR_Boiler_Substitution_INDEX;
-									if(WR_LoadRun[idx] > 0) {
-										if(GETBIT(WR.PWM_Loads, idx)) WR_Change_Load_PWM(idx, -32768); else WR_Switch_Load(idx, 0);
-										WR_SwitchTime[idx] = rtcSAM3X8.unixtime();
-										//_delay(10); // 1/100 Hz
-									}
-									digitalWriteDirect(PIN_WR_Boiler_Substitution, !digitalReadDirect(PIN_WR_Boiler_Substitution));
-								} else
-#endif
-								{
-									int16_t val = pm;
-									if(GETBIT(WR.PWM_Loads, p)) WR_Change_Load_PWM(p, val - WR_LoadRun[p]);
-									else {
-										if(WR_Load_pins[p] < 0) { // HTTP
-											if(val < 0) val = 0; else if(val > 0) val = WR.LoadPower[p];
-											WR_Refresh |= (1<<p);
-											WR_LoadRun[p] = val;
-											WR_SwitchTime[p] = WR_LastSwitchTime = rtcSAM3X8.unixtime();
-										} else WR_Switch_Load(p, val > 0);
-									}
-								}
-							}
-							_itoa(WR_LoadRun[p], strReturn);
-						} else if(*str == 'T') { // get_WRT(n)
-							l_i32 = WR_SwitchTime[p];
-							if(l_i32 == 0) strcat(strReturn, "-"); else DecodeTimeDate(l_i32, strReturn);
-						} else if(*str == 'N') { // get_WRN(n)
-							if(WR_Load_pins[p] < 0) strcat(strReturn, "HTTP-"); else strcat(strReturn, "D");
-							_itoa(abs(WR_Load_pins[p]), strReturn);
-#ifdef WR_Load_pins_Boiler_INDEX
-							if(p == WR_Load_pins_Boiler_INDEX) strcat(strReturn, "(B)");
-#endif
-#ifdef WR_Boiler_Substitution_INDEX
-							if(p == WR_Boiler_Substitution_INDEX) m_snprintf(strReturn + strlen(strReturn), 20, "(D%d)", PIN_WR_Boiler_Substitution);
-#endif
-						} else if(*str == 'C') { // get_WRC(n)
-							if(GETBIT(WR.PWM_Loads, p))	{
-								WR_Calc_Power_Array_Start(p);
-								strcat(strReturn, "1");
-							}
-						} else { // get_WR(n)
-xget_WR:
-							if(p == 0) { // get_WR(0)
-								if(i) { // <ip>/&set_WR(0=x) -> set power(= x / 10) + set MPPT flag(WR_Check_MPPT() = x % 10)
-#ifdef WR_PowerMeter_Modbus
-									if(HP.get_testMode() != NORMAL) WR_PowerMeter_Power = pm;
-#endif
-								}
-								if(WR_Pnet == -32768) strcat(strReturn, "-"); else _itoa(WR_Pnet, strReturn);
-							} else if(p == 1) { // get_WR(1)
-#ifdef WR_Boiler_Substitution_INDEX
-								bool on = digitalReadDirect(PIN_WR_Boiler_Substitution);
-								strReturn += strlen(strReturn);
-								*strReturn++ = '0' + (on ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX);
-								*strReturn++ = '0' + (on ? WR_Load_pins_Boiler_INDEX : WR_Boiler_Substitution_INDEX);
-								*strReturn = '\0';
-#endif
-							}
-						}
-					} else if(*str == '(') goto xget_WR;
-					else strcat(strReturn,"E08"); // выход за диапазон, значение не установлено
-					ADD_WEBDELIM(strReturn);
-					continue;
-				}
-#endif
 
 				// РЕЛЕ
 				if(strstr(str,"Relay"))          // Проверка для запросов содержащих Relay
@@ -2874,6 +2733,7 @@ x_ok:
 #define emptyStr			WEB_HEADER_END  	   // пустая строка после которой начинаются данные
 #define MAX_FILE_LEN		64  	              // максимальная длина имени файла
 const char Title[]          = "Title: ";          // где лежит имя файла
+const char Length[]         = "Content-Length: "; // где лежит длина файла
 const char SETTINGS[]       = "*SETTINGS*";       // Идентификатор передачи настроек (лежит в Title:)
 const char LOAD_FLASH_START[]= "*SPI_FLASH*";     // Идентификатор начала загрузки веб морды в SPI Flash (лежит в Title:)
 const char LOAD_FLASH_END[]  = "*SPI_FLASH_END*"; // Идентификатор колнца загрузки веб морды в SPI Flash (лежит в Title:)
@@ -2899,8 +2759,7 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 	if(!ptr) return pLOAD_ERR;
 	ptr += sizeof(emptyStr) - 1;
 	nameFile = strstr(Socket[thread].inPtr, Title);
-	pStart = (byte*) strstr(Socket[thread].inPtr, http_Length);
-	if(pStart) pStart += sizeof(http_Length) - 1;
+	pStart = (byte*) strstr(Socket[thread].inPtr, Length);
 	if(nameFile) {
 		char *p = strchr(nameFile += sizeof(Title) - 1, '\r');
 		if(p) *p = '\0'; else nameFile = NULL;
@@ -2914,12 +2773,16 @@ TYPE_RET_POST parserPOST(uint8_t thread, uint16_t size)
 		journal.jprintf("Upload: %s name length > %d bytes!\n", nameFile, MAX_FILE_LEN - 1);
 		return pLOAD_ERR;
 	}
+	if(pStart) {
+		char *p = strchr((char*)(pStart += sizeof(Length) - 1), '\r');
+		if(p) *p = '\0'; else pStart = NULL;
+	}
 	if(!pStart) { // Размер файла не найден, запрос не верен, выходим
 xLenErr:
 		journal.jprintf("Upload: %s - length not found!\n", nameFile);
 		return pLOAD_ERR;
 	}
-	lenFile = strtol((char*) pStart, NULL, 10);	// получить длину
+	lenFile = atoi((char*) pStart);	// получить длину
 	// все нашлось, можно обрабатывать
 	buf_len = size - (ptr - (byte *) Socket[thread].inBuf);                  // длина (остаток) данных (файла) в буфере
 	// В зависимости от имени файла (Title)
@@ -2928,16 +2791,10 @@ xLenErr:
 		WEB_STORE_DEBUG_INFO(52);
 		int32_t len;
 		// Определение начала данных (поиск HEADER_BIN)
-xContinueSearchHeader:
-		pStart = (byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
+		pStart=(byte*)strstr((char*) ptr, HEADER_BIN);    // Поиск заголовка
 		if(pStart == NULL) {              // Заголовок не найден
-			if((len = Socket[thread].client.available())) {
-				if(len > W5200_MAX_LEN) len = W5200_MAX_LEN;
-				Socket[thread].client.read(ptr = (uint8_t*)Socket[thread].inBuf, len);            // прочитать буфер
-				goto xContinueSearchHeader;
-			}
 			journal.jprintf("Upload: Wrong save format: %s!\n", nameFile);
-			if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("[Avail:%d] %s\n\n", Socket[thread].client.available(), ptr);
+			if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf("%s\n\n", ptr);
 			return pSETTINGS_ERR;
 		}
 		len=pStart+sizeof(HEADER_BIN)-1 - (byte*) Socket[thread].inBuf;         // размер текстового заголовка в буфере до окончания HEADER_BIN, дальше идут бинарные данные

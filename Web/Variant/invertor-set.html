@@ -7,15 +7,15 @@
 	<script type='text/javascript' src='scripts.js'></script>
 	<script type="text/javascript">
 		window.onload = function() {
-		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU)");
-		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(L0),get_pFC(L100),get_pFC(LOFF)");
+		loadParam("hide_fcan,get_pFC(ARSTFLT),get_pFC(LOGW),get_pFC(UPTIME),get_pFC(PID_STEP),get_pFC(PID_STOP),get_pFC(DTC),get_pFC(FRQ),get_pFC(FRQB),get_pFC(MIN),get_pFC(MINC),get_pFC(MINB),get_pFC(MINU),get_pFC(MAXG)");
+		loadParam("get_pFC(MAXU),get_pFC(STEP),get_pFC(STEPB),get_pFC(DT),get_pFC(DTB),get_pFC(MAX),get_pFC(MAXC),get_pFC(MAXB),get_pFC(FRO),get_pFC(ROP),get_pFC(ROPH),get_pFC(FRF),get_pFC(ROE),get_pFC(TR),get_pFC(DAC),get_pFC(PIN),get_pFC(L0),get_pFC(L100)");
 		};
 	</script>
 </head>
 <body class="actuators">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-<h1>Настройки инвертора Omron MX2 <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'> <input type="submit" value="Программирование (1*)" onclick='loadParam("progFC")'></h1>
+<h1>Настройки инвертора <input style="float:none;" type="submit" value="Назад" onclick='window.history.back()'> <input type="submit" value="Записать в EEPROM"  onclick='loadParam("set_SAVE")'></h1>
 
   <div class="row1">
    <table>
@@ -27,41 +27,47 @@
    </thead>
    <tbody>
     <tr><td>Время опроса инвертора (миллисекунд)</td><td id="get_pfc-tr"></td></tr>
+    <tr><td>Авто-сброс не критичного сбоя инвертора</td><td><input type="checkbox" id="get_pfc-arstflt" onchange="setParam('get_pFC(ARSTFLT)');"></td></tr>
     <tr><td>Логировать параметры во время работы</td><td><input type="checkbox" id="get_pfc-logw" onchange="setParam('get_pFC(LOGW)');"></td></tr>
-    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>2</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
+    <tr><td>Период цикла управления (обновления) тепловым насосом (сек.) [3...600]<sup>1</sup>, сек.</td><td><input type="number" id="get_pfc-uptime"> <input type="submit" value=">" onclick="setParam('get_pFC(UPTIME)');"></td></tr>
     <tr><td>Проценты от уровня защит (мощность, ток, давление, температура) при которой происходит блокировка роста частоты</td><td><input type="number" id="get_pfc-pid_stop"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STOP)');"></td></tr>
 
     <tr><td><b>Граничные температуры</b></td><td></td></tr>
-    <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_pfc-dtc"> <input type="submit" value=">" onclick="setParam('get_pFC(DTC)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_pfc-dt"> <input type="submit" value=">" onclick="setParam('get_pFC(DT)');"></td></tr>
-    <tr><td>Превышение температуры от уставок (подача) при которой срабатыват защита ГВС, уменьшается частота (°C) [0...10]</td><td><input type="number" id="get_pfc-dtb"> <input type="submit" value=">" onclick="setParam('get_pFC(DTB)');"></td></tr>
+    <tr><td>Защита по температуре нагнетания - сколько градусов не доходит до максимальной и при этом происходит уменьшение частоты (°C) [1...25]</td><td><input type="number" id="get_pfc-dtc" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(DTC)');"></td></tr>
+    <tr><td>Уменьшение частоты (отопление/охлаждение) при приближении к максимальной температуре подачи на °C [0...10]</td><td><input type="number" id="get_pfc-dt" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(DT)');"></td></tr>
+    <tr><td>Уменьшение частоты (ГВС) при приближении к максимальной температуре подачи на °C [0...10]</td><td><input type="number" id="get_pfc-dtb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(DTB)');"></td></tr>
 
     <tr><td><b>Стартовые частоты</b></td><td></td></tr>
-    <tr><td>Стартовая частота инвертора для отопления и охлаждения (Гц) [20...120]</td><td><input type="number" id="get_pfc-frq"> <input type="submit" value=">" onclick="setParam('get_pFC(FRQ)');"></td></tr>
-    <tr><td>Стартовая частота инвертора при ГВС (Гц) [20...150]</td><td><input type="number" id="get_pfc-frqb"> <input type="submit" value=">" onclick="setParam('get_pFC(FRQB)');"></td></tr>
+    <tr><td>Стартовая установка инвертора</td><td><input type="number" id="get_pfc-frq" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(FRQ)');"></td></tr>
+    <tr><td>Стартовая установка инвертора при ГВС</td><td><input type="number" id="get_pfc-frqb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(FRQB)');"></td></tr>
 
     <tr><td><b>Минимальные частоты</b></td><td></td></tr>
-    <tr><td>Минимальная частота инвертора для отопления (Гц) [20...80]</td><td><input type="number" id="get_pfc-min"> <input type="submit" value=">" onclick="setParam('get_pFC(MIN)');"></td></tr>
-    <tr><td>Минимальная частота инвертора для охлаждения (Гц) [20...80]</td><td><input type="number" id="get_pfc-minc"> <input type="submit" value=">" onclick="setParam('get_pFC(MINC)');"></td></tr>
-    <tr><td>Минимальная частота инвертора для ГВС (Гц) [20...80]</td><td><input type="number" id="get_pfc-minb"> <input type="submit" value=">" onclick="setParam('get_pFC(MINB)');"></td></tr>
-    <tr><td>Минимальная частота инвертора в ручном режиме (Гц) [20...80]</td><td><input type="number" id="get_pfc-minu"> <input type="submit" value=">" onclick="setParam('get_pFC(MINU)');"></td></tr>
+    <tr><td>Минимальная установка инвертора</td><td><input type="number" id="get_pfc-min" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MIN)');"></td></tr>
+    <tr><td>Минимальная установка инвертора при охлаждении</td><td><input type="number" id="get_pfc-minc" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MINC)');"></td></tr>
+    <tr><td>Минимальная установка инвертора при ГВС</td><td><input type="number" id="get_pfc-minb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MINB)');"></td></tr>
+    <tr><td>Минимальная установка инвертора в ручном режиме</td><td><input type="number" id="get_pfc-minu" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MINU)');"></td></tr>
 
     <tr><td><b>Максимальные частоты</b></td><td></td></tr>
-    <tr><td>Максимальная частота инвертора для отопления (Гц) [40...200]</td><td><input type="number" id="get_pfc-max"> <input type="submit" value=">" onclick="setParam('get_pFC(MAX)');"></td></tr>
-    <tr><td>Максимальная частота инвертора для охлаждения (Гц) [40...200]</td><td><input type="number" id="get_pfc-maxc"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXC)');"></td></tr>
-    <tr><td>Максимальная частота инвертора для ГВС (Гц) [40...200]</td><td><input type="number" id="get_pfc-maxb"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXB)');"></td></tr>
-    <tr><td>Максимальная частота инвертора в ручном режиме (Гц) [40...200]</td><td><input type="number" id="get_pfc-maxu"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXU)');"></td></tr>
+    <tr><td>Максимальная установка инвертора</td><td><input type="number" id="get_pfc-max" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAX)');"></td></tr>
+    <tr><td>Максимальная установка при работе от генератора</td><td><input type="number" id="get_pfc-maxg" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXG)');"></td></tr>
+    <tr><td>Максимальная установка инвертора при охлаждении</td><td><input type="number" id="get_pfc-maxc" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXC)');"></td></tr>
+    <tr><td>Максимальная установка инвертора при ГВС</td><td><input type="number" id="get_pfc-maxb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXB)');"></td></tr>
+    <tr><td>Максимальная установка инвертора в ручном режиме</td><td><input type="number" id="get_pfc-maxu" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(MAXU)');"></td></tr>
 
     <tr><td><b>Ограничение ПИД регулятора</b></td><td></td></tr>
-    <tr><td>Максимальный шаг (на увеличение) изменения частоты при ПИД регулировании (гц) [0...5]</td><td><input type="number" id="get_pfc-pid_step"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STEP)');"></td></tr>
-    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока (Гц) [0,2...5]</td><td><input type="number" id="get_pfc-step"> <input type="submit" value=">" onclick="setParam('get_pFC(STEP)');"></td></tr>
-    <tr><td>Шаг уменьшения частоты при достижении максимальной температуры, мощности и тока для ГВС (Гц) [0,2...5]</td><td><input type="number" id="get_pfc-stepb"> <input type="submit" value=">" onclick="setParam('get_pFC(STEPB)');"></td></tr>
+    <tr><td>Максимальный шаг изменения оборотов за одну итерацию вверх</td><td><input type="number" id="get_pfc-pid_step" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(PID_STEP)');"></td></tr>
+    <tr><td>Шаг уменьшения установки при достижении максимальной температуры, мощности и тока</td><td><input type="number" id="get_pfc-step" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(STEP)');"></td></tr>
+    <tr><td>Шаг уменьшения установки при достижении максимальной температуры, мощности и тока при ГВС</td><td><input type="number" id="get_pfc-stepb" step="0.01"> <input type="submit" value=">" onclick="setParam('get_pFC(STEPB)');"></td></tr>
+
+    <tr><td><b>Возврат масла</b></td><td></td></tr>
+    <tr><td>Возврат масла при частоте ниже <span id="get_pfc-frf"></span> Гц</td><td><input type="checkbox" id="get_pfc-fro" onchange="setParam('get_pFC(FRO)');"></td></tr>
+    <tr><td>Период возврата, кратно времени опроса инвертора (сек.)</td><td><input type="number" id="get_pfc-rop"> <input type="submit" value=">" onclick="setParam('get_pFC(ROP)');"></td></tr>
+    <tr><td>Уменьшение периода на каждый 1 Гц ниже <span id="get_pfc-frf_2"></span> Гц (сек.)</td><td><input type="number" id="get_pfc-roph"> <input type="submit" value=">" onclick="setParam('get_pFC(ROPH)');"></td></tr>
+    <tr><td>Открытие/закрытие ЭРВ перед изменением частоты (шаги)</td><td><input type="number" id="get_pfc-roe"> <input type="submit" value=">" onclick="setParam('get_pFC(ROE)');"></td></tr>
 
    </tbody>
    </table>
-<br>1. Установка регистров (программирование) Omron MX2 под требования НК, после программирования надо сделать автонастройку (H001=1).<br/>
-       При программировании считается что установлены параметры связи по умолчанию (С071=5, С072=1, С074=0, С075=1, С076=2, С077=0, С078=0).<br/>
-    2. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД.<br/>
+<br>1. Это период с которым вызывается функция управления работой ТН, она должна быть меньше чем время интегрирования ПИД<br/>
   </div>
 
 <div name="hide_fcan" class="row1">

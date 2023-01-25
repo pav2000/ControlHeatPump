@@ -2,8 +2,6 @@
 <html><head>
 <meta content="text/html" charset="UTF-8" http-equiv="content-type">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript" src="jquery.min.js"></script>
 <script src="highstock.js"></script>
 <script src="exporting.js"></script>
@@ -14,7 +12,8 @@
  * Grid-light theme for Highcharts JS
  */
 Highcharts.theme = {
-	colors: ["#7cb5ec", "#f7a35c", "#90ee7e", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+// https://github.com/google/palette.js
+	colors: ["#ff0029","#377eb8","#66a61e","#984ea3","#00d2d5","#ff7f00","#af8d00","#7f80cd","#b3e900","#c42e60","#a65628","#f781bf","#8dd3c7","#bebada","#fb8072","#80b1d3","#fdb462","#fccde5","#bc80bd","#ffed6f","#c4eaff","#cf8c00","#1b9e77","#d95f02","#e7298a","#e6ab02","#a6761d","#0097ff"],
 	chart: {
 		backgroundColor: null,
 	},
@@ -46,11 +45,9 @@ Highcharts.theme = {
 	},
 	yAxis: {
 		minorTickInterval: 'auto',
-		title: {
-			style: {
-				textTransform: 'uppercase'
-			}
-		},
+//		title: {
+//			style: { textTransform: 'uppercase'	}
+//		},
 		labels: {
 			style: {
 				fontSize: '10px'
@@ -67,7 +64,7 @@ Highcharts.theme = {
 };
 
 var file_head = 'hist';
-var preload_days = 3;
+var preload_days = 2;
 var csv_line_delim = '\n';
 var csv_delim = ';';
 var fieldList = [];
@@ -91,6 +88,10 @@ function createChart() {
 		},
 		rangeSelector: {
 			buttons: [{
+				count: 30,
+				type: 'minute',
+				text: '30m'
+			}, {
 				count: 1,
 				type: 'hour',
 				text: '1ч'
@@ -99,21 +100,9 @@ function createChart() {
 				type: 'hour',
 				text: '3ч'
 			}, {
-				count: 12,
-				type: 'hour',
-				text: '12ч'
-			}, {
 				count: 1,
 				type: 'day',
 				text: '1д'
-			}, {
-				count: 2,
-				type: 'day',
-				text: '2д'
-			}, {
-				count: 3,
-				type: 'day',
-				text: '3д'
 			}, {
 				count: 1,
 				type: 'week',
@@ -135,12 +124,6 @@ function createChart() {
 		plotOptions: {
 			line: {
 				gapSize: 5
-				//color: '#d62020'
-				//  },
-				//  bar: {
-				//color: '#d52020'
-				//  },
-				//  column: {
 			},
 			series: {
 				marker: {
@@ -153,15 +136,9 @@ function createChart() {
 			}
 		},
 		tooltip: {
-			valueDecimals: 1,
+			//valueDecimals: 2,
 			valueSuffix: '',
-			xDateFormat: '%d.%m.%Y<br/>%H:%M:%S'
-			// reformat the tooltips so that local times are displayed
-			//formatter: function() {
-			//var d = new Date(this.x + (myOffset*60000));
-			//var n = (this.point.name === undefined) ? '' : '<br/>' + this.point.name;
-			//return this.series.name + ':<b>' + this.y + '</b>' + n + '<br/>' + d.toDateString() + '<br/>' + d.toTimeString().replace(/\(.*\)/, "");
-			//}
+			xDateFormat: '%A, %d.%m.%Y %H:%M'
 		},
 		xAxis: {
 			type: 'datetime',
@@ -180,67 +157,67 @@ function createChart() {
 		},
 		yAxis: [{
 			title: {
-				text: '°C'
+				text: '°C', align: 'high', offset: -10
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'T'
 		}, {
 			title: {
-				text: 'бар'
+				text: 'бар', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'P'
 		}, {
 			title: {
-				text: 'V'
+				text: 'V', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'кВт'
+				text: 'кВт', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP'
+				text: 'COP', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: '%'
+				text: '%', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'R'
 		}, {
 			title: {
-				text: 'Гц'
-			},
-			opposite: true,
-			showEmpty: false,
-			id: 'H'
-		}, {
-			title: {
-				text: 'Шаги'
+				text: 'Шаги', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'S'
 		}, {
 			title: {
-				text: 'м³ч'
+				text: 'м³ч', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'F'
+		}, {
+			title: {
+				text: 'Гц', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'H'
 		}],
 		exporting: {
 			enabled: true,
@@ -256,17 +233,19 @@ function createChart() {
 		navigator: {
 			baseSeries: 0, //select which series to show in history navigator, First series is 0
 			series: {
-				includeInCSVExport: false
+//				includeInCSVExport: false
 			}
 		},
 		series: []
 	};
 	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // add each field
 	{
+		var ax = fieldList[fieldIndex].axis;
 		chartOptions.series.push({
 			data: fieldList[fieldIndex].data,
 			index: fieldList[fieldIndex].series,
-			yAxis: fieldList[fieldIndex].axis,
+			yAxis: ax,
+			tooltip: {valueDecimals: ax == 'W' ? 3 : ax == 'C' ? 2 : 1},
 			//visible:false,
 			name: fieldList[fieldIndex].name
 		});
@@ -304,7 +283,7 @@ function HideAll() {
 var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
 
 function get_period() {
-	return document.getElementById("StartDate").value.replace(/-/g,'') + '-' + document.getElementById("EndDate").value.replace(/-/g,'');
+	return document.getElementById("StartDate").value.replace(/-/g,'') + '00-' + document.getElementById("EndDate").value.replace(/-/g,'') + '59';
 }
 
 function init_chart() {
@@ -322,7 +301,7 @@ function init_chart() {
 			fieldList.push({
 				field: i + 1,
 				axis: arr[i].substr(0, 1),
-				name: arr[i].substr(1),
+				name: arr[i].substr(1).replace("\n",""),
 				data: []
 			});
 		}
@@ -380,21 +359,20 @@ function clearChart() {
 </script>
 <title>Статистика детально</title>
 </head>
-<body class="index">
-<div id="menu" style="min-height: 1238px;" class="menu"><script src="menu.js"></script></div>
-<div class="content">
+<body style="background-color: white;">
+ <div>
 	<h2>Статистика детально</h2>
-	<div id="BelowChart">
+	<div id="BelowChart"> 
 		с <input id="StartDate" type="date"> по <input id="EndDate" type="date">
-		<button onClick="loadSelected();">Загрузить</button>
-		<button onClick="clearChart();">Очистить</button>
-		<button value="Hide All" name="Hide All Button" onClick="HideAll();">Скрыть все</button>
+		<button onclick="loadSelected();">Загрузить</button>
+		<button onclick="clearChart();">Очистить</button>
+		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>
 	<div id="chart-container" style="height: 600px"><br>
 	Идет загрузка...<br>
 	</div>
-	<div id="BelowChart" style="height: 500px">
+	<div id="BelowChart" style="height: 500px"> 
 	</div>
-</div>
+ </div>
 </body>
 </html>

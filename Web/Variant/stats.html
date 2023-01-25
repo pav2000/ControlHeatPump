@@ -2,9 +2,6 @@
 <html><head>
 <meta content="text/html" charset="UTF-8" http-equiv="content-type">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
- 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="style.css">
-	<script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript" src="jquery.min.js"></script>
 <script src="highstock.js"></script>
 <script src="exporting.js"></script>
@@ -15,7 +12,8 @@
  * Grid-light theme for Highcharts JS
  */
 Highcharts.theme = {
-	colors: ["#7cb5ec", "#f7a35c", "#90ee7e", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+// https://github.com/google/palette.js
+	colors: ["#ff0029","#377eb8","#66a61e","#984ea3","#00d2d5","#ff7f00","#af8d00","#7f80cd","#b3e900","#c42e60","#a65628","#f781bf","#8dd3c7","#bebada","#fb8072","#80b1d3","#377eb8","#fdb462","#fccde5","#bc80bd","#ffed6f","#ff0029"],
 	chart: {
 		backgroundColor: null,
 	},
@@ -47,11 +45,9 @@ Highcharts.theme = {
 	},
 	yAxis: {
 		minorTickInterval: 'auto',
-		title: {
-			style: {
-				textTransform: 'uppercase'
-			}
-		},
+//		title: {
+//			style: { textTransform: 'uppercase'	}
+//		},
 		labels: {
 			style: {
 				fontSize: '10px'
@@ -142,12 +138,6 @@ function createChart() {
 		plotOptions: {
 			line: {
 				gapSize: 5
-				//color: '#d62020'
-				//  },
-				//  bar: {
-				//color: '#d52020'
-				//  },
-				//  column: {
 			},
 			series: {
 				marker: {
@@ -160,9 +150,26 @@ function createChart() {
 			}
 		},
 		tooltip: {
-			valueDecimals: 1,
-			valueSuffix: '',
-			xDateFormat: '%d.%m.%Y<br/>%H:%M:%S'
+			//valueDecimals: 1,
+			xDateFormat: '%A, %d.%m.%Y'
+/*
+ %a: Short weekday, like 'Mon'.
+ %A: Long weekday, like 'Monday'.
+ %d: Two digit day of the month, 01 to 31.
+ %e: Day of the month, 1 through 31.
+ %b: Short month, like 'Jan'.
+ %B: Long month, like 'January'.
+ %m: Two digit month number, 01 through 12.
+ %y: Two digits year, like 09 for 2009.
+ %Y: Four digits year, like 2009.
+ %H: Two digits hours in 24h format, 00 through 23.
+ %I: Two digits hours in 12h format, 00 through 11.
+ %l: Hours in 12h format, 1 through 11.
+ %M: Two digits minutes, 00 through 59.
+ %p: Upper case AM or PM.
+ %P: Lower case AM or PM.
+ %S: Two digits seconds, 00 through 59
+*/
 			// reformat the tooltips so that local times are displayed
 			//formatter: function() {
 			//var d = new Date(this.x + (myOffset*60000));
@@ -187,42 +194,42 @@ function createChart() {
 		},
 		yAxis: [{
 			title: {
-				text: '°C'
+				text: '°C', align: 'high', offset: -10
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'T'
 		}, {
 			title: {
-				text: 'бар'
+				text: 'бар', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'P'
 		}, {
 			title: {
-				text: 'V'
+				text: 'V', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'V'
 		}, {
 			title: {
-				text: 'кВт'
+				text: 'кВт', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'W'
 		}, {
 			title: {
-				text: 'COP'
+				text: 'COP', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
 			id: 'C'
 		}, {
 			title: {
-				text: 'минуты'
+				text: 'мин.', align: 'high', offset: 15
 			},
 			opposite: true,
 			showEmpty: false,
@@ -233,7 +240,7 @@ function createChart() {
 			csv: {
 //				decimalPoint: ',',
 				itemDelimiter: ';',
-				dateFormat: '%Y.%m.%d %H:%M:%S'
+				dateFormat: '%Y.%m.%d'// %H:%M:%S'
 			}
 		},
 		legend: {
@@ -242,7 +249,7 @@ function createChart() {
 		navigator: {
 			baseSeries: 0, //select which series to show in history navigator, First series is 0
 			series: {
-				includeInCSVExport: false
+//				includeInCSVExport: false
 			}
 		},
 		series: []
@@ -305,7 +312,7 @@ function init_chart() {
 			fieldList.push({
 				field: i + 1,
 				axis: arr[i].substr(0, 1),
-				name: arr[i].substr(1),
+				name: arr[i].substr(1).replace("\n",""),
 				data: []
 			});
 		}
@@ -327,8 +334,11 @@ function loadChartsGroup(period) {
 			if(arr.length == 0) continue;
 			var dt = getChartDate(arr[0]);
 			for(var fi = 1; fi < arr.length; fi++) {
-				var p = [dt, parseFloat(arr[fi])];
-				if(!isNaN(p[1])) fieldList[fi - 1].data.push(p);
+				var nf = parseFloat(arr[fi]);
+				if(!isNaN(nf)) {
+					if(nf == 0 && (fi == 5 || fi == 10 || fi == 11) && arr[15] == 0) continue; // if no Motohour - skip zero (W)
+					fieldList[fi - 1].data.push([dt, nf]);
+				}
 			}
 		}
 	}).fail(function() {
@@ -350,23 +360,21 @@ function loadSelected() {
 	});
 }
 </script>
-
+<title>Статистика по дням</title>
 </head>
-<body class="index">
-<div id="menu" class="menu"><script src="menu.js"></script></div>
-<div class="content">
-<h2>Статистика по дням</h2>
-	<div id="BelowChart">
+<body style="background-color: white;">
+ <div>
+	<h2>Статистика по дням</h2>
+	<div id="BelowChart"> 
 		Год: <select id="get_liststats"></select>
-		<button onClick="loadSelected();">Загрузить</button>
-		<button value="Hide All" name="Hide All Button" onClick="HideAll();">Скрыть все</button>
+		<button onclick="loadSelected();">Загрузить</button>
+		<button value="Hide All" name="Hide All Button" onclick="HideAll();">Скрыть все</button>
 	</div>
-	<div id="chart-container" style="height: 600px;"><br>
+	<div id="chart-container" style="height: 600px"><br>
 	Идет загрузка...<br>
 	</div>
-	<div id="BelowChart" style="height: 500px">
+	<div id="BelowChart" style="height: 500px"> 
 	</div>
-
-</div>
+ </div>
 </body>
 </html>

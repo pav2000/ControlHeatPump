@@ -152,13 +152,13 @@ void get_txtState(uint8_t thread, boolean header)
        if (HP.dFC.get_present()) 
          {
 #ifdef FC_VACON
-             strcat(Socket[thread].outBuf,"Целевая скорость [%]: ");    _dtoa(Socket[thread].outBuf,HP.dFC.get_target(),2); STR_END;
-             strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _dtoa(Socket[thread].outBuf,HP.dFC.get_frequency(),2); STR_END;
+             strcat(Socket[thread].outBuf,"Целевая скорость [%]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_target()/100.0,2); STR_END;
+             strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_frequency()/100.0,2); STR_END;
 #else
-              strcat(Socket[thread].outBuf,"Целевая частота [Гц]: ");    _dtoa(Socket[thread].outBuf,HP.dFC.get_target(),2); STR_END;
-              strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _dtoa(Socket[thread].outBuf,HP.dFC.get_frequency(),2); STR_END;
+              strcat(Socket[thread].outBuf,"Целевая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_target()/100.0,2); STR_END;
+              strcat(Socket[thread].outBuf,"Текущая частота [Гц]: ");    _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_frequency()/100.0,2); STR_END;
 #endif
-              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _dtoa(Socket[thread].outBuf,HP.dFC.get_power(),3); STR_END;
+              strcat(Socket[thread].outBuf,"Текущая мощность [кВт]: ");  _ftoa(Socket[thread].outBuf,(float)HP.dFC.get_power()/1000.0,3); STR_END;
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
               strcat(Socket[thread].outBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),Socket[thread].outBuf); STR_END;
 #endif
@@ -701,30 +701,6 @@ void get_txtSettings(uint8_t thread)
 
 }
 
-// Передать полный дамп EEPROM
-bool get_binEeprom(uint8_t thread)
-{
-    strcpy(Socket[thread].outBuf, WEB_HEADER_OK_CT);
-    strcat(Socket[thread].outBuf, WEB_HEADER_BIN_ATTACH);
-    strcat(Socket[thread].outBuf, "settings_eeprom.bin\"\r\n\r\n");
-    uint16_t len = strlen(Socket[thread].outBuf);
-    if(sendPacketRTOS(thread, (byte*)Socket[thread].outBuf, len, 0) != len) return 0;
-    uint32_t ptr = 0;
-    do {
-    	len = I2C_MEMORY_TOTAL * 1024 / 8 - ptr >= sizeof(Socket[thread].outBuf) ? sizeof(Socket[thread].outBuf) : I2C_MEMORY_TOTAL * 1024 / 8 - ptr;
-    	if(readEEPROM_I2C(ptr, (byte*)Socket[thread].outBuf, len)) {
-    		journal.jprintf("Error read EEPROM at 0x%X\n", ptr);
-    		return false;
-    	}
-    	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) {
-    		journal.jprintf("Error send file from 0x%X\n", ptr);
-    		return false;
-    	}
-    	ptr += len;
-    } while(len == sizeof(Socket[thread].outBuf));
-    return true;
-}
-
 // Записать в клиента бинарный файл настроек
 bool get_binSettings(uint8_t thread)
 {
@@ -768,7 +744,7 @@ bool get_binSettings(uint8_t thread)
 	
     // 4. Расписание
 	if((len = HP.Schdlr.load((byte*) Socket[thread].outBuf)) <= 0) {
-		journal.jprintf("Error read scheduler from EEPROM\n");
+		journal.jprintf("Error read EEPROM at 0x%X\n", I2C_SCHEDULER_EEPROM);
 		return 0;
 	}
 	if(sendBufferRTOS(thread, (uint8_t*)Socket[thread].outBuf, len) != len) return 0; // передать пакет, при ошибке выйти
@@ -1057,16 +1033,16 @@ void get_mailState(EthernetClient client,char *tempBuf)
 		strcpy(tempBuf,"Текущее состояние инвертора: "); _itoa(HP.dFC.read_stateFC(),tempBuf);
 		strcat(tempBuf,cStrEnd);
 		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Целевая частота [Гц]: ");    _dtoa(tempBuf,HP.dFC.get_target(),2);
+		strcpy(tempBuf,"Целевая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_target()/100.0,2);
 		strcat(tempBuf,cStrEnd);
 		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Текущая частота [Гц]: ");    _dtoa(tempBuf,HP.dFC.get_frequency(),2);
+		strcpy(tempBuf,"Текущая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_frequency()/100.0,2);
 		strcat(tempBuf,cStrEnd);
 		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Текущая мощность [кВт]: ");  _dtoa(tempBuf,HP.dFC.get_power(),3);
+		strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,3);
 		strcat(tempBuf,cStrEnd);
 		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _dtoa(tempBuf,HP.dFC.read_tempFC(),0);
+		strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _ftoa(tempBuf,(float)HP.dFC.read_tempFC()/10.0,2);
 		strcat(tempBuf,cStrEnd);
 		client.write(tempBuf,strlen(tempBuf));
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление

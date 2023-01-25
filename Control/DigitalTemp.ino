@@ -136,28 +136,11 @@ int8_t sensorTemp::Read()
 				numErrorRead = 0; // Сброс счетчика ошибок
 				//SerialDbg.print(rtcSAM3X8.get_seconds()); SerialDbg.print('.'); SerialDbg.print(name); SerialDbg.print(':'); SerialDbg.println(ttemp);
 				// Защита от скачков
-				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : get_setup_flag(fTEMP_ignory_errors) ? GAP_TEMP_VAL_NERR : GAP_TEMP_VAL))) {
+				if ((lastTemp==STARTTEMP)||(abs(lastTemp-ttemp) < (get_setup_flag(fTEMP_ignory_CRC) ? GAP_TEMP_VAL_CRC : GAP_TEMP_VAL))) {
 					lastTemp=ttemp; nGap=0; // Первая итерация или нет скачка Штатная ситуация
-				} else { // Данные сильно отличаются от предыдущих - "СКАЧЕК"
+				} else { // Данные сильно отличаются от предыдущих "СКАЧЕК"
 				   nGap++;
-				   if((get_setup_flags() & ((1<<fTEMP_dont_log_errors) | (1<<fTEMP_ignory_errors))) == ((1<<fTEMP_dont_log_errors) | (1<<fTEMP_ignory_errors))) {
-					   if(ttemp == 8500) {
-						   if(nGap > 1) nGap--;
-					   } else if(nGap > GAP_NUMBER_BAD) {
-						   nGap = 0;
-						   lastTemp = ttemp;
-					   }
-				   } else if(get_setup_flag(fTEMP_ignory_CRC)) {
-					   if(nGap > GAP_NUMBER_CRC ) {
-						   nGap = 0;
-					   	   lastTemp = ttemp;
-					   }
-				   } else if(get_setup_flag(fTEMP_ignory_errors)) {
-					   if(nGap > GAP_NUMBER_NERR ) {
-						   nGap = 0;
-					   	   lastTemp = ttemp;
-					   }
-				   } else if(nGap > GAP_NUMBER) {
+				   if (nGap > (get_setup_flag(fTEMP_ignory_CRC) ? GAP_NUMBER_CRC : GAP_NUMBER)) { // Больше максимальной длительности данные используем, счетчик сбрасываем
 					   nGap = 0;
 					   lastTemp = ttemp;
 				   }

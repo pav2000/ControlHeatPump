@@ -651,7 +651,7 @@ void pingW5200(boolean f)
 // Запрос на сервер с ожиданием ответа, веб блокируется, вызов из MAIN_WEB_TASK
 // HTTP 1.0 GET, timeout - ms
 // Ответ: "str=x", Возврат: int(x). Ошибка x <= -2000000000;
-// fget_value: 0 - не читать ответ, 1 - считать тело ответа в Socket[MAIN_WEB_TASK].outBuf, 4 - #1 + проверить Content-Length
+// fget_value: 0 - не читать ответ, 1 - считать тело ответа в Socket[MAIN_WEB_TASK].outBuf,
 //             2 - вернуть значение после '=', 3 - проверить на "Ok"
 int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_value)
 {
@@ -685,7 +685,7 @@ int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_valu
 				ret = -2000000011;
 			} else {
 				ret = -2000000001;
-				int timeout = HTTP_REQ_TIMEOUT / 10;
+				int timeout = HTTP_REQ_TIMEOUT / 20;
 				while(timeout-- > 0) { // ожидание ответа
 					SemaphoreGive(xWebThreadSemaphore);
 					_delay(20);
@@ -705,42 +705,15 @@ int Send_HTTP_Request(const char *server, const char *request, uint8_t fget_valu
 										ret = 0;
 									} else {
 										int datasize = tTCP.available();
+										if(datasize > (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)) datasize = sizeof(Socket[MAIN_WEB_TASK].outBuf);
 										if(tTCP.read(buffer, datasize) == datasize) {
-											buffer = (uint8_t*) memmem(buffer, datasize, WEB_HEADER_END, sizeof(WEB_HEADER_END)-1);
+											buffer = (uint8_t*)strstr((char*)buffer, WEB_HEADER_END);
 											if(buffer) {
 												buffer += sizeof(WEB_HEADER_END)-1;
 												if(fget_value == 1)	{
-xget_value_1:
 													memcpy((uint8_t*)Socket[MAIN_WEB_TASK].outBuf, buffer, datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf));
-													*(Socket[MAIN_WEB_TASK].outBuf + datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf)) = '\0';
+													ret = 0;
 													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Response: %s", Socket[MAIN_WEB_TASK].outBuf);
-													ret = 0;
-												} else if(fget_value == 4) {
-													char *p = (char*) memmem(Socket[MAIN_WEB_TASK].outBuf, datasize, http_Length, sizeof(http_Length)-1);
-													if(p) {
-														if(atoi(p + sizeof(http_Length)-1) <= datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf)) goto xget_value_1;
-													} else goto xget_value_1;
-													memcpy((uint8_t*)Socket[MAIN_WEB_TASK].outBuf, buffer, datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf));
-													WEB_STORE_DEBUG_INFO(60);
-													buffer = (uint8_t*)Socket[MAIN_WEB_TASK].outBuf + datasize - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
-													do {
-														for(uint8_t i = 0; i < 255; i++) {
-															if((datasize = tTCP.available()) == 0) _delay(1); else break; // ждем получение пакета
-														}
-														if(datasize) {
-															if(buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf + datasize > (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)-1) datasize = sizeof(Socket[MAIN_WEB_TASK].outBuf)-1 - (buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
-															if(tTCP.read(buffer, datasize) != datasize) break;
-															buffer += datasize;
-															if(datasize < W5200_MAX_LEN) break;
-														} else break;
-													} while(buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf < (int)sizeof(Socket[MAIN_WEB_TASK].outBuf)-1);
-													*buffer = '\0';
-													WEB_STORE_DEBUG_INFO(61);
-													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) {
-														journal.jprintf("Size: %d, ", buffer - (uint8_t*)Socket[MAIN_WEB_TASK].outBuf);
-														journal.jprintf_time("Response: %s", Socket[MAIN_WEB_TASK].outBuf);
-													}
-													ret = 0;
 												} else {
 													if(fget_value == 2) {
 														char *p = strchr((char*)buffer, '=');
@@ -749,10 +722,7 @@ xget_value_1:
 														} else ret = -2000000009;
 													} else { // 3
 														ret = (buffer[0] & ~0x20) == 'O' && (buffer[1] & ~0x20) == 'K'; // 'Ok'?
-														if(ret == 0 && (HP.get_NetworkFlags() & ((1<<fWebFullLog) | (1<<fWebLogError))) == (1<<fWebLogError)) {
-															*(Socket[MAIN_WEB_TASK].outBuf + datasize) = '\0';
-															journal.jprintf_time("Response: %s", buffer);
-														}
+														if(ret == 0 && (HP.get_NetworkFlags() & ((1<<fWebFullLog) | (1<<fWebLogError))) == (1<<fWebLogError)) journal.jprintf_time("Response: %s", buffer);
 													}
 													if(HP.get_NetworkFlags() & (1<<fWebFullLog)) journal.jprintf_time("Response: %s", buffer);
 												}
@@ -788,9 +758,6 @@ xget_value_1:
 		journal.jprintf_time("Error %d send request to %s!", ret + 2000000000, server);
 		switch (ret)
 		{
-		case -2000000001:
-			journal.jprintf(" Response timeout");
-			break;
 		case -2000000002:
 			journal.jprintf(" Address wrong");
 			break;
@@ -924,6 +891,207 @@ boolean sendNarodMon(boolean debug)
            
   return true;
 }
+
+// Посылка данных на народный мониторинг без использования MQTT потребовалось в декабре 2022 года.
+/*Передача показаний по протоколам TCP/UDP на narodmon.ru:8283
+Если Ваш прибор допускает только ввод IP адреса или у Вас проблемы с DNS, то используйте любой IP из списка nslookup narodmon.ru до которого у Вас наименьший ping, но помните, что IP-адрес сервера может сменится, а DNS-имя - нет. TCP также можно использовать для массовой загрузки показаний на сервер "задним числом" путем передачи в одном пакете данных показаний датчика в разные моменты времени, но не более 4КБ на пакет для TCP и 512 байт для UDP. Предпочтительно отправлять показания всех датчиков в одном пакете данных для минимизации издержек на инициализацию соединения с сервером и импорт показаний датчиков.
+Ответ сервера при успешной отправке будет OK (или текст ошибки или команда на исполнение), что рекомендуется использовать в качестве подтверждения получения данных, а при отсутствии ответа повторить отправку когда восстановится связь с сервером. При сообщениях об ошибках НЕ ПОВТОРЯТЬ!
+Конец строки ответа сервера завершается спецсимволом \n код 10(0A). Для оперативного отслеживания состояния логических входов и выходов рекомендуется в ответ на получение команды от сервера возвращать новое состояние логических датчиков в уже открытый ранее сокет согласно протоколу, но только в случае изменений дабы не получить ошибку малого интервала показаний.
+При использовании протокола UDP ответа сервера не последует.
+Формат пакета данных:
+#MAC[#NAME]\n
+#mac1#value1[#time1][#name1]\n
+...
+#macN#valueN[#timeN][#nameN]\n
+##
+*/
+
+
+// debug  true - выводить в консоль информацию о посылаемых данных false - нет вывода
+boolean sendNarodMon2022(boolean debug)
+{
+ uint8_t i;
+ char buf[32];
+     if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon2022 ignore: Wrong MAC address, change MAC from default.\n"); return false;}
+     
+     HP.clMQTT.clearBuf();   // очистить рабочие буфера	
+     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
+    // Рабочие буфера для отправки MQTT
+    // Для экономии места используется выходной буфер MAIN_WEB_TASK потока веб сервера Socket[MAIN_WEB_TASK].outBuf[3*W5200_MAX_LEN] (в этом потоке ДОЛЖЕН проводится запуск MQTT и буфер гарантированно не используется другими задачами)
+    // Размер выходного буфера char outBuf[3*W5200_MAX_LEN] - 6 кБ - хватит на все. Распределение памяти в выходном буфере:
+    //  смещение 0 -                        root[LEN_ROOT]  - корень топика, длина до LEN_ROOT
+    //  смещение 100 (LEN_ROOT) -           topic[LEN_TOPIC] - сам топик, длина до  LEN_TOPIC
+    //  смещение 300 (LEN_ROOT+LEN_TOPIC) - temp[16] - временный буфер для получения строки флоат
+    // используется толллько root - используется только рут формируется весь пакет а потом он отправляется.
+      strcpy(HP.clMQTT.root,"#");  // Формирование строки куда потом пишутся топики
+      strcat(HP.clMQTT.root,HP.get_netMAC()); // # мак адрес в качестве идентификатора
+      strcat(HP.clMQTT.root,"#");
+      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,buf); // Копирование имени устройства
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"\n");  // Конец первой строки
+      // Формирование параметров #mac1#value1\n
+      strcat(HP.clMQTT.root,"#"); 
+      strcpy(buf,HP.sTemp[TOUT].get_name());
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"#");
+      ftoa(buf,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);  
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"\n");
+      
+      strcat(HP.clMQTT.root,"#"); 
+      strcpy(buf,HP.sTemp[TIN].get_name());
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"#");
+      ftoa(buf,(float)HP.sTemp[TIN].get_Temp()/100.0,1);  
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"\n");
+
+      strcat(HP.clMQTT.root,"#"); 
+      strcpy(buf,HP.sTemp[TBOILER].get_name());
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"#");
+      ftoa(buf,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);  
+      strcat(HP.clMQTT.root,buf);
+      strcat(HP.clMQTT.root,"\n");
+
+ if(HP.dFC.get_present())
+         {
+          strcat(HP.clMQTT.root,"#FC#");
+          ftoa(buf,(float)HP.dFC.get_frequency()/100.0,2);
+          strcat(HP.clMQTT.root,buf);
+          strcat(HP.clMQTT.root,"\n");
+         }
+
+         strcat(HP.clMQTT.root,"#ERROR#");
+         itoa(HP.get_errcode(),buf,10);
+         strcat(HP.clMQTT.root,buf);
+         strcat(HP.clMQTT.root,"\n");
+
+      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,
+      if (HP.clMQTT.get_NarodMonBig())                
+           {
+		      strcat(HP.clMQTT.root,"#");    // Нагнетанее
+		      strcpy(buf,HP.sTemp[TCOMP].get_name());
+		      strcat(HP.clMQTT.root,buf);
+		      strcat(HP.clMQTT.root,"#");
+		      ftoa(buf,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);  
+		      strcat(HP.clMQTT.root,buf);
+		      strcat(HP.clMQTT.root,"\n");
+		
+		      strcat(HP.clMQTT.root,"#");  // перегрев
+		      strcpy(buf,"OWERHEAT");
+		      strcat(HP.clMQTT.root,buf);
+		      strcat(HP.clMQTT.root,"#");
+		      ftoa(buf,(float)HP.dEEV.get_Overheat()/100.0,1);  
+		      strcat(HP.clMQTT.root,buf);
+		      strcat(HP.clMQTT.root,"\n");
+
+			for(i=0;i<ANUMBER;i++)  // давления
+	             if(HP.sADC[i].get_present()) 
+	             {
+	                 strcat(HP.clMQTT.root,"#");
+	                 strcpy(buf,HP.sADC[i].get_name());
+	                 strcat(HP.clMQTT.root,buf);
+			         strcat(HP.clMQTT.root,"#");
+	         	      ftoa(buf,(float)HP.sADC[i].get_Value()/100.0,2);  
+			         strcat(HP.clMQTT.root,buf);
+			         strcat(HP.clMQTT.root,"\n");
+	             }
+
+           #ifdef EEV_DEF   // Положение ЭРВ
+  		     strcat(HP.clMQTT.root,"#");    // Нагнетанее
+             strcpy(buf,HP.dEEV.get_name());
+		     strcat(HP.clMQTT.root,buf);
+		     strcat(HP.clMQTT.root,"#");
+             itoa(HP.dEEV.get_EEV(),buf,10);
+    	     strcat(HP.clMQTT.root,buf);
+		     strcat(HP.clMQTT.root,"\n");
+           #endif 
+
+ 		     strcat(HP.clMQTT.root,"#");    // Мощность системы отопления
+             strcpy(buf,"powerCO");
+		     strcat(HP.clMQTT.root,buf);
+		     strcat(HP.clMQTT.root,"#");
+		     ftoa(buf,HP.powerOUT,1);
+    	     strcat(HP.clMQTT.root,buf);
+		     strcat(HP.clMQTT.root,"\n");
+ 
+         }   
+      strcat(HP.clMQTT.root,"##\n");
+
+
+
+    // пакет сформирован его надо отправить
+   	IPAddress ip(0, 0, 0, 0);
+   	int8_t flag = 0;
+   	EthernetClient tTCP; // For get time
+   	if(debug) journal.jprintf("sendNarodMon2022 start.\n");
+	//Запущен шедулер то захватываем семафор
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+		return false;
+	} 
+
+    if (!linkStatusWiznet(false)) {	journal.jprintf((char*)"sendNarodMon2022: no link.\n");  SemaphoreGive(xWebThreadSemaphore); return false;}// Нет связи выходим
+
+ //IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
+ //   char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
+ //   uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
+
+	
+	if(check_address(HP.clMQTT.get_narodMon_server(), ip) == 0) { // DNS - ошибка выходим (проверяем DNS)
+		journal.jprintf((char*)"sendNarodMon2022: problem DNS\n");
+		SemaphoreGive(xWebThreadSemaphore);
+		return false;
+	}  // DNS - ошибка выходим
+	
+		
+		flag = tTCP.connect(HP.clMQTT.get_narodMon_serverIP(),HP.clMQTT.get_narodMon_port() , W5200_SOCK_SYS);
+		if(!flag) {
+			journal.jprintf("sendNarodMon2022:  connect fail\n"); 
+			SemaphoreGive(xWebThreadSemaphore);
+			return false;
+		} else { // Соедиение установлено посылаем пакет
+			if(tTCP.write((const uint8_t *)HP.clMQTT.root, strlen(HP.clMQTT.root)) == 0) {
+				journal.jprintf("sendNarodMon2022:  send error\n");
+				SemaphoreGive(xWebThreadSemaphore);
+				return false;
+			}
+			else {
+				if(debug) journal.jprintf("sendNarodMon2022:  send OK\n");
+				// Получение ответа сервера
+       			uint8_t wait = 20;
+				flag = 0;
+				while(wait--) { // ожидание ответа
+	//				SemaphoreGive(xWebThreadSemaphore);
+					_delay(50);
+	//				if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) break; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+					if(tTCP.available()) {
+						flag = 1;
+						break;
+					}
+				}
+                if(flag > 0) { // Ответ получен
+                	memset(buf,sizeof(buf-1),0x00); // очистить буфер
+					if(tTCP.read((uint8_t *)&buf, sizeof(buf-1)) >1) { // Ответ получен
+					if(debug) journal.jprintf("sendNarodMon2022-> %s\n",buf);	else journal.jprintf("send answer: %s\n",buf);
+						}
+                }
+				tTCP.stop();
+				SemaphoreGive(xWebThreadSemaphore);
+				return true;
+				 }
+			
+		}
+ 
+
+ //    journal.jprintf("\n------------------------\n");    
+ //     journal.jprintf(HP.clMQTT.root);    
+      return true;
+      
+ 
+     
+}
+
 
 // Посылка данных на брокер MQTT
 // debug  true - выводить в консоль информацию о посылаемых данных false - нет вывода
@@ -1106,13 +1274,13 @@ boolean sendMQTT(boolean debug)
            ftoa(HP.clMQTT.temp,(float)HP.fullCOP/100.0,2);
            if (HP.clMQTT.sendTopic(false,debug,false)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
           #endif 
-//           if (HP.dFC.get_present())
-//           {
-//           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
-//           strcat(HP.clMQTT.topic,"COP");
-//           ftoa(HP.clMQTT.temp,(float)HP.COP/100.0,2);
-//           if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;
-//           }
+           if (HP.dFC.get_present())   
+           {
+           strcpy(HP.clMQTT.topic,HP.clMQTT.root);
+           strcat(HP.clMQTT.topic,"COP");
+           ftoa(HP.clMQTT.temp,(float)HP.COP/100.0,2);
+           if (HP.clMQTT.sendTopic(false,debug,true)) {if (debug) journal.jprintf((char*)MQTTDebugStr, HP.clMQTT.topic,HP.clMQTT.temp);} else return false;  
+           }        
            if (debug) journal.jprintf(cStrEnd);   
           }  
         if (!debug) journal.jprintf((char*)MQTTPublishOK);   

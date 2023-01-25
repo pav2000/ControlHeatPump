@@ -97,9 +97,6 @@ Stats_Data Stats_data[] = {
 #ifdef POUT
 	,{ 0, STATS_OBJ_Press, STATS_TYPE_MIN, STATS_WHEN_ALWAYS, POUT }
 #endif
-#ifdef WATTROUTER
-	,{ 0, STATS_OBJ_WattRouter_Out, STATS_TYPE_SUM, STATS_WHEN_ALWAYS, 0 }
-#endif
 };
 
 const char stats_file_start[] = "stats_";

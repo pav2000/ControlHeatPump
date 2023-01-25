@@ -411,13 +411,7 @@ void Nextion::Update()
 #ifdef RBOILER
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
 #endif
-#ifdef RPUMPBH
-					| ((HP.dRelay[RPUMPBH].get_Relay() && !(HP.get_modWork() & pBOILER)) << 4)
-#endif
-#ifdef WR_Load_pins_Boiler_INDEX
-					| ((WR_LoadRun[WR_Load_pins_Boiler_INDEX] > 0) << 5)
-#endif
-					| (HP.get_BackupPower() << 6);
+					| (HP.get_BackupPower() << 4);
 		if(fUpdate == 2) Page1flags = ~fl;
 		if(fl != Page1flags) {
 			if((fl ^ Page1flags) & (1<<0)) {
@@ -435,29 +429,20 @@ void Nextion::Update()
 				if(fl & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
 			}
 #endif
-#if defined(RBOILER) || defined(RPUMPBH) || defined(WR_Load_pins_Boiler_INDEX)
-			if((fl ^ Page1flags) & (7<<3)) {
-				if(fl & (1<<3)) sendCommand("t3.pco=63488");
-				else if(fl & (1<<4)) sendCommand("t3.pco=2016");
-				else if(fl & (1<<5)) sendCommand("t3.pco=65280");
-				else sendCommand("t3.pco=65535");
+#ifdef RBOILER
+			if((fl ^ Page1flags) & (1<<3)) {
+				if(fl & (1<<3)) sendCommand(HP.dRelay[RBOILER].get_Relay() ? "t3.pco=63488" : "t3.pco=65280"); else sendCommand("t3.pco=65535");
 			}
 #endif
-            if((fl ^ Page1flags) & (1<<6)) {
+            if((fl ^ Page1flags) & (1<<4)) {
 #ifdef NEXTION_GENERATOR 
             	if(fUpdate == 2) {
             		sendCommand("vis bt1,1");  // Показ кнопки работа от генератора
             		sendCommand("tsw bt1,1");
             	}
-            	if(fl & (1<<6)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
+            	if(fl & (1<<4)) sendCommand("bt1.val=1"); else sendCommand("bt1.val=0");
 #else
-	#ifdef NEXTION_GENERATOR_FLASHING
-            	if(fl & (1<<6)) {
-            		if(GETBIT(HP.Option.flags2, f2NextionGenFlashing)) sendCommand("r.val=1"); else sendCommand("r.val=2");
-            	} else sendCommand("r.val=0");
-	#else
-            	if(fl & (1<<6)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
-	#endif
+            	if(fl & (1<<4)) sendCommand("vis bt1,1"); else sendCommand("vis bt1,0");
 #endif
             }
             Page1flags = fl;
@@ -626,13 +611,13 @@ void Nextion::Update()
 
 	} else if(PageID == NXTID_PAGE_BOILER)  // Обновление данных 6 страницы "ГВС"
 	{
-		strcat(dptoa(ntemp, HP.sTemp[TBOILER].get_Temp() / 10, 1), _xB0);
+		strcat(ftoa(ntemp, (float) HP.sTemp[TBOILER].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("tboiler", ntemp);
-		strcat(dptoa(ntemp, HP.sTemp[TCONOUTG].get_Temp() / 10, 1), _xB0);
+		strcat(ftoa(ntemp, (float) HP.sTemp[TCONOUTG].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("tconoutg", ntemp);
-		strcat(dptoa(ntemp, HP.sTemp[TCONING].get_Temp() / 10, 1), _xB0);
+		strcat(ftoa(ntemp, (float) HP.sTemp[TCONING].get_Temp() / 100.0, 1), _xB0);
 		setComponentText("tconing", ntemp);
-		strcat(dptoa(ntemp, HP.get_boilerTempTarget() / 10, 1), "");
+		strcat(ftoa(ntemp, (float) HP.get_boilerTempTarget() / 100.0, 1), "");
 		setComponentText("tustgvs", ntemp);
 		if(HP.get_BoilerON()) sendCommand("gvson.val=1");    // Кнопка включения ГВС в положение ВКЛ
 		else sendCommand("gvson.val=0");                     // Кнопка включения ГВС в положение ВЫКЛ

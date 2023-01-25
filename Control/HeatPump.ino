@@ -99,7 +99,6 @@ void HeatPump::initHeatPump()
 {
 	uint8_t i;
 	NO_Power = 0;
-	fBackupPowerOffDelay = 0;
 	flags = (1<<fHP_SunNotInited);
 	eraseError();
 
@@ -115,9 +114,6 @@ void HeatPump::initHeatPump()
 #endif
 #ifdef POUT
 	sADC[POUT].initSensorADC(POUT, ADC_SENSOR_POUT, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
-#endif
-#ifdef IWR
-	sADC[IWR].initSensorADC(IWR, ADC_SENSOR_IWR, FILTER_SIZE_OTHER);			// Инициализация аналогового датчика POUT
 #endif
 
 	for(i = 0; i < INUMBER; i++) sInput[i].initInput(i);           // Инициализация контактных датчиков
@@ -387,10 +383,6 @@ int32_t HeatPump::save(void)
 		if(save_2bytes(addr, SAVE_TYPE_PwrCorr, crc)) break;
 		if(save_struct(addr, (uint8_t*)&correct_power220, sizeof(correct_power220), crc)) break; // Сохранение correct_power220
 		#endif
-		#ifdef WATTROUTER
-		if(save_2bytes(addr, SAVE_TYPE_Wattrouter, crc)) break;
-		if(save_struct(addr, (uint8_t*)&WR, sizeof(WR), crc)) break; // Сохранение WR
-		#endif
 		if(save_2bytes(addr, SAVE_TYPE_END, crc)) break;
 		if(writeEEPROM_I2C(addr, (uint8_t *) &crc, sizeof(crc))) { error = ERR_SAVE_EEPROM; break; } // CRC
 		addr = addr + sizeof(crc) - (I2C_SETTING_EEPROM + 2);
@@ -416,12 +408,11 @@ int32_t HeatPump::save(void)
 }
 
 // Считать настройки из памяти i2c или из RAM, если не NULL, на выходе длина или код ошибки (меньше нуля)
-// flag: b1 - из памяти, b2 - не проверять CRC
-int32_t HeatPump::load(uint8_t *buffer, uint8_t flag)
+int32_t HeatPump::load(uint8_t *buffer, uint8_t from_RAM)
 {
 	uint16_t size;
 	journal.jprintf(" Load settings from ");
-	if(!(flag & 1)) {
+	if(from_RAM == 0) {
 		journal.jprintf("I2C");
 		if(readEEPROM_I2C(I2C_SETTING_EEPROM, (byte*) &size, sizeof(size))) {
 x_ReadError:
@@ -439,20 +430,17 @@ x_Error:
 	}
 	journal.jprintf(", size %d, crc: ", size + 2); // sizeof(crc)
 	size -= 2;
-	uint16_t crc = 0xFFFF;
 #ifdef LOAD_VERIFICATION
-	if(flag & 2) {
-		journal.jprintf("*SKIP*");
-	} else {
-		for(uint16_t i = 0; i < size; i++)  crc = _crc16(crc, buffer[i]);
-		if(crc != *((uint16_t *)(buffer + size))) {
-			journal.jprintf("Error: %04x != %04x!\n", crc, *((uint16_t *)(buffer + size)));
-			return error = ERR_CRC16_EEPROM;
-		}
-		journal.jprintf("%04x", crc);
+	
+	uint16_t crc = 0xFFFF;
+	for(uint16_t i = 0; i < size; i++)  crc = _crc16(crc, buffer[i]);
+	if(crc != *((uint16_t *)(buffer + size))) {
+		journal.jprintf("Error: %04x != %04x!\n", crc, *((uint16_t *)(buffer + size)));
+		return error = ERR_CRC16_EEPROM;
 	}
+	journal.jprintf("%04x", crc);
 #else
-	journal.jprintf("*No verification*");
+	journal.jprintf("*No verification");
 #endif
 	uint8_t *buffer_max = buffer + size;
 	size += 2;
@@ -498,10 +486,6 @@ x_Error:
 #ifdef CORRECT_POWER220
 		} else if(type == SAVE_TYPE_PwrCorr) {
 			load_struct((uint8_t*)&correct_power220, &buffer, sizeof(correct_power220));
-#endif
-#ifdef WATTROUTER
-		} else if(type == SAVE_TYPE_Wattrouter) {
-			load_struct((uint8_t*)&WR, &buffer, sizeof(WR)); WR_Loads = WR.Loads;
 #endif
 		} else if(type == SAVE_TYPE_END) {
 			break;
@@ -686,12 +670,7 @@ void HeatPump::updateDateTime(int32_t dTime)
 		if(offBoiler > 0) offBoiler = offBoiler + dTime;                         // время выключения нагрева ГВС ТН (необходимо для переключения на другие режимы на ходу)
 		if(startDefrost > 0) startDefrost = startDefrost + dTime;                   // время срабатывания датчика разморозки
 		if(startSalmonella > 0) startSalmonella = startSalmonella + dTime;             // время начала обеззараживания
-#ifdef WATTROUTER
-		if(WR_LastSwitchTime) WR_LastSwitchTime += dTime;
-		for(uint8_t i = 0; i < WR_NumLoads; i++) {
-			if(WR_SwitchTime[i]) WR_SwitchTime[i] += dTime;
-		}
-#endif
+
 	}
 }
       
@@ -739,7 +718,7 @@ void HeatPump::resetSettingHP()
 	num_resPing = 0;                                // число не прошедших пингов
 
 	fullCOP = -1000;                                // Полный СОР  сотые -1000 признак невозможности расчета
-//	COP = -1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
+	COP = -1000;                                    // Чистый COP сотые  -1000 признак невозможности расчета
 
 	// Инициализациия различных времен
 	DateTime.saveTime = 0;                          // дата и время сохранения настроек в eeprom
@@ -804,8 +783,8 @@ void HeatPump::resetSettingHP()
 	Option.pausePump = 600;              //  Время паузы  насоса при выключенном компрессоре, сек
 	Option.workPump = 15;                //  Время работы  насоса при выключенном компрессоре, сек
 	Option.tChart = 10;                  //  период накопления статистики по умолчанию 60 секунд
-	SETBIT0(Option.flags, fAddHeat);      //  Использование дополнительного тэна при нагреве НЕ ИСПОЛЬЗОВАТЬ
-	SETBIT0(Option.flags, fTypeRHEAT);    //  Использование дополнительного тэна по умолчанию режим резерв
+	SETBIT0(Option.flags, fAddHeat);      //  Использование дополнительного тена при нагреве НЕ ИСПОЛЬЗОВАТЬ
+	SETBIT0(Option.flags, fTypeRHEAT);    //  Использование дополнительного тена по умолчанию режим резерв
 	SETBIT1(Option.flags, fBeep);         //  Звук
 	SETBIT1(Option.flags, fNextion);      //  дисплей Nextion
 	SETBIT0(Option.flags, fHistory);      //  Сброс статистика на карту
@@ -819,18 +798,8 @@ void HeatPump::resetSettingHP()
 	Option.SunMinWorktime = SUN_MIN_WORKTIME;
 	Option.SunMinPause = SUN_MIN_PAUSE;
 #endif
-    SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности)
+    SETBIT0(Option.flags, fBackupPower); // Использование резервного питания от генератора (ограничение мощности) 
 	Option.maxBackupPower=3000;          // Максимальная мощность при питании от генератора (Вт)
-#ifdef WATTROUTER
-	WR.MinNetLoad = 50;
-	WR.NextSwitchPause = 10;
-	WR.TurnOnMinTime = 9;
-	WR.TurnOnPause = 300;
-	WR.LoadAdd = 150;
-	WR.LoadHist = 100;
-	WR.PWM_Freq = PWM_WRITE_OUT_FREQ_DEFAULT;
-	WR.WF_Hour = 5;
-#endif
 
 }
 
@@ -1041,151 +1010,80 @@ void HeatPump::get_datetime(char *var, char *ret)
 // Установить опции ТН из числа (float), "set_oHP"
 boolean HeatPump::set_optionHP(char *var, float x)   
 {
-	int n = x;
-	if(strcmp(var,option_ADD_HEAT)==0)         {switch (n)  //использование дополнительного нагревателя (значения 1 и 0)
+	if(strcmp(var,option_ADD_HEAT)==0)         {switch ((int)x)  //использование дополнительного нагревателя (значения 1 и 0)
 												   {
 													case 0:  SETBIT0(Option.flags,fAddHeat);                                    return true; break;  // использование запрещено
 													case 1:  SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // резерв
 													case 2:  SETBIT1(Option.flags,fAddHeat);SETBIT1(Option.flags,fTypeRHEAT);   return true; break;  // бивалент
 													default: SETBIT1(Option.flags,fAddHeat);SETBIT0(Option.flags,fTypeRHEAT);   return true; break;  // Исправить по умолчанию
 												   } }else  // бивалент
-	if(strcmp(var,option_TEMP_RHEAT)==0)       {if ((x>=-30)&&(x<=30))  {Option.tempRHEAT=rd(x, 100); return true;} else return false; }else     // температура управления RHEAT (градусы)
-	if(strcmp(var,option_SunRegGeoTemp)==0)    { Option.SunRegGeoTemp = rd(x, 100); return true; }else
-	if(strcmp(var,option_SunRegGeoTempGOff)==0){ Option.SunRegGeoTempGOff = rd(x, 100); return true; }else
-	if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
-	if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
-	if(strcmp(var,option_SunTempOn)==0)   	   { Option.SunTempOn = rd(x, 100); return true;} else
-	if(strcmp(var,option_SunTempOff)==0)   	   { Option.SunTempOff = rd(x, 100); return true;} else
-	if(strcmp(var,option_SunRegGeo)==0)        { Option.flags = (Option.flags & ~(1<<fSunRegenerateGeo)) | ((n!=0)<<fSunRegenerateGeo); return true; }else
-	if(strcmp(var,option_PUMP_WORK)==0)        {if ((n>=0)&&(n<=65535)) {Option.workPump=n; return true;} else return false;}else                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
-	if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((n>=0)&&(n<=65535)) {Option.pausePump=n; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
-	if(strcmp(var,option_ATTEMPT)==0)          { if ((n>=0)&&(n<=255)) {Option.nStart=n; return true;} else return false;  }else                // число попыток пуска
-	if(strcmp(var,option_TIME_CHART)==0)       { if(n>0) { if (get_State()==pWORK_HP) clearChart(); Option.tChart = n; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
-	if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = n; return true;} else
-	if(strcmp(var, option_BEEP) == 0) { // Подача звукового сигнала
-		if(n == 0) {
-			SETBIT0(Option.flags, fBeep);
-			digitalWriteDirect(PIN_BEEP, LOW);
-			return true;
-		} else if(n == 1) {
-			SETBIT1(Option.flags, fBeep);
-			return true;
-		} else return false;
-	} else
+	if(strcmp(var,option_TEMP_RHEAT)==0)       {if ((x>=-30.0)&&(x<=30.0))  {Option.tempRHEAT=rd(x, 100); return true;} else return false; }else     // температура управления RHEAT (градусы)
+	if(strcmp(var,option_PUMP_WORK)==0)        {if ((x>=0)&&(x<=65535)) {Option.workPump=x; return true;} else return false;}else                // работа насоса конденсатора при выключенном компрессоре МИНУТЫ
+	if(strcmp(var,option_PUMP_PAUSE)==0)       {if ((x>=0)&&(x<=65535)) {Option.pausePump=x; return true;} else return false;}else               // пауза между работой насоса конденсатора при выключенном компрессоре МИНУТЫ
+	if(strcmp(var,option_ATTEMPT)==0)          { if ((x>=0)&&(x<=255)) {Option.nStart=x; return true;} else return false;  }else                // число попыток пуска
+	if(strcmp(var,option_TIME_CHART)==0)       { if(x>0) { if (get_State()==pWORK_HP) clearChart(); Option.tChart = x; return true; } else return false; } else // Сбросить статистистику, начать отсчет заново
+	if(strcmp(var,option_Charts_when_comp_on)==0){ Charts_when_comp_on = x; return true;} else
+	if(strcmp(var,option_BEEP)==0)             {if (x==0) {SETBIT0(Option.flags,fBeep); return true;} else if (x==1) {SETBIT1(Option.flags,fBeep); return true;} else return false;  }else            // Подача звукового сигнала
 	if(strcmp(var, option_NEXTION) == 0) {// использование дисплея nextion
-	   bool fl = n != 0;
+	   bool fl = x != 0;
 	   if(fl != GETBIT(Option.flags, fNextion)) {
 		   Option.flags = (Option.flags & ~(1 << fNextion)) | (fl << fNextion);
 		   updateNextion(true);
 	   }
 	   return true;
-	} else if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((n!=0)<<fNextionOnWhileWork); updateNextion(false); return true; } else            // использование дисплея nextion
-	if(strcmp(var,option_NEXT_SLEEP)==0)       {if (n>=0) {Option.sleep=n; updateNextion(false); return true;} else return false;  }else       // Время засыпания секунды NEXTION минуты
+	} else if(strcmp(var,option_NEXTION_WORK)==0)     { Option.flags = (Option.flags & ~(1<<fNextionOnWhileWork)) | ((x!=0)<<fNextionOnWhileWork); updateNextion(false); return true; } else            // использование дисплея nextion
+	if(strcmp(var,option_NEXT_SLEEP)==0)       {if (x>=0) {Option.sleep=x; updateNextion(false); return true;} else return false;  }else       // Время засыпания секунды NEXTION минуты
 #ifdef NEXTION
-	if(strcmp(var,option_NEXT_DIM)==0)         {if ((n>=1)&&(n<=100)) {Option.dim=n; myNextion.set_dim(Option.dim); return true;} else return false; }else       // Якрость % NEXTION
+	if(strcmp(var,option_NEXT_DIM)==0)         {if ((x>=1)&&(x<=100)) {Option.dim=x; myNextion.set_dim(Option.dim); return true;} else return false; }else       // Якрость % NEXTION
 #endif
-	if(strcmp(var,option_History)==0)          {if (n==0) {SETBIT0(Option.flags,fHistory); return true;} else if (n==1) {SETBIT1(Option.flags,fHistory); return true;} else return false;       }else       // Сбрасывать статистику на карту
-	if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (n==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (n==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
-	if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((n!=0)<<fWebStoreOnSPIFlash); return true; } else
-	if(strcmp(var,option_LogWirelessSensors)==0){ Option.flags = (Option.flags & ~(1<<fLogWirelessSensors)) | ((n!=0)<<fLogWirelessSensors); return true; } else
-	if(strcmp(var,option_SAVE_ON)==0)          {if (n==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (n==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
+	if(strcmp(var,option_History)==0)          {if (x==0) {SETBIT0(Option.flags,fHistory); return true;} else if (x==1) {SETBIT1(Option.flags,fHistory); return true;} else return false;       }else       // Сбрасывать статистику на карту
+	if(strcmp(var,option_SDM_LOG_ERR)==0)      {if (x==0) {SETBIT0(Option.flags,fSDMLogErrors); return true;} else if (x==1) {SETBIT1(Option.flags,fSDMLogErrors); return true;} else return false;       }else
+	if(strcmp(var,option_WebOnSPIFlash)==0)    { Option.flags = (Option.flags & ~(1<<fWebStoreOnSPIFlash)) | ((x!=0)<<fWebStoreOnSPIFlash); return true; } else
+	if(strcmp(var,option_LogWirelessSensors)==0){ Option.flags = (Option.flags & ~(1<<fLogWirelessSensors)) | ((x!=0)<<fLogWirelessSensors); return true; } else
+	if(strcmp(var,option_SAVE_ON)==0)          {if (x==0) {SETBIT0(Option.flags,fSaveON); return true;} else if (x==1) {SETBIT1(Option.flags,fSaveON); return true;} else return false;    }else             // флаг записи в EEPROM включения ТН (восстановление работы после перезагрузки)
 	if(strncmp(var,option_SGL1W, sizeof(option_SGL1W)-1)==0) {
 	   uint8_t bit = var[sizeof(option_SGL1W)-1] - '0' - 1;
 	   if(bit <= 3) {
-		   Option.flags = (Option.flags & ~(1<<(f1Wire1TSngl + bit))) | (n == 0 ? 0 : (1<<(f1Wire1TSngl + bit)));
+		   Option.flags = (Option.flags & ~(1<<(f1Wire1TSngl + bit))) | (x == 0 ? 0 : (1<<(f1Wire1TSngl + bit)));
 		   return true;
 	   }
 	} else
-	if(strcmp(var,option_SunMinWorktime)==0)   { Option.SunMinWorktime = n; return true; }else
-	if(strcmp(var,option_SunMinPause)==0)      { Option.SunMinPause = n; return true; }else
-	if(strcmp(var,option_PAUSE)==0)			   { if ((n>=0)&&(n<=999)) {Option.pause=n*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
-	if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = n; return true; }else
-	if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((n>=0)&&(n<=900)) {Option.delayOnPump=n; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
-	if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((n>=0)&&(n<=900)) {Option.delayOffPump=n; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
-	if(strcmp(var,option_DELAY_START_RES)==0)  {if ((n>=0)&&(n<=6000)) {Option.delayStartRes=n; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
-	if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((n>=0)&&(n<=6000)) {Option.delayRepeadStart=n; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
-	if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((n>=0)&&(n<=600)) {Option.delayDefrostOn=n; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
-	if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((n>=0)&&(n<=600)) {Option.delayDefrostOff=n; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
-	if(strcmp(var,option_DELAY_R4WAY)==0)      {if ((n>=0)&&(n<=600)) {Option.delayR4WAY=n; return true;} else return false;}else         // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
-	if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((n>=0)&&(n<=1200)) {Option.delayBoilerSW=n; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
-	if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((n>=0)&&(n<=1200)) {Option.delayBoilerOff=n; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
-	else if(strcmp(var,option_fBackupPower)==0)     {if (n==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (n==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;} // флаг Использование резервного питания от генератора (ограничение мощности)
-	else if(strcmp(var, option_f2BackupPowerAuto) == 0) {
+	if(strcmp(var,option_SunRegGeo)==0)        { Option.flags = (Option.flags & ~(1<<fSunRegenerateGeo)) | ((x!=0)<<fSunRegenerateGeo); return true; }else
+	if(strcmp(var,option_SunRegGeoTemp)==0)    { Option.SunRegGeoTemp = rd(x, 100); return true; }else
+	if(strcmp(var,option_SunRegGeoTempGOff)==0){ Option.SunRegGeoTempGOff = rd(x, 100); return true; }else
+	if(strcmp(var,option_SunTDelta)==0)        { Option.SunTDelta = rd(x, 100); return true; }else
+	if(strcmp(var,option_SunGTDelta)==0)       { Option.SunGTDelta = rd(x, 100); return true; }else
+	if(strcmp(var,option_SunMinWorktime)==0)   { Option.SunMinWorktime = x; return true; }else
+	if(strcmp(var,option_SunMinPause)==0)      { Option.SunMinPause = x; return true; }else
+	if(strcmp(var,option_PAUSE)==0)			  { if ((x>=0)&&(x<=200)) {Option.pause=x*60; return true;} else return false; }else             // минимальное время простоя компрессора с переводом в минуты но хранится в секундах!!!!!
+	if(strcmp(var,option_MinCompressorOn)==0)  { Option.MinCompressorOn = x; return true; }else
+	if(strcmp(var,option_DELAY_ON_PUMP)==0)    {if ((x>=0)&&(x<=900)) {Option.delayOnPump=x; return true;} else return false;}else        // Задержка включения компрессора после включения насосов (сек).
+	if(strcmp(var,option_DELAY_OFF_PUMP)==0)   {if ((x>=0)&&(x<=900)) {Option.delayOffPump=x; return true;} else return false;}else       // Задержка выключения насосов после выключения компрессора (сек).
+	if(strcmp(var,option_DELAY_START_RES)==0)  {if ((x>=0)&&(x<=6000)) {Option.delayStartRes=x; return true;} else return false;}else     // Задержка включения ТН после внезапного сброса контроллера (сек.)
+	if(strcmp(var,option_DELAY_REPEAD_START)==0){if ((x>=0)&&(x<=6000)) {Option.delayRepeadStart=x; return true;} else return false;}else // Задержка перед повторным включениме ТН при ошибке (попытки пуска) секунды
+	if(strcmp(var,option_DELAY_DEFROST_ON)==0) {if ((x>=0)&&(x<=600)) {Option.delayDefrostOn=x; return true;} else return false;}else     // ДЛЯ ВОЗДУШНОГО ТН Задержка после срабатывания датчика перед включением разморозки (секунды)
+	if(strcmp(var,option_DELAY_DEFROST_OFF)==0){if ((x>=0)&&(x<=600)) {Option.delayDefrostOff=x; return true;} else return false;}else    // ДЛЯ ВОЗДУШНОГО ТН Задержка перед выключением разморозки (секунды)
+	if(strcmp(var,option_DELAY_R4WAY)==0)      {if ((x>=0)&&(x<=600)) {Option.delayR4WAY=x; return true;} else return false;}else         // Задержка между переключением 4-х ходового клапана и включением компрессора, для выравнивания давлений (сек). Если включены эти опции (переключение тепло-холод)
+	if(strcmp(var,option_DELAY_BOILER_SW)==0)  {if ((x>=0)&&(x<=1200)) {Option.delayBoilerSW=x; return true;} else return false;}else     // Пауза (сек) после переключение ГВС - выравниваем температуру в контуре отопления/ГВС что бы сразу защиты не сработали
+	if(strcmp(var,option_DELAY_BOILER_OFF)==0) {if ((x>=0)&&(x<=1200)) {Option.delayBoilerOff=x; return true;} else return false;}        // Время (сек) на сколько блокируются защиты при переходе с ГВС на отопление и охлаждение слишком горяче после ГВС
+	if(strcmp(var,option_fBackupPower)==0)     {if (x==0) {SETBIT0(Option.flags,fBackupPower); return true;} else if (x==1) {SETBIT1(Option.flags,fBackupPower); return true;} else return false;}else // флаг Использование резервного питания от генератора (ограничение мощности)
+	if(strcmp(var, option_fBackupPowerAuto) == 0) {
 	#ifdef SGENERATOR
-		if(n == 0) { SETBIT0(Option.flags2, f2BackupPowerAuto);	return true;
-		} else if(n == 1) {	SETBIT1(Option.flags2, f2BackupPowerAuto); return true;
+		if(x == 0) {
+			SETBIT0(Option.flags2, f2BackupPowerAuto);
+			return true;
+		} else if(x == 1) {
+			SETBIT1(Option.flags2, f2BackupPowerAuto);
+			return true;
 		} else return false;
 	#else
 		return true;
-	#endif
-	} else if(strcmp(var, option_f2NextionGenFlashing) == 0) {
-	#ifdef NEXTION_GENERATOR_FLASHING
-		if(n == 0) { SETBIT0(Option.flags2, f2NextionGenFlashing);	return true;
-		} else if(n == 1) {	SETBIT1(Option.flags2, f2NextionGenFlashing); return true;
-		} else return false;
-	#else
-		return true;
-	#endif
-	} else if(strcmp(var,option_maxBackupPower)==0)   {if ((n>=0)&&(n<=10000)) {Option.maxBackupPower=n; return true;} else return false;}       // Максимальная мощность при питании от генератора
-#ifdef WATTROUTER
-	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1) == 0) {
-	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
-	   if(bit < WR_NumLoads) {
-		   WR.Loads = WR_Loads = (WR_Loads & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
-		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
-		   return true;
-	   }
-	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1) == 0) {
-	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
-	   if(bit < WR_NumLoads) {
-#ifdef WR_Boiler_Substitution_INDEX
-		   if(bit == WR_Boiler_Substitution_INDEX) return true;
-		   if(bit == WR_Load_pins_Boiler_INDEX) WR.PWM_Loads = (WR.PWM_Loads & ~(1<<WR_Boiler_Substitution_INDEX)) | (n == 0 ? 0 : (1<<WR_Boiler_Substitution_INDEX));
 #endif
-		   WR.PWM_Loads = (WR.PWM_Loads & ~(1<<bit)) | (n == 0 ? 0 : (1<<bit));
-		   //if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = true;
-		   return true;
-	   }
-	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1) == 0) {
-	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
-	   if(bit < WR_NumLoads) {
-		   WR.LoadPower[bit] = n;
-		   if(GETBIT(WR.PWM_Loads, bit)) WR_Refresh |= (1<<bit);
-		   return true;
-	   }
-	} else if(strcmp(var,option_WR_MinNetLoad)==0) { WR.MinNetLoad = n; return true; }
-	else if(strcmp(var,option_WR_TurnOnPause)==0)  { WR.TurnOnPause = n; return true; }
-	else if(strcmp(var,option_WR_NextSwitchPause)==0){ WR.NextSwitchPause = n; return true; }
-	else if(strcmp(var,option_WR_TurnOnMinTime)==0){ WR.TurnOnMinTime = n; return true; }
-	else if(strcmp(var,option_WR_LoadHist)==0)     { WR.LoadHist = n; return true; }
-	else if(strcmp(var,option_WR_LoadAdd)==0)      { WR.LoadAdd = n; return true; }
-	else if(strcmp(var,option_WR_PWM_FullPowerTime)==0){ WR.PWM_FullPowerTime = n; return true; }
-	else if(strcmp(var,option_WR_PWM_FullPowerLimit)==0){ WR.PWM_FullPowerLimit = n; return true; }
-	else if(strcmp(var,option_WR_fLog)==0)         { WR.Flags = (WR.Flags & ~(1<<WR_fLog)) | ((n!=0)<<WR_fLog); return true; }
-	else if(strcmp(var,option_WR_fLogFull)==0)     { WR.Flags = (WR.Flags & ~(1<<WR_fLogFull)) | ((n!=0)<<WR_fLogFull); return true; }
-	else if(strcmp(var,option_WR_WF_Hour)==0)      { if(n >= 0 && n <= 23) { WR.WF_Hour = n; return true; } else return false; }
-	else if(strcmp(var,option_WR_PWM_Freq)==0)     {
-#ifdef WR_ONE_PERIOD_PWM
-		WR.PWM_Freq = PWM_WRITE_OUT_FREQ_DEFAULT;
-#else
-		if(WR.PWM_Freq != n) {
-			WR.PWM_Freq = n;
-			memset(TCChanEnabled, 0, sizeof_TCChanEnabled);
-			PWMEnabled = 0;
-			WR_Refresh |= WR_fLoadMask;
-		}
-#endif
-		return true;
-	} else if(strcmp(var,option_WR_fActive)==0) {
-		WR.Flags = (WR.Flags & ~(1<<WR_fActive)) | ((n!=0)<<WR_fActive);
-		if(n == 0) WR_Refresh = true;
-#ifdef WR_PNET_AVERAGE
-		else WR_Pnet_avg_init = true;
-#endif
-		return true;
-	}
-#endif
-	return false;
+   } else
+   if(strcmp(var,option_maxBackupPower)==0)   {if ((x>=0)&&(x<=10000)) {Option.maxBackupPower=x; return true;} else return false;}else       // Максимальная мощность при питании от генератора
+   if(strcmp(var,option_SunTempOn)==0)   	  { Option.SunTempOn = rd(x, 100); return true;} else
+   if(strcmp(var,option_SunTempOff)==0)   	  { Option.SunTempOff = rd(x, 100); return true;} else
+   return false; 
 }
 
 // Получить опции ТН, результат добавляется в ret, "get_oHP"
@@ -1242,54 +1140,17 @@ char* HeatPump::get_optionHP(char *var, char *ret)
 	#endif
 		   ) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero);
 	} else
-	if(strcmp(var, option_f2BackupPowerAuto) == 0) {
+	if(strcmp(var, option_fBackupPowerAuto) == 0) {
 	#ifdef SGENERATOR
 	   if(GETBIT(Option.flags2, f2BackupPowerAuto)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero);
-	#else
+#else
 	   return strcat(ret, (char*) cZero);
-	#endif
-	} else
-	if(strcmp(var, option_f2NextionGenFlashing) == 0) {
-	#ifdef NEXTION_GENERATOR_FLASHING
-	   if(GETBIT(Option.flags2, f2NextionGenFlashing)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero);
-	#else
-	   return strcat(ret, (char*) cZero);
-	#endif
-	} else
+#endif
+   } else
 	if(strcmp(var,option_maxBackupPower)==0)   {return _itoa(Option.maxBackupPower,ret);}else    // Максимальная мощность при питании от генератора
 	if(strcmp(var,option_SunTempOn)==0)        {_dtoa(ret,Option.SunTempOn/10, 1); return ret; } else
 	if(strcmp(var,option_SunTempOff)==0)       {_dtoa(ret,Option.SunTempOff/10, 1); return ret; }
-#ifdef WATTROUTER
-	else if(strncmp(var, option_WR_Loads, sizeof(option_WR_Loads)-1)==0) {
-	   uint8_t bit = var[sizeof(option_WR_Loads)-1] - '0';
-	   if(bit < WR_NumLoads) {
-		   return strcat(ret,(char*)(GETBIT(WR_Loads, bit) ? cOne : cZero));
-	   }
-	} else if(strncmp(var, option_WR_Loads_PWM, sizeof(option_WR_Loads_PWM)-1)==0) {
-	   uint8_t bit = var[sizeof(option_WR_Loads_PWM)-1] - '0';
-	   if(bit < WR_NumLoads && WR_Load_pins[bit] > 0) {
-		   return strcat(ret,(char*)(GETBIT(WR.PWM_Loads, bit) ? cOne : cZero));
-	   }
-	} else if(strncmp(var, option_WR_LoadPower, sizeof(option_WR_LoadPower)-1)==0) {
-	   uint8_t bit = var[sizeof(option_WR_LoadPower)-1] - '0';
-	   if(bit < WR_NumLoads) {
-		   return _itoa(WR.LoadPower[bit], ret);
-	   }
-	} else if(strcmp(var, option_WR_MinNetLoad)==0){ return _itoa(WR.MinNetLoad, ret); }
-	else if(strcmp(var, option_WR_TurnOnPause)==0) { return _itoa(WR.TurnOnPause, ret); }
-	else if(strcmp(var, option_WR_NextSwitchPause)==0){ return _itoa(WR.NextSwitchPause, ret); }
-	else if(strcmp(var, option_WR_TurnOnMinTime)==0){ return _itoa(WR.TurnOnMinTime, ret); }
-	else if(strcmp(var, option_WR_PWM_Freq)==0)    { return _itoa(WR.PWM_Freq, ret); }
-	else if(strcmp(var, option_WR_LoadHist)==0)    { return _itoa(WR.LoadHist, ret); }
-	else if(strcmp(var, option_WR_LoadAdd)==0)     { return _itoa(WR.LoadAdd, ret); }
-	else if(strcmp(var, option_WR_PWM_FullPowerTime)==0){ return _itoa(WR.PWM_FullPowerTime, ret); }
-	else if(strcmp(var, option_WR_PWM_FullPowerLimit)==0){ return _itoa(WR.PWM_FullPowerLimit, ret); }
-	else if(strcmp(var, option_WR_fLog) == 0)      { if(GETBIT(WR.Flags, WR_fLog)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
-	else if(strcmp(var, option_WR_fLogFull) == 0)  { if(GETBIT(WR.Flags, WR_fLogFull)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
-	else if(strcmp(var, option_WR_fActive) == 0)   { if(GETBIT(WR.Flags, WR_fActive)) return strcat(ret, (char*) cOne); else return strcat(ret, (char*) cZero); }
-	else if(strcmp(var, option_WR_WF_Hour) == 0)   { return _itoa(WR.WF_Hour, ret); }
-#endif
-	return strcat(ret,(char*)cInvalid);
+   return strcat(ret,(char*)cInvalid);
 }
 
 
@@ -1311,13 +1172,7 @@ void HeatPump::get_listChart(char* ret, const char *delimiter)
 		if(ChartsModSetup[index].object == STATS_OBJ_Temp) strcat(ret, sTemp[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_Press) strcat(ret, sADC[ChartsModSetup[index].number].get_note());
 		else if(ChartsModSetup[index].object == STATS_OBJ_PressTemp) {
-#ifndef CONFIG_5
-		strcat(ret, sADC[ChartsModSetup[index].number].get_note());
-#else
-        if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PEVA")==0) strcat(ret, "T° кипения");else
-        if (strcmp(sADC[ChartsModSetup[index].number].get_name(),"PCON")==0) strcat(ret, "T° конденсации");else
-		{strcat(ret, "Температура "); strcat(ret, sADC[ChartsModSetup[index].number].get_name());}
-#endif
+			strcat(ret, sADC[ChartsModSetup[index].number].get_note());
 			strcat(ret, ", °C");
 		} else if(ChartsModSetup[index].object == STATS_OBJ_Flow) strcat(ret, sFrequency[ChartsModSetup[index].number].get_note());
 		else strcat(ret, STATS_OBJ_names[ChartsModSetup[index].object]);
@@ -1372,13 +1227,6 @@ void  HeatPump::updateChart()
 		else if(ChartsModSetup[i].object == STATS_OBJ_Press) Charts[i].add_Point(sADC[ChartsModSetup[i].number].get_Value());
 		else if(ChartsModSetup[i].object == STATS_OBJ_PressTemp) Charts[i].add_Point(PressToTemp(ChartsModSetup[i].number));
 		else if(ChartsModSetup[i].object == STATS_OBJ_Flow) Charts[i].add_Point(sFrequency[ChartsModSetup[i].number].get_Value() / 10);
-#ifdef WATTROUTER
-#ifdef WR_PowerMeter_Modbus
-		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter_In) Charts[i].add_Point(WR_PowerMeter_Power / 10);
-#else
-		else if(ChartsModSetup[i].object == STATS_OBJ_WattRouter_In) Charts[i].add_Point(WR_Pnet);
-#endif
-#endif
 	}
 	for(uint8_t i = 0; i < sizeof(ChartsConstSetup) / sizeof(ChartsConstSetup[0]); i++) {
 		uint8_t j = sizeof(ChartsModSetup) / sizeof(ChartsModSetup[0]) + i;
@@ -1395,7 +1243,7 @@ void  HeatPump::updateChart()
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Power_FC) Charts[j].add_Point(dFC.get_power() / 10);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Current_FC) Charts[j].add_Point(dFC.get_current());
 #ifdef USE_ELECTROMETER_SDM
-		else if(ChartsConstSetup[i].object == STATS_OBJ_Voltage) Charts[j].add_Point(dSDM.get_voltage() * 100);
+		else if(ChartsConstSetup[i].object == STATS_OBJ_Voltage) Charts[j].add_Point(dSDM.get_Voltage() * 100);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_Power) Charts[j].add_Point((int32_t)power220 / 10);
 		else if(ChartsConstSetup[i].object == STATS_OBJ_COP_Full) Charts[j].add_Point(fullCOP);
 #endif
@@ -1425,12 +1273,11 @@ void HeatPump::get_Chart(int index, char *str)
 #endif
 #ifdef TCONOUT
 	case STATS_OBJ_Overcool:
-		if(Chart_PressTemp_PCON && Chart_Temp_TCONOUT) Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str,&Charts[Chart_Temp_TCONOUT]);
+		if(Chart_PressTemp_PCON && Chart_Temp_TCONOUT) Charts[Chart_PressTemp_PCON].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
 		break;
 #endif
 	case STATS_OBJ_TCOMP_TCON:
-		if(Chart_Temp_TCOMP && Chart_PressTemp_PCON) Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]); else // если датчика PCON нет
-		if(Chart_Temp_TCOMP && Chart_Temp_TCONOUT)   Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TCONOUT]);
+		if(Chart_Temp_TCOMP && Chart_PressTemp_PCON) Charts[Chart_Temp_TCOMP].get_PointsStrSubDiv100(str, &Charts[Chart_PressTemp_PCON]);
 		break;
 	case STATS_OBJ_Delta_GEO:
 		if(Chart_Temp_TEVAING && Chart_Temp_TEVAOUTG) Charts[Chart_Temp_TEVAING].get_PointsStrSubDiv100(str, &Charts[Chart_Temp_TEVAOUTG]);
@@ -1448,9 +1295,6 @@ void HeatPump::get_Chart(int index, char *str)
 		if(Chart_Flow_FLOWCON && Chart_Temp_TCONING && Chart_Temp_TCONOUTG) Charts[Chart_Flow_FLOWCON].get_PointsStrPower(str, &Charts[Chart_Temp_TCONING], &Charts[Chart_Temp_TCONOUTG], sFrequency[FLOWCON].get_Capacity());
 		break;
 #endif
-	case STATS_OBJ_WattRouter_In:
-		Charts[index].get_PointsStr(str);
-		break;
 	default:
 		Charts[index].get_PointsStrDiv100(str);
 	}
@@ -1544,7 +1388,7 @@ int16_t HeatPump::setTargetTemp(int16_t dt)
 
 int16_t HeatPump::get_targetTempCool()
 {
-	int T;
+	int16_t T;
 	if(get_ruleCool() == pHYBRID) T = Prof.Cool.Temp1;
 	else if(!(GETBIT(Prof.Cool.flags, fTarget))) T = Prof.Cool.Temp1;
 	else T = Prof.Cool.Temp2;
@@ -1554,7 +1398,7 @@ int16_t HeatPump::get_targetTempCool()
 
 int16_t HeatPump::get_targetTempHeat()
 {
-	int T;
+	int16_t T;
 	if(get_ruleHeat() == pHYBRID) T = Prof.Heat.Temp1;
 	else if(!(GETBIT(Prof.Heat.flags, fTarget))) T = Prof.Heat.Temp1;
 	else T = Prof.Heat.Temp2;
@@ -1577,28 +1421,22 @@ int16_t HeatPump::get_targetTempHeat()
 }
 
 // ИЗМЕНИТЬ целевую температуру бойлера с провекой допустимости значений
-int16_t HeatPump::setTempTargetBoiler(int16_t dt) {
-	if((Prof.Boiler.TempTarget + dt >= 500) && (Prof.Boiler.TempTarget + dt <= 9000)) Prof.Boiler.TempTarget = Prof.Boiler.TempTarget + dt;
-	return Prof.Boiler.TempTarget;
+int16_t HeatPump::setTempTargetBoiler(int16_t dt)
+{
+  if ((Prof.Boiler.TempTarget+dt>=5.0*100)&&(Prof.Boiler.TempTarget+dt<=90.0*100))   Prof.Boiler.TempTarget=Prof.Boiler.TempTarget+dt;
+  return Prof.Boiler.TempTarget;     
 }
 
 // Получить целевую температуру бойлера с учетом корректировки
 int16_t HeatPump::get_boilerTempTarget()
 {
-	int16_t ret = Prof.Boiler.TempTarget;
-	int8_t h = rtcSAM3X8.get_hours();
-	if(Prof.Boiler.add_delta_temp != 0) {
+	 if(Prof.Boiler.add_delta_temp != 0) {
+		int8_t h = rtcSAM3X8.get_hours();
 		if((Prof.Boiler.add_delta_end_hour >= Prof.Boiler.add_delta_hour && h >= Prof.Boiler.add_delta_hour && h <= Prof.Boiler.add_delta_end_hour)
-				|| (Prof.Boiler.add_delta_end_hour < Prof.Boiler.add_delta_hour && (h >= Prof.Boiler.add_delta_hour || h <= Prof.Boiler.add_delta_end_hour)))
-			ret += Prof.Boiler.add_delta_temp;
-	}
-#if defined(WATTROUTER) && defined(WEATHER_FORECAST) && defined(WR_Load_pins_Boiler_INDEX)
-	if(h <= TARIF_NIGHT_END && WF_BoilerTargetPercent < WF_BOILER_MAX_CLOUDS && GETBIT(WR_Loads, WR_Load_pins_Boiler_INDEX) && GETBIT(WR.Flags, WR_fActive)) {
-		ret = Prof.Boiler.WF_MinTarget + (ret - Prof.Boiler.WF_MinTarget) * WF_BoilerTargetPercent / 100;
-		if(ret < Prof.Boiler.tempRBOILER) ret = Prof.Boiler.tempRBOILER;
-	}
-#endif
-	return ret;
+			|| (Prof.Boiler.add_delta_end_hour < Prof.Boiler.add_delta_hour && (h >= Prof.Boiler.add_delta_hour || h <= Prof.Boiler.add_delta_end_hour)))
+			return Prof.Boiler.TempTarget + Prof.Boiler.add_delta_temp;
+	 }
+	 return Prof.Boiler.TempTarget;
 }
 
 // Получить целевую температуру отопления
@@ -1617,23 +1455,6 @@ void HeatPump::getTargetTempStr(char *rstr)
 		return;
 	}
 	*--rstr = '\0';
-}
-
-// Целевая температура в строку, 2 знака после запятой
-void HeatPump::getTargetTempStr2(char *rstr)
-{
-	switch(get_modeHouse())   // проверка отопления
-	{
-	case pHEAT:
-		rstr = dptoa(rstr, get_targetTempHeat(), 2);
-		break;
-	case pCOOL:
-		rstr = dptoa(rstr, get_targetTempCool(), 2);
-		break;
-	default:
-		strcpy(rstr, "-.-");
-		return;
-	}
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -1757,10 +1578,7 @@ if(b && (get_modWork() & pBOILER)){
 
 	if(!b && GETBIT(dRelay[PUMP_IN].flags, fR_StatusMain)) {
 		journal.jprintf(" Delay: stop IN pump.\n");
-		for(uint16_t i = 0; i < DELAY_BEFORE_STOP_IN_PUMP; i++) {
-			_delay(1000); // задержка перед выключение гео насоса после выключения компрессора (облегчение останова)
-			if(is_next_command_stop()) break;
-		}
+		_delay(DELAY_BEFORE_STOP_IN_PUMP * 1000); // задержка перед выключениме гео насоса после выключения компрессора (облегчение останова)
 	}
 	
 	dRelay[PUMP_IN].set_Relay(b);             // Реле включения насоса входного контура  (геоконтур)
@@ -1771,10 +1589,7 @@ if(b && (get_modWork() & pBOILER)){
 #endif
 	)){ // Насосы выключены и будут выключены, нужна пауза идет останов компрессора (новое значение выкл  старое значение вкл)
 		journal.jprintf(" Delay: stop OUT pump.\n");
-		for(uint16_t i = 0; i < Option.delayOffPump; i++) {
-			_delay(1000); // задержка перед выключение насосов после выключения компрессора (облегчение останова)
-			if(is_next_command_stop()) break;
-		}
+		_delay(Option.delayOffPump * 1000); // задержка перед выключениме насосов после выключения компрессора (облегчение останова)
 	} else {
 		_delay(d);                                // Задержка на d мсек
 	}
@@ -2008,10 +1823,10 @@ xGoWait:
 	//  set_Error(ERR_PEVA_EEV,(char*)__FUNCTION__);        // остановить по ошибке для проверки EEV
 
 
-	// 5. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузы не будет -----------------
+	// 5. Если не старт ТН то проверка на минимальную паузу между включениями, при включении ТН паузе не будет -----------------
 	if(!start)  // Команда Resume
 		while(check_compressor_pause()) {
-			_delay(1000);
+			_delay(100 * 1000);
 			if(get_State() != pSTARTING_HP) return;
 		}    // Могли нажать кнопку стоп, выход из процесса запуска
 
@@ -2101,11 +1916,11 @@ void HeatPump::StopWait(boolean stop)
 
  // Принудительное выключение отдельных узлов ТН если они есть в конфиге
   #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-     dRelay[RBOILER].set_OFF();  // выключить тэн бойлера
+     dRelay[RBOILER].set_OFF();  // выключить тен бойлера
   #endif
 
   #ifdef RHEAT  // управление  ТЭНом отопления
-     dRelay[RHEAT].set_OFF();     // выключить тэн отопления
+     dRelay[RHEAT].set_OFF();     // выключить тен отопления
   #endif
 
   #ifdef RPUMPB  // управление  насосом циркуляции ГВС
@@ -2162,7 +1977,7 @@ void HeatPump::resetPID()
 
 
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-// Проверка на необходимость греть бойлер дополнительным тэном (true - надо греть) ВСЕ РЕЖИМЫ
+// Проверка на необходимость греть бойлер дополнительным теном (true - надо греть) ВСЕ РЕЖИМЫ
 boolean HeatPump::boilerAddHeat()
 {
 	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
@@ -2363,7 +2178,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if(T > Boiler_Target_AddHeating()) {
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBh22; return pCOMP_OFF; // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
@@ -2373,10 +2188,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		}
 		// Отслеживание включения
-		if(!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) { // Температура ниже гистерезиса надо включаться!
-			Status.ret = pBh2;
-			return pCOMP_ON;
-		}
+		if (!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) {Status.ret=pBh2; return pCOMP_ON;} // Температура ниже гистерезиса надо включаться!
 
 		// дошли до сюда значить сохранение предыдущего состяния, температура в диапазоне регулирования может быть или нагрев или остывание
 		if (onBoiler) {Status.ret=pBh4; return pCOMP_NONE;}  // Если включен принак работы бойлера (трехходовой) значит ПРОДОЛЖНЕНИЕ нагрева бойлера
@@ -2394,7 +2206,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		// Отслеживание выключения (с учетом догрева)
 		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
 		{
-			if(T > Boiler_Target_AddHeating()) {
+			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
 			}
 		}
@@ -2403,8 +2215,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			set_HeatBoilerUrgently(false);
 			return pCOMP_OFF;  // Температура выше целевой температуры БОЙЛЕРА надо выключаться!
 		} else if(!onBoiler && T < TRG - (HeatBoilerUrgently ? 10 : Prof.Boiler.dTemp)) { // Отслеживание включения
-			Status.ret = pBp2;
-			return pCOMP_ON; // Достигнут гистерезис и компрессор еще не работает на ГВС - Старт бойлера
+			Status.ret=pBp2; return pCOMP_ON; // Достигнут гистерезис и компрессор еще не работает на ГВС - Старт бойлера
 		} else if (is_compressor_on() &&(!(onBoiler))) return pCOMP_OFF;// компрессор работает, но ГВС греть не надо  - уходим без изменения состояния
 		
 		// ПИД ----------------------------------
@@ -2489,22 +2300,18 @@ MODE_COMP  HeatPump::UpdateBoiler()
 
 		// Дошли до сюда - ПИД на подачу. Компресор работает
 		updatePidBoiler=xTaskGetTickCount();
-		// Одна итерация ПИД регулятора (на выходе: алг.1 - ИЗМЕНЕНИЕ частоты, алг.2 - сама частота)
 #ifdef SUPERBOILER
 		Status.ret=pBp14;
-        int16_t newFC = updatePID((Prof.Boiler.tempPID - PressToTemp(PCON)), Prof.Boiler.pid, pidw);
+        int16_t newFC = updatePID((Prof.Boiler.tempPID - PressToTemp(PCON)), Prof.Boiler.pid, pidw); // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #else
 		Status.ret=pBp12;
-		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);
+		int16_t newFC = updatePID(Prof.Boiler.tempPID - FEED, Prof.Boiler.pid, pidw);             // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #endif
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
+		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
 #else
-		// Расчет целевой частоты с ограничением
-		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
-		newFC += dFC.get_target();
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_target()+dFC.get_PidFreqStep(); else newFC +=dFC.get_target(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 		if (newFC>dFC.get_maxFreqBoiler())   newFC=dFC.get_maxFreqBoiler();                                                 // ограничение диапазона ОТДЕЛЬНО для ГВС!!!! (меньше мощность)
 		if (newFC<dFC.get_minFreqBoiler())   newFC=dFC.get_minFreqBoiler(); //return pCOMP_OFF;                             // Уменьшать дальше некуда, выключаем компрессор
@@ -2680,17 +2487,13 @@ MODE_COMP HeatPump::UpdateHeat()
 		Status.ret=pHp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		// Одна итерация ПИД регулятора (на выходе: алг.1 - ИЗМЕНЕНИЕ частоты, алг.2 - сама частота)
 		updatePidTime=xTaskGetTickCount();
-		newFC = updatePID(CalcTargetPID(Prof.Heat) - FEED, Prof.Heat.pid, pidw);
+		newFC = updatePID(CalcTargetPID(Prof.Heat) - FEED, Prof.Heat.pid, pidw);         // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
+		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
 #else
-		// Расчет целевой частоты с ограничением
-		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
-		newFC += dFC.get_target();
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_target()+dFC.get_PidFreqStep(); else newFC += dFC.get_target(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
 
 		if (newFC>dFC.get_maxFreq())   newFC=dFC.get_maxFreq();                                                // ограничение диапазона
@@ -2838,19 +2641,15 @@ MODE_COMP HeatPump::UpdateCool()
 		Status.ret=pCp12;   // Дошли до сюда - ПИД на подачу. Компресор работает
 #endif
 
-		// Одна итерация ПИД регулятора (на выходе: алг.1 - ИЗМЕНЕНИЕ частоты, алг.2 - сама частота)
 		updatePidTime=xTaskGetTickCount();
 		newFC = updatePID(FEED - CalcTargetPID(Prof.Cool), Prof.Cool.pid, pidw);      // Одна итерация ПИД регулятора (на выходе ИЗМЕНЕНИЕ частоты)
 #ifdef PID_FORMULA2
 		if(newFC > dFC.get_target() + dFC.get_PidFreqStep()) newFC = dFC.get_target() + dFC.get_PidFreqStep(); // На увеличение
-		else if(newFC < dFC.get_target() - dFC.get_PidMaxStep()) newFC = dFC.get_target() - dFC.get_PidMaxStep(); // На уменьшение
+		//else if(newFC < dFC.get_target() - dFC.get_PidFreqStep()) newFC = dFC.get_target() - dFC.get_PidFreqStep(); // На уменьшение
 #else
-		// Расчет целевой частоты с ограничением
-		if(newFC > dFC.get_PidFreqStep()) newFC = dFC.get_PidFreqStep();
-		else if(newFC < -dFC.get_PidMaxStep()) newFC = -dFC.get_PidMaxStep();
-		newFC += dFC.get_target();
+		if (newFC>dFC.get_PidFreqStep()) newFC=dFC.get_target()+dFC.get_PidFreqStep(); else newFC += dFC.get_target(); // Расчет целевой частоты с ограничением на ее рост не более dFC.get_PidFreqStep()
 #endif
-
+        
 		if (newFC>dFC.get_maxFreqCool())   newFC=dFC.get_maxFreqCool();                                       // ограничение диапазона
 		if (newFC<dFC.get_minFreqCool())   newFC=dFC.get_minFreqCool(); // return pCOMP_OFF;                                              // Уменьшать дальше некуда, выключаем компрессор// newFC=minFreq;
 	    if(GETBIT(Option.flags, fBackupPower) && newFC > dFC.get_maxFreqGen()) newFC = dFC.get_maxFreqGen();
@@ -3018,7 +2817,7 @@ MODE_HP HeatPump::get_Work()
 		}
 		break;
 	}
-#ifdef RHEAT  // Дополнительный тэн для нагрева отопления
+#ifdef RHEAT  // Дополнительный тен для нагрева отопления
 if(!GETBIT(Option.flags,fBackupPower)){ // Нет питания от резервного источника
 	if (GETBIT(Option.flags,fAddHeat))
 	{
@@ -3153,9 +2952,8 @@ boolean HeatPump::Switch_R4WAY(boolean fCool)
 // проверка на паузу между включениями, возврат true - в паузе
 boolean HeatPump::check_compressor_pause()
 {
-	uint16_t pause = (Status.modWork & (pHEAT | pCOOL)) ? Prof.Heat.CompressorPause : Option.pause;
-	if(stopCompressor && rtcSAM3X8.unixtime() - stopCompressor < pause) {
-		if(!compressor_in_pause) journal.jprintf_time("Waiting compressor, pause %d s...\n", pause - (rtcSAM3X8.unixtime() - stopCompressor));
+	if(stopCompressor && rtcSAM3X8.unixtime() - stopCompressor < Option.pause) {
+		if(!compressor_in_pause) journal.jprintf_time("Waiting compressor, pause %d s...\n", Option.pause - (rtcSAM3X8.unixtime() - stopCompressor));
 		return compressor_in_pause = true;
 	}
 	return compressor_in_pause = false;
@@ -3164,6 +2962,7 @@ boolean HeatPump::check_compressor_pause()
 // Попытка включить компрессор  с учетом всех защит КОНФИГУРАЦИЯ уже установлена
 // Вход режим работы ТН
 // Возможно компрессор уже включен и происходит только смена режима
+const char *EEV_go={" EEV go "};  // экономим место
 void HeatPump::compressorON()
 {
 	if(get_State() == pOFF_HP || get_State() == pSTOPING_HP || error) return;  // ТН выключен или выключается выходим ничего не делаем!!!
@@ -3198,62 +2997,48 @@ xNextStop:
 		return;
 	}
 
-	// 1. Обеспечение минимальной паузы компрессора
 #ifdef EEV_DEF
 	if(lastEEV != -1) {         // Не первое включение компрессора после старта ТН
+		// 1. Обеспечение минимальной паузы компрессора
 		if(compressor_in_pause) return;
 #ifdef DEBUG_MODWORK
 		journal.jprintf_time("compressorON > modWork:%X[%s], now %s\n",get_modWork(),codeRet[Status.ret], is_compressor_on() ? "ON" : "OFF");
 #endif
 	}//get_fEEVStartPosByTemp()
-
-	// 2. Задержка перед включением компрессора
-	#ifdef DEFROST
-	if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
-	{
-	#endif
-#ifdef DEBUG_MODWORK
-	journal.jprintf_time("Pause %d s before start compressor\n", Option.delayOnPump);
-#endif
-	uint16_t d = Option.delayOnPump;
-#ifdef FLOW_CONTROL
-	//for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
-	if(Option.delayOnPump < BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1) d = BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1;
-#endif
-	for(; d > 0; d--) { // задержка перед включением компрессора
-		_delay(1000);
-		if(error || is_next_command_stop()) return; // прерваться по ошибке или по команде
-	}
-	#ifdef DEFROST
-	}  // if(!(mod & pDEFROST))
-	#endif
-
-	// 3. Установка ЭРВ
-	journal.jprintf(" EEV go ");
+	// 2. Разбираемся с ЭРВ
+	journal.jprintf(EEV_go);
 	if(dEEV.get_LightStart()) { // Выйти на пусковую позицию
 		dEEV.set_EEV(dEEV.get_preStartPos());
-		journal.jprintf("PreStartPos:");
-	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
-		dEEV.set_EEV((Status.modWork & pBOILER) && GETBIT(dEEV.get_flags(), fEEV_BoilerStartPos) ? dEEV.get_BoilerStartPos() : dEEV.get_StartPos());
-		journal.jprintf("StartPos:");
-	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
-		dEEV.set_EEV(lastEEV);
-		journal.jprintf("LastPos:");
-	}
-	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
 #ifdef EEV_PREFER_PERCENT
-	journal.jprintf(" %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+		journal.jprintf("preStartPos: %.2d\n", dEEV.calc_percent(dEEV.get_preStartPos()));
 #else
-	journal.jprintf(" %d\n", dEEV.get_EEV());
+		journal.jprintf("preStartPos: %d\n", dEEV.get_preStartPos());
+#endif
+	} else if(dEEV.get_StartFlagPos()) { // Всегда начинать работу ЭРВ со стартовой позиции
+		dEEV.set_EEV(dEEV.get_StartPos());
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf("StartPos: %.2d\n", dEEV.calc_percent(dEEV.get_EEV()));
+#else
+		journal.jprintf("StartPos: %d\n", dEEV.get_EEV());
 #endif
 
-	dEEV.CorrectOverheatInit();
+	} else if(lastEEV != -1) { // установка последнего значения ЭРВ
+		dEEV.set_EEV(lastEEV);
+#ifdef EEV_PREFER_PERCENT
+		journal.jprintf("lastEEV: %.2d\n", dEEV.calc_percent(lastEEV));
+#else
+		journal.jprintf("lastEEV: %d\n", lastEEV);
+#endif
+	}
 	if(lastEEV != -1 && dEEV.get_EevClose()) {        // Если закрывали то пауза для выравнивания давлений
 		_delay(dEEV.get_delayOn());  // Задержка на delayOn сек  для выравнивания давлений
 	}
+	dEEV.CorrectOverheatInit();
+	for(uint8_t i = 1; i && dEEV.stepperEEV.isBuzy(); i++) _delay(100); // wait EEV stop
 #endif
+	
 
-	// 4. Управление компрессором
+	// 3. Управление компрессором
 	if (get_errcode()==OK)                                 // Компрессор включить если нет ошибок
 	{
 		// Дополнительные защиты перед пуском компрессора
@@ -3262,10 +3047,10 @@ xNextStop:
 			startPump=false;                               // Поставить признак останова задачи насос
 			if(get_workPump()) journal.jprintf(" WARNING! %s: Pumps in pause, OFF . . .\n",(char*)__FUNCTION__);
 		}
-		#ifdef DEFROST
-		if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
-		{
-		#endif
+	#ifdef DEFROST
+	  if(!(get_modWork() & pDEFROST))  // При разморозке есть лишние проверки
+	  {
+	#endif		
 		// Проверка включения насосов с проверкой и предупреждением (этого не должно быть)
 		if(!dRelay[PUMP_IN].get_Relay()) {
 			journal.jprintf(" WARNING! %s is off before start compressor!\n", dRelay[PUMP_IN].get_name());
@@ -3283,6 +3068,19 @@ xNextStop:
 			return;
 		}
 #endif
+
+#ifdef DEBUG_MODWORK
+		journal.jprintf_time("Pause %d s before start compressor\n", Option.delayOnPump);
+#endif
+		uint16_t d = Option.delayOnPump;
+#ifdef FLOW_CONTROL
+		//for(uint8_t i = 0; i < FNUMBER; i++) sFrequency[i].reset();  // Сброс счетчиков протока
+		if(Option.delayOnPump < BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1) d = BASE_TIME_READ + TIME_READ_SENSOR/1000 + 1;
+#endif
+		for(; d > 0; d--) { // задержка перед включением компрессора
+			_delay(1000);
+			if(error || is_next_command_stop()) return; // прерваться по ошибке, еще бы проверить команду на останов...
+		}
 
 #ifdef FLOW_CONTROL      // если надо проверяем потоки (защита от отказа насосов) ERR_MIN_FLOW
 		for(uint8_t i = 0; i < FNUMBER; i++) {   // Проверка потока по каждому датчику
@@ -3306,10 +3104,9 @@ xNextStop:
 			if (sInput[SEVA].get_Input()==SEVA_OFF) {set_Error(ERR_SEVA_FLOW,(char*)"SEVA"); return;}                              // Выход по ошибке отсутствия протока
 #endif
 
-		#ifdef DEFROST
-		}  // if(!(mod & pDEFROST))
-		#endif
-
+#ifdef DEFROST
+   }  // if(!(mod & pDEFROST))
+#endif	
 		resetPID(); 										// Инициализировать переменные ПИД регулятора
 		if(Charts_when_comp_on) task_updstat_chars = 0;
 	    command_completed = rtcSAM3X8.unixtime();
@@ -3320,13 +3117,13 @@ xNextStop:
 		set_Error(ERR_COMP_ERR,(char*)__FUNCTION__);return;
 	}
 
-	// 5. Если нужно облегченный пуск  в зависимости от флага fEEV_light_start
+	// 4. Если нужно облегченный пуск  в зависимости от флага fEEV_light_start
 #ifdef EEV_DEF
 	if(dEEV.get_LightStart())                  //  ЭРВ ОБЛЕГЧЕННЫЙ ПУСК
 	{
-		journal.jprintf(" Pause %ds before go start position EEV . . .\n", dEEV.get_DelayStartPos());
+		journal.jprintf(" Pause %d second before go starting position EEV . . .\n", dEEV.get_DelayStartPos());
 		_delay(dEEV.get_DelayStartPos() * 1000);  // Задержка после включения компрессора до ухода на рабочую позицию
-		journal.jprintf(" EEV go ");
+		journal.jprintf(EEV_go);
 		if((dEEV.get_StartFlagPos()) || ((lastEEV == -1))) {
 			dEEV.set_EEV(dEEV.get_StartPos());
 #ifdef EEV_PREFER_PERCENT
@@ -3345,7 +3142,7 @@ xNextStop:
 		}
 	}
 #endif
-	// 6. Обеспечение задержки отслеживания ЭРВ
+	// 5. Обеспечение задержки отслеживания ЭРВ
 #ifdef EEV_DEF
 	if (lastEEV>0)                                            // НЕ первое включение компрессора после старта ТН
 	{
@@ -3391,27 +3188,16 @@ void HeatPump::compressorOFF()
 	checkEVI();                                                     // выключить ЭВИ
 #endif
 
-#if defined(EEV_DEF) && defined(EEV_CLOSE_IMMEDIATELY)
-	if(dEEV.get_EevClose())                                 // Hазбираемся с ЭРВ
-	{
-		//journal.jprintf(" Pause before closing EEV %d sec . . .\n", dEEV.get_delayOff());
-		_delay(dEEV.get_delayOff() * 1000);                              // пауза перед закрытием ЭРВ
-		dEEV.set_EEV(EEV_CLOSE_STEP);                                    // Если нужно, то закрыть ЭРВ
-		journal.jprintf(" EEV closed\n");
-	}
-#endif
-
 	PUMPS_OFF;                                                          // выключить насосы + задержка
 
 	onBoiler = false;
 	offBoiler = rtcSAM3X8.unixtime();
 
-
-#if defined(EEV_DEF) && !defined(EEV_CLOSE_IMMEDIATELY)
+#ifdef EEV_DEF
 	if(dEEV.get_EevClose())                                 // Hазбираемся с ЭРВ
 	{
 		journal.jprintf(" Pause before closing EEV %d sec . . .\n", dEEV.get_delayOff());
-		_delay(dEEV.get_delayOff() * 1000);                              // пауза перед закрытием ЭРВ
+		_delay(dEEV.get_delayOff() * 1000);                                // пауза перед закрытием ЭРВ  на инверторе компрессор останавливается до 2 минут
 		dEEV.set_EEV(EEV_CLOSE_STEP);                                    // Если нужно, то закрыть ЭРВ
 		journal.jprintf(" EEV closed\n");
 	}
@@ -3875,84 +3661,34 @@ void HeatPump::calculatePower()
 	if (powerGEO<0) powerGEO=0;
 #endif
 
-	// Получение мощностей потребления электроэнергии
-	int32_t _power220 = 0;
+// Получение мощностей потребления электроэнергии
+	uint16_t fc_pwr = dFC.get_power();  // получить текущую мощность компрессора
 #ifdef USE_ELECTROMETER_SDM  // Если есть электросчетчик можно рассчитать полное потребление (с насосами)
 	if(dSDM.get_link()) {  // Если счетчик работает (связь не утеряна)
-		_power220 += dSDM.get_power();
-		if(_power220 < 0) _power220 = 0;
-	}
+		power220 = dSDM.get_Power();
+	} else power220 = 0; // связи со счетчиком нет
+#else
+	power220=0; // электросчетчика нет
 #endif
 #ifdef CORRECT_POWER220
-	int32_t corr_power220 = 0;
-	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) corr_power220 += correct_power220[i].value;
-	if(corr_power220) {
-		corr_power220 = corr_power220 * dSDM.get_voltage() / 220;
-		_power220 += corr_power220;
-	}
+	for(uint8_t i = 0; i < sizeof(correct_power220)/sizeof(correct_power220[0]); i++) if(dRelay[correct_power220[i].num].get_Relay()) power220 += correct_power220[i].value;
 #endif
 #ifdef ADD_FC_POWER_WHEN_GENERATOR
-	if(GETBIT(Option.flags, fBackupPower)) _power220 += dFC.get_power();  // получить текущую мощность компрессора
+	if(GETBIT(Option.flags, fBackupPower)) power220 += fc_pwr;
 #endif
 
-	
-#ifdef CORRECT_POWER220_EXCL_RBOILER
-corr_power220 = 0;
-  #ifdef WR_Load_pins_Boiler_INDEX
-   #ifdef WR_Boiler_Substitution_INDEX
-	corr_power220 = WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX]
-   #else
-	corr_power220 = WR_LoadRun[WR_Load_pins_Boiler_INDEX]
-   #endif
-   #ifndef PWM_ACCURATE_POWER
-				* dSDM.get_voltage() / 220
-   #endif
-				;
-  #else
-	if(dRelay[RBOILER].get_Relay()) corr_power220 = CORRECT_POWER220_EXCL_RBOILER * dSDM.get_voltage() / 220;
-  #endif
-	_power220 -= corr_power220;
-	corr_power220 = 0;
-#else
-	#ifdef WATTROUTER
-		#ifdef WR_Load_pins_Boiler_INDEX
-		 #ifdef WR_Boiler_Substitution_INDEX
-	corr_power220 = WR_LoadRun[digitalReadDirect(PIN_WR_Boiler_Substitution) ? WR_Boiler_Substitution_INDEX : WR_Load_pins_Boiler_INDEX]
-		 #else
-	corr_power220 = WR_LoadRun[WR_Load_pins_Boiler_INDEX]
-		 #endif
-		#endif
-		#ifndef PWM_ACCURATE_POWER
-					* dSDM.get_voltage() / 220
-		#endif
-					;
-	if(!dRelay[RBOILER].get_Relay()) { // Если греем ваттроутером, то вычесть
-		_power220 -= corr_power220;
-		corr_power220 = 0;
-	}
-	#endif
-#endif
-	power220 = _power220;
-#ifdef CORRECT_POWER220_EXCL_RBOILER	
-	_power220 -= corr_power220; // Из мгновенного COP убираем бойлер
-#endif
-	// Расчет COP
-#ifndef COP_ALL_CALC    	// если COP надо считать не всегда
-if(is_compressor_on()){		// Если компрессор работает
+// Расчет КОП
+#ifndef COP_ALL_CALC    // если КОП надо считать не всегда 
+if(is_compressor_on()){      // Если компрессор работает
 #endif	
-//	uint16_t fc_pwr = dFC.get_power();  // получить текущую мощность компрессора
-//	if(fc_pwr) COP = powerOUT * 100 / fc_pwr; else COP=0; // Компрессорный COP в сотых долях !!!!!!
-	if(_power220 != 0) fullCOP = powerOUT * 100 / _power220; else fullCOP = 0; // ПОЛНЫЙ COP в сотых долях !!!!!!
-	#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
-//		if(COP>10*100) COP=8*100;       // COP не более 8
-		if(fullCOP>8*100) fullCOP=7*100; // полный COP не более 7
-	#endif
-#ifndef COP_ALL_CALC		// если COP надо считать не всегда
-	} else {				// компрессор не рабоатет
-		fullCOP=0;
-//		COP=0;
-
-	}
+	if(fc_pwr) COP = powerOUT * 100 / fc_pwr; else COP=0; // ЧИСТЫЙ КОП в сотых долях !!!!!!
+	if(power220 != 0) fullCOP = powerOUT * 100 / power220; else fullCOP = 0; // ПОЛНЫЙ КОП в сотых долях !!!!!!
+		#ifndef COP_ALL_CALC        // Ограничение переходных процессов для варианта расчета КОП только при работающем компрессоре, что бы графики нормально масштабировались
+		if(COP>10*100) COP=8*100;       // КОП не более 8
+		if(fullCOP>8*100) fullCOP=7*100; // полный КОП не более 7
+		#endif
+#ifndef COP_ALL_CALC   // если КОП надо считать не всегда 
+	} else { COP=0; fullCOP=0; }  // компрессор не рабоатет
 #endif
 }
 
@@ -3995,17 +3731,17 @@ void HeatPump::Sun_OFF(void)
 // Предполагается что Электросчетчик стоит на входе ТН (ТЭН не включены) это наиболее точный метод определения мощности
 // Если электросчетчика нет, то пытаемся получить из частотного преобразователя.
 // если не получается определить мощность то функция возвращает 0
-#ifndef NOLINK_SUM_POWER_PUMP
-#define NOLINK_SUM_POWER_PUMP 200   // Мощность потребления насосов, для добавления к мощности компрессора, если нет связи со электро-счетчиком
-#endif
-int16_t HeatPump::getPower(void) {
+#define SUM_POWER_PUMP 200   // Мощность потребления насосов (для добавления к мощности компрессора)
+int16_t HeatPump::getPower(void)
+{
 #ifdef USE_ELECTROMETER_SDM  // Пытаемся получить мощность по электросчетчику
-	if(!dSDM.get_link()) dSDM.uplinkSDM();	// Попытаемся реанимировать счетчик (связь по модбасу)
-	if(dSDM.get_link()) return dSDM.get_power();
+if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
+dSDM.uplinkSDM();	// Попытаемся реанимировать счетчик (связь по модбасу)
+if (dSDM.get_link()) { return  dSDM.get_Power();} // Если счетчик работает (связь не утеряна)
 #endif
-	// Дошли до сюда - значит не получилось мощность по электросчетчику определить,	работаем с ПЧ
-	if(dFC.get_present()) return dFC.get_power() + NOLINK_SUM_POWER_PUMP;
-	return 0; // Мощность не определилась
+// Дошли до сюда - значит не получилось мощность по электросчетчику определить,	работаем с ПЧ
+if (dFC.get_present()) return dFC.get_power()+SUM_POWER_PUMP; 
+return 0; // Мощность не определилась
 }
 
 void HeatPump::set_HeatBoilerUrgently(boolean onoff)
@@ -4028,7 +3764,6 @@ int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 	journal.printf("PID(%x): err:%d,pre_err:%d,sum:%d (%d,%d,%d). ", &pid, errorPid, pidw.pre_err, pidw.sum, pid.Kp, pid.Ki, pid.Kd);
 #endif
 #ifdef PID_FORMULA2
-	// Алгоритм 2 - стандартный ардуиновский ПИД, выдает значение (не дельту)
 	pidw.sum += (int32_t)pid.Ki * errorPid;
 	if(pidw.PropOnMeasure) {
 		pidw.sum -= (int32_t)pid.Kp * (pidw.pre_err - errorPid);
@@ -4054,7 +3789,7 @@ int32_t updatePID(int32_t errorPid, PID_STRUCT &pid, PID_WORK_STRUCT &pidw)
 #ifdef DEBUG_PID
 	journal.printf("D=%d,Sum(%d)=%d\n", -pid.Kd * (pidw.pre_err - errorPid), pidw.sum, newVal);
 #endif
-#else  // Алгоритм 1 - оригинальный ПИД, выдает дельту, коэффициенты не корректируются по времени
+#else  // Алгоритм 1 Классический ПИД
 	// Cp, Ci, Cd – коэффициенты дискретного ПИД регулятора;
 	// u(t) = P (t) + I (t) + D (t);
 	// P (t) = Kp * e (t);

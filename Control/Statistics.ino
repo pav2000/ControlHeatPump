@@ -244,9 +244,6 @@ void Statistics::Init(uint8_t newyear)
 											Stats_data[i].value = val * 1000;
 										}
 										break;
-									case STATS_OBJ_WattRouter_Out:
-										Stats_data[i].value = val * 10000000;
-										break;
 									case STATS_OBJ_COP_Full:
 										Stats_data[i].value = val * 100;
 										break;
@@ -379,7 +376,7 @@ void Statistics::Update()
 			break;
 		case STATS_OBJ_Voltage:
 		    #ifdef USE_ELECTROMETER_SDM
-			newval = HP.dSDM.get_voltage();
+			newval = HP.dSDM.get_Voltage();
 			#endif
 			break;
 		case STATS_OBJ_Power: {
@@ -417,19 +414,6 @@ void Statistics::Update()
 			}
 			break;
 		}
-#ifdef WATTROUTER
-		case STATS_OBJ_WattRouter_Out: {
-			newval = 0;
-			for(int8_t j = 0; j < WR_NumLoads; j++)
-#ifdef WR_Load_pins_Boiler_INDEX
-				if(j != WR_Load_pins_Boiler_INDEX || !HP.dRelay[RBOILER].get_Relay())
-#endif
-					newval += WR_LoadRun[j];
-			newval = newval * tm / 360; // в мВтч*10
-			WR_LoadRunStats += newval;
-			break;
-		}
-#endif
 		case STATS_OBJ_COP_Full:
 			if(Stats_data[i].type == STATS_TYPE_AVG) continue;
 #ifdef STATS_SKIP_COP_WHEN_RELAY_ON
@@ -498,7 +482,6 @@ void Statistics::HistoryFileHeader(char *ret, uint8_t flag)
 			case STATS_OBJ_Power_OUT:
 			case STATS_OBJ_Power_GEO:
 			case STATS_OBJ_Power_FC:
-			case STATS_OBJ_WattRouter_Out:
 				strcat(ret, "W");		// ось мощность
 				break;
 			case STATS_OBJ_COP_Full:
@@ -562,10 +545,6 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		if(flag) strcat(ret, "W"); // ось мощность
 		strcat(ret, "Выработано, кВтч"); // хранится в Вт
 		break;
-	case STATS_OBJ_WattRouter_Out:
-		if(flag) strcat(ret, "W"); // ось мощность
-		strcat(ret, "Ваттроутер, кВт/ч"); // хранится в Вт, НЕ кВт*ч!
-		break;
 	case STATS_OBJ_COP_Full:
 		if(flag) strcat(ret, "C"); // ось COP
 		strcat(ret, "Полный COP");
@@ -623,7 +602,7 @@ xSkipEmpty:
 	switch(Stats_data[i].object) {
 	case STATS_OBJ_Temp:					// C
 	case STATS_OBJ_Press: 					// bar
-		int_to_dec_str(val / 10, 10, ret, 1);
+		int_to_dec_str(val, 100, ret, 1);
 		break;
 	case STATS_OBJ_Voltage:					// V
 		int_to_dec_str(val, 1, ret, 0);
@@ -634,21 +613,18 @@ xSkipEmpty:
 		switch(Stats_data[i].type) {
 		case STATS_TYPE_SUM:
 		case STATS_TYPE_AVG:
-			int_to_dec_str(val / 1000, 1000, ret, 3);
+			int_to_dec_str(val, 1000000, ret, 3);
 			break;
 		default:
 			int_to_dec_str(val, 1000, ret, 3);
 		}
-		break;
-	case STATS_OBJ_WattRouter_Out:
-		int_to_dec_str(val / 10000, 1000, ret, 3);
 		break;
 	case STATS_OBJ_COP_Full:
 		if(Stats_data[i].type == STATS_TYPE_AVG) int_to_dec_str(Stats_data[Stats_data[i].when].value / (Stats_data[Stats_data[i].number].value / 100), 100, ret, 2);
 		else int_to_dec_str(val, 100, ret, 2);
 		break;
 	default:
-		if(Stats_data[i].type == STATS_TYPE_TIME) int_to_dec_str(val / 10000, 6, ret, 1);  // минуты;
+		if(Stats_data[i].type == STATS_TYPE_TIME) int_to_dec_str(val, 60000, ret, 1);  // минуты;
 		else goto xSkipEmpty;
 		break;
 	}
@@ -1027,15 +1003,6 @@ void Statistics::History()
 		case STATS_OBJ_Power_GEO:
 			int_to_dec_str(HP.powerGEO, 1, &buf, 0); // W
 			break;
-	   #ifdef WATTROUTER	
-		case STATS_OBJ_WattRouter_Out: {
-			int32_t n = WR_LoadRunStats;
-			WR_LoadRunStats = 0;
-			n *= 60; n = n / 10000 + (n % 10000 >= 5000 ? 1 : 0);
-			int_to_dec_str(n, 1, &buf, 0); // W
-			break;
-		}
-		#endif
 		case STATS_OBJ_COP_Full:
 			int_to_dec_str(HP.fullCOP, 1, &buf, 0); // C
 			break;

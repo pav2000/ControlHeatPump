@@ -35,7 +35,7 @@ void Journal::Init()
 	bufferHead = 0;
 	full = 0;                   // Буфер не полный
 	memset(_data, 0, JOURNAL_LEN);
-	jprintf("\nSTART ---\nInit RAM journal, size %d . . .\n", JOURNAL_LEN);
+	//jprintf("\nSTART ---\nInit RAM journal, size %d . . .\n", JOURNAL_LEN);
 	return;
 #else                      // журнал во флеше
 
@@ -568,11 +568,10 @@ if(strcmp(var,hp_RULE)==0) {  switch ((int)x)
  if(strcmp(var,hp_WEATHER)==0) { Heat.flags = (Heat.flags & ~(1<<fWeather)) | ((x!=0)<<fWeather); return true; }else                     // Использование погодозависимости
  if(strcmp(var,hp_HEAT_FLOOR)==0) { Heat.flags = (Heat.flags & ~(1<<fHeatFloor)) | ((x!=0)<<fHeatFloor); return true; }else
  if(strcmp(var,hp_SUN)==0) { Heat.flags = (Heat.flags & ~(1<<fUseSun)) | ((x!=0)<<fUseSun); return true; }else
- if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; } else            // Коэффициент погодозависимости
- if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; } else
- if(strcmp(var,hp_WeatherBase)==0){ Heat.WeatherBase = x; return true; } else
- if(strcmp(var,hp_WeatherTargetRange)==0){ Heat.WeatherTargetRange = rd(x, 10); return true; } else
- if(strcmp(var,hp_CompressorPause)==0){ if(x >= 0) {Heat.CompressorPause = x * 60; return true; } else return false; } else
+ if(strcmp(var,hp_K_WEATHER)==0){ Heat.kWeatherPID=rd(x, 1000); return true; }             // Коэффициент погодозависимости
+ if(strcmp(var,hp_kWeatherTarget)==0){ Heat.kWeatherTarget=rd(x, 1000); return true; }
+ if(strcmp(var,hp_WeatherBase)==0){ Heat.WeatherBase = x; return true; }
+ if(strcmp(var,hp_WeatherTargetRange)==0){ Heat.WeatherTargetRange = rd(x, 10); return true; }
  return false; 
 }
 
@@ -608,11 +607,10 @@ char* Profile::get_paramHeatHP(char *var,char *ret, boolean fc)
    if(strcmp(var,hp_HEAT_FLOOR)==0)  { if(GETBIT(Heat.flags,fHeatFloor)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_SUN)==0)      { if(GETBIT(Heat.flags,fUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
    if(strcmp(var,hp_targetPID)==0){ _dtoa(ret,HP.CalcTargetPID(Heat),2); return ret;    } else
-   if(strcmp(var,hp_K_WEATHER)==0){ _dtoa(ret,Heat.kWeatherPID,3); return ret;            } else                 // Коэффициент погодозависимости
-   if(strcmp(var,hp_kWeatherTarget)==0){ _dtoa(ret,Heat.kWeatherTarget,3); return ret;    } else
-   if(strcmp(var,hp_WeatherBase)==0){ _dtoa(ret,Heat.WeatherBase,0); return ret;    } else
-   if(strcmp(var,hp_WeatherTargetRange)==0){ _dtoa(ret,Heat.WeatherTargetRange,1); return ret;    } else
-   if(strcmp(var,hp_CompressorPause)==0) { _itoa(Heat.CompressorPause / 60, ret); return ret; } else
+   if(strcmp(var,hp_K_WEATHER)==0){ _dtoa(ret,Heat.kWeatherPID,3); return ret;            }                 // Коэффициент погодозависимости
+   if(strcmp(var,hp_kWeatherTarget)==0){ _dtoa(ret,Heat.kWeatherTarget,3); return ret;    }
+   if(strcmp(var,hp_WeatherBase)==0){ _dtoa(ret,Heat.WeatherBase,0); return ret;    }
+   if(strcmp(var,hp_WeatherTargetRange)==0){ _dtoa(ret,Heat.WeatherTargetRange,1); return ret;    }
    return  strcat(ret,(char*)cInvalid);
 }
 
@@ -662,10 +660,8 @@ boolean Profile::set_boiler(char *var, char *c)
 	if(strcmp(var,boil_fAddHeatingForce)==0){ if(x) SETBIT1(Boiler.flags,fAddHeatingForce); else SETBIT0(Boiler.flags,fAddHeatingForce); return true;} else
 	if(strcmp(var,boil_HeatUrgently)==0)    { HP.set_HeatBoilerUrgently(x); return true;} else
 	if(strcmp(var,hp_SUN)==0) 				{ Boiler.flags = (Boiler.flags & ~(1<<fBoilerUseSun)) | ((x!=0)<<fBoilerUseSun); return true; }else
-	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0)&&(x<=90))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
+	if(strcmp(var,boil_TEMP_RBOILER)==0)	{ if((x>=0)&&(x<=60))  {Boiler.tempRBOILER=rd(x, 100); return true;} else return false;} else   // температура включения догрева бойлера
 	if(strcmp(var,boil_dAddHeat)==0)	    { Boiler.dAddHeat = rd(x, 100); return true;} else
-	if(strcmp(var,boil_WF_MinTarget)==0)    { Boiler.WF_MinTarget = rd(x, 100); return true;} else
-	if(strcmp(var,boil_WR_Target)==0)       { Boiler.WR_Target = rd(x, 100); return true;} else
 	if(strcmp(var,boil_DischargeDelta)==0)	{ Boiler.DischargeDelta = rd(x, 10); return true;} else
 	if(strcmp(var,boil_fWorkOnGenerator)==0){ if(x) SETBIT1(Boiler.flags, fWorkOnGenerator); else SETBIT0(Boiler.flags, fWorkOnGenerator); return true; } else
 	return false;
@@ -708,19 +704,9 @@ char* Profile::get_boiler(char *var, char *ret)
  if(strcmp(var,hp_SUN)==0) { if(GETBIT(Boiler.flags,fBoilerUseSun)) return strcat(ret,(char*)cOne);else return strcat(ret,(char*)cZero);} else
  if(strcmp(var,boil_TEMP_RBOILER)==0){    _dtoa(ret,Boiler.tempRBOILER/10,1); return ret;    }else                            // температура включения догрева бойлера
  if(strcmp(var,boil_dAddHeat)==0){        _dtoa(ret,Boiler.dAddHeat/10,1); return ret;       }else
- if(strcmp(var,boil_WF_MinTarget)==0){   _dtoa(ret,Boiler.WF_MinTarget/10,1); return ret;       }else
- if(strcmp(var,boil_WR_Target)==0){      _dtoa(ret,Boiler.WR_Target/10,1); return ret;       }else
  if(strcmp(var,boil_DischargeDelta)==0){  _dtoa(ret, Boiler.DischargeDelta, 1); return ret;       }else
  if(strcmp(var,boil_HeatUrgently)==0){if(HP.HeatBoilerUrgently) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
  if(strcmp(var,boil_fWorkOnGenerator)==0){ if(GETBIT(Boiler.flags, fWorkOnGenerator)) return strcat(ret,(char*)cOne); else return strcat(ret,(char*)cZero); }else
- if(strcmp(var,boil_TargetTemp)==0) {
-	 if(!GETBIT(HP.Prof.Boiler.flags, fTurboBoiler) && GETBIT(HP.Prof.Boiler.flags, fAddHeating)) {// режим догрева, не турбо
-		 _dtoa(ret, HP.Boiler_Target_AddHeating() / 10, 1);
-		 strcat(ret, ", ");
-	 }
-	 _dtoa(ret, HP.get_boilerTempTarget() / 10, 1);
-	 return ret;
- } else
  return strcat(ret,(char*)cInvalid);
 }
 
@@ -840,9 +826,6 @@ int16_t  Profile::save(int8_t num)
   magic=0xaa;                                   // Обновить заголовок
   dataProfile.len=get_sizeProfile();            // вычислить адрес начала данных
   dataProfile.saveTime=rtcSAM3X8.unixtime();    // запомнить время сохранения профиля
-#ifdef WATTROUTER
-  SaveON.WR_Loads = WR_Loads;
-#endif
 
   int32_t adr=I2C_PROFILE_EEPROM+dataProfile.len*num;
   
@@ -917,18 +900,7 @@ int32_t Profile::load(int8_t num)
   if (GETBIT(HP.Prof.Boiler.flags,fSalmonella)) {HP.sTemp[TBOILER].set_maxTemp(SALMONELLA_TEMP+300);journal.jprintf(" Set boiler max t=%.2d for salmonella\n", HP.sTemp[TBOILER].get_maxTemp());}
   else HP.sTemp[TBOILER].set_maxTemp(MAXTEMP[TBOILER]);
   #endif
-
-#ifdef WATTROUTER
-  WR_Loads = SaveON.WR_Loads;
-  if(GETBIT(WR.Flags, WR_fActive)) WR_Refresh = WR_Loads;
-#endif
-
-  if(SaveON.bTIN == 0) { // Первоначальное заполнение
-	  for(uint8_t i = 0; i < TNUMBER; i++) {
-		  if(HP.sTemp[i].get_setup_flags() & ((1<<fTEMP_as_TIN_average) | (1<<fTEMP_as_TIN_min))) SaveON.bTIN |= (1<<i);
-	  }
-  }
-
+  // Обнуляем ПИД errKp
   return adr;
  }
 
@@ -1002,7 +974,7 @@ boolean Profile::set_paramProfile(char *var, char *c)
 		var += sizeof(prof_DailySwitch)-1;
 		uint32_t i = *(var + 1) - '0';
 		if(i >= DAILY_SWITCH_MAX) return false;
-		if(*var == prof_DailySwitchDevice) { // set_DSDn
+		if(*var == prof_DailySwitchDevice) {
 			DailySwitch[i].Device = x;
 		} else {
 			uint32_t h = x / 10;
@@ -1010,9 +982,9 @@ boolean Profile::set_paramProfile(char *var, char *c)
 			uint32_t m = x % 10;
 			if(m > 5) m = 5;
 			x = h * 10 + m;
-			if(*var == prof_DailySwitchOn) { // set_DSSn
+			if(*var == prof_DailySwitchOn) {
 				DailySwitch[i].TimeOn = x;
-			} else if(*var == prof_DailySwitchOff) { // set_DSEn
+			} else if(*var == prof_DailySwitchOff) {
 				DailySwitch[i].TimeOff = x;
 			}
 		}

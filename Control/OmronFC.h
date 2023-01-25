@@ -187,8 +187,7 @@ public:
   uint16_t get_dtTemp(){return _data.dtTemp;}                    // Привышение температуры от уставок (подача) при которой срабатыват защита (уменьшается частота) в сотых градуса
   uint16_t get_dtTempBoiler(){return _data.dtTempBoiler;}        // Привышение температуры от уставок (подача) при которой срабатыват защита ГВС в сотых градуса
   uint16_t get_maxFreqGen(){return _data.maxFreqGen;}            // Максимальная частота инвертора при работе от генератора в 0.01
-  uint16_t get_PidMaxStep(){return _data.PidMaxStep;}
-
+    
   // Управление по модбас Общее для всех частотников
   int16_t get_target() {return FC;}            // Получить целевую частоту в 0.01 герцах
   int8_t  set_target(int16_t x,boolean show, int16_t _min, int16_t _max);// Установить целевую частоту в 0.01 герцах show - выводить сообщение или нет + границы
@@ -231,7 +230,6 @@ public:
   uint16_t get_save_size(void) { return sizeof(_data); } // Размер структуры сохранения
 
 private:
-  void Adjust_EEV(int16_t freq_delta);
   int8_t  err;                                     // ошибка частотника (работа) при ошибке останов ТН
   uint16_t numErr;                                 // число ошибок чтение по модбасу
   uint8_t number_err;                              // Число ошибок связи при превышении FC_NUM_READ блокировка инвертора
@@ -281,20 +279,10 @@ private:
 	  int16_t  level100;              // Отсчеты ЦАП соответсвующие максимальной частота
 	  int16_t  levelOff;              // Минимальная мощность при котором частотник отключается (ограничение минимальной мощности)
 	#endif
-	  uint8_t  setup_flags;             // флаги настройки
-	  int16_t ReturnOilPeriod;			// в FC_TIME_READ
-	  int16_t ReturnOilPerDivHz;		// Уменьшение периода в FC_TIME_READ на каждый Гц
-	  uint16_t ReturnOilTime;			// Время возврата, в периодах опроса инвертора (FC_TIME_READ)
+	  uint8_t  setup_flags;           // флаги настройки
 	  int16_t maxFreqGen;				// Максимальная скорость инвертора при работе от генератора в 0.01
-	  int16_t AdjustEEV_k;				// Подстройки ЭРВ при изменении оборотов, множитель, сотые шага ЭРВ
-	  uint16_t PidMaxStep;				// Максимальный шаг изменения частоты инвертора у PID регулятора, сотые
-	  uint16_t ReturnOilMinFreq;		// Частота меньше которой должен происходить возврат масла, в сотых Гц
-	  uint16_t ReturnOilFreq;			// Частота возврата масла, в сотых %
-	  int16_t  ReturnOil_AdjustEEV_k;	// Подстройки ЭРВ при изменении оборотов, множитель, сотые шага ЭРВ
    } _data;  // Структура для сохранения настроек, setup_flags всегда последний!
 	  uint8_t  flags;                 // флаги настройки
-      int16_t	ReturnOilTimer;
-      int16_t  Adjust_EEV_delta;
      
   // Функции работы с OMRON MX2  Чтение регистров
   #ifndef FC_ANALOG_CONTROL    // НЕ АНАЛОГОВОЕ УПРАВЛЕНИЕ
