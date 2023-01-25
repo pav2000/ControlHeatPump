@@ -50,7 +50,7 @@ div.remtemp table table td {height:30px!important;}
 div.remtemp table table th {height:45px!important;}
 .row1 dd, .row1 dt{float:left;width:45%;margin:0;}
 .row1 dd{padding: 5px 10px 5px 0;text-align:right;font-weight:600;}
-.row1 dl:nth-child(1){float:left;width:89%;padding:3% 5%;background: rgba(255, 255, 255, 0.6);min-height:170px;line-height:38px;margin-left:0.5%;}
+.row1 dl:nth-child(1){float:left;width:95%;padding:3% 2%;background: rgba(255, 255, 255, 0.6);min-height:170px;line-height:38px;margin-left:0.5%;}
 .row1 dl:nth-child(1) dt {font-size:1.5em;padding:0;width:30%;}
 .row1 dl:nth-child(1) dd {font-size:1.5em;padding:0;width:70%;}
 .row2 dd, .row2 dt{float:left;width:35%;margin:10;line-height:20px;padding: 0; text-align:left;height: 15px;}

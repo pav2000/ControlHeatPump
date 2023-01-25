@@ -807,7 +807,10 @@ void vWeb0(void *)
 			{
 				WEB_STORE_DEBUG_INFO(55);
 				narmont=thisTime;
-				sendNarodMon(false);                       // отладка выключена
+			//	sendNarodMon(false);            // отладка выключена
+                sendNarodMon2022(false);        // Посылка данных на народный мониторинг без использования MQTT потребовалось в декабре 2022 года.
+
+				
 				active=false;
 			}  // if ((HP.clMQTT.get_NarodMonUse()))
 

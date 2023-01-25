@@ -157,28 +157,28 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Порт сервера (обычно 1883)</td>
+			<td>Порт сервера (обычно 8283)</td>
 			<td>
 				<input id="get_mqtt-port_narmon" type="number" min="1" max="65000" step="1" style="min-width:100px;">
 				<input id="get_mqtt-port_narmon2" type="submit" value=">"  onclick="setParam('get_MQTT(PORT_NARMON)');">
 			</td>
 		</tr>	
 		<tr>
-			<td>Логин для входа (получается при регистрации)</td>
+			<td>Логин для входа (не используется)</td>
 			<td>
 				<input id="get_mqtt-login_narmon" type="text" maxlength="31">
 				<input id="get_mqtt-login_narmon2" type="submit" value=">"  onclick="setParam('get_MQTT(LOGIN_NARMON)');">
 			</td>
 		</tr>
 		<tr>
-			<td>Личный код для передачи (смотреть в разделе API MQTT сервиса)</td>
+			<td>Личный код для передачи (не используется)</td>
 			<td>
 				<input id="get_mqtt-password_narmon" type="text" maxlength="31">
 				<input id="get_mqtt-password_narmon2" type="submit" value=">"  onclick="setParam('get_MQTT(PASSWORD_NARMON)');">
 			</td>
 		</tr>		
 		<tr>
-			<td>Имя устройства (корень всех топиков)<sup>3</sup></td>
+			<td>Имя устройства (название прибора на народном мониторинге)<sup>3</sup></td>
 			<td>
 				<input id="get_mqtt-id_narmon" type="text" maxlength="31">
 				<input id="get_mqtt-id_narmon2" type="submit" value=">"  onclick="setParam('get_MQTT(ID_NARMON)');">
@@ -190,9 +190,16 @@
 		</tr>		
 	</tbody>
 	</table>
-	<p>1. Передается  TOUT, TIN, TBOILER, RCOMP или FC, ERROR<br>
+	<p> С декабря 2022 года используется API народного мониторинга через TCP пакеты (Передача показаний по протоколам TCP/UDP на narodmon.ru:8283).<br>
+        TCP также можно использовать для массовой загрузки показаний на сервер "задним числом" путем передачи в одном пакете данных показаний датчика в разные
+        моменты времени, но не более 4КБ на пакет для TCP и 512 байт для UDP. Предпочтительно отправлять показания всех датчиков в одном пакете данных для
+        минимизации издержек на инициализацию соединения с сервером и импорт показаний датчиков.<br>
+        Ответ сервера при успешной отправке будет OK (или текст ошибки или команда на исполнение), что рекомендуется использовать в качестве подтверждения
+        получения данных, а при отсутствии ответа повторить отправку когда восстановится связь с сервером. При сообщениях об ошибках НЕ ПОВТОРЯТЬ!
+        Конец строки ответа сервера завершается спецсимволом \n код 10(0A).<br>
+        1. Передается  TOUT, TIN, TBOILER, RCOMP или FC, ERROR<br>
 	2. Передается TCOMP, OWERHEAT, PCON, PEVA, EEV, powerCO<br>
-	3. Топик конкретного датчика Имя_устройства/Имя_датчика<br>
+	3. Название прибора до 15 знаков<br>
 	4. MAC aдрес должен быть уникален, для этого измените его с дефолтного (страница Сеть). С дефолтного адреса отправка блокируется</p>
 </div>
 </div>

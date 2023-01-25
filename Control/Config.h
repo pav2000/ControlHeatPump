@@ -868,7 +868,7 @@ const char *noteTemp[] = {"Температура улицы",
        const boolean SENSORTEMP[TNUMBER]={true,true,true,true,true,true,true,true,true/*TRTO*/,true,false,false,true,true,true,true}; 
        // минимальные значения температур
        const int16_t MINTEMP[TNUMBER]={-4000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000};
-      // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALMONELLA_TEMP+300
+      // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300
        const int16_t MAXTEMP[TNUMBER]={9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500};
       // Значения датчиков при тестировании  опция TEST В СОТЫХ ГРАДУСА
         const int16_t TESTTEMP[TNUMBER]={1000,2000,300,400,1000,3000,700,500,500,500,500,500,2000,2000,2000,2000};
@@ -1410,7 +1410,7 @@ const char *noteTemp[] = {"Температура улицы",
        //7 - выводить снизу на схеме и не строить график
        const uint8_t SENSORTEMP[TNUMBER]={    1,    1,    1,    1,    1,    1,    1,    0,    1,    1,    1,    1,   1,   1,   3,   3,   3,   3,  3,  3,   3,   3,   3,  3,  3};
        const int16_t MINTEMP[TNUMBER]={-4000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000};
-       // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALMONELLA_TEMP+300
+       // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300
        const int16_t MAXTEMP[TNUMBER]={9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500};
        // Значения датчиков при тестировании  опция TEST В СОТЫХ ГРАДУСА
        const int16_t TESTTEMP[TNUMBER]={1000,2000,300,400,1000,3000,-700,-1234,-500,500,0,0,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000};
@@ -1928,7 +1928,7 @@ const char *noteTemp[] = {"Температура улицы",
      const boolean SENSORTEMP[TNUMBER]={true,true,true,true,false,true,true,false,true,true,true,true,true,true};
       // минимальные значения температур
      const int16_t MINTEMP[TNUMBER]={-4000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000,-3000};
-     // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALMONELLA_TEMP+300
+     // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300
      const int16_t MAXTEMP[TNUMBER]={9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500,9500};
      // Значения датчиков при тестировании  опция TEST В СОТЫХ ГРАДУСА
      const int16_t TESTTEMP[TNUMBER]={1000,2000,300,400,1000,3000,700,500,500,500,500,500,2000,2000}; 
@@ -2463,7 +2463,7 @@ const char *noteTemp[] = {"Температура улицы",
        const boolean SENSORTEMP[TNUMBER]={true,true,true,true,true,true,true,true,true/*3way*/,true,true,true,true,true};
        // минимальные значения температур
        const int16_t MINTEMP[TNUMBER]={-3500,-3000,-1500,-1000,-2000,-2000,0,-500,-1510,100,-1000,-1000,-1000,-1000};
-       // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура берется не здесь, она равна SALMONELLA_TEMP+300
+       // Макимальные значения температур ВНИМАНИЕ! для TBOILER температура берется не здесь, она равна SALLMONELA_TEMP+300
        const int16_t MAXTEMP[TNUMBER]={4000,3500,2520,4000,8500,6520,5510,4200,4010,8700,2500,2500,5000,5500};
        // Значения датчиков при тестировании  опция TEST В СОТЫХ ГРАДУСА
        const int16_t TESTTEMP[TNUMBER]={1000,2000,300,400,1000,3000,765,123,-500,500,0,0,2000,2000};
@@ -2635,7 +2635,6 @@ const char *noteTemp[] = {"Температура улицы",
       #define FC_ACCEL_TIME       (60*100)         // Время разгона (см компрессор) в 0.01 сек
       #define FC_DEACCEL_TIME     (60*100)         // Время торможения (см компрессор) в 0.01 сек
 	  #define FC_START_PID_DELAY  (30*100)         // Задержка ПИД после старта компрессора
-	  #define FC_PID_MAX_STEP         300			// Максимальный шаг изменения частоты инвертора у PID регулятора, сотые %
 
       // Значения по умолчанию (начало DEF_) не Константы
       #define DEF_FC_DT_COMP_TEMP     (5*100)        // Защита по температуре компрессора - сколько градусов не доходит до максимальной (TCOMP) и при этом происходит уменьшение частоты
@@ -3007,7 +3006,7 @@ const char *noteTemp[] = {"Температура улицы",
     const uint8_t SENSORTEMP[TNUMBER]={    5,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    7,    7 };
     // минимальные значения температур
     const int16_t MINTEMP[TNUMBER] = { -4000,-1000,-1000,-1000,-2000,-2000,-2000,-2000,-2000,-2000,-4000,-2000,-2000,-3000 };
-    // Макимальные значения температур, ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALMONELLA_TEMP+300
+    // Макимальные значения температур, ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300
     const int16_t MAXTEMP[TNUMBER] = {  9000, 9000, 9000, 8700, 9000, 9000, 6000, 6500, 9000, 9000,10000, 9000, 9000, 9000 };
     // Значения датчиков при тестировании, опция TEST
     const int16_t TESTTEMP[TNUMBER]= {  1000, 2200, 6000, 5000,  500,  100, 3000, 3500, -200, 3300, 2700, 3500, 2000, 2100 };
@@ -3312,7 +3311,7 @@ const char *noteTemp[] = {"Температура улицы",
 //	#define TEST_BOARD 				// Тестовая плата!
 
 	#define CONFIG_NAME   "vad7"
-	#define CONFIG_NOTE   "Частотник(3ф), охлаждение, ЭРВ, РТО, ТП, СК, ВаттРоутер"
+	#define CONFIG_NOTE   "Частотник, 3 фазы, охлаждение, ЭРВ, РТО, СК, ТП"
 	// Danfoss HLP068T4LC6, Vacon 10 (12A), ПТО: B3-052-46-HQ, РТО: HE 4.0, ЭРВ: ETS 6-25
 	// Геоконтур: 6x50м ПНД50/ПП20 коаксил, Солнечный Коллектор: 6х50м ПНД 20.
 	#define HP_SCHEME     3			// Номер схемы который выводится на морде, подмена файлов plan[HPscheme].png -> plan1.png
@@ -3321,10 +3320,10 @@ const char *noteTemp[] = {"Температура улицы",
 	#define SPI_FLASH				// + Наличие чипа флеш памяти на шине SPI
 	#define LOAD_VERIFICATION     	// Признак чтения настроек c проверкой версии, длины, CRC16. Закоментируйте эту строку для ПОПЫТКИ загрузить старый формат, Запись всегда идет в новом
 	#define CHART_ONLY_COMP_ON      // Накопление точек для графиков ТОЛЬКО если компрессор работает, иначе всегда (и в паузах тоже) когда ТН включен
-	//#define CLEAR_CHART_HP_ON		// Очистка графиков при страте ТН
+	//#define CLEAR_CHART_HP_ON      // Очистка графиков при страте ТН
 	#define NEXTION                 // Разрешить использование дисплея. ЗАКОМЕНТИРУЙТЕ эту строку, что бы не использовать дисплей
 	#ifdef 	NEXTION
-	//#define NEXTION_GENERATOR		// На дисплее кнопкой можно переключать "Работа от генератора" (ограничение мощности потребления)
+	//#define NEXTION_GENERATOR   // На дисплее кнопкой можно переключать "Работа от генератора" (ограничение мощности потребления)
 	#define NEXTION_SCR0_DIS_ON_OFF	// Отключить реакцию на кнопку Вкл/Выкл на главном экране, есть еще одна кнопка Вкл/Выкл на экране Профили.
 	#endif
 	#define EXTERNAL_AREF     	  	// Использование внешней опоры для АЦП
@@ -3339,7 +3338,7 @@ const char *noteTemp[] = {"Температура улицы",
 	//#define USE_PZEM004T			// Наличие электросчетчика PZEM-004T v3 Modbus/UART
 	#define ADD_FC_POWER_WHEN_GENERATOR // Прибавлять расчитанную мощность частотника к показаниям счетчика, когда работа через генератор
 	#define USE_UPS					// Используется ИБП на контроллер, проверка через вход SPOWER
-	#define AUTO_START_GENERATOR 60 // Автозапуск генератора (реле RGEN), ждать секунд (для прогрева)
+	#define AUTO_START_GENERATOR 30 // Автозапуск генератора (реле RGEN), ждать секунд (для прогрева)
 	#define AUTO_START_GEN_TIMEOUT 200 // Таймаут ожидания старта генератора, сек
 	#define STATS_USE_BUFFER_FOR_SAVING // Сохранять статистику только когда буфер (512 байт) заполнен, иначе каждый день
 	#define MIN_RAM_CHARTS
@@ -3356,13 +3355,11 @@ const char *noteTemp[] = {"Температура улицы",
 	#endif
 	//	#define PIN_ONE_WIRE_BUS   23       // X23-X24. нога с интерфейсом программный OneWire ВСЕ температурные датчики
 
-	#define TARIF_NIGHT_END			6		// Последний час ночного тарифа электроэнергии
-
-	#define USE_SUN_COLLECTOR				// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
-	#define SUN_TDELTA				300		// Дельта температур для включения, сотые градуса, по умолчанию
-	#define SUNG_TDELTA				200		// Дельта температур жидкости для выключения, сотые градуса, по умолчанию
-	#define SUN_MIN_WORKTIME		120		// минимальное время работы, после которого будут проверятся границы, сек, по умолчанию
-	#define SUN_MIN_PAUSE			900		// минимальное время паузы после останова СК, сек, по умолчанию
+	#define USE_SUN_COLLECTOR			// Используется солнечный/воздушный коллектор (работает при включенном ТН постоянно, если позволяет температура)
+	#define SUN_TDELTA			300		// Дельта температур для включения, сотые градуса, по умолчанию
+	#define SUNG_TDELTA			200		// Дельта температур жидкости для выключения, сотые градуса, по умолчанию
+	#define SUN_MIN_WORKTIME	120		// минимальное время работы, после которого будут проверятся границы, сек, по умолчанию
+	#define SUN_MIN_PAUSE		900		// минимальное время паузы после останова СК, сек, по умолчанию
 
 	#define RADIO_SENSORS			// Радиодатчики через ZONT МЛ‑489.
 	// Подключение через плату UART - K-line или через 4 платы UART-RS485 отдельно на RX и TX, на стороне МЛ-489 : питание 5V, через диод K-line >--TX--|>|--RX
@@ -3375,11 +3372,10 @@ const char *noteTemp[] = {"Температура улицы",
 
 	#ifdef TEST_BOARD
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
-//		#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-//		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
-//		#define NEXTION_DEBUG 			// Отладка дисплея Nextion - отправка
-//		#define NEXTION_DEBUG2 			// Отладка дисплея Nextion - прием
-//		#define DEBUG_PID				// Отладка ПИДа
+	//	#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
+		#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
+	//  #define NEXTION_DEBUG 			// Отладка дисплея Nextion
+	//	#define DEBUG_PID				// Отладка ПИДа
 		#define I2C_FRAM_MEMORY  0		// 1 - FRAM память
 		#undef ONEWIRE_DS2482
 		#undef ONEWIRE_DS2482_SECOND
@@ -3390,8 +3386,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#else
 		#define DEBUG                   // В последовательный порт шлет сообщения в первую очередь ошибки
 		//#define DEBUG_NATIVE_USB		// Отладка через второй USB порт (Native)
-		//#define DEBUG_MODWORK			// Вывод в консоль состояние HP при работе
-	  	//#define NEXTION_DEBUG2			// Отладка дисплея Nextion - прием
+		//#define DEBUG_MODWORK           // Вывод в консоль состояние HP при работе
 		//#define DEBUG_PID				// Отладка ПИДа
 		#define DEBUG_RADIO				// Отладка радиодатчиков
 		#define I2C_EEPROM_64KB	        // Использование памяти I2C для записи журнала при коментарии используется оперативка
@@ -3582,7 +3577,7 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FLOW_CONTROL								  // Контроль потоков через ПТО (актуален если установлены расходомеры)
 
 	// АНАЛОГОВЫЕ ДАТЧИКИ  -------------------------------------------------------------------
-	#define ANUMBER		4       // Максимальное число аналоговых датчиков (то что поддерживается)
+	#define ANUMBER		5       // Максимальное число аналоговых датчиков (то что поддерживается)
 	// наличие датчиков в конфигурации минимальные максимальные и тестовые значения
 	// Справочно нумерация датчиков
 	// Давление харится в сотых бара
@@ -3590,40 +3585,40 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PCON			1	// Датчик давления конденсатора.
 	#define PGEO			2	// Датчик давления жидкости геоконтура
 	#define POUT			3	// Датчик давления теплоносителя отопления
-	//#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
+	#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
 	// Имена датчиков
 	const char *nameAnalog[] = {"PEVA",
 								"PCON",
 								"PGEO",
-								"POUT"
-								//,"IWR"
+								"POUT",
+								"IWR"
 						   };
 	// Описание датчиков
 	const char *noteAnalog[] = {"Давление кипения",
 								"Давление конденсации",
 								"Давление геоконтура",
-								"Давление отопления"
-								//,"Ток ваттроутера"
+								"Давление отопления",
+								"Ток ваттроутера"
 							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
-	#define ADC_SENSOR_PEVA		13		// A11/PIN_65. X33. датчик давления испарителя
+	#define ADC_SENSOR_PEVA		13		// A11, X33. датчик давления испарителя
 	#define ADC_SENSOR_PCON		12		// A10, X31. датчик давления конденсатора
 	#define ADC_SENSOR_PGEO		4		// A3, X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_IWR		3		// A4, X19.2 датчик тока (4-20мА), + резистор 150 Ом на GND
 	// Коэффициент преобразования отсчеты АЦП-давление, тысячные
-	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181};
+	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181, 1000};
 	// напряжение (отсчеты АЦП) соответсвующее cZero
-	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70};
+	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70,    0};
 	// Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
-	// const uint8_t  ADC_GAIN[ANUMBER] = {   1,    1,    1,    1};
+	// const uint8_t  ADC_GAIN[ANUMBER] = { 1,    1,    1,    1};
 
 
-	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
-	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения, в сотых
-	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280};	// Максимальные значения, в сотых
-	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150};	// Значения датчиков при тестировании  опция TEST, в сотых
+	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true, true};	// Присутствие датчика в конфигурации
+	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100,-32767};	// минимальные значения, в сотых
+	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280,65535};	// Максимальные значения, в сотых
+	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150,    1};	// Значения датчиков при тестировании  опция TEST, в сотых
 	//#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
 	#ifdef ANALOG_MODBUS
 	#define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
@@ -3641,12 +3636,11 @@ const char *noteTemp[] = {"Температура улицы",
 
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Исполнительные устройства (реле и сухие контакты) ВНИМАТЕЛЬНО ПРОВЕРЯЕМ СООТВЕТСВИЕ ВСЕХ МАССИВОВ!!! ------------------------------------------------------------------
-	// Проверочный regexp: "PIN_[a-zA-Z0-9_]+[\s\t]+\d+"
 	#define RELAY_INVERT			// Реле выходов: включение высоким уровнем (High Level trigger)
 	#define RNUMBER                    12 // Число исполнительных устройств (всех)
 	// устройства DC 24V
-	#define PIN_DEVICE_RCOMP           61 // через FOD852(p1..4); X31.3->p2, X22.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
-	//#define PIN_FC_RESET             53 // -> DI3(10) Выход для сброса инвертора
+	#define PIN_DEVICE_RCOMP           12 //{#->61,X22.2}[R_9(X1)3.3V] через FOD852(p1..4); X174.2->p2, X1.2->R680->(p1): 24V(6)->p4, DI1(8)->p3. Реле включения компрессора. P5.1=1
+	//#define PIN_FC_RESET             53 //[R_7] -> DI3(10) Выход для сброса инвертора
 	// устройства DC 12V
 	#define PIN_DEVICE_GEN             62 // X22.3 -> R680 -> FOD852.p1, X12.1(GND) -> FOD852.p2 (FOD852 = TLP627)
 	// устройства DC 5V
@@ -3655,25 +3649,23 @@ const char *noteTemp[] = {"Температура улицы",
 	#define PIN_DEVICE_RPUMPO          47 //[R_2] Реле включения насоса выходного контура  (отопление и ГВС)
 	#define PIN_DEVICE_RPUMPBH         48 //[R_3] Реле насоса НАГРЕВА бойлера (ГВС) - не циркуляция
 	#define PIN_DEVICE_RPUMPI          49 //[R_4] Реле включения насоса входного контура  (геоконтур)
-	#define PIN_DEVICE_RBOILER         11 //[R_8] Включение ТЭНа бойлера (SSR, PWM). PWM - Dimmer(10000W).SCR, GND - Dimmer.[MOC3023.2](Cut MOC3023.2 to Dimmer.GND!)
-	#define PIN_PWM_ZERO_CROSS         12 // X17.2(-), X1.2(+) - EL817C.4(pullup to X1.1(3.3V) - R75k), [Dimmer(10000W).Zero - Zero] - R15k - PC817C.1, Dimmer.GND - PC817C.2
+	#define PIN_DEVICE_RBOILER         13 //50 //{#->13} [R_5] Включение ТЭНа бойлера (SSR, PWM)
 	#define PIN_DEVICE_R4WAY           51 //[R_6] 4-ходовой клапан
-	#define PIN_DEVICE_RPUMPFL         50 //[R_5 реле насоса Теплого Пола
+	#define PIN_DEVICE_RPUMPFL         50 //11 //{#->50}[R_8] реле насоса Теплого Пола
 	#ifdef USE_SUN_COLLECTOR
 		#define PIN_DEVICE_RSUN        46 //[R_1] Реле включения насоса солнечного коллектора
 		#define PIN_DEVICE_RSUN_ON     53 //[R_7] Реле включение шарового крана солнечного коллектора
-		#define PIN_DEVICE_RSUN_OFF    60 // X22.1 Реле выключение шарового крана солнечного коллектора, через доп реле.
+		#define PIN_DEVICE_RSUN_OFF    60 //13 //{#->60,X22.1}[R_10] Реле выключение шарового крана солнечного коллектора, через доп реле.
 		#define SUN_VALVE_SWITCH_TIME  30000 // Время переключения крана, мсек
 	#endif
-	// Free: -
-	//#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
-	//#define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
-	//#define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
-	//#define PIN_DEVICE_R3WAY           13 //[R_10(X2)3.3V] 3-ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
-	//#define PIN_DEVICE_RFAN1           11        // Реле включения вентилятора испарителя №1
-	//#define PIN_DEVICE_RFAN2           11        // Реле включения вентилятора испарителя №2
-	//#define PIN_DEVICE_REVI            11        // Соленойд для EVI. (испаритель ниже +3гр и конденсатор выше +40гр)
-	//  Пины DUE 68, 69 не подключены к плате!
+	//	#define PIN_DEVICE_GEN             34 // X37.1(EEV23) -> Relay(-12V)(+12V=X41.2)
+	//  #define PIN_DEVICE_RSUPERBOILER    11 //[R_8] реле насоса супербойлера
+	//  #define PIN_DEVICE_RHEAT           12 //[R_9] Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
+	//    #define PIN_DEVICE_R3WAY         13 //[R_10(X2)3.3V] 3-ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
+	//  #define PIN_DEVICE_RFAN1           11        // Реле включения вентилятора испарителя №1
+	//  #define PIN_DEVICE_RFAN2           11        // Реле включения вентилятора испарителя №2
+	//  #define PIN_DEVICE_REVI            11        // Соленойд для EVI. (испаритель ниже +3гр и конденсатор выше +40гр)
+	//                                     Пины DUE 68, 69 не подключены к плате!
 
 	// Имена индексов ВАЖЕН ПОРЯДОК!
 	#define RCOMP              0          // Реле включения компрессора (через пускатель)
@@ -3688,25 +3680,23 @@ const char *noteTemp[] = {"Температура улицы",
 	#define RSUNON             9          // Реле открытия шарового крана солнечного коллектора
 	#define RSUNOFF            10         // Реле закрытия шарового крана солнечного коллектора
 	#define RGEN               11         // Реле запуска генератора (ATS), так не дает остановить его, если он уже запущен
-	//#define RRESET             6          // Выход для сброса инвертора
-	//#define R3WAY              7          // Трех ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
+	//   #define RRESET             6          // Выход для сброса инвертора
+	//   #define R3WAY              7          // Трех ходовой кран. Переключение системы СО — ГВС (что сейчас греть)
 	//                                         // Если заремарен, то конфигурация с двумя насосами RPUMPO и RPUMPB. Работают по-очередно.
-	//#define RSUPERBOILER       6          // реле насоса супербойлера
-	//#define RFAN1              5          // Реле включения вентилятора испарителя №1
-	//#define RFAN2              6          // Реле включения вентилятора испарителя №2
-	//#define REVI               6          // Соленойд для EVI. (испаритель ниже +3гр и конденсатор выше +40гр)
-	//#define RHEAT              7          // Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
+	//   #define RSUPERBOILER       6          // реле насоса супербойлера
+	//   #define RFAN1              5          // Реле включения вентилятора испарителя №1
+	//   #define RFAN2              6          // Реле включения вентилятора испарителя №2
+	//   #define REVI               6          // Соленойд для EVI. (испаритель ниже +3гр и конденсатор выше +40гр)
+	//   #define RHEAT              7          // Включение ТЭНа СО (электрокотел), может использоваться как догрев, резерв и т.д.
 
 	#define PUMP_OUT      RPUMPO			// Насос выходного контура (отопление)
 	#define PUMP_IN       RPUMPI 			// Насос входного  контура (гео или воздушник)
 
 	//#define RELAY_WAIT_SWITCH	11			// Заморозить выполнение задач на это время после переключения реле, ms
 
-	#define NOLINK_SUM_POWER_PUMP 200  		// Мощность потребления насосов, для добавления к мощности компрессора, если нет связи со электро-счетчиком, Вт
-	#define CORRECT_POWER220				// Корректировка потребляемой мощности из электросети (и для расчета COP), если включены указанные реле, Вт при 220V
+	#define CORRECT_POWER220				// Корректировка потребляемой мощности из электросети (и для расчета COP), если включены указанные реле, Вт
 	#ifdef CORRECT_POWER220
 		CORRECT_POWER220_STRUCT correct_power220[] = { {RPUMPFL, 25} }; // Обороты: III = 45 Вт, II = 22 Вт, ТП-4 = 25
-		#define CORRECT_POWER220_EXCL_RBOILER// Вычитание мощности бойлера, включая данные ваттроутера, Вт при 220V
 	#endif
 	#define STATS_SKIP_COP_WHEN_RELAY_ON 	RBOILER	// Пропускать логирование COP при включенном реле
 
@@ -3802,7 +3792,7 @@ const char *noteTemp[] = {"Температура улицы",
 	const uint8_t SENSORTEMP[TNUMBER]={    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    7,    7,    7,    7,    4,    6,    6,    6,    6,    6,    1,    1 };
 	// минимальные значения температур
 	const int16_t MINTEMP[TNUMBER] = { -4000,-1000,-1000,-1000,-2000,-2000,-2000,-2000,-2000,-2000,-4000,-2000,-2000,-3000,-3000,-3000,-3000,-2000,-2000,-2000,-2000,-2000,-2000,-2000 };
-	// Макимальные значения температур, ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALMONELLA_TEMP+300
+	// Макимальные значения температур, ВНИМАНИЕ! для TBOILER температура меняется если включен режим сальмонеллы на SALLMONELA_TEMP+300
 	const int16_t MAXTEMP[TNUMBER] = {  9000, 9000, 9000, 8700, 9000, 9000, 6000, 6500, 9000, 9000,10000, 9000, 9000, 9000, 9000, 9000, 9000, 7000, 7000, 7000, 7000, 7000, 9000, 9000 };
 	// Значения датчиков при тестировании, опция TEST
 	const int16_t TESTTEMP[TNUMBER]= {  1000, 2200, 6000, 5000,  500,  100, 3000, 3500, -200, 3300, 2700, 3500, 2000, 2100, 2200, 1500, 2150, 2301, 2302, 2303, 2304, 2305, 2800, -100 };
@@ -3868,13 +3858,12 @@ const char *noteTemp[] = {"Температура улицы",
 	};
 	// #endif
 
-	#define TIME_READ_SENSOR  2000        // Период опроса датчиков (мсек)
-	#define T_NUMSAMLES       1           // Число значений для усреднения показаний температуры
-	#define GAP_TEMP_VAL      500         // Допустимая разница (в сотых C) показаний между двумя считываниями (борьба с помехами) - при привышении ошибка не возникает, но данные пропускаются.
+	#define TIME_READ_SENSOR  2000         // Период опроса датчиков (мсек)
+	#define T_NUMSAMLES       1             // Число значений для усреднения показаний температуры
+	#define GAP_TEMP_VAL      500           // Допустимая разница (в сотых C) показаний между двумя считываниями (борьба с помехами) - при привышении ошибка не возникает, но данные пропускаются.
 	#define GAP_TEMP_VAL_CRC  200     	  // Датчики с флагом игнорировать CRC. Допустимая разница (в сотых C) показаний между двумя считываниями (борьба с помехами) - при привышении ошибка не возникает, но данные пропускаются.
 	#define GAP_NUMBER        3       	  // Максимальное число идущих подряд показаний превышающих на GAP_TEMP_VAL, после этого эти показания выдаются за действительные
 	#define GAP_NUMBER_CRC    7       	  // Датчики с флагом игнорировать CRC. Максимальное число идущих подряд показаний превышающих на GAP_TEMP_VAL, после этого эти показания выдаются за действительные
-	#define GAP_NUMBER_BAD    10          // Максимальное число идущих подряд показаний превышающих GAP_TEMP_VAL для датчиков с флагами "игнорировать ошибки" + "не логировать ошибки"
 
 	//
 	// Конфигурация системы отопления --------------------------------------------------------------------------------
@@ -3883,8 +3872,76 @@ const char *noteTemp[] = {"Температура улицы",
 	#define FEED      sTemp[TCONOUTG].get_Temp()       // Подача системы CO
 	#define RET       sTemp[TCONING].get_Temp()        // Обратка системы CO
 
+	// Графики в памяти
+	Charts_Mod_setup ChartsModSetup[] = {
+		{ STATS_OBJ_Temp, TOUT },
+		{ STATS_OBJ_Temp, TIN },
+		{ STATS_OBJ_Temp, TBOILER },
+		{ STATS_OBJ_Temp, TCOMP },
+		{ STATS_OBJ_Temp, TEVAING },
+		{ STATS_OBJ_Temp, TEVAOUTG },
+		{ STATS_OBJ_Temp, TCONING },
+		{ STATS_OBJ_Temp, TCONOUTG },
+		{ STATS_OBJ_Temp, TEVAOUT },
+		{ STATS_OBJ_Temp, TCONOUT },
+		{ STATS_OBJ_Temp, TSUN },
+		{ STATS_OBJ_Temp, TSUNOUTG },
+		{ STATS_OBJ_Flow, FLOWEVA },
+		{ STATS_OBJ_Flow, FLOWCON },
+		//{ STATS_OBJ_Press, PGEO },
+		{ STATS_OBJ_Press, POUT },
+		{ STATS_OBJ_PressTemp, PEVA },
+		{ STATS_OBJ_PressTemp, PCON }
+	};
+	const Charts_Const_setup ChartsConstSetup[] = {
+		{ STATS_OBJ_EEV, "ЭРВ" },
+		{ STATS_OBJ_Overheat, "Перегрев" },
+		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
+		{ STATS_OBJ_Compressor, "Частота, Гц" },
+		//{ STATS_OBJ_Power_FC, "Мощность компрессора" },
+		{ STATS_OBJ_Power, "Потребляемая мощность" },
+		{ STATS_OBJ_COP_Full, "COP" }
+	};
+	const Charts_Const_setup ChartsOnFlySetup[] = {
+		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
+		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
+		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
+		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
+		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
+		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
+	};
 
-	//#define PID_FORMULA2							// Адаптированный алгоритм ПИД Arduino-PID-Library
+	// История (графики) на SD карте
+	const History_setup HistorySetup[] = {
+		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
+		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
+		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
+		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
+		{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
+		{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
+		{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
+		{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
+		{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
+		{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
+		{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
+		{ STATS_OBJ_Temp, TSUN, noteTemp[TSUN] },
+		{ STATS_OBJ_Temp, TSUNOUTG, noteTemp[TSUNOUTG] },
+		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
+		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
+		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
+		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
+		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
+		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
+		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
+		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
+		{ STATS_OBJ_COP_Full, 0, "COP" },
+		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
+		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
+		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] }
+	};
+
+	#define PID_FORMULA2							// Адаптированный алгоритм ПИД Arduino-PID-Library
 	// ------------------- EEV -----------------------------------
 	// ЭРВ ТОЛЬКО ОДНА ШТУКА ВСЕГДА (не массив) ------------------
 	#define EEV_DEF                     // Наличие ЭРВ в конфигурации
@@ -4012,50 +4069,22 @@ const char *noteTemp[] = {"Температура улицы",
 
 	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
 	#define WATTROUTER												// Включить
-	#define WR_NumLoads				4								// Кол-во нагрузок (1..8)
+	#define WR_NumLoads				4								// Кол-во нагрузок (0..5)
 //	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
-	#define WR_PowerMeter_Modbus	3								// (0xF8) Использовать счетчик PZEM-004T Modbus для получения мощности, адрес
-	#define WR_PowerMeter_ModbusReg 0x0003							// Адрес регистра мощности (32b), десятые Вт
-
-	#define WR_Load_pins_Boiler_INDEX		0						// Индекс бойлера в массиве WR_Load_pins
-	#define WR_Boiler_Hysteresis			100						// Гистерезис бойлера, сотые градуса
-	#define WR_Boiler_Substitution_INDEX	3						// Если бойлер нагрет - Индекс подменной нагрузки для бойлера, должен быть больше индекса бойлера
-	#define PIN_WR_Boiler_Substitution		13						// R_10(X2.2). Если бойлер нагрет, то переключаем выход контактором и продолжаем с другой нагрузкой
-	#define WR_Boiler_Substitution_swtime	50						// Время переключения контактора, мсек
-
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, PIN_DEVICE_RBOILER };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-
 #ifndef TEST_BOARD
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #else
-	#undef HTTP_LowConsumeRequest
-	#undef PIN_WR_Boiler_Substitution
-	#define PIN_WR_Boiler_Substitution		43
+	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
 #endif
-
-	#define WR_PWM_POWER_MIN			50							// Минимальная мощность для PWM, Вт
-	#define WR_TestAvailablePowerForRelayLoads WR_Load_pins_Boiler_INDEX// Использовать нагрузку PWM для проверки доступной мощности перед включением релейной нагрузки, индекс
-	#define WR_TestAvailablePowerTime 	2							// Сколько циклов (WEB0_FREQUENT_JOB_PERIOD) ждать проверки нагрузки
-	#define WR_RELAY_LEVEL_ON			1							// Уровень реле ВКЛ
-	#define WR_PNET_AVERAGE				4							// Размер буфера для усреднения
-	#define WR_ONE_PERIOD_PWM										// Одно-полупериодный ШИМ, иначе целыми полупериодами
-#ifdef WR_ONE_PERIOD_PWM
-	#define PWM_WRITE_OUT_FREQ_DEFAULT	100							// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 	8							// bits
-	#define PWM_ACCURATE_POWER										// Точный расчет мощности
-#ifdef PWM_ACCURATE_POWER
-	#define PWM_CALC_POWER_ARRAY		1							// Расчет массива точной мощности, 1 - Сбрасывать мощность между шагами, 2 - нет
-	#define PWM_CALC_POWER_SW_SKIP		1							// Сколько значений пропускать после изменения мощности
-	const uint8_t PWM_POWER_ARRAY[101] = { 255,232,224,218,214,210,208,205,202,200,197,195,193,191,189,188,186,184,182,181,179,177,176,174,172,171,170,169,167,166,165,163,162,161,160,159,157,156,154,153,152,151,150,149,148,146,145,144,142,141,139,138,137,135,134,132,131,130,128,127,125,124,122,121,119,118,117,115,113,112,111,110,109,107,106,104,103,102,100,98,97,95,93,91,89,87,85,83,81,78,76,72,69,65,61,54,46,35,20,0 ,0 };
-#endif
-	#define WR_ZERO_CROSS_EDGE			TC_CMR_EEVTEDG_RISING		// для PIN_PWM_ZERO_CROSS
-	#define WR_ZERO_CROSS_TC_CMR_EEVT 	TC_CMR_EEVT_TIOB
-	#define WR_ZERO_CROSS_TC_BMR_SET 	//chTC->TC_BMR |= TC_BMR_TC2XC2S_TCLK2
-	#define WR_ZERO_CROSS_PERIPH 		PIO_PERIPH_B
-#else
-	#define PWM_WRITE_OUT_FREQ_DEFAULT 1							// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 6								// bits
+	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
+	#define WR_RELAY_LEVEL_ON		1
+	#define PWM_WRITE_OUT_FREQUENCY	3								// Частота вывода PWM, Гц, для функции PWM_Write()
+	#define PWM_WRITE_OUT_RESOLUTION 5								// 0..31, bits
+#ifndef WR_CurrentSensor_4_20mA
+	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
 #endif
 	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
+	#define WR_NEXT_TURN_ON_PAUSE	10								// Минимальная пауза на включение следующего реле, сек
 
 	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
 	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП
@@ -4063,96 +4092,12 @@ const char *noteTemp[] = {"Температура улицы",
 	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
 	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
 
-#if defined(WR_CurrentSensor_4_20mA)
+#ifdef WR_CurrentSensor_4_20mA
 	#define WEB0_FREQUENT_JOB_PERIOD 	1000	 		// Периодичность важных функций в задаче WEB0, мс
-#elif  defined(WR_PowerMeter_Modbus)
-	#define WEB0_FREQUENT_JOB_PERIOD 	TIME_READ_SENSOR// Периодичность важных функций в задаче WEB0, мс
 #else
-	#define WEB0_FREQUENT_JOB_PERIOD 	1500	 		// Периодичность важных функций в задаче WEB0, мс
+	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс
 #endif
 	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
-
-	#define WEATHER_FORECAST							// Корректировка ночного нагрева бойлера по прогнозу погоды
-	#define WF_ForecastHour				5				// Час, когда запрашивать прогноз
-	#define WF_ForecastAggregateHours	5				// За сколько часов брать среднее
-	#define WF_ForecastAfterSunrise		2*60*60 		// Через сколько времени после восхода смотреть прогноз, сек
-	#define WF_BOILER_MAX_CLOUDS		95				// Ниже этой облачности начинаем корректировать температуру бойлера, %
-	//                                   янв, фев, мар, апр, май, июн, июл, авг, сен, окт, ноя, дек
-	const uint8_t WF_SunByMonth[12] = 	{ 35,  20,  10,   0,   0,   0,   0,   0,  15,  30,  40,  50 };	// + к облачности, %
-
-	// Графики в памяти
-	Charts_Mod_setup ChartsModSetup[] = {
-#ifdef WATTROUTER
-		{ STATS_OBJ_WattRouter_In, 0 },
-#else
-		{ STATS_OBJ_Temp, TOUT },
-#endif
-		{ STATS_OBJ_Temp, TIN },
-		{ STATS_OBJ_Temp, TBOILER },
-		{ STATS_OBJ_Temp, TCOMP },
-		{ STATS_OBJ_Temp, TEVAING },
-		{ STATS_OBJ_Temp, TEVAOUTG },
-		{ STATS_OBJ_Temp, TCONING },
-		{ STATS_OBJ_Temp, TCONOUTG },
-		{ STATS_OBJ_Temp, TEVAOUT },
-		{ STATS_OBJ_Temp, TCONOUT },
-		{ STATS_OBJ_Temp, TSUN },
-		{ STATS_OBJ_Temp, TSUNOUTG },
-		{ STATS_OBJ_Flow, FLOWEVA },
-		{ STATS_OBJ_Flow, FLOWCON },
-		//{ STATS_OBJ_Press, PGEO },
-		{ STATS_OBJ_Press, POUT },
-		{ STATS_OBJ_PressTemp, PEVA },
-		{ STATS_OBJ_PressTemp, PCON }
-	};
-	const Charts_Const_setup ChartsConstSetup[] = {
-		{ STATS_OBJ_EEV, "ЭРВ" },
-		{ STATS_OBJ_Overheat, "Перегрев" },
-		{ STATS_OBJ_Overheat2, "Перегрев на входе компрессора" },
-		{ STATS_OBJ_Compressor, "Частота, Гц" },
-		//{ STATS_OBJ_Power_FC, "Мощность компрессора" },
-		{ STATS_OBJ_Power, "Потребляемая мощность" },
-		{ STATS_OBJ_COP_Full, "COP" }
-	};
-	const Charts_Const_setup ChartsOnFlySetup[] = {
-		{ STATS_OBJ_Overcool, "Переохлаждение" }, // T[PCON] - TCONOUT
-		{ STATS_OBJ_TCOMP_TCON, "Нагнетание - Конденсация" }, // TCOMP - TCON
-		{ STATS_OBJ_Delta_GEO, "Дельта температур геоконтура" }, // TEVAING - TEVAOUTG
-		{ STATS_OBJ_Delta_OUT, "Дельта температур выхода" }, // TCONOUTG - TCONING
-		{ STATS_OBJ_Power_GEO, "Мощность геоконтура" }, // (TEVAOUTG - TEVAING) * FLOWEVA / kfCapacity
-		{ STATS_OBJ_Power_OUT, "Выходная мощность" } // (TCONOUTG - TCONING) * FLOWCON / kfCapacity
-	};
-
-	// История (графики) на SD карте
-	const History_setup HistorySetup[] = {
-		{ STATS_OBJ_Compressor, 0, "Компрессор, Гц" },
-		{ STATS_OBJ_Temp, TOUT, noteTemp[TOUT] },
-		{ STATS_OBJ_Temp, TIN, noteTemp[TIN] },
-		{ STATS_OBJ_Temp, TBOILER, noteTemp[TBOILER] },
-		{ STATS_OBJ_Temp, TCOMP, noteTemp[TCOMP] },
-		{ STATS_OBJ_Temp, TEVAING, noteTemp[TEVAING] },
-		{ STATS_OBJ_Temp, TEVAOUTG, noteTemp[TEVAOUTG] },
-		{ STATS_OBJ_Temp, TCONING, noteTemp[TCONING] },
-		{ STATS_OBJ_Temp, TCONOUTG, noteTemp[TCONOUTG] },
-		{ STATS_OBJ_Temp, TEVAOUT, noteTemp[TEVAOUT] },
-		{ STATS_OBJ_Temp, TCONOUT, noteTemp[TCONOUT] },
-		{ STATS_OBJ_Temp, TSUN, noteTemp[TSUN] },
-		{ STATS_OBJ_Temp, TSUNOUTG, noteTemp[TSUNOUTG] },
-		{ STATS_OBJ_PressTemp, PEVA, "Температура кипения" },
-		{ STATS_OBJ_PressTemp, PCON, "Температура конденсации" },
-		{ STATS_OBJ_Flow, FLOWEVA, noteFrequency[FLOWEVA] },
-		{ STATS_OBJ_Flow, FLOWCON, noteFrequency[FLOWCON] },
-		{ STATS_OBJ_EEV, STATS_EEV_Percent, "Положение ЭРВ, %" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverHeat, "Перегрев" },
-		{ STATS_OBJ_EEV, STATS_EEV_OverCool, "Переохлаждение" },
-		{ STATS_OBJ_Power, 0, "Потребление, кВт" },
-		{ STATS_OBJ_Power_OUT, 0, "Выработка, кВт" },
-		{ STATS_OBJ_COP_Full, 0, "COP" },
-		{ STATS_OBJ_Temp, TKITCHEN, noteTemp[TKITCHEN] },
-		{ STATS_OBJ_Temp, TFL2BEDR, noteTemp[TFL2BEDR] },
-		{ STATS_OBJ_Temp, TFL2TV, noteTemp[TFL2TV] },
-		{ STATS_OBJ_WattRouter_Out, 0, "Ваттроутер, кВтч"}
-	};
 
 
 #endif  // CONFIG_7

@@ -1549,15 +1549,15 @@ int8_t devSDM::get_readState(uint8_t group)
 		uint16_t tmp16[2];
 	};
 #else
-	float tmp;
+	static float tmp;
 #endif
 	if(!GETBIT(flags,fSDM) || !GETBIT(flags,fSDMLink)
 #ifdef USE_UPS
 		|| HP.NO_Power
 #endif
 		) {   // Если нет счетчика или нет связи выходим
-		AcPower = 0;
-		Voltage = 0;
+		AcPower = 0.0f;
+		Voltage = 0.0f;
 		return err;
 	}
 	// Чтение состояния счетчика
@@ -1568,7 +1568,7 @@ int8_t devSDM::get_readState(uint8_t group)
 		if(group == 0) {
 #ifdef USE_PZEM004T
 			Modbus.readInputRegisters32(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);
-			if(_err == OK) AcPower = tmp / 10; else goto xErr;
+			if(_err == OK) AcPower = (float)tmp / 10.0f; else goto xErr;
 #else
 			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_AC_POWER, &tmp);
 			if(_err == OK) AcPower = tmp; else goto xErr;
@@ -1594,7 +1594,7 @@ int8_t devSDM::get_readState(uint8_t group)
 			if(_err==OK) { Voltage = tmp16[0] / 10; group = 1; } else goto xErr;
 #else
 			_err = Modbus.readInputRegistersFloat(SDM_MODBUS_ADR, SDM_VOLTAGE, &tmp);   // Напряжение
-			if(_err==OK) { Voltage = tmp; group = 1; } else goto xErr;
+			if(_err==OK) { Voltage=tmp; group = 1; } else goto xErr;
 #endif
 #endif
 		}

@@ -1,6 +1,6 @@
-// Copyright (c) 2016-2020 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
+// Copyright (c) 2016-2022 by Pavel Panfilov <firstlast2007@gmail.com> skype pav2000pav
 // &                       by Vadim Kulakov vad7@yahoo.com, vad711
-var VER_WEB = "1.102";
+var VER_WEB = "1.112";
 var urlcontrol = ''; //  автоопределение (если адрес сервера совпадает с адресом контроллера)
 // адрес и порт контроллера, если адрес сервера отличен от адреса контроллера (не рекомендуется)
 //var urlcontrol = 'http://192.168.0.199';
@@ -311,7 +311,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											updateParam(upsens);
 											loadParam(loadsens);
 											values[1] = "--;" + values[1];
-										}
+										} else if(arr[0].substring(0,13) == "set_listProf(") location.reload();
 										element = document.getElementById(idsel);
 										if(element) {
 											if(values[0].substr(-6, 5) == "_skip") {
@@ -453,12 +453,21 @@ function loadParam(paramid, noretry, resultdiv) {
 										} else if(values[0].substr(0, 11) == 'get_tblTemp') {
 											var content = "", loadsens = "", upsens = "";
 											var count = values[1].split(';');
+											var T, TL, tin;
 											for(var j = 0; j < count.length - 1; j++) {
-												var T = count[j];
+												T = count[j];
+												tin = 0;
+												if(T.substring(0,1) == '*') {
+													tin = 1;
+													T = T.substring(1);
+												}
 												loadsens += "get_nTemp(" +T+ "),";
+												if(tin) loadsens += "get_inTemp(" +T+ "),";
 												upsens += "get_fullTemp(" +T+ "),";
-												T = T.toLowerCase();
-												content += '<tr><td nowrap><span id="get_ntemp-' +T+ '"></span>:</td><td id="get_fulltemp-' +T+ '"></td></tr>';
+												TL = T.toLowerCase();
+												content += '<tr><td nowrap><span id="get_ntemp-' +TL+ '"></span>:</td><td id="get_fulltemp-' +TL+ '"></td><td>'
+												if(tin) content += '<input type="checkbox" id="get_intemp-' +TL+ '" onchange="set_bTIN(this,\'' +T+ '\');">';
+												content += '</td></tr>';
 											}
 											document.getElementById(valueid).innerHTML = content;
 											loadParam(loadsens);
@@ -693,7 +702,7 @@ function loadParam(paramid, noretry, resultdiv) {
 				check_ready = 1;
 				setTimeout(function() {
 					loadParam(paramid);
-				}, 4000);
+				}, urltimeout);
 			}
 			autoheight(); // update height
 		}

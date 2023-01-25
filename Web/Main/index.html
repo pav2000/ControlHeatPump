@@ -12,15 +12,22 @@ window.onload = function() {
 </script>	
 </head>
 <body class="index">
+
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
+<!-- Виджет погоды (если не нужен закомментировать 4 строки ниже) настраиватся https://weatherwidget.io/ -->
+<a class="weatherwidget-io" href="https://forecast7.com/ru/56d8637d36/kimry/" data-label_1="Кимры" data-label_2="Стрельчиха" data-theme="mountains" >Кимры Стрельчиха</a>
+<script>
+!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+</script>
+
 <div class="row1">
 	<dl>
 		<dt><nobr>Тепловой насос</nobr></dt><dd><span id="get_work">-</span></dd>
 		<dt>Расписание</dt><dd><span id="get_schdlr-an">-</span></dd>
 		<dt><nobr>Режим работы</nobr></dt><dd>&nbsp;<select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');" style="font-size:1em"></select></dd>
 		<dt>Показатели</dt><dd><span id="get_errcode">-</span></dd> <dd style="width:100%;"><span id="get_error">-</span></dd>
-		<dt><nobr>От генератора</nobr></dt><dd>&nbsp;<input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></dt>
+		<dt><nobr>От генератора<sup>1</sup></nobr></dt><dd>&nbsp;<input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></dt>
 	</dl>
 </div>
 <div class="row2">
@@ -45,6 +52,7 @@ window.onload = function() {
 		<dt>Целевая</dt><dd><nobr><input id="get_boiler-trg" type="number" min="5" max="90" step="1"><input type="submit" value=">" onclick="setParam('get_Boiler(TRG)');"></nobr></dd>
 	</dl>									
 </div>
+		1. Работа ТН от генератора (ограничение мощности). Флаг сбрасывается при сбросе НК, для его сохранения необходимо на любой странице нажать кнопку "Записать в EEPROM"<br/>
 </div>
 </body>
 </html>
