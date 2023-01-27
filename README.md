@@ -33,12 +33,12 @@ C марта 2021 проект разделился. К сожалению пр�
 После этого объединю ветки и продолжу работу.  Такой план.  <br>
 <br>
 Готовая плата pav2000 версии 2.1<br>
-<img src="https://github.com/pav2000/ControlHeatPump/blob/main/Picture/pav2000_up_v21.jpg" width="600" /> <br>
-<img src="https://github.com/pav2000/ControlHeatPump/blob/main/Picture/pav2000_down_v21.jpg" width="600" /> <br>
+<img src="https://github.com/pav2000/ControlHeatPump/blob/master/Picture/pav2000_up_v21.jpg" width="800" />
+<img src="https://github.com/pav2000/ControlHeatPump/blob/master/Picture/pav2000_down_v21.jpg" width="800" />
 <br>
 
 Скриншоты веб-интерфейса:
-<img src="https://github.com/pav2000/ControlHeatPump/blob/main/Picture/state01.jpg" width="600" /> <br>
+<img src="https://github.com/pav2000/ControlHeatPump/blob/master/Picture/state01.jpg" width="1024" /> <br>
 ![Схема](https://user-images.githubusercontent.com/6220128/56410009-3079bb00-6284-11e9-804b-d476fb43ca89.png)
 ![ЭРВ](https://user-images.githubusercontent.com/6220128/56410010-3079bb00-6284-11e9-9673-fb239037f33a.png)
 ![Настройки](https://user-images.githubusercontent.com/6220128/56410003-2fe12480-6284-11e9-91c9-26ff2ed4c03b.png)
