@@ -909,7 +909,7 @@ boolean sendNarodMon(boolean debug)
 boolean sendNarodMon2022(boolean debug)
 {
  uint8_t i;
- char buf[32];
+ char buf[32]; 
      if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon2022 ignore: Wrong MAC address, change MAC from default.\n"); return false;}
      
      HP.clMQTT.clearBuf();   // очистить рабочие буфера	
@@ -924,8 +924,10 @@ boolean sendNarodMon2022(boolean debug)
       strcpy(HP.clMQTT.root,"#");  // Формирование строки куда потом пишутся топики
       strcat(HP.clMQTT.root,HP.get_netMAC()); // # мак адрес в качестве идентификатора
       strcat(HP.clMQTT.root,"#");
-      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,buf); // Копирование имени устройства
-      strcat(HP.clMQTT.root,buf);
+ //     strcpy(buf,""); // Очистка строки///
+ //     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,buf); // Копирование имени устройства///
+ //     strcat(HP.clMQTT.root,buf);//
+      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,HP.clMQTT.root); // Копирование имени устройства в конец строки HP.clMQTT.root
       strcat(HP.clMQTT.root,"\n");  // Конец первой строки
       // Формирование параметров #mac1#value1\n
       strcat(HP.clMQTT.root,"#"); 
