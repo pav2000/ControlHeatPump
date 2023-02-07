@@ -28,7 +28,9 @@ function show_all() {
 <body class="test">
 <div id="menu" class="menu"><script src="menu.js"></script></div>
 <div class="content">
-	<h1>Режим тест</h1>
+	<h1>Режим тест
+       <input type="submit" value="?" onclick='location.assign("test-help.html")' style="float:none;">
+       </h1>
 	<h2 >Режим работы: <select id="get_testmode" onchange="setParam('get_testMode','get_testmode');"></select></h2>
 	<h3>Описание: <span id="get_remarktest"></span></h3>
 	<h3>Ошибка: <span id="get_error"></span></h3>
