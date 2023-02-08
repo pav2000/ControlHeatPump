@@ -7,15 +7,15 @@
 <script type='text/javascript' src='scripts.js'></script>
 <script type="text/javascript">
 window.onload = function() { /*get_ruleCool,get_ruleHeat,*/
-	loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Heat(DTG),get_Cool(HP_IN),get_Heat(HP_IN)");
-	loadParam("get_Heat(KWT),get_Cool(TEMP1),get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN),get_Heat(KWB),get_Heat(KWR),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Heat(CP)");
+	loadParam("get_Temp(TOUT),get_Heat(RULE),get_Cool(RULE),get_Cool(TARGET),get_Heat(TARGET),get_modeHP,get_Cool(TEMP1),get_Heat(TEMP1),get_Cool(TEMP2),get_Heat(TEMP2),get_Cool(DTEMP),get_Heat(DTEMP),get_Cool(HP_TIME),get_Heat(HP_TIME),get_Cool(HP_PRO),get_Heat(HP_PRO),get_Cool(TEMP_IN),get_Heat(TEMP_IN),get_Cool(TEMP_OUT),get_Heat(TEMP_OUT),get_Heat(DTG)");
+	loadParam("get_Heat(ADT),get_Heat(ADH),get_Heat(ADEH),get_Heat(KWT),get_Cool(TEMP_PID),get_Heat(TEMP_PID),get_Heat(HFL),get_Cool(HFL),get_Heat(SUN),get_Cool(SUN),get_Heat(KWB),get_Heat(KWR),get_Cool(KW),get_Heat(KW),get_Cool(W),get_Heat(W),get_Cool(HP_DIF),get_Heat(HP_DIF),get_Cool(D_TEMP),get_Heat(D_TEMP),get_Cool(HP_IN),get_Heat(HP_IN)");
 	loadParam("get_listDSR,get_tblPDS");
 };
 function setDS(v, i) {
 	setParam("get_Prof(DS" + v + i + "=" + document.getElementById("get_prof-ds" + v.toLowerCase() + i).value.replace(":","").substr(0,3) + ")");
 }
 function loadParam_after(paramid) {
-	if(paramid.indexOf("(KW")!=-1 || paramid.indexOf("(TEMP1")!=-1) {
+	if(paramid.indexOf("(KW")!=-1) {
 		loadParam("get_TrgT,get_Cool(TP),get_Heat(TP)");
 	}
 }
@@ -167,13 +167,14 @@ function loadParam_after(paramid) {
 </table>
 <div class="row1"><h2>Защиты при работе теплового насоса</h2></div>	
 <table>
-	<thead><tr><th>Параметр</th><th>Охлаждение</th><th>Отопление</th></tr>
-	</thead><tbody>
+	<thead>
 	<tr>
-		<td>Минимальный простой компрессора (минуты)</td>
-		<td></td>
-		<td nowrap><input id="get_heat-cp" type="number" min="0" step="1"><input type="submit" value=">" onclick="setParam('get_Heat(CP)');"></td>
-	</tr>						
+		<th>Параметр</th>
+		<th>Охлаждение</th>
+		<th>Отопление</th>
+	</tr>
+	</thead>			
+	<tbody>
 	<tr>
 		<td>Минимальная/максимальная температура подачи °C [0..30] [0..70]</td>
 		<td nowrap><input id="get_cool-temp_in" type="number" min="0" max="30" step="0.1"><input type="submit" value=">" onclick="setParam('get_Cool(TEMP_IN)');"></td>
