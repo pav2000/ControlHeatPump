@@ -873,8 +873,11 @@ void get_datTest(uint8_t thread)
 }
 
 // Получить состояние теплового насоса для отсылки по почте
-// посылается в клиента используя tempBuf
-void get_mailState(EthernetClient client,char *tempBuf)
+// Строки формируются в buf и выводятся через HP.message.smtpWriteBody(): он ставит CRLF,
+// экранирует ведущую точку и режет слишком длинные строки, как того требует RFC 5321.
+// Вызывается ТОЛЬКО из Message::sendMail(), между DATA и завершающей точкой.
+// buf_size должен быть не меньше LEN_MAILBUF: get_Counts() формирует около 1.3 кБ текста.
+void get_mailState(char *buf, uint16_t buf_size)
 {
 #ifdef CONFIG_5
 	uint8_t j;
@@ -882,212 +885,205 @@ void get_mailState(EthernetClient client,char *tempBuf)
 #endif
 	uint8_t i;
 
-	strcpy(tempBuf,"\r\n -----  С О С Т О Я Н И Е  -----");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody(" -----  С О С Т О Я Н И Е  -----");
 
-	strcpy(tempBuf,"\n  1. Тепловой насос");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  1. Тепловой насос");
 
-	strcpy(tempBuf,"Состояние: "); strcat(tempBuf,HP.StateToStr());
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Состояние: "); strcat(buf,HP.StateToStr());
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Статус: "); HP.get_StateModworkStr(tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Статус: "); HP.get_StateModworkStr(buf);
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Последняя ошибка: ");  _itoa(HP.get_errcode(),tempBuf); strcat(tempBuf," - "); strcat(tempBuf,HP.get_lastErr());
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Последняя ошибка: ");  _itoa(HP.get_errcode(),buf); strcat(buf," - "); strcat(buf,HP.get_lastErr());
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Режим работы: ");strcat(tempBuf,HP.TestToStr());
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Режим работы: ");strcat(buf,HP.TestToStr());
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Последняя перезагрузка: "); DecodeTimeDate(HP.get_startDT(),tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Последняя перезагрузка: "); DecodeTimeDate(HP.get_startDT(),buf);
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Время с последней перезагрузки: "); TimeIntervalToStr(HP.get_uptime(),tempBuf);
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Время с последней перезагрузки: "); TimeIntervalToStr(HP.get_uptime(),buf);
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"Причина последней перезагрузки: "); strcat(tempBuf,ResetCause());
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Причина последней перезагрузки: "); strcat(buf,ResetCause());
+	HP.message.smtpWriteBody(buf);
 
-	strcpy(tempBuf,"\n  2. Датчики температуры");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  2. Датчики температуры");
 	for(i = 0; i < TNUMBER; i++)   // Информация по  датчикам температуры
 	{
 		if(HP.sTemp[i].get_present())  // только присутсвующие датчики
 		{
 #ifdef CONFIG_5
-			strcpy(tempBuf, HP.sTemp[i].get_name());
-			if((x=8-strlen(HP.sTemp[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
-			strcat(tempBuf,"["); strcat(tempBuf,addressToHex(HP.sTemp[i].get_address())); strcat(tempBuf,"] ");
-			strcat(tempBuf, HP.sTemp[i].get_note());
-			strcat(tempBuf, ": ");
+			strcpy(buf, HP.sTemp[i].get_name());
+			if((x=8-strlen(HP.sTemp[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(buf," "); }
+			strcat(buf,"["); strcat(buf,addressToHex(HP.sTemp[i].get_address())); strcat(buf,"] ");
+			strcat(buf, HP.sTemp[i].get_note());
+			strcat(buf, ": ");
 #else
-			strcpy(tempBuf, HP.sTemp[i].get_note());
-			strcat(tempBuf, " (");
-			strcat(tempBuf, HP.sTemp[i].get_name());
-			strcat(tempBuf, "): ");
+			strcpy(buf, HP.sTemp[i].get_note());
+			strcat(buf, " (");
+			strcat(buf, HP.sTemp[i].get_name());
+			strcat(buf, "): ");
 #endif
-			_dtoa(tempBuf, HP.sTemp[i].get_Temp(), 2);
+			_dtoa(buf, HP.sTemp[i].get_Temp(), 2);
 			if(HP.sTemp[i].get_lastErr() != OK) {
-				strcat(tempBuf, " error:");
-				_itoa(HP.sTemp[i].get_lastErr(), tempBuf);
+				strcat(buf, " error:");
+				_itoa(HP.sTemp[i].get_lastErr(), buf);
 			}
-			strcat(tempBuf, cStrEnd);
-			client.write(tempBuf, strlen(tempBuf));
+			HP.message.smtpWriteBody(buf);
 		}  //   if (HP.sTemp[i].get_present())
 	}
-	strcpy(tempBuf,"\n  3. Аналоговые датчики");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  3. Аналоговые датчики");
 	for(i=0;i<ANUMBER;i++)   // Информация по  аналоговым датчикам
 	{
 		if (HP.sADC[i].get_present()) // только присутсвующие датчики
 		{
 #ifdef CONFIG_5
-			strcpy(tempBuf,HP.sADC[i].get_name());
-			if((x=8-strlen(HP.sADC[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
-			strcat(tempBuf,HP.sADC[i].get_note());  strcat(tempBuf,": ");
+			strcpy(buf,HP.sADC[i].get_name());
+			if((x=8-strlen(HP.sADC[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(buf," "); }
+			strcat(buf,HP.sADC[i].get_note());  strcat(buf,": ");
 #else
-			strcpy(tempBuf, HP.sADC[i].get_note());
-			strcat(tempBuf, " (");
-			strcat(tempBuf, HP.sADC[i].get_name());
-			strcat(tempBuf, "): ");
+			strcpy(buf, HP.sADC[i].get_note());
+			strcat(buf, " (");
+			strcat(buf, HP.sADC[i].get_name());
+			strcat(buf, "): ");
 #endif
-			_dtoa(tempBuf, HP.sADC[i].get_Value(), 2);
-			if (HP.sADC[i].get_lastErr()!=OK ) { strcat(tempBuf," error:"); _itoa(HP.sADC[i].get_lastErr(),tempBuf); }
-			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			_dtoa(buf, HP.sADC[i].get_Value(), 2);
+			if (HP.sADC[i].get_lastErr()!=OK ) { strcat(buf," error:"); _itoa(HP.sADC[i].get_lastErr(),buf); }
+			HP.message.smtpWriteBody(buf);
 		}
 	}
 
-	strcpy(tempBuf,"\n  4. Датчики 'сухой контакт'");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  4. Датчики 'сухой контакт'");
 	for(i=0;i<INUMBER;i++)
 	{
 		if (HP.sInput[i].get_present()) // только присутсвующие датчики
 		{
 #ifdef CONFIG_5
-			strcpy(tempBuf,HP.sInput[i].get_name()); if((x=8-strlen(HP.sInput[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
-			strcat(tempBuf,HP.sInput[i].get_note());  strcat(tempBuf,": ");
+			strcpy(buf,HP.sInput[i].get_name()); if((x=8-strlen(HP.sInput[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(buf," "); }
+			strcat(buf,HP.sInput[i].get_note());  strcat(buf,": ");
 #else
-			strcpy(tempBuf, HP.sInput[i].get_note());
-			strcat(tempBuf, " (");
-			strcat(tempBuf, HP.sInput[i].get_name());
-			strcat(tempBuf, "): ");
+			strcpy(buf, HP.sInput[i].get_note());
+			strcat(buf, " (");
+			strcat(buf, HP.sInput[i].get_name());
+			strcat(buf, "): ");
 #endif
-			_itoa(HP.sInput[i].get_Input(),tempBuf);
-			strcat(tempBuf," alarm:"); _itoa(HP.sInput[i].get_alarmInput(),tempBuf);
-			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			_itoa(HP.sInput[i].get_Input(),buf);
+			strcat(buf," alarm:"); _itoa(HP.sInput[i].get_alarmInput(),buf);
+			HP.message.smtpWriteBody(buf);
 		}
 	}
 
-	strcpy(tempBuf,"\n  5. Реле");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  5. Реле");
 	for(i=0;i<RNUMBER;i++)
 	{
 		if (HP.dRelay[i].get_present()) // только присутсвующие датчики
 		{
 #ifdef CONFIG_5
-			strcpy(tempBuf,HP.dRelay[i].get_name()); if((x=8-strlen(HP.dRelay[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
-			strcat(tempBuf,HP.dRelay[i].get_note());  strcat(tempBuf,": ");
+			strcpy(buf,HP.dRelay[i].get_name()); if((x=8-strlen(HP.dRelay[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(buf," "); }
+			strcat(buf,HP.dRelay[i].get_note());  strcat(buf,": ");
 #else
-			strcpy(tempBuf, HP.dRelay[i].get_note());
-			strcat(tempBuf, " (");
-			strcat(tempBuf, HP.dRelay[i].get_name());
-			strcat(tempBuf, "): ");
+			strcpy(buf, HP.dRelay[i].get_note());
+			strcat(buf, " (");
+			strcat(buf, HP.dRelay[i].get_name());
+			strcat(buf, "): ");
 #endif
-			_itoa(HP.dRelay[i].get_Relay(),tempBuf);
-			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			_itoa(HP.dRelay[i].get_Relay(),buf);
+			HP.message.smtpWriteBody(buf);
 		}
 	}
 
+	HP.message.smtpWriteBody("");
 #ifdef EEV_DEF
-	strcpy(tempBuf,"\n  6. ЭРВ - ");  strcat(tempBuf,HP.dEEV.get_note());  strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),tempBuf);
-	strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),tempBuf);
-	strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Правило управления ЭРВ: ");
-	HP.dEEV.get_ruleEEVtext(tempBuf);
-	strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Текущее положение: ");
+	strcpy(buf,"  6. ЭРВ - ");  strcat(buf,HP.dEEV.get_note());
+	HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Минимальное положение (шаги): ");  _itoa(HP.dEEV.get_minEEV(),buf);
+	HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Полное открыте (шаги):");  _itoa(HP.dEEV.get_maxEEV(),buf);
+	HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Правило управления ЭРВ: ");
+	HP.dEEV.get_ruleEEVtext(buf);
+	HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Текущее положение: ");
 #ifdef EEV_PREFER_PERCENT
-	_dtoa(tempBuf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
+	_dtoa(buf, HP.dEEV.calc_percent(HP.dEEV.get_EEV()), 2);
 #else
-	_itoa(HP.dEEV.get_EEV(),tempBuf);
+	_itoa(HP.dEEV.get_EEV(),buf);
 #endif
-	strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Текущий перегрев (градусы): ");  _dtoa(tempBuf, HP.dEEV.get_Overheat(), 2);
-	strcat(tempBuf,cStrEnd);
-	client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Текущий перегрев (градусы): ");  _dtoa(buf, HP.dEEV.get_Overheat(), 2);
+	HP.message.smtpWriteBody(buf);
 #else
-	strcpy(tempBuf,"EEV absent");    strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("  6. ЭРВ - EEV absent");
 #endif
 
-	strcpy(tempBuf,"\n  7. Инвертор ");strcat(tempBuf,HP.dFC.get_name());
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	strcpy(buf,"  7. Инвертор ");strcat(buf,HP.dFC.get_name());
+	HP.message.smtpWriteBody(buf);
 	if(HP.dFC.get_present()) {
-		strcpy(tempBuf,"Текущее состояние инвертора: "); _itoa(HP.dFC.read_stateFC(),tempBuf);
-		strcat(tempBuf,cStrEnd);
-		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Целевая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_target()/100.0,2);
-		strcat(tempBuf,cStrEnd);
-		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Текущая частота [Гц]: ");    _ftoa(tempBuf,(float)HP.dFC.get_frequency()/100.0,2);
-		strcat(tempBuf,cStrEnd);
-		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Текущая мощность [кВт]: ");  _ftoa(tempBuf,(float)HP.dFC.get_power()/1000.0,3);
-		strcat(tempBuf,cStrEnd);
-		client.write(tempBuf,strlen(tempBuf));
-		strcpy(tempBuf,"Tемпература радиатора [°С]: ");  _ftoa(tempBuf,(float)HP.dFC.read_tempFC()/10.0,2);
-		strcat(tempBuf,cStrEnd);
-		client.write(tempBuf,strlen(tempBuf));
+		strcpy(buf,"Текущее состояние инвертора: "); _itoa(HP.dFC.read_stateFC(),buf);
+		HP.message.smtpWriteBody(buf);
+		strcpy(buf,"Целевая частота [Гц]: ");    _ftoa(buf,(float)HP.dFC.get_target()/100.0,2);
+		HP.message.smtpWriteBody(buf);
+		strcpy(buf,"Текущая частота [Гц]: ");    _ftoa(buf,(float)HP.dFC.get_frequency()/100.0,2);
+		HP.message.smtpWriteBody(buf);
+		strcpy(buf,"Текущая мощность [кВт]: ");  _ftoa(buf,(float)HP.dFC.get_power()/1000.0,3);
+		HP.message.smtpWriteBody(buf);
+		strcpy(buf,"Tемпература радиатора [°С]: ");  _ftoa(buf,(float)HP.dFC.read_tempFC()/10.0,2);
+		HP.message.smtpWriteBody(buf);
 #ifdef FC_ANALOG_CONTROL // Аналоговое управление
-		strcpy(tempBuf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),tempBuf);
-		strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-#endif              
+		strcpy(buf,"ЦАП дискреты: ");            _itoa(HP.dFC.get_DAC(),buf);
+		HP.message.smtpWriteBody(buf);
+#endif
 	} else {
-		strcpy(tempBuf,"FC absent");  strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+		HP.message.smtpWriteBody("FC absent");
 	}
 
-	strcpy(tempBuf,"\n  8. Электросчетчик"); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  8. Электросчетчик");
 #ifdef USE_ELECTROMETER_SDM
-	strcpy(tempBuf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Суммарная активная энергия [кВт*ч]: ");                      HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,tempBuf); strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
-	strcpy(tempBuf,"Cостояние связи со счетчиком: ");                            HP.dSDM.get_paramSDM((char*)sdm_LINK,tempBuf);strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	strcpy(buf,"Текущее входное напряжение [В]: ");                          HP.dSDM.get_paramSDM((char*)sdm_VOLTAGE,buf);    HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Текущий потребляемый ток ТН [А]: ");                         HP.dSDM.get_paramSDM((char*)sdm_CURRENT,buf);    HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Текущая потребляемая активная мощность ТН [Вт]: ");          HP.dSDM.get_paramSDM((char*)sdm_ACPOWER,buf);    HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Коэффициент мощности: ");                                    HP.dSDM.get_paramSDM((char*)sdm_POW_FACTOR,buf); HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Угол фазы (градусы): ");                                     HP.dSDM.get_paramSDM((char*)sdm_PHASE,buf);      HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Суммарная активная энергия [кВт*ч]: ");                      HP.dSDM.get_paramSDM((char*)sdm_ACENERGY,buf);   HP.message.smtpWriteBody(buf);
+	strcpy(buf,"Cостояние связи со счетчиком: ");                            HP.dSDM.get_paramSDM((char*)sdm_LINK,buf);       HP.message.smtpWriteBody(buf);
 #else
-	strcpy(tempBuf,"SDM absent");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("SDM absent");
 #endif
 
-	strcpy(tempBuf,"\n  9. Частотные датчики потока");
-	strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+	HP.message.smtpWriteBody("");
+	HP.message.smtpWriteBody("  9. Частотные датчики потока");
 	for(i=0;i<FNUMBER;i++)
 	{
 		if (HP.sFrequency[i].get_present())
 		{
 #ifdef CONFIG_5
-			strcpy(tempBuf,HP.sFrequency[i].get_name()); if((x=8-strlen(HP.sFrequency[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(tempBuf," "); }
-			strcat(tempBuf,HP.sFrequency[i].get_note());  strcat(tempBuf,": ");
+			strcpy(buf,HP.sFrequency[i].get_name()); if((x=8-strlen(HP.sFrequency[i].get_name()))>0) { for(j=0;j<x;j++)  strcat(buf," "); }
+			strcat(buf,HP.sFrequency[i].get_note());  strcat(buf,": ");
 #else
-			strcpy(tempBuf, HP.sFrequency[i].get_note());
-			strcat(tempBuf, " (");
-			strcat(tempBuf, HP.sFrequency[i].get_name());
-			strcat(tempBuf, "): ");
+			strcpy(buf, HP.sFrequency[i].get_note());
+			strcat(buf, " (");
+			strcat(buf, HP.sFrequency[i].get_name());
+			strcat(buf, "): ");
 #endif
-			_dtoa(tempBuf, HP.sFrequency[i].get_Value(), 3);
-			strcat(tempBuf,cStrEnd);  client.write(tempBuf,strlen(tempBuf));
+			_dtoa(buf, HP.sFrequency[i].get_Value(), 3);
+			HP.message.smtpWriteBody(buf);
 		}
 	}
-	// счетчики
-	get_Counts(tempBuf);
-	client.write(tempBuf,strlen(tempBuf));
-
+	// счетчики. get_Counts() формирует около 1.3 кБ - именно поэтому сюда передается mailBuf,
+	// а не 256-байтный tempBuf, как было раньше (переполнение затирало retMail и retSMS)
+	if(buf_size >= LEN_MAILBUF) {
+		get_Counts(buf);
+		HP.message.smtpWriteBlock(buf);
+	}
 }

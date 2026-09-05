@@ -17,7 +17,7 @@
  */
 // Класс для уведомлений
 #include "Message.h"
-extern void get_mailState(EthernetClient client, char *tempBuf);
+extern void get_mailState(char *buf, uint16_t buf_size);
 #define JOURNAL(...) if(GETBIT(HP.get_NetworkFlags(), fWebFullLog)) journal.jprintf(__VA_ARGS__)
 
 // Инициализация
@@ -34,6 +34,16 @@ void Message::initMessage(uint8_t web_task)
   retSMS[0]=0x00;
 //  retTest=Socket[web_task].outBuf+LEN_TEMPBUF+LEN_RETMAIL+LEN_RETSMS;// Хранится отдельно!
   retTest[0]=0x00;
+  mailBuf=Socket[web_task].outBuf+MAILBUF_OFFSET;
+  mailBuf[0]=0x00;
+  txBuf=Socket[web_task].outBuf+MAILBUF_OFFSET+LEN_MAILBUF;
+  txLen=0;
+  smtpCaps=0;
+  smtpCode=0;
+  smtpSemLost=false;
+  sendRetry=0;
+  sendRetryTime=0;
+  smsSent=false;
   // Инициализация переменных
   IPAddress zeroIP(0, 0, 0, 0);
   lastmessageSetting = pMESSAGE_NONE;                                              // последнее отправленное уведомление
@@ -126,10 +136,21 @@ boolean Message::dnsUpdate() // запускается 0 потоке вебсе
 	return ret;
 }
 
+// Есть ли в строке управляющие символы.
+// Веб-сервер вызывает urldecode() ДО разбора команд, поэтому "%0D%0A" в запросе превращается
+// в настоящие CR/LF. Попав в адрес, они разорвут команду SMTP надвое ("RCPT TO:<a>" + чужая
+// команда), а в заголовках письма пустая строка оборвет их досрочно и остаток уйдет в тело.
+static boolean mail_has_ctrl(const char *s)
+{
+	for(; *s; s++) if((uint8_t)*s < 0x20 || (uint8_t)*s == 0x7F) return true;
+	return false;
+}
+
 // Установить параметр Уведомления из строки
 boolean Message::set_messageSetting(char *var, char *c)
 {
   float x;
+  if(mail_has_ctrl(c)) return false;   // ни в одной настройке уведомлений управляющих символов быть не может
   if (strcmp(var, mess_MAIL) == 0) { if (strcmp(c, cZero) == 0)      { SETBIT0(messageSetting.flags, fMail); return true;} else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMail);  return true;  } else return false;
   } else if (strcmp(var, mess_MAIL_AUTH) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMailAUTH);  return true;  } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMailAUTH); return true; } else return false;
   } else if (strcmp(var, mess_MAIL_INFO) == 0) { if (strcmp(c, cZero) == 0)   {  SETBIT0(messageSetting.flags, fMailInfo);  return true;  } else if (strcmp(c, cOne) == 0) { SETBIT1(messageSetting.flags, fMailInfo); return true; } else return false;
@@ -370,90 +391,205 @@ uint16_t Message::get_crc16(uint16_t crc)
   return crc;
 }
 
-// Послать команду SMTP серверу  и разобрать ответ
-// wait - ждать ответ или нет
-boolean  Message::SendCommandSMTP(char *c, boolean wait)
+// ------------------------- ТРАНСПОРТ SMTP -------------------------------------------------
+// Все команды и все строки письма завершаются SMTP_CRLF. Общая константа проекта cStrEnd ("\n")
+// здесь неприменима: RFC 5321 требует именно CR+LF, а после закрытия CVE-2023-51764 (SMTP smuggling)
+// современные серверы на одиночном переводе строки не распознают конец письма и рвут соединение.
+
+// Скопировать ответ сервера в retMail с гарантированным завершающим нулем
+void Message::setRetMail(const char *s)
 {
-  uint8_t count = 0;
-  byte respCode, thisByte;
-  int num;
+	strncpy(retMail, s, LEN_RETMAIL - 1);
+	retMail[LEN_RETMAIL - 1] = '\0';   // strncpy не терминирует строку, если источник не короче лимита
+}
 
-  if (!clientMessage.connected())  // если клиент не соединен то это ошибка выходим
-  {
-    JOURNAL("Server no connected, abort send mail???\n");
-    return false;
-  }
+// Собрать ответ на тестовое уведомление: <prefix><значение параметра var>\nОтвет: <answer>
+// Сборка идет с контролем границ: раньше цепочка strcpy/strcat при длинном ответе сервера
+// вылезала за retTest[LEN_RETTEST] и затирала соседние поля класса.
+void Message::setRetTest(const char *prefix, const char *var, const char *answer)
+{
+	uint16_t n;
+	m_snprintf(retTest, sizeof(retTest), "%s", prefix);
+	get_messageSetting((char*) var, retTest);   // адрес получателя / номер телефона ДОБАВЛЯЕТСЯ в строку
+	retTest[sizeof(retTest) - 1] = '\0';
+	n = strlen(retTest);
+	m_snprintf(retTest + n, sizeof(retTest) - n, "\nОтвет: %s", answer);
+}
 
-  if ((strlen(c) < LEN_TEMPBUF) && (tempBuf != c)) strcpy(tempBuf, c); // если надо то копируем
+// Сбросить накопленный исходящий поток в сокет.
+// Письмо копится в txBuf и уходит крупными кусками: EthernetClient::write() сразу выполняет
+// Sock_SEND с активным ожиданием SEND_OK, поэтому построчная отправка - это десятки блокирующих
+// операций и десятки TCP-пакетов на одно письмо.
+// Пишем кусками не больше SMTP_MAX_SEND: send() в библиотеке обрезает запись по W5100.SSIZE (2048)
+// и молча теряет хвост, а EthernetClient::write() все равно возвращает полный размер.
+void Message::smtpFlush()
+{
+	uint16_t pos = 0, chunk;
+	while(pos < txLen) {
+		chunk = txLen - pos;
+		if(chunk > SMTP_MAX_SEND) chunk = SMTP_MAX_SEND;
+		if(clientMessage.write((const uint8_t*) txBuf + pos, chunk) == 0) break;  // соединение потеряно
+		pos += chunk;
+	}
+	txLen = 0;
+}
 
-  // Послать команду, Если она не пустая (в противном случае только читаем)
-  if (strlen(tempBuf) > 0) // Посылаем не пустые комнады
-  {
-    //    clientMessage.println(tempBuf); // почемуто не отправляет????
-    strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
-    //    SerialDbg.print(">>");SerialDbg.print(tempBuf);SerialDbg.print("<< len=");SerialDbg.println(strlen(tempBuf));
-    JOURNAL("%s", tempBuf);
-  }
+// Вывести одну строку тела письма. ЕДИНСТВЕННАЯ точка вывода тела, отсюда все гарантии:
+//  - удвоение ведущей точки (RFC 5321 4.5.2), иначе такая строка оборвет письмо;
+//  - разрезание строк длиннее SMTP_MAX_LINE (предел RFC - 998 байт без CRLF), по границе utf-8;
+//  - завершение ровно CR+LF, благодаря чему завершающая точка всегда дает CRLF.CRLF
+void Message::smtpWriteBody(const char *line)
+{
+	if(line == NULL) line = "";
+	smtpWriteBodyLen(line, strlen(line));
+}
 
-  // Необходимость ожидания и получения ответа
-  if (!wait) {
-    strcpy(tempBuf, "");   // ответа не ожидаем
-    return true;
-  }
+// То же, но длина задана явно: строка может быть куском большего буфера и не завершаться нулем.
+// Входной буфер НЕ изменяется, поэтому допустимы и строковые константы.
+void Message::smtpWriteBodyLen(const char *line, uint16_t len)
+{
+	uint16_t part;
+	if(line == NULL) { line = ""; len = 0; }
+	do {
+		part = len;
+		if(part > SMTP_MAX_LINE) {
+			part = SMTP_MAX_LINE;
+			while(part > 1 && (line[part] & 0xC0) == 0x80) part--;  // не рвать многобайтный символ utf-8
+		}
+		if(txLen + part + 3 > LEN_TXBUF) smtpFlush();              // +3: удвоенная точка и CRLF
+		if(part && line[0] == '.') txBuf[txLen++] = '.';
+		memcpy(txBuf + txLen, line, part); txLen += part;
+		txBuf[txLen++] = '\r'; txBuf[txLen++] = '\n';
+		if(txLen >= SMTP_FLUSH_AT) smtpFlush();
+		line += part; len -= part;
+	} while(len);
+}
 
+// Разобрать готовый многострочный блок (разделители "\n" или "\r\n") и вывести его построчно.
+// Нужен для вывода get_Counts(), который формирует весь текст сразу в буфере.
+void Message::smtpWriteBlock(const char *block)
+{
+	const char *p = block, *e;
+	uint16_t len;
+	while(*p) {
+		e = strchr(p, '\n');
+		if(e == NULL) { smtpWriteBodyLen(p, strlen(p)); break; }
+		len = e - p;
+		if(len && *(e - 1) == '\r') len--;      // отбросить CR перед LF
+		smtpWriteBodyLen(p, len);
+		p = e + 1;
+	}
+}
 
-  while (!clientMessage.available()) // ожидание ответа 5 сек
-  {
-    SemaphoreGive(xWebThreadSemaphore);                                                   // отдать семафор для обработки других задач
-    _delay(200);
-    if (SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
-      return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-    }
-    count++;
-    if (count > 25)
-    {
-      strncpy(retMail, "Server not answer . . .", LEN_RETMAIL);
-      if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("%s\n", retMail);
-      //    clientMessage.stop();
-      //    SemaphoreGive(xWebThreadSemaphore);
-      return false;
-    }
+// Прочитать одну строку ответа сервера (до LF), хвостовой CR срезается.
+// На время паузы семафор отдается, иначе на секундных таймаутах встанет весь веб-сервер.
+// Опрос сначала частый (реле в локальной сети отвечает за единицы мсек), потом редкий -
+// иначе каждый обмен стоил бы полного шага ожидания, а их за сеанс около десятка.
+boolean Message::smtpReadLine(char *buf, uint16_t size, uint32_t timeout)
+{
+	uint16_t pos = 0, poll = 0;
+	uint32_t startTick = GetTickCount();
+	for(;;) {
+		while(clientMessage.available()) {
+			int c = clientMessage.read();
+			if(c < 0) break;
+			if(c == '\n') {
+				if(pos && buf[pos - 1] == '\r') pos--;
+				buf[pos] = '\0';
+				return true;
+			}
+			if(pos < size - 1) buf[pos++] = (char) c;   // слишком длинную строку молча обрезаем
+		}
+		if(!clientMessage.connected()) {                // сервер закрыл сессию, данных больше не будет
+			buf[pos] = '\0';
+			return false;
+		}
+		if(GetTickCount() - startTick > timeout) {
+			buf[pos] = '\0';
+			return false;
+		}
+		SemaphoreGive(xWebThreadSemaphore);             // отдать семафор для обработки других задач
+		_delay(poll < SMTP_POLL_FAST_N ? SMTP_POLL_FAST : SMTP_POLL_SLOW);
+		if(poll < SMTP_POLL_FAST_N) poll++;
+		if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			// Семафор обратно не получен. Он сейчас у другой задачи, поэтому НИ трогать сокет,
+			// НИ отдавать семафор нельзя: он бинарный, и лишний Give освободил бы SPI из-под владельца.
+			smtpSemLost = true;
+			buf[pos] = '\0';
+			return false;
+		}
+	}
+}
 
-  }
-  // разбор ответа
-  respCode = clientMessage.peek();   // первый байт - это старшая цифра ответа, по ней можно определить ошибки
-  if(!GETBIT(WorkFlags, fWF_MessageSendError) && respCode >= '4') journal.jprintf("Error send message: ");
-  while (clientMessage.available())  // чтение ответа
-  {
-    num = clientMessage.read((byte*)tempBuf, LEN_TEMPBUF - 1);  tempBuf[num] = 0; // Обрезать строку
-    //   SerialDbg.print("num=");SerialDbg.print(num);SerialDbg.print(" >>"); SerialDbg.print(tempBuf);
-    if(!GETBIT(WorkFlags, fWF_MessageSendError) && respCode >= '4') journal.jprintf("%s", tempBuf);
-  }
+// Прочитать ответ сервера ЦЕЛИКОМ, в том числе многострочный (RFC 5321 4.2.1):
+// признак продолжения - дефис в 4-й позиции, у последней строки там пробел.
+// Без этого остаток ответа (например, на EHLO) достался бы следующей команде и диалог разъехался бы.
+// Код ответа кладется в smtpCode, первая строка - в retMail.
+// Попутно из ответа на EHLO взводятся биты возможностей сервера в smtpCaps.
+boolean Message::smtpReadReply(uint32_t timeout)
+{
+	boolean first = true;
+	smtpCode = 0;
+	for(;;) {
+		if(!smtpReadLine(tempBuf, LEN_TEMPBUF, timeout)) {
+			if(first) setRetMail("No answer from server");
+			return false;
+		}
+		JOURNAL("< %s\n", tempBuf);
+		if(strlen(tempBuf) < 3 || tempBuf[0] < '2' || tempBuf[0] > '5'
+		   || tempBuf[1] < '0' || tempBuf[1] > '9' || tempBuf[2] < '0' || tempBuf[2] > '9') {
+			setRetMail("Bad reply format");
+			return false;
+		}
+		smtpCode = (tempBuf[0] - '0') * 100 + (tempBuf[1] - '0') * 10 + (tempBuf[2] - '0');
+		if(first) { setRetMail(tempBuf); first = false; }
+		else if(strlen(tempBuf) > 4) {
+			// Пояснение к отказу серверы часто дают во второй строке - дописываем, пока влезает.
+			// Строка короче 5 символов содержательного текста после кода не несет.
+			uint16_t rl = strlen(retMail);
+			if(rl < LEN_RETMAIL - 2) {
+				retMail[rl++] = ' ';
+				strncpy(retMail + rl, tempBuf + 4, LEN_RETMAIL - 1 - rl);
+				retMail[LEN_RETMAIL - 1] = '\0';
+			}
+		}
+		// Разбор объявленных расширений: строки вида "250-AUTH PLAIN LOGIN", "250-8BITMIME"
+		if(strstr(tempBuf + 3, "8BITMIME")) SETBIT1(smtpCaps, fSMTP_8BITMIME);
+		char *a = strstr(tempBuf + 3, "AUTH");
+		if(a) {
+			if(strstr(a, "PLAIN")) SETBIT1(smtpCaps, fSMTP_AUTH_PLAIN);
+			if(strstr(a, "LOGIN")) SETBIT1(smtpCaps, fSMTP_AUTH_LOGIN);
+		}
+		if(strlen(tempBuf) == 3 || tempBuf[3] == ' ') break;   // последняя строка ответа
+		if(tempBuf[3] != '-') { setRetMail("Bad reply format"); return false; }
+	}
+	return smtpCode < 400;
+}
 
-  // Проверка на ошибки
-  if (respCode >= '4') // ошибка при общении с сервером, закрываем сессию
-  {
-    strncpy(retMail, tempBuf, LEN_RETMAIL); // запомнить ответ сервера при ошибке
-    //    SerialDbg.print("retMail "); SerialDbg.println(retMail);
-    //    SerialDbg.print("answer "); SerialDbg.println(answer);
-    clientMessage.println("QUIT"); // Послать команду на закрытие сессии
-    JOURNAL("QUIT\n");
-    while (!clientMessage.available()) // ожидание ответа 1 сек
-    {
-      _delay(100);
-      count++;
-      if (count > 10) break;
-    }
-    while (clientMessage.available())
-    {
-      thisByte = clientMessage.read();
-      JOURNAL("%c", thisByte);
-    }
-    JOURNAL("disconnected\n");
-    clientMessage.stop();
-    return false;
-  }
-  return true;
+// Послать команду серверу и разобрать ответ. true - код ответа меньше 400.
+boolean Message::smtpCmd(const char *cmd, uint32_t timeout)
+{
+	JOURNAL("> %s\n", cmd);
+	return smtpCmdSecret(cmd, timeout);
+}
+
+// То же, но текст команды в журнал НЕ пишется: через нее уходят логин и пароль в base64,
+// а журнал доступен через веб-морду.
+boolean Message::smtpCmdSecret(const char *cmd, uint32_t timeout)
+{
+	if(!clientMessage.connected()) {
+		setRetMail("Connection lost");
+		smtpCode = 0;
+		return false;
+	}
+	smtpFlush();                                  // команда не должна перемешаться с остатком тела
+	uint16_t len = strlen(cmd);
+	if(len > LEN_TXBUF - 3) len = LEN_TXBUF - 3;
+	memcpy(txBuf, cmd, len);
+	txBuf[len] = '\r'; txBuf[len + 1] = '\n';
+	txLen = len + 2;
+	smtpFlush();
+	return smtpReadReply(timeout);
 }
 
 // Установить уведомление (сформировать для отправки но НЕ ОТПРАВЛЯТЬ)
@@ -493,6 +629,9 @@ boolean Message::setMessage(MESSAGE ms, char *c, int p1) // может запу�
   }
   messageData.p1 = p1;
   waitSend = true;                // выставить флаг необходимости отправки Уведомления
+  sendRetry = 0;                  // новое уведомление - счетчик повторов и признак ухода SMS сбрасываются
+  sendRetryTime = 0;
+  smsSent = false;
   return true;
 }
 
@@ -514,8 +653,10 @@ boolean Message::setTestSMS() // может запускаться из любо
 boolean Message::sendMessage()  // запуск из 0 потока
 {
   uint16_t i;
+  boolean retryMail = false;                             // письмо не ушло по временной причине, ждем следующей попытки
 
   if (!waitSend) return true;                            // Отправлять нечего выходим
+  if (sendRetry && rtcSAM3X8.unixtime() < sendRetryTime) return true;  // время повторной попытки еще не пришло
   strcpy(retTest, "Ничего не отправлено. Проверьте флаг разрешения отправки сообщений.");
   if (HP.get_uptime() < cDELAY_START_MESSAGE) {
     // ждать не будем, ибо зачем? _delay(200);  // Прошло мало времени после старта возможно инет еще не поднят
@@ -525,20 +666,17 @@ boolean Message::sendMessage()  // запуск из 0 потока
   // Отправка Уведомления. Все таки отправлять придется -))
   if ((GETBIT(messageSetting.flags, fMail)) && (messageData.ms != pMESSAGE_TESTSMS)) // Разрешены уведомления по почте и не тест SMS
   {
-    if (sendMail()) // Формирование ответа
-    {
-      // Отправка удачна
-      for (i = 0; i < strlen(retMail); i++) if (retMail[i] == '=') retMail[i] = ':'; // замена знака = на : т.к. это запрещенный знак в запросах
-      strcpy(retTest, "Тестовое письмо отправлено на "); get_messageSetting((char*)mess_SMTP_RCPTTO, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO));
-      strcat(retTest, "\nОтвет: "); strcat(retTest, retMail);
-    }
-    else
-    {
-      // Отправка не удачна
-      for (i = 0; i < strlen(retMail); i++) if (retMail[i] == '=') retMail[i] = ':'; // замена знака = на : т.к. это запрещенный знак в запросах
-      strcpy(retTest, "Тестовое письмо НЕ отправлено на "); get_messageSetting((char*)mess_SMTP_RCPTTO, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMTP_RCPTTO));
-      strcat(retTest, "\nОтвет: "); strcat(retTest, retMail);
-    }
+    boolean ok = sendMail(); // Формирование ответа
+    for (i = 0; i < strlen(retMail); i++) if (retMail[i] == '=') retMail[i] = ':'; // замена знака = на : т.к. это запрещенный знак в запросах
+    setRetTest(ok ? "Тестовое письмо отправлено на " : "Тестовое письмо НЕ отправлено на ", mess_SMTP_RCPTTO, retMail);
+    // Ошибка с кодом 4xx или обрыв связи (smtpCode == 0) - временная, повтор имеет смысл.
+    // При 5xx повторять бессмысленно: нужна правка настроек.
+    if (!ok && smtpCode < 500 && sendRetry < MAIL_RETRY_MAX) {
+      sendRetry++;
+      sendRetryTime = rtcSAM3X8.unixtime() + MAIL_RETRY_DELAY;
+      retryMail = true;
+      journal.jprintf("Mail retry %d/%d in %d sec\n", sendRetry, MAIL_RETRY_MAX, MAIL_RETRY_DELAY);
+    } else sendRetry = 0;
   }
 
   if ((!(GETBIT(messageSetting.flags, fMail))) && (messageData.ms == pMESSAGE_TESTMAIL)) // Почта не разрешена а отправляется тестовое письмо
@@ -546,263 +684,308 @@ boolean Message::sendMessage()  // запуск из 0 потока
     strcpy(retTest, "Письмо не отправлено. Проверьте флаг разрешения отправки почты.");
   }
 
-  if ((GETBIT(messageSetting.flags, fSMS)) && (messageData.ms != pMESSAGE_TESTMAIL)) // Разрешены уведомления по SMS и не тест mail
+  // !smsSent - чтобы повторная попытка отправить письмо не продублировала уже ушедшее SMS
+  if ((GETBIT(messageSetting.flags, fSMS)) && (messageData.ms != pMESSAGE_TESTMAIL) && !smsSent)
   {
+    boolean ok = false;
     switch (messageSetting.sms_service)
     {
       case pSMS_RU:
-        if (sendSMS())
-        { // Удачно
-          strcpy(retTest, "Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
-        else
-        { // Не удачно
-          strcpy(retTest, "Тестовое SMS НЕ отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
+        ok = sendSMS();
+        setRetTest(ok ? "Тестовое SMS отправлено на номер " : "Тестовое SMS НЕ отправлено на номер ", mess_SMS_PHONE, retSMS);
         break;
 
       case pSMSC_RU:
-        if (sendSMSC())
-        { // Удачно
-          strcpy(retTest, "Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
-        else
-        { // Не удачно
-          strcpy(retTest, "Тестовое SMS НЕ отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
-        break;
-
       case pSMSC_UA:
-        if (sendSMSC())
-        { // Удачно
-          strcpy(retTest, "Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
-        else
-        { // Не удачно
-          strcpy(retTest, "Тестовое SMS НЕ отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
+        ok = sendSMSC();
+        setRetTest(ok ? "Тестовое SMS отправлено на номер " : "Тестовое SMS НЕ отправлено на номер ", mess_SMS_PHONE, retSMS);
         break;
 
       case pSMSCLUB:
-        if (sendSMSCLUB())
-        { // Удачно
-          strcpy(retTest, "Тестовое SMS отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
-        else
-        { // Не удачно
-          strcpy(retTest, "Тестовое SMS НЕ отправлено на номер "); get_messageSetting((char*)mess_SMS_PHONE, retTest); //strcat(retTest,HP.message.get_messageSetting(pSMS_PHONE));
-          strcat(retTest, "\nОтвет: "); strcat(retTest, retSMS);
-        }
+        ok = sendSMSCLUB();
+        setRetTest(ok ? "Тестовое SMS отправлено на номер " : "Тестовое SMS НЕ отправлено на номер ", mess_SMS_PHONE, retSMS);
         break;
 
-      default:  return false;
-    } // ничего не делаем но это ошибка
+      default:               // некорректная настройка сервиса. Раньше здесь был return ДО сброса
+        strcpy(retSMS, "Invalid SMS service");   // waitSend, и отправка дергалась на каждом цикле
+        journal.jprintf("%s: %d\n", retSMS, (int)messageSetting.sms_service);
+        break;
+    }
+    smsSent = ok;          // ушло - при повторной попытке письма SMS больше не трогаем
   }
 
 
   if ((!(GETBIT(messageSetting.flags, fSMS))) && (messageData.ms == pMESSAGE_TESTSMS)) // SMS не разрешена а отправляется тестовое SMS
     strcpy(retTest, "SMS не отправлено. Проверьте флаг разрешения отправки SMS.");
 
+  if (retryMail) return false;   // waitSend оставляем взведенным - письмо будет повторено
   waitSend = false;        // Сбросить флаг необходимости отпвки уведомления
+  sendRetry = 0;
   return true;             // Послано
 }
 
 // Отправить почту --------------------------------------------------------------------
+// Диалог ведется строго по RFC 5321/5322: EHLO с адресным литералом, конверт без пробела после
+// двоеточия, тело завершается CRLF.CRLF, 8-битное тело объявляется через MIME и BODY=8BITMIME.
+// Благодаря этому письмо принимает любой стандартный сервер и послабления на стороне реле
+// (smtpd_forbid_bare_newline, отказ от reject_non_fqdn_helo_hostname) не нужны.
 boolean Message::sendMail()
 {
-	strcpy(retMail, ""); // Обнулить ошибку
+	// ВСЕ переменные объявляются здесь: ниже используется переход на единую точку выхода smtp_error
+	static const char dowNames[] = "SunMonTueWedThuFriSat";
+	static const char monNames[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+	static uint16_t msgIdCnt = 0;
+	const char *stage = "connect";       // на каком этапе оборвался сеанс, попадает в журнал и в retMail
+	const char *type;                    // тип уведомления для темы письма
+	const char *dom;                     // домен отправителя для Message-ID
+	IPAddress ip;                        // собственный адрес контроллера, для приветствия EHLO
+	IPAddress oldIP;                     // адрес сервера из кеша, чтобы заметить его смену
+	IPAddress zeroIP(0, 0, 0, 0);
+	boolean connected, nonAscii;
+	uint16_t i;
+	int n;
+	uint32_t ut;
+	char dowName[4], monName[4];
+
+	setRetMail("");                      // Обнулить ошибку
+	txLen = 0;
+	smtpCaps = 0;
+	smtpCode = 0;
+	smtpSemLost = false;
+
+	// Адреса могли попасть в структуру из EEPROM в обход проверок веб-морды, а управляющий
+	// символ в адресе разорвал бы команду SMTP надвое или оборвал заголовки письма
+	if(mail_has_ctrl(messageSetting.smtp_MailTo) || mail_has_ctrl(messageSetting.smtp_RCPTTo)) {
+		setRetMail("Control char in mail address, check settings");
+		smtpCode = 500;                  // постоянная ошибка: повторять бессмысленно
+		if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("Error send mail: %s\n", retMail);
+		SETBIT1(WorkFlags, fWF_MessageSendError);
+		return false;
+	}
+
 	// Подготовка
 	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
 		return false; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
 	}
 
-	// 1. Соединение по телнету
-	if(clientMessage.connect(messageSetting.smtp_server, messageSetting.smtp_port, W5200_SOCK_SYS)) {
-		JOURNAL("Connect server: %s port: %d\n", messageSetting.smtp_server, messageSetting.smtp_port);
-	} else {
+	// 1. Соединение. Быстрый путь - по адресу из кеша, который заполняет dnsUpdate():
+	//    connect() по имени каждый раз делает полный запрос к DNS на том же сокете.
+	//    Кеш обновляется только при старте и при смене имени сервера в настройках, поэтому
+	//    при неудаче имя ОБЯЗАТЕЛЬНО перепроверяется через DNS: иначе после переезда сервера
+	//    на другой адрес контроллер молчал бы до перезагрузки.
+	connected = false;
+	oldIP = messageSetting.smtp_serverIP;
+	if(!(oldIP == zeroIP)) connected = clientMessage.connect(oldIP, messageSetting.smtp_port, W5200_SOCK_SYS);
+	if(!connected) {
+		check_address(messageSetting.smtp_server, messageSetting.smtp_serverIP); // 0 - не удалось, 1 - на входе был IP, 2 - получен через DNS
+		if(!(messageSetting.smtp_serverIP == zeroIP) && !(messageSetting.smtp_serverIP == oldIP)) {
+			if(!(oldIP == zeroIP)) journal.jprintf("SMTP server address changed\n");
+			connected = clientMessage.connect(messageSetting.smtp_serverIP, messageSetting.smtp_port, W5200_SOCK_SYS);
+		}
+	}
+	if(!connected) {
 		if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("Connect failed: %s port: %d\n", messageSetting.smtp_server, messageSetting.smtp_port);
-		strncpy(retMail, "No connect", LEN_RETMAIL);
+		setRetMail("No connect");
 		SETBIT1(WorkFlags, fWF_MessageSendError);
 		SemaphoreGive (xWebThreadSemaphore);
 		return false;
+	}
+	JOURNAL("Connect server: %s port: %d\n", messageSetting.smtp_server, messageSetting.smtp_port);
+
+	// 2. Приветствие сервера
+	stage = "greeting";
+	if(!smtpReadReply(SMTP_TO_GREETING) || smtpCode != 220) goto smtp_error;
+
+	// 3. Представление. EHLO нужен ВСЕГДА, даже без авторизации: только из его ответа известны
+	//    поддерживаемые механизмы AUTH и признак 8BITMIME. Имя - адресный литерал в скобках,
+	//    RFC 5321 4.1.1.1 требует FQDN либо литерал, прежнее "host" не является ни тем ни другим.
+	stage = "EHLO";
+	smtpCaps = 0;                        // расширения берем только из ответа на EHLO, текст приветствия не в счет
+	ip = Ethernet.localIP();             // именно фактический адрес, а не сохраненный в настройках
+	if(ip == zeroIP) ip = HP.get_ip();
+	m_snprintf(tempBuf, LEN_TEMPBUF, "EHLO [%d.%d.%d.%d]", ip[0], ip[1], ip[2], ip[3]);
+	if(!smtpCmd(tempBuf, SMTP_TO_COMMAND)) {
+		if(smtpCode < 500) goto smtp_error;                    // обрыв связи или временная ошибка
+		smtpCaps = 0;                                          // сервер не знает ESMTP - откат на HELO
+		stage = "HELO";
+		m_snprintf(tempBuf, LEN_TEMPBUF, "HELO [%d.%d.%d.%d]", ip[0], ip[1], ip[2], ip[3]);
+		if(!smtpCmd(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
 	}
 
-	// 2. Общение с сервером, получаем приветствие при соединении
-	if(!SendCommandSMTP((char*) "", true)) {
-		if(strlen(retMail) == 0) strncpy(retMail, (char*) "No answer", LEN_RETMAIL);
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	// 3. Авторизация
-	if(GETBIT(messageSetting.flags, fMailAUTH))                        // Требуется авторизация
+	// 4. Авторизация. Механизм выбирается по ответу EHLO: PLAIN укладывается в один обмен вместо трех,
+	//    но предлагают его не все серверы. Защиты ни один из них не дает - base64 это не шифрование.
+	if(GETBIT(messageSetting.flags, fMailAUTH))
 	{
-		if(!SendCommandSMTP((char*) "EHLO host", true)) {
-			clientMessage.stop();  // ответ содержит ошибки
-			SETBIT1(WorkFlags, fWF_MessageSendError);
-			SemaphoreGive (xWebThreadSemaphore);
-			return false;
-		}
-		if(!SendCommandSMTP((char*) "AUTH LOGIN", true)) {
-			clientMessage.stop();  // ответ содержит ошибки
-			SETBIT1(WorkFlags, fWF_MessageSendError);
-			SemaphoreGive (xWebThreadSemaphore);
-			return false;
-		}
-		strcpy(tempBuf, "");
-		base64_encode(tempBuf, messageSetting.smtp_login, strlen(messageSetting.smtp_login)); // Послать логин
-		if(!SendCommandSMTP(tempBuf, true)) {
-			clientMessage.stop();  // ответ содержит ошибки
-			SETBIT1(WorkFlags, fWF_MessageSendError);
-			SemaphoreGive (xWebThreadSemaphore);
-			return false;
-		}
-		strcpy(tempBuf, "");
-		base64_encode(tempBuf, messageSetting.smtp_password, strlen(messageSetting.smtp_password)); // Послать пароль
-		if(!SendCommandSMTP(tempBuf, true)) {
-			clientMessage.stop();  // ответ содержит ошибки
-			SETBIT1(WorkFlags, fWF_MessageSendError);
-			SemaphoreGive (xWebThreadSemaphore);
-			return false;
-		}
-	} else                                                               // Авторизация не требуется
-	{
-		if(!SendCommandSMTP((char*) "HELO host", true)) {
-			clientMessage.stop();  // ответ содержит ошибки
-			SETBIT1(WorkFlags, fWF_MessageSendError);
-			SemaphoreGive (xWebThreadSemaphore);
-			return false;
+		stage = "AUTH";
+		if(GETBIT(smtpCaps, fSMTP_AUTH_PLAIN)) {
+			// AUTH PLAIN: <NUL>логин<NUL>пароль в base64, RFC 4616. Собираем вручную - в строке есть нули
+			n = 0;
+			mailBuf[n++] = '\0';
+			i = strlen(messageSetting.smtp_login);  memcpy(mailBuf + n, messageSetting.smtp_login, i);    n += i;
+			mailBuf[n++] = '\0';
+			i = strlen(messageSetting.smtp_password); memcpy(mailBuf + n, messageSetting.smtp_password, i); n += i;
+			strcpy(tempBuf, "AUTH PLAIN ");
+			base64_encode(tempBuf + strlen(tempBuf), mailBuf, n);
+			memset(mailBuf, 0, n);        // не оставлять пароль открытым текстом в общем буфере веб-сервера
+			JOURNAL("> AUTH PLAIN <hidden>\n");
+			if(!smtpCmdSecret(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
+		} else if(GETBIT(smtpCaps, fSMTP_AUTH_LOGIN)) {
+			if(!smtpCmd("AUTH LOGIN", SMTP_TO_COMMAND)) goto smtp_error;
+			base64_encode(tempBuf, messageSetting.smtp_login, strlen(messageSetting.smtp_login));         // Послать логин
+			JOURNAL("> <login hidden>\n");
+			if(!smtpCmdSecret(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
+			base64_encode(tempBuf, messageSetting.smtp_password, strlen(messageSetting.smtp_password));   // Послать пароль
+			JOURNAL("> <password hidden>\n");
+			if(!smtpCmdSecret(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
+		} else {
+			// Обычно так отвечает сервер, требующий STARTTLS до авторизации, а TLS контроллер не умеет
+			setRetMail("Server offers no AUTH PLAIN/LOGIN");
+			smtpCode = 500;                        // постоянная ошибка: повторять бессмысленно, нужна правка настроек
+			goto smtp_error;
 		}
 	}
 
-	// 4. Формирование адресов
-	strcpy(tempBuf, "MAIL From: <");
-	strcat(tempBuf, messageSetting.smtp_MailTo);
-	strcat(tempBuf, ">");
-	if(!SendCommandSMTP(tempBuf, true)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	strcpy(tempBuf, "RCPT To: <");
-	strcat(tempBuf, messageSetting.smtp_RCPTTo);
-	strcat(tempBuf, ">");
-	if(!SendCommandSMTP(tempBuf, true)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
+	// 5. Конверт. RFC 5321 4.1.1.2: пробела после двоеточия быть не должно
+	stage = "MAIL FROM";
+	m_snprintf(tempBuf, LEN_TEMPBUF, "MAIL FROM:<%s>%s", messageSetting.smtp_MailTo,
+	           GETBIT(smtpCaps, fSMTP_8BITMIME) ? " BODY=8BITMIME" : "");  // тело в utf-8, оно 8-битное
+	if(!smtpCmd(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
 
-	// 5. Заголовок сообщения
-	if(!SendCommandSMTP((char*) "DATA", true)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	strcpy(tempBuf, "To: <");
-	strcat(tempBuf, messageSetting.smtp_RCPTTo);
-	strcat(tempBuf, ">");
-	if(!SendCommandSMTP(tempBuf, false)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	strcpy(tempBuf, "From: <");
-	strcat(tempBuf, messageSetting.smtp_MailTo);
-	strcat(tempBuf, ">");
-	if(!SendCommandSMTP(tempBuf, false)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	strcpy(tempBuf, "Content-type: text/plain; charset=\"utf-8\"");             // Кодировка
-	if(!SendCommandSMTP(tempBuf, false)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
+	stage = "RCPT TO";
+	m_snprintf(tempBuf, LEN_TEMPBUF, "RCPT TO:<%s>", messageSetting.smtp_RCPTTo);
+	if(!smtpCmd(tempBuf, SMTP_TO_COMMAND)) goto smtp_error;
+
+	stage = "DATA";
+	if(!smtpCmd("DATA", SMTP_TO_DATA_INIT) || smtpCode != 354) goto smtp_error;
+
+	// 6. Заголовки письма. С этого места и до завершающей точки вывод идет ТОЛЬКО через
+	//    smtpWriteBody(): он гарантирует CRLF, экранирование ведущей точки и предел длины строки.
+	stage = "headers";
+	// Date - свой, чтобы почтовые клиенты показывали время события, а не время получения (RFC 5322 3.3)
+	ut = rtcSAM3X8.unixtime();
+	memcpy(dowName, dowNames + (uint8_t)(((ut / 86400UL) + 4) % 7) * 3, 3); dowName[3] = '\0'; // 01.01.1970 - четверг
+	i = rtcSAM3X8.get_months(); if(i < 1 || i > 12) i = 1;
+	memcpy(monName, monNames + (i - 1) * 3, 3); monName[3] = '\0';
+	m_snprintf(tempBuf, LEN_TEMPBUF, "Date: %s, %d %s %d %02d:%02d:%02d %c%02d00",
+	           dowName, rtcSAM3X8.get_days(), monName, rtcSAM3X8.get_years(),
+	           rtcSAM3X8.get_hours(), rtcSAM3X8.get_minutes(), rtcSAM3X8.get_seconds(),
+	           TIME_ZONE < 0 ? '-' : '+', TIME_ZONE < 0 ? -(TIME_ZONE) : TIME_ZONE);
+	smtpWriteBody(tempBuf);
+	// Message-ID - без него почтовые клиенты не связывают ответы в цепочку (RFC 5322 3.6.4)
+	dom = strchr(messageSetting.smtp_MailTo, '@');
+	m_snprintf(tempBuf, LEN_TEMPBUF, "Message-ID: <%u.%u@%s>", ut, ++msgIdCnt, dom ? dom + 1 : "heatpump.local");
+	smtpWriteBody(tempBuf);
+	m_snprintf(tempBuf, LEN_TEMPBUF, "From: <%s>", messageSetting.smtp_MailTo);
+	smtpWriteBody(tempBuf);
+	m_snprintf(tempBuf, LEN_TEMPBUF, "To: <%s>", messageSetting.smtp_RCPTTo);
+	smtpWriteBody(tempBuf);
 	// Тема письма
-	m_snprintf(tempBuf, 256, "Subject: Controller %s - ", nameHeatPump);
 	switch((int) messageData.ms)   // Заголовок уведомления - добавляем тип уведомления
 	{
-	case pMESSAGE_NONE:	break;                                                                                          // Нет уведомлений
-	case pMESSAGE_TESTMAIL:	strcat(tempBuf, "TESTMAIL\r\n"); break;                                                         // Тестовое почта
-	case pMESSAGE_TESTSMS:	strcat(tempBuf, "TESTSMS\r\n");	break;                                                         // Тестовое смс
-	case pMESSAGE_RESET:	strcat(tempBuf, "RESET\r\n");	break;                                                            // Уведомление Сброс
-	case pMESSAGE_ERROR:	strcat(tempBuf, "ERROR\r\n");	break;                                                            // Уведомление Ошибка
-	case pMESSAGE_LIFE:		strcat(tempBuf, "LIFE\r\n");	break;                                                             // Уведомление Сигнал жизни
-	case pMESSAGE_TEMP:		strcat(tempBuf, "TEMP\r\n");	break;                                                             // Уведомление Достижение граничной температуры
-	case pMESSAGE_SD:		strcat(tempBuf, "ERROR SD\r\n");break;                                                         // Уведомление "Проблемы с sd картой"
-	case pMESSAGE_WARNING:	strcat(tempBuf, "WARNING\r\n");	break;                                                          // Уведомление "Прочие уведомления"
+	case pMESSAGE_NONE:		type = "";			break;                     // Нет уведомлений
+	case pMESSAGE_TESTMAIL:	type = "TESTMAIL";	break;                     // Тестовое почта
+	case pMESSAGE_TESTSMS:	type = "TESTSMS";	break;                     // Тестовое смс
+	case pMESSAGE_RESET:	type = "RESET";		break;                     // Уведомление Сброс
+	case pMESSAGE_ERROR:	type = "ERROR";		break;                     // Уведомление Ошибка
+	case pMESSAGE_LIFE:		type = "LIFE";		break;                     // Уведомление Сигнал жизни
+	case pMESSAGE_TEMP:		type = "TEMP";		break;                     // Уведомление Достижение граничной температуры
+	case pMESSAGE_SD:		type = "ERROR SD";	break;                     // Уведомление "Проблемы с sd картой"
+	case pMESSAGE_WARNING:	type = "WARNING";	break;                     // Уведомление "Прочие уведомления"
 	default:
-		strcat(tempBuf, "ERROR TYPE \r\n");
-		clientMessage.stop();
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
+		setRetMail("Unknown message type");
+		smtpCode = 500;                    // постоянная ошибка: повторять бессмысленно
+		goto smtp_error;
 	}
-	if(!SendCommandSMTP(tempBuf, false)) {
-		clientMessage.stop();  // послать тему письма
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
+	// Тема ограничена 150 байтами: после base64 она вырастет на треть и должна уместиться в tempBuf
+	if(*type) n = m_snprintf(mailBuf, 151, "Controller %s - %s", nameHeatPump, type);
+	else      n = m_snprintf(mailBuf, 151, "Controller %s", nameHeatPump);   // без висящего дефиса
+	// Если обрезка попала внутрь многобайтного символа utf-8 - отбросить незаконченную последовательность
+	i = n;
+	while(i > 0 && (mailBuf[i - 1] & 0xC0) == 0x80) i--;    // хвостовые байты-продолжения
+	if(i > 0 && (mailBuf[i - 1] & 0x80)) {                  // перед ними ведущий байт последовательности
+		i--;                                                // длина: 2 при 110xxxxx, 3 при 1110xxxx, иначе 4
+		if(n - i < ((mailBuf[i] & 0xE0) == 0xC0 ? 2 : (mailBuf[i] & 0xF0) == 0xE0 ? 3 : 4)) {
+			n = i; mailBuf[n] = '\0';                       // последовательность не поместилась целиком
+		}
 	}
+	nonAscii = false;                       // заголовки по RFC 5322 семибитные, кириллицу надо кодировать
+	for(i = 0; mailBuf[i]; i++) if(mailBuf[i] & 0x80) { nonAscii = true; break; }
+	if(nonAscii) {                          // RFC 2047: =?UTF-8?B?<base64>?=
+		strcpy(tempBuf, "Subject: =?UTF-8?B?");
+		base64_encode(tempBuf + strlen(tempBuf), mailBuf, n);
+		strcat(tempBuf, "?=");
+	} else m_snprintf(tempBuf, LEN_TEMPBUF, "Subject: %s", mailBuf);
+	smtpWriteBody(tempBuf);
+	smtpWriteBody("MIME-Version: 1.0");
+	smtpWriteBody("Content-Type: text/plain; charset=utf-8");
+	smtpWriteBody("Content-Transfer-Encoding: 8bit");   // тело содержит кириллицу в utf-8, а не us-ascii
 
-	// 6. Текст сообщения
-	clientMessage.write(tempBuf, m_snprintf(tempBuf, 256, " --- %s ver.%s ---%s", SendMessageTitle, VERSION, cStrEnd));
+	// 7. ПУСТАЯ СТРОКА - обязательный разделитель заголовков и тела (RFC 5322 2.1).
+	//    Без нее тело приклеивается к последнему заголовку и получатель видит пустое письмо.
+	smtpWriteBody("");
 
-	strcpy(tempBuf, "Конфигурация: ");
-	strcat(tempBuf, CONFIG_NAME);
-	strcat(tempBuf, " (");
-	strcat(tempBuf, CONFIG_NOTE);
-	strcat(tempBuf, ")");
-	strcat(tempBuf, cStrEnd);
-	clientMessage.write(tempBuf, strlen(tempBuf));
+	// 8. Текст сообщения
+	m_snprintf(tempBuf, LEN_TEMPBUF, "--- %s ver.%s ---", SendMessageTitle, VERSION);
+	smtpWriteBody(tempBuf);
+	m_snprintf(tempBuf, LEN_TEMPBUF, "Конфигурация: %s (%s)", CONFIG_NAME, CONFIG_NOTE);
+	smtpWriteBody(tempBuf);
+	m_snprintf(tempBuf, LEN_TEMPBUF, "Создание уведомления: %s %s", NowDateToStr(), NowTimeToStr());
+	smtpWriteBody(tempBuf);
+	smtpWriteBlock(messageData.data);      // само уведомление, буфер не изменяется (его ждет еще sendSMS)
 
-	strcpy(tempBuf, "Создание уведомления: ");
-	strcat(tempBuf, NowDateToStr());
-	strcat(tempBuf, " ");
-	strcat(tempBuf, NowTimeToStr());
-	strcat(tempBuf, cStrEnd);
-	clientMessage.write(tempBuf, strlen(tempBuf));
+	// 9. Дополнительная информация если требуется добавляется в уведомление
+	if(GETBIT(messageSetting.flags, fMailInfo)) get_mailState(mailBuf, LEN_MAILBUF);
 
-	strcat(messageData.data, cStrEnd);
-	clientMessage.write(messageData.data, strlen(messageData.data));
+	// 10. Завершение письма. Тело гарантированно закончилось на CRLF, поэтому точка дает CRLF.CRLF
+	stage = "end of DATA";
+	smtpFlush();
+	if(!smtpCmd(".", SMTP_TO_DATA_END)) goto smtp_error;
+	// retMail уже содержит ответ сервера ("250 ... queued as ..."), записанный в smtpReadReply()
 
-	// 7. Дополнительная информация если требуется добавляется в уведомление
-	if(GETBIT(messageSetting.flags, fMailInfo)) get_mailState(clientMessage, tempBuf);
-
-	// 8. Завершение сессии  и отправка
-	if(!SendCommandSMTP((char*) ".", true)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
-	}
-	strncpy(retMail, (char*) tempBuf, LEN_RETMAIL);                                                                  // Копирование сообщения сервера при удачной отправки
-	if(!SendCommandSMTP((char*) "QUIT", true)) {
-		clientMessage.stop();  // ответ содержит ошибки
-		SETBIT1(WorkFlags, fWF_MessageSendError);
-		SemaphoreGive (xWebThreadSemaphore);
-		return false;
+	stage = "QUIT";
+	m_snprintf(mailBuf, LEN_MAILBUF, "%s", retMail);   // сохранить ответ: его перезапишет ответ на QUIT
+	smtpCmd("QUIT", SMTP_TO_QUIT);                     // результат не важен, письмо уже принято
+	setRetMail(mailBuf);
+	SETBIT0(WorkFlags, fWF_MessageSendError);
+	// Письмо уже принято сервером, поэтому неудача QUIT ничего не меняет - возвращаем успех.
+	// Но если на QUIT потерян семафор, сокет трогать нельзя и отдавать семафор нельзя тоже.
+	if(smtpSemLost) {
+		journal.jprintf("Mail sent, but network mutex lost\n");
+		return true;
 	}
 	clientMessage.stop();
 	JOURNAL("OK disconnected\n");
-	SETBIT0(WorkFlags, fWF_MessageSendError);
 	SemaphoreGive (xWebThreadSemaphore);
 	return true;
+
+smtp_error:
+	// Единая точка выхода по ошибке. Сначала штатный QUIT - тогда сервер запишет в свой журнал
+	// внятную причину вместо "lost connection", по которой потом трудно понять, что произошло.
+	// Текст ошибки формируем ДО QUIT: ответ на него перезапишет retMail.
+	if(smtpCode >= 400)   // 4xx - временная (повтор имеет смысл), 5xx - постоянная (нужна правка настроек)
+		m_snprintf(mailBuf, LEN_MAILBUF, "%s error on %s: %s", smtpCode < 500 ? "Temporary" : "Permanent", stage, retMail);
+	else
+		m_snprintf(mailBuf, LEN_MAILBUF, "Failed on %s: %s", stage, strlen(retMail) ? retMail : "no answer");
+	if(!GETBIT(WorkFlags, fWF_MessageSendError)) journal.jprintf("Error send mail: %s\n", mailBuf);
+	txLen = 0;                             // недописанное тело в сокет не отправляем
+	SETBIT1(WorkFlags, fWF_MessageSendError);
+	// Семафор сети потерян: он сейчас у другой задачи, поэтому ни сокет трогать, ни отдавать
+	// семафор нельзя - он бинарный, и лишний Give освободил бы SPI из-под владельца.
+	// Сокет не течет: следующий connect() на этот же сокет начинает с Sock_CLOSE.
+	if(smtpSemLost) {
+		journal.jprintf("Send mail aborted: network mutex lost\n");
+		setRetMail(mailBuf);
+		return false;
+	}
+	n = smtpCode;                          // ответ на QUIT затрет код ошибки, а по нему sendMessage
+	if(clientMessage.connected()) smtpCmd("QUIT", SMTP_TO_QUIT);   // решает, имеет ли смысл повтор
+	smtpCode = n;
+	setRetMail(mailBuf);                   // ставим ПОСЛЕ QUIT: его ответ перезаписал бы retMail
+	if(!smtpSemLost) {                     // семафор мог потеряться уже на самом QUIT
+		clientMessage.stop();
+		SemaphoreGive (xWebThreadSemaphore);
+	} else journal.jprintf("Send mail aborted: network mutex lost\n");
+	return false;
 }
 
 // Отправить SMS sms.ru ----------------------------------------------------------------------------------
@@ -867,9 +1050,11 @@ boolean Message::sendSMS()
 		SemaphoreGive (xWebThreadSemaphore);
 		return false;
 	}
-	for(i = 0; i < strlen(messageData.data); i++)
-		if(messageData.data[i] == ' ') messageData.data[i] = '+'; // замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения
+	// Замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения.
+	// Заменяем в КОПИИ: сам messageData.data править нельзя, его использует и отправка почты
+	i = strlen(tempBuf);
 	strcat(tempBuf, messageData.data);                       // содержимое
+	for(; tempBuf[i]; i++) if(tempBuf[i] == ' ') tempBuf[i] = '+';
 	strcat(tempBuf, cStrEnd);
 	clientMessage.write(tempBuf, strlen(tempBuf));
 
@@ -993,8 +1178,11 @@ boolean Message::sendSMSC()
     case pMESSAGE_WARNING : strcat(tempBuf, "WARNING+"); break;                                                          // Уведомление "Прочие уведомления"
     default               : strcat(tempBuf, "ERROR+TYPE+"); SemaphoreGive(xWebThreadSemaphore); return false; break;    // ответ содержит ошибки
   }
-  for (i = 0; i < strlen(messageData.data); i++) if (messageData.data[i] == ' ') messageData.data[i] = '+'; // замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения
+  // Замена пробела на знак "+" т.к. это запрещенный знак при отправке сообщения.
+  // Заменяем в КОПИИ: сам messageData.data править нельзя, его использует и отправка почты
+  i = strlen(tempBuf);
   strcat(tempBuf, messageData.data);                       // содержимое
+  for (; tempBuf[i]; i++) if (tempBuf[i] == ' ') tempBuf[i] = '+';
   strcat(tempBuf, cStrEnd);  clientMessage.write(tempBuf, strlen(tempBuf));
 
   //JOURNAL("%s\n",tempBuf);
