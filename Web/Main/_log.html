@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Журнал. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script>
+urlupdate = 6000;
+window.onload = function() { _updatelog(); };
+</script>
+</head>
+<body class="log">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+<div class="acts">
+	<input type="submit" value="Обновить" onclick="_updatelog()">
+	<input type="submit" value="Очистить" onclick='if(confirm("Очистить журнал?")){loadParam("RESET_JOURNAL",true);setTimeout(_updatelog,500);}'>
+	<a href="journal.txt" download><button type="button">Скачать</button></a>
+</div>
+<pre class="log" id="log">Загрузка...</pre>
+</main>
+</body>
+</html>

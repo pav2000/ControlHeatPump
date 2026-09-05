@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Статистика. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<style>#chart-container{height:66vh;min-height:320px}</style>
+<script src="jquery.min.js"></script>
+<script src="highstock.js"></script>
+<script src="exporting.js"></script>
+<script src="export-csv.js"></script>
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script type="text/javascript">
+urlupdate = 6000;
+/**
+ * Grid-light theme for Highcharts JS
+ */
+Highcharts.theme = {
+// https://github.com/google/palette.js
+	colors: ["#ff0029","#377eb8","#66a61e","#984ea3","#00d2d5","#ff7f00","#af8d00","#7f80cd","#b3e900","#c42e60","#a65628","#f781bf","#8dd3c7","#bebada","#fb8072","#80b1d3","#377eb8","#fdb462","#fccde5","#bc80bd","#ffed6f","#ff0029"],
+	chart: {
+		backgroundColor: null,
+	},
+	title: {
+		style: {
+			fontSize: '16px',
+			fontWeight: 'bold',
+			textTransform: 'uppercase'
+		}
+	},
+	tooltip: {
+		borderWidth: 0,
+		backgroundColor: 'rgba(219,219,216,0.8)',
+		shadow: false
+	},
+	legend: {
+		itemStyle: {
+			fontWeight: 'bold',
+			fontSize: '13px'
+		}
+	},
+	xAxis: {
+		gridLineWidth: 1,
+		labels: {
+			style: {
+				fontSize: '10px'
+			}
+		}
+	},
+	yAxis: {
+		minorTickInterval: 'auto',
+//		title: {
+//			style: { textTransform: 'uppercase'	}
+//		},
+		labels: {
+			style: {
+				fontSize: '10px'
+			}
+		}
+	},
+	plotOptions: {
+		candlestick: {
+			lineColor: '#404048'
+		}
+	},
+	// General
+	background2: '#F0F0EA'
+};
+
+var file_head = 'stats';
+var csv_line_delim = '\n';
+var csv_delim = ';';
+var fieldList = [];
+var dynamicChart;
+//var myOffset = new Date().getTimezoneOffset();
+var xAxisName;
+
+Highcharts.setOptions(Highcharts.theme);
+window.onload = function() {
+	loadParam("get_listStats");
+}
+function loadParam_after(paramid) {
+	if(paramid.indexOf("_listStats")!=-1) {
+		var els = document.getElementById('get_liststats').options;
+		for(var i = 0; i < els.length; i++) els[i].text = els[i].text.replace(/[^\d]/g,'');
+		init_chart();
+	}
+}
+
+function createChart() {
+	var chartOptions = {
+		chart: {
+			renderTo: 'chart-container',
+			zoomType: '',
+			events: {
+				load: function() {	}
+			}
+		},
+		rangeSelector: {
+			buttons: [ {
+				count: 1,
+				type: 'day',
+				text: '1д'
+			}, {
+				count: 2,
+				type: 'day',
+				text: '2д'
+			}, {
+				count: 3,
+				type: 'day',
+				text: '3д'
+			}, {
+				count: 1,
+				type: 'week',
+				text: 'нед'
+			}, {
+				count: 2,
+				type: 'week',
+				text: '2нед'
+			}, {
+				count: 1,
+				type: 'month',
+				text: 'мес'
+			}, {
+				count: 3,
+				type: 'month',
+				text: '3мес'
+			}, {
+				count: 1,
+				type: 'year',
+				text: 'год'
+			}, {
+				type: 'all',
+				text: 'все'
+			}],
+			inputEnabled: false,
+			selected: 1
+		},
+		title: {
+			text: ''
+		},
+		plotOptions: {
+			line: {
+				gapSize: 5
+			},
+			series: {
+				marker: {
+					radius: 2
+				},
+				animation: true,
+				step: false,
+				turboThrehold: 1000,
+				borderWidth: 0
+			}
+		},
+		tooltip: {
+			//valueDecimals: 1,
+			xDateFormat: '%A, %d.%m.%Y'
+/*
+ %a: Short weekday, like 'Mon'.
+ %A: Long weekday, like 'Monday'.
+ %d: Two digit day of the month, 01 to 31.
+ %e: Day of the month, 1 through 31.
+ %b: Short month, like 'Jan'.
+ %B: Long month, like 'January'.
+ %m: Two digit month number, 01 through 12.
+ %y: Two digits year, like 09 for 2009.
+ %Y: Four digits year, like 2009.
+ %H: Two digits hours in 24h format, 00 through 23.
+ %I: Two digits hours in 12h format, 00 through 11.
+ %l: Hours in 12h format, 1 through 11.
+ %M: Two digits minutes, 00 through 59.
+ %p: Upper case AM or PM.
+ %P: Lower case AM or PM.
+ %S: Two digits seconds, 00 through 59
+*/
+			// reformat the tooltips so that local times are displayed
+			//formatter: function() {
+			//var d = new Date(this.x + (myOffset*60000));
+			//var n = (this.point.name === undefined) ? '' : '<br/>' + this.point.name;
+			//return this.series.name + ':<b>' + this.y + '</b>' + n + '<br/>' + d.toDateString() + '<br/>' + d.toTimeString().replace(/\(.*\)/, "");
+			//}
+		},
+		xAxis: {
+			type: 'datetime',
+			ordinal: false,
+			dateTimeLabelFormats: {
+				hour: '%H',
+				minute: '%H:%M',
+			    day: '%e. %b',
+			    week: '%e. %b',
+			    month: '%b \'%y',
+			    year: '%Y'
+			},			
+			title: {
+				text: ''
+			}
+		},
+		yAxis: [{
+			title: {
+				text: '°C', align: 'high', offset: -10
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'T'
+		}, {
+			title: {
+				text: 'бар', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'P'
+		}, {
+			title: {
+				text: 'V', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'V'
+		}, {
+			title: {
+				text: 'кВт', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'W'
+		}, {
+			title: {
+				text: 'COP', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'C'
+		}, {
+			title: {
+				text: 'мин.', align: 'high', offset: 15
+			},
+			opposite: true,
+			showEmpty: false,
+			id: 'M'
+		}],
+		exporting: {
+			enabled: true,
+			csv: {
+//				decimalPoint: ',',
+				itemDelimiter: ';',
+				dateFormat: '%Y.%m.%d'// %H:%M:%S'
+			}
+		},
+		legend: {
+			enabled: true
+		},
+		navigator: {
+			baseSeries: 0, //select which series to show in history navigator, First series is 0
+			series: {
+//				includeInCSVExport: false
+			}
+		},
+		series: []
+	};
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // add each field
+	{
+		chartOptions.series.push({
+			data: fieldList[fieldIndex].data,
+			index: fieldList[fieldIndex].series,
+			yAxis: fieldList[fieldIndex].axis,
+			//visible:false,
+			name: fieldList[fieldIndex].name
+		});
+	}
+	chartOptions.xAxis.title.text = xAxisName;
+	dynamicChart = new Highcharts.StockChart(chartOptions);
+	for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) // and each field
+	{
+		for(var seriesIndex = 0; seriesIndex < dynamicChart.series.length; seriesIndex++) // compare each series name
+		{
+			if(dynamicChart.series[seriesIndex].name == fieldList[fieldIndex].name) {
+				fieldList[fieldIndex].series = seriesIndex;
+			}
+		}
+	}
+}
+
+// converts date format from csv
+function getChartTime(d) {
+	// get the data using javascript's date object (year, month, day, hour, minute, second)
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), d.substring(8, 10), d.substring(10, 12), 0); //d.substring(12, 14)) - (myOffset * 60000);
+}
+function getChartDate(d) {
+	return Date.UTC(d.substring(0, 4), d.substring(4, 6) - 1, d.substring(6, 8), 0, 0, 0); // - (myOffset * 60000);
+}
+
+// Hide all series
+function HideAll() {
+	for(var index = 0; index < dynamicChart.series.length; index++)
+	{
+		if(dynamicChart.series[index].name == 'Navigator') continue;
+		dynamicChart.series[index].hide();
+	}
+}
+var urlhead = urlcontrol == '' ? '' : urlcontrol + '/';
+
+function get_period() {
+	var els = document.getElementById("get_liststats").options;
+	return els.length ? els[els.selectedIndex].text : '';
+}
+
+function init_chart() {
+	var dh = $.get(urlhead + file_head + '_head.csv', function(data) { // format: <axis char><field1 name>;<axis char><field2 name>;... 
+		var arr = data.split(csv_delim);
+		for(var i = 0; i < arr.length; i++) {
+			if(i == 0) {
+				xAxisName = arr[i];
+				continue;
+			}
+			fieldList.push({
+				field: i + 1,
+				axis: arr[i].substr(0, 1),
+				name: arr[i].substr(1).replace("\n",""),
+				data: []
+			});
+		}
+	}).fail(function() { alert('Get header failed!'); });
+	$.when(dh).done(function() {
+		var seriesCounter = 0
+		for(var j = 0; j < fieldList.length; j++) fieldList[j].series = seriesCounter++;
+		var dt = get_period();
+		if(dt) { $.when(loadChartsGroup(dt)).done(function() {	createChart(); });	}
+	});
+}
+
+// load chart with period
+function loadChartsGroup(period) {
+	return $.get(urlhead + file_head + "_" + period + '.dat', function(data) {
+		var feeds = data.split(csv_line_delim);
+		for(var h = 0; h < feeds.length; h++) {
+			var arr = feeds[h].split(csv_delim);
+			if(arr.length == 0) continue;
+			var dt = getChartDate(arr[0]);
+			for(var fi = 1; fi < arr.length; fi++) {
+				var nf = parseFloat(arr[fi]);
+				if(!isNaN(nf)) {
+					if(nf == 0 && (fi == 5 || fi == 10 || fi == 11) && arr[15] == 0) continue; // if no Motohour - skip zero (W)
+					fieldList[fi - 1].data.push([dt, nf]);
+				}
+			}
+		}
+	}).fail(function() {
+		alert('Get chart data ' + period + ' failed!');
+	});
+}
+
+function loadSelected() {
+	var dt = Number(get_period());
+	if(dynamicChart.series.length && dynamicChart.series[0].xData.length && dt >= new Date(dynamicChart.series[0].xData[0]).getFullYear() && dt <= new Date(dynamicChart.series[0].xData[dynamicChart.series[0].xData.length-1]).getFullYear()) return;
+	$.when(loadChartsGroup(dt)).done(function() {
+		for(var fieldIndex = 0; fieldIndex < fieldList.length; fieldIndex++) {
+			fieldList[fieldIndex].data.sort(function(a, b) {
+				return a[0] - b[0];
+			});
+			dynamicChart.series[fieldList[fieldIndex].series].setData(fieldList[fieldIndex].data, false);
+		}
+		dynamicChart.redraw();
+	});
+}
+</script>
+<script>
+// узкий экран: кнопки диапазона не помещаются в 375 px - уменьшаем кегль и отступы
+Highcharts.setOptions({rangeSelector:{buttonTheme:{style:{fontSize:"9px"}},buttonSpacing:2,labelStyle:{fontSize:"9px"}}});
+</script>
+</head>
+<body class="stat">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+<div class="acts">
+	Год: <select id="get_liststats"></select>
+	<button onclick="loadSelected();">Загрузить</button>
+	<button onclick="HideAll();">Скрыть все</button>
+</div>
+<div class="chartbox">
+	<div id="chart-container">Идет загрузка...</div>
+</div>
+</main>
+</body>
+</html>

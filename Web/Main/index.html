@@ -3,6 +3,19 @@
 <title>Народный контроллер ТН</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Выбор версии интерфейса: авто по короткой стороне экрана устройства.
+     Ручной выбор переключателем в левом верхнем углу действует до закрытия вкладки. -->
+<script>
+(function(){
+	var f = null;
+	try { f = sessionStorage.getItem('ui'); } catch(e) {}
+	if(f == 'd') return;
+	var w = screen.width | 0, h = screen.height | 0;
+	// короткая сторона экрана устройства; если браузер её не сообщает - ширина окна
+	var m = (w > 0 && h > 0) ? Math.min(w, h) : (window.innerWidth | 0);
+	if(f == 'm' || (m > 0 && m < 760)) location.replace('_index.html');
+})();
+</script>
 <link rel="stylesheet" type="text/css" href="style.css">
 <script src='scripts.js'></script>
 <script>
@@ -13,7 +26,25 @@ window.onload = function() {
 </head>
 <body class="index">
 
-<div id="menu" class="menu"><script src="menu.js"></script></div>
+<!-- Переключатель десктопная / мобильная версия.
+     Лежит внутри #menu, а не прямым потомком body: иначе autoheight() (scripts.js:796)
+     в quirks-режиме растянул бы его по высоте страницы.
+     Разметка пишется до menu.js, а скрипт ниже переставляет её под логотип. -->
+<div id="menu" class="menu"><div id="uisw" title="Десктопная / мобильная версия">
+<span class="on"><svg viewBox="0 0 24 24"><path d="M2 3h20v13H2zM11 16h2v3h-2zM8 19h8v2H8z"/></svg></span>
+<span onclick="try{sessionStorage.setItem('ui','m')}catch(e){};location.href='_index.html'"><svg viewBox="0 0 24 24"><path d="M6 1h12v22H6zM9 20h6v1H9z"/></svg></span>
+</div><style>
+#uisw{display:flex;width:64px;margin:12px auto 0 auto;border-radius:20px;overflow:hidden;background:#fff;cursor:pointer;min-height:0}
+#uisw span{width:32px;height:26px;display:flex;align-items:center;justify-content:center}
+#uisw span svg{width:17px;height:17px;fill:#F44E4E}
+#uisw span.on{background:#0C6161}
+#uisw span.on svg{fill:#fff}
+</style><script src="menu.js"></script><script>
+// menu.js пишет логотип и переключатель работы ТН через document.write, поэтому
+// переставляем переключатель версий уже после него: под логотип, перед .swich
+(function(){var s=document.getElementById("uisw"),w=document.querySelector(".menu .swich");
+ if(s&&w) w.parentNode.insertBefore(s,w);})();
+</script></div>
 <div class="content">
 <!-- Виджет погоды (если не нужен закомментировать 4 строки ниже) настраиватся https://weatherwidget.io/ -->
 <a class="weatherwidget-io" href="https://forecast7.com/ru/56d8637d36/kimry/" data-label_1="Кимры" data-label_2="Стрельчиха" data-theme="mountains" >Кимры Стрельчиха</a>

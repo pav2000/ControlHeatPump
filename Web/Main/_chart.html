@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Графики. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<style>.chartbox{min-height:0}.chartbox > div{padding:6px}</style>
+<script src="jquery.min.js"></script>
+<script src="scripts.js"></script>
+<script src="highcharts.js"></script>
+<script src="exporting.js"></script>
+<script src="export-csv2.js"></script>
+<script src="_m.js"></script>
+<script type="text/javascript">
+urlupdate = 6000;
+function createChart(values, resultdiv) {
+	var title = document.getElementById("get_listchart").options[Number(values[0].replace("get_Chart(", "").replace(/\)[0-9]?/g, ""))].value;
+	var data = values[1].split(';');
+	var yizm = "";
+	if(data.length > 0) {
+		var n = Number(data[0]);
+		if(n >= 0 && n < 8) { yizm = "Температура, °C"; }
+		else if(n == 8) { yizm = "Давление, бар"; }
+		else if(n == 9) { yizm = "Проток, м³ч"; }
+		else if(n == 10) { yizm = "Позиция"; ytooltip = ""; }
+		else if(n >= 12 && n < 16 ) { yizm = "Мощность, кВт"; }
+		else if(n == 20) { yizm = "Состояние реле"; }
+	}
+	var dataSeries1 = [];
+	for(var i = 1; i < data.length - 1; i++) dataSeries1.push([i, Number(data[i])]);
+	$('#' + resultdiv).highcharts({
+		title: {
+			text: title,
+			x: -15
+		},
+		chart: {
+			type: 'line',
+			zoomType: 'xy',
+			height: 300,
+			animation: false,
+			resetZoomButton: {
+				position: {
+					align: undefined,
+					verticalAlign: "top",
+					x: 20,
+					y: -40
+				},
+				relativeTo: "plot"}
+		},
+		lang: {
+			contextButtonTitle: "Меню графика",
+			decimalPoint: ".",
+			downloadJPEG: "Скачать JPEG картинку",
+			downloadPDF: "Скачать PDF документ",
+			downloadPNG: "Скачать PNG картинку",
+			downloadSVG: "Скачать SVG векторную картинку",
+			downloadCSV: "Скачать CSV",
+			downloadXLS: "Скачать XLS",
+			drillUpText: "Вернуться к {series.name}",
+			loading: "Загрузка...",
+			noData: "Нет информации для отображения",
+			numericSymbolMagnitude: 1000,
+			numericSymbols: ["k", "M", "G", "T", "P", "E"],
+			printChart: "Распечатать график",
+			resetZoom: "Сброс увеличения",
+			resetZoomTitle: "Сброс увеличения к 1:1"
+		},
+		xAxis: {
+			title: {
+				text: "Время, позиция: x" + window.time_chart + " сек."}},
+		yAxis: [{ // Primary yAxis
+			allowDecimals: false,
+			labels: {
+				format: '{value}',
+				style: {
+					color: Highcharts.getOptions().colors[0]}},
+			title: {
+				text: yizm,
+				style: {
+					color: Highcharts.getOptions().colors[0]}}
+		}],
+		tooltip: {
+			valueSuffix: ''
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'middle',
+			borderWidth: 0
+		},
+		exporting: {
+			enabled: true,
+			csv: {
+//				decimalPoint: ',',
+				itemDelimiter: ';'
+			}
+		},
+		//plotOptions: { series: { dataGrouping: { enabled: false } } },
+		plotOptions: {
+			series: {
+				label: {
+					connectorAllowed: false},
+	            animation: false,
+				pointStart: 0
+			}
+		},
+		series: [{
+				yAxis: 0,
+				name: title,
+				tooltip: {
+					valueDecimals: 2},
+				states: {
+					hover: {
+						enabled: false}},
+				showInLegend: false,
+				turboThreshold: 0,
+				data: dataSeries1,
+				dashStyle: "Solid"
+			}
+		]
+	});
+}
+window.onload = function() {
+	loadParam("get_listChart,get_oHP(TIME_CHART)");
+	Highcharts.setOptions({ global: { useUTC: false } });
+	$("#autoupdate").change(function(){
+	if(this.checked){
+		var timerId = setInterval(function() { setParam('get_listChart','chart1');setParam('get_listChart2','chart2');setParam('get_listChart3','chart3');setParam('get_listChart4','chart4') }, 10000)
+		window.timerId = timerId
+	}else{
+		timerId = window.timerId
+		clearInterval(timerId);
+	}
+	});		
+}
+function RefreshAll() {
+	setParam('get_listChart','chart1');
+	setParam('get_listChart2','chart2');
+	setParam('get_listChart3','chart3');
+	setParam('get_listChart4','chart4');
+}
+</script>
+</head>
+<body class="chart">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+<div class="acts">
+	<input type="submit" value="Обновить всё" onclick="RefreshAll()">
+	<input type="submit" value="Очистить" onclick="if(confirm('Очистить графики?')){ loadParam('get_Chart(CLR)');RefreshAll(); }">
+	<input type="submit" value="Настройки" onclick="_setui('d');location.assign('charts-set.html')">
+</div>
+<div class="card">
+	<div class="row"><span class="k">Автообновление (10 с)</span><span class="v">
+		<input id="autoupdate" type="checkbox">
+		<select style="display:none" id="get_ohp-time_chart" disabled></select></span></div>
+</div>
+<div class="card">
+	<div class="row"><span class="k">График 1</span><span class="v">
+		<select name="chrt_sel" id="get_listchart" onchange="setParam('get_listChart','chart1')"></select>
+		<input type="submit" value="&#8635;" onclick="setParam('get_listChart','chart1')"></span></div>
+	<div class="chartbox"><div id="chart1">График не выбран</div></div>
+</div>
+<div class="card">
+	<div class="row"><span class="k">График 2</span><span class="v">
+		<select name="chrt_sel" id="get_listchart2" onchange="setParam('get_listChart2','chart2')"></select>
+		<input type="submit" value="&#8635;" onclick="setParam('get_listChart2','chart2')"></span></div>
+	<div class="chartbox"><div id="chart2">График не выбран</div></div>
+</div>
+<div class="card">
+	<div class="row"><span class="k">График 3</span><span class="v">
+		<select name="chrt_sel" id="get_listchart3" onchange="setParam('get_listChart3','chart3')"></select>
+		<input type="submit" value="&#8635;" onclick="setParam('get_listChart3','chart3')"></span></div>
+	<div class="chartbox"><div id="chart3">График не выбран</div></div>
+</div>
+<div class="card">
+	<div class="row"><span class="k">График 4</span><span class="v">
+		<select name="chrt_sel" id="get_listchart4" onchange="setParam('get_listChart4','chart4');"></select>
+		<input type="submit" value="&#8635;" onclick="setParam('get_listChart4','chart4')"></span></div>
+	<div class="chartbox"><div id="chart4">График не выбран</div></div>
+</div>
+</main>
+</body>
+</html>

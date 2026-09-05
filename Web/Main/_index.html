@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Состояние. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script>
+urlupdate = 6000;
+window.onload = function() {
+	updateParam("get_Boiler(ON),get_modeHP,get_error,get_errcode,get_Temp(TOUT),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_TrgT(1),get_Boiler(TRG),get_Temp(TBOILER),get_Relay(RPUMPI),get_Relay(RPUMPO),get_SCHDLR(AN),get_Boiler(URG),get_oHP(BPOW)");
+};
+</script>
+</head>
+<body class="index">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+
+<div class="card">
+	<div class="row"><span class="k">Тепловой насос</span><span class="v"><span id="get_work">-</span></span></div>
+	<div class="row"><span class="k">Расписание</span><span class="v"><span id="get_schdlr-an">-</span></span></div>
+	<div class="row"><span class="k">Режим работы</span><span class="v">
+		<select id="get_modehp" onchange="setParam('get_modeHP','get_modehp');"></select></span></div>
+	<div class="row"><span class="k">Показатели</span><span class="v"><span id="get_errcode">-</span></span></div>
+	<div class="row"><span class="v wide" style="flex:1 1 auto;text-align:left"><span id="get_error">-</span></span></div>
+	<div class="row"><span class="k">От генератора<sup>1</sup></span><span class="v">
+		<input type="checkbox" id="get_ohp-bpow" onchange="setParam('get_oHP(BPOW)');"></span></div>
+</div>
+
+<div class="grid">
+	<div class="card">
+		<h2 class="ico ico1">Улица и дом</h2>
+		<div class="row"><span class="k">На улице</span><span class="v"><span id="get_temp-tout">-</span>&deg;</span></div>
+		<div class="row"><span class="k">В доме</span><span class="v"><span id="get_temp-tin">-</span>&deg;</span></div>
+		<div class="row"><span class="k">Цель</span><span class="v">
+			<input id="get_trgt-1" type="number" min="5" max="50" step="0.1">
+			<input type="submit" value="&gt;" onclick="setParam('get_TrgT(1)');"></span></div>
+	</div>
+	<div class="card">
+		<h2 class="ico ico2">Геоконтур</h2>
+		<div class="row"><span class="k">Из геоконтура</span><span class="v"><span id="get_temp-tevaing">-</span>&deg;</span></div>
+		<div class="row"><span class="k">В геоконтур</span><span class="v"><span id="get_temp-tevaoutg">-</span>&deg;</span></div>
+		<div class="row"><span class="k">Насос ГК</span><span class="v"><span id="get_relay-rpumpi-ONOFF">-</span></span></div>
+	</div>
+	<div class="card">
+		<h2 class="ico ico3">Отопление</h2>
+		<div class="row"><span class="k">Подача</span><span class="v"><span id="get_temp-tconoutg">-</span>&deg;</span></div>
+		<div class="row"><span class="k">Обратка</span><span class="v"><span id="get_temp-tconing">-</span>&deg;</span></div>
+		<div class="row"><span class="k">Насос СО</span><span class="v"><span id="get_relay-rpumpo-ONOFF">-</span></span></div>
+	</div>
+	<div class="card">
+		<h2 class="ico ico4">Бойлер</h2>
+		<div class="row"><span class="k">Нагрев</span><span class="v">
+			<input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></span></div>
+		<div class="row"><span class="k">Срочно</span><span class="v">
+			<input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></span></div>
+		<div class="row"><span class="k">Температура</span><span class="v"><span id="get_temp-tboiler">-</span>&deg;</span></div>
+		<div class="row"><span class="k">Целевая</span><span class="v">
+			<input id="get_boiler-trg" type="number" min="5" max="90" step="1">
+			<input type="submit" value="&gt;" onclick="setParam('get_Boiler(TRG)');"></span></div>
+	</div>
+</div>
+
+<div class="hint">1. Работа ТН от генератора (ограничение мощности). Флаг сбрасывается
+при сбросе НК; чтобы сохранить его, нажмите «Записать в EEPROM» на любой странице
+настроек десктопной версии.</div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>О контроллере. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script>
+urlupdate = 6000;
+window.onload = function() {
+	loadParam("get_config,get_configNote");
+};
+</script>
+</head>
+<body class="about">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+<div class="card">
+	<h2>Народный контроллер теплового насоса</h2>
+	<div class="row"><span class="k">Конфигурация</span>
+		<span class="v wide"><span id="get_config"></span></span></div>
+	<div class="row"><span class="k">Описание</span>
+		<span class="v wide"><span id="get_confignote"></span></span></div>
+</div>
+<div class="card">
+	<div class="hint" style="font-size:13px">
+		Разработка прошивки контроллера: Pav2000, vad711<br>
+		Разработка web-интерфейса: vad711<br>
+		Дизайн: Sheeny<br><br>
+		Особая благодарность форумчанам
+		<a target="_blank" href="https://www.forumhouse.ru/forums/645/">forumhouse.ru</a>,
+		которые помогают советами и опытом в соответствующей ветке форума.
+	</div>
+</div>
+<div class="card">
+	<div class="hint">Полный набор страниц настройки и отладки доступен в
+		<a href="index.html" onclick="_setui('d')">десктопной версии</a>.</div>
+</div>
+</main>
+</body>
+</html>

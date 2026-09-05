@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ГВС. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script>
+urlupdate = 6000;
+window.onload = function() {
+	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO),get_Boiler(W)");
+	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(DD),get_Boiler(WG),get_Boiler(WT),get_Boiler(TT)");
+};
+</script>
+</head>
+<body class="gvs">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+
+<div class="acts">
+	<input type="submit" value="Записать в EEPROM" onclick='loadParam("set_SAVE")'>
+</div>
+
+<div class="card">
+	<h2>Параметры ГВС</h2>
+	<table class="par2"><tbody>
+	<tr><td>Включение нагрева бойлера</td>
+		<td><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></td></tr>
+	<tr><td>Нагреть срочно<sup>11</sup></td>
+		<td><input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></td></tr>
+	<tr><td>Целевая температура бойлера &deg;C [5..90]. Текущая: <span id="get_boiler-tt">-</span></td>
+		<td nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(TRG)');"></td></tr>
+	<tr><td>Гистерезис целевой температуры &deg;C [0..30]<sup>1</sup></td>
+		<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="30" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(DTRG)');"></td></tr>
+	<tr class="sub"><td colspan="2">Ночной тариф</td></tr>
+	<tr><td>Добавка к целевой температуре по часам &deg;C [-50..50]<sup>2</sup></td>
+		<td nowrap><input id="get_boiler-adt" type="number" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(ADT)');"></td></tr>
+	<tr><td>Начальный час добавки [0..23]</td>
+		<td nowrap><input id="get_boiler-adh" type="number" min="0" max="23" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(ADH)');"></td></tr>
+	<tr><td>Конечный час добавки [0..23]</td>
+		<td nowrap><input id="get_boiler-adeh" type="number" min="0" max="23" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(ADEH)');"></td></tr>
+	<tr class="sub"><td colspan="2">Встроенный ТЭН</td></tr>
+	<tr><td>Ускоренный нагрев бойлера<sup>3</sup></td>
+		<td><input type="checkbox" id="get_boiler-turbo" onchange="setParam('get_Boiler(TURBO)');"></td></tr>
+	<tr><td>Использование ТЭНа для догрева бойлера<sup>4</sup></td>
+		<td><input id="get_boiler-addh" type="checkbox" onchange="setParam('get_Boiler(ADDH)');"></td></tr>
+	<tr><td>Температура догрева бойлера &deg;C [0..90]</td>
+		<td nowrap><input id="get_boiler-tempr" type="number" min="0" max="90" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(TEMPR)');"></td></tr>
+	<tr><td>Температура цели при нагреве Ваттроутером &deg;C</td>
+		<td nowrap><input id="get_boiler-w" type="number" min="0" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(W)');"></td></tr>
+	<tr><td>Температура цели ночью и с прогнозом нулевой облачности &deg;C</td>
+		<td nowrap><input id="get_boiler-wt" type="number" min="0" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(WT)');"></td></tr>
+	<tr><td>Гистерезис цели нагрева ТН, если догрев не по расписанию &deg;C</td>
+		<td nowrap><input id="get_boiler-dah" type="number" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(dAH)');"></td></tr>
+	<tr><td>Включать догрев, если компрессор не нагрел бойлер<sup>5</sup></td>
+		<td><input id="get_boiler-ahf" type="checkbox" onchange="setParam('get_Boiler(AHF)');"></td></tr>
+	</tbody></table>
+</div>
+
+<div class="card">
+	<h2>ПИД и защиты</h2>
+	<table class="par2"><tbody>
+	<tr><td>Использовать ПИД управление инвертором</td>
+		<td><input id="get_boiler-pid" type="checkbox" onchange="setParam('get_Boiler(PID)');"></td></tr>
+	<tr><td>Целевая температура подачи &deg;C [30..70]</td>
+		<td nowrap><input id="get_boiler-temp" type="number" min="30" max="70" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(TEMP)');"></td></tr>
+	<tr><td>Постоянная интегрирования, сек [5..600]</td>
+		<td nowrap><input id="get_boiler-pt" type="number" min="5" max="600" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(PT)');"></td></tr>
+	<tr><td>Пропорциональная составляющая [0..50]</td>
+		<td nowrap><input id="get_boiler-pp" type="number" min="0" max="50" step="0.001"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(PP)');"></td></tr>
+	<tr><td>Интегральная составляющая [0..50]</td>
+		<td nowrap><input id="get_boiler-pi" type="number" min="0" max="50" step="0.001"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(PI)');"></td></tr>
+	<tr><td>Дифференциальная составляющая [0..50]</td>
+		<td nowrap><input id="get_boiler-pd" type="number" min="0" max="50" step="0.001"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(PD)');"></td></tr>
+	<tr class="sub"><td colspan="2">Защиты при работе теплового насоса</td></tr>
+	<tr><td>Максимальная температура подачи &deg;C [20..70]</td>
+		<td nowrap><input id="get_boiler-max" type="number" min="20" max="70" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(MAX)');"></td></tr>
+	</tbody></table>
+</div>
+
+<div class="card">
+	<h2>Опции</h2>
+	<table class="par2"><tbody>
+	<tr><td>Греть совместно с отоплением, если ТН работает на отопление<sup>6</sup></td>
+		<td><input id="get_boiler-tgheat" type="checkbox" onchange="setParam('get_Boiler(TGHEAT)');"></td></tr>
+	<tr><td>Профилактика сальмонеллы (1 раз в неделю)</td>
+		<td><input type="checkbox" id="get_boiler-slmn" onchange="setParam('get_Boiler(SLMN)');"></td></tr>
+	<tr><td>Использовать солнечный коллектор (TSUN&gt;TEVAOUTG+&Delta;&deg;)</td>
+		<td><input type="checkbox" name="get_boiler-sun" id="get_boiler-sun" onchange="setParam('get_Boiler(SUN)');"></td></tr>
+	<tr><td>Греть от генератора без ТЭНа</td>
+		<td><input type="checkbox" id="get_boiler-wg" onchange="setParam('get_Boiler(WG)');"></td></tr>
+	<tr><td>Управление циркуляционным насосом ГВС<sup>7</sup></td>
+		<td><input type="checkbox" id="get_boiler-circ" onchange="setParam('get_Boiler(CIRC)');"></td></tr>
+	<tr><td>Время работы насоса ГВС, мин [0..60]<sup>8</sup></td>
+		<td nowrap><input id="get_boiler-circw" type="number" min="0" max="60" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(CIRCW)');"></td></tr>
+	<tr><td>Пауза между включениями насоса циркуляции, мин [0..60]<sup>9</sup></td>
+		<td nowrap><input id="get_boiler-circp" type="number" min="0" max="60" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(CIRCP)');"></td></tr>
+	<tr><td>При нагреве бойлера сбрасывать «избыточное» тепло<sup>10</sup></td>
+		<td><input type="checkbox" id="get_boiler-resh" onchange="setParam('get_Boiler(RESH)');"></td></tr>
+	<tr><td>Время сброса тепла, сек [1..10000]</td>
+		<td nowrap><input id="get_boiler-resht" type="number" min="1" max="10000" step="1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(RESHT)');"></td></tr>
+	<tr><td>Сброс тепла в отопление при приближении подачи к максимальной / догреву на &deg;C</td>
+		<td nowrap><input id="get_boiler-dd" type="number" min="0" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(DD)');"></td></tr>
+	</tbody></table>
+</div>
+
+<div class="card">
+	<h2>Расписание</h2>
+	<table class="par2"><tbody>
+	<tr><td>Работа по расписанию</td>
+		<td><input type="checkbox" name="get_boiler-sch_on" id="get_boiler-sch_on" onchange="setParam('get_Boiler(SCH_ON)'); loadParam('get_Boiler(SCH_AH)');"></td></tr>
+	<tr><td>Работа по расписанию только для ТЭНа</td>
+		<td><input type="checkbox" name="get_boiler-sch_ah" id="get_boiler-sch_ah" onchange="setParam('get_Boiler(SCH_AH)'); loadParam('get_Boiler(SCH_ON)');"></td></tr>
+	</tbody></table>
+	<div class="hint">Сетка расписания 7&times;24 редактируется в
+		<a href="gvs.html" onclick="_setui('d')">десктопной версии</a>.</div>
+</div>
+
+<div class="hint">
+1. Диапазон регулирования равен: целевая температура минус гистерезис.<br>
+2. При значении добавки 0 &deg;C опция не работает.<br>
+3. Одновременная работа ТН и ТЭНа.<br>
+4. ТЭН включается после того, как ТН достиг температуры догрева.<br>
+5. Защита от недогрева компрессором.<br>
+6. Бойлер греется вместе с отоплением.<br>
+7. Насос рециркуляции ГВС.<br>
+8. Длительность одного включения насоса рециркуляции.<br>
+9. Пауза между включениями насоса рециркуляции.<br>
+10. Излишек тепла уходит в систему отопления.<br>
+11. Внеочередной нагрев бойлера до целевой температуры.
+</div>
+
+</main>
+</body>
+</html>

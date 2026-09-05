@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Схема ТН. Народный контроллер ТН</title>
+<link rel="stylesheet" href="_style.css">
+<script src="scripts.js"></script>
+<script src="_m.js"></script>
+<script>
+urlupdate = 4000;
+window.onload = function() {
+	_fitplan();
+	loadParam("hide_tro_ei,hide_sun,get_tblTemp1,get_modeHP");
+	updateParam("get_pFC(cFC),get_pFC(INFO1),get_pEEV(POSpp),get_OverHeat,get_Press(PEVA),get_Press(PCON),get_Temp(TBOILER),get_Temp(TOUT),get_Temp(TEVAOUT),get_Temp(TCOMPIN),get_Temp(TEVAIN),get_Temp(TCOMP),get_Temp(TIN),get_Temp(TEVAING),get_Temp(TEVAOUTG),get_Temp(TCONING),get_Temp(TCONOUTG),get_Temp(TCONOUT),get_Temp(TBOILER),get_Relay(RPUMPI),get_relayOut,get_Flow(FLOWEVA),get_Flow(FLOWCON),get_OverCool,get_Power220,get_fullCOP,get_PowerGEO,get_PowerCO,get_Relay(RBOILER),get_Relay(RSUN),get_Temp(TSUN),get_Temp(TSUNOUTG),get_TrgT,get_oHP(BP)");
+};
+window.addEventListener('resize', _fitplan);
+window.addEventListener('orientationchange', function(){ setTimeout(_fitplan, 200); });
+function set_bTIN(f,T) {
+	if(confirm((f.checked ? "Включить" : "Выключить") + " регулирование по этому датчику?")) setParam("get_inTemp(" +T+ ")"); else f.checked = !f.checked;
+}
+</script>
+</head>
+<body class="plan">
+<div id="menu"><script src="_menu.js"></script></div>
+<main>
+
+<div class="viswrap" id="viswrap">
+<div class="visualization" id="vis">
+	<span id="get_temp-tboiler" class="red">-.-</span>
+	<span id="get_temp-tevaoutg" class="blue">-.-</span>
+	<span id="get_temp-tevaing" class="blue">-.-</span>
+	<span id="get_temp-tconing" class="orange">-.-</span>
+	<span id="get_temp-tconout" class="orange">-.-</span>
+	<span id="get_temp-tconoutg" class="red">-.-</span>
+	<span id="get_temp-tcomp" class="red">-.-</span>
+<div name="hide_tro_ei">
+	<span id="get_temp-tcompin" class="blue">-.-</span>
+	<span id="get_temp-tevain" class="blue">-.-</span>
+</div>
+	<span id="get_temp-tevaout" class="blue">-.-</span>
+	<span id="get_press-pcon" class="red">-.-</span>
+	<span id="get_press-peva" class="blue">-.-</span>
+	<span id="get_pfc-info1" class="blue">-</span>
+	<span id="get_pfc-cfc" class="blue">-</span>
+	<span id="get_overheat">-.-</span>
+	<span id="get_peev-pospp">-</span>
+	<span id="get_flow-floweva" class="blue">-.-</span>
+	<span id="get_flow-flowcon" class="orange">-.-</span>
+	<span id="get_overcool" class="orange">-.-</span>
+	<span id="get_relay-rboiler" class="charsw" title=" ϟ"></span>
+<div name="hide_sun">
+	<span id="get_relay-rsun" class="charsw" title=" ϟ"></span>
+	<span id="get_temp-tsun" class="red">-.-</span>
+	<span id="get_temp-tsunoutg" class="red">-.-</span>
+</div>
+</div>
+</div>
+
+<div class="card">
+	<div class="row"><span class="k">Режим работы</span><span class="v"><span id="get_modehp">-</span></span></div>
+	<div class="row"><span class="k">На улице</span><span class="v"><span id="get_temp-tout">-</span>&deg;</span></div>
+	<div class="row"><span class="k">В доме</span><span class="v"><span id="get_temp-tin">-</span>&deg;</span></div>
+	<div class="row"><span class="k">Цель</span><span class="v"><span id="get_trgt">-</span>&deg;</span></div>
+	<div class="row"><span class="k">Насос ГК</span><span class="v"><span id="get_relay-rpumpi-ONOFF">-</span></span></div>
+	<div class="row"><span class="k">Насос СО</span><span class="v"><span id="get_relayout">-</span></span></div>
+	<div class="row"><span class="k">Потребление</span><span class="v"><span id="get_power220">-</span> кВт</span></div>
+	<div class="row"><span class="k">Вход</span><span class="v"><span id="get_powergeo">-</span> кВт</span></div>
+	<div class="row"><span class="k">Выход</span><span class="v"><span id="get_powerco">-</span> кВт</span></div>
+	<div class="row"><span class="k">COP</span><span class="v"><span id="get_fullcop">-</span></span></div>
+</div>
+<div class="hint"><span id="get_ohp-bp-hide" style="color:red" hidden>От генератора</span></div>
+
+<div class="card">
+	<h2>Датчики температуры</h2>
+	<div class="scroll">
+	<table><tbody id="get_tbltemp1"></tbody></table>
+	</div>
+</div>
+
+</main>
+</body>
+</html>
