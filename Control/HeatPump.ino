@@ -1981,12 +1981,12 @@ void HeatPump::resetPID()
 boolean HeatPump::boilerAddHeat()
 {
 	if(get_State() != pWORK_HP) return false; // работа ТЭНа бойлера разрешена если только работает ТН, в противном случае выкл
-	if (GETBIT(Option.flags,fBackupPower))  { // если переключение на ходу на резервный источник то сбросить догрев бойлера
+	if (!is_BoilerHeaterAllowed())  { // если переключение на ходу на резервный источник то сбросить догрев бойлера
 		flagRBOILER = false;
 		return false;
 	}
 	int16_t T = sTemp[TBOILER].get_Temp();
-	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella)) && (!GETBIT(Option.flags, fBackupPower))) // Сальмонелла не взирая на расписание если включен бойлер и не питание от резервного источника
+	if((GETBIT(Prof.SaveON.flags, fBoilerON)) && (GETBIT(Prof.Boiler.flags, fSalmonella))) // Сальмонелла не взирая на расписание если включен бойлер (запрет ТЭНа на генераторе проверен выше)
 	{
 		if((rtcSAM3X8.get_day_of_week() == SALMONELLA_DAY) && (rtcSAM3X8.get_hours() == SALMONELLA_HOUR) && (rtcSAM3X8.get_minutes() <= 2) && (!onSalmonella)) { // Надо начитать процесс обеззараживания
 			startSalmonella = rtcSAM3X8.unixtime();
@@ -2080,7 +2080,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			flagRBOILER = false;
 			return pCOMP_OFF;
 		}
-		if(!GETBIT(Option.flags, fBackupPower)) {   // Включение ТЭНа бойлера если не питание от резервного источника
+		if(is_BoilerHeaterAllowed()) {   // Включение ТЭНа бойлера если он не запрещен (генератор + fWorkOnGenerator)
 			dRelay[RBOILER].set_ON();
 			#ifdef RPUMPBH
 			if(!onBoiler && GETBIT(flags, fHP_BoilerTogetherHeat)) dRelay[RPUMPBH].set_OFF();   // насос ГВС - выключить
@@ -2103,7 +2103,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 	if(!GETBIT(Prof.SaveON.flags,fBoilerON) || (!scheduleBoiler() && !GETBIT(Prof.Boiler.flags,fScheduleAddHeat))) // Если запрещено греть бойлер согласно расписания ИЛИ  Бойлер выключен, выходим и можно смотреть отопление
 	{
 #ifdef RBOILER  // управление дополнительным ТЭНом бойлера
-		if(GETBIT(Prof.Boiler.flags, fAddHeat)) {
+		if(GETBIT(Prof.Boiler.flags, fAddHeating)) {
 			dRelay[RBOILER].set_OFF();
 			flagRBOILER=false; // Выключение
 		}
@@ -2176,7 +2176,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 		}
 
 		// Отслеживание выключения (с учетом догрева)
-		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
+		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating) && is_BoilerHeaterAllowed())// режим догрева (если ТЭН разрешен), не турбо
 		{
 			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBh22; return pCOMP_OFF; // Температура выше целевой температуры ДОГРЕВА надо выключаться!
@@ -2204,7 +2204,7 @@ MODE_COMP  HeatPump::UpdateBoiler()
 			Status.ret=pBp1; set_Error(ERR_PID_FEED,(char*)__FUNCTION__); return pCOMP_OFF;  // Достижение максимальной температуры подачи
 		}
 		// Отслеживание выключения (с учетом догрева)
-		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating))// режим догрева, не турбо
+		if(!GETBIT(Prof.Boiler.flags, fTurboBoiler) && GETBIT(Prof.Boiler.flags, fAddHeating) && is_BoilerHeaterAllowed())// режим догрева (если ТЭН разрешен), не турбо
 		{
 			if (T > Prof.Boiler.tempRBOILER - (onBoiler || HeatBoilerUrgently ? 0 : Prof.Boiler.dAddHeat)) {
 				Status.ret=pBp22; return pCOMP_OFF;  // Температура выше целевой температуры ДОГРЕВА надо выключаться!
@@ -2762,10 +2762,7 @@ MODE_HP HeatPump::get_Work()
 		ret = pOFF;
 		break;
 	case pCOMP_ON:
-		if(GETBIT(Option.flags, fBackupPower) && !GETBIT(Prof.Boiler.flags, fWorkOnGenerator)) {
-			Status.ret = pBgen;
-			ret = pOFF;
-		} else ret = pBOILER;
+		ret = pBOILER;
 		break;
 	case pCOMP_NONE:
 		ret = pBOILER + pCONTINUE;

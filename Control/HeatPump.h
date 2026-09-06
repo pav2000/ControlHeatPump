@@ -389,6 +389,7 @@ class HeatPump
    uint16_t get_maxBackupPower() {return Option.maxBackupPower;};      // Максимальная мощность при питании от генератора (Вт)
    uint8_t  get_BackupPower() {return GETBIT(Option.flags,fBackupPower);}// получить флаг использования генератора (ограничение мощности)
    boolean  set_BackupPower(boolean f) {if(f)SETBIT1(Option.flags,fBackupPower);else SETBIT0(Option.flags,fBackupPower);return GETBIT(Option.flags,fBackupPower);}// установить флаг использования генератора (ограничение мощности)
+   boolean  is_BoilerHeaterAllowed() {return !(GETBIT(Option.flags,fBackupPower) && GETBIT(Prof.Boiler.flags,fWorkOnGenerator));}// разрешен ли ТЭН бойлера (на генераторе запрещается флагом fWorkOnGenerator)
 #ifdef SGENERATOR
    void     check_fBackupPower(void) { Option.flags = (Option.flags & ~(1<<fBackupPower)) | ((sInput[SGENERATOR].get_Input() == sInput[SGENERATOR].get_alarmInput())<<fBackupPower); };
 #endif
