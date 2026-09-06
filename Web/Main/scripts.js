@@ -8,6 +8,18 @@ var urlcontrol = ''; //  автоопределение (если адрес с�
 //var urlcontrol = 'http://77.50.254.24:25402';
 var urltimeout = 1800; // таймаут ожидание ответа от контроллера. Чем хуже интертнет, тем выше значения. Но не более времени обновления параметров
 var urlupdate = 4000; // время обновления параметров в миллисекундах
+var retrymax = 5;          // предел числа повторов одного неудачного запроса
+var retrymaxdelay = 30000; // потолок паузы между повторами, мс
+
+// Записать HTML в элемент. Возвращает false, если элемента на странице нет.
+// Это штатная ситуация: например, страницы справки запрашивают get_tblRelay,
+// не имея самой таблицы. Раньше здесь падал TypeError и обрывал разбор всего ответа.
+function setHTMLById(id, html) {
+	var el = document.getElementById(id);
+	if(!el) return false;
+	el.innerHTML = html;
+	return true;
+}
 
 function setParam(paramid, resultid) {
 	// Замена set_Par(Var1) на set_par-var1 для получения значения 
@@ -90,7 +102,7 @@ function setParam(paramid, resultid) {
 var NeedLogin = sessionStorage.getItem("NeedLogin");
 var LPString = sessionStorage.getItem("LPString");
 
-function loadParam(paramid, noretry, resultdiv) {
+function loadParam(paramid, noretry, resultdiv, attempt, ondone) {
 	var check_ready = 1;
 	var queue = 0;
 	var req_stek = new Array();
@@ -120,6 +132,7 @@ function loadParam(paramid, noretry, resultdiv) {
 		request.send(null);
 		request.onreadystatechange = function() {
 			if(this.readyState != 4) return;
+			var retrying = false;
 			if(request.status == 200) {
 				if(request.responseText != null) {
 					var arr = request.responseText.replace(/^\x7f+/, '').replace(/\x7f\x7f*$/, '').split('\x7f');
@@ -132,6 +145,11 @@ function loadParam(paramid, noretry, resultdiv) {
 						}
 						for(var i = 0; i < arr.length; i++) {
 							if(arr[i] != null && arr[i] != 0) {
+							// Разбор одной записи изолирован: раньше исключение в любом обработчике
+							// обрывало разбор всего ответа. После объединения опроса (см. updateParam)
+							// в одном ответе идут записи и меню, и страницы, поэтому одна сбойная
+							// запись уронила бы обновление всей страницы.
+							try {
 								var j = arr[i].indexOf('=');
 								var values = [arr[i].substring(0,j), arr[i].substring(j+1)];
 								var valueid = values[0].replace("(", "-").replace(")", "").replace("set_", "get_").toLowerCase();
@@ -232,11 +250,11 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(type == 'scan') {
 									if(valueid == "get_message-scan_sms") {
 										if(values[1] == "wait response") {
-											setTimeout(loadParam('get_Message(scan_SMS)'), 3000);
+											setTimeout(function(){ loadParam('get_Message(scan_SMS)'); }, 3000);
 										} else alert(values[1]);
 									} else if(valueid == "get_message-scan_mail") {
 										if(values[1] == "wait response") {
-											setTimeout(loadParam('get_Message(scan_MAIL)'), 3000);
+											setTimeout(function(){ loadParam('get_Message(scan_MAIL)'); }, 3000);
 										} else alert(values[1]);
 									} else if(values[0] != null && values[0] != 0 && values[1] != null && values[1] != 0) {
 										var content = "<tr><td>" + values[1].replace(/\:/g, "</td><td>").replace(/(\;)/g, "</td></tr><tr><td>") + "</td></tr>";
@@ -397,7 +415,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr><td>' + count[j] + '</td><td id="get_ninput-' + input + '"></td><td id="get_input-' + input + '">-</td> <td nowrap><input id="get_alarminput-' + input + '" type="number" min="0" max="1"><input type="submit" value=">" onclick="setParam(\'get_alarmInput(' + count[j] + ')\');"></td><td nowrap><input id="get_testinput-' + input + '" type="number" min="0" max="1" step="1" value=""><input type="submit" value=">"  onclick="setParam(\'get_testInput(' + count[j] + ')\');"></td><td id="get_pininput-' + input + '">-</td><td id="get_typeinput-' + input + '">-</td><td id="get_einput-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											updateParam(upsens);
 											loadParam(loadsens);
 										} else if(values[0] == 'get_tblTempF') {
@@ -469,7 +487,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												if(tin) content += '<input type="checkbox" id="get_intemp-' +TL+ '" onchange="set_bTIN(this,\'' +T+ '\');">';
 												content += '</td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											loadParam(loadsens);
 											updateParam(upsens);
 										} else if(values[0] == 'get_tblFlow') {
@@ -492,7 +510,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td id="get_eflow-' + input + '">-</td>';
 												content = content + '</tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											updateParam(upsens);
 											loadParam(loadsens);
 										} else if(values[0] == 'get_tblRelay') {
@@ -505,7 +523,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_isrelay-' + relay + '"><td>' + count[j] + '</td><td id="get_nrelay-' + relay + '"></td><td><span id="get_relay-' + relay + '-ONOFF"></span><input type="checkbox" name="relay" id="get_relay-' + relay + '" onchange="setParam(\'get_Relay(' + count[j] + ')\');"></td><td id="get_pinrelay-' + relay + '"></td>';
 												content = content + '</tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											updateParam(upsens);
 											loadParam(loadsens);
 										} else if(values[0] == 'get_tblPwrC') {
@@ -514,7 +532,7 @@ function loadParam(paramid, noretry, resultdiv) {
 											for(var j = 0; j < count.length - 1; j++) {
 												content = content + '<tr><td>' + count[j] + '</td><td nowrap><input id="get_pwrc-' + count[j].toLowerCase() + '" type="number" value="' + count[j+1] + '"><input type="submit" value=">" onclick="setParam(\'get_PwrC(' + count[j++] + ')\');"></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 										} else if(values[0] == 'get_tblCharts') {
 											var content = ""; loadsens = "";
 											var count = values[1].split(';');
@@ -524,7 +542,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<td nowrap><input id="get_charto-' + count[j] + '" type="text"> <input type="submit" value=">" onclick="setParam(\'get_ChartO(' + count[j] + ')\');"></td>';
 												content = content + '<td nowrap><input id="get_chartx-' + count[j] + '" type="text"> <input type="submit" value=">" onclick="setParam(\'get_ChartX(' + count[j] + ')\');"></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											loadParam(loadsens);
 										} else if(values[0] == 'get_numberIP') {
 											var content = "", content2 = "", upsens = "", loadsens = "";
@@ -537,7 +555,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content2 = content2 + '<td><input type="checkbox" id="get_sensorruleip-' + j + '" onchange="setParam(\'get_sensorRuleIP(' + j + ')\');" ></td>';
 												content2 = content2 + '<td><select id="get_listip-' + j + '" onchange="setParam(\'get_listIP-' + j + '\',\'get_listIP-' + j + '\');"></select></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											document.getElementById(valueid + "-inputs").innerHTML = content2;
 											updateParam(upsens);
 											loadParam(loadsens);
@@ -549,7 +567,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content = content + '<tr id="get_prof-' + j + '"><td>' + (j+1) + '</td><td id="infoprofile-' + j + '"></td>';
 												content = content + '<td nowrap><input id="eraseprofile-' + j + '" type="submit" value="Стереть"  onclick=\'loadParam("eraseProfile(' + j + ')")\'> <input name="profile" type="submit" value="Загрузить" onclick=\'loadParam("loadProfile(' + j + ')")\' disabled></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											loadParam(loadsens);
 										} else if(values[0] == 'get_tblPDS') {
 											var content = "";
@@ -560,7 +578,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content += '<tr><td><select id="get_prof-dsd' + j + '" onchange="setParam(\'get_Prof(DSD' + j + ')\')">' + elem.innerHTML.replace('>' + tflds[0] + '<', ' selected>' + tflds[0] + '<') + '<\select></td><td>' + tflds[1] 
 													+ '</td><td nowrap><input id="get_prof-dss' + j + '" type="text" size="6" value="' + tflds[2] + '"> <input type="submit" value=">" onclick="setDS(\'S\',' + j + ')"></td><td nowrap><input id="get_prof-dse' + j + '" type="text" size="6" value="' + tflds[3] + '"> <input type="submit" value=">" onclick="setDS(\'E\',' + j + ')"></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 										} else if(values[0] == 'get_tblWR') {
 											var content = "", upsens = "", loadsens = "";
 											var count = Number(values[1]);
@@ -573,7 +591,7 @@ function loadParam(paramid, noretry, resultdiv) {
 												content += '<td nowrap><input id="get_wrl-' + j + '" type="number"><input type="submit" value=">" onclick="setParam(\'get_WRL(' + j + ')\')"></td>';
                                                 content += '<td id="get_wrt-' + j + '"></td><td id="get_wrn-' + j + '"></td></tr>';
 											}
-											document.getElementById(valueid).innerHTML = content;
+											if(!setHTMLById(valueid, content)) continue;	// нет приёмника на этой странице
 											loadParam(loadsens);
 											updateParam(upsens);
 										} else {
@@ -664,9 +682,9 @@ function loadParam(paramid, noretry, resultdiv) {
 								} else if(values[0] == "get_errcode" && values[1] < 0) {
 									document.getElementById("get_errcode").innerHTML = "Ошибка";
 								} else if(values[0] == "test_Mail") {
-									setTimeout(loadParam('get_Message(scan_MAIL)'), 3000);
+									setTimeout(function(){ loadParam('get_Message(scan_MAIL)'); }, 3000);
 								} else if(values[0] == "test_SMS") {
-									setTimeout(loadParam('get_Message(scan_SMS)'), 3000);
+									setTimeout(function(){ loadParam('get_Message(scan_SMS)'); }, 3000);
 								} else if(values[0] == "progFC") {
 									alert(values[1]);
 								} else if(values[0].indexOf("set_SAVE")==0) {
@@ -690,6 +708,7 @@ function loadParam(paramid, noretry, resultdiv) {
 										element.innerHTML = values[1];
 									}
 								}
+							} catch(err) { console.warn("loadParam: " + arr[i] + " -> " + err); }
 							}
 						}
 						if(typeof window["loadParam_after"] == 'function') window["loadParam_after"](paramid);
@@ -698,12 +717,24 @@ function loadParam(paramid, noretry, resultdiv) {
 //			} else if(request.status == 0) return;
 			} else if(noretry != true) {
 				if(request.status == 401 && location.protocol == "file:") NeedLogin = 1;
-				console.log("request.status: " + request.status + " retry load...");
-				check_ready = 1;
-				setTimeout(function() {
-					loadParam(paramid);
-				}, urltimeout);
+				// Повтор с экспоненциальным откатом и пределом попыток.
+				// Раньше повтор был безусловным и бесконечным: каждый тик updateParam
+				// порождал ещё одну вечную цепочку, и при недоступном контроллере
+				// поток запросов рос линейно без ограничения.
+				var att = (attempt || 0) + 1;
+				if(att <= retrymax) {
+					var delay = urltimeout * Math.pow(2, att - 1);
+					if(delay > retrymaxdelay) delay = retrymaxdelay;
+					retrying = true;
+					console.log("request.status: " + request.status + " retry " + att + "/" + retrymax + " through " + delay + " ms");
+					setTimeout(function() {
+						loadParam(paramid, noretry, resultdiv, att, ondone);   // аргументы больше не теряются
+					}, delay);
+				} else {
+					console.log("request.status: " + request.status + " retry limit, give up: " + paramid);
+				}
 			}
+			if(!retrying && typeof ondone == "function") ondone();
 			autoheight(); // update height
 		}
 	}
@@ -793,23 +824,13 @@ function upload(file) {
 	xhr.send(file);
 }
 
+// Высоту колонок и фон держит CSS: .menu - position:fixed сверху донизу,
+// .content - min-height:100vh. Заглушка оставлена, потому что функцию зовут из
+// обработчика ответа ниже и из menu.js. Прежняя версия давала два принудительных
+// пересчёта layout на каждый XHR и на каждый скролл, писала значения без единиц
+// (работала только в quirks) и прибивала body.style.minWidth, из-за чего
+// медиазапросы не могли сработать в принципе.
 function autoheight() {
-/*	var max_col_height = Math.max(
-		document.body.scrollHeight, document.documentElement.scrollHeight,
-		document.body.offsetHeight, document.documentElement.offsetHeight,
-		document.body.clientHeight, document.documentElement.clientHeight
-	);*/
-	var max_col_height = window.innerHeight;
-	var columns = document.body.children;
-	for(var i = columns.length - 1; i >= 0; i--) { // прокручиваем каждую колонку в цикле
-		if(columns[i].offsetHeight > max_col_height) {
-			max_col_height = columns[i].offsetHeight; // устанавливаем новое значение максимальной высоты
-		}
-	}
-	for(var i = columns.length - 1; i >= 0; i--) {
-		columns[i].style.minHeight = max_col_height; // устанавливаем высоту каждой колонки равной максимальной
-	}
-	document.body.style.minWidth = Math.max(document.body.clientWidth, document.body.scrollWidth);
 }
 
 function calcacp() {
@@ -842,11 +863,72 @@ function setKanalog() {
 	setParam('get_transPress(' + sens + ')');
 }
 
+// ---------------- объединённый периодический опрос ----------------
+// Было: каждый вызов updateParam создавал собственный вечный setInterval, id нигде
+// не сохранялся, отменить интервал было нельзя. При этом updateParam вызывается ещё
+// и из обработчика ответа (10 мест ниже по файлу), поэтому повторный приход того же
+// табличного ответа - в том числе после повтора по таймауту - добавлял новый интервал
+// поверх старого, и частота опроса росла.
+// Стало: регистрация складывается в общий набор, тикает один таймер. Побочно это
+// объединяет запрос меню (menu.js) с запросом страницы в один HTTP-запрос и убирает
+// повторы параметров между ними.
+var pollSets = {};     // строка параметров -> true
+var pollTimer = null;
+var pollBusy = 0;      // сколько запросов текущего тика ещё в полёте
+var pollBusyAt = 0;    // когда счётчик стал ненулевым - для сторожевого сброса
+var pollMaxLen = 1200; // предел длины одной порции, как в ветке get_tblTempF выше
+
 function updateParam(paramids) {
-	setInterval(function() {
-		loadParam(paramids)
-	}, urlupdate);
-	loadParam(paramids);
+	if(!paramids) return;
+	if(!pollSets[paramids]) {
+		pollSets[paramids] = true;
+		loadParam(paramids);           // первая порция сразу, как было раньше
+	}
+	if(!pollTimer) pollTimer = setTimeout(pollTick, urlupdate);
+}
+
+// снять опрос (в текущей морде не используется, но теперь это возможно)
+function stopUpdateParam(paramids) {
+	if(paramids) delete pollSets[paramids];
+	else pollSets = {};
+}
+
+// собрать все зарегистрированные параметры в один список без повторов
+function pollList() {
+	var seen = {}, out = [], k, a, i, p;
+	for(k in pollSets) {
+		if(!pollSets.hasOwnProperty(k)) continue;
+		a = k.split(',');
+		for(i = 0; i < a.length; i++) {
+			p = a[i];
+			if(p == "" || seen[p]) continue;
+			seen[p] = 1;
+			out.push(p);
+		}
+	}
+	return out;
+}
+
+function pollTick() {
+	pollTimer = setTimeout(pollTick, urlupdate);  // urlupdate перечитывается каждый тик
+	// сторожевой сброс: если колбэк по какой-то причине не пришёл, опрос не должен встать
+	if(pollBusy > 0 && Date.now() - pollBusyAt > 90000) pollBusy = 0;
+	if(pollBusy > 0) return;                      // предыдущий тик ещё не ответил
+	var list = pollList(), chunk = "";
+	for(var i = 0; i < list.length; i++) {
+		if(chunk != "" && chunk.length + list[i].length + 1 > pollMaxLen) {
+			pollSend(chunk);
+			chunk = "";
+		}
+		chunk += (chunk == "" ? "" : ",") + list[i];
+	}
+	if(chunk != "") pollSend(chunk);
+}
+
+function pollSend(chunk) {
+	if(pollBusy == 0) pollBusyAt = Date.now();
+	pollBusy++;
+	loadParam(chunk, false, undefined, 0, function() { if(pollBusy > 0) pollBusy--; });
 }
 
 function updatelog() {
