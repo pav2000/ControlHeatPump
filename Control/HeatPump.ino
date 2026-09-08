@@ -285,6 +285,7 @@ void HeatPump::set_testMode(TEST_MODE b)
 // Получить источник загрузки веб морды
 TYPE_SOURSE_WEB HeatPump::get_SourceWeb()
 {
+#ifndef SD_ONLY
 	if(get_WebStoreOnSPIFlash()) {
 		switch (get_fSPIFlash())
 		{
@@ -295,17 +296,18 @@ TYPE_SOURSE_WEB HeatPump::get_SourceWeb()
 			return pFLASH_WEB;
 		}
 		return pMIN_WEB;
-	} else {
-		switch (get_fSD())
-		{
-		case 0:
-			if(get_fSPIFlash() == 2) return pFLASH_WEB;
-			break;
-		case 2:
-			return pSD_WEB;
-		}
-		return pMIN_WEB;
 	}
+#endif
+	// SD_ONLY либо настройка = хранение на SD карте: грузим морду с карты
+	switch (get_fSD())
+	{
+	case 0:
+		if(get_fSPIFlash() == 2) return pFLASH_WEB;
+		break;
+	case 2:
+		return pSD_WEB;
+	}
+	return pMIN_WEB;
 }
 
 // -------------------------------------------------------------------------
