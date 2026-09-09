@@ -685,6 +685,8 @@ function loadParam(paramid, noretry, resultdiv, attempt, ondone) {
 									setTimeout(function(){ loadParam('get_Message(scan_MAIL)'); }, 3000);
 								} else if(values[0] == "test_SMS") {
 									setTimeout(function(){ loadParam('get_Message(scan_SMS)'); }, 3000);
+								} else if(values[0] == "test_NarodMon") {
+									alert(values[1]);
 								} else if(values[0] == "progFC") {
 									alert(values[1]);
 								} else if(values[0].indexOf("set_SAVE")==0) {

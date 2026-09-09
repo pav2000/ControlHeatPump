@@ -18,6 +18,12 @@ function _uisw(){
 // Шапка и шторка. Вызывается из _menu.js / _menu-user.js во время разбора страницы.
 function _mdraw(items){
  var h = '<input type="checkbox" id="nav">'
+  // строка состояния над шапкой: состояние ТН, перегрев, частота инвертора
+  + '<div class="sbar">'
+  + '<span id="sb_mode" title="Состояние ТН">-</span>'
+  + '<span title="Перегрев">&Delta;<b id="get_overheat">-</b>&deg;</span>'
+  + '<span title="Частота инвертора"><b id="get_pfc-cfc">-</b> Гц</span>'
+  + '</div>'
   + '<header class="top">'
   + '<label class="burger" for="nav"><b></b></label>'
   + '<div class="ttl">' + document.title.split('.')[0] + '</div>'
@@ -44,8 +50,21 @@ function _mdraw(items){
    + _uisw() + '</nav>';
  document.write(h);
  _mactive();
+ _mirror("get_mode", "sb_mode");
  loadParam("get_listProf");
- updateParam("get_status,get_WORK,get_MODE,get_SCHDLR(On),get_listProf_");
+ updateParam("get_status,get_WORK,get_MODE,get_SCHDLR(On),get_listProf_,get_OverHeat,get_pFC(cFC)");
+}
+
+
+// Состояние ТН показывается и в шторке (как было), и в верхней строке.
+// Двух элементов с одним id быть не может, поэтому scripts.js пишет в #get_mode,
+// а сюда текст зеркалится наблюдателем.
+function _mirror(srcId, dstId) {
+ var s = document.getElementById(srcId), d = document.getElementById(dstId);
+ if(!s || !d) return;
+ var cp = function() { d.textContent = s.textContent; };
+ cp();
+ if(window.MutationObserver) new MutationObserver(cp).observe(s, {childList:true, characterData:true, subtree:true});
 }
 
 // Подсветка активного пункта - тот же приём, что в menu.js:79-85, но имя файла
