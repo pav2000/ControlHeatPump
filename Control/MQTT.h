@@ -83,8 +83,8 @@ class clientMQTT                              // Класс клиент MQTT
     uint16_t get_crc16(uint16_t crc);           // Рассчитать контрольную сумму для данных на входе входная сумма на выходе новая
 
     boolean dnsUpdate();                        // Обновление IP адресов MQTT через dns
-    boolean dnsUpdateStart();                   // Обновление IP адресов MQTT через dns при СТАРТЕ!!! семафоры не используются
     boolean sendTopic(boolean NM, boolean debug, boolean link_close);// Внутренная функция послать один топик
+    void    recoverNARMON();                    // Реанимация связи с народным мониторингом. МЮТЕКС xWebThreadSemaphore ДОЛЖЕН быть захвачен!
 
     uint16_t updateErrMQTT(boolean NM);         // Еще одна ошибка отправки на MQTT параметр тип сервера true - народный мониторинг false MQTT
     void resetErrMQTT(boolean NM){if(NM)numErrNARMON=0;else numErrMQTT=0;}  // Сброс числа ошибок отправки на MQTT параметр тип сервера true - народный мониторинг false MQTT
@@ -115,6 +115,14 @@ class clientMQTT                              // Класс клиент MQTT
     IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
     char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
     uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
+    char*   get_narodMon_login(){return mqttSettintg.narodMon_login;}            // Логин владельца, передается метрикой OWNER
+    char*   get_narodMon_id(){return mqttSettintg.narodMon_id;}                  // Имя прибора на народном мониторинге
+    void    nextStateNARMON();                                                   // Перевести состояние на следующую ступень реанимации
+    // Ручная отправка по кнопке из веб морды. Взводить флаг можно из ЛЮБОГО потока, сама отправка
+    // идет в MAIN_WEB_TASK - только там рабочие буфера гарантированно свободны.
+    void    setTestNARMON(){testNARMON=true;}                                    // Заказать внеочередную отправку
+    boolean getTestNARMON(){return testNARMON;}                                  // Заказана ли внеочередная отправка
+    void    clearTestNARMON(){testNARMON=false;}                                 // Снять заказ
     void clearBuf() {root[0]=0x00;topic[0]=0x00;temp[0]=0x00;};                  // очистка рабочих буферов перед отправкой
     // Рабочие буфера для отправки MQTT
     // Для экономии места используется выходной буфер MAIN_WEB_TASK потока веб сервера Socket[MAIN_WEB_TASK].outBuf[3*W5200_MAX_LEN] (в этом потоке ДОЛЖЕН проводится запуск MQTT и буфер гарантированно не используется другими задачами)
@@ -122,6 +130,9 @@ class clientMQTT                              // Класс клиент MQTT
     //  смещение 0 -                        root[LEN_ROOT]  - корень топика, длина до LEN_ROOT
     //  смещение 100 (LEN_ROOT) -           topic[LEN_TOPIC] - сам топик, длина до  LEN_TOPIC
     //  смещение 300 (LEN_ROOT+LEN_TOPIC) - temp[16] - временный буфер для получения строки флоат
+    // ВНИМАНИЕ: отправка на народный мониторинг (sendNarodMon2022) собирает ВЕСЬ пакет в root,
+    // занимая NARMON_PACKET_MAX байт от его начала плюс NARMON_ANSWER_MAX под ответ сервера.
+    // Раскладка выше при этом перекрывается, topic и temp в той функции не используются.
     char *root,*topic, *temp;                                                      // указатели на рабочие буфера
 
  private:
@@ -129,6 +140,7 @@ class clientMQTT                              // Класс клиент MQTT
    boolean closeSockSys(boolean debug);         // Попытаться сбросить системный сокет МЮТЕКС уже захвачен!!
    boolean dnsUpadateMQTT;                      // Флаг необходимости обновления через dns IP адреса для MQTT
    boolean dnsUpadateNARMON;                    // Флаг необходимости обновления через dns IP адреса для NARMON
+   boolean testNARMON;                          // Заказана внеочередная отправка на народный мониторинг (кнопка в веб морде)
    uint16_t numErrNARMON;                       // число ошибок отправки на народный моиторинг
    uint16_t numErrMQTT;                         // число ошибок отправки на MQTT
    TYPE_STATE_MQTT stateNARMON;                 // Состояние передачи что надо делать

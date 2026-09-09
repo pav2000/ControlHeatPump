@@ -56,13 +56,18 @@ void clientMQTT::initMQTT(uint8_t web_task)
  // NARMON
  strcpy(mqttSettintg.narodMon_server,DEFAULT_ADR_NARMON); // Адрес сервера народного мониторинга
  mqttSettintg.narodMon_serverIP=zeroIP;                   // IP Адрес сервера народного мониторинга
- mqttSettintg.narodMon_port=DEFAULT_PORT_MQTT;            // Адрес порта сервера народного мониторинга
- strcpy(mqttSettintg.narodMon_login,"login");             // логин сервера народного мониторинга
+ mqttSettintg.narodMon_port=DEFAULT_PORT_NARMON;          // Адрес порта сервера народного мониторинга (TCP протокол, 8283)
+ strcpy(mqttSettintg.narodMon_login,DEFAULT_LOGIN_NARMON);// логин владельца на народном мониторинге (метрика OWNER)
  strcpy(mqttSettintg.narodMon_password,"1234");           // пароль сервера народного мониторинга
  strcpy(mqttSettintg.narodMon_id,"HeatPump");             // Идентификатор клиента на MQTT сервере
 
  dnsUpadateMQTT=false;                                     // Флаг необходимости обновления через dns IP адреса для MQTT
  dnsUpadateNARMON=false;                                   // Флаг необходимости обновления через dns IP адреса для NARMON
+ testNARMON=false;                                         // Внеочередная отправка на народный мониторинг не заказана
+ stateNARMON=pMQTT_OK;                                     // Состояние передачи, с него начинается лестница реанимации
+ stateMQTT=pMQTT_OK;
+ numErrNARMON=0;                                           // Счетчики ошибок отправки подряд
+ numErrMQTT=0;
  w5200_MQTT.setSock(W5200_SOCK_SYS);                       // Установить сокет с которым рабоатем
 // w5200_MQTT.setCallback(callback);
 }
@@ -278,6 +283,58 @@ uint16_t clientMQTT::updateErrMQTT(boolean NM)
       return numErrMQTT;
      }
 return 0;
+}
+
+// Реанимация связи с народным мониторингом ПЕРЕД очередной попыткой соединения.
+// Ступени те же, что и у MQTT в sendTopic(): сокет -> перепроверка DNS -> сброс сетевого чипа.
+// ВНИМАНИЕ: мютекс xWebThreadSemaphore ДОЛЖЕН быть захвачен вызывающим - внутри работа с SPI и сокетами!
+void clientMQTT::recoverNARMON()
+{
+ IPAddress zeroIP(0,0,0,0), tempIP;
+ uint8_t i;
+ switch (stateNARMON)
+ {
+  case pMQTT_OK:                                     // Предыдущая отправка была удачна, реанимировать нечего
+       break;
+  case pMQTT_SOCK:                                   // Попытка реанимировать системный сокет
+       HP.num_resMQTT++;
+       if(closeSockSys(true)) journal.jprintf((char*)ResSock);
+       break;
+  case pMQTT_DNS:                                    // Сокет не помог, возможно сервер сменил адрес
+       HP.num_resMQTT++;
+       if(closeSockSys(true))
+         {
+          journal.jprintf((char*)ResDHCP);
+          _delay(50);
+          check_address(mqttSettintg.narodMon_server,tempIP);      // Адрес НЕ сохраняем в настройках, только в ОЗУ
+          if((tempIP!=zeroIP)&&(tempIP!=mqttSettintg.narodMon_serverIP))
+            {
+             mqttSettintg.narodMon_serverIP=tempIP;
+             journal.jprintf((char*)ChangeIP,mqttSettintg.narodMon_server);
+            }
+          _delay(50);
+         }
+       break;
+  case pMQTT_RES:                                    // Ничего не помогло - сброс сетевого чипа
+       HP.num_resMQTT++;
+       journal.jprintf((char*)ResChip);
+       initW5200(false);                                           // Инициализация сети без вывода инфы в консоль
+       for(i=0;i<W5200_THREAD;i++) SETBIT1(Socket[i].flags,fABORT_SOCK); // Признак инициализации сокета, надо прерывать передачу в сервере
+       _delay(50);
+       break;
+ }
+}
+
+// Следующая ступень реанимации, вызывается ПОСЛЕ неудачной отправки на народный мониторинг
+void clientMQTT::nextStateNARMON()
+{
+ switch(stateNARMON)
+ {
+  case pMQTT_OK:   stateNARMON=pMQTT_SOCK; break;
+  case pMQTT_SOCK: stateNARMON=pMQTT_DNS;  break;
+  case pMQTT_DNS:  stateNARMON=pMQTT_RES;  break;
+  case pMQTT_RES:  stateNARMON=pMQTT_OK;   break;
+ }
 }
 
 /*

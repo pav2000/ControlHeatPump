@@ -905,186 +905,228 @@ boolean sendNarodMon(boolean debug)
 #macN#valueN[#timeN][#nameN]\n
 ##
 */
+
+// Дописать в пакет народного мониторинга строку "#метрика#значение\n" с контролем границы буфера.
+// p - текущий конец пакета (строка всегда закрыта нулем), end - первый байт ЗА буфером.
+// Возврат: новый конец пакета или NULL, если место кончилось. NULL на входе прозрачно возвращается
+// обратно - это позволяет не проверять результат после каждого вызова, достаточно одной проверки в конце.
+static char* nm_add(char *p, char *end, const char *metric, const char *value)
+{
+	uint16_t lm, lv;
+	if(p == NULL) return NULL;
+	lm = strlen(metric); lv = strlen(value);
+	if(p + lm + lv + 3 >= end) return NULL;      // '#' + метрика + '#' + значение + '\n' + завершающий ноль, он тоже должен влезть
+	*p++ = '#';
+	memcpy(p, metric, lm); p += lm;
+	*p++ = '#';
+	memcpy(p, value, lv);  p += lv;
+	*p++ = '\n';
+	*p = '\0';
+	return p;
+}
+
+// Прочитать строку ответа сервера до LF, хвостовой CR срезается, слишком длинная строка молча обрезается.
+// На время паузы семафор ОТДАЕТСЯ, иначе на секундных таймаутах встанет весь веб сервер.
+// Опрос сначала частый (сервер отвечает быстро), потом редкий - иначе ожидание всегда стоило бы полного шага.
+// Возврат: >0 - длина строки, 0 - ответа нет (таймаут или сервер закрыл сессию),
+//          -1 - семафор потерян: вызывающему трогать сокет и делать SemaphoreGive НЕЛЬЗЯ.
+static int16_t nm_read_line(EthernetClient &c, char *buf, uint16_t size, uint32_t timeout)
+{
+	uint16_t pos = 0, poll = 0;
+	uint32_t startTick = GetTickCount();
+	buf[0] = '\0';
+	for(;;) {
+		while(c.available()) {
+			int ch = c.read();
+			if(ch < 0) break;
+			if(ch == '\n') {
+				if(pos && buf[pos - 1] == '\r') pos--;
+				buf[pos] = '\0';
+				return pos;
+			}
+			if(pos < size - 1) buf[pos++] = (char) ch;
+		}
+		if(!c.connected()) { buf[pos] = '\0'; return pos; }   // сервер закрыл сессию, данных больше не будет
+		if(GetTickCount() - startTick > timeout) { buf[pos] = '\0'; return pos; }
+		SemaphoreGive(xWebThreadSemaphore);                   // отдать семафор для обработки других задач
+		_delay(poll < NARMON_POLL_FAST_N ? NARMON_POLL_FAST : NARMON_POLL_SLOW);
+		if(poll < NARMON_POLL_FAST_N) poll++;
+		if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {
+			// Семафор обратно не получен. Он сейчас у другой задачи, поэтому НИ трогать сокет,
+			// НИ отдавать семафор нельзя: он бинарный, и лишний Give освободил бы SPI из-под владельца.
+			buf[pos] = '\0';
+			return -1;
+		}
+	}
+}
+
+// Посылка данных на народный мониторинг по TCP протоколу.
 // debug  true - выводить в консоль информацию о посылаемых данных false - нет вывода
+// Возврат: true  - повторять НЕ надо: пакет принят сервером, либо сервер ответил ошибкой протокола
+//                  ("При сообщениях об ошибках НЕ ПОВТОРЯТЬ!"), либо отправка невозможна в принципе;
+//          false - пакет НЕ доставлен (нет линка, нет соединения, нет ответа) - имеет смысл повторить.
 boolean sendNarodMon2022(boolean debug)
 {
- uint8_t i;
- char buf[32]; 
-     if (memcmp(defaultMAC,HP.get_mac(),sizeof(defaultMAC))==0) {journal.jprintf("sendNarodMon2022 ignore: Wrong MAC address, change MAC from default.\n"); return false;}
-     
-     HP.clMQTT.clearBuf();   // очистить рабочие буфера	
-     journal.jprintf((char*)MQTTpublish,HP.clMQTT.get_narodMon_server());  
-    // Рабочие буфера для отправки MQTT
-    // Для экономии места используется выходной буфер MAIN_WEB_TASK потока веб сервера Socket[MAIN_WEB_TASK].outBuf[3*W5200_MAX_LEN] (в этом потоке ДОЛЖЕН проводится запуск MQTT и буфер гарантированно не используется другими задачами)
-    // Размер выходного буфера char outBuf[3*W5200_MAX_LEN] - 6 кБ - хватит на все. Распределение памяти в выходном буфере:
-    //  смещение 0 -                        root[LEN_ROOT]  - корень топика, длина до LEN_ROOT
-    //  смещение 100 (LEN_ROOT) -           topic[LEN_TOPIC] - сам топик, длина до  LEN_TOPIC
-    //  смещение 300 (LEN_ROOT+LEN_TOPIC) - temp[16] - временный буфер для получения строки флоат
-    // используется толллько root - используется только рут формируется весь пакет а потом он отправляется.
-      strcpy(HP.clMQTT.root,"#");  // Формирование строки куда потом пишутся топики
-      strcat(HP.clMQTT.root,HP.get_netMAC()); // # мак адрес в качестве идентификатора
-      strcat(HP.clMQTT.root,"#");
- //     strcpy(buf,""); // Очистка строки///
- //     HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,buf); // Копирование имени устройства///
- //     strcat(HP.clMQTT.root,buf);//
-      HP.clMQTT.get_paramMQTT((char*)mqtt_ID_NARMON,HP.clMQTT.root); // Копирование имени устройства в конец строки HP.clMQTT.root
-      strcat(HP.clMQTT.root,"\n");  // Конец первой строки
-      // Формирование параметров #mac1#value1\n
-      strcat(HP.clMQTT.root,"#"); 
-      strcpy(buf,HP.sTemp[TOUT].get_name());
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"#");
-      ftoa(buf,(float)HP.sTemp[TOUT].get_Temp()/100.0,1);  
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"\n");
-      
-      strcat(HP.clMQTT.root,"#"); 
-      strcpy(buf,HP.sTemp[TIN].get_name());
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"#");
-      ftoa(buf,(float)HP.sTemp[TIN].get_Temp()/100.0,1);  
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"\n");
+	uint8_t i;
+	int flag = 0;
+	int16_t len;
+	boolean ret;
+	char val[16];                                    // временный буфер под одно значение
+	char *p, *end, *answer;
+	IPAddress zeroIP(0, 0, 0, 0), oldIP, newIP;
+	EthernetClient tTCP;
 
-      strcat(HP.clMQTT.root,"#"); 
-      strcpy(buf,HP.sTemp[TBOILER].get_name());
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"#");
-      ftoa(buf,(float)HP.sTemp[TBOILER].get_Temp()/100.0,1);  
-      strcat(HP.clMQTT.root,buf);
-      strcat(HP.clMQTT.root,"\n");
+	if(memcmp(defaultMAC, HP.get_mac(), sizeof(defaultMAC)) == 0) {
+		journal.jprintf("sendNarodMon2022 ignore: Wrong MAC address, change MAC from default.\n");
+		return true;                                 // Пока MAC не сменят, повторять бессмысленно
+	}
 
- if(HP.dFC.get_present())
-         {
-          strcat(HP.clMQTT.root,"#FC#");
-          ftoa(buf,(float)HP.dFC.get_frequency()/100.0,2);
-          strcat(HP.clMQTT.root,buf);
-          strcat(HP.clMQTT.root,"\n");
-         }
-
-         strcat(HP.clMQTT.root,"#ERROR#");
-         itoa(HP.get_errcode(),buf,10);
-         strcat(HP.clMQTT.root,buf);
-         strcat(HP.clMQTT.root,"\n");
-
-      // Послать расширенный набор данных TCOMP OWERHEAT мощность выходная коп полный, положение ЭРВ, два давления,
-      if (HP.clMQTT.get_NarodMonBig())                
-           {
-		      strcat(HP.clMQTT.root,"#");    // Нагнетанее
-		      strcpy(buf,HP.sTemp[TCOMP].get_name());
-		      strcat(HP.clMQTT.root,buf);
-		      strcat(HP.clMQTT.root,"#");
-		      ftoa(buf,(float)HP.sTemp[TCOMP].get_Temp()/100.0,1);  
-		      strcat(HP.clMQTT.root,buf);
-		      strcat(HP.clMQTT.root,"\n");
-		
-		      strcat(HP.clMQTT.root,"#");  // перегрев
-		      strcpy(buf,"OWERHEAT");
-		      strcat(HP.clMQTT.root,buf);
-		      strcat(HP.clMQTT.root,"#");
-		      ftoa(buf,(float)HP.dEEV.get_Overheat()/100.0,1);  
-		      strcat(HP.clMQTT.root,buf);
-		      strcat(HP.clMQTT.root,"\n");
-
-			for(i=0;i<ANUMBER;i++)  // давления
-	             if(HP.sADC[i].get_present()) 
-	             {
-	                 strcat(HP.clMQTT.root,"#");
-	                 strcpy(buf,HP.sADC[i].get_name());
-	                 strcat(HP.clMQTT.root,buf);
-			         strcat(HP.clMQTT.root,"#");
-	         	      ftoa(buf,(float)HP.sADC[i].get_Value()/100.0,2);  
-			         strcat(HP.clMQTT.root,buf);
-			         strcat(HP.clMQTT.root,"\n");
-	             }
-
-           #ifdef EEV_DEF   // Положение ЭРВ
-  		     strcat(HP.clMQTT.root,"#");    // Нагнетанее
-             strcpy(buf,HP.dEEV.get_name());
-		     strcat(HP.clMQTT.root,buf);
-		     strcat(HP.clMQTT.root,"#");
-             itoa(HP.dEEV.get_EEV(),buf,10);
-    	     strcat(HP.clMQTT.root,buf);
-		     strcat(HP.clMQTT.root,"\n");
-           #endif 
-
- 		     strcat(HP.clMQTT.root,"#");    // Мощность системы отопления
-             strcpy(buf,"powerCO");
-		     strcat(HP.clMQTT.root,buf);
-		     strcat(HP.clMQTT.root,"#");
-		     ftoa(buf,HP.powerOUT,1);
-    	     strcat(HP.clMQTT.root,buf);
-		     strcat(HP.clMQTT.root,"\n");
- 
-         }   
-      strcat(HP.clMQTT.root,"##\n");
-
-    // пакет сформирован его надо отправить
-   	IPAddress ip(0, 0, 0, 0);
-   	int8_t flag = 0;
-   	EthernetClient tTCP; // For get time
-   	if(debug) journal.jprintf("sendNarodMon2022 start.\n");
-	//Запущен шедулер то захватываем семафор
-	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) {  // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-		return false;
-	} 
-
-    if (!linkStatusWiznet(false)) {	journal.jprintf((char*)"sendNarodMon2022: no link.\n");  SemaphoreGive(xWebThreadSemaphore); return false;}// Нет связи выходим
-
- //IPAddress get_narodMon_serverIP(){return mqttSettintg.narodMon_serverIP; }   // IP Адрес сервера народного мониторинга
- //   char*   get_narodMon_server(){return mqttSettintg.narodMon_server; }         // Адрес сервера народного мониторинга
- //   uint16_t get_narodMon_port(){return mqttSettintg.narodMon_port;}             // Адрес порта сервера  народного мониторинга
-
-	
-	if(check_address(HP.clMQTT.get_narodMon_server(), ip) == 0) { // DNS - ошибка выходим (проверяем DNS)
-		journal.jprintf((char*)"sendNarodMon2022: problem DNS\n");
+	// Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
+	if(SemaphoreTake(xWebThreadSemaphore, (W5200_TIME_WAIT / portTICK_PERIOD_MS)) == pdFALSE) return false;
+	if(!linkStatusWiznet(false)) {                   // Нет связи выходим
+		journal.jprintf((char*)"sendNarodMon2022: no link.\n");
 		SemaphoreGive(xWebThreadSemaphore);
 		return false;
-	}  // DNS - ошибка выходим
-	
-		
-		flag = tTCP.connect(HP.clMQTT.get_narodMon_serverIP(),HP.clMQTT.get_narodMon_port() , W5200_SOCK_SYS);
-		if(!flag) {
-			journal.jprintf("sendNarodMon2022:  connect fail\n"); 
-			SemaphoreGive(xWebThreadSemaphore);
-			return false;
-		} else { // Соедиение установлено посылаем пакет
-			if(tTCP.write((const uint8_t *)HP.clMQTT.root, strlen(HP.clMQTT.root)) == 0) {
-				journal.jprintf("sendNarodMon2022:  send error\n");
-				SemaphoreGive(xWebThreadSemaphore);
-				return false;
-			}
-			else {
-				if(debug) journal.jprintf("sendNarodMon2022:  send OK\n");
-				// Получение ответа сервера
-       			uint8_t wait = 20;
-				flag = 0;
-				while(wait--) { // ожидание ответа
-	//				SemaphoreGive(xWebThreadSemaphore);
-					_delay(50);
-	//				if(SemaphoreTake(xWebThreadSemaphore,(W5200_TIME_WAIT/portTICK_PERIOD_MS))==pdFALSE) break; // Захват семафора потока или ОЖИДАНИЕ W5200_TIME_WAIT, если семафор не получен то выходим
-					if(tTCP.available()) {
-						flag = 1;
-						break;
-					}
-				}
-                if(flag > 0) { // Ответ получен
-                	memset(buf,sizeof(buf-1),0x00); // очистить буфер
-					if(tTCP.read((uint8_t *)&buf, sizeof(buf-1)) >1) { // Ответ получен
-					if(debug) journal.jprintf("sendNarodMon2022-> %s\n",buf);	else journal.jprintf("send answer: %s\n",buf);
-						}
-                }
-				tTCP.stop();
-				SemaphoreGive(xWebThreadSemaphore);
-				return true;
-				 }
-			
-		}
+	}
 
- //    journal.jprintf("\n------------------------\n");    
-      if(debug)  journal.jprintf(HP.clMQTT.root);    
-      return true;
-     
+	// Пакет собирается ЦЕЛИКОМ в рабочем буфере root - это Socket[MAIN_WEB_TASK].outBuf (6 кБ),
+	// поэтому отправка обязана идти из потока MAIN_WEB_TASK, там буфер гарантированно свободен.
+	// Под пакет отведено NARMON_PACKET_MAX, сразу за ним лежит буфер ответа сервера.
+	// Области topic/temp при этом перекрываются - в этой функции они не используются.
+	HP.clMQTT.clearBuf();
+	p      = HP.clMQTT.root;
+	end    = HP.clMQTT.root + NARMON_PACKET_MAX;
+	answer = HP.clMQTT.root + NARMON_PACKET_MAX;
+	*p = '\0';
+
+	// 1я строка: #MAC[#Имя прибора]. MAC служит идентификатором прибора в проекте.
+	p = nm_add(p, end, HP.get_netMAC(), HP.clMQTT.get_narodMon_id());
+	// Логин владельца отдаем метрикой OWNER - сервер один раз использует его для автоматической
+	// привязки ничейного прибора к учетной записи. Дефолтный логин не отправляем.
+	if((HP.clMQTT.get_narodMon_login()[0] != '\0') && (strcmp(HP.clMQTT.get_narodMon_login(), DEFAULT_LOGIN_NARMON) != 0))
+		p = nm_add(p, end, "OWNER", HP.clMQTT.get_narodMon_login());
+
+	// Температуры отдаем только с установленных датчиков: get_Temp() у отсутствующего возвращает 0,
+	// и на сервере завелся бы датчик с вечными 0.0 градуса.
+	if(HP.sTemp[TOUT].get_present())    { ftoa(val, (float)HP.sTemp[TOUT].get_Temp()    / 100.0, 1); p = nm_add(p, end, HP.sTemp[TOUT].get_name(), val);    }
+	if(HP.sTemp[TIN].get_present())     { ftoa(val, (float)HP.sTemp[TIN].get_Temp()     / 100.0, 1); p = nm_add(p, end, HP.sTemp[TIN].get_name(), val);     }
+	if(HP.sTemp[TBOILER].get_present()) { ftoa(val, (float)HP.sTemp[TBOILER].get_Temp() / 100.0, 1); p = nm_add(p, end, HP.sTemp[TBOILER].get_name(), val); }
+
+	if(HP.dFC.get_present()) {                       // Инвертор - отдаем частоту
+		ftoa(val, (float)HP.dFC.get_frequency() / 100.0, 2);
+		p = nm_add(p, end, "FC", val);
+	} else {                                         // Старт-стоп - отдаем состояние компрессора
+		p = nm_add(p, end, HP.dRelay[RCOMP].get_name(), HP.dRelay[RCOMP].get_Relay() ? cOne : cZero);
+	}
+
+	itoa(HP.get_errcode(), val, 10);
+	p = nm_add(p, end, "ERROR", val);
+
+	// Расширенный набор: нагнетание, перегрев, давления, положение ЭРВ, выходная мощность
+	if(HP.clMQTT.get_NarodMonBig())
+	{
+		if(HP.sTemp[TCOMP].get_present()) { ftoa(val, (float)HP.sTemp[TCOMP].get_Temp() / 100.0, 1); p = nm_add(p, end, HP.sTemp[TCOMP].get_name(), val); }
+	#ifdef EEV_DEF
+		// ИМЯ МЕТРИКИ OWERHEAT НЕ МЕНЯТЬ! Опечатка историческая, но переименование заведет
+		// на сервере НОВЫЙ датчик и обнулит всю накопленную историю перегрева.
+		ftoa(val, (float)HP.dEEV.get_Overheat() / 100.0, 1);
+		p = nm_add(p, end, "OWERHEAT", val);
+	#endif
+		for(i = 0; i < ANUMBER; i++)                 // давления
+			if(HP.sADC[i].get_present()) { ftoa(val, (float)HP.sADC[i].get_Value() / 100.0, 2); p = nm_add(p, end, HP.sADC[i].get_name(), val); }
+	#ifdef EEV_DEF
+		itoa(HP.dEEV.get_EEV(), val, 10);            // Положение ЭРВ
+		p = nm_add(p, end, HP.dEEV.get_name(), val);
+	#endif
+		ftoa(val, HP.powerOUT, 1);                   // Мощность системы отопления
+		p = nm_add(p, end, "powerCO", val);
+	}
+
+	// Признак окончания пакета - именно "##" без перевода строки, как в описании протокола
+	if(p != NULL) {
+		if(p + 3 > end) p = NULL;
+		else { *p++ = '#'; *p++ = '#'; *p = '\0'; }
+	}
+	if(p == NULL) {                                  // Обрезанный пакет слать нельзя: ##_MISSED_AT_THE_END
+		journal.jprintf("sendNarodMon2022: packet overflow, increase NARMON_PACKET_MAX\n");
+		SemaphoreGive(xWebThreadSemaphore);
+		return true;
+	}
+
+	if(debug) {                                      // Пакет печатаем построчно: в PRINTF_BUF он целиком не влезет
+		char *s = HP.clMQTT.root, *e;
+		journal.jprintf("sendNarodMon2022 packet:\n");
+		while(*s) {
+			e = strchr(s, '\n');
+			if(e) *e = '\0';
+			journal.jprintf(" %s\n", s);
+			if(e == NULL) break;
+			*e = '\n';
+			s = e + 1;
+		}
+	}
+
+	// Соединение. Быстрый путь - по адресу из кеша, который заполняет dnsUpdate() (при старте и при
+	// смене имени сервера в настройках). При неудаче имя ОБЯЗАТЕЛЬНО перепроверяется через DNS:
+	// иначе после переезда сервера на другой адрес контроллер молчал бы до перезагрузки.
+	HP.clMQTT.recoverNARMON();                       // Если прошлая отправка была неудачной - реанимируем связь
+	oldIP = HP.clMQTT.get_narodMon_serverIP();
+	if(!(oldIP == zeroIP)) flag = tTCP.connect(oldIP, HP.clMQTT.get_narodMon_port(), W5200_SOCK_SYS);
+	if(!flag) {
+		check_address(HP.clMQTT.get_narodMon_server(), newIP); // 0 - не удалось, 1 - на входе был IP, 2 - получен через DNS
+		if(!(newIP == zeroIP) && !(newIP == oldIP)) {
+			HP.clMQTT.set_narodMon_serverIP(newIP);
+			if(!(oldIP == zeroIP)) journal.jprintf((char*)ChangeIP, HP.clMQTT.get_narodMon_server());
+			flag = tTCP.connect(newIP, HP.clMQTT.get_narodMon_port(), W5200_SOCK_SYS);
+		}
+	}
+	if(!flag) {
+		journal.jprintf("sendNarodMon2022: connect fail\n");
+		HP.clMQTT.updateErrMQTT(true);               // После MQTT_NUM_ERR_OFF ошибок подряд отправка отключится сама
+		HP.clMQTT.nextStateNARMON();                 // Следующая ступень реанимации - на следующей попытке
+		SemaphoreGive(xWebThreadSemaphore);
+		return false;
+	}
+
+	if(tTCP.write((const uint8_t *)HP.clMQTT.root, strlen(HP.clMQTT.root)) == 0) {
+		journal.jprintf("sendNarodMon2022: send error\n");
+		tTCP.stop();                                 // Сокет закрыть обязательно, иначе останется занятым
+		HP.clMQTT.updateErrMQTT(true);
+		HP.clMQTT.nextStateNARMON();
+		SemaphoreGive(xWebThreadSemaphore);
+		return false;
+	}
+	if(debug) journal.jprintf("sendNarodMon2022: send OK\n");
+
+	// Ответ сервера: OK при успешной отправке, иначе текст ошибки протокола или команда на исполнение
+	len = nm_read_line(tTCP, answer, NARMON_ANSWER_MAX, NARMON_TO_ANSWER);
+	if(len < 0) {
+		// Семафор потерян (он сейчас у другой задачи) - сокет трогать и семафор отдавать НЕЛЬЗЯ.
+		// Пакет при этом уже ушел в сеть и сервер его почти наверняка принял, поэтому повторять
+		// НЕ надо: повтор через минуту дал бы INTERVAL...<5m и риск бана прибора.
+		journal.jprintf("sendNarodMon2022: mutex lost, answer not read\n");
+		return true;
+	}
+	tTCP.stop();
+	journal.jprintf_time((char*)MQTTpublish, HP.clMQTT.get_narodMon_server());
+	if(len == 0) {                                   // Ответа нет - протокол предписывает повторить отправку
+		journal.jprintf("no answer\n");
+		HP.clMQTT.updateErrMQTT(true);
+		HP.clMQTT.nextStateNARMON();
+		ret = false;
+	} else if((answer[0] == 'O') && (answer[1] == 'K')) {  // Показания приняты
+		journal.jprintf("%s\n", answer);
+		HP.clMQTT.resetErrMQTT(true);
+		HP.clMQTT.updateState(true, pMQTT_OK);
+		ret = true;
+	} else {                                         // Ошибка протокола: связь исправна, но данные не приняты.
+		journal.jprintf("ERROR: %s\n", answer);      // ПОВТОРЯТЬ НЕЛЬЗЯ, надо исправлять настройки прибора
+		HP.clMQTT.updateErrMQTT(true);
+		HP.clMQTT.updateState(true, pMQTT_OK);       // Реанимировать связь не нужно, она работает
+		ret = true;
+	}
+	SemaphoreGive(xWebThreadSemaphore);
+	return ret;
 }  // Конец отсылки данных на народный мониторинг
 
 

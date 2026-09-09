@@ -802,15 +802,27 @@ void vWeb0(void *)
 #endif
 
 #ifdef MQTT                                     // признак использования MQTT
-			// 7. Отправка нанародный мониторинг
+			// 7. Отправка на народный мониторинг
+			// Внеочередная отправка по кнопке из веб морды. Интервал соблюдаем и здесь: показания чаще
+			// одного раза в 5 минут сервер считает ошибкой (INTERVAL...<5m), а за частые отправки банит прибор.
+			if ((HP.clMQTT.get_NarodMonUse())&&(HP.clMQTT.getTestNARMON())&&(active))
+			{
+				WEB_STORE_DEBUG_INFO(55);
+				HP.clMQTT.clearTestNARMON();
+				if(thisTime-narmont>TIME_NARMON*1000UL) { narmont=thisTime; sendNarodMon2022(true); }  // с выводом пакета в журнал
+				else journal.jprintf_time("NarodMon test: too early, min interval is %d sec\n",TIME_NARMON);
+				active=false;
+			}
+			// Штатная отправка по времени
 			if ((HP.clMQTT.get_NarodMonUse())&&(thisTime-narmont>TIME_NARMON*1000UL)&&(active))// если нужно & время отправки пришло
 			{
 				WEB_STORE_DEBUG_INFO(55);
-				narmont=thisTime;
 			//	sendNarodMon(false);            // отладка выключена
-                sendNarodMon2022(false);        // Посылка данных на народный мониторинг без использования MQTT потребовалось в декабре 2022 года.
-
-				
+				// Посылка данных на народный мониторинг без использования MQTT потребовалось в декабре 2022 года.
+				// Если пакет не доставлен (нет связи или нет ответа) - протокол предписывает повторить отправку,
+				// когда связь восстановится. Повторяем через NARMON_RETRY, но не чаще: иначе прибор попадет в бан.
+				if(sendNarodMon2022(false)) narmont=thisTime;
+				else narmont=thisTime-(TIME_NARMON-NARMON_RETRY)*1000UL;
 				active=false;
 			}  // if ((HP.clMQTT.get_NarodMonUse()))
 

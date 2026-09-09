@@ -156,10 +156,14 @@ void web_server(uint8_t thread)
 						// Для обычного пользователя подменить файл меню, для сокращения функционала
 						if(GETBIT(Socket[thread].flags, fUser)) {
 							if(strcmp(Socket[thread].inPtr, "menu.js") == 0) strcpy(Socket[thread].inPtr, "menu-user.js");
+							else if(strcmp(Socket[thread].inPtr, "_menu.js") == 0) strcpy(Socket[thread].inPtr, "_menu-user.js"); // мобильная морда
 							else if(strstr(Socket[thread].inPtr, ".html")) {
 								if(!(strcmp(Socket[thread].inPtr, "index.html") == 0
 									|| strcmp(Socket[thread].inPtr, "plan.html") == 0
-									|| strcmp(Socket[thread].inPtr, "about.html") == 0)) goto xUNAUTHORIZED;
+									|| strcmp(Socket[thread].inPtr, "about.html") == 0
+									|| strcmp(Socket[thread].inPtr, "_index.html") == 0
+									|| strcmp(Socket[thread].inPtr, "_plan.html") == 0
+									|| strcmp(Socket[thread].inPtr, "_about.html") == 0)) goto xUNAUTHORIZED;
 							}
 						}
 						urldecode(Socket[thread].inPtr, Socket[thread].inPtr, len + 1);
@@ -1410,6 +1414,16 @@ void parserGET(uint8_t thread, int8_t )
 			ADD_WEBDELIM(strReturn) ;
 			continue;
 		}   // test_Mail
+#ifdef MQTT
+		if (strcmp(str,"test_NarodMon")==0)  // Внеочередная отправка на народный мониторинг
+		{	// Отправлять прямо отсюда нельзя: пакет собирается в буфере потока MAIN_WEB_TASK, а этот
+			// обработчик может крутиться в любом потоке веб сервера. Поэтому только взводим флаг.
+			if (HP.clMQTT.get_NarodMonUse()) { HP.clMQTT.setTestNARMON(); strcat(strReturn,"Send queued, see journal: "); strcat(strReturn,HP.clMQTT.get_narodMon_server()); }
+			else { strcat(strReturn,"NarodMon sending is off.");}
+			ADD_WEBDELIM(strReturn) ;
+			continue;
+		}   // test_NarodMon
+#endif
 		if(strcmp(str, "get_OverCool") == 0) {
 			_dtoa(strReturn, HP.get_overcool(), 2);
 			ADD_WEBDELIM(strReturn);
