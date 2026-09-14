@@ -803,14 +803,19 @@ void vWeb0(void *)
 
 #ifdef MQTT                                     // признак использования MQTT
 			// 7. Отправка на народный мониторинг
-			// Внеочередная отправка по кнопке из веб морды. Интервал соблюдаем и здесь: показания чаще
-			// одного раза в 5 минут сервер считает ошибкой (INTERVAL...<5m), а за частые отправки банит прибор.
+			// Внеочередная отправка по кнопке из веб морды. Это ОТЛАДОЧНЫЙ режим - им пользуются, когда
+			// показания не проходят, поэтому интервал здесь НЕ проверяется и жать кнопку можно подряд.
+			// Ответственность за частоту на том, кто отлаживает: если с прошлой отправки не прошло
+			// TIME_NARMON, сервер ответит INTERVAL...<5m, а за систематические злоупотребления банит прибор.
+			// narmont все равно сдвигаем: иначе сразу за ручной отправкой могла бы уйти штатная, которую
+			// никто не заказывал. На саму кнопку это не влияет.
 			if ((HP.clMQTT.get_NarodMonUse())&&(HP.clMQTT.getTestNARMON())&&(active))
 			{
 				WEB_STORE_DEBUG_INFO(55);
 				HP.clMQTT.clearTestNARMON();
-				if(thisTime-narmont>TIME_NARMON*1000UL) { narmont=thisTime; sendNarodMon2022(true); }  // с выводом пакета в журнал
-				else journal.jprintf_time("NarodMon test: too early, min interval is %d sec\n",TIME_NARMON);
+				if(thisTime-narmont<=TIME_NARMON*1000UL) journal.jprintf_time("NarodMon test: less than %d sec since last send, expect INTERVAL error\n",TIME_NARMON);
+				narmont=thisTime;
+				sendNarodMon2022(true);          // с выводом пакета и ответа сервера в журнал
 				active=false;
 			}
 			// Штатная отправка по времени
