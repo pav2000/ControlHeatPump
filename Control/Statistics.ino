@@ -429,9 +429,6 @@ void Statistics::Update()
 			newval = HP.fullCOP;
 			if(newval == 0) skip_value = 1;
 			break;
-		case STATS_OBJ_Sun:
-			if(!GETBIT(HP.flags, fHP_SunWork)) continue;
-			break;
 		case STATS_OBJ_Compressor:
 			if(compressor_on_timer == 0) continue;
 			break;
@@ -555,9 +552,6 @@ void Statistics::StatsFieldHeader(char *ret, uint8_t i, uint8_t flag)
 		break;
 	case STATS_OBJ_Compressor:
 		strcat(ret, "Моточасы, м");
-		break;
-	case STATS_OBJ_Sun:
-		strcat(ret, "СК время, м");
 		break;
 	default: strcat(ret, "?");
 	}

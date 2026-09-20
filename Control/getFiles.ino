@@ -244,7 +244,6 @@ void get_txtSettings(uint8_t thread)
          
      strcat(Socket[thread].outBuf,"  - Опции -\r\n"); 
      strcat(Socket[thread].outBuf,"Теплый пол: ");HP.Prof.get_paramHeatHP((char*)hp_HEAT_FLOOR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
-     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN*+2°>TEVAOUTG): ");HP.Prof.get_paramHeatHP((char*)hp_SUN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramHeatHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
         
@@ -272,7 +271,6 @@ void get_txtSettings(uint8_t thread)
          }
      strcat(Socket[thread].outBuf," - Опции -\r\n"); 
      strcat(Socket[thread].outBuf,"Теплый пол: ");HP.Prof.get_paramCoolHP((char*)hp_HEAT_FLOOR,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
-     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN*+2°>TEVAOUTG): ");HP.Prof.get_paramCoolHP((char*)hp_SUN,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Использование погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
      strcat(Socket[thread].outBuf,"Коэффициент погодозависимости: ");HP.Prof.get_paramCoolHP((char*)hp_K_WEATHER,Socket[thread].outBuf,HP.dFC.get_present());STR_END;
          
@@ -316,7 +314,6 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf," - Опции -\r\n");
      strcat(Socket[thread].outBuf,"Греть совместно с отоплением, если ТН работает на отопление: ");HP.Prof.get_boiler((char*)boil_TOGETHER_HEAT,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Профилактика сальмонеллы (1 раз в неделю): ");HP.Prof.get_boiler((char*)boil_SALMONELLA,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор (TSUN>TEVAOUTG+Δ°): ");HP.Prof.get_boiler((char*)hp_SUN,Socket[thread].outBuf);STR_END; // hp_SUN это правильно
      strcat(Socket[thread].outBuf,"Управления циркуляционным насосом ГВС: ");HP.Prof.get_boiler((char*)boil_CIRCULATION,Socket[thread].outBuf); STR_END;
      strcat(Socket[thread].outBuf,"Время работы насоса ГВС (мин.): ");HP.Prof.get_boiler((char*)boil_CIRCUL_WORK,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Пауза в работе насоса ГВС (мин.): ");HP.Prof.get_boiler((char*)boil_CIRCUL_PAUSE,Socket[thread].outBuf);STR_END;
@@ -353,14 +350,6 @@ void get_txtSettings(uint8_t thread)
      strcat(Socket[thread].outBuf,"Время работы насоса отопления при выключенном компрессоре (сек): "); HP.get_optionHP((char*)option_PUMP_WORK,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Время паузы насоса отопления при выключенном компрессоре (сек): "); HP.get_optionHP((char*)option_PUMP_PAUSE,Socket[thread].outBuf);STR_END;
      
-     // Солнечный коллектор
-     strcat(Socket[thread].outBuf," - Настройки солнечного коллектора -\r\n");
-     strcat(Socket[thread].outBuf,"Использовать солнечный коллектор для регенерации геоконтура в простое: "); HP.get_optionHP((char*)option_SunRegGeo,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Температура воздуха (TSUN) начала регенерации геоконтура с помощью СК (+Δ) °C: "); HP.get_optionHP((char*)option_SunRegGeoTemp,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Температура (TSUNOUTG) завершения регенерации геоконтура с помощью СК °C: "); HP.get_optionHP((char*)option_SunRegGeoTempGOff,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Разница (Δ) температур: TSUN и на выходе в геоконтур для включения СК °C: "); HP.get_optionHP((char*)option_SunTDelta,Socket[thread].outBuf);STR_END;
-     strcat(Socket[thread].outBuf,"Разница (Δ) температур на выходе из СК и на выходе в геоконтур для выключения СК °C: "); HP.get_optionHP((char*)option_SunGTDelta,Socket[thread].outBuf);STR_END;
-
      strcat(Socket[thread].outBuf," - Времена и задержки -\r\n");
      strcat(Socket[thread].outBuf,"Минимальное время простоя компрессора (мин): "); HP.get_optionHP((char*)option_PAUSE,Socket[thread].outBuf);STR_END;
      strcat(Socket[thread].outBuf,"Задержка включения компрессора после включения насосов (сек): "); HP.get_optionHP((char*)option_DELAY_ON_PUMP,Socket[thread].outBuf);STR_END;

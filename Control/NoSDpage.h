@@ -320,7 +320,6 @@ const char index_noSD[] =
 "               if (valueid != null  && values[1] != null && values[1] == 0 ) {\r\n"
 "                 element=document.getElementById(valueid);if(element) {element.className = \"inactive\";}\r\n"
 "                 if(values[0] == \"get_isRelay(RHEAT)\" && values[1] == 0) {element=document.getElementById(\"get_ohp-add_heat\");if(element) {element.disabled = true;}}\r\n"
-"                 if(values[0] == \"get_isRelay(REVI)\" && values[1] == 0) {element=document.getElementById(\"get_ohp-temp_evi\");if(element) {element.disabled = true;} element=document.getElementById(\"get_ohp-temp_evi2\");if(element) {element.disabled = true;}}\r\n"
 "                 var tableElem = document.getElementById(valueid);\r\n"
 "                 if (tableElem) {\r\n"
 "                   var elements = tableElem.getElementsByTagName('select');\r\n"

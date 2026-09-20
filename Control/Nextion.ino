@@ -405,9 +405,6 @@ void Nextion::Update()
 			setComponentText("t1", ntemp);
 		}
 		uint8_t fl = (HP.IsWorkingNow() && HP.get_State() != pSTOPING_HP) | (HP.HeatBoilerUrgently << 1)
-#ifdef USE_SUN_COLLECTOR
-					| (HP.dRelay[RSUN].get_Relay() << 2)
-#endif
 #ifdef RBOILER
 					| (HP.dRelay[RBOILER].get_Relay() << 3)
 #endif
@@ -424,11 +421,6 @@ void Nextion::Update()
 			if((fl ^ Page1flags) & (1<<1)) {
 				if(fl & (1<<1)) sendCommand("vis g,1"); else sendCommand("vis g,0");
 			}
-#ifdef USE_SUN_COLLECTOR
-			if((fl ^ Page1flags) & (1<<2)) {
-				if(fl & (1<<2)) sendCommand("vis s,1"); else sendCommand("vis s,0");
-			}
-#endif
 #ifdef RBOILER
 			if((fl ^ Page1flags) & (1<<3)) {
 				if(fl & (1<<3)) sendCommand(HP.dRelay[RBOILER].get_Relay() ? "t3.pco=63488" : "t3.pco=65280"); else sendCommand("t3.pco=65535");

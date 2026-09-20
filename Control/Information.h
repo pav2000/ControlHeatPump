@@ -108,7 +108,6 @@ struct type_SaveON {
 #define fAddHeating      	6           // флаг ДОГРЕВА ГВС ТЭНом
 #define fBoilerTogetherHeat	7			// флаг одновременного нагрева бойлера с отоплением до температуры догрева
 #define fBoilerPID			8			// ПИД
-#define fBoilerUseSun		9		  	// флаг использования солнечного коллектора
 #define fAddHeatingForce	10			// флаг Включать догрев, если компрессор не нагрел бойлер до температуры догрева
 #define fWorkOnGenerator    11			// Греть бойлер на генераторе
 
@@ -137,7 +136,6 @@ struct type_boilerHP {
 #define fTarget      0                // Что является целью  - 0 (температура в доме), 1 (температура обратки).
 #define fWeather     1                // флаг Погодозависмости
 #define fHeatFloor   2				  // флаг использования теплого пола
-#define fUseSun      3				  // флаг использования солнечного коллектора
 
 struct type_DailySwitch {
 	uint8_t Device;					// Реле; 0 - нет и конец массива

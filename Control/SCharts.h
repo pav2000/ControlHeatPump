@@ -53,8 +53,7 @@ enum {
 	STATS_OBJ_Current_FC,	//= 16,
 	STATS_OBJ_Compressor,	//= 17,
 	STATS_OBJ_COP_Full,		//= 18,
-	STATS_OBJ_Sun,			//= 19,
-	STATS_OBJ_Relay			//= 20
+	STATS_OBJ_Relay			//= 19
 };
 
 const char *STATS_OBJ_names[] = {
@@ -77,7 +76,6 @@ const char *STATS_OBJ_names[] = {
 	"Current_FC",
 	"Compressor",
 	"COP_Full",
-	"Sun",
 	"Relay",
 	NULL
 };
