@@ -10,8 +10,9 @@
 <script>
 urlupdate = 6000;
 window.onload = function() {
-	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO),get_Boiler(W)");
-	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(DD),get_Boiler(WG),get_Boiler(WT),get_Boiler(TT)");
+	loadParam("get_Boiler(RESH),get_Boiler(RESHT),get_Boiler(CIRCP),get_Boiler(CIRCW),get_Boiler(MAX),get_Boiler(ON),get_Boiler(SCH_ON),get_Boiler(SCH_AH),get_Boiler(ADDH),get_Boiler(SLMN),get_Boiler(CIRC),get_Boiler(DTRG),get_Boiler(TRG),get_Boiler(TEMP),get_Boiler(TEMPR),get_Boiler(TURBO)");
+	loadParam("get_Boiler(TGHEAT),get_Boiler(PD),get_Boiler(PI),get_Boiler(PP),get_Boiler(PT),get_Boiler(ADT),get_Boiler(ADH),get_Boiler(ADEH),get_Boiler(PID),get_Boiler(SUN),get_Boiler(dAH),get_Boiler(AHF),get_Boiler(DD),get_Boiler(WG)");
+	updateParam("get_Temp(TBOILER)");
 };
 </script>
 </head>
@@ -30,7 +31,7 @@ window.onload = function() {
 		<td><input type="checkbox" id="get_boiler-on" onchange="setParam('get_Boiler(ON)');"></td></tr>
 	<tr><td>Нагреть срочно<sup>11</sup></td>
 		<td><input type="checkbox" id="get_boiler-urg" onchange="setParam('get_Boiler(URG)');"></td></tr>
-	<tr><td>Целевая температура бойлера &deg;C [5..90]. Текущая: <span id="get_boiler-tt">-</span></td>
+	<tr><td>Целевая температура бойлера &deg;C [5..90]. Текущая: <span id="get_temp-tboiler">-</span></td>
 		<td nowrap><input id="get_boiler-trg" type="number" min="5" max="90" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(TRG)');"></td></tr>
 	<tr><td>Гистерезис целевой температуры &deg;C [0..30]<sup>1</sup></td>
 		<td nowrap><input id="get_boiler-dtrg" type="number" min="0" max="30" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(DTRG)');"></td></tr>
@@ -48,10 +49,6 @@ window.onload = function() {
 		<td><input id="get_boiler-addh" type="checkbox" onchange="setParam('get_Boiler(ADDH)');"></td></tr>
 	<tr><td>Температура догрева бойлера &deg;C [0..90]</td>
 		<td nowrap><input id="get_boiler-tempr" type="number" min="0" max="90" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(TEMPR)');"></td></tr>
-	<tr><td>Температура цели при нагреве Ваттроутером &deg;C</td>
-		<td nowrap><input id="get_boiler-w" type="number" min="0" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(W)');"></td></tr>
-	<tr><td>Температура цели ночью и с прогнозом нулевой облачности &deg;C</td>
-		<td nowrap><input id="get_boiler-wt" type="number" min="0" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(WT)');"></td></tr>
 	<tr><td>Гистерезис цели нагрева ТН, если догрев не по расписанию &deg;C</td>
 		<td nowrap><input id="get_boiler-dah" type="number" step="0.1"><input type="submit" value="&gt;" onclick="setParam('get_Boiler(dAH)');"></td></tr>
 	<tr><td>Включать догрев, если компрессор не нагрел бойлер<sup>5</sup></td>

@@ -692,7 +692,6 @@ void vWeb0(void *)
 	static unsigned long resW5200 = 0;
 	static unsigned long iniW5200 = 0;
 	static unsigned long pingt = 0;
-	static uint16_t RepeatLowConsumeRequest = 0;
 #ifdef MQTT
 	static unsigned long narmont=0;
 	static unsigned long mqttt=0;
@@ -785,21 +784,6 @@ void vWeb0(void *)
 				pingServer();
 				active = false;
 			}
-
-#ifdef HTTP_LowConsumeRequest
-			if(active) {
-				if(GETBIT(HP.Option.flags, fBackupPower) != Request_LowConsume || (RepeatLowConsumeRequest && --RepeatLowConsumeRequest == 0)) {
-					strcpy(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, HTTP_LowConsumeRequest);
-					_itoa(GETBIT(HP.Option.flags, fBackupPower), Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE);
-					int err = Send_HTTP_Request(Socket[MAIN_WEB_TASK].outBuf + HTTP_REQ_BUFFER_SIZE, false);
-					if(err != -2000000000) {
-						if(err > -2000000000) Request_LowConsume = GETBIT(HP.Option.flags, fBackupPower);
-						else RepeatLowConsumeRequest = (uint16_t)(HTTP_REQUEST_ERR_REPEAT * 1000 / WEB0_OTHER_JOB_PERIOD + 1);
-					}
-					active = false;
-				}
-			}
-#endif
 
 #ifdef MQTT                                     // признак использования MQTT
 			// 7. Отправка на народный мониторинг

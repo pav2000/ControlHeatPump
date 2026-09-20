@@ -1534,7 +1534,7 @@
 	#define FLOW_CONTROL								  // Контроль потоков через ПТО (актуален если установлены расходомеры)
 
 	// АНАЛОГОВЫЕ ДАТЧИКИ  -------------------------------------------------------------------
-	#define ANUMBER		5       // Максимальное число аналоговых датчиков (то что поддерживается)
+	#define ANUMBER		4       // Максимальное число аналоговых датчиков (то что поддерживается)
 	// наличие датчиков в конфигурации минимальные максимальные и тестовые значения
 	// Справочно нумерация датчиков
 	// Давление харится в сотых бара
@@ -1542,20 +1542,17 @@
 	#define PCON			1	// Датчик давления конденсатора.
 	#define PGEO			2	// Датчик давления жидкости геоконтура
 	#define POUT			3	// Датчик давления теплоносителя отопления
-	#define IWR				4	// Датчки тока на входе ваттроутера, должен быть последним!
 	// Имена датчиков
 	const char *nameAnalog[] = {"PEVA",
 								"PCON",
 								"PGEO",
-								"POUT",
-								"IWR"
+								"POUT"
 						   };
 	// Описание датчиков
 	const char *noteAnalog[] = {"Давление кипения",
 								"Давление конденсации",
 								"Давление геоконтура",
-								"Давление отопления",
-								"Ток ваттроутера"
+								"Давление отопления"
 							};
 
 	// Номера каналов АЦП, в нумерации SAM3X (AD*):
@@ -1563,19 +1560,18 @@
 	#define ADC_SENSOR_PCON		12		// A10, X31. датчик давления конденсатора
 	#define ADC_SENSOR_PGEO		4		// A3, X19.1 датчик давления геоконтура - желтый, красный "+5V", черный "-".
 	#define ADC_SENSOR_POUT		5		// A2, X16.3 датчик давления отопления - желтый, красный "+5V", черный "-".
-	#define ADC_SENSOR_IWR		3		// A4, X19.2 датчик тока (4-20мА), + резистор 150 Ом на GND
 	// Коэффициент преобразования отсчеты АЦП-давление, тысячные
-	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181, 1000};
+	const uint16_t TRANsADC[ANUMBER]  = {   373, 1380,  181,  181};
 	// напряжение (отсчеты АЦП) соответсвующее cZero
-	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70,    0};
+	const uint16_t ANALOG_ZERO[ANUMBER] = { 290,  740,   70,   70};
 	// Усиление на шине (0,1 = x1, 2 = x2, 3 = x4)
 	// const uint8_t  ADC_GAIN[ANUMBER] = { 1,    1,    1,    1};
 
 
-	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true, true};	// Присутствие датчика в конфигурации
-	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100,-32767};	// минимальные значения, в сотых
-	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280,65535};	// Максимальные значения, в сотых
-	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150,    1};	// Значения датчиков при тестировании  опция TEST, в сотых
+	const boolean ANALOG_SENSORS[ANUMBER]= { true,  true, true, true};	// Присутствие датчика в конфигурации
+	const int16_t ANALOG_MIN[ANUMBER]   = {   30,   100,  100,  100};	// минимальные значения, в сотых
+	const uint16_t ANALOG_MAX[ANUMBER]  = {  700,  2000,  280,  280};	// Максимальные значения, в сотых
+	const uint16_t ANALOG_TEST[ANUMBER] = {  150,   800,  150,  150};	// Значения датчиков при тестировании  опция TEST, в сотых
 	//#define ANALOG_MODBUS 									// Данные аналоговых датчиков читаются по Modbus RTU
 	#ifdef ANALOG_MODBUS
 	#define ANALOG_MODBUS_NUM_READ				3			// Число попыток чтения
@@ -2021,39 +2017,8 @@
 	#ifdef HTTP_TIME_REQUEST
 	const char HTTP_TIME_REQ[]			= "/curr_time.csv";
 	#endif
-	#define HTTP_LowConsumeServer		"192.168.0.8"
-	#define HTTP_LowConsumeRequest		"/&LowConsume_set="			// HTTP GET запрос информирование о режиме низкого потребления, в конец будет добавлен 0/1
 
-	// Ваттроутер (перенаправление свободной энергии солнца на нагрев)
-	#define WATTROUTER												// Включить
-	#define WR_NumLoads				4								// Кол-во нагрузок (0..5)
-//	#define WR_CurrentSensor_4_20mA	IWR								// Использовать аналоговый датчик тока с выходом 4-20mA, номер ADC датчика
-#ifndef TEST_BOARD
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, 33, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-#else
-	const int8_t WR_Load_pins[]	=	{ PIN_DEVICE_RBOILER, -2, -1, -3 };	// [<0] - реле по HTTP, для PWM нагрузки пины должны быть PWM/TIMER
-#endif
-	#define WR_Load_pins_Boiler_INDEX 0								// Индекс бойлера в массиве WR_Load_pins
-	#define WR_RELAY_LEVEL_ON		1
-	#define PWM_WRITE_OUT_FREQUENCY	3								// Частота вывода PWM, Гц, для функции PWM_Write()
-	#define PWM_WRITE_OUT_RESOLUTION 5								// 0..31, bits
-#ifndef WR_CurrentSensor_4_20mA
-	#define WR_PNET_AVERAGE			5								// Размер буфера для усреднения
-#endif
-	#define WR_SKIP_EXTREMUM		200								// Отбрасывать пиковое значение больше Вт
-	#define WR_NEXT_TURN_ON_PAUSE	10								// Минимальная пауза на включение следующего реле, сек
-
-	#define HTTP_MAP_Server			"192.168.0.9"					// Адрес системы мониторинга Malina2 инвертора МАП МикроАрт
-	#define HTTP_MAP_Read_MAP		"/read_json.php?device=map"		// Запрос чтения массива данных МАП
-	#define HTTP_MAP_Read_MPPT		"/read_json.php?device=mppt"	// Запрос чтения массива данных КЭС
-	#define HTTP_MAP_RELAY_SW_1		"/write_sec.php?id=1&relay="	// 1..3
-	#define HTTP_MAP_RELAY_SW_2		"&mode="						// On = 1, Off = 0
-
-#ifdef WR_CurrentSensor_4_20mA
-	#define WEB0_FREQUENT_JOB_PERIOD 	1000	 		// Периодичность важных функций в задаче WEB0, мс
-#else
 	#define WEB0_FREQUENT_JOB_PERIOD 	1200	 		// Периодичность важных функций в задаче WEB0, мс
-#endif
 	#define WEB0_OTHER_JOB_PERIOD    	10000   		// Периодичность других функций внутри задачи WEB0, мс
 
 
