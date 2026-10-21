@@ -1,12 +1,23 @@
 # ControlHeatPump
-Контроллер теплового насоса
+Контроллер теплового насоса<br>
+Октябрь 2026 проект ЗАКРЫТ. Обновлений больше не будет.<br>
+Начиная с мая 2026 года я работал над рефакторингом этого проекта. Было много изменений в архитектуре, удалена часть функционала
+которым я не пользовался и добавлен новый функционал. Передела полностью веб морда контроллера.<br>
+В октябре 2026 года я выложил новый проект на GitHub https://github.com/pav2000/ControlHeatPump2.0<br>
+В дальнейшем все правки я делаю только в новом проекте.<br>
+
+Heat Pump Controller<br>
+October 2026: Project CLOSED. There will be no further updates.<br>
+Starting in May 2026, I worked on refactoring this project. This involved significant architectural changes, the removal of
+some features I no longer used, and the addition of new functionality. The controller’s web interface was completely overhauled.<br>
+In October 2026, I published the new project on GitHub: https://github.com/pav2000/ControlHeatPump2.0<br>
+Moving forward, all future modifications will be made exclusively within the new project.<br>
+
+---------------------------------------------------------------------------
 
 Открытый проект "Народный контроллер" для тепловых насосов.<br>
 Данное програмноое обеспечение предназначено для управления<br>
 различными типами тепловых насосов для отопления и ГВС.<br>
-<br>
-В данном репозитории идет текущая работа, возможны ошибки и нестабильная работа.<br>
-Оттестированный релиз здесь: https://github.com/vad7/ControlHeatPump<br>
 <br>
 Подробное обсуждение проекта на форуме: <br>
 https://www.forumhouse.ru/threads/352693/ <br>
